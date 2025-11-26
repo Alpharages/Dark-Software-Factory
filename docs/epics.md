@@ -203,6 +203,9 @@ This document provides the complete epic and story breakdown for Dark Software F
 
 ## Epic 1: Foundation & Development Environment
 
+**ClickUp Epic ID:** `86evnjw6h`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjw6h
+
 **Epic Goal:** Establish the complete development foundation for the AI Dev Tool Orchestrator, enabling the development team to build, test, and deploy all subsequent features. This epic creates the project structure, core infrastructure, and deployment pipeline that supports the entire transformation.
 
 **User Value:** Development team can build, test, and deploy the orchestrator with confidence. All foundational services (database, message queue, auth, monitoring, CI/CD) are operational and documented.
@@ -212,6 +215,8 @@ This document provides the complete epic and story breakdown for Dark Software F
 ---
 
 ### Story 1.1: NestJS Project Initialization
+
+**ClickUp ID:** `86evnjw87` | **URL:** https://app.clickup.com/t/86evnjw87
 
 As a developer,
 I want a properly initialized NestJS project with TypeScript configuration,
@@ -248,6 +253,8 @@ So that I can start building the orchestrator with a solid foundation.
 
 ### Story 1.2: Project Structure & Module Organization
 
+**ClickUp ID:** `86evnjw88` | **URL:** https://app.clickup.com/t/86evnjw88
+
 As a developer,
 I want a well-organized module structure following NestJS and architecture best practices,
 So that the codebase is maintainable and scalable as we add features.
@@ -283,6 +290,8 @@ So that the codebase is maintainable and scalable as we add features.
 ---
 
 ### Story 1.3: PostgreSQL Database Setup with Prisma
+
+**ClickUp ID:** `86evnjw8e` | **URL:** https://app.clickup.com/t/86evnjw8e
 
 As a developer,
 I want a PostgreSQL database configured with Prisma ORM,
@@ -328,6 +337,8 @@ So that I can persist tickets, executions, and metrics reliably.
 
 ### Story 1.4: Environment Configuration & Secrets Management
 
+**ClickUp ID:** `86evnjw8f` | **URL:** https://app.clickup.com/t/86evnjw8f
+
 As a developer,
 I want environment-based configuration with secure secrets management,
 So that the application can run in different environments (dev, staging, prod) securely.
@@ -370,6 +381,8 @@ So that the application can run in different environments (dev, staging, prod) s
 
 ### Story 1.5: RabbitMQ Message Queue Integration
 
+**ClickUp ID:** `86evnjw8g` | **URL:** https://app.clickup.com/t/86evnjw8g
+
 As a developer,
 I want RabbitMQ integrated as the message queue,
 So that I can process AI executions, QA checks, and deployments asynchronously.
@@ -406,6 +419,8 @@ So that I can process AI executions, QA checks, and deployments asynchronously.
 ---
 
 ### Story 1.6: JWT Authentication Service Integration
+
+**ClickUp ID:** `86evnjw8k` | **URL:** https://app.clickup.com/t/86evnjw8k
 
 As a developer,
 I want JWT-based authentication integrated with the separate auth service,
@@ -447,6 +462,8 @@ So that all endpoints are secured with role-based access control.
 ---
 
 ### Story 1.7: Winston Structured Logging Setup
+
+**ClickUp ID:** `86evnjw8m` | **URL:** https://app.clickup.com/t/86evnjw8m
 
 As a developer,
 I want structured JSON logging with Winston,
@@ -490,6 +507,8 @@ So that all logs are searchable, traceable, and comply with observability requir
 
 ### Story 1.8: Prometheus Metrics Endpoints
 
+**ClickUp ID:** `86evnjw8t` | **URL:** https://app.clickup.com/t/86evnjw8t
+
 As a developer,
 I want Prometheus-compatible metrics exposed,
 So that we can monitor system health and make GO/NO-GO decisions (NFR-O5).
@@ -528,6 +547,8 @@ So that we can monitor system health and make GO/NO-GO decisions (NFR-O5).
 ---
 
 ### Story 1.9: Sentry Error Tracking Integration
+
+**ClickUp ID:** `86evnjw8v` | **URL:** https://app.clickup.com/t/86evnjw8v
 
 As a developer,
 I want Sentry integrated for error tracking and alerting,
@@ -574,6 +595,8 @@ So that critical failures trigger immediate alerts (NFR-O6) and we can debug pro
 
 ### Story 1.10: Docker Compose Development Environment
 
+**ClickUp ID:** `86evnjw8x` | **URL:** https://app.clickup.com/t/86evnjw8x
+
 As a developer,
 I want a Docker Compose setup for local development,
 So that I can run PostgreSQL, RabbitMQ, and the orchestrator together easily.
@@ -605,6 +628,8 @@ So that I can run PostgreSQL, RabbitMQ, and the orchestrator together easily.
 ---
 
 ### Story 1.11: GitHub Actions CI/CD Pipeline
+
+**ClickUp ID:** `86evnjw8z` | **URL:** https://app.clickup.com/t/86evnjw8z
 
 As a developer,
 I want a GitHub Actions pipeline for automated testing and deployment,
@@ -646,6 +671,8 @@ So that every commit is validated and deployments are automated (NFR-M5-M7).
 
 ### Story 1.12: API Documentation with Swagger/OpenAPI
 
+**ClickUp ID:** `86evnjw8y` | **URL:** https://app.clickup.com/t/86evnjw8y
+
 As a developer,
 I want automatic API documentation with Swagger,
 So that frontend developers and integrators can understand endpoints easily.
@@ -679,6 +706,8 @@ So that frontend developers and integrators can understand endpoints easily.
 ---
 
 ### Story 1.13: Development Scripts & Documentation
+
+**ClickUp ID:** `86evnjw90` | **URL:** https://app.clickup.com/t/86evnjw90
 
 As a developer,
 I want comprehensive npm scripts and README documentation,
@@ -756,13 +785,20 @@ So that new developers can onboard quickly (NFR-UX9: productive within 1 week).
 
 ## Epic 2: Ticket Intake & AI Routing Engine
 
-**Epic Goal:** Enable PMs to create tickets in AetherFlow and have them automatically routed to appropriate AI tools (Cursor, Windsurf, Antigravity) for code generation. This epic implements the core orchestration intelligence that connects ticket creation to AI execution.
+**ClickUp Epic ID:** `86evnjw9b`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjw9b
 
-**User Value:** PMs can create tickets and watch them automatically flow to the right AI tool without manual routing. The system intelligently parses requirements, validates quality, and generates optimal prompts.
+**Epic Goal:** Enable PMs to create tickets in AetherFlow and have them automatically routed to appropriate AI tools (Cursor CLI Headless or Claude Code) for code generation. This epic implements the core orchestration intelligence that connects ticket creation to AI execution using a multi-provider strategy.
+
+**User Value:** PMs can create tickets and watch them automatically flow to the right AI tool without manual routing. The system intelligently parses requirements, validates quality, and generates optimal prompts. Multi-provider approach ensures reliability with automatic fallback if one provider fails.
 
 **FRs Covered:** FR1-FR7 (PM ticket creation), FR56-FR65 (Webhook, Task Intake, AI Routing & Execution)
 
+**Architecture Reference:** Multi-Provider AI Strategy (ADR-003: Cursor CLI Headless, ADR-006: Claude Code)
+
 ### Story 2.1: ClickUp Webhook Endpoint & Event Handling
+
+**ClickUp ID:** `86evnjwa0` | **URL:** https://app.clickup.com/t/86evnjwa0
 
 As a PM,
 I want my ClickUp task creation to trigger the orchestrator automatically,
@@ -791,6 +827,8 @@ So that I don't need to manually start AI execution for each ticket.
 - Architecture reference: NFR-I7 (reliable webhook handling with retries/duplicates)
 
 ### Story 2.2: Ticket Data Parsing & Validation
+
+**ClickUp ID:** `86evnjwa2` | **URL:** https://app.clickup.com/t/86evnjwa2
 
 As the system,
 I want to parse ClickUp task data into our ticket model,
@@ -833,44 +871,58 @@ So that I can validate and process tickets consistently.
 - FR58: System validates ticket quality before routing
 - Store parsed ticket in `tickets` table (Prisma schema)
 
-### Story 2.3: AI Tool Selection & Routing Logic
+### Story 2.3: AI Tool Selection & Routing Logic (Multi-Provider)
+
+**ClickUp ID:** `86evnjwa3` | **URL:** https://app.clickup.com/t/86evnjwa3
 
 As the system,
 I want to intelligently route tickets to the most appropriate AI tool,
-So that each task type is handled by the optimal AI provider.
+So that each task complexity level is handled by the optimal AI provider.
 
 **Acceptance Criteria:**
 
 **Given** a validated ticket exists  
 **When** the routing engine analyzes the ticket  
 **Then** the system selects an AI provider based on:
-- Task type keywords (frontend → Cursor, backend → Windsurf, infra → Antigravity)
-- Project preferences (configured per project)
-- AI provider availability (health check status)
-- Cost optimization (if multiple tools viable, choose cheaper)
-- Provider load balancing (distribute across providers)
+- **Task complexity assessment:**
+  - Files to modify count (1 file vs 3+ files)
+  - Architecture changes required (yes/no)
+  - Cross-file dependencies (low/medium/high)
+  - Estimated lines of code (<100 vs >100)
+  - Ticket tags (architecture, refactor, complex, simple, bugfix)
+- **Provider availability** (health check status)
+- **Cost optimization** (prefer Claude Code for simple tasks)
+- **Fallback readiness** (if primary fails, use secondary)
 
-**And** routing decision is logged with justification  
+**And** routing rules are:
+- **High complexity (score ≥10)** → Cursor CLI Headless (full repo context)
+- **Low/Medium complexity (score <10)** → Claude Code (faster, cheaper)
+- **If primary unavailable** → Automatic fallback to secondary provider
+
+**And** routing decision is logged with:
+- Justification (complexity score breakdown)
+- Selected provider (CURSOR_HEADLESS | CLAUDE_CODE)
+- Routing reason (complexity, availability, cost)
+- Timestamp of routing decision
+
 **And** if no provider is available:
 - Ticket remains in `VALIDATED` status
 - Retry scheduled after 5 minutes
 - Alert sent to operators if downtime > 15 minutes
 
-**And** routing metadata is stored:
-- Selected provider (CURSOR | WINDSURF | ANTIGRAVITY)
-- Routing reason (task type, availability, cost)
-- Timestamp of routing decision
-
 **Prerequisites:** Story 2.2 (Parsed tickets)
 
 **Technical Notes:**
 - Create AIRoutingService in `src/modules/ai-routing/`
-- Implement provider selection algorithm
-- FR60: System routes to appropriate AI tool based on task type
-- Check provider health via API ping before routing
-- Architecture reference: Multi-provider strategy section
+- Implement complexity scoring algorithm (see architecture doc)
+- FR60: System routes to appropriate AI tool based on task complexity
+- Check provider health via API status check
+- Architecture reference: Multi-Provider AI Strategy, ADR-003, ADR-006
+- Create AIProviderFactory for provider selection
 
-### Story 2.4: AI Prompt Generation from Ticket Context
+### Story 2.4: AI Prompt Generation from Ticket Context (Multi-Provider)
+
+**ClickUp ID:** `86evnjwa4` | **URL:** https://app.clickup.com/t/86evnjwa4
 
 As the system,
 I want to convert ticket requirements into AI-executable prompts,
@@ -886,26 +938,40 @@ So that AI tools receive clear, complete instructions for code generation.
 - Acceptance criteria in executable format (test scenarios)
 - Project context (tech stack, coding standards, file structure)
 - Relevant code files to modify (if specified in ticket)
+- Technical requirements (types, error handling, best practices)
 
-**And** prompt follows structured format with sections for Task, Requirements, Acceptance Criteria, Technical Context, Additional Context
+**And** prompt follows structured format with sections for:
+- Task Title
+- Description
+- Acceptance Criteria
+- Technical Requirements
+- Context (tech stack, related files, dependencies)
 
 **And** prompt is optimized per AI provider:
-- Cursor: Emphasize file-level changes
-- Windsurf: Emphasize full project context
-- Antigravity: Emphasize infrastructure as code
+- **Cursor CLI Headless:** Include file paths, emphasize repository context (Cursor auto-indexes)
+- **Claude Code:** Include file contents inline, emphasize autonomous coding, tool use for file operations
 
-**And** prompt generation metrics are tracked (length, complexity)
+**And** prompt generation handles provider-specific limits:
+- Cursor: Standard context window
+- Claude Code: Extended context (200K+ tokens)
+
+**And** prompt generation metrics are tracked (length, complexity, provider)
 
 **Prerequisites:** Story 2.3 (Routing decision), FR3 (Context documents)
 
 **Technical Notes:**
-- Create PromptGeneratorService
+- Create PromptGeneratorService with provider-specific builders
 - FR61: System converts tickets to AI-executable prompts
 - Load context documents from ticket attachments
-- Use provider-specific prompt templates
-- Limit prompt size to provider limits (e.g., 100K tokens)
+- Use provider-specific prompt templates:
+  - `buildCursorPrompt()` - For Cursor CLI Headless
+  - `buildClaudeCodePrompt()` - For Claude Code (include file contents)
+- Limit prompt size to provider limits
+- Architecture reference: Multi-Provider Prompt Engineering section
 
 ### Story 2.5: AI Execution Tracking & State Management
+
+**ClickUp ID:** `86evnjwaa` | **URL:** https://app.clickup.com/t/86evnjwaa
 
 As the system,
 I want to track AI execution state throughout the process,
@@ -935,79 +1001,180 @@ So that PMs can monitor progress and we can handle failures gracefully.
 - FR62: System monitors AI execution progress
 - Emit events to `ai-execution-queue` for async processing
 
-### Story 2.6: AI Provider API Integration (Cursor)
+### Story 2.6: AI Provider Integration - Cursor CLI Headless Mode
+
+**ClickUp ID:** `86evnjwab` | **URL:** https://app.clickup.com/t/86evnjwab
 
 As the system,
-I want to integrate with Cursor's API for code generation,
-So that Cursor-routed tickets can generate code automatically.
+I want to integrate with Cursor CLI in headless mode for code generation,
+So that complex, multi-file tickets can generate code with full repository context.
 
 **Acceptance Criteria:**
 
-**Given** a ticket is routed to Cursor  
-**When** the system calls Cursor's API  
+**Given** a ticket is routed to Cursor CLI Headless  
+**When** the system executes Cursor headless  
 **Then** the integration:
-- Authenticates using CURSOR_API_KEY from environment
-- Sends the generated prompt via Cursor's API endpoint
-- Sets appropriate timeout (configurable, default 10 minutes)
-- Handles rate limiting (retry with exponential backoff)
-- Receives generated code in response
+- Prepares isolated workspace (git clone to `/tmp/cursor-workspaces/ticket-{id}`)
+- Creates feature branch (`feature/ticket-{id}`)
+- Executes: `cursor --headless --dir /workspace --apply "prompt" --wait`
+- Sets appropriate timeout (configurable, default 5 minutes)
+- Monitors execution via process status
+- Collects changes via `git diff HEAD`
+- Parses files modified and change summary
 
-**And** successful generation stores code output, parses files changed, updates status to COMPLETED, tracks API cost
+**And** successful generation:
+- Captures generated code via git diff
+- Parses files changed from git
+- Updates execution status to COMPLETED
+- Tracks execution time for cost estimation
+- Stores workspace path for debugging
 
-**And** failed generation captures error, updates status to FAILED, determines if retryable, schedules retry if appropriate
+**And** failed generation:
+- Captures error output (stdout/stderr)
+- Updates status to FAILED
+- Determines if retryable (timeout, crash, vs invalid prompt)
+- Schedules retry if appropriate
+- Preserves workspace for debugging
 
-**Prerequisites:** Story 2.5 (Execution tracking), 1.4 (Env config with API keys)
+**And** workspace management:
+- One workspace per ticket execution
+- Automatic cleanup after PR creation (or archive for 7 days)
+- Supports concurrent executions (10+ workspaces)
+
+**Prerequisites:** Story 2.5 (Execution tracking), 1.4 (Env config)
 
 **Technical Notes:**
-- Create CursorProviderService implementing AIProviderInterface
-- Use axios or fetch for HTTP calls
+- Create CursorHeadlessProvider implementing AIProviderInterface
+- Use Node.js `child_process.exec` for CLI execution
 - FR65: Execute AI code generation
 - Implement circuit breaker pattern
-- Architecture reference: AI Provider Integration (NFR-I4)
+- Architecture reference: ADR-003 (Cursor CLI Headless Mode)
+- Validation script: `scripts/validate-ai-providers.sh`
+- Cursor CLI docs: https://cursor.com/docs/cli/overview
 
-### Story 2.7: AI Provider API Integration (Windsurf)
+### Story 2.7: AI Provider Integration - Claude Code (Anthropic)
+
+**ClickUp ID:** `86evnjwad` | **URL:** https://app.clickup.com/t/86evnjwad
 
 As the system,
-I want to integrate with Windsurf's API for code generation,
-So that Windsurf-routed tickets can generate code automatically.
+I want to integrate with Claude Code (Anthropic's autonomous coding agent) via API,
+So that simple-to-medium complexity tickets can be handled cost-effectively with autonomous coding capabilities.
 
 **Acceptance Criteria:**
 
-**Given** a ticket is routed to Windsurf  
-**When** the system calls Windsurf's API  
-**Then** the integration follows the same pattern as Cursor: authenticates using WINDSURF_API_KEY, handles Windsurf-specific response format, implements retry and circuit breaker logic, tracks API cost
+**Given** a ticket is routed to Claude Code  
+**When** the system calls the Anthropic API  
+**Then** the integration:
+- Authenticates using ANTHROPIC_API_KEY from environment
+- Prepares isolated workspace (git clone to `/tmp/claude-workspaces/ticket-{id}`)
+- Creates feature branch (`feature/ticket-{id}`)
+- Loads relevant file contents into extended context
+- Calls Anthropic API with:
+  - Model: `claude-3-5-sonnet-20241022`
+  - Extended context (200K+ tokens with file contents)
+  - Tool use enabled for file operations
+  - Max tokens: 8000
+- Processes tool use responses (file edits, creates)
+- Applies changes to workspace files
+- Collects changes via `git diff HEAD`
 
-**And** Windsurf-specific features are supported: full project context submission, architecture decision explanations, multi-file change tracking
+**And** successful generation:
+- Parses tool use calls for file operations
+- Writes generated code to workspace files
+- Captures git diff
+- Updates execution status to COMPLETED
+- Tracks API cost (input/output tokens)
 
-**Prerequisites:** Story 2.5, Story 2.6 (AI provider pattern)
+**And** failed generation:
+- Captures API error (rate limit, invalid request, etc.)
+- Updates status to FAILED
+- Determines if retryable
+- Schedules retry if appropriate
+
+**And** autonomous coding features:
+- Multi-turn conversation support for complex tasks
+- Tool use for file operations
+- Extended context for large codebases
+- Autonomous planning and execution
+
+**And** cost tracking:
+- Track input tokens (~$3/1M tokens)
+- Track output tokens (~$15/1M tokens)
+- Estimated cost per ticket (~$0.10-$0.50)
+
+**Prerequisites:** Story 2.5 (Execution tracking), 1.4 (Env config)
 
 **Technical Notes:**
-- Create WindsurfProviderService implementing AIProviderInterface
-- Reuse retry/circuit breaker logic from Cursor
-- Architecture reference: AI Provider Integration (NFR-I4)
+- Create ClaudeCodeProvider implementing AIProviderInterface
+- Install `@anthropic-ai/sdk` package
+- FR65: Execute AI code generation
+- Implement circuit breaker pattern
+- Architecture reference: ADR-006 (Claude Code as Secondary Provider)
+- Claude Code docs: https://www.claude.com/product/claude-code
+- Tool schema for file operations: `edit_file`, `create_file`, `read_file`
 
-### Story 2.8: AI Provider API Integration (Antigravity)
+### Story 2.8: Multi-Provider Orchestration & Fallback Logic
+
+**ClickUp ID:** `86evnjwaf` | **URL:** https://app.clickup.com/t/86evnjwaf
 
 As the system,
-I want to integrate with Google Antigravity's API for code generation,
-So that Antigravity-routed tickets (especially infrastructure) can generate code automatically.
+I want to implement intelligent provider selection and automatic fallback,
+So that ticket processing continues even if one AI provider fails.
 
 **Acceptance Criteria:**
 
-**Given** a ticket is routed to Antigravity  
-**When** the system calls Antigravity's API  
-**Then** the integration follows the same pattern as Cursor/Windsurf with ANTIGRAVITY_API_KEY
+**Given** a ticket needs AI code generation  
+**When** the system selects a provider via AIProviderFactory  
+**Then** provider selection follows these rules:
+- Assess ticket complexity (0-100 score)
+- **High complexity (≥10):** Try Cursor first → fallback to Claude Code
+- **Low/Medium complexity (<10):** Try Claude Code first → fallback to Cursor
+- Check provider availability before selection
 
-**And** Antigravity-specific features are supported: infrastructure-as-code generation, Google Cloud Platform specifics
+**And** fallback logic handles failures:
+- If primary provider fails with retryable error → fallback to secondary
+- If secondary also fails → mark as FAILED, escalate to human
+- Log fallback events with reason
+- Track fallback frequency for monitoring
 
-**Prerequisites:** Story 2.5, Story 2.6 (AI provider pattern)
+**And** provider availability checks:
+- Health check before routing
+- Circuit breaker pattern (open after 5 failures in 1 minute)
+- Automatic circuit closer after 30 seconds
+- Status monitoring for dashboard
+
+**And** complexity assessment algorithm:
+```typescript
+score = 
+  (filesCount > 3 ? 5 : filesCount * 2) +
+  (descriptionLength > 500 ? 3 : 0) +
+  (hasTag('architecture') ? 5 : 0) +
+  (hasTag('refactor') ? 4 : 0) +
+  (acceptanceCriteria > 5 ? 2 : 0)
+
+if (score >= 10) return 'high'
+if (score >= 5) return 'medium'
+return 'low'
+```
+
+**And** fallback metrics tracked:
+- Fallback trigger count per provider
+- Success rate after fallback
+- Cost comparison (primary vs fallback)
+- Time to completion comparison
+
+**Prerequisites:** Story 2.6 (Cursor), Story 2.7 (Claude Code), Story 2.3 (Routing)
 
 **Technical Notes:**
-- Create AntigravityProviderService implementing AIProviderInterface
-- Reuse common provider logic
-- Architecture reference: AI Provider Integration (NFR-I4)
+- Create AIProviderFactory in `src/modules/ai-routing/providers/`
+- Implement BaseAIProvider interface for both providers
+- Create FallbackStrategy service
+- Architecture reference: Multi-Provider Routing Logic
+- Circuit breaker library: `opossum` or custom implementation
 
 ### Story 2.9: AI Execution Retry Logic & Error Handling
+
+**ClickUp ID:** `86evnjwag` | **URL:** https://app.clickup.com/t/86evnjwag
 
 As the system,
 I want to automatically retry failed AI executions with context,
@@ -1034,6 +1201,8 @@ So that transient failures don't require manual intervention.
 
 ### Story 2.10: RabbitMQ AI Execution Queue Processing
 
+**ClickUp ID:** `86evnjwam` | **URL:** https://app.clickup.com/t/86evnjwam
+
 As the system,
 I want AI executions to be processed asynchronously via message queue,
 So that webhook responses are fast and execution can scale independently.
@@ -1056,6 +1225,8 @@ So that webhook responses are fast and execution can scale independently.
 - Architecture reference: RabbitMQ message format
 
 ### Story 2.11: Ticket Quality Scoring Algorithm
+
+**ClickUp ID:** `86evnjwan` | **URL:** https://app.clickup.com/t/86evnjwan
 
 As a PM,
 I want to see a quality score for my tickets before submission,
@@ -1081,6 +1252,8 @@ So that I can improve ticket clarity and completeness.
 
 ### Story 2.12: Project Context Extraction & Attachment
 
+**ClickUp ID:** `86evnjwap` | **URL:** https://app.clickup.com/t/86evnjwap
+
 As a PM,
 I want to attach context documents to tickets,
 So that AI has the necessary background to generate appropriate code.
@@ -1105,11 +1278,33 @@ So that AI has the necessary background to generate appropriate code.
 **Epic 2 Summary:**
 
 **Total Stories:** 12  
-**Deliverables:** ClickUp webhook integration, Ticket parsing & validation, AI routing algorithm, Prompt generation, Execution tracking, 3 AI provider integrations, Retry logic, RabbitMQ async processing, Quality scoring, Context extraction
+**Deliverables:** 
+- ClickUp webhook integration
+- Ticket parsing & validation  
+- Multi-provider AI routing algorithm (complexity-based)
+- Provider-specific prompt generation
+- Execution tracking
+- **2 AI provider integrations:**
+  - Cursor CLI Headless (primary - complex tasks)
+  - Claude Code/Anthropic API (secondary - simple tasks)
+- Multi-provider orchestration & fallback logic
+- Retry logic with error handling
+- RabbitMQ async processing
+- Quality scoring algorithm
+- Context extraction & attachment
+
+**Architecture Impact:**
+- Multi-provider strategy reduces single-point-of-failure risk
+- Complexity-based routing optimizes cost and quality
+- Automatic fallback ensures reliability
+- Official tools (Cursor CLI + Anthropic SDK) eliminate custom AI integration
 
 ---
 
 ## Epic 3: Automated QA & Quality Gates
+
+**ClickUp Epic ID:** `86evnjwb1`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwb1
 
 **Epic Goal:** Ensure AI-generated code meets quality standards through automated validation (linting, testing, security checks) before human review. This epic implements the first line of defense against AI errors.
 
@@ -1118,6 +1313,8 @@ So that AI has the necessary background to generate appropriate code.
 **FRs Covered:** FR66-FR71 (Automated QA & Quality Gates)
 
 ### Story 3.1: Linting Integration for Multiple Languages
+
+**ClickUp ID:** `86evnjwb4` | **URL:** https://app.clickup.com/t/86evnjwb4
 
 As the system,
 I want to run language-specific linters on AI-generated code,
@@ -1153,6 +1350,8 @@ So that code style and syntax errors are caught automatically.
 
 ### Story 3.2: Automated Test Execution Framework
 
+**ClickUp ID:** `86evnjwb5` | **URL:** https://app.clickup.com/t/86evnjwb5
+
 As the system,
 I want to run existing project tests against AI-generated code,
 So that regressions and broken functionality are detected automatically.
@@ -1187,6 +1386,8 @@ So that regressions and broken functionality are detected automatically.
 
 ### Story 3.3: Test Coverage Calculation & Enforcement
 
+**ClickUp ID:** `86evnjwb6` | **URL:** https://app.clickup.com/t/86evnjwb6
+
 As the system,
 I want to calculate test coverage and enforce minimum thresholds,
 So that AI-generated code doesn't reduce overall project quality.
@@ -1219,6 +1420,8 @@ So that AI-generated code doesn't reduce overall project quality.
 - NFR-M1: Orchestrator codebase must maintain >80% test coverage
 
 ### Story 3.4: Basic Security & Code Quality Checks
+
+**ClickUp ID:** `86evnjwb7` | **URL:** https://app.clickup.com/t/86evnjwb7
 
 As the system,
 I want to run security scans on AI-generated code,
@@ -1253,6 +1456,8 @@ So that vulnerabilities and code smells are detected early.
 
 ### Story 3.5: Quality Gate Decision Engine
 
+**ClickUp ID:** `86evnjwb8` | **URL:** https://app.clickup.com/t/86evnjwb8
+
 As the system,
 I want to enforce quality gates that block deployment if standards aren't met,
 So that only validated code proceeds to human review.
@@ -1286,6 +1491,8 @@ So that only validated code proceeds to human review.
 - Architecture reference: NFR-O6 (Critical failures trigger alerts)
 
 ### Story 3.6: QA Results Storage & Retrieval
+
+**ClickUp ID:** `86evnjwb9` | **URL:** https://app.clickup.com/t/86evnjwb9
 
 As a Lead QA,
 I want QA results stored and accessible,
@@ -1327,6 +1534,8 @@ So that I can review quality trends and make informed decisions.
 
 ### Story 3.7: RabbitMQ QA Queue Processing
 
+**ClickUp ID:** `86evnjwba` | **URL:** https://app.clickup.com/t/86evnjwba
+
 As the system,
 I want QA checks to run asynchronously after AI code generation,
 So that the pipeline remains responsive and scalable.
@@ -1359,6 +1568,8 @@ So that the pipeline remains responsive and scalable.
 - Architecture reference: RabbitMQ queue structure
 
 ### Story 3.8: QA Metrics & Prometheus Integration
+
+**ClickUp ID:** `86evnjwbe` | **URL:** https://app.clickup.com/t/86evnjwbe
 
 As an operator,
 I want QA metrics exposed to Prometheus,
@@ -1401,6 +1612,9 @@ So that I can monitor quality trends and system health.
 
 ## Epic 4: GitHub Integration & CI/CD Pipeline
 
+**ClickUp Epic ID:** `86evnjwbg`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwbg
+
 **Epic Goal:** Automatically push validated AI-generated code to GitHub and trigger CI/CD deployments. This epic completes the automated pipeline from ticket to production.
 
 **User Value:** Validated code flows automatically to GitHub and deploys without manual git commands. Teams get deployed features faster with full traceability.
@@ -1408,6 +1622,8 @@ So that I can monitor quality trends and system health.
 **FRs Covered:** FR72-FR78 (GitHub Integration & Deployment)
 
 ### Story 4.1: GitHub API Client & Authentication
+
+**ClickUp ID:** `86evnjwbj` | **URL:** https://app.clickup.com/t/86evnjwbj
 
 As the system,
 I want to authenticate with GitHub API securely,
@@ -1444,6 +1660,8 @@ So that I can perform git operations programmatically.
 
 ### Story 4.2: Feature Branch Creation
 
+**ClickUp ID:** `86evnjwbk` | **URL:** https://app.clickup.com/t/86evnjwbk
+
 As the system,
 I want to create feature branches for each ticket automatically,
 So that AI code changes are isolated and reviewable.
@@ -1472,6 +1690,8 @@ So that AI code changes are isolated and reviewable.
 - Store branch_name in `github_pushes` table
 
 ### Story 4.3: Git Commit Generation & Push
+
+**ClickUp ID:** `86evnjwbm` | **URL:** https://app.clickup.com/t/86evnjwbm
 
 As the system,
 I want to commit AI-generated code and push to GitHub,
@@ -1515,6 +1735,8 @@ Execution-ID: {execution_id}
 
 ### Story 4.4: Pull Request Creation & Metadata
 
+**ClickUp ID:** `86evnjwbn` | **URL:** https://app.clickup.com/t/86evnjwbn
+
 As the system,
 I want to create pull requests automatically with rich context,
 So that reviewers understand what was changed and why.
@@ -1543,9 +1765,11 @@ ClickUp: [TICKET-{id}](url)
 - [ ] {criterion 2}
 
 ## AI Context
-- Provider: {Cursor/Windsurf/Antigravity}
+- Provider: {CURSOR_HEADLESS | CLAUDE_CODE}
+- Complexity Score: {score}/100
 - Confidence: {score}%
 - Execution ID: {id}
+- Fallback Used: {yes/no}
 
 ## QA Results
 - Linting: ✅ Passed
@@ -1566,6 +1790,8 @@ ClickUp: [TICKET-{id}](url)
 - Update github_pushes.pr_number and pr_url
 
 ### Story 4.5: CI/CD Pipeline Trigger & Monitoring
+
+**ClickUp ID:** `86evnjwbq` | **URL:** https://app.clickup.com/t/86evnjwbq
 
 As the system,
 I want to trigger CI/CD pipelines automatically when code is pushed,
@@ -1601,6 +1827,8 @@ So that deployments happen without manual intervention.
 - Create `deployments` table record linked to github_pushes
 
 ### Story 4.6: Deployment Status Synchronization
+
+**ClickUp ID:** `86evnjwbt` | **URL:** https://app.clickup.com/t/86evnjwbt
 
 As a PM,
 I want ClickUp ticket status updated when deployment completes,
@@ -1638,6 +1866,8 @@ Build: {build_id}
 
 ### Story 4.7: GitHub Push Error Handling & Rollback
 
+**ClickUp ID:** `86evnjwbw` | **URL:** https://app.clickup.com/t/86evnjwbw
+
 As the system,
 I want to handle GitHub push failures gracefully,
 So that failed pushes don't block the pipeline permanently.
@@ -1672,6 +1902,8 @@ So that failed pushes don't block the pipeline permanently.
 - Architecture reference: Error Handling section
 
 ### Story 4.8: GitHub Integration Metrics & Monitoring
+
+**ClickUp ID:** `86evnjwbx` | **URL:** https://app.clickup.com/t/86evnjwbx
 
 As an operator,
 I want GitHub integration metrics exposed,
@@ -1710,6 +1942,9 @@ So that I can monitor git operations and deployment success rates.
 
 ## Epic 5: PM Dashboard & Project Orchestration
 
+**ClickUp Epic ID:** `86evnjwc0`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwc0
+
 **Epic Goal:** Provide PMs with a unified dashboard to monitor all their AI projects, approve code, manage workload, and communicate with clients. This is the primary PM interface for orchestrating the Dark Factory.
 
 **User Value:** PMs can see all their projects at a glance, take quick actions (approve, reject, escalate), monitor their workload to prevent burnout, and maintain client relationships efficiently.
@@ -1717,6 +1952,8 @@ So that I can monitor git operations and deployment success rates.
 **FRs Covered:** FR8-FR23 (PM Orchestration), FR96-FR99 (PM Dashboard interface), FR15-FR19 (Workload management), FR20-FR23 (Client communication)
 
 ### Story 5.1: PM Dashboard Frontend Foundation
+
+**ClickUp ID:** `86evnjwc3` | **URL:** https://app.clickup.com/t/86evnjwc3
 
 As a PM,
 I want a responsive dashboard that loads quickly and works on desktop and mobile,
@@ -1751,6 +1988,8 @@ So that I can monitor projects from anywhere.
 
 ### Story 5.2: Project List & Status Overview
 
+**ClickUp ID:** `86evnjwc4` | **URL:** https://app.clickup.com/t/86evnjwc4
+
 As a PM,
 I want to see all my assigned projects with current status,
 So that I can quickly identify what needs attention.
@@ -1783,6 +2022,8 @@ So that I can quickly identify what needs attention.
 
 ### Story 5.3: Real-Time Ticket Execution Status
 
+**ClickUp ID:** `86evnjwc5` | **URL:** https://app.clickup.com/t/86evnjwc5
+
 As a PM,
 I want to see real-time updates on AI execution for my tickets,
 So that I know what's happening without constantly refreshing.
@@ -1802,7 +2043,8 @@ So that I know what's happening without constantly refreshing.
 **And** progress indicators show:
 - Current step in pipeline
 - Estimated time remaining (if available)
-- AI provider being used (Cursor/Windsurf/Antigravity icon)
+- AI provider being used (Cursor CLI Headless or Claude Code icon)
+- Fallback status (if secondary provider was used)
 
 **And** Socket.IO events update UI without page refresh
 
@@ -1815,6 +2057,8 @@ So that I know what's happening without constantly refreshing.
 - Architecture reference: Socket.IO Event Naming
 
 ### Story 5.4: Code Approval Workflow Interface
+
+**ClickUp ID:** `86evnjwc6` | **URL:** https://app.clickup.com/t/86evnjwc6
 
 As a PM,
 I want to review and approve AI-generated code before deployment,
@@ -1852,6 +2096,8 @@ So that I maintain control over what goes to production.
 
 ### Story 5.5: AI Confidence Scores & Uncertainty Flags
 
+**ClickUp ID:** `86evnjwc7` | **URL:** https://app.clickup.com/t/86evnjwc7
+
 As a PM,
 I want to see AI confidence levels for each task,
 So that I can prioritize review of uncertain outputs.
@@ -1887,6 +2133,8 @@ So that I can prioritize review of uncertain outputs.
 - Display uncertainty flags as expandable list
 
 ### Story 5.6: Workload & Capacity Dashboard
+
+**ClickUp ID:** `86evnjwc8` | **URL:** https://app.clickup.com/t/86evnjwc8
 
 As a PM,
 I want to monitor my workload and capacity,
@@ -1928,6 +2176,8 @@ So that I can prevent burnout and request help before overload.
 
 ### Story 5.7: Manager View - Team Capacity Overview
 
+**ClickUp ID:** `86evnjwc9` | **URL:** https://app.clickup.com/t/86evnjwc9
+
 As a Manager,
 I want to see all PMs' workload distribution,
 So that I can balance capacity and prevent team burnout.
@@ -1962,6 +2212,8 @@ So that I can balance capacity and prevent team burnout.
 - POST `/api/v1/projects/{id}/reassign` with new PM ID
 
 ### Story 5.8: Client Communication Log
+
+**ClickUp ID:** `86evnjwca` | **URL:** https://app.clickup.com/t/86evnjwca
 
 As a PM,
 I want to log client conversations with AI transcription,
@@ -1999,6 +2251,8 @@ So that I have searchable history of all client interactions.
 
 ### Story 5.9: Sprint Review & Progress Reporting
 
+**ClickUp ID:** `86evnjwcb` | **URL:** https://app.clickup.com/t/86evnjwcb
+
 As a PM,
 I want to generate progress reports for client sprint reviews,
 So that I can share transparent updates efficiently.
@@ -2030,6 +2284,8 @@ So that I can share transparent updates efficiently.
 - Template-based reports (configurable per client)
 
 ### Story 5.10: Quick Actions & Keyboard Shortcuts
+
+**ClickUp ID:** `86evnjwcc` | **URL:** https://app.clickup.com/t/86evnjwcc
 
 As a PM,
 I want keyboard shortcuts and quick actions,
@@ -2072,6 +2328,9 @@ So that I can work efficiently without excessive clicking.
 
 ## Epic 6: Cost Tracking & Budget Monitoring
 
+**ClickUp Epic ID:** `86evnjwce`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwce
+
 **Epic Goal:** Track AI compute costs in real-time, prevent budget overruns, and provide financial visibility for GO/NO-GO decisions. This epic addresses the Risk #3 (Cost Explosion) from the brainstorming session.
 
 **User Value:** Managers can see exactly how much each project costs, prevent runaway AI spending, and make data-driven financial decisions about the transformation.
@@ -2080,14 +2339,16 @@ So that I can work efficiently without excessive clicking.
 
 ### Story 6.1: AI API Usage Tracking
 
+**ClickUp ID:** `86evnjwch` | **URL:** https://app.clickup.com/t/86evnjwch
+
 As the system,
 I want to track every AI API call with associated costs,
 So that we have accurate cost data per project and provider.
 
 **Acceptance Criteria:**
 
-**Given** an AI API call is made (Cursor, Windsurf, Antigravity)  
-**When** the call completes  
+**Given** an AI execution completes (Cursor CLI Headless or Claude Code)  
+**When** the execution finishes  
 **Then** a cost record is created with:
 - ticket_id and execution_id (traceability)
 - ai_provider (CURSOR | WINDSURF | ANTIGRAVITY)
@@ -2109,11 +2370,18 @@ So that we have accurate cost data per project and provider.
 **Technical Notes:**
 - FR85: System tracks AI API usage (calls, tokens, costs) per project
 - Create CostTrackingService in `src/modules/cost-tracking/`
-- Pricing models: Cursor ~$X/1K tokens, Windsurf ~$Y/call, etc. (update with actual pricing)
+- **Pricing models:**
+  - **Cursor CLI Headless:** Fixed license cost (~$2,500/month) / execution time
+  - **Claude Code:** Pay-per-use ($3/1M input tokens, $15/1M output tokens)
+  - Typical Claude Code ticket: $0.10-$0.50
+  - Estimated blended cost: ~$29.50/ticket (100 tickets/month)
 - Store in `cost_records` table per Prisma schema
 - Architecture reference: Cost Storage section (cents, not dollars)
+- Track execution time for Cursor, tokens for Claude Code
 
 ### Story 6.2: Real-Time Cost Calculation Per Ticket/Project
+
+**ClickUp ID:** `86evnjwcj` | **URL:** https://app.clickup.com/t/86evnjwcj
 
 As a Manager,
 I want to see costs accumulate in real-time as AI works,
@@ -2132,8 +2400,10 @@ So that I can stop execution if costs exceed expectations.
 **And** cost metrics available:
 - Cost per ticket (individual ticket view)
 - Cost per project (project dashboard)
-- Cost per AI provider (compare Cursor vs Windsurf vs Antigravity)
+- Cost per AI provider (compare Cursor CLI Headless vs Claude Code)
 - Cost per PM (track which PMs create efficient tickets)
+- Provider utilization (% of tickets routed to each provider)
+- Fallback cost impact (cost when using fallback provider)
 
 **And** API endpoint provides:
 - GET `/api/v1/costs/ticket/{ticketId}` - Ticket cost details
@@ -2150,6 +2420,8 @@ So that I can stop execution if costs exceed expectations.
 - Architecture reference: Cost Tracking API contracts
 
 ### Story 6.3: Budget Alerts & Thresholds
+
+**ClickUp ID:** `86evnjwck` | **URL:** https://app.clickup.com/t/86evnjwck
 
 As a Manager,
 I want automated alerts when projects exceed cost budgets,
@@ -2188,6 +2460,8 @@ So that I can take action before costs spiral out of control.
 
 ### Story 6.4: Automatic Cost Cap Enforcement
 
+**ClickUp ID:** `86evnjwcm` | **URL:** https://app.clickup.com/t/86evnjwcm
+
 As a Manager,
 I want execution to pause automatically if hard cost cap is reached,
 So that we never accidentally spend beyond approved limits.
@@ -2223,6 +2497,8 @@ So that we never accidentally spend beyond approved limits.
 
 ### Story 6.5: Cost Monitoring Dashboard
 
+**ClickUp ID:** `86evnjwcn` | **URL:** https://app.clickup.com/t/86evnjwcn
+
 As a Manager,
 I want a dedicated cost dashboard with trends and breakdowns,
 So that I can understand spending patterns and optimize costs.
@@ -2233,10 +2509,13 @@ So that I can understand spending patterns and optimize costs.
 **When** I select a time period (daily, weekly, monthly)  
 **Then** I see:
 - **Total spend** (big number with trend arrow)
-- **Spend by AI provider** (pie chart: Cursor 45%, Windsurf 35%, Antigravity 20%)
+- **Spend by AI provider** (pie chart showing Cursor CLI Headless vs Claude Code distribution)
+  - Example: Cursor 55%, Claude Code 45%
 - **Spend by project** (bar chart: top 10 projects)
 - **Spend by PM** (helps identify which PMs create cost-efficient tickets)
 - **Trend chart** (line graph over time)
+- **Provider utilization** (tickets processed per provider)
+- **Fallback frequency** (% of tickets that required fallback)
 
 **And** interactive features:
 - Drill down into specific project/provider/PM
@@ -2245,9 +2524,12 @@ So that I can understand spending patterns and optimize costs.
 - Compare periods (this month vs. last month)
 
 **And** cost insights displayed:
-- Average cost per ticket (e.g., $12.50/ticket)
+- Average cost per ticket (target: ~$29.50/ticket)
 - Most expensive tickets (outliers)
-- Cost optimization suggestions ("Cursor is 20% cheaper for frontend tasks")
+- Cost optimization suggestions:
+  - "Claude Code is 95% cheaper for simple tasks - route more tickets to it"
+  - "Improve ticket quality to reduce AI retries (saves 15% on cost)"
+  - "Complex tickets benefit from Cursor's repo context - maintain current routing"
 
 **Prerequisites:** Story 6.2 (Cost data), Story 5.1 (Dashboard foundation)
 
@@ -2258,6 +2540,8 @@ So that I can understand spending patterns and optimize costs.
 - Architecture reference: Cost Dashboard API contracts
 
 ### Story 6.6: GO/NO-GO Decision Dashboard
+
+**ClickUp ID:** `86evnjwcp` | **URL:** https://app.clickup.com/t/86evnjwcp
 
 As Leadership,
 I want a dashboard showing all critical success metrics for phase gates,
@@ -2299,6 +2583,8 @@ So that we can make data-driven GO/NO-GO decisions.
 
 ### Story 6.7: Cost Optimization Recommendations
 
+**ClickUp ID:** `86evnjwcq` | **URL:** https://app.clickup.com/t/86evnjwcq
+
 As a Manager,
 I want AI-powered cost optimization suggestions,
 So that I can reduce spending without sacrificing quality.
@@ -2308,13 +2594,16 @@ So that I can reduce spending without sacrificing quality.
 **Given** cost data is analyzed  
 **When** optimization engine runs  
 **Then** recommendations are generated:
-- "Switch frontend tasks from Windsurf to Cursor (20% cheaper, same quality)"
-- "Batch similar tickets together (reduces API overhead by 15%)"
-- "Project X has 40% failed executions → improve ticket quality to reduce rework costs"
-- "Provider Antigravity is 2x slower for your task types → avoid unless necessary"
+- "Route more simple tasks to Claude Code (95% cheaper than Cursor for single-file changes)"
+- "Improve ticket quality (reduces failed executions and rework by 30%)"
+- "Project X has high complexity tickets → ensure Cursor is used for best results"
+- "Claude Code fallback success rate is 85% → reliable secondary option"
+- "Batch similar tickets together (reduces workspace setup overhead by 15%)"
 
 **And** recommendations include:
-- Estimated savings (e.g., "Save ~$500/month")
+- Estimated savings (e.g., "Save ~$500/month by routing 20% more to Claude Code")
+- Provider performance metrics (success rate, average time)
+- Ticket quality improvements needed
 - Implementation difficulty (Easy, Medium, Hard)
 - Risk assessment (Low, Medium, High)
 
@@ -2333,6 +2622,8 @@ So that I can reduce spending without sacrificing quality.
 - Use ML or rule-based engine for recommendations
 
 ### Story 6.8: Financial Metrics for Business Oversight
+
+**ClickUp ID:** `86evnjwct` | **URL:** https://app.clickup.com/t/86evnjwct
 
 As a Manager,
 I want comprehensive financial metrics,
@@ -2376,6 +2667,9 @@ So that I can evaluate overall business impact of the transformation.
 
 ## Epic 7: TL Architecture Review Workflows
 
+**ClickUp Epic ID:** `86evnjwcw`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwcw
+
 **Epic Goal:** Enable Technical Leads to review and approve AI architecture decisions before implementation, preventing technical debt and ensuring system quality. This epic addresses the TL Validation Bottleneck risk (R7).
 
 **User Value:** TLs can efficiently review AI's architecture proposals, approve sound decisions quickly, and intervene when AI makes poor technical choices - maintaining system quality at scale.
@@ -2383,6 +2677,8 @@ So that I can evaluate overall business impact of the transformation.
 **FRs Covered:** FR24-FR33 (TL Architecture Validation, AI Capability Management)
 
 ### Story 7.1: Architecture Decision Records (ADR) Generation
+
+**ClickUp ID:** `86evnjwcz` | **URL:** https://app.clickup.com/t/86evnjwcz
 
 As the system,
 I want AI to document its architecture decisions in ADR format,
@@ -2417,6 +2713,8 @@ riptive name (e.g., "Use Redis for Session Storage")
 - ADR format: https://adr.github.io/
 
 ### Story 7.2: TL Architecture Review Queue
+
+**ClickUp ID:** `86evnjwd0` | **URL:** https://app.clickup.com/t/86evnjwd0
 
 As a TL,
 I want a dedicated queue of architecture decisions requiring my review,
@@ -2453,6 +2751,8 @@ So that I can efficiently approve/reject AI's technical choices.
 
 ### Story 7.3: Risk-Based Review Prioritization
 
+**ClickUp ID:** `86evnjwd1` | **URL:** https://app.clickup.com/t/86evnjwd1
+
 As a TL,
 I want high-risk architecture decisions flagged for thorough review,
 So that I can focus my time on decisions that matter most.
@@ -2486,6 +2786,8 @@ So that I can focus my time on decisions that matter most.
 - Store risk_level (HIGH | MEDIUM | LOW) in architecture_decisions table
 
 ### Story 7.4: Architecture Decision Approval/Rejection
+
+**ClickUp ID:** `86evnjwd2` | **URL:** https://app.clickup.com/t/86evnjwd2
 
 As a TL,
 I want to approve, reject, or request modifications to AI decisions,
@@ -2521,6 +2823,8 @@ So that I maintain technical quality standards.
 - If rejected: create new execution with TL feedback in prompt
 
 ### Story 7.5: Architecture Patterns & Constraints
+
+**ClickUp ID:** `86evnjwd3` | **URL:** https://app.clickup.com/t/86evnjwd3
 
 As a TL,
 I want to define architecture patterns and constraints that AI must follow,
@@ -2558,6 +2862,8 @@ So that AI makes consistent decisions aligned with our standards.
 
 ### Story 7.6: AI Escalation & Uncertainty Handling
 
+**ClickUp ID:** `86evnjwd4` | **URL:** https://app.clickup.com/t/86evnjwd4
+
 As an AI agent,
 I want to escalate architecture decisions to TL when I'm uncertain,
 So that I don't make poor choices that create technical debt.
@@ -2591,6 +2897,8 @@ So that I don't make poor choices that create technical debt.
 - Create escalation workflow in ADR status: Proposed → Escalated → Guidance Provided → Resolved
 
 ### Story 7.7: TL Capability Management & AI Limitations
+
+**ClickUp ID:** `86evnjwd5` | **URL:** https://app.clickup.com/t/86evnjwd5
 
 As a TL,
 I want to identify when AI hits capability limits,
@@ -2627,6 +2935,8 @@ So that I can manually intervene or provide guidance.
 - Share with PMs via dashboard insights
 
 ### Story 7.8: Architecture Review Metrics & Insights
+
+**ClickUp ID:** `86evnjwd6` | **URL:** https://app.clickup.com/t/86evnjwd6
 
 As a TL,
 I want metrics on architecture review patterns,
@@ -2670,6 +2980,9 @@ So that I can optimize the review process and identify AI improvement areas.
 
 ## Epic 8: QA Review & Quality Approval Gates
 
+**ClickUp Epic ID:** `86evnjwd8`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwd8
+
 **Epic Goal:** Enable Lead QA to review code samples, configure quality gates, and approve deployments to production. This epic ensures quality standards are maintained while scaling to 50+ projects.
 
 **User Value:** Lead QA can focus on strategic quality oversight (sampling, trends, gates) instead of reviewing every line of code - making quality scalable.
@@ -2677,6 +2990,8 @@ So that I can optimize the review process and identify AI improvement areas.
 **FRs Covered:** FR34-FR43 (Lead QA Capabilities, QA Metrics), FR109-FR111 (Quality Dashboard)
 
 ### Story 8.1: QA Review Queue & Sampling Configuration
+
+**ClickUp ID:** `86evnjwdb` | **URL:** https://app.clickup.com/t/86evnjwdb
 
 As a Lead QA,
 I want to configure what percentage of AI code I review,
@@ -2714,6 +3029,8 @@ So that I can balance thoroughness with scalability.
 - Default: 20% random sampling per PRD
 
 ### Story 8.2: QA Code Review Interface
+
+**ClickUp ID:** `86evnjwdc` | **URL:** https://app.clickup.com/t/86evnjwdc
 
 As a Lead QA,
 I want to review AI-generated code with context and QA results,
@@ -2756,6 +3073,8 @@ So that I can efficiently assess quality.
 
 ### Story 8.3: Production Approval Workflow
 
+**ClickUp ID:** `86evnjwdd` | **URL:** https://app.clickup.com/t/86evnjwdd
+
 As a Lead QA,
 I want to approve or reject code for production deployment,
 So that I serve as the final quality gate.
@@ -2796,6 +3115,8 @@ So that I serve as the final quality gate.
 
 ### Story 8.4: Quality Gate Configuration
 
+**ClickUp ID:** `86evnjwde` | **URL:** https://app.clickup.com/t/86evnjwde
+
 As a Lead QA,
 I want to define quality gates that must pass before my review,
 So that I only review code that meets basic standards.
@@ -2832,6 +3153,8 @@ So that I only review code that meets basic standards.
 - Architecture reference: Quality Gates section
 
 ### Story 8.5: Bug Escape Tracking & Analysis
+
+**ClickUp ID:** `86evnjwdg` | **URL:** https://app.clickup.com/t/86evnjwdg
 
 As a Lead QA,
 I want to track bugs that escaped to production,
@@ -2870,6 +3193,8 @@ So that I can identify patterns and improve quality processes.
 
 ### Story 8.6: Quality Metrics Dashboard
 
+**ClickUp ID:** `86evnjwdh` | **URL:** https://app.clickup.com/t/86evnjwdh
+
 As a Lead QA,
 I want a comprehensive quality dashboard,
 So that I can monitor quality trends and make data-driven decisions.
@@ -2907,6 +3232,8 @@ So that I can monitor quality trends and make data-driven decisions.
 
 ### Story 8.7: Quality Trends & Anomaly Detection
 
+**ClickUp ID:** `86evnjwdk` | **URL:** https://app.clickup.com/t/86evnjwdk
+
 As a Lead QA,
 I want automatic detection of quality anomalies,
 So that I can investigate issues before they escalate.
@@ -2942,6 +3269,8 @@ So that I can investigate issues before they escalate.
 - Send alerts via configured channels (email, Slack, in-app)
 
 ### Story 8.8: Quality Review Metrics & QA Workload
+
+**ClickUp ID:** `86evnjwdm` | **URL:** https://app.clickup.com/t/86evnjwdm
 
 As a Lead QA,
 I want to track my review workload and efficiency,
@@ -2985,6 +3314,9 @@ So that I can optimize the review process.
 
 ## Epic 9: Self-Healing & Production Monitoring
 
+**ClickUp Epic ID:** `86evnjwdp`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwdp
+
 **Epic Goal:** Automatically detect production issues and create fix tickets, enabling the system to "self-heal" by generating fixes for bugs without manual intervention. This epic begins the journey toward autonomous operations.
 
 **User Value:** Production issues are detected immediately and automatically queued for AI to fix - reducing downtime and manual firefighting.
@@ -2992,6 +3324,8 @@ So that I can optimize the review process.
 **FRs Covered:** FR79-FR84 (Self-Healing & Production Monitoring)
 
 ### Story 9.1: Production Error Monitoring Integration
+
+**ClickUp ID:** `86evnjwds` | **URL:** https://app.clickup.com/t/86evnjwds
 
 As the system,
 I want to integrate with production monitoring tools,
@@ -3032,6 +3366,8 @@ So that I can detect errors and anomalies in deployed applications.
 
 ### Story 9.2: Error Severity Classification & Prioritization
 
+**ClickUp ID:** `86evnjwdt` | **URL:** https://app.clickup.com/t/86evnjwdt
+
 As the system,
 I want to classify production errors by severity,
 So that critical issues are fixed first.
@@ -3067,6 +3403,8 @@ So that critical issues are fixed first.
 - Auto-calculate or allow manual override
 
 ### Story 9.3: Automatic Fix Ticket Creation
+
+**ClickUp ID:** `86evnjwdw` | **URL:** https://app.clickup.com/t/86evnjwdw
 
 As the system,
 I want to automatically create ClickUp fix tickets for production errors,
@@ -3105,6 +3443,8 @@ So that bugs get queued for AI resolution without manual intervention.
 
 ### Story 9.4: Error Log Analysis & Context Extraction
 
+**ClickUp ID:** `86evnjwdx` | **URL:** https://app.clickup.com/t/86evnjwdx
+
 As the system,
 I want to analyze error logs to provide fix context,
 So that AI has enough information to generate a proper fix.
@@ -3141,6 +3481,8 @@ So that AI has enough information to generate a proper fix.
 - Store structured context for AI prompt generation
 
 ### Story 9.5: AI Fix Generation & Testing
+
+**ClickUp ID:** `86evnjwdy` | **URL:** https://app.clickup.com/t/86evnjwdy
 
 As the system,
 I want AI to generate fixes for production errors,
@@ -3181,6 +3523,8 @@ So that bugs are resolved automatically without human coding.
 
 ### Story 9.6: Fix Verification & Deployment
 
+**ClickUp ID:** `86evnjwdz` | **URL:** https://app.clickup.com/t/86evnjwdz
+
 As the system,
 I want to verify fixes resolve the error before full deployment,
 So that we don't deploy ineffective or breaking fixes.
@@ -3218,6 +3562,8 @@ So that we don't deploy ineffective or breaking fixes.
 
 ### Story 9.7: Self-Healing Metrics & Success Tracking
 
+**ClickUp ID:** `86evnjwe0` | **URL:** https://app.clickup.com/t/86evnjwe0
+
 As an operator,
 I want metrics on self-healing effectiveness,
 So that I can evaluate if autonomous fixing is working.
@@ -3241,7 +3587,9 @@ So that I can evaluate if autonomous fixing is working.
 - Cost of self-healing (AI compute for fixes)
 
 **And** insights guide improvement:
-- "Provider Cursor has 75% fix success rate vs. Windsurf 55%"
+- "Cursor CLI Headless has 75% fix success rate for complex bugs"
+- "Claude Code has 82% success rate for simple bug fixes"
+- "Multi-provider fallback improved fix success from 75% to 88%"
 - "Critical errors fixed in 23 minutes average (target: <30 min)"
 - "Self-healing saved 120 hours of manual debugging this month"
 
@@ -3254,6 +3602,8 @@ So that I can evaluate if autonomous fixing is working.
 - Compare self-healing vs. manual fix time (ROI calculation)
 
 ### Story 9.8: Production Error Dashboard for Ops Team
+
+**ClickUp ID:** `86evnjwe1` | **URL:** https://app.clickup.com/t/86evnjwe1
 
 As an operator,
 I want a production error dashboard,
@@ -3299,6 +3649,9 @@ So that I can monitor application health and self-healing status.
 
 ## Epic 10: Real-Time Updates & Orchestrator Monitoring
 
+**ClickUp Epic ID:** `86evnjwe3`  
+**ClickUp Epic URL:** https://app.clickup.com/t/86evnjwe3
+
 **Epic Goal:** Provide real-time visibility into AI execution progress, system health, and orchestrator operations. This epic ensures users get immediate feedback and operators can monitor system health.
 
 **User Value:** Users see live updates without refreshing, operators can monitor system health in real-time, and issues are detected before they become critical.
@@ -3306,6 +3659,8 @@ So that I can monitor application health and self-healing status.
 **FRs Covered:** FR9-FR10 (Real-time notifications via Socket.IO), FR100-FR104 (Orchestrator Monitoring Dashboard)
 
 ### Story 10.1: Socket.IO Real-Time Infrastructure
+
+**ClickUp ID:** `86evnjwe6` | **URL:** https://app.clickup.com/t/86evnjwe6
 
 As the system,
 I want Socket.IO configured for real-time bidirectional communication,
@@ -3345,6 +3700,8 @@ So that clients receive live updates without polling.
 
 ### Story 10.2: Execution Progress Updates
 
+**ClickUp ID:** `86evnjwe7` | **URL:** https://app.clickup.com/t/86evnjwe7
+
 As a PM,
 I want real-time updates on AI execution progress,
 So that I see what's happening without refreshing the page.
@@ -3380,6 +3737,8 @@ So that I see what's happening without refreshing the page.
 
 ### Story 10.3: Cost Alert Real-Time Notifications
 
+**ClickUp ID:** `86evnjwe8` | **URL:** https://app.clickup.com/t/86evnjwe8
+
 As a Manager,
 I want immediate alerts when costs cross thresholds,
 So that I can take action before budget is exhausted.
@@ -3412,6 +3771,8 @@ So that I can take action before budget is exhausted.
 - Architecture reference: Cost alerts (NFR-O7)
 
 ### Story 10.4: Quality Gate Failure Notifications
+
+**ClickUp ID:** `86evnjwe9` | **URL:** https://app.clickup.com/t/86evnjwe9
 
 As a PM/TL,
 I want immediate notification when QA checks fail,
@@ -3446,6 +3807,8 @@ So that I can review and take corrective action quickly.
 
 ### Story 10.5: Orchestrator System Health Dashboard
 
+**ClickUp ID:** `86evnjwea` | **URL:** https://app.clickup.com/t/86evnjwea
+
 As an operator,
 I want a real-time system health dashboard,
 So that I can monitor orchestrator operational status.
@@ -3459,7 +3822,10 @@ So that I can monitor orchestrator operational status.
 - **Component status:**
   - Database: Connected (latency: 12ms)
   - RabbitMQ: Connected (queue depth: 5)
-  - AI Providers: Cursor ✅, Windsurf ✅, Antigravity ⚠️ slow
+  - **AI Providers:**
+    - Cursor CLI Headless: ✅ Available (avg response: 45s)
+    - Claude Code API: ✅ Available (avg response: 18s)
+    - Fallback system: ✅ Operational
   - GitHub API: ✅ (rate limit: 4500/5000 remaining)
   - ClickUp API: ✅
 
@@ -3483,6 +3849,8 @@ So that I can monitor orchestrator operational status.
 - Architecture reference: Observability requirements
 
 ### Story 10.6: Queue Depth Monitoring & Alerts
+
+**ClickUp ID:** `86evnjweb` | **URL:** https://app.clickup.com/t/86evnjweb
 
 As an operator,
 I want to monitor queue depths in real-time,
@@ -3520,6 +3888,8 @@ So that I can detect bottlenecks before they cause delays.
 
 ### Story 10.7: Execution Logs & Error Details
 
+**ClickUp ID:** `86evnjwec` | **URL:** https://app.clickup.com/t/86evnjwec
+
 As an operator,
 I want to view execution logs and errors in real-time,
 So that I can debug issues as they happen.
@@ -3556,6 +3926,8 @@ So that I can debug issues as they happen.
 - Architecture reference: Logging Format (structured JSON)
 
 ### Story 10.8: Manual Intervention & Circuit Breaker
+
+**ClickUp ID:** `86evnjwed` | **URL:** https://app.clickup.com/t/86evnjwed
 
 As an operator,
 I want to manually pause/resume execution or trigger circuit breakers,
@@ -3596,6 +3968,8 @@ So that I can control system behavior during incidents.
 
 ### Story 10.9: System Metrics Export & Integration
 
+**ClickUp ID:** `86evnjwee` | **URL:** https://app.clickup.com/t/86evnjwee
+
 As an operator,
 I want to export metrics to external monitoring tools,
 So that I can integrate with existing infrastructure.
@@ -3634,6 +4008,8 @@ So that I can integrate with existing infrastructure.
 - Architecture reference: Observability stack (Prometheus + Grafana)
 
 ### Story 10.10: Notification Preferences & Channels
+
+**ClickUp ID:** `86evnjweg` | **URL:** https://app.clickup.com/t/86evnjweg
 
 As a user,
 I want to configure my notification preferences,
@@ -3826,8 +4202,13 @@ So that I only receive relevant alerts via my preferred channels.
 2. Configure ClickUp space for project
 3. Set up GitHub organization/repositories
 4. Provision cloud infrastructure (databases, RabbitMQ)
-5. Obtain API keys (Cursor, Windsurf, Antigravity, GitHub)
-6. Set up development environments for team
+5. Obtain credentials:
+   - Cursor CLI installed and configured
+   - Anthropic API key for Claude Code (`ANTHROPIC_API_KEY`)
+   - GitHub Personal Access Token
+   - ClickUp API key and webhook secret
+6. Run validation: `./scripts/validate-ai-providers.sh`
+7. Set up development environments for team
 
 **Ongoing:**
 1. **Backlog Refinement:** Break down any unclear stories further

@@ -11,9 +11,11 @@
 
 The Dark Software Factory uses a **dual-provider AI strategy** for code generation:
 - **Primary:** Cursor CLI (Headless Mode) - Full repository context, multi-file editing
-- **Secondary:** Claude CLI (Anthropic) - Fast, cost-effective, focused tasks
+- **Secondary:** Claude Code (Anthropic) - Fast, cost-effective, focused tasks with autonomous coding capabilities
 
 This approach provides **risk mitigation, cost optimization, and flexibility** while leveraging official, documented tools from both providers.
+
+**Note:** Claude Code is Anthropic's autonomous coding agent. Learn more: https://www.claude.com/product/claude-code
 
 ---
 
@@ -38,16 +40,16 @@ This approach provides **risk mitigation, cost optimization, and flexibility** w
 
 ## Provider Comparison
 
-| Feature | Cursor CLI (Headless) | Claude CLI | Winner |
+| Feature | Cursor CLI (Headless) | Claude Code | Winner |
 |---------|----------------------|------------|--------|
-| **Repository Context** | ✅ Automatic full repo | ⚠️ Manual context building | Cursor |
-| **Multi-File Editing** | ✅ Semantic awareness | ⚠️ Limited | Cursor |
+| **Repository Context** | ✅ Automatic full repo | ✅ Autonomous context building | Tie |
+| **Multi-File Editing** | ✅ Semantic awareness | ✅ Autonomous multi-file | Tie |
 | **Code Quality** | ✅ Excellent | ✅ Excellent | Tie |
 | **Speed** | ⚠️ ~30-90s | ✅ ~10-30s | Claude |
 | **Cost** | ⚠️ Higher (Cursor license) | ✅ Lower (pay-per-use) | Claude |
-| **Setup Complexity** | ✅ Simple (just install) | ✅ Simple (npm/pip + API key) | Tie |
+| **Setup Complexity** | ✅ Simple (just install) | ✅ API integration | Cursor |
 | **Concurrency** | ✅ 10+ instances | ✅ Unlimited (API-based) | Claude |
-| **Server-Ready** | ✅ Yes (headless mode) | ✅ Yes (CLI) | Tie |
+| **Autonomous Coding** | ⚠️ Requires prompting | ✅ Built-in autonomy | Claude |
 
 ---
 
@@ -116,7 +118,7 @@ Task arrives → Assess complexity → Select provider
 export class AIProviderFactory {
   constructor(
     private cursorProvider: CursorHeadlessProvider,
-    private claudeProvider: ClaudeCLIProvider,
+    private claudeProvider: ClaudeCodeProvider,
     private metricsService: MetricsService
   ) {}
 
@@ -243,28 +245,28 @@ cursor --headless \
 
 ---
 
-### Claude CLI (Anthropic)
+### Claude Code (Anthropic)
 
-**Command Structure:**
-```bash
-claude --prompt "$(cat prompt.txt)" \
-  --file src/api/users.ts \
-  --file package.json \
-  --model claude-3-5-sonnet \
-  --max-tokens 8000
-```
+**Integration Approach:**
+Claude Code is Anthropic's autonomous coding agent that can be integrated via:
+- Anthropic API with extended context
+- Agentic workflow (prompt → plan → code → verify)
+- Multi-turn conversation for complex tasks
 
 **Advantages:**
 - ✅ Fast response times (10-30s typical)
 - ✅ Excellent code quality
 - ✅ Lower per-request cost
 - ✅ Unlimited concurrency (API-based)
+- ✅ Autonomous coding capabilities
+- ✅ Multi-file awareness through prompting
 
 **Best For:**
 - Single-file changes
 - Focused bug fixes
-- Simple feature additions
+- Simple to medium feature additions
 - Time-sensitive tasks
+- Cost-sensitive workloads
 
 **Cost Model:**
 - Pay-per-use (per 1M tokens)
@@ -422,7 +424,7 @@ node poc/claude-cli-poc.ts
 
 ### This Week:
 1. Implement `CursorHeadlessProvider`
-2. Implement `ClaudeCLIProvider`
+2. Implement `ClaudeCodeProvider`
 3. Build `AIProviderFactory` with routing logic
 4. Test fallback scenarios
 5. Deploy to staging
@@ -439,10 +441,10 @@ node poc/claude-cli-poc.ts
 
 - **Architecture Doc:** `docs/architecture.md` (Section: Multi-Provider AI Implementation)
 - **Cursor CLI Docs:** https://cursor.com/docs/cli/overview
-- **Claude CLI Docs:** https://www.npmjs.com/package/@anthropic-ai/claude-cli
-- **Anthropic API:** https://docs.anthropic.com
+- **Claude Code:** https://www.claude.com/product/claude-code
+- **Anthropic API Docs:** https://docs.anthropic.com
 - **Validation Script:** `scripts/validate-ai-providers.sh`
-- **POC Scripts:** `poc/cursor-headless-poc.ts`, `poc/claude-cli-poc.ts`
+- **POC Scripts:** `poc/cursor-headless-poc.ts`, `poc/claude-code-poc.ts`
 
 ---
 

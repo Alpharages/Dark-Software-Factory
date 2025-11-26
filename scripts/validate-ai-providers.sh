@@ -15,6 +15,7 @@
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║   🧪 MULTI-PROVIDER AI VALIDATION                             ║"
 echo "║   Dark Software Factory - AI Dev Tool Orchestrator             ║"
+echo "║   Providers: Cursor CLI Headless + Claude Code                 ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -94,66 +95,69 @@ fi
 echo ""
 echo ""
 
-# ==================== Test Claude CLI ====================
+# ==================== Test Claude Code ====================
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "2️⃣  TESTING: Claude CLI (Anthropic)"
+echo "2️⃣  TESTING: Claude Code (Anthropic SDK)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-if command -v claude &> /dev/null; then
-    echo "✅ Claude CLI found: $(which claude)"
-    claude --version 2>&1 | head -1 || echo "v?.?.?"
-    echo ""
-    
-    # Check API key
-    if [ -z "$ANTHROPIC_API_KEY" ]; then
-        echo "❌ ANTHROPIC_API_KEY environment variable not set"
-        echo ""
-        echo "Required actions:"
-        echo "  1. Get API key: https://console.anthropic.com"
-        echo "  2. Set env var: export ANTHROPIC_API_KEY='sk-ant-...'"
-        echo "  3. Add to shell profile for persistence"
-        CLAUDE_AVAILABLE=false
-        ALL_TESTS_PASSED=false
-    else
-        echo "✅ ANTHROPIC_API_KEY is set (${#ANTHROPIC_API_KEY} chars)"
+# Check for Anthropic SDK
+if command -v npm &> /dev/null; then
+    if npm list @anthropic-ai/sdk &> /dev/null || npm list -g @anthropic-ai/sdk &> /dev/null; then
+        echo "✅ Anthropic SDK found (locally or globally)"
+        npm list @anthropic-ai/sdk 2>&1 | grep @anthropic || npm list -g @anthropic-ai/sdk 2>&1 | grep @anthropic || echo "  Version check skipped"
         echo ""
         
-        # Test Claude execution
-        echo "Testing Claude code generation..."
-        echo "Prompt: 'Write a TypeScript hello world function'"
-        echo ""
-        
-        CLAUDE_OUTPUT=$(timeout 30s claude --prompt "Write a TypeScript function named 'hello' that returns 'Hello, World!'. Only output the code, no explanation." --model claude-3-5-sonnet 2>&1)
-        CLAUDE_EXIT=$?
-        
-        if [ $CLAUDE_EXIT -eq 0 ] && echo "$CLAUDE_OUTPUT" | grep -q "function"; then
-            echo "✅ Claude CLI works!"
+        # Check API key
+        if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "❌ ANTHROPIC_API_KEY environment variable not set"
             echo ""
-            echo "Sample output:"
-            echo "$CLAUDE_OUTPUT" | head -10
-            CLAUDE_AVAILABLE=true
-        else
-            echo "❌ Claude execution failed (exit code: $CLAUDE_EXIT)"
+            echo "Required actions:"
+            echo "  1. Get API key: https://console.anthropic.com"
+            echo "  2. Set env var: export ANTHROPIC_API_KEY='sk-ant-...'"
+            echo "  3. Add to ~/.zshrc or ~/.bashrc for persistence"
             echo ""
-            echo "Output:"
-            echo "$CLAUDE_OUTPUT"
+            echo "Example:"
+            echo "  echo 'export ANTHROPIC_API_KEY=\"sk-ant-...\"' >> ~/.zshrc"
+            echo "  source ~/.zshrc"
             CLAUDE_AVAILABLE=false
             ALL_TESTS_PASSED=false
+        else
+            echo "✅ ANTHROPIC_API_KEY is set (${#ANTHROPIC_API_KEY} chars)"
+            echo "   API key format: $(echo "$ANTHROPIC_API_KEY" | head -c 15)..."
+            echo ""
+            
+            # Note about API testing
+            echo "📝 Note: Full API test requires running a Node.js script"
+            echo "   Claude Code will be tested via Anthropic API integration"
+            echo "   in the orchestrator POC scripts."
+            echo ""
+            echo "✅ Claude Code ready for integration!"
+            echo "   - SDK installed: Yes"
+            echo "   - API key configured: Yes"
+            echo "   - Integration: Via @anthropic-ai/sdk"
+            echo "   - Learn more: https://www.claude.com/product/claude-code"
+            CLAUDE_AVAILABLE=true
         fi
+    else
+        echo "⚠️  Anthropic SDK not found"
+        echo ""
+        echo "Installation instructions:"
+        echo "  Install SDK:"
+        echo "    npm install @anthropic-ai/sdk"
+        echo ""
+        echo "  Or globally:"
+        echo "    npm install -g @anthropic-ai/sdk"
+        echo ""
+        echo "  After installation:"
+        echo "    export ANTHROPIC_API_KEY='sk-ant-...'"
+        echo ""
+        echo "  TypeScript types are included with the SDK"
+        CLAUDE_AVAILABLE=false
     fi
 else
-    echo "⚠️  Claude CLI not found"
-    echo ""
-    echo "Installation instructions:"
-    echo "  Option 1 (npm):"
-    echo "    npm install -g @anthropic-ai/claude-cli"
-    echo ""
-    echo "  Option 2 (pip):"
-    echo "    pip install anthropic-cli"
-    echo ""
-    echo "  After installation:"
-    echo "    export ANTHROPIC_API_KEY='your-key'"
+    echo "❌ npm not found - cannot check for Anthropic SDK"
+    echo "   Install Node.js/npm first: https://nodejs.org"
     CLAUDE_AVAILABLE=false
 fi
 
@@ -167,8 +171,8 @@ echo "╚═══════════════════════�
 echo ""
 
 echo "Provider Status:"
-echo "  Cursor CLI:  $([ "$CURSOR_AVAILABLE" = true ] && echo '✅ AVAILABLE' || echo '❌ NOT AVAILABLE')"
-echo "  Claude CLI:  $([ "$CLAUDE_AVAILABLE" = true ] && echo '✅ AVAILABLE' || echo '❌ NOT AVAILABLE')"
+echo "  Cursor CLI Headless: $([ "$CURSOR_AVAILABLE" = true ] && echo '✅ AVAILABLE' || echo '❌ NOT AVAILABLE')"
+echo "  Claude Code (SDK):   $([ "$CLAUDE_AVAILABLE" = true ] && echo '✅ AVAILABLE' || echo '❌ NOT AVAILABLE')"
 echo ""
 
 # Determine recommendation
@@ -179,15 +183,19 @@ if [ "$CURSOR_AVAILABLE" = true ] && [ "$CLAUDE_AVAILABLE" = true ]; then
     echo ""
     echo "🎯 RECOMMENDATION:"
     echo "  ✅ Proceed with multi-provider strategy"
-    echo "  ✅ Use Cursor for complex, multi-file tasks"
-    echo "  ✅ Use Claude for simple, focused tasks"
+    echo "  ✅ Use Cursor CLI Headless for complex, multi-file tasks"
+    echo "  ✅ Use Claude Code for simple to medium, autonomous tasks"
     echo "  ✅ Auto-fallback enabled if one provider fails"
     echo ""
     echo "Next steps:"
-    echo "  1. Run POC: npm run test:cursor-poc"
-    echo "  2. Run POC: npm run test:claude-poc"
+    echo "  1. Run POC: npm run test:cursor-headless-poc"
+    echo "  2. Run POC: npm run test:claude-code-poc"
     echo "  3. Implement multi-provider routing logic"
     echo "  4. Deploy orchestrator with both providers"
+    echo ""
+    echo "Integration notes:"
+    echo "  • Cursor: Via CLI (cursor --headless ...)"
+    echo "  • Claude Code: Via Anthropic API (@anthropic-ai/sdk)"
     exit 0
     
 elif [ "$CURSOR_AVAILABLE" = true ]; then
@@ -198,12 +206,14 @@ elif [ "$CURSOR_AVAILABLE" = true ]; then
     echo "🎯 RECOMMENDATION:"
     echo "  ✅ Proceed with Cursor only"
     echo "  ⚠️  No fallback provider (single point of failure)"
-    echo "  📝 Consider installing Claude CLI for redundancy"
+    echo "  📝 Consider installing Claude Code (Anthropic SDK) for redundancy"
     echo ""
     echo "Next steps:"
-    echo "  1. Run POC: npm run test:cursor-poc"
-    echo "  2. Deploy orchestrator with Cursor provider"
-    echo "  3. (Optional) Install Claude CLI later for fallback"
+    echo "  1. Run POC: npm run test:cursor-headless-poc"
+    echo "  2. Deploy orchestrator with Cursor provider only"
+    echo "  3. (Optional) Install Claude Code later for fallback:"
+    echo "     - npm install @anthropic-ai/sdk"
+    echo "     - export ANTHROPIC_API_KEY='sk-ant-...'"
     exit 0
     
 elif [ "$CLAUDE_AVAILABLE" = true ]; then
@@ -212,16 +222,18 @@ elif [ "$CLAUDE_AVAILABLE" = true ]; then
     echo "╰────────────────────────────────────────────────────────────────╯"
     echo ""
     echo "🎯 RECOMMENDATION:"
-    echo "  ✅ Proceed with Claude only"
-    echo "  ⚠️  Manual context building required (no auto repo context)"
-    echo "  ⚠️  Limited multi-file editing capabilities"
-    echo "  📝 Consider installing Cursor for better repo context"
+    echo "  ✅ Proceed with Claude Code only"
+    echo "  ℹ️  Claude Code has autonomous coding capabilities"
+    echo "  ℹ️  Extended context window (200K+ tokens)"
+    echo "  📝 Consider installing Cursor for even better repo context"
     echo ""
     echo "Next steps:"
-    echo "  1. Run POC: npm run test:claude-poc"
-    echo "  2. Implement context-building service"
-    echo "  3. Deploy orchestrator with Claude provider"
-    echo "  4. (Optional) Install Cursor CLI later for better context"
+    echo "  1. Run POC: npm run test:claude-code-poc"
+    echo "  2. Implement Anthropic API integration"
+    echo "  3. Deploy orchestrator with Claude Code provider"
+    echo "  4. (Optional) Install Cursor CLI later for multi-file awareness:"
+    echo "     - Install from: https://cursor.com"
+    echo "     - Verify: cursor --version"
     exit 0
     
 else
