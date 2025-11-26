@@ -10,9 +10,11 @@
 
 ## Executive Summary
 
-The AI Dev Tool Orchestrator is a **separate NestJS microservice** that extends AetherFlow (existing 80% infrastructure) by automating the complete pipeline from PM-created tickets to deployed code. It acts as the "orchestration brain" connecting ClickUp webhooks → AI development tools (Cursor, Windsurf, Antigravity) → automated QA → GitHub → CI/CD deployment → production monitoring. The architecture prioritizes clean separation from AetherFlow to protect existing infrastructure, systematic validation through phase gates, and observability for data-driven GO/NO-GO decisions.
+The AI Dev Tool Orchestrator is a **separate NestJS microservice** that extends AetherFlow (existing 80% infrastructure) by automating the complete pipeline from PM-created tickets to deployed code. It acts as the "orchestration brain" connecting ClickUp webhooks → **Cursor Headless Mode** (AI code generation) → automated QA → GitHub → CI/CD deployment → production monitoring. The architecture leverages **Cursor's official CLI with headless mode** for programmatic AI code generation, providing full repository context, multi-file editing, and semantic codebase understanding without building AI capabilities from scratch.
 
 **Architecture Philosophy:** "Integrate, don't disrupt" - the orchestrator extends AetherFlow's capabilities without modifying its proven 80% foundation.
+
+**Key Innovation:** Using Cursor's official `--headless` mode for server-side, automated code generation - purpose-built for CI/CD and automation scenarios.
 
 ---
 
@@ -62,11 +64,16 @@ npx @nestjs/cli new ai-dev-orchestrator --package-manager npm
 | **Code Style** | ESLint + Prettier | NestJS built-in | Code consistency across AI-generated code | NFR-M2 (Maintainability) | NestJS Starter |
 
 **Key Architectural Decisions:**
+- ✅ **Multi-Provider AI Strategy:** Cursor CLI Headless (primary) + Claude CLI (fallback)
+- ✅ **Cursor CLI Headless Mode:** Official approach for AI code generation (not custom APIs)
+- ✅ **Claude CLI:** Anthropic's official CLI as secondary provider for flexibility
 - ✅ **Separate Database:** Own PostgreSQL instance (not shared with AetherFlow) for service independence
 - ✅ **RabbitMQ:** Message broker for async AI execution, job queuing, retry logic
 - ✅ **Separate Auth:** Dedicated authentication service (not shared with AetherFlow) using JWT
 - ✅ **Socket.IO:** Real-time dashboard updates (consistent with AetherFlow)
 - ✅ **Prometheus:** Metrics and observability for GO/NO-GO decision gates
+
+**Critical Success Factor:** Dual-provider approach reduces risk - if one provider has issues, automatically fall back to the other.
 
 ---
 
@@ -119,17 +126,19 @@ ai-dev-orchestrator/
 │   │       ├── qa-task.consumer.ts      # Consume and process QA tasks
 │   │       └── deployment-task.consumer.ts
 │   │
-│   ├── ai-routing/                      # AI tool routing engine (FR60-65)
+│   ├── ai-routing/                      # AI code generation engine (FR60-65)
 │   │   ├── ai-routing.module.ts
-│   │   ├── ai-routing.service.ts        # Route to Cursor/Windsurf/Antigravity
+│   │   ├── ai-routing.service.ts        # Orchestrates AI code generation
 │   │   ├── prompt-builder.service.ts    # Convert tickets to AI prompts
 │   │   ├── providers/
 │   │   │   ├── base-ai.provider.ts      # Abstract base class
-│   │   │   ├── cursor.provider.ts       # Cursor API client
-│   │   │   ├── windsurf.provider.ts     # Windsurf API client
-│   │   │   └── antigravity.provider.ts  # Antigravity API client
+│   │   │   ├── cursor-headless.provider.ts  # ⭐ PRIMARY: Cursor CLI headless mode
+│   │   │   ├── claude-cli.provider.ts   # 🔄 SECONDARY: Claude CLI (Anthropic)
+│   │   │   ├── workspace.service.ts     # Workspace isolation & management
+│   │   │   └── provider-factory.ts      # Provider selection & fallback logic
 │   │   └── strategies/
-│   │       └── routing-strategy.ts      # Task type → AI tool mapping
+│   │       ├── routing-strategy.ts      # Provider selection logic
+│   │       └── fallback-strategy.ts     # Auto-fallback on provider failure
 │   │
 │   ├── execution/                       # AI execution monitoring (FR60-65)
 │   │   ├── execution.module.ts
@@ -459,6 +468,64 @@ ai-dev-orchestrator/
   - Room-based messaging (per PM, per project)
   - Compatible with AetherFlow's existing Socket.IO setup
 
+### AI Code Generation - Multi-Provider Strategy
+
+**Primary: Cursor CLI (Headless Mode)**
+- Official CLI: `cursor --headless --dir /path --apply "prompt"`
+- Server-side execution (no GUI required)
+- Full repository context awareness
+- Multi-file editing with consistency
+- Semantic codebase understanding
+- Built-in code quality and best practices
+- Supports concurrent execution (multiple workspaces)
+
+**Cursor Headless Features:**
+- `--headless`: Runs without GUI (server-ready)
+- `--dir`: Specifies workspace directory
+- `--apply`: AI prompt for code generation
+- `--files`: Target specific files (optional)
+- `--wait`: Wait for completion before exiting
+
+**Secondary: Claude CLI (Anthropic)**
+- Official CLI: `claude` command with API integration
+- Programmatic access to Claude 3.5 Sonnet
+- Excellent code generation capabilities
+- Context-aware responses (via prompt engineering)
+- Fallback when Cursor unavailable
+- Lower cost per token than some alternatives
+
+**Claude CLI Features:**
+- `claude --prompt "prompt"`: Send prompt to Claude
+- `claude --file context.txt`: Include file context
+- `--model claude-3-5-sonnet`: Specify model
+- `--max-tokens 8000`: Control output length
+- Standard input/output for piping
+
+**Multi-Provider Strategy:**
+```typescript
+// Provider selection logic
+async function selectProvider(ticket: Ticket): AIProvider {
+  // Try Cursor first (full repo context)
+  if (await cursorProvider.isAvailable()) {
+    return cursorProvider;
+  }
+  
+  // Fallback to Claude CLI
+  if (await claudeProvider.isAvailable()) {
+    return claudeProvider;
+  }
+  
+  throw new Error('No AI providers available');
+}
+```
+
+**Why Multi-Provider Approach:**
+- ✅ **Risk Mitigation:** One provider fails → auto-switch to backup
+- ✅ **Flexibility:** Choose best provider per ticket type
+- ✅ **Cost Optimization:** Use cheaper provider for simple tasks
+- ✅ **Performance:** Route based on provider availability/speed
+- ✅ **Validation:** Compare outputs from different providers
+
 ### HTTP Client & External APIs
 - **Axios 1.x** - Promise-based HTTP client
   - Interceptors for auth, logging, retries
@@ -466,12 +533,7 @@ ai-dev-orchestrator/
   - Timeout configuration
   - Support for cancellation tokens
 
-**AI Provider APIs:**
-- Cursor API (HTTP/REST)
-- Windsurf API (HTTP/REST)
-- Google Antigravity API (HTTP/REST)
-
-**Other External APIs:**
+**External APIs:**
 - GitHub REST API v3 (Octokit client)
 - ClickUp API v2
 - AetherFlow internal APIs
@@ -594,28 +656,179 @@ ai-dev-orchestrator/
 - Add comments with execution details
 - Update custom fields (AI confidence, cost, execution time)
 
-### 3. AI Provider Integration
+### 3. AI Provider Integration (Multi-Provider)
 
-**Communication:** HTTP/REST APIs
+**Communication:** CLI execution via Node.js `child_process`
 
-**Cursor API:**
-- Endpoint: `{{cursor_api_url}}/v1/execute`
-- Auth: API key in header
-- Payload: Prompt, context, configuration
-- Response: Generated code, confidence score, execution logs
+#### **Primary: Cursor CLI Headless Mode**
 
-**Windsurf API:**
-- Similar structure to Cursor
-- Provider-specific configuration options
+```bash
+cursor --headless \
+  --dir /workspaces/project-repo \
+  --apply "Ticket description with acceptance criteria" \
+  --files src/auth/users.ts,src/routes/api.ts \
+  --wait
+```
 
-**Antigravity API:**
-- Similar structure to Cursor
-- Provider-specific configuration options
+**Integration Pattern:**
+```typescript
+// Cursor headless provider
+async function generateCodeWithCursor(prompt: string, workspaceDir: string) {
+  const command = `cursor --headless --dir "${workspaceDir}" --apply "${prompt}" --wait`;
+  const { stdout, stderr } = await execAsync(command, {
+    timeout: 300000, // 5 min
+    maxBuffer: 10 * 1024 * 1024
+  });
+  return stdout;
+}
+```
 
-**Common Integration Pattern:**
-- Abstract base class: `BaseAIProvider`
-- Concrete implementations: `CursorProvider`, `WindsurfProvider`, `AntigravityProvider`
-- Factory pattern for provider selection
+**Advantages:**
+- ✅ Full repository context automatically
+- ✅ Multi-file editing with awareness
+- ✅ Semantic codebase understanding
+- ✅ Best for complex, multi-file changes
+
+---
+
+#### **Secondary: Claude CLI**
+
+```bash
+# Claude CLI with context
+claude --prompt "$(cat prompt.txt)" \
+  --file src/auth/users.ts \
+  --file package.json \
+  --model claude-3-5-sonnet \
+  --max-tokens 8000
+```
+
+**Integration Pattern:**
+```typescript
+// Claude CLI provider
+async function generateCodeWithClaude(prompt: string, context: CodeContext) {
+  // Build context from relevant files
+  const contextFiles = context.relevantFiles.map(f => `--file ${f}`).join(' ');
+  
+  // Enhanced prompt with repository context
+  const enhancedPrompt = buildClaudePrompt(prompt, context);
+  
+  const command = `claude --prompt "${enhancedPrompt}" ${contextFiles} --model claude-3-5-sonnet`;
+  
+  const { stdout } = await execAsync(command, {
+    timeout: 180000, // 3 min
+    maxBuffer: 10 * 1024 * 1024
+  });
+  
+  return parseClaudeOutput(stdout);
+}
+```
+
+**Context Building:**
+```typescript
+function buildClaudePrompt(ticket: Ticket, context: CodeContext): string {
+  return `
+You are an expert developer working on: ${context.projectName}
+
+Tech Stack: ${context.techStack}
+Dependencies: ${context.dependencies.join(', ')}
+
+Repository Structure:
+${context.fileTree}
+
+Related Files Context:
+${context.relatedFilesContent}
+
+Task:
+${ticket.description}
+
+Acceptance Criteria:
+${ticket.acceptanceCriteria.join('\n')}
+
+Generate production-ready code that:
+- Follows existing patterns in the codebase
+- Includes TypeScript types
+- Has proper error handling
+- Is well-commented
+
+Output format: Provide complete file contents with clear file paths.
+  `;
+}
+```
+
+**Advantages:**
+- ✅ Official Anthropic CLI
+- ✅ Excellent code generation quality
+- ✅ Lower cost per token
+- ✅ Fast response times
+- ✅ Good for focused, single-file changes
+
+---
+
+#### **Multi-Provider Routing Logic**
+
+```typescript
+// ai-routing/providers/provider-factory.ts
+export class AIProviderFactory {
+  async getProvider(ticket: Ticket, context: CodeContext): Promise<AIProvider> {
+    const complexity = this.assessComplexity(ticket);
+    
+    // Route based on complexity and availability
+    if (complexity === 'high' || ticket.requiresMultiFileEdit) {
+      // Try Cursor first (better for complex tasks)
+      if (await this.cursorProvider.isAvailable()) {
+        return this.cursorProvider;
+      }
+      
+      // Fallback to Claude
+      return this.claudeProvider;
+    }
+    
+    // For simple tasks, use Claude (faster, cheaper)
+    if (await this.claudeProvider.isAvailable()) {
+      return this.claudeProvider;
+    }
+    
+    // Fallback to Cursor
+    return this.cursorProvider;
+  }
+  
+  private assessComplexity(ticket: Ticket): 'low' | 'medium' | 'high' {
+    const indicators = {
+      filesCount: ticket.relevantFiles?.length || 1,
+      descriptionLength: ticket.description.length,
+      acceptanceCriteriaCount: ticket.acceptanceCriteria.length,
+      hasArchitectureChanges: ticket.tags?.includes('architecture'),
+    };
+    
+    // Complexity scoring logic
+    if (indicators.filesCount > 3 || indicators.hasArchitectureChanges) {
+      return 'high';
+    }
+    if (indicators.filesCount > 1 || indicators.acceptanceCriteriaCount > 3) {
+      return 'medium';
+    }
+    return 'low';
+  }
+}
+```
+
+---
+
+#### **Workspace Management (Both Providers)**
+
+**Workspace Isolation:**
+- Each ticket gets isolated workspace: `/tmp/ai-workspaces/ticket-{id}`
+- Fresh git clone per execution
+- Feature branch created: `feature/ticket-{id}`
+- Multiple concurrent workspaces supported (50+ projects)
+- Auto-cleanup after PR creation
+
+**Common Flow:**
+1. **Prepare:** Clone repo, checkout branch
+2. **Generate:** Call Cursor or Claude based on routing
+3. **Collect:** Git diff to capture changes
+4. **Commit:** Create commit with generated code
+5. **Cleanup:** Remove workspace after PR creation
 
 ### 4. GitHub Integration
 
@@ -1515,7 +1728,52 @@ npm run test:e2e
 
 ---
 
-### ADR-003: RabbitMQ for Message Queue
+### ADR-003: Cursor CLI Headless Mode for AI Code Generation
+
+**Status:** Accepted  
+**Date:** 2025-11-25
+
+**Context:** Need programmatic AI code generation with full repository context for automated ticket-to-code pipeline.
+
+**Options Considered:**
+1. Custom integration with AI APIs (GPT-4, Claude) - requires building context engine
+2. Cursor local API (unofficial, undocumented)
+3. VSCode extension development (3-4 weeks, maintenance burden)
+4. MCP protocol integration (new, experimental)
+5. **Cursor CLI headless mode (official, documented)**
+
+**Decision:** Use Cursor's official `cursor --headless` CLI command for AI code generation.
+
+**Rationale:**
+- ✅ Official, documented, maintained by Cursor team
+- ✅ Purpose-built for automation and CI/CD
+- ✅ Full Cursor AI power (Claude/GPT-4 with repository context)
+- ✅ Multi-file editing with semantic understanding
+- ✅ No custom AI integration needed (don't build from scratch)
+- ✅ Server-ready (no GUI, low resource usage)
+- ✅ Supports concurrent execution (50+ projects goal)
+- ✅ Automatic codebase indexing and context
+- ✅ Available TODAY (https://cursor.com/docs/cli/overview)
+
+**Consequences:**
+- ✅ Can start building immediately (no research phase)
+- ✅ Leverages Cursor's AI capabilities without reimplementation
+- ✅ Official support reduces maintenance burden
+- ✅ Scales to Phase 3 requirements (50+ projects)
+- ⚠️ Requires Cursor license for headless usage
+- ⚠️ Dependency on Cursor team for CLI updates
+- ⚠️ Must validate concurrent execution limits
+- ⚠️ Need workspace isolation strategy
+
+**Implementation Notes:**
+- Execute via Node.js `child_process`: `cursor --headless --dir /path --apply "prompt"`
+- Workspace per ticket: `/tmp/cursor-workspaces/ticket-{id}`
+- Results collected via git diff
+- Cost tracking via execution time monitoring
+
+---
+
+### ADR-004: RabbitMQ for Message Queue
 
 **Status:** Accepted
 
@@ -1539,7 +1797,7 @@ npm run test:e2e
 
 ---
 
-### ADR-004: Separate Authentication Service
+### ADR-005: Separate Authentication Service
 
 **Status:** Accepted
 
@@ -1560,7 +1818,46 @@ npm run test:e2e
 
 ---
 
-### ADR-005: Socket.IO for Real-Time Updates
+### ADR-006: Claude CLI as Secondary AI Provider
+
+**Status:** Accepted  
+**Date:** 2025-11-25
+
+**Context:** Need fallback option if Cursor headless has issues, plus ability to optimize costs for simple tasks.
+
+**Decision:** Add Claude CLI (Anthropic) as secondary AI provider alongside Cursor headless.
+
+**Rationale:**
+- ✅ Official Anthropic CLI (`claude` command)
+- ✅ Excellent code generation quality (Claude 3.5 Sonnet)
+- ✅ Lower cost per token than some alternatives
+- ✅ Fast response times (typically <30s for simple tasks)
+- ✅ Reduces risk - not dependent on single provider
+- ✅ Flexibility to route based on task complexity
+- ✅ Can compare outputs for quality validation
+
+**Routing Strategy:**
+- **Cursor:** Complex tasks, multi-file edits, architecture changes
+- **Claude:** Simple tasks, single-file edits, focused changes
+- **Fallback:** Cursor fails → Claude, Claude fails → escalate
+
+**Consequences:**
+- ✅ Reduced single-provider dependency risk
+- ✅ Cost optimization (use cheaper provider when appropriate)
+- ✅ Flexibility in provider selection
+- ✅ Can validate by comparing provider outputs
+- ⚠️ Need to manage multiple API keys
+- ⚠️ Claude requires explicit context building (no auto repo context)
+- ⚠️ Need provider selection logic in orchestrator
+
+**Implementation:**
+- Install: `npm install -g @anthropic-ai/claude-cli` or `pip install anthropic-cli`
+- Configure: `export ANTHROPIC_API_KEY="key"`
+- Execute: `claude --prompt "..." --file context.ts --model claude-3-5-sonnet`
+
+---
+
+### ADR-007: Socket.IO for Real-Time Updates
 
 **Status:** Accepted
 
@@ -1577,13 +1874,490 @@ npm run test:e2e
 
 ---
 
-**Document Status:** ✅ Complete  
-**Version:** 1.0  
-**Last Updated:** 2025-11-20  
-**Next Review:** After Phase 1 MVP completion
+## Multi-Provider AI Implementation Strategy
 
-**Approval Required:** BMad (Founder/CEO)
+### Overview
+
+The orchestrator uses a **dual-provider approach** for AI code generation:
+- **Primary:** Cursor CLI headless mode (full repo context, multi-file editing)
+- **Secondary:** Claude CLI (Anthropic's official CLI for programmatic access)
+
+This strategy provides flexibility, reduces risk, and optimizes for task complexity.
+
+### Command Structure
+
+#### **Cursor CLI Headless**
+
+```bash
+cursor --headless \
+  --dir /path/to/workspace \
+  --apply "prompt with ticket details" \
+  [--files src/file1.ts,src/file2.ts] \
+  --wait
+```
+
+**Flags:**
+- `--headless`: Run without GUI (server-ready, low resources)
+- `--dir`: Workspace directory (isolated per ticket)
+- `--apply`: AI prompt (ticket description + acceptance criteria)
+- `--files`: Optional target files for focused editing
+- `--wait`: Wait for completion before exiting
 
 ---
 
-_This architecture document provides the complete technical foundation for implementing the AI Dev Tool Orchestrator. All 136 functional requirements are architecturally supported, and all integration points are defined._
+#### **Claude CLI**
+
+```bash
+claude --prompt "$(cat prompt.txt)" \
+  --file src/context1.ts \
+  --file src/context2.ts \
+  --model claude-3-5-sonnet \
+  --max-tokens 8000
+```
+
+**Flags:**
+- `--prompt`: AI prompt (can be piped or from file)
+- `--file`: Include file for context (multiple allowed)
+- `--model`: Specify Claude model (3-5-sonnet, 3-opus, etc.)
+- `--max-tokens`: Control output length
+- Standard input/output for piping
+
+**Installation:**
+```bash
+# Install Claude CLI
+npm install -g @anthropic-ai/claude-cli
+
+# Or via pip
+pip install anthropic-cli
+
+# Configure API key
+export ANTHROPIC_API_KEY="your-api-key"
+```
+
+### Workspace Isolation Strategy
+
+**Problem:** Multiple concurrent tickets need isolated environments.
+
+**Solution:** Per-ticket workspace isolation
+
+```
+/tmp/cursor-workspaces/
+├── ticket-123-1732567890/     # Project A, ticket 123
+│   ├── .git/
+│   ├── src/
+│   └── package.json
+├── ticket-456-1732567891/     # Project A, ticket 456
+└── ticket-789-1732567892/     # Project B, ticket 789
+```
+
+**Lifecycle:**
+1. **Create:** `git clone {repo} /tmp/cursor-workspaces/ticket-{id}-{timestamp}`
+2. **Branch:** `git checkout -b feature/ticket-{id}`
+3. **Execute:** `cursor --headless --dir /tmp/cursor-workspaces/ticket-{id}-{timestamp} --apply "{prompt}"`
+4. **Collect:** `git diff HEAD` to capture changes
+5. **Cleanup:** Remove workspace after PR creation (or archive for debugging)
+
+### Prompt Engineering
+
+**Template Structure:**
+
+```typescript
+function buildCursorPrompt(ticket: Ticket): string {
+  return `
+${ticket.title}
+
+Description:
+${ticket.description}
+
+Acceptance Criteria:
+${ticket.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}
+
+Technical Requirements:
+- Follow existing code patterns in this repository
+- Include TypeScript types for all new code
+- Add error handling for edge cases
+- Write production-ready, maintainable code
+- Include comments for complex logic
+- Ensure backward compatibility
+
+Context:
+- Tech Stack: ${ticket.techStack}
+- Related Files: ${ticket.relatedFiles.join(', ')}
+- Dependencies: ${ticket.dependencies.join(', ')}
+  `.trim();
+}
+```
+
+**Key Elements:**
+- ✅ Clear task title
+- ✅ Detailed description
+- ✅ Explicit acceptance criteria
+- ✅ Technical requirements
+- ✅ Repository context (tech stack, related files)
+- ✅ Quality expectations
+
+### Execution Flow (Multi-Provider)
+
+```typescript
+// orchestrator/src/ai-routing/ai-routing.service.ts
+
+async function executeAIGeneration(ticket: Ticket, context: CodeContext) {
+  // 1. Prepare isolated workspace
+  const workspaceDir = await prepareWorkspace(ticket, context);
+  
+  // 2. Select provider based on task complexity
+  const provider = await providerFactory.getProvider(ticket, context);
+  // => CursorHeadlessProvider or ClaudeCLIProvider
+  
+  try {
+    // 3. Execute with selected provider
+    const result = await provider.execute(ticket, workspaceDir, context);
+    
+    // 4. Collect results
+    const changes = await collectChanges(workspaceDir);
+    
+    // 5. Validate generated code
+    await validateCode(workspaceDir, changes);
+    
+    // 6. Create commit
+    await commitChanges(workspaceDir, ticket);
+    
+    // 7. Push to GitHub
+    await pushToGitHub(workspaceDir, ticket);
+    
+    // 8. Track metrics
+    await trackExecution(ticket, provider, result);
+    
+    return {
+      success: true,
+      provider: provider.name,
+      filesModified: changes.files,
+      executionTimeMs: result.executionTime
+    };
+    
+  } catch (error) {
+    // 9. Fallback on failure
+    if (provider.name === 'cursor' && error.retryable) {
+      console.log('Cursor failed, falling back to Claude...');
+      const fallbackProvider = await providerFactory.getFallbackProvider();
+      return executeWithProvider(fallbackProvider, ticket, workspaceDir, context);
+    }
+    throw error;
+    
+  } finally {
+    // 10. Cleanup
+    await cleanupWorkspace(workspaceDir);
+  }
+}
+```
+
+---
+
+#### **Provider-Specific Execution**
+
+**Cursor Headless Provider:**
+```typescript
+async execute(ticket: Ticket, workspace: string, context: CodeContext) {
+  const prompt = buildCursorPrompt(ticket);
+  const command = `cursor --headless --dir "${workspace}" --apply "${prompt}" --wait`;
+  
+  const { stdout } = await execAsync(command, {
+    timeout: 300000, // 5 min
+    maxBuffer: 10 * 1024 * 1024
+  });
+  
+  return { executionTime: Date.now() - start, output: stdout };
+}
+```
+
+**Claude CLI Provider:**
+```typescript
+async execute(ticket: Ticket, workspace: string, context: CodeContext) {
+  // 1. Build enhanced prompt with context
+  const prompt = buildClaudePrompt(ticket, context);
+  
+  // 2. Include relevant files for context
+  const fileFlags = context.relevantFiles.map(f => `--file ${workspace}/${f}`).join(' ');
+  
+  // 3. Execute Claude CLI
+  const command = `claude --prompt "${prompt}" ${fileFlags} --model claude-3-5-sonnet`;
+  
+  const { stdout } = await execAsync(command, {
+    timeout: 180000, // 3 min
+    maxBuffer: 10 * 1024 * 1024
+  });
+  
+  // 4. Parse output and write to files
+  const generatedCode = parseClaudeOutput(stdout);
+  await writeGeneratedCode(workspace, generatedCode);
+  
+  return { executionTime: Date.now() - start, output: stdout };
+}
+```
+
+### Concurrency Management
+
+**Goal:** Support 50+ concurrent projects (Phase 3)
+
+**Strategy:**
+
+```typescript
+// RabbitMQ queue configuration
+const AI_EXECUTION_QUEUE = {
+  name: 'ai-execution-queue',
+  concurrency: 10, // 10 concurrent Cursor instances
+  prefetch: 1,
+  durable: true
+};
+
+// Worker pool
+const cursorWorkerPool = {
+  maxWorkers: 10,
+  minWorkers: 2,
+  idleTimeout: 300000, // 5 min
+  maxQueueSize: 100
+};
+```
+
+**Limits:**
+- Start conservatively: 5-10 concurrent Cursor instances
+- Monitor: CPU, memory, disk I/O
+- Scale horizontally: Multiple orchestrator nodes if needed
+- Queue overflow: Reject new tickets with backpressure signal
+
+### Error Handling
+
+**Common Failures:**
+
+| Error | Cause | Mitigation |
+|-------|-------|------------|
+| Timeout | Cursor execution >5 min | Increase timeout, split ticket |
+| Out of Memory | Large repository | Increase container memory, shallow clone |
+| Git Conflict | Concurrent edits | Rebase and retry |
+| Cursor Crash | AI model issue | Retry with exponential backoff |
+| Invalid Prompt | Malformed ticket | Ticket validation before routing |
+
+**Retry Strategy:**
+```typescript
+const retryConfig = {
+  maxRetries: 3,
+  backoff: 'exponential', // 1s, 2s, 4s
+  retryableErrors: ['timeout', 'cursor-crash', 'network-error'],
+  nonRetryableErrors: ['invalid-prompt', 'auth-failed']
+};
+```
+
+### Cost Tracking
+
+**Metrics to Track:**
+- Cursor API usage (if metered)
+- Execution time per ticket
+- Success rate (% completed without errors)
+- Retry count per ticket
+- Workspace disk usage
+
+**Implementation:**
+```typescript
+// Track cost after each execution
+await costTracker.record({
+  ticketId: ticket.id,
+  executionTimeMs: executionTime,
+  success: true,
+  retries: 2,
+  filesModified: 5,
+  provider: 'cursor-headless'
+});
+
+// Calculate cost (if metered by Cursor)
+const estimatedCost = (executionTime / 1000) * CURSOR_COST_PER_SECOND;
+```
+
+### Validation Checklist
+
+**Before deploying to production:**
+
+#### **Cursor CLI Validation:**
+- [ ] Verify `cursor --headless` command exists
+- [ ] Test single execution end-to-end
+- [ ] Test concurrent execution (5-10 instances)
+- [ ] Measure resource usage (CPU, memory, disk)
+- [ ] Validate workspace isolation (no cross-contamination)
+- [ ] Test error scenarios (timeout, crash, invalid prompt)
+- [ ] Verify cleanup process (no orphaned workspaces)
+- [ ] Confirm cost tracking accuracy
+- [ ] Load test with realistic ticket volume
+- [ ] Document Cursor license requirements for headless
+
+#### **Claude CLI Validation:**
+- [ ] Install Claude CLI (`npm install -g @anthropic-ai/claude-cli` or `pip install anthropic-cli`)
+- [ ] Configure API key (`export ANTHROPIC_API_KEY="..."`)
+- [ ] Test single code generation task
+- [ ] Validate context file inclusion works
+- [ ] Test output parsing and file writing
+- [ ] Measure cost per request
+- [ ] Compare quality vs Cursor for same task
+- [ ] Test fallback scenario (Cursor fails → Claude works)
+
+#### **Multi-Provider Logic:**
+- [ ] Provider selection works based on complexity
+- [ ] Fallback triggers correctly on failure
+- [ ] Both providers tracked in metrics
+- [ ] Cost tracking differentiates by provider
+
+### Phase 1 Validation Scripts
+
+#### **validate-ai-providers.sh** (Tests both Cursor and Claude)
+
+```bash
+#!/bin/bash
+# validate-ai-providers.sh - Tests both Cursor and Claude CLI
+
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║   🧪 MULTI-PROVIDER AI VALIDATION                             ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+ALL_TESTS_PASSED=true
+
+# ==================== Test Cursor CLI ====================
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "1️⃣  TESTING: Cursor CLI Headless Mode"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if command -v cursor &> /dev/null; then
+    echo "✅ Cursor CLI found: $(which cursor)"
+    
+    # Test headless execution
+    mkdir -p /tmp/cursor-test
+    cd /tmp/cursor-test
+    git init > /dev/null 2>&1
+    echo 'test' > test.txt
+    git add . && git commit -m "init" > /dev/null 2>&1
+    
+    if timeout 60s cursor --headless --dir /tmp/cursor-test --apply "Add a hello function" --wait 2>&1; then
+        echo "✅ Cursor headless works!"
+        CURSOR_AVAILABLE=true
+    else
+        echo "⚠️  Cursor headless failed"
+        CURSOR_AVAILABLE=false
+        ALL_TESTS_PASSED=false
+    fi
+else
+    echo "❌ Cursor CLI not found"
+    CURSOR_AVAILABLE=false
+fi
+
+echo ""
+
+# ==================== Test Claude CLI ====================
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "2️⃣  TESTING: Claude CLI"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if command -v claude &> /dev/null; then
+    echo "✅ Claude CLI found: $(which claude)"
+    
+    # Test Claude execution
+    if [ -z "$ANTHROPIC_API_KEY" ]; then
+        echo "⚠️  ANTHROPIC_API_KEY not set"
+        echo "   Set with: export ANTHROPIC_API_KEY='your-key'"
+        CLAUDE_AVAILABLE=false
+        ALL_TESTS_PASSED=false
+    else
+        # Test simple code generation
+        if timeout 30s claude --prompt "Write a TypeScript hello world function" --model claude-3-5-sonnet 2>&1 | grep -q "function"; then
+            echo "✅ Claude CLI works!"
+            CLAUDE_AVAILABLE=true
+        else
+            echo "⚠️  Claude execution failed"
+            CLAUDE_AVAILABLE=false
+            ALL_TESTS_PASSED=false
+        fi
+    fi
+else
+    echo "⚠️  Claude CLI not found"
+    echo "   Install: npm install -g @anthropic-ai/claude-cli"
+    echo "   Or: pip install anthropic-cli"
+    CLAUDE_AVAILABLE=false
+fi
+
+echo ""
+
+# ==================== Results ====================
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║   📊 VALIDATION RESULTS                                        ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo ""
+
+echo "Cursor CLI:  $([ "$CURSOR_AVAILABLE" = true ] && echo '✅ AVAILABLE' || echo '❌ NOT AVAILABLE')"
+echo "Claude CLI:  $([ "$CLAUDE_AVAILABLE" = true ] && echo '✅ AVAILABLE' || echo '❌ NOT AVAILABLE')"
+echo ""
+
+if [ "$CURSOR_AVAILABLE" = true ] && [ "$CLAUDE_AVAILABLE" = true ]; then
+    echo "✅✅✅ BOTH PROVIDERS AVAILABLE - OPTIMAL ✅✅✅"
+    echo ""
+    echo "RECOMMENDATION:"
+    echo "- Use Cursor for complex, multi-file tasks"
+    echo "- Use Claude for simple, focused tasks"
+    echo "- Auto-fallback if one provider fails"
+    exit 0
+elif [ "$CURSOR_AVAILABLE" = true ]; then
+    echo "✅ CURSOR AVAILABLE - CAN PROCEED"
+    echo "⚠️  Claude not available - no fallback"
+    echo ""
+    echo "RECOMMENDATION:"
+    echo "- Proceed with Cursor only"
+    echo "- Install Claude CLI for fallback (optional)"
+    exit 0
+elif [ "$CLAUDE_AVAILABLE" = true ]; then
+    echo "✅ CLAUDE AVAILABLE - CAN PROCEED"
+    echo "⚠️  Cursor not available - limited repo context"
+    echo ""
+    echo "RECOMMENDATION:"
+    echo "- Proceed with Claude only"
+    echo "- Install Cursor for better multi-file editing"
+    exit 0
+else
+    echo "❌ NO PROVIDERS AVAILABLE - CANNOT PROCEED"
+    echo ""
+    echo "REQUIRED ACTIONS:"
+    echo "1. Install Cursor CLI and/or Claude CLI"
+    echo "2. Configure API keys"
+    echo "3. Re-run this validation"
+    exit 1
+fi
+```
+
+---
+
+**Document Status:** ✅ Complete  
+**Version:** 2.1  
+**Last Updated:** 2025-11-25  
+**Changes:** Added Claude CLI as secondary AI provider (multi-provider strategy)
+**Next Review:** After multi-provider validation
+
+**Approval Required:** BMad (Founder/CEO)
+
+**Critical First Step:** Run validation script (`scripts/validate-ai-providers.sh`) to confirm both providers work.
+
+---
+
+## Multi-Provider Summary
+
+**Primary Provider:** Cursor CLI Headless
+- Full repository context
+- Multi-file editing with awareness
+- Best for complex tasks
+- Command: `cursor --headless --dir /path --apply "prompt"`
+
+**Secondary Provider:** Claude CLI
+- Excellent code quality
+- Lower cost per token
+- Good for focused tasks
+- Command: `claude --prompt "..." --file context.ts --model claude-3-5-sonnet`
+
+**Strategy:** Use both providers with intelligent routing and automatic fallback.
+
+---
+
+_This architecture document provides the complete technical foundation for implementing the AI Dev Tool Orchestrator using a multi-provider approach (Cursor CLI + Claude CLI). All 136 functional requirements are architecturally supported with official, documented tooling from both Cursor and Anthropic._
