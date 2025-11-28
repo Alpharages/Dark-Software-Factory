@@ -16,11 +16,20 @@
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
       "@/*": [
         "src/*"
       ]
     }
-  }
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
