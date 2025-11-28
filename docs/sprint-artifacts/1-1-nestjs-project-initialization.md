@@ -1,7 +1,7 @@
 # Story 1.1: NestJS Project Initialization
 
 **Epic:** 1 - Foundation & Development Environment  
-**Status:** Ready for Review  
+**Status:** done  
 **Priority:** P0 - BLOCKER  
 **Effort:** 5 story points  
 **ClickUp ID:** `86evnjw87`  
@@ -355,7 +355,7 @@ export class AppController {
 **Expected directory structure after initialization:**
 
 ```
-ai-dev-orchestrator/
+.
 ├── src/
 │   ├── app.controller.spec.ts      # Unit test for app controller
 │   ├── app.controller.ts           # Main app controller with /health endpoint
@@ -808,21 +808,21 @@ This story implements:
 
 ## File List
 
-- ai-dev-orchestrator/.eslintrc.js
-- ai-dev-orchestrator/.gitignore
-- ai-dev-orchestrator/.prettierrc
-- ai-dev-orchestrator/README.md
-- ai-dev-orchestrator/nest-cli.json
-- ai-dev-orchestrator/package.json
-- ai-dev-orchestrator/src/app.controller.spec.ts
-- ai-dev-orchestrator/src/app.controller.ts
-- ai-dev-orchestrator/src/app.module.ts
-- ai-dev-orchestrator/src/app.service.ts
-- ai-dev-orchestrator/src/main.ts
-- ai-dev-orchestrator/test/app.e2e-spec.ts
-- ai-dev-orchestrator/test/jest-e2e.json
-- ai-dev-orchestrator/tsconfig.build.json
-- ai-dev-orchestrator/tsconfig.json
+- .eslintrc.js
+- .gitignore
+- .prettierrc
+- README.md
+- nest-cli.json
+- package.json
+- src/app.controller.spec.ts
+- src/app.controller.ts
+- src/app.module.ts
+- src/app.service.ts
+- src/main.ts
+- test/app.e2e-spec.ts
+- test/jest-e2e.json
+- tsconfig.build.json
+- tsconfig.json
 
 ## Change Log
 
@@ -832,6 +832,10 @@ This story implements:
 - **Implemented Health Check**: Added `/health` endpoint in `AppController`.
 - **Added Tests**: Updated unit and E2E tests for health check.
 - **Configured Linting**: Set up `.eslintrc.js` and `.prettierrc`.
+- **Fixed Lint Script**: Updated `package.json` to use `ESLINT_USE_FLAT_CONFIG=false` for legacy config compatibility.
+- **Enhanced TypeScript Config**: Added `experimentalDecorators` and `emitDecoratorMetadata` to `tsconfig.json`.
+- **Code Review**: Addressed all findings (untracked files committed, config documented).
+- **Migration**: Moved project files to root directory.
 
 ---
 

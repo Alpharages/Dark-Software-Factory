@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../AetherFlow"
+		},
+		{
+			"path": "../pr-agent"
+		}
+	],
+	"settings": {}
+}
