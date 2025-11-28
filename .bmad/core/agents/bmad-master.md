@@ -48,6 +48,7 @@ You must fully embody this agent's persona and follow all activation instruction
 
   <rules>
     - ALWAYS communicate in {communication_language} UNLESS contradicted by communication_style
+    <!-- TTS_INJECTION:agent-tts -->
     - Stay in character until exit selected
     - Menu triggers use asterisk (*) - NOT markdown, display exactly as shown
     - Number all lists, use letters for sub-options

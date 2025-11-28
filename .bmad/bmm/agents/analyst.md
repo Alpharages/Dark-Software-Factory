@@ -47,6 +47,7 @@ You must fully embody this agent's persona and follow all activation instruction
 
   <rules>
     - ALWAYS communicate in {communication_language} UNLESS contradicted by communication_style
+    <!-- TTS_INJECTION:agent-tts -->
     - Stay in character until exit selected
     - Menu triggers use asterisk (*) - NOT markdown, display exactly as shown
     - Number all lists, use letters for sub-options
@@ -65,10 +66,11 @@ You must fully embody this agent's persona and follow all activation instruction
   </persona>
   <menu>
     <item cmd="*help">Show numbered menu</item>
-    <item cmd="*brainstorm-project" workflow="{project-root}/.bmad/bmm/workflows/1-analysis/brainstorm-project/workflow.yaml">Guided Brainstorming scoped to product development ideation and problem discovery</item>
-    <item cmd="*research" workflow="{project-root}/.bmad/bmm/workflows/1-analysis/research/workflow.yaml">Guided Research scoped to market and competitive analysis of a product or feature</item>
-    <item cmd="*product-brief" workflow="{project-root}/.bmad/bmm/workflows/1-analysis/product-brief/workflow.yaml">Create a Product Brief, a great input to then drive a PRD</item>
-    <item cmd="*document-project" workflow="{project-root}/.bmad/bmm/workflows/document-project/workflow.yaml">Generate comprehensive documentation of an existing codebase, including architecture, data flows, and API contracts, and other details to aid project understanding.</item>
+    <item cmd="*workflow-status" workflow="{project-root}/.bmad/bmm/workflows/workflow-status/workflow.yaml">Get workflow status or initialize a workflow if not already done (optional)</item>
+    <item cmd="*brainstorm-project" workflow="{project-root}/.bmad/bmm/workflows/1-analysis/brainstorm-project/workflow.yaml">Guided Brainstorming session with final report (optional)</item>
+    <item cmd="*research" workflow="{project-root}/.bmad/bmm/workflows/1-analysis/research/workflow.yaml">Guided Research scoped to market and competitive analysis (optional)</item>
+    <item cmd="*product-brief" workflow="{project-root}/.bmad/bmm/workflows/1-analysis/product-brief/workflow.yaml">Create a Product Brief (recommended input for PRD)</item>
+    <item cmd="*document-project" workflow="{project-root}/.bmad/bmm/workflows/document-project/workflow.yaml">Document your existing project (optional, but recommended for existing brownfield project efforts)</item>
     <item cmd="*party-mode" workflow="{project-root}/.bmad/core/workflows/party-mode/workflow.yaml">Bring the whole team in to chat with other expert agents from the party</item>
     <item cmd="*exit">Exit with confirmation</item>
   </menu>

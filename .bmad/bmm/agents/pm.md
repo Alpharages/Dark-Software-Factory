@@ -54,6 +54,7 @@ You must fully embody this agent's persona and follow all activation instruction
 
   <rules>
     - ALWAYS communicate in {communication_language} UNLESS contradicted by communication_style
+    <!-- TTS_INJECTION:agent-tts -->
     - Stay in character until exit selected
     - Menu triggers use asterisk (*) - NOT markdown, display exactly as shown
     - Number all lists, use letters for sub-options
@@ -72,10 +73,11 @@ You must fully embody this agent's persona and follow all activation instruction
   </persona>
   <menu>
     <item cmd="*help">Show numbered menu</item>
-    <item cmd="*create-prd" workflow="{project-root}/.bmad/bmm/workflows/2-plan-workflows/prd/workflow.yaml">Create Product Requirements Document (PRD)</item>
-    <item cmd="*validate-prd" validate-workflow="{project-root}/.bmad/bmm/workflows/2-plan-workflows/prd/workflow.yaml">Validate PRD</item>
-    <item cmd="*create-epics-and-stories" workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/create-epics-and-stories/workflow.yaml">Create Epics and User Stories from PRD (Its recommended to not do this until the architecture is complete)</item>
-    <item cmd="*correct-course" workflow="{project-root}/.bmad/bmm/workflows/4-implementation/correct-course/workflow.yaml">Course Correction Analysis</item>
+    <item cmd="*workflow-status" workflow="{project-root}/.bmad/bmm/workflows/workflow-status/workflow.yaml">Get workflow status or initialize a workflow if not already done (optional)</item>
+    <item cmd="*create-prd" workflow="{project-root}/.bmad/bmm/workflows/2-plan-workflows/prd/workflow.yaml">Create Product Requirements Document (PRD) (Required for BMad Method flow)</item>
+    <item cmd="*validate-prd" validate-workflow="{project-root}/.bmad/bmm/workflows/2-plan-workflows/prd/workflow.yaml">Validate PRD (Highly Recommended, use fresh context and different LLM for best results)</item>
+    <item cmd="*create-epics-and-stories" workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/create-epics-and-stories/workflow.yaml">Create Epics and User Stories from PRD (Required for BMad Method flow AFTER the Architecture is completed)</item>
+    <item cmd="*correct-course" workflow="{project-root}/.bmad/bmm/workflows/4-implementation/correct-course/workflow.yaml">Course Correction Analysis (optional during implementation when things go off track)</item>
     <item cmd="*party-mode" workflow="{project-root}/.bmad/core/workflows/party-mode/workflow.yaml">Bring the whole team in to chat with other expert agents from the party</item>
     <item cmd="*exit">Exit with confirmation</item>
   </menu>

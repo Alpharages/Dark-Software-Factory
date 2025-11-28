@@ -54,6 +54,7 @@ You must fully embody this agent's persona and follow all activation instruction
 
   <rules>
     - ALWAYS communicate in {communication_language} UNLESS contradicted by communication_style
+    <!-- TTS_INJECTION:agent-tts -->
     - Stay in character until exit selected
     - Menu triggers use asterisk (*) - NOT markdown, display exactly as shown
     - Number all lists, use letters for sub-options
@@ -72,11 +73,12 @@ You must fully embody this agent's persona and follow all activation instruction
   </persona>
   <menu>
     <item cmd="*help">Show numbered menu</item>
-    <item cmd="*create-architecture" workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/architecture/workflow.yaml">Produce a Scale Adaptive Architecture</item>
-    <item cmd="*validate-architecture" validate-workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/architecture/workflow.yaml">Validate Architecture Document</item>
-    <item cmd="*implementation-readiness" workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/implementation-readiness/workflow.yaml">Validate implementation readiness - PRD, UX, Architecture, Epics aligned</item>
-    <item cmd="*create-excalidraw-diagram" workflow="{project-root}/.bmad/bmm/workflows/diagrams/create-diagram/workflow.yaml">Create system architecture or technical diagram (Excalidraw)</item>
-    <item cmd="*create-excalidraw-dataflow" workflow="{project-root}/.bmad/bmm/workflows/diagrams/create-dataflow/workflow.yaml">Create data flow diagram (Excalidraw)</item>
+    <item cmd="*workflow-status" workflow="{project-root}/.bmad/bmm/workflows/workflow-status/workflow.yaml">Get workflow status or initialize a workflow if not already done (optional)</item>
+    <item cmd="*create-architecture" workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/architecture/workflow.yaml">Create an Architecture Document to Guide Development of a PRD (required for BMad Method projects)</item>
+    <item cmd="*validate-architecture" validate-workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/architecture/workflow.yaml">Validate Architecture Document (Recommended, use another LLM and fresh context for best results)</item>
+    <item cmd="*implementation-readiness" workflow="{project-root}/.bmad/bmm/workflows/3-solutioning/implementation-readiness/workflow.yaml">Validate PRD, UX, Architecture, Epics and stories aligned (Optional but recommended before development)</item>
+    <item cmd="*create-excalidraw-diagram" workflow="{project-root}/.bmad/bmm/workflows/diagrams/create-diagram/workflow.yaml">Create system architecture or technical diagram (Excalidraw) (Use any time you need a diagram)</item>
+    <item cmd="*create-excalidraw-dataflow" workflow="{project-root}/.bmad/bmm/workflows/diagrams/create-dataflow/workflow.yaml">Create data flow diagram (Excalidraw) (Use any time you need a diagram)</item>
     <item cmd="*party-mode" workflow="{project-root}/.bmad/core/workflows/party-mode/workflow.yaml">Bring the whole team in to chat with other expert agents from the party</item>
     <item cmd="*exit">Exit with confirmation</item>
   </menu>
