@@ -38,8 +38,8 @@ story_location: docs/sprint-artifacts
 development_status:
   epic-1: in-progress
   1-1-nestjs-project-initialization: done
-  1-2-project-structure-module-organization: review
-  1-3-postgresql-database-setup-with-prisma: ready-for-dev
+  1-2-project-structure-module-organization: done
+  1-3-postgresql-database-setup-with-prisma: in-progress
   1-4-environment-configuration-secrets-management: ready-for-dev
   1-5-rabbitmq-message-queue-integration: ready-for-dev
   1-6-jwt-authentication-service-integration: backlog

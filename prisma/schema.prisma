@@ -1,0 +1,286 @@
+// Prisma Schema for AI Dev Tool Orchestrator
+// Architecture Reference: docs/architecture.md (Data Architecture section)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// ============================================
+// TICKET INTAKE
+// ============================================
+
+model Ticket {
+  id                    String       @id @default(uuid())
+  clickup_task_id       String       @unique
+  project_id            String
+  title                 String
+  description           String       @db.Text
+  acceptance_criteria   String       @db.Text
+  ticket_quality_score  Int
+  status                TicketStatus @default(RECEIVED)
+  
+  // Relationships
+  executions      Execution[]
+  cost_records    CostRecord[]
+  
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  
+  @@index([project_id, status])
+  @@index([created_at])
+  @@map("tickets")
+}
+
+enum TicketStatus {
+  RECEIVED
+  VALIDATED
+  VALIDATION_FAILED
+  QUEUED
+  AI_PROCESSING
+  QA_REVIEW
+  QA_FAILED
+  GITHUB_PUSH
+  DEPLOYING
+  DEPLOYED
+  MONITORING
+  FAILED
+  COMPLETED
+}
+
+// ============================================
+// AI EXECUTION TRACKING
+// ============================================
+
+model Execution {
+  id                String           @id @default(uuid())
+  ticket_id         String
+  ticket            Ticket           @relation(fields: [ticket_id], references: [id])
+  
+  ai_provider       AIProvider
+  prompt            String           @db.Text
+  status            ExecutionStatus  @default(QUEUED)
+  confidence_score  Float?
+  
+  started_at        DateTime?
+  completed_at      DateTime?
+  failed_at         DateTime?
+  error_message     String?          @db.Text
+  
+  // Generated code
+  code_output       String?          @db.Text
+  files_changed     Json?            // Array of file paths
+  
+  // Retry tracking
+  retry_count       Int              @default(0)
+  max_retries       Int              @default(3)
+  
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  
+  @@index([ticket_id, status])
+  @@index([ai_provider, status])
+  @@map("executions")
+}
+
+enum AIProvider {
+  CURSOR
+  WINDSURF
+  ANTIGRAVITY
+}
+
+enum ExecutionStatus {
+  QUEUED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  TIMEOUT
+  CANCELLED
+}
+
+// ============================================
+// QA RESULTS
+// ============================================
+
+model QAResult {
+  id                  String   @id @default(uuid())
+  execution_id        String
+  
+  linting_passed      Boolean
+  linting_errors      Json?
+  
+  tests_passed        Boolean
+  test_results        Json?
+  test_coverage       Float?
+  
+  code_review_passed  Boolean
+  code_review_issues  Json?
+  
+  overall_passed      Boolean
+  
+  created_at          DateTime @default(now())
+  
+  @@map("qa_results")
+}
+
+// ============================================
+// GITHUB INTEGRATION
+// ============================================
+
+model GitHubPush {
+  id              String       @id @default(uuid())
+  execution_id    String
+  
+  repository      String
+  branch_name     String
+  commit_sha      String?
+  pr_number       Int?
+  pr_url          String?
+  
+  push_status     GitHubStatus @default(PENDING)
+  error_message   String?      @db.Text
+  
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+  
+  @@map("github_pushes")
+}
+
+enum GitHubStatus {
+  PENDING
+  BRANCH_CREATED
+  COMMITTED
+  PR_CREATED
+  MERGED
+  FAILED
+}
+
+// ============================================
+// DEPLOYMENT TRACKING
+// ============================================
+
+model Deployment {
+  id              String           @id @default(uuid())
+  github_push_id  String
+  
+  environment     String           // dev, staging, production
+  cicd_provider   String           // github-actions, jenkins, etc.
+  build_id        String?
+  
+  status          DeploymentStatus @default(TRIGGERED)
+  deployed_at     DateTime?
+  
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+  
+  @@map("deployments")
+}
+
+enum DeploymentStatus {
+  TRIGGERED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+// ============================================
+// COST TRACKING
+// ============================================
+
+model CostRecord {
+  id              String     @id @default(uuid())
+  ticket_id       String
+  ticket          Ticket     @relation(fields: [ticket_id], references: [id])
+  
+  ai_provider     AIProvider
+  operation_type  String     // code_generation, review, etc.
+  
+  tokens_used     Int?
+  api_calls       Int        @default(1)
+  cost_in_cents   Int        // Store as cents to avoid floating point
+  
+  created_at      DateTime   @default(now())
+  
+  @@index([ticket_id])
+  @@index([ai_provider, created_at])
+  @@map("cost_records")
+}
+
+// ============================================
+// PRODUCTION MONITORING
+// ============================================
+
+model ProductionError {
+  id                String        @id @default(uuid())
+  
+  application       String
+  error_type        String
+  error_message     String        @db.Text
+  stack_trace       String?       @db.Text
+  
+  severity          ErrorSeverity
+  
+  fix_ticket_id     String?       // ClickUp task ID if auto-created
+  resolved          Boolean       @default(false)
+  
+  occurred_at       DateTime
+  created_at        DateTime      @default(now())
+  
+  @@index([application, severity, resolved])
+  @@map("production_errors")
+}
+
+enum ErrorSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ============================================
+// METRICS & ANALYTICS
+// ============================================
+
+model Metric {
+  id          String   @id @default(uuid())
+  
+  metric_name String
+  metric_type String   // counter, gauge, histogram
+  value       Float
+  labels      Json?    // Key-value pairs for filtering
+  
+  recorded_at DateTime @default(now())
+  
+  @@index([metric_name, recorded_at])
+  @@map("metrics")
+}
+
+// ============================================
+// AUDIT TRAIL
+// ============================================
+
+model AuditLog {
+  id              String   @id @default(uuid())
+  
+  entity_type     String   // ticket, execution, deployment
+  entity_id       String
+  action          String   // created, updated, status_changed
+  
+  actor_type      String   // user, system
+  actor_id        String?  // user ID if human, null if system
+  
+  before_state    Json?
+  after_state     Json?
+  
+  created_at      DateTime @default(now())
+  
+  @@index([entity_type, entity_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
