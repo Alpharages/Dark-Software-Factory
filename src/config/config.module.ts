@@ -5,18 +5,18 @@ import { envValidationSchema } from './env.validation';
 
 @Global()
 @Module({
-    imports: [
-        NestConfigModule.forRoot({
-            isGlobal: true, // Makes ConfigService available everywhere
-            load: [configuration], // Load our typed configuration
-            validationSchema: envValidationSchema, // Validate on startup
-            validationOptions: {
-                abortEarly: false, // Show all validation errors, not just first
-                allowUnknown: true, // Allow extra env vars (for system vars)
-            },
-            cache: true, // Cache config values for performance
-            expandVariables: true, // Support ${VAR} syntax in .env
-        }),
-    ],
+  imports: [
+    NestConfigModule.forRoot({
+      isGlobal: true, // Makes ConfigService available everywhere
+      load: [configuration], // Load our typed configuration
+      validationSchema: envValidationSchema, // Validate on startup
+      validationOptions: {
+        abortEarly: false, // Show all validation errors, not just first
+        allowUnknown: true, // Allow extra env vars (for system vars)
+      },
+      cache: true, // Cache config values for performance
+      expandVariables: true, // Support ${VAR} syntax in .env
+    }),
+  ],
 })
-export class ConfigModule { }
+export class ConfigModule {}

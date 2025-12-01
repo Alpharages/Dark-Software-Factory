@@ -218,6 +218,65 @@ curl http://localhost:3000/health
 open http://localhost:3000/api/docs
 ```
 
+### Environment Setup
+
+**IMPORTANT:** Before starting the application, you MUST configure environment variables.
+
+#### Step 1: Copy the environment template
+
+```bash
+cp .env.example .env
+```
+
+#### Step 2: Generate secure secrets
+
+```bash
+# Generate JWT Secret (minimum 32 characters required)
+openssl rand -base64 32
+
+# Generate ClickUp Webhook Secret (minimum 16 characters required)
+openssl rand -hex 16
+```
+
+#### Step 3: Edit `.env` and fill in the required variables
+
+```bash
+# Open .env in your editor
+nano .env  # or code .env, or vim .env
+```
+
+**Required variables (application will fail to start if missing):**
+- `DATABASE_URL` - PostgreSQL connection string
+- `RABBITMQ_URL` - RabbitMQ connection string  
+- `JWT_SECRET` - At least 32 characters (use `openssl rand -base64 32`)
+- `AUTH_SERVICE_URL` - Authentication service URL
+- `GITHUB_TOKEN` - GitHub personal access token (must start with `ghp_`, `ghs_`, or `github_pat_`)
+- `CLICKUP_API_KEY` - ClickUp API key
+- `CLICKUP_WEBHOOK_SECRET` - At least 16 characters (use `openssl rand -hex 16`)
+- **At least ONE AI provider key:** `CURSOR_API_KEY`, `WINDSURF_API_KEY`, or `ANTIGRAVITY_API_KEY`
+
+**Validation:**  
+The application validates all environment variables on startup. If any required variable is missing or invalid, you'll see a detailed error message explaining what's needed.
+
+```bash
+# Example validation error
+Config validation error: JWT_SECRET is required. Generate with: openssl rand -base64 32
+```
+
+#### Step 4: Verify configuration
+
+```bash
+# Start the application
+npm run start:dev
+
+# If successful, you should see:
+# ✅ Database connected
+# ✅ Config loaded successfully
+# 🚀 Application is running on: http://localhost:3000
+```
+
+**Security Note:** NEVER commit the `.env` file to git. It contains secrets and is already excluded in `.gitignore`.
+
 ---
 
 ## ⚙️ Configuration

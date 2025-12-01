@@ -1,4 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { RabbitMQService } from './rabbitmq.service';
+import { RabbitMQPublisherService } from './rabbitmq-publisher.service';
 
-@Module({})
-export class RabbitmqModule {}
+@Global() // Makes RabbitMQ services available everywhere
+@Module({
+  imports: [ConfigModule],
+  providers: [RabbitMQService, RabbitMQPublisherService],
+  exports: [RabbitMQService, RabbitMQPublisherService],
+})
+export class RabbitMQModule {}

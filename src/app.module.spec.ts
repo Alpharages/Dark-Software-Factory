@@ -22,6 +22,7 @@ describe('AppModule', () => {
   let module: TestingModule;
 
   beforeEach(async () => {
+    // Note: Environment variables are set globally in test/jest-setup.ts
     module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

@@ -1095,6 +1095,20 @@ Before marking this story as complete, verify:
 
 ---
 
+## Objective
+Implement RabbitMQ integration to enable asynchronous communication between system components. This includes setting up the RabbitMQ service, creating a publisher/consumer abstraction, and configuring the necessary exchanges and queues for the AI Orchestrator.
+
+> [!NOTE]
+> **Completion Notes (2025-11-30)**
+> - Implemented RabbitMQ integration with `RabbitMQService`, `RabbitMQPublisherService`, and `RabbitMQConsumerBase`.
+> - Configured `RabbitMQModule` as a global module.
+> - Added RabbitMQ health check to `AppController`.
+> - Verified with Unit Tests and E2E Tests.
+> - Verified RabbitMQ Management UI is accessible.
+> - **Note**: `test/jest-setup.ts` was updated to use `guest:guest` credentials for local testing.
+
+---
+
 ## Common Pitfalls to Avoid
 
 **Connection & Configuration:**
@@ -1250,6 +1264,28 @@ This story was prepared with complete context analysis from:
 - Epic 1 goals (establish async messaging infrastructure)
 - PRD reliability requirements (NFR-R3: recoverable executions)
 - NestJS microservices best practices
+
+### File List
+
+**Modified Files:**
+- `docker-compose.yml` - Added RabbitMQ service configuration
+- `package.json` - Added RabbitMQ dependencies
+- `pnpm-lock.yaml` - Updated dependency lock file
+- `src/app.module.ts` - Registered RabbitMQModule
+- `src/app.controller.ts` - Added RabbitMQ health check
+- `src/config/configuration.ts` - Added RabbitMQ URL configuration
+- `test/jest-setup.ts` - Added RabbitMQ test environment variables
+- `.env` - Added RABBITMQ_URL (gitignored)
+- `.env.example` - Added RABBITMQ_URL example
+
+**New Files:**
+- `src/rabbitmq/rabbitmq.config.ts` - Queue names, exchanges, routing keys
+- `src/rabbitmq/rabbitmq.service.ts` - Connection and queue management
+- `src/rabbitmq/rabbitmq-publisher.service.ts` - Message publishing with retry
+- `src/rabbitmq/rabbitmq-consumer.base.ts` - Base consumer class with error handling
+- `src/rabbitmq/rabbitmq.module.ts` - Global RabbitMQ module
+- `src/rabbitmq/rabbitmq-publisher.service.spec.ts` - Unit tests for publisher
+- `test/rabbitmq.e2e-spec.ts` - E2E tests for integration
 
 ### Completion Notes
 

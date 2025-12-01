@@ -12,7 +12,7 @@ import { AuthModule } from './auth/auth.module';
 // Core workflow modules
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TicketIntakeModule } from './ticket-intake/ticket-intake.module';
-import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from './ai-routing/ai-routing.module';
 import { ExecutionModule } from './execution/execution.module';
 
@@ -35,9 +35,12 @@ import { IntegrationModule } from './integration/integration.module';
 
 @Module({
   imports: [
-    // Global modules (available everywhere)
+    // Configuration
     ConfigModule,
+
+    // Infrastructure
     DatabaseModule,
+    RabbitMQModule,
 
     // Authentication
     AuthModule,
@@ -45,7 +48,6 @@ import { IntegrationModule } from './integration/integration.module';
     // Core workflow
     WebhooksModule,
     TicketIntakeModule,
-    RabbitmqModule,
     AiRoutingModule,
     ExecutionModule,
 
