@@ -5,7 +5,7 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TicketIntakeModule } from './ticket-intake/ticket-intake.module';
-import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from './ai-routing/ai-routing.module';
 import { ExecutionModule } from './execution/execution.module';
 import { QaAutomationModule } from './qa-automation/qa-automation.module';
@@ -47,7 +47,7 @@ describe('AppModule', () => {
       AuthModule,
       WebhooksModule,
       TicketIntakeModule,
-      RabbitmqModule,
+      RabbitMQModule,
       AiRoutingModule,
       ExecutionModule,
       QaAutomationModule,

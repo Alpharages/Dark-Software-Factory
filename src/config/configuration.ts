@@ -61,9 +61,17 @@ export default () => {
       sentry: {
         dsn: process.env.SENTRY_DSN,
         environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
-        enabled: !!process.env.SENTRY_DSN && process.env.NODE_ENV === 'production',
+        release: process.env.SENTRY_RELEASE,
+        debug: process.env.SENTRY_DEBUG === 'true',
+        enabled: !!process.env.SENTRY_DSN,
       },
-      logLevel: process.env.LOG_LEVEL || 'info',
+      logging: {
+        level: process.env.LOG_LEVEL || 'info',
+        serviceName: process.env.SERVICE_NAME || 'ai-dev-orchestrator',
+        dir: process.env.LOG_DIR || 'logs',
+        file: process.env.LOG_FILE_ENABLED === 'true',
+        redactFields: process.env.LOG_REDACT_FIELDS?.split(',') || [],
+      },
     },
 
     // Security

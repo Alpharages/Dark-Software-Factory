@@ -1,0 +1,215 @@
+# ===========================================
+# Dark Software Factory - Development Stack
+# ===========================================
+# Usage:
+#   Start:     docker-compose up -d
+#   Logs:      docker-compose logs -f
+#   Stop:      docker-compose down
+#   Clean:     docker-compose down -v
+# ===========================================
+
+name: dark-software-factory  # Explicit project name prevents conflicts
+
+services:
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: dsf-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ai_orchestrator}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - dsf-network
+    restart: unless-stopped
+
+  # ===========================================
+  # RabbitMQ Message Queue
+  # ===========================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: dsf-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"      # AMQP protocol
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dsf-network
+    restart: unless-stopped
+
+  # ===========================================
+  # AI Dev Orchestrator Application
+  # ===========================================
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: dsf-app
+    environment:
+      # Application
+      NODE_ENV: development
+      PORT: 3000
+      
+      # Hot reload (required for macOS Docker file watching)
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      
+      # Database (connects to postgres service)
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      
+      # RabbitMQ (connects to rabbitmq service)
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672
+      
+      # JWT (use development secret)
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600}
+      
+      # AI Providers (optional for development)
+      CURSOR_API_KEY: ${CURSOR_API_KEY:-}
+      WINDSURF_API_KEY: ${WINDSURF_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      
+      # GitHub (optional for development)
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      
+      # ClickUp (optional for development)
+      CLICKUP_WEBHOOK_SECRET: ${CLICKUP_WEBHOOK_SECRET:-}
+      
+      # Sentry (optional for development)
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      # Mount source code for hot reload
+      - ../src:/app/src:delegated
+      - ../prisma:/app/prisma:delegated
+      - ../test:/app/test:delegated
+      # Mount config files
+      - ../package.json:/app/package.json:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../nest-cli.json:/app/nest-cli.json:ro
+      # Exclude node_modules (use container's node_modules)
+      - /app/node_modules
+      # Exclude dist (build output)
+      - /app/dist
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - dsf-network
+    restart: unless-stopped
+    # Resource limits (prevents OOM during Prisma generate)
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    # Log rotation (prevents unbounded log growth)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================
+  # Prometheus (Optional - Metrics)
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    container_name: dsf-prometheus
+    profiles:
+      - monitoring
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - dsf-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Grafana (Optional - Dashboards)
+  # ===========================================
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: dsf-grafana
+    profiles:
+      - monitoring
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - dsf-network
+    restart: unless-stopped
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  dsf-network:
+    driver: bridge
+    name: dsf-network
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres_data:
+    driver: local
+    name: dsf-postgres-data
+  rabbitmq_data:
+    driver: local
+    name: dsf-rabbitmq-data
+  prometheus_data:
+    driver: local
+    name: dsf-prometheus-data
+  grafana_data:
+    driver: local
+    name: dsf-grafana-data

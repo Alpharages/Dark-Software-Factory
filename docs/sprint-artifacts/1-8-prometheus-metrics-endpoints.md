@@ -1,7 +1,7 @@
 # Story 1.8: Prometheus Metrics Endpoints
 
 **Epic:** 1 - Foundation & Development Environment  
-**Status:** ready-for-dev  
+**Status:** done  
 **Priority:** P0 - CRITICAL (Required for observability and GO/NO-GO decisions)  
 **Effort:** 5 story points  
 **ClickUp ID:** `86evnjw8t`  

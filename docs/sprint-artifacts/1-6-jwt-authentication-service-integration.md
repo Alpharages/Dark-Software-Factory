@@ -1,7 +1,7 @@
 # Story 1.6: JWT Authentication Service Integration
 
 **Epic:** 1 - Foundation & Development Environment  
-**Status:** ready-for-dev  
+**Status:** `done`  
 **Priority:** P0 - BLOCKER  
 **Effort:** 5 story points  
 **ClickUp ID:** `86evnjw8k`  

@@ -1,13 +1,17 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 // Configuration & Database (Global modules)
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
+import { LoggerModule } from './common/logger';
+import { AppMetricsModule } from './common/metrics';
 
 // Authentication
 import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './common/guards';
 
 // Core workflow modules
 import { WebhooksModule } from './webhooks/webhooks.module';
@@ -33,10 +37,19 @@ import { RealtimeModule } from './realtime/realtime.module';
 // External integrations
 import { IntegrationModule } from './integration/integration.module';
 
+// Common
+import { CorrelationIdMiddleware } from './common/middleware';
+import { HttpExceptionFilter } from './common/filters';
+import { LoggingInterceptor, AuditLogInterceptor } from './common/interceptors';
+import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common/sentry';
+
 @Module({
   imports: [
     // Configuration
     ConfigModule,
+    LoggerModule,
+    SentryModule,
+    AppMetricsModule, // Must be early for global metrics availability
 
     // Infrastructure
     DatabaseModule,
@@ -69,6 +82,42 @@ import { IntegrationModule } from './integration/integration.module';
     IntegrationModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+
+    // Apply JwtAuthGuard globally
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    // Global Exception Filter
+    {
+      provide: APP_FILTER,
+      useClass: SentryExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    // Global Logging Interceptor
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    // Global Sentry Interceptor
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SentryInterceptor,
+    },
+    // Global Audit Log Interceptor
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CorrelationIdMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

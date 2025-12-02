@@ -63,7 +63,15 @@ export const envValidationSchema = Joi.object({
   // Monitoring (optional but recommended)
   SENTRY_DSN: Joi.string().uri().optional(),
   SENTRY_ENVIRONMENT: Joi.string().optional(),
+  SENTRY_RELEASE: Joi.string().optional(),
+  SENTRY_DEBUG: Joi.boolean().default(false),
+
+  // Logging
   LOG_LEVEL: Joi.string().valid('error', 'warn', 'info', 'debug').default('info'),
+  SERVICE_NAME: Joi.string().default('ai-dev-orchestrator'),
+  LOG_DIR: Joi.string().default('logs'),
+  LOG_FILE_ENABLED: Joi.boolean().default(true),
+  LOG_REDACT_FIELDS: Joi.string().optional(),
 
   // Security
   RATE_LIMIT_PER_USER: Joi.number().default(1000),

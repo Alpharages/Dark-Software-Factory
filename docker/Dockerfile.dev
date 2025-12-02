@@ -1,0 +1,39 @@
+# ===========================================
+# Dark Software Factory - Development Image
+# ===========================================
+# Purpose: Local development with hot reload
+# Usage: docker-compose up (not standalone)
+# ===========================================
+
+FROM node:22-alpine AS development
+
+# Set working directory
+WORKDIR /app
+
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++ git
+
+# Install pnpm (project uses pnpm)
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy package files first for better layer caching
+COPY package.json pnpm-lock.yaml ./
+
+# Install ALL dependencies (including devDependencies for development)
+RUN pnpm install --frozen-lockfile
+
+# Copy Prisma schema for client generation
+COPY prisma ./prisma/
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy source code (will be overwritten by volume mount in docker-compose)
+COPY . .
+
+# Expose application port
+EXPOSE 3000
+
+# Development command with hot reload
+# Note: --watch uses native Node.js file watcher
+CMD ["pnpm", "run", "start:dev"]

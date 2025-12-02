@@ -143,6 +143,71 @@ The **Dark Software Factory** is an AI-driven transformation that enables except
 - ClickUp workspace with API access
 - AI Provider accounts (Cursor, Windsurf, Antigravity)
 
+### Docker Development Environment
+
+#### Quick Start
+
+```bash
+# Start all services (PostgreSQL, RabbitMQ, App)
+docker-compose up -d
+
+# ⚠️ IMPORTANT: Run initial migration after FIRST start
+docker-compose exec app npx prisma migrate deploy
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Clean restart (removes volumes)
+docker-compose down -v && docker-compose up -d
+```
+
+#### Available Services
+
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| App | 3000 | http://localhost:3000 | AI Dev Orchestrator |
+| PostgreSQL | 5432 | - | Database |
+| RabbitMQ | 5672 | - | Message Queue |
+| RabbitMQ UI | 15672 | http://localhost:15672 | Management (guest/guest) |
+
+#### Optional Monitoring Stack
+
+```bash
+# Start with Prometheus + Grafana
+docker-compose --profile monitoring up -d
+```
+
+| Service | Port | URL | Credentials |
+|---------|------|-----|-------------|
+| Prometheus | 9090 | http://localhost:9090 | - |
+| Grafana | 3001 | http://localhost:3001 | admin/admin |
+
+#### Common Commands
+
+```bash
+# Run database migrations
+npm run docker:migrate
+
+# Seed database
+npm run docker:seed
+
+# Open Prisma Studio
+npm run docker:studio
+
+# Shell into app container
+npm run docker:shell
+
+# Rebuild containers
+npm run docker:rebuild
+```
+
+#### Hot Reload
+
+Source code changes are automatically detected. The app restarts within 2-3 seconds.
+
 ### Installation (Development)
 
 #### Option 1: Docker Compose (Recommended)
