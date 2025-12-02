@@ -1,7 +1,7 @@
 # Story 1.12: API Documentation with Swagger/OpenAPI
 
 **Epic:** 1 - Foundation & Development Environment  
-**Status:** Ready for Review  
+**Status:** Done  
 **Priority:** P2 - MEDIUM (Improves developer experience)  
 **Effort:** 3 story points  
 **ClickUp ID:** `86evnjw8y`  

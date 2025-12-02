@@ -28,7 +28,7 @@ export class AppController {
     private readonly appService: AppService,
     private readonly prismaService: PrismaService,
     private readonly rabbitMQService: RabbitMQService,
-  ) { }
+  ) {}
 
   @ApiTags('Health')
   @ApiOperation({ summary: 'Root endpoint' })
@@ -40,7 +40,10 @@ export class AppController {
   }
 
   @ApiTags('Health')
-  @ApiOperation({ summary: 'Health check', description: 'Returns health status of database and RabbitMQ' })
+  @ApiOperation({
+    summary: 'Health check',
+    description: 'Returns health status of database and RabbitMQ',
+  })
   @ApiResponse({ status: 200, type: HealthResponseDto })
   @Public()
   @Get('health')

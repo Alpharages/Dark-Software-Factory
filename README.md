@@ -192,24 +192,29 @@ docker-compose --profile monitoring up -d
 
 ```bash
 # Run database migrations
-npm run docker:migrate
+pnpm run docker:migrate
 
 # Seed database
-npm run docker:seed
+pnpm run docker:seed
 
 # Open Prisma Studio
-npm run docker:studio
+pnpm run docker:studio
 
 # Shell into app container
-npm run docker:shell
+pnpm run docker:shell
 
 # Rebuild containers
-npm run docker:rebuild
+pnpm run docker:rebuild
 ```
 
 #### Hot Reload
 
 Source code changes are automatically detected. The app restarts within 2-3 seconds.
+
+### Additional Resources
+
+- **[SETUP.md](./SETUP.md)** - Detailed setup guide with troubleshooting
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Development guidelines
 
 ### Installation (Development)
 
@@ -247,7 +252,7 @@ git clone https://github.com/alpharages/dark-software-factory.git
 cd dark-software-factory
 
 # Install dependencies
-npm install
+pnpm install
 
 # Start PostgreSQL (ensure it's running on port 5432)
 # Start RabbitMQ (ensure it's running on port 5672)
@@ -259,10 +264,10 @@ cp .env.example .env
 nano .env
 
 # Run database migrations
-npm run migration:run
+pnpm run migration:deploy
 
 # Start in development mode (hot reload)
-npm run start:dev
+pnpm run start:dev
 
 # API will be available at http://localhost:3000
 ```
@@ -335,7 +340,7 @@ Config validation error: JWT_SECRET is required. Generate with: openssl rand -ba
 
 ```bash
 # Start the application
-npm run start:dev
+pnpm run start:dev
 
 # If successful, you should see:
 # ✅ Database connected
@@ -364,7 +369,7 @@ LOG_LEVEL=debug              # error | warn | info | debug
 # ============================================
 # DATABASE
 # ============================================
-DATABASE_URL="postgresql://postgres:password@localhost:5432/dark_factory?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ai_orchestrator?schema=public"
 
 # ============================================
 # MESSAGE QUEUE
@@ -474,33 +479,33 @@ dark-software-factory/
 
 ```bash
 # Development
-npm run start:dev           # Start with hot reload
-npm run start:debug         # Start with debugger attached
-npm run build               # Production build
-npm run start:prod          # Start production build
+pnpm run start:dev           # Start with hot reload
+pnpm run start:debug         # Start with debugger attached
+pnpm run build               # Production build
+pnpm run start:prod          # Start production build
 
 # Testing
-npm run test                # Run unit tests
-npm run test:watch          # Tests in watch mode
-npm run test:cov            # Generate coverage report (target: >80%)
-npm run test:e2e            # Run end-to-end tests
+pnpm run test                # Run unit tests
+pnpm run test:watch          # Tests in watch mode
+pnpm run test:cov            # Generate coverage report (target: >80%)
+pnpm run test:e2e            # Run end-to-end tests
 
 # Code Quality
-npm run lint                # ESLint check
-npm run lint:fix            # ESLint fix
-npm run format              # Prettier format
-npm run format:check        # Prettier check only
+pnpm run lint                # ESLint check & fix
+pnpm run format              # Prettier format
+pnpm run format:check        # Prettier check only
+pnpm run check               # Full quality check (lint + test + build)
 
 # Database
-npm run migration:generate  # Generate Prisma migration
-npm run migration:run       # Apply pending migrations
-npm run migration:revert    # Revert last migration
-npm run db:seed             # Seed database with test data
-npm run db:reset            # Reset database (dev only!)
+pnpm run migration:dev       # Create & apply migration (dev)
+pnpm run migration:deploy    # Apply migrations (prod/CI)
+pnpm run db:seed             # Seed database with test data
+pnpm run db:studio           # Open Prisma Studio
 
-# Monitoring
-npm run logs                # View application logs
-npm run metrics             # View Prometheus metrics (http://localhost:9090/metrics)
+# Docker
+pnpm run docker:up           # Start services
+pnpm run docker:down         # Stop services
+pnpm run docker:logs         # View logs
 ```
 
 ### Development Guidelines
@@ -541,20 +546,20 @@ chore: update dependencies
 
 ```bash
 # Unit tests (target: >80% coverage)
-npm run test
+pnpm run test
 
 # Watch mode (for TDD)
-npm run test:watch
+pnpm run test:watch
 
 # Coverage report
-npm run test:cov
+pnpm run test:cov
 open coverage/lcov-report/index.html
 
 # E2E tests (integration tests)
-npm run test:e2e
+pnpm run test:e2e
 
 # Specific test file
-npm run test -- ticket-intake.service.spec.ts
+pnpm run test -- ticket-intake.service.spec.ts
 ```
 
 ### Test Structure
@@ -602,7 +607,7 @@ All code must pass:
 - ✅ **Linting:** ESLint with no errors
 - ✅ **Testing:** All tests passing
 - ✅ **Coverage:** Minimum 80% code coverage
-- ✅ **Security:** No critical vulnerabilities (npm audit)
+- [ ] **Security:** No critical vulnerabilities (pnpm audit)
 - ✅ **Type Safety:** TypeScript compilation with no errors
 
 ---
@@ -614,7 +619,7 @@ All code must pass:
 Before deploying to production, ensure:
 
 - [ ] All environment variables configured in production environment
-- [ ] Database migrations applied (`npm run migration:run`)
+- [ ] Database migrations applied (`pnpm run migration:deploy`)
 - [ ] SSL/TLS certificates configured for HTTPS
 - [ ] GitHub webhooks pointing to production URL
 - [ ] ClickUp webhooks pointing to production URL
@@ -724,7 +729,7 @@ We welcome contributions! Please follow these guidelines:
 2. **Create a feature branch** (`git checkout -b feature/DSF-XXX-description`)
 3. **Make your changes** (follow code style guidelines)
 4. **Write/update tests** (maintain >80% coverage)
-5. **Run quality checks** (`npm run lint && npm run test`)
+5. **Run quality checks** (`pnpm run lint && pnpm run test`)
 6. **Commit your changes** (use conventional commits)
 7. **Push to your fork** (`git push origin feature/DSF-XXX-description`)
 8. **Create a Pull Request** with detailed description
@@ -810,7 +815,7 @@ Found a bug? Have a feature request?
 - **Secrets Management:** All secrets in environment variables (never committed)
 - **Data Encryption:** AES-256-GCM for sensitive data at rest (NFR-S3)
 - **API Security:** Rate limiting, CORS, helmet.js protection
-- **Dependency Scanning:** Automated npm audit in CI/CD
+- **Dependency Scanning:** Automated pnpm audit in CI/CD
 - **Code Scanning:** Semgrep security rules in QA pipeline
 - **Error Handling:** No sensitive data in error messages (NFR-S4)
 

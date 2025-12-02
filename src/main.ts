@@ -50,13 +50,17 @@ async function bootstrap() {
       .setTitle('Dark Software Factory API')
       .setDescription(
         'AI Dev Tool Orchestrator API - Automates the pipeline from PM tickets to deployed code.\n\n' +
-        '## Authentication\n' +
-        'Most endpoints require JWT Bearer authentication. Use the Authorize button to set your token.\n\n' +
-        '## Roles\n' +
-        'Valid roles: `ADMIN`, `MANAGER`, `PM`, `TL`, `QA`, `VIEWER`',
+          '## Authentication\n' +
+          'Most endpoints require JWT Bearer authentication. Use the Authorize button to set your token.\n\n' +
+          '## Roles\n' +
+          'Valid roles: `ADMIN`, `MANAGER`, `PM`, `TL`, `QA`, `VIEWER`',
       )
       .setVersion('1.0.0')
-      .setContact('Dark Software Factory Team', 'https://github.com/alpharages/dark-software-factory', 'support@alpharages.com')
+      .setContact(
+        'Dark Software Factory Team',
+        'https://github.com/alpharages/dark-software-factory',
+        'support@alpharages.com',
+      )
       .addServer('http://localhost:3000', 'Development')
       .addServer('https://staging.darksoftwarefactory.com', 'Staging')
       .addBearerAuth(

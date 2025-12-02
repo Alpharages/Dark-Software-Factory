@@ -82,7 +82,6 @@ describe('AppController', () => {
   });
 });
 
-
 describe('Swagger Configuration', () => {
   let module: TestingModule;
 
