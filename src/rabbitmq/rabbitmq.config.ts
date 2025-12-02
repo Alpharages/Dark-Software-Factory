@@ -40,6 +40,10 @@ export const createQueueConfig = (queueName: string, url: string): RabbitMQConfi
  * Queue names (must match architecture naming convention)
  */
 export const QUEUE_NAMES = {
+  // Story 2.1-2.2: Ticket intake pipeline
+  TICKET_INTAKE: 'ticket-intake-queue',
+  AI_ROUTING: 'ai-routing-queue',
+  // Core execution queues
   AI_EXECUTION: 'ai-execution-queue',
   QA_CHECK: 'qa-check-queue',
   DEPLOYMENT: 'deployment-queue',

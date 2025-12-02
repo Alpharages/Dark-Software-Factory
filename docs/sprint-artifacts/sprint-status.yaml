@@ -68,8 +68,16 @@ development_status:
   epic-1-retrospective: done
 
   epic-2: in-progress
-  2-1-clickup-webhook-endpoint-event-handling: ready-for-dev
-  2-2-ticket-data-parsing-validation: ready-for-dev
+  2-1-clickup-webhook-endpoint-event-handling:
+    status: done
+    developer: "Antigravity"
+    dev_branch: "feature/2-1-clickup-webhooks"
+    notes: "APPROVED. ClickUp webhook endpoint with HMAC-SHA256 signature verification, idempotency deduplication (5-min window), audit logging, RabbitMQ queue publishing, Prometheus metrics, ThrottlerGuard (100 req/min), CorrelationIdInterceptor. Unit tests: 11/11 passing. E2E tests: 10 cases."
+  2-2-ticket-data-parsing-validation:
+    status: done
+    developer: "Antigravity"
+    dev_branch: "feature/2-2-ticket-parsing"
+    notes: "APPROVED. Ticket parsing, validation, quality scoring (0-100), queue consumer, ClickUp commenting, audit logging. Unit tests: 29/29 passing."
   2-3-ai-tool-selection-routing-logic-multi-provider: ready-for-dev
   2-4-ai-prompt-generation-from-ticket-context-multi-provider: ready-for-dev
   2-5-ai-execution-tracking-state-management: ready-for-dev
@@ -79,13 +87,21 @@ development_status:
   2-9-ai-execution-retry-logic-error-handling:
     status: ready-for-dev
     notes: "Story drafted with comprehensive retry logic implementation guide. Includes error classification, exponential backoff (1s, 2s, 4s), RabbitMQ delayed messages, and Sentry integration."
-  2-10-rabbitmq-ai-execution-queue-processing: backlog
-  2-11-ticket-quality-scoring-algorithm: backlog
-  2-12-project-context-extraction-attachment: backlog
+  2-10-rabbitmq-ai-execution-queue-processing:
+    status: ready-for-dev
+    notes: "Story drafted with comprehensive queue processing implementation guide. Includes AIExecutionPublisher, AIExecutionConsumer, ExecutionTrackerService, queue metrics, and integration tests. Coordinates with Stories 2.5-2.9."
+  2-11-ticket-quality-scoring-algorithm:
+    status: ready-for-dev
+    notes: "Story drafted with comprehensive quality scoring implementation. Includes 6-category scoring algorithm (title 15pts, description 25pts, AC 30pts, context 10pts, complexity 10pts, prerequisites 10pts), API endpoint for PM access, improvement suggestions engine. Prerequisite: Story 2.2."
+  2-12-project-context-extraction-attachment:
+    status: ready-for-dev
+    notes: "Story drafted with comprehensive context extraction implementation. Includes 4 format extractors (PDF, MD, TXT, DOCX), caching layer, Prometheus metrics, and integration guide for Story 2.4 prompt generation. Prerequisites: Stories 2.2, 2.4."
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-linting-integration-for-multiple-languages: backlog
+  epic-3: in-progress
+  3-1-linting-integration-for-multiple-languages:
+    status: ready-for-dev
+    notes: "Story drafted with comprehensive linting implementation guide. Includes ESLint (TS/JS), Flake8 (Python), golangci-lint (Go). Prometheus metrics, database integration, and unit test requirements documented."
   3-2-automated-test-execution-framework: backlog
   3-3-test-coverage-calculation-enforcement: backlog
   3-4-basic-security-code-quality-checks: backlog

@@ -11,6 +11,7 @@ import { MetricsController } from './metrics.controller';
 import { HttpCollector, BusinessCollector, SystemCollector, QueueCollector } from './collectors';
 import {
   HTTP_METRICS,
+  WEBHOOK_METRICS,
   TICKET_METRICS,
   AI_METRICS,
   QA_METRICS,
@@ -67,6 +68,34 @@ import {
       name: HTTP_METRICS.REQUEST_TOTAL,
       help: 'Total number of HTTP requests',
       labelNames: [LABELS.METHOD, LABELS.PATH, LABELS.STATUS_CODE],
+    }),
+
+    // Webhook Metrics (Story 2.1 - NFR-O5)
+    makeCounterProvider({
+      name: WEBHOOK_METRICS.RECEIVED_TOTAL,
+      help: 'Total number of webhooks received',
+      labelNames: ['event_type'],
+    }),
+    makeCounterProvider({
+      name: WEBHOOK_METRICS.PROCESSED_TOTAL,
+      help: 'Total number of webhooks successfully processed',
+      labelNames: ['event_type', LABELS.STATUS],
+    }),
+    makeHistogramProvider({
+      name: WEBHOOK_METRICS.PROCESSING_DURATION,
+      help: 'Webhook processing duration in seconds',
+      labelNames: ['event_type'],
+      buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+    }),
+    makeCounterProvider({
+      name: WEBHOOK_METRICS.ERRORS_TOTAL,
+      help: 'Total number of webhook processing errors',
+      labelNames: ['event_type', LABELS.ERROR_TYPE],
+    }),
+    makeCounterProvider({
+      name: WEBHOOK_METRICS.DUPLICATES_TOTAL,
+      help: 'Total number of duplicate webhooks detected',
+      labelNames: ['event_type'],
     }),
 
     // Ticket Metrics

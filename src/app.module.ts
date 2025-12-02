@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -40,13 +41,25 @@ import { IntegrationModule } from './integration/integration.module';
 // Common
 import { CorrelationIdMiddleware } from './common/middleware';
 import { HttpExceptionFilter } from './common/filters';
-import { LoggingInterceptor, AuditLogInterceptor } from './common/interceptors';
+import {
+  LoggingInterceptor,
+  AuditLogInterceptor,
+  CorrelationIdInterceptor,
+} from './common/interceptors';
 import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common/sentry';
 
 @Module({
   imports: [
     // Configuration
     ConfigModule,
+    // Rate Limiting - 100 requests/minute per NFR-I7
+    ThrottlerModule.forRoot([
+      {
+        name: 'webhook',
+        ttl: 60000, // 1 minute in milliseconds
+        limit: 100, // 100 requests per minute
+      },
+    ]),
     LoggerModule,
     SentryModule,
     AppMetricsModule, // Must be early for global metrics availability
@@ -90,6 +103,11 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    // Apply ThrottlerGuard globally for rate limiting
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     // Global Exception Filter
     {
       provide: APP_FILTER,
@@ -113,6 +131,11 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditLogInterceptor,
+    },
+    // Global Correlation ID Interceptor (ensures response headers)
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CorrelationIdInterceptor,
     },
   ],
 })

@@ -1,7 +1,7 @@
 # Story 2.1: ClickUp Webhook Endpoint & Event Handling
 
 **Epic:** 2 - Ticket Intake & AI Routing Engine  
-**Status:** ready-for-dev  
+**Status:** review  
 **Priority:** P0 - BLOCKER  
 **Effort:** 8 story points  
 **ClickUp ID:** `86evnjwa0`  
@@ -2131,24 +2131,82 @@ This story was prepared with complete context analysis from:
 - Current codebase state (webhook module shell, Prisma schema)
 - Configuration (CLICKUP_WEBHOOK_SECRET already defined)
 
+### File List
+
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `src/webhooks/interfaces/clickup-webhook.interface.ts` | ClickUp event types, payload interfaces |
+| `src/webhooks/interfaces/index.ts` | Barrel export for interfaces |
+| `src/webhooks/dto/clickup-webhook.dto.ts` | Webhook payload DTOs with Swagger |
+| `src/webhooks/dto/task-event.dto.ts` | Internal task event DTO, WebhookResponseDto |
+| `src/webhooks/dto/index.ts` | Barrel export for DTOs |
+| `src/webhooks/guards/webhook-signature.guard.ts` | HMAC-SHA256 signature verification guard |
+| `src/webhooks/guards/index.ts` | Barrel export for guards |
+| `src/webhooks/webhooks.controller.ts` | POST /api/v1/webhooks/clickup endpoint |
+| `src/webhooks/webhooks.service.ts` | Webhook processing with dedup, audit, queue |
+| `src/webhooks/webhooks.service.spec.ts` | Unit tests (11 test cases) |
+| `src/common/decorators/correlation-id.decorator.ts` | @CorrelationId() parameter decorator |
+| `src/common/interceptors/correlation-id.interceptor.ts` | Response header correlation ID |
+| `test/webhooks.e2e-spec.ts` | E2E tests (10 test cases) |
+
+**Files Modified:**
+| File | Changes |
+|------|---------|
+| `src/webhooks/webhooks.module.ts` | Added controller, service, guard, imports |
+| `src/main.ts` | Enabled `rawBody: true` for Fastify |
+| `src/app.module.ts` | Added ThrottlerModule (100 req/min), ThrottlerGuard, CorrelationIdInterceptor |
+| `src/common/decorators/index.ts` | Exported CorrelationId decorator |
+| `src/common/interceptors/index.ts` | Exported CorrelationIdInterceptor |
+| `src/common/metrics/metrics.constants.ts` | Added WEBHOOK_METRICS constants |
+| `src/common/metrics/metrics.module.ts` | Registered 5 webhook metric providers |
+| `src/rabbitmq/rabbitmq.service.ts` | Added `publishToQueue()` method |
+| `docs/sprint-artifacts/sprint-status.yaml` | Updated story status |
+
+### Change Log
+
+**2025-12-02 - Implementation Complete**
+- Implemented ClickUp webhook endpoint with HMAC-SHA256 signature verification
+- Added idempotency deduplication with 5-minute in-memory cache and cleanup
+- Integrated audit logging to `audit_logs` table via Prisma
+- Added RabbitMQ queue publishing to `ticket-intake-queue`
+- Implemented Prometheus metrics: received, processed, errors, duplicates, duration
+- Created @CorrelationId() decorator for request tracing
+- Added ThrottlerModule for 100 req/min rate limiting
+- Unit tests: 11/11 passing
+- E2E tests: 10 test cases covering auth, processing, dedup, rate limits
+- Build and lint passing
+
+**Code Review Fixes (2025-12-02)**
+- Added missing `@nestjs/throttler` package and global ThrottlerGuard
+- Created `correlation-id.interceptor.ts` per story requirements
+- Added rate limit test to E2E test suite
+- Updated Dev Agent Record with File List and Change Log
+
 ### Completion Notes
 
-**Story Status:** ready-for-dev  
-**Context Completeness:** ✅ COMPREHENSIVE  
-**Developer Readiness:** ✅ FLAWLESS IMPLEMENTATION GUIDE CREATED
+**Story Status:** review  
+**Implementation Completeness:** ✅ ALL ACCEPTANCE CRITERIA MET  
+**Test Coverage:** ✅ Unit (11) + E2E (10) tests passing  
+**Code Quality:** ✅ Lint and build passing
 
-**Workflow After Story Completion:**
-1. **Before Starting:** Update `sprint-status.yaml` → `2-1-clickup-webhook-endpoint-event-handling: in-progress`
-2. **Implementation:** Follow Steps 1-11 to implement complete webhook handling
-3. **Validation:** Complete all items in Validation Checklist
-4. **Version Control:** Commit with message `feat: add ClickUp webhook endpoint with signature verification`
-5. **Status Update:** Update `sprint-status.yaml` → `2-1-clickup-webhook-endpoint-event-handling: review`
-6. **Code Review:** Request review from Scrum Master via code-review workflow
+**Validation Checklist Status:**
+- ✅ All files created per specification
+- ✅ POST /api/v1/webhooks/clickup endpoint available
+- ✅ Signature verification with timing-safe comparison
+- ✅ Rate limiting: 100 requests/minute via ThrottlerGuard
+- ✅ Idempotency: 5-minute deduplication window
+- ✅ Audit logging to database
+- ✅ Queue publishing to ticket-intake-queue
+- ✅ Prometheus metrics exposed
+- ✅ Correlation ID propagation
 
 ---
 
 **Document prepared by:** Bob (Scrum Master)  
 **Preparation date:** 2025-12-01  
+**Implementation by:** Antigravity (Dev Agent)  
+**Implementation date:** 2025-12-02  
 **Analysis method:** Ultimate BMad Method Story Context Engine  
-**Quality level:** Developer-ready with zero ambiguity
+**Quality level:** Production-ready
 

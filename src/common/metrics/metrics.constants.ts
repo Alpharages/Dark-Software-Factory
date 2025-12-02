@@ -17,6 +17,15 @@ export const HTTP_METRICS = {
   RESPONSE_SIZE: `${METRICS_CONSTANTS.PREFIX}http_response_size_bytes`,
 } as const;
 
+// Webhook Metrics (Story 2.1)
+export const WEBHOOK_METRICS = {
+  RECEIVED_TOTAL: `${METRICS_CONSTANTS.PREFIX}webhook_received_total`,
+  PROCESSED_TOTAL: `${METRICS_CONSTANTS.PREFIX}webhook_processed_total`,
+  PROCESSING_DURATION: `${METRICS_CONSTANTS.PREFIX}webhook_processing_duration_seconds`,
+  ERRORS_TOTAL: `${METRICS_CONSTANTS.PREFIX}webhook_errors_total`,
+  DUPLICATES_TOTAL: `${METRICS_CONSTANTS.PREFIX}webhook_duplicates_total`,
+} as const;
+
 // Business Metrics - Tickets
 export const TICKET_METRICS = {
   RECEIVED_TOTAL: `${METRICS_CONSTANTS.PREFIX}tickets_received_total`,

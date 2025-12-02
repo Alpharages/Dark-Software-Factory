@@ -78,6 +78,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
     // Create main queues with dead letter configuration
     const queues = [
+      // Story 2.1-2.2: Ticket intake pipeline
+      QUEUE_NAMES.TICKET_INTAKE,
+      QUEUE_NAMES.AI_ROUTING,
+      // Core execution queues
       QUEUE_NAMES.AI_EXECUTION,
       QUEUE_NAMES.QA_CHECK,
       QUEUE_NAMES.DEPLOYMENT,
@@ -158,5 +162,49 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       messageCount: queue.messageCount,
       consumerCount: queue.consumerCount,
     };
+  }
+
+  /**
+   * Publish message to a specific queue
+   *
+   * Per Story 2.1: Webhook events published to ticket-intake-queue
+   *
+   * @param queue - Queue name
+   * @param message - Message payload
+   * @param options - Publish options
+   */
+  async publishToQueue(
+    queue: string,
+    message: unknown,
+    options?: {
+      correlationId?: string;
+      persistent?: boolean;
+      headers?: Record<string, string>;
+    },
+  ): Promise<void> {
+    if (!this.channel) {
+      throw new Error('RabbitMQ channel not initialized');
+    }
+
+    // Ensure queue exists
+    await this.channel.assertQueue(queue, {
+      durable: true,
+      deadLetterExchange: EXCHANGE_NAMES.DEAD_LETTER_EXCHANGE,
+      deadLetterRoutingKey: `dlx-${queue}`,
+      messageTtl: 3600000, // 1 hour
+    });
+
+    // Publish message
+    const messageBuffer = Buffer.from(JSON.stringify(message));
+
+    this.channel.sendToQueue(queue, messageBuffer, {
+      persistent: options?.persistent ?? true,
+      correlationId: options?.correlationId,
+      headers: options?.headers,
+      contentType: 'application/json',
+      timestamp: Date.now(),
+    });
+
+    this.logger.debug(`Published message to ${queue}`);
   }
 }

@@ -37,6 +37,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }), // Disable Fastify's default logger
+    {
+      // Enable raw body for webhook signature verification (Story 2.1)
+      rawBody: true,
+    },
   );
 
   const logger = app.get(LoggerService);
