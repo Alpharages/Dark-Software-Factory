@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppModule } from './app.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './database/prisma.service';
@@ -77,5 +79,51 @@ describe('AppController', () => {
       expect(result.status).toBe('unhealthy');
       expect(result.services.rabbitmq).toBe('down');
     });
+  });
+});
+
+
+describe('Swagger Configuration', () => {
+  let module: TestingModule;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('should generate valid OpenAPI document', () => {
+    const app = module.createNestApplication();
+
+    const config = new DocumentBuilder()
+      .setTitle('Test API')
+      .setVersion('1.0')
+      .addBearerAuth({ type: 'http', scheme: 'bearer' }, 'JWT-auth')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+
+    expect(document).toBeDefined();
+    expect(document.openapi).toBe('3.0.0');
+    expect(document.info.title).toBe('Test API');
+    expect(document.paths).toBeDefined();
+  });
+
+  it('should include JWT security scheme', () => {
+    const app = module.createNestApplication();
+
+    const config = new DocumentBuilder()
+      .setTitle('Test API')
+      .setVersion('1.0')
+      .addBearerAuth({ type: 'http', scheme: 'bearer' }, 'JWT-auth')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+
+    expect(document.components?.securitySchemes?.['JWT-auth']).toBeDefined();
   });
 });

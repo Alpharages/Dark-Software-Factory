@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LoggerService } from '../../common/logger';
 import { JwtStrategy } from './jwt.strategy';
 import { Role } from '../constants/roles.enum';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
@@ -21,6 +22,16 @@ describe('JwtStrategy', () => {
               }
               return undefined;
             }),
+          },
+        },
+        {
+          provide: LoggerService,
+          useValue: {
+            setContext: jest.fn(),
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
           },
         },
       ],

@@ -29,6 +29,7 @@ if (process.env.SENTRY_DSN) {
 // Now import NestJS and app modules
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from './common/logger';
 
@@ -40,6 +41,49 @@ async function bootstrap() {
 
   const logger = app.get(LoggerService);
   app.useLogger(logger);
+
+  // Only enable Swagger in non-production environments
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (!isProduction) {
+    const config = new DocumentBuilder()
+      .setTitle('Dark Software Factory API')
+      .setDescription(
+        'AI Dev Tool Orchestrator API - Automates the pipeline from PM tickets to deployed code.\n\n' +
+        '## Authentication\n' +
+        'Most endpoints require JWT Bearer authentication. Use the Authorize button to set your token.\n\n' +
+        '## Roles\n' +
+        'Valid roles: `ADMIN`, `MANAGER`, `PM`, `TL`, `QA`, `VIEWER`',
+      )
+      .setVersion('1.0.0')
+      .setContact('Dark Software Factory Team', 'https://github.com/alpharages/dark-software-factory', 'support@alpharages.com')
+      .addServer('http://localhost:3000', 'Development')
+      .addServer('https://staging.darksoftwarefactory.com', 'Staging')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Enter JWT token' },
+        'JWT-auth',
+      )
+      .addTag('Health', 'System health and status endpoints')
+      .addTag('Auth', 'Authentication and user profile endpoints')
+      .addTag('Admin', 'Administrative endpoints (elevated permissions required)')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+
+    await SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+        docExpansion: 'list',
+        filter: true,
+        showRequestDuration: true,
+      },
+      customSiteTitle: 'Dark Software Factory API',
+    });
+
+    logger.log(`Swagger docs available at: http://localhost:3000/api/docs`);
+  }
 
   await app.listen(3000, '0.0.0.0');
   logger.log(`Application is running on: ${await app.getUrl()}`);

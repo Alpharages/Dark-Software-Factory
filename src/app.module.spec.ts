@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { register } from 'prom-client';
 import { AppModule } from './app.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
@@ -22,6 +23,9 @@ describe('AppModule', () => {
   let module: TestingModule;
 
   beforeEach(async () => {
+    // Clear metrics registry to avoid conflicts
+    register.clear();
+
     // Note: Environment variables are set globally in test/jest-setup.ts
     module = await Test.createTestingModule({
       imports: [AppModule],

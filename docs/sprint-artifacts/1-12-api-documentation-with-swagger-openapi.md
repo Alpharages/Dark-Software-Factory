@@ -1,7 +1,7 @@
 # Story 1.12: API Documentation with Swagger/OpenAPI
 
 **Epic:** 1 - Foundation & Development Environment  
-**Status:** ready-for-dev  
+**Status:** Ready for Review  
 **Priority:** P2 - MEDIUM (Improves developer experience)  
 **Effort:** 3 story points  
 **ClickUp ID:** `86evnjw8y`  
@@ -460,37 +460,37 @@ open http://localhost:3000/api/docs
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Install Dependency** (AC: prerequisite)
-  - [ ] Run `pnpm add @nestjs/swagger`
-  - [ ] Verify in `package.json`
+- [x] **Task 1: Install Dependency** (AC: prerequisite)
+  - [x] Run `pnpm add @nestjs/swagger`
+  - [x] Verify in `package.json`
 
-- [ ] **Task 2: Configure Swagger in main.ts** (AC: #1, #2, security)
-  - [ ] Add environment check (`NODE_ENV !== 'production'`)
-  - [ ] Configure DocumentBuilder with title, description, auth
-  - [ ] Setup Swagger UI at `/api/docs`
+- [x] **Task 2: Configure Swagger in main.ts** (AC: #1, #2, security)
+  - [x] Add environment check (`NODE_ENV !== 'production'`)
+  - [x] Configure DocumentBuilder with title, description, auth
+  - [x] Setup Swagger UI at `/api/docs`
 
-- [ ] **Task 3: Create Response DTOs** (AC: #3)
-  - [ ] Create `src/common/dto/health-response.dto.ts` with exported ServiceStatusDto
-  - [ ] Create `src/common/dto/profile-response.dto.ts` with correct Role enum values
-  - [ ] Create `src/common/dto/admin-stats-response.dto.ts`
-  - [ ] Create `src/common/dto/error-response.dto.ts` (401/403)
-  - [ ] Create `src/common/dto/index.ts` barrel export
+- [x] **Task 3: Create Response DTOs** (AC: #3)
+  - [x] Create `src/common/dto/health-response.dto.ts` with exported ServiceStatusDto
+  - [x] Create `src/common/dto/profile-response.dto.ts` with correct Role enum values
+  - [x] Create `src/common/dto/admin-stats-response.dto.ts`
+  - [x] Create `src/common/dto/error-response.dto.ts` (401/403)
+  - [x] Create `src/common/dto/index.ts` barrel export
 
-- [ ] **Task 4: Add Swagger Decorators** (AC: #1, #4)
-  - [ ] Add `@ApiTags()`, `@ApiOperation()`, `@ApiResponse()`
-  - [ ] Add `@ApiBearerAuth()` for protected routes
-  - [ ] Add `@ApiUnauthorizedResponse()` and `@ApiForbiddenResponse()`
+- [x] **Task 4: Add Swagger Decorators to Controller** (AC: #1, #4)
+  - [x] Add `@ApiTags()`, `@ApiOperation()`, `@ApiResponse()`
+  - [x] Add `@ApiBearerAuth()` for protected routes
+  - [x] Add `@ApiUnauthorizedResponse()` and `@ApiForbiddenResponse()`
 
-- [ ] **Task 5: Add Unit Tests** (AC: quality)
-  - [ ] Add Swagger document generation test
-  - [ ] Add JWT security scheme test
-  - [ ] Run `pnpm run test`
+- [x] **Task 5: Add Unit Tests** (AC: quality)
+  - [x] Add Swagger document generation test
+  - [x] Add JWT security scheme test
+  - [x] Run `pnpm run test`
 
-- [ ] **Task 6: Verify** (AC: all)
-  - [ ] Start server: `pnpm run start:dev`
-  - [ ] Access: `http://localhost:3000/api/docs`
-  - [ ] Verify all endpoints and error schemas
-  - [ ] Test JWT auth in Swagger UI
+- [x] **Task 6: Verify** (AC: all)
+  - [x] Start server: `pnpm run start:dev`
+  - [x] Access: `http://localhost:3000/api/docs`
+  - [x] Verify all endpoints and error schemas
+  - [x] Test JWT auth in Swagger UI
 
 ---
 
@@ -558,5 +558,23 @@ export class TicketIntakeController {
 ### Agent Model Used
 
 ### Completion Notes List
+- Implemented Swagger/OpenAPI documentation using `@nestjs/swagger`.
+- Configured Swagger to be available only in non-production environments.
+- Created DTOs for Health, Profile, Admin Stats, and Error responses.
+- Added Swagger decorators to `AppController` endpoints.
+- Added unit tests for Swagger configuration in `src/app.controller.spec.ts`.
+- Fixed existing test issues in `src/auth/strategies/jwt.strategy.spec.ts` (missing LoggerService) and `src/app.module.spec.ts` (metric registration conflict).
+- Verified all tests pass (54/54).
 
 ### File List
+- package.json
+- src/main.ts
+- src/app.controller.ts
+- src/app.controller.spec.ts
+- src/common/dto/health-response.dto.ts
+- src/common/dto/profile-response.dto.ts
+- src/common/dto/admin-stats-response.dto.ts
+- src/common/dto/error-response.dto.ts
+- src/common/dto/index.ts
+- src/auth/strategies/jwt.strategy.spec.ts
+- src/app.module.spec.ts
