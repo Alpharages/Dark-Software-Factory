@@ -11,7 +11,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private channel: any = null;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   async onModuleInit() {
     await this.connect();
@@ -87,6 +87,16 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       QUEUE_NAMES.DEPLOYMENT,
       QUEUE_NAMES.MONITORING,
     ];
+
+    // Create wait queue for AI routing retries (Story 2.3 fix)
+    // Messages here wait for 5 minutes (TTL) then dead-letter back to AI_ROUTING
+    await this.channel.assertQueue(QUEUE_NAMES.AI_ROUTING_WAIT, {
+      durable: true,
+      deadLetterExchange: '', // Default exchange
+      deadLetterRoutingKey: QUEUE_NAMES.AI_ROUTING, // Route back to main queue
+      messageTtl: 300000, // 5 minutes
+    });
+    this.logger.log(`Queue created: ${QUEUE_NAMES.AI_ROUTING_WAIT} (TTL: 5m)`);
 
     for (const queueName of queues) {
       await this.channel.assertQueue(queueName, {

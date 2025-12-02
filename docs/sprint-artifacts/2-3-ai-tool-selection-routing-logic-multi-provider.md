@@ -52,6 +52,55 @@ So that each task complexity level is handled by the optimal AI provider.
 
 ---
 
+## Tasks/Subtasks
+
+### Phase 1: Database Schema & Infrastructure
+- [ ] Update AIProvider enum in Prisma schema (CURSOR_HEADLESS, CLAUDE_CODE)
+- [ ] Add routing decision fields to Execution model (complexity_score, complexity_breakdown, routing_reason, fallback_used, original_provider)
+- [ ] Run `npx prisma migrate dev --name update_ai_provider_enum`
+- [ ] Run `npx prisma generate` to regenerate TypeScript types
+- [ ] Verify AI_ROUTING queue exists in rabbitmq.config.ts (or add if missing from Story 2.2)
+- [ ] Add ai-routing-queue to setupQueuesAndExchanges() in rabbitmq.service.ts
+
+### Phase 2: Configuration & Interfaces  
+- [ ] Add AI provider configuration to src/config/configuration.ts
+- [ ] Add environment variable validation to src/config/env.validation.ts
+- [ ] Create src/ai-routing/interfaces/ai-routing.interface.ts
+- [ ] Create src/ai-routing/interfaces/index.ts barrel export
+- [ ] Create src/ai-routing/dto/routing-request.dto.ts
+- [ ] Create src/ai-routing/dto/routing-decision.dto.ts
+- [ ] Create src/ai-routing/dto/index.ts barrel export
+
+### Phase 3: Core Services
+- [ ] Create src/ai-routing/complexity-scorer.service.ts with scoring algorithm
+- [ ] Create src/ai-routing/provider-health.service.ts with health monitoring
+- [ ] Create src/ai-routing/ai-routing.service.ts with main routing logic
+- [ ] Create src/ai-routing/ai-routing.consumer.ts extending RabbitMQConsumerBase
+
+### Phase 4: Module Setup & Metrics
+- [ ] Update src/ai-routing/ai-routing.module.ts with all providers
+- [ ] Configure Prometheus metrics (ai_routing_total, ai_routing_duration_seconds, ai_complexity_score, ai_provider_health, ai_provider_active_executions, ai_provider_availability_total)
+- [ ] Import DatabaseModule and RabbitmqModule
+- [ ] Export services for use by other modules
+
+### Phase 5: Testing
+- [ ] Write unit tests for ProviderHealthService (src/ai-routing/provider-health.service.spec.ts)
+- [ ] Write unit tests for ComplexityScorerService (src/ai-routing/complexity-scorer.service.spec.ts)
+- [ ] Write unit tests for AIRoutingService (src/ai-routing/ai-routing.service.spec.ts)
+- [ ] Write integration tests for AIRoutingConsumer (src/ai-routing/ai-routing.consumer.spec.ts)
+- [ ] Run `pnpm test` and ensure all tests pass
+- [ ] Run `pnpm test:e2e` if applicable
+
+### Phase 6: Validation & Documentation
+- [ ] Complete validation checklist (database, RabbitMQ, configuration, complexity scoring, routing logic, provider health, ticket status, retry logic, Prometheus metrics, audit logging)
+- [ ] Update .env.example with AI provider environment variables
+- [ ] Verify all acceptance criteria are met
+- [ ] Update File List section with all created/modified files
+- [ ] Add completion notes to Dev Agent Record
+- [ ] Update sprint-status.yaml to 'review'
+
+---
+
 ## Quick Implementation Summary (TL;DR)
 
 **Step 0: Install Dependencies**

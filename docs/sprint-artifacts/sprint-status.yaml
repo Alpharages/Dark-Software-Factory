@@ -78,7 +78,11 @@ development_status:
     developer: "Antigravity"
     dev_branch: "feature/2-2-ticket-parsing"
     notes: "APPROVED. Ticket parsing, validation, quality scoring (0-100), queue consumer, ClickUp commenting, audit logging. Unit tests: 29/29 passing."
-  2-3-ai-tool-selection-routing-logic-multi-provider: ready-for-dev
+  2-3-ai-tool-selection-routing-logic-multi-provider:
+    status: done
+    developer: "Antigravity"
+    dev_branch: "feature/2-3-ai-routing"
+    notes: "APPROVED. Implemented AI routing logic with ComplexityScorerService (5-factor analysis), ProviderHealthService (health/load monitoring), and AIRoutingService. Integrated RabbitMQ consumer/publisher. Added comprehensive unit tests. FIXED Code Review findings: Implemented 'Wait Queue' pattern for 5-minute delayed retries when no provider is available."
   2-4-ai-prompt-generation-from-ticket-context-multi-provider: ready-for-dev
   2-5-ai-execution-tracking-state-management: ready-for-dev
   2-6-ai-provider-integration-cursor-cli-headless-mode: ready-for-dev
@@ -102,8 +106,12 @@ development_status:
   3-1-linting-integration-for-multiple-languages:
     status: ready-for-dev
     notes: "Story drafted with comprehensive linting implementation guide. Includes ESLint (TS/JS), Flake8 (Python), golangci-lint (Go). Prometheus metrics, database integration, and unit test requirements documented."
-  3-2-automated-test-execution-framework: backlog
-  3-3-test-coverage-calculation-enforcement: backlog
+  3-2-automated-test-execution-framework:
+    status: ready-for-dev
+    notes: "Story drafted with comprehensive test execution framework implementation guide. Includes DockerExecutorService for isolated test execution, TestOutputParser for Jest/PyTest/Go/Mocha formats, framework auto-detection, Prometheus metrics, and database integration. Prerequisites: Stories 3.1, 1.3, 1.8, 1.9."
+  3-3-test-coverage-calculation-enforcement:
+    status: ready-for-dev
+    notes: "Story drafted and quality-reviewed. Includes CoverageService, CoverageBaselineService, CoverageFileParser for file-level coverage, delta calculation, configurable thresholds (global + per-project), PM notification via Socket.IO, HTML report generation, and Prometheus metrics. Quality review fixed: ErrorCategory.QA_AUTOMATION, file-level coverage parsing, PM notification, env.validation.ts. Prerequisites: Stories 3.2, 1.3, 1.8, 1.9."
   3-4-basic-security-code-quality-checks: backlog
   3-5-quality-gate-decision-engine: backlog
   3-6-qa-results-storage-retrieval: backlog

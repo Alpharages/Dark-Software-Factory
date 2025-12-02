@@ -43,6 +43,7 @@ export const QUEUE_NAMES = {
   // Story 2.1-2.2: Ticket intake pipeline
   TICKET_INTAKE: 'ticket-intake-queue',
   AI_ROUTING: 'ai-routing-queue',
+  AI_ROUTING_WAIT: 'ai-routing-wait-queue', // For delayed retries (Story 2.3 fix)
   // Core execution queues
   AI_EXECUTION: 'ai-execution-queue',
   QA_CHECK: 'qa-check-queue',
@@ -63,6 +64,11 @@ export const EXCHANGE_NAMES = {
  * Routing keys (dot notation per architecture)
  */
 export const ROUTING_KEYS = {
+  // AI Routing (Story 2.3)
+  AI_ROUTING_STARTED: 'ai.routing.started',
+  AI_ROUTING_COMPLETED: 'ai.routing.completed',
+  AI_ROUTING_NO_PROVIDER: 'ai.routing.no_provider',
+
   // AI Execution
   AI_EXECUTION_STARTED: 'ai.execution.started',
   AI_EXECUTION_COMPLETED: 'ai.execution.completed',

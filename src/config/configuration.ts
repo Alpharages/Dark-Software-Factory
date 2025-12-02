@@ -27,19 +27,27 @@ export default () => {
       authServiceUrl: process.env.AUTH_SERVICE_URL,
     },
 
-    // AI Providers
-    aiProviders: {
-      cursor: {
-        apiKey: process.env.CURSOR_API_KEY,
-        enabled: !!process.env.CURSOR_API_KEY,
+    // AI Providers (Story 2.3: Multi-Provider Strategy)
+    ai: {
+      providers: {
+        cursorHeadless: {
+          enabled: process.env.CURSOR_HEADLESS_ENABLED === 'true',
+          healthCheckUrl: process.env.CURSOR_HEADLESS_HEALTH_URL || '',
+          timeout: parseInt(process.env.CURSOR_HEADLESS_TIMEOUT || '300000', 10), // 5 min
+          maxConcurrent: parseInt(process.env.CURSOR_MAX_CONCURRENT || '3', 10),
+        },
+        claudeCode: {
+          enabled: process.env.CLAUDE_CODE_ENABLED === 'true',
+          apiKey: process.env.ANTHROPIC_API_KEY || '',
+          healthCheckUrl: 'https://api.anthropic.com/v1/messages',
+          timeout: parseInt(process.env.CLAUDE_CODE_TIMEOUT || '180000', 10), // 3 min
+          maxConcurrent: parseInt(process.env.CLAUDE_MAX_CONCURRENT || '5', 10),
+        },
       },
-      windsurf: {
-        apiKey: process.env.WINDSURF_API_KEY,
-        enabled: !!process.env.WINDSURF_API_KEY,
-      },
-      antigravity: {
-        apiKey: process.env.ANTIGRAVITY_API_KEY,
-        enabled: !!process.env.ANTIGRAVITY_API_KEY,
+      routing: {
+        complexityThreshold: parseInt(process.env.AI_COMPLEXITY_THRESHOLD || '10', 10),
+        retryDelayMinutes: parseInt(process.env.AI_RETRY_DELAY_MINUTES || '5', 10),
+        alertThresholdMinutes: parseInt(process.env.AI_ALERT_THRESHOLD_MINUTES || '15', 10),
       },
     },
 

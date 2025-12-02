@@ -34,10 +34,24 @@ export const envValidationSchema = Joi.object({
   }),
   AUTH_SERVICE_URL: Joi.string().uri().required(),
 
-  // AI Providers (at least one required)
-  CURSOR_API_KEY: Joi.string().allow(''),
-  WINDSURF_API_KEY: Joi.string().allow(''),
-  ANTIGRAVITY_API_KEY: Joi.string().allow(''),
+  // AI Providers (Story 2.3)
+  CURSOR_HEADLESS_ENABLED: Joi.boolean().default(false),
+  CURSOR_HEADLESS_HEALTH_URL: Joi.string().allow('').optional(),
+  CURSOR_HEADLESS_TIMEOUT: Joi.number().default(300000),
+  CURSOR_MAX_CONCURRENT: Joi.number().default(3),
+
+  CLAUDE_CODE_ENABLED: Joi.boolean().default(false),
+  ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {
+    is: true,
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(''),
+  }),
+  CLAUDE_CODE_TIMEOUT: Joi.number().default(180000),
+  CLAUDE_MAX_CONCURRENT: Joi.number().default(5),
+
+  AI_COMPLEXITY_THRESHOLD: Joi.number().default(10),
+  AI_RETRY_DELAY_MINUTES: Joi.number().default(5),
+  AI_ALERT_THRESHOLD_MINUTES: Joi.number().default(15),
 
   // GitHub Integration (REQUIRED)
   GITHUB_TOKEN: Joi.string()
@@ -86,18 +100,4 @@ export const envValidationSchema = Joi.object({
   FEATURE_SELF_HEALING: Joi.boolean().default(true),
   FEATURE_COST_TRACKING: Joi.boolean().default(true),
   FEATURE_QUALITY_GATES: Joi.boolean().default(true),
-})
-  // Custom validation: At least one AI provider must be configured
-  .custom((value, helpers) => {
-    const hasAnyProvider =
-      value.CURSOR_API_KEY || value.WINDSURF_API_KEY || value.ANTIGRAVITY_API_KEY;
-
-    if (!hasAnyProvider) {
-      return helpers.error('any.custom', {
-        message:
-          'At least one AI provider API key must be configured (CURSOR_API_KEY, WINDSURF_API_KEY, or ANTIGRAVITY_API_KEY)',
-      });
-    }
-
-    return value;
-  });
+});

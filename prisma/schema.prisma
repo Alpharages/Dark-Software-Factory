@@ -80,6 +80,13 @@ model Execution {
   retry_count       Int              @default(0)
   max_retries       Int              @default(3)
   
+  // Routing decision metadata (Story 2.3)
+  complexity_score     Int?
+  complexity_breakdown Json?
+  routing_reason       String?
+  fallback_used        Boolean          @default(false)
+  original_provider    AIProvider?
+  
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   
@@ -89,9 +96,8 @@ model Execution {
 }
 
 enum AIProvider {
-  CURSOR
-  WINDSURF
-  ANTIGRAVITY
+  CURSOR_HEADLESS    // Primary: Full repo context, complex tasks
+  CLAUDE_CODE        // Secondary: Faster, cheaper, simple tasks
 }
 
 enum ExecutionStatus {
