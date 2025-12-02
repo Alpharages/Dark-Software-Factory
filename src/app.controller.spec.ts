@@ -6,7 +6,7 @@ import { RabbitMQService } from './rabbitmq/rabbitmq.service';
 
 describe('AppController', () => {
   let appController: AppController;
-  let appService: AppService;
+  // let appService: AppService;
   let prismaService: PrismaService;
   let rabbitMQService: RabbitMQService;
 
@@ -36,7 +36,6 @@ describe('AppController', () => {
     }).compile();
 
     appController = app.get<AppController>(AppController);
-    appService = app.get<AppService>(AppService);
     prismaService = app.get<PrismaService>(PrismaService);
     rabbitMQService = app.get<RabbitMQService>(RabbitMQService);
   });

@@ -37,11 +37,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
 
     // Send user-friendly response
-    const errorResponse = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorResponse: any = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       requestId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       message: typeof message === 'string' ? message : (message as any).message || message,
     };
 

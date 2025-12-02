@@ -91,8 +91,7 @@ export class SentryService implements OnModuleInit, OnModuleDestroy {
       maxBreadcrumbs: SENTRY_CONSTANTS.MAX_BREADCRUMBS,
 
       // Data scrubbing
-      beforeSend: (event: Sentry.ErrorEvent, hint: Sentry.EventHint) =>
-        this.beforeSend(event, hint),
+      beforeSend: (event: Sentry.ErrorEvent) => this.beforeSend(event),
       beforeBreadcrumb: (breadcrumb: Sentry.Breadcrumb) => this.beforeBreadcrumb(breadcrumb),
 
       // Ignore specific errors
@@ -249,7 +248,7 @@ export class SentryService implements OnModuleInit, OnModuleDestroy {
 
   // ============= Private Methods =============
 
-  private beforeSend(event: Sentry.ErrorEvent, hint: Sentry.EventHint): Sentry.ErrorEvent | null {
+  private beforeSend(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
     // Scrub sensitive data from event
     if (event.request) {
       event.request.headers = this.scrubSensitiveData(

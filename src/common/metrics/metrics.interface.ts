@@ -1,4 +1,4 @@
-import { Histogram, Counter, Gauge, Summary } from 'prom-client';
+import { Histogram, Counter, Gauge /* Summary */ } from 'prom-client';
 
 /**
  * Metric registration options

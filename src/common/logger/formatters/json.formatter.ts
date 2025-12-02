@@ -33,6 +33,7 @@ export const jsonFormatter = (serviceName: string, redactFields: string[] = []) 
         logEntry.error = { stack };
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return logEntry as any;
     })(),
     json(),

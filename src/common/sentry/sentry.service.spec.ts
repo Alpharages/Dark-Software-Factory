@@ -22,6 +22,7 @@ describe('SentryService', () => {
         {
           provide: ConfigService,
           useValue: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             get: jest.fn((key: string, defaultValue?: any) => {
               if (key === 'SENTRY_DSN') return 'https://example@sentry.io/123';
               if (key === 'NODE_ENV') return 'test';

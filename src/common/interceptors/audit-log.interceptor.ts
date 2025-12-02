@@ -43,7 +43,7 @@ export class AuditLogInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: (result) => {
+        next: () => {
           const duration = Date.now() - startTime;
           this.logger.log(`[AUDIT] ${auditOptions.action} on ${auditOptions.resource} - SUCCESS`, {
             ...auditContext,

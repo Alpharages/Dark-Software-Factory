@@ -1,0 +1,11 @@
+# Default owners for everything
+* @khakanali
+
+# CI/CD workflows
+.github/ @khakanali
+
+# Database schema
+prisma/ @khakanali
+
+# Documentation
+docs/ @khakanali

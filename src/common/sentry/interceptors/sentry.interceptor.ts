@@ -42,7 +42,7 @@ export class SentryInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        error: (exception) => {
+        error: () => {
           // Interceptor can capture errors that filter might miss or add extra context
           // But usually Filter handles the capture.
           // This is useful for breadcrumbs or specific transaction handling

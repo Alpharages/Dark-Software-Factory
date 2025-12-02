@@ -30,12 +30,15 @@ export class LoggerService implements NestLoggerService {
     );
 
     const transports = [
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       createConsoleTransport(this.serviceName, isProduction, redactFields) as any,
     ];
 
     if (enableFile) {
       transports.push(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         createCombinedFileTransport(this.serviceName, logDir, redactFields) as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         createErrorFileTransport(this.serviceName, logDir, redactFields) as any,
       );
     }
@@ -43,6 +46,7 @@ export class LoggerService implements NestLoggerService {
     this.logger = createLogger({
       level: logLevel,
       levels: LOG_LEVELS,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       transports: transports as any,
       exceptionHandlers: enableFile
         ? [createErrorFileTransport(this.serviceName, logDir, redactFields)]

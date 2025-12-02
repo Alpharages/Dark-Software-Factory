@@ -6,6 +6,9 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-10.x-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![CI](https://github.com/alpharages/dark-software-factory/actions/workflows/ci.yml/badge.svg)](https://github.com/alpharages/dark-software-factory/actions/workflows/ci.yml)
+[![Deploy](https://github.com/alpharages/dark-software-factory/actions/workflows/deploy.yml/badge.svg)](https://github.com/alpharages/dark-software-factory/actions/workflows/deploy.yml)
+[![codecov](https://codecov.io/gh/alpharages/dark-software-factory/branch/main/graph/badge.svg)](https://codecov.io/gh/alpharages/dark-software-factory)
 
 ---
 

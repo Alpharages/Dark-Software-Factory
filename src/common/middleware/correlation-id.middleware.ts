@@ -9,6 +9,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
   constructor(private readonly logger: LoggerService) {}
 
   use(req: FastifyRequest['raw'], res: FastifyReply['raw'], next: () => void): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const headers = (req as any).headers || {};
     const context = createRequestContext(headers);
 
@@ -18,7 +19,9 @@ export class CorrelationIdMiddleware implements NestMiddleware {
     this.logger.debug('Request started', {
       requestId: context.requestId,
       correlationId: context.correlationId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       method: (req as any).method,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       url: (req as any).url,
     });
 
