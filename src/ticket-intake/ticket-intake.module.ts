@@ -4,6 +4,7 @@ import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-pro
 import { TicketIntakeService } from './ticket-intake.service';
 import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
+import { TicketQualityController } from './ticket-quality.controller';
 import { TicketIntakeConsumer } from './ticket-intake.consumer';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
@@ -20,15 +21,18 @@ const METRICS = {
  * Ticket Intake Module
  * FR57: Parse ticket details from ClickUp
  * FR58: Validate ticket quality
+ * Story 2.11: PM-facing quality scoring API
  *
  * Processes incoming tickets from the webhook queue:
  * - Consumes from ticket-intake-queue (Story 2.1)
  * - Validates ticket data quality
  * - Calculates quality scores
  * - Routes validated tickets to AI processing
+ * - Exposes PM-facing quality scoring API
  */
 @Module({
   imports: [ConfigModule, DatabaseModule, RabbitMQModule],
+  controllers: [TicketQualityController],
   providers: [
     // Services
     TicketIntakeService,

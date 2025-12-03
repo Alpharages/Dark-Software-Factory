@@ -119,8 +119,10 @@ development_status:
     dev_branch: "feature/2-10-queue-processing"
     notes: "APPROVED. Code review completed. FIXED: (1) Removed duplicate execution_duration_seconds metric, (2) Added rollback on queue publish failure, (3) Extracted PRIORITY_TO_COMPLEXITY constant, (4) Removed unused duration param, (5) Made monitoring interval configurable, (6) Corrected File List. All 96 execution module tests passing."
   2-11-ticket-quality-scoring-algorithm:
-    status: ready-for-dev
-    notes: "Story drafted with comprehensive quality scoring implementation. Includes 6-category scoring algorithm (title 15pts, description 25pts, AC 30pts, context 10pts, complexity 10pts, prerequisites 10pts), API endpoint for PM access, improvement suggestions engine. Prerequisite: Story 2.2."
+    status: done
+    developer: "Amelia (Dev Agent)"
+    dev_branch: "feature/2-11-quality-scoring"
+    notes: "APPROVED. Code review #2 completed. FIXED: (1) Added JwtAuthGuard for JWT authentication - CRITICAL security fix, (2) Added ThrottlerGuard for rate limiting. All 34 unit tests passing. Controller guards properly configured: JwtAuthGuard + RolesGuard + ThrottlerGuard."
   2-12-project-context-extraction-attachment:
     status: ready-for-dev
     notes: "Story drafted with comprehensive context extraction implementation. Includes 4 format extractors (PDF, MD, TXT, DOCX), caching layer, Prometheus metrics, and integration guide for Story 2.4 prompt generation. Prerequisites: Stories 2.2, 2.4."

@@ -10,176 +10,176 @@ import { PublishExecutionDto } from './dto';
  * Story 2.10: RabbitMQ AI Execution Queue Processing
  */
 describe('AIExecutionPublisher', () => {
-    let publisher: AIExecutionPublisher;
-    let executionTracker: jest.Mocked<ExecutionTrackerService>;
-    let rabbitmqPublisher: jest.Mocked<RabbitMQPublisherService>;
+  let publisher: AIExecutionPublisher;
+  let executionTracker: jest.Mocked<ExecutionTrackerService>;
+  let rabbitmqPublisher: jest.Mocked<RabbitMQPublisherService>;
 
-    const mockExecution = {
-        id: 'exec-123',
-        ticket_id: 'ticket-456',
-        ai_provider: AIProvider.CURSOR_HEADLESS,
-        prompt: 'Test prompt',
-        status: 'QUEUED',
-        created_at: new Date(),
-        updated_at: new Date(),
+  const mockExecution = {
+    id: 'exec-123',
+    ticket_id: 'ticket-456',
+    ai_provider: AIProvider.CURSOR_HEADLESS,
+    prompt: 'Test prompt',
+    status: 'QUEUED',
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  beforeEach(async () => {
+    const mockExecutionTracker = {
+      startExecution: jest.fn().mockResolvedValue(mockExecution),
+      failExecution: jest.fn().mockResolvedValue({}), // For rollback on publish failure
     };
 
-    beforeEach(async () => {
-        const mockExecutionTracker = {
-            startExecution: jest.fn().mockResolvedValue(mockExecution),
-            failExecution: jest.fn().mockResolvedValue({}), // For rollback on publish failure
-        };
+    const mockRabbitMQPublisher = {
+      publishWithRetry: jest.fn().mockResolvedValue(true),
+    };
 
-        const mockRabbitMQPublisher = {
-            publishWithRetry: jest.fn().mockResolvedValue(true),
-        };
+    const mockCounter = { inc: jest.fn(), labels: jest.fn().mockReturnThis() };
 
-        const mockCounter = { inc: jest.fn(), labels: jest.fn().mockReturnThis() };
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AIExecutionPublisher,
+        { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
+        { provide: RabbitMQPublisherService, useValue: mockRabbitMQPublisher },
+        { provide: 'PROM_METRIC_QUEUE_MESSAGES_PUBLISHED_TOTAL', useValue: mockCounter },
+        { provide: 'PROM_METRIC_QUEUE_PUBLISH_ERRORS_TOTAL', useValue: mockCounter },
+      ],
+    }).compile();
 
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                AIExecutionPublisher,
-                { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
-                { provide: RabbitMQPublisherService, useValue: mockRabbitMQPublisher },
-                { provide: 'PROM_METRIC_QUEUE_MESSAGES_PUBLISHED_TOTAL', useValue: mockCounter },
-                { provide: 'PROM_METRIC_QUEUE_PUBLISH_ERRORS_TOTAL', useValue: mockCounter },
-            ],
-        }).compile();
+    publisher = module.get<AIExecutionPublisher>(AIExecutionPublisher);
+    executionTracker = module.get(ExecutionTrackerService);
+    rabbitmqPublisher = module.get(RabbitMQPublisherService);
+  });
 
-        publisher = module.get<AIExecutionPublisher>(AIExecutionPublisher);
-        executionTracker = module.get(ExecutionTrackerService);
-        rabbitmqPublisher = module.get(RabbitMQPublisherService);
+  describe('publishExecution', () => {
+    const validDto: PublishExecutionDto = {
+      ticketId: 'ticket-456',
+      prompt: 'Fix the bug in authentication',
+      repositoryUrl: 'https://github.com/test/repo',
+      projectId: 'proj-123',
+      priority: 2,
+    };
+
+    it('should create execution and publish to queue', async () => {
+      const result = await publisher.publishExecution(validDto);
+
+      expect(result.executionId).toBe('exec-123');
+      expect(result.correlationId).toBeDefined();
+      expect(executionTracker.startExecution).toHaveBeenCalled();
+      expect(rabbitmqPublisher.publishWithRetry).toHaveBeenCalled();
     });
 
-    describe('publishExecution', () => {
-        const validDto: PublishExecutionDto = {
-            ticketId: 'ticket-456',
-            prompt: 'Fix the bug in authentication',
-            repositoryUrl: 'https://github.com/test/repo',
-            projectId: 'proj-123',
-            priority: 2,
-        };
+    it('should use provided correlation ID', async () => {
+      const correlationId = 'custom-corr-123';
+      const result = await publisher.publishExecution(validDto, correlationId);
 
-        it('should create execution and publish to queue', async () => {
-            const result = await publisher.publishExecution(validDto);
-
-            expect(result.executionId).toBe('exec-123');
-            expect(result.correlationId).toBeDefined();
-            expect(executionTracker.startExecution).toHaveBeenCalled();
-            expect(rabbitmqPublisher.publishWithRetry).toHaveBeenCalled();
-        });
-
-        it('should use provided correlation ID', async () => {
-            const correlationId = 'custom-corr-123';
-            const result = await publisher.publishExecution(validDto, correlationId);
-
-            expect(result.correlationId).toBe(correlationId);
-        });
-
-        it('should generate correlation ID if not provided', async () => {
-            const result = await publisher.publishExecution(validDto);
-
-            expect(result.correlationId).toBeDefined();
-            expect(result.correlationId).toMatch(
-                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-            );
-        });
-
-        it('should use CURSOR_HEADLESS as default provider', async () => {
-            await publisher.publishExecution(validDto);
-
-            const callArg = executionTracker.startExecution.mock.calls[0][0];
-            expect(callArg.provider).toBe(AIProvider.CURSOR_HEADLESS);
-        });
-
-        it('should use preferred provider when specified', async () => {
-            const dtoWithProvider = {
-                ...validDto,
-                preferredProvider: AIProvider.CLAUDE_CODE,
-            };
-
-            await publisher.publishExecution(dtoWithProvider);
-
-            const callArg = executionTracker.startExecution.mock.calls[0][0];
-            expect(callArg.provider).toBe(AIProvider.CLAUDE_CODE);
-        });
-
-        it('should use default priority of 3 when not specified', async () => {
-            const dtoNoPriority = { ...validDto };
-            delete (dtoNoPriority as any).priority;
-
-            await publisher.publishExecution(dtoNoPriority);
-
-            // Check the message published to RabbitMQ
-            const publishCall = rabbitmqPublisher.publishWithRetry.mock.calls[0];
-            const message = publishCall[1] as { payload: { priority: number } };
-            expect(message.payload.priority).toBe(3);
-        });
-
-        it('should throw and track error when publish fails', async () => {
-            rabbitmqPublisher.publishWithRetry.mockResolvedValue(false);
-
-            await expect(publisher.publishExecution(validDto)).rejects.toThrow(
-                'Failed to publish message to queue'
-            );
-        });
-
-        it('should rollback execution status when publish fails', async () => {
-            rabbitmqPublisher.publishWithRetry.mockResolvedValue(false);
-
-            await expect(publisher.publishExecution(validDto)).rejects.toThrow();
-
-            // Verify rollback was called
-            expect(executionTracker.failExecution).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    executionId: 'exec-123',
-                    errorCode: 'QUEUE_PUBLISH_FAILED',
-                    isRetryable: true,
-                }),
-                expect.any(String), // correlationId
-            );
-        });
-
-        it('should calculate complexity score from priority', async () => {
-            // Priority 1 (highest) should map to higher complexity
-            const highPriorityDto = { ...validDto, priority: 1 };
-            await publisher.publishExecution(highPriorityDto);
-
-            const callArg = executionTracker.startExecution.mock.calls[0][0];
-            // Complexity = (6 - priority) * 2 = (6-1) * 2 = 10
-            expect(callArg.complexityScore).toBe(10);
-        });
+      expect(result.correlationId).toBe(correlationId);
     });
 
-    describe('publishBatch', () => {
-        const batchDtos: PublishExecutionDto[] = [
-            {
-                ticketId: 'ticket-1',
-                prompt: 'Task 1',
-                repositoryUrl: 'https://github.com/test/repo',
-                projectId: 'proj-123',
-            },
-            {
-                ticketId: 'ticket-2',
-                prompt: 'Task 2',
-                repositoryUrl: 'https://github.com/test/repo',
-                projectId: 'proj-123',
-            },
-        ];
+    it('should generate correlation ID if not provided', async () => {
+      const result = await publisher.publishExecution(validDto);
 
-        it('should publish multiple executions', async () => {
-            const result = await publisher.publishBatch(batchDtos);
-
-            expect(result.executionIds).toHaveLength(2);
-            expect(executionTracker.startExecution).toHaveBeenCalledTimes(2);
-            expect(rabbitmqPublisher.publishWithRetry).toHaveBeenCalledTimes(2);
-        });
-
-        it('should use same correlation ID for all batch items', async () => {
-            const correlationId = 'batch-corr-123';
-            const result = await publisher.publishBatch(batchDtos, correlationId);
-
-            expect(result.correlationId).toBe(correlationId);
-        });
+      expect(result.correlationId).toBeDefined();
+      expect(result.correlationId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
     });
+
+    it('should use CURSOR_HEADLESS as default provider', async () => {
+      await publisher.publishExecution(validDto);
+
+      const callArg = executionTracker.startExecution.mock.calls[0][0];
+      expect(callArg.provider).toBe(AIProvider.CURSOR_HEADLESS);
+    });
+
+    it('should use preferred provider when specified', async () => {
+      const dtoWithProvider = {
+        ...validDto,
+        preferredProvider: AIProvider.CLAUDE_CODE,
+      };
+
+      await publisher.publishExecution(dtoWithProvider);
+
+      const callArg = executionTracker.startExecution.mock.calls[0][0];
+      expect(callArg.provider).toBe(AIProvider.CLAUDE_CODE);
+    });
+
+    it('should use default priority of 3 when not specified', async () => {
+      const dtoNoPriority = { ...validDto };
+      delete (dtoNoPriority as any).priority;
+
+      await publisher.publishExecution(dtoNoPriority);
+
+      // Check the message published to RabbitMQ
+      const publishCall = rabbitmqPublisher.publishWithRetry.mock.calls[0];
+      const message = publishCall[1] as { payload: { priority: number } };
+      expect(message.payload.priority).toBe(3);
+    });
+
+    it('should throw and track error when publish fails', async () => {
+      rabbitmqPublisher.publishWithRetry.mockResolvedValue(false);
+
+      await expect(publisher.publishExecution(validDto)).rejects.toThrow(
+        'Failed to publish message to queue',
+      );
+    });
+
+    it('should rollback execution status when publish fails', async () => {
+      rabbitmqPublisher.publishWithRetry.mockResolvedValue(false);
+
+      await expect(publisher.publishExecution(validDto)).rejects.toThrow();
+
+      // Verify rollback was called
+      expect(executionTracker.failExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionId: 'exec-123',
+          errorCode: 'QUEUE_PUBLISH_FAILED',
+          isRetryable: true,
+        }),
+        expect.any(String), // correlationId
+      );
+    });
+
+    it('should calculate complexity score from priority', async () => {
+      // Priority 1 (highest) should map to higher complexity
+      const highPriorityDto = { ...validDto, priority: 1 };
+      await publisher.publishExecution(highPriorityDto);
+
+      const callArg = executionTracker.startExecution.mock.calls[0][0];
+      // Complexity = (6 - priority) * 2 = (6-1) * 2 = 10
+      expect(callArg.complexityScore).toBe(10);
+    });
+  });
+
+  describe('publishBatch', () => {
+    const batchDtos: PublishExecutionDto[] = [
+      {
+        ticketId: 'ticket-1',
+        prompt: 'Task 1',
+        repositoryUrl: 'https://github.com/test/repo',
+        projectId: 'proj-123',
+      },
+      {
+        ticketId: 'ticket-2',
+        prompt: 'Task 2',
+        repositoryUrl: 'https://github.com/test/repo',
+        projectId: 'proj-123',
+      },
+    ];
+
+    it('should publish multiple executions', async () => {
+      const result = await publisher.publishBatch(batchDtos);
+
+      expect(result.executionIds).toHaveLength(2);
+      expect(executionTracker.startExecution).toHaveBeenCalledTimes(2);
+      expect(rabbitmqPublisher.publishWithRetry).toHaveBeenCalledTimes(2);
+    });
+
+    it('should use same correlation ID for all batch items', async () => {
+      const correlationId = 'batch-corr-123';
+      const result = await publisher.publishBatch(batchDtos, correlationId);
+
+      expect(result.correlationId).toBe(correlationId);
+    });
+  });
 });

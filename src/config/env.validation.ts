@@ -116,4 +116,11 @@ export const envValidationSchema = Joi.object({
   ANTHROPIC_MAX_TOKENS: Joi.number().min(1000).max(100000).default(8000),
   ANTHROPIC_TIMEOUT_MS: Joi.number().min(30000).max(300000).default(120000),
   CLAUDE_WORKSPACES_ROOT: Joi.string().default('/tmp/claude-workspaces'),
+
+  // Story 2.11: Quality Scoring Configuration (optional - has sensible defaults)
+  QUALITY_SCORE_THRESHOLD_EXCELLENT: Joi.number().integer().min(0).max(100).default(90),
+  QUALITY_SCORE_THRESHOLD_GOOD: Joi.number().integer().min(0).max(100).default(70),
+  QUALITY_SCORE_THRESHOLD_FAIR: Joi.number().integer().min(0).max(100).default(50),
+  QUALITY_MINIMUM_THRESHOLD: Joi.number().integer().min(0).max(100).default(50),
+  QUALITY_SCORE_CACHE_TTL_SECONDS: Joi.number().integer().min(60).max(3600).default(300),
 });

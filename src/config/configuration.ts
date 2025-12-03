@@ -161,5 +161,15 @@ export default () => {
       backoffMultiplier: parseFloat(process.env.RETRY_BACKOFF_MULTIPLIER || '2'),
       maxDelayMs: parseInt(process.env.RETRY_MAX_DELAY_MS || '30000', 10),
     },
+
+    // Story 2.11: Quality Scoring Configuration
+    // FR4: PM ticket quality visibility before submission
+    quality: {
+      thresholdExcellent: parseInt(process.env.QUALITY_SCORE_THRESHOLD_EXCELLENT || '90', 10),
+      thresholdGood: parseInt(process.env.QUALITY_SCORE_THRESHOLD_GOOD || '70', 10),
+      thresholdFair: parseInt(process.env.QUALITY_SCORE_THRESHOLD_FAIR || '50', 10),
+      minimumThreshold: parseInt(process.env.QUALITY_MINIMUM_THRESHOLD || '50', 10),
+      cacheTtlSeconds: parseInt(process.env.QUALITY_SCORE_CACHE_TTL_SECONDS || '300', 10),
+    },
   };
 };

@@ -9,116 +9,116 @@ import { AIProvider } from '@prisma/client';
  * Message published to ai-execution-queue
  */
 export interface IAIExecutionMessage {
-    /** Unique message identifier */
-    messageId: string;
+  /** Unique message identifier */
+  messageId: string;
 
-    /** ISO 8601 timestamp */
-    timestamp: string;
+  /** ISO 8601 timestamp */
+  timestamp: string;
 
-    /** Correlation ID for request tracing */
-    correlationId: string;
+  /** Correlation ID for request tracing */
+  correlationId: string;
 
-    /** Message payload */
-    payload: IAIExecutionPayload;
+  /** Message payload */
+  payload: IAIExecutionPayload;
 }
 
 /**
  * AI Execution payload - core execution data
  */
 export interface IAIExecutionPayload {
-    /** Ticket ID from ClickUp */
-    ticketId: string;
+  /** Ticket ID from ClickUp */
+  ticketId: string;
 
-    /** Unique execution ID */
-    executionId: string;
+  /** Unique execution ID */
+  executionId: string;
 
-    /** Selected AI provider */
-    aiProvider: AIProvider;
+  /** Selected AI provider */
+  aiProvider: AIProvider;
 
-    /** Execution priority (1=highest, 5=lowest) */
-    priority: number;
+  /** Execution priority (1=highest, 5=lowest) */
+  priority: number;
 
-    /** AI prompt for code generation */
-    prompt: string;
+  /** AI prompt for code generation */
+  prompt: string;
 
-    /** Repository URL for code context */
-    repositoryUrl: string;
+  /** Repository URL for code context */
+  repositoryUrl: string;
 
-    /** Project ID for context */
-    projectId: string;
+  /** Project ID for context */
+  projectId: string;
 
-    /** Optional: Target branch */
-    targetBranch?: string;
+  /** Optional: Target branch */
+  targetBranch?: string;
 
-    /** Optional: Specific files to modify */
-    targetFiles?: string[];
+  /** Optional: Specific files to modify */
+  targetFiles?: string[];
 
-    /** Optional: Allow provider fallback */
-    allowFallback?: boolean;
+  /** Optional: Allow provider fallback */
+  allowFallback?: boolean;
 }
 
 /**
  * Consumer processing result
  */
 export interface IProcessingResult {
-    /** Whether processing succeeded */
-    success: boolean;
+  /** Whether processing succeeded */
+  success: boolean;
 
-    /** Execution ID that was processed */
-    executionId: string;
+  /** Execution ID that was processed */
+  executionId: string;
 
-    /** Duration in milliseconds */
-    durationMs: number;
+  /** Duration in milliseconds */
+  durationMs: number;
 
-    /** Error message if failed */
-    errorMessage?: string;
+  /** Error message if failed */
+  errorMessage?: string;
 
-    /** Error code if failed */
-    errorCode?: string;
+  /** Error code if failed */
+  errorCode?: string;
 
-    /** Provider that executed the task */
-    executedBy?: AIProvider;
+  /** Provider that executed the task */
+  executedBy?: AIProvider;
 }
 
 /**
  * Queue statistics for monitoring
  */
 export interface IQueueStats {
-    /** Queue name */
-    queueName: string;
+  /** Queue name */
+  queueName: string;
 
-    /** Messages waiting in queue */
-    messageCount: number;
+  /** Messages waiting in queue */
+  messageCount: number;
 
-    /** Active consumers */
-    consumerCount: number;
+  /** Active consumers */
+  consumerCount: number;
 
-    /** Messages processed per second */
-    processingRate: number;
+  /** Messages processed per second */
+  processingRate: number;
 
-    /** Average processing time (ms) */
-    avgProcessingTimeMs: number;
+  /** Average processing time (ms) */
+  avgProcessingTimeMs: number;
 }
 
 /**
  * Consumer state for health checks
  */
 export interface IConsumerState {
-    /** Consumer tag identifier */
-    consumerTag: string;
+  /** Consumer tag identifier */
+  consumerTag: string;
 
-    /** Whether consumer is active */
-    isActive: boolean;
+  /** Whether consumer is active */
+  isActive: boolean;
 
-    /** When consumer started */
-    startedAt: Date;
+  /** When consumer started */
+  startedAt: Date;
 
-    /** Total messages processed */
-    messagesProcessed: number;
+  /** Total messages processed */
+  messagesProcessed: number;
 
-    /** Total messages failed */
-    messagesFailed: number;
+  /** Total messages failed */
+  messagesFailed: number;
 
-    /** Currently processing message ID */
-    currentMessageId: string | null;
+  /** Currently processing message ID */
+  currentMessageId: string | null;
 }

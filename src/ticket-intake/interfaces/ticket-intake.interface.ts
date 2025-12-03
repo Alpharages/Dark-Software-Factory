@@ -68,3 +68,54 @@ export interface ITicketProcessingResult {
   qualityScore?: number;
   errors?: string[];
 }
+
+/**
+ * Story 2.11: PM-Facing Quality Scoring Types
+ * FR4: PMs can view ticket quality score before submitting
+ */
+
+/** Enhanced category score with suggestions for PM API */
+export interface ICategoryScore {
+  category: string;
+  score: number;
+  maxPoints: number;
+  percentage: number;
+  suggestions: string[];
+  details: string;
+}
+
+/** Enhanced breakdown with category details for PM API */
+export interface IQualityScoreBreakdownEnhanced {
+  titleClarity: ICategoryScore;
+  descriptionCompleteness: ICategoryScore;
+  acceptanceCriteria: ICategoryScore;
+  contextDocuments: ICategoryScore;
+  taskComplexity: ICategoryScore;
+  prerequisites: ICategoryScore;
+}
+
+/** Quality grade type */
+export type QualityGrade = 'excellent' | 'good' | 'fair' | 'poor';
+
+/** Enhanced quality score response for PM API */
+export interface IQualityScoreEnhanced {
+  totalScore: number;
+  grade: QualityGrade;
+  gradeEmoji: string;
+  gradeMessage: string;
+  breakdown: IQualityScoreBreakdownEnhanced;
+  topSuggestions: string[];
+  meetsMinimumThreshold: boolean;
+  scoredAt: string;
+}
+
+/** Input for PM-facing quality scoring API */
+export interface IQualityScoreInput {
+  title: string;
+  description: string;
+  acceptanceCriteria: string;
+  contextDocuments?: string[];
+  tags?: string[];
+  prerequisites?: string[];
+  projectContext?: string;
+}
