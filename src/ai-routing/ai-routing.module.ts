@@ -9,12 +9,20 @@ import { AIRoutingService } from './ai-routing.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
 import { AIRoutingConsumer } from './ai-routing.consumer';
-// ADD: Prompt generation imports
+// Story 2.4: Prompt generation imports
 import { PromptGeneratorService } from './prompt-generator.service';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
+// Story 2.6: AI Execution imports
+import { AIExecutionService } from './ai-execution.service';
+import {
+  WorkspaceService,
+  GitOperationsService,
+  CursorHeadlessProvider,
+} from './providers';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
+import { ExecutionModule } from '../execution/execution.module';
 
 /**
  * AI Routing Module
@@ -28,17 +36,24 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
  * - AIRoutingConsumer: Process routing queue
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule, RabbitMQModule],
+  imports: [ConfigModule, DatabaseModule, RabbitMQModule, ExecutionModule],
   providers: [
+    // Story 2.3: Routing services
     AIRoutingService,
     ComplexityScorerService,
     ProviderHealthService,
     AIRoutingConsumer,
 
-    // Story 2.4: Prompt generation services (ADD)
+    // Story 2.4: Prompt generation services
     PromptGeneratorService,
     CursorPromptBuilder,
     ClaudeCodePromptBuilder,
+
+    // Story 2.6: AI Execution services
+    AIExecutionService,
+    WorkspaceService,
+    GitOperationsService,
+    CursorHeadlessProvider,
 
     // Story 2.3 Metrics
     // Prometheus metrics
@@ -92,14 +107,46 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
       labelNames: ['provider'],
       buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5],
     }),
+
+    // Story 2.6: Cursor Headless Metrics
+    makeCounterProvider({
+      name: 'cursor_executions_total',
+      help: 'Total Cursor CLI executions',
+      labelNames: ['status'],
+    }),
+    makeHistogramProvider({
+      name: 'cursor_execution_duration_seconds',
+      help: 'Cursor execution duration in seconds',
+      labelNames: ['status'],
+      buckets: [10, 30, 60, 120, 180, 240, 300, 600],
+    }),
+    makeGaugeProvider({
+      name: 'cursor_active_executions',
+      help: 'Currently active Cursor executions',
+    }),
+    makeGaugeProvider({
+      name: 'cursor_workspaces_active',
+      help: 'Currently active workspaces',
+    }),
+    makeCounterProvider({
+      name: 'cursor_workspace_operations_total',
+      help: 'Workspace operations count',
+      labelNames: ['operation', 'status'],
+    }),
   ],
   exports: [
+    // Story 2.3: Routing exports
     AIRoutingService,
     ComplexityScorerService,
     ProviderHealthService,
-    PromptGeneratorService, // ADD
-    CursorPromptBuilder, // ADD
-    ClaudeCodePromptBuilder, // ADD
+    // Story 2.4: Prompt generation exports
+    PromptGeneratorService,
+    CursorPromptBuilder,
+    ClaudeCodePromptBuilder,
+    // Story 2.6: AI Execution exports
+    AIExecutionService,
+    WorkspaceService,
+    CursorHeadlessProvider,
   ],
 })
 export class AiRoutingModule {}

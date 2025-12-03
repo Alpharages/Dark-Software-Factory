@@ -100,4 +100,14 @@ export const envValidationSchema = Joi.object({
   FEATURE_SELF_HEALING: Joi.boolean().default(true),
   FEATURE_COST_TRACKING: Joi.boolean().default(true),
   FEATURE_QUALITY_GATES: Joi.boolean().default(true),
+
+  // Story 2.6: Cursor CLI Configuration (optional - has defaults)
+  CURSOR_CLI_PATH: Joi.string().default('cursor'),
+  CURSOR_HEADLESS_TIMEOUT_MS: Joi.number().min(30000).max(600000).default(300000),
+  CURSOR_WORKSPACES_ROOT: Joi.string().default('/tmp/cursor-workspaces'),
+  CURSOR_MAX_CONCURRENT_WORKSPACES: Joi.number().min(1).max(50).default(10),
+  CURSOR_PRESERVE_FAILED_WORKSPACES: Joi.boolean().default(true),
+  CURSOR_WORKSPACE_CLEANUP_AGE_MS: Joi.number().default(7 * 24 * 60 * 60 * 1000),
+  CURSOR_GIT_USER_NAME: Joi.string().default('Dark Factory'),
+  CURSOR_GIT_USER_EMAIL: Joi.string().email().default('bot@darkfactory.ai'),
 });

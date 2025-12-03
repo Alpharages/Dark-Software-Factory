@@ -107,5 +107,20 @@ export default () => {
       costTracking: process.env.FEATURE_COST_TRACKING === 'true',
       qualityGates: process.env.FEATURE_QUALITY_GATES === 'true',
     },
+
+    // Story 2.6: Cursor CLI Headless Configuration
+    cursor: {
+      cliPath: process.env.CURSOR_CLI_PATH || 'cursor',
+      headlessTimeoutMs: parseInt(process.env.CURSOR_HEADLESS_TIMEOUT_MS || '300000', 10),
+      workspacesRoot: process.env.CURSOR_WORKSPACES_ROOT || '/tmp/cursor-workspaces',
+      maxConcurrentWorkspaces: parseInt(process.env.CURSOR_MAX_CONCURRENT_WORKSPACES || '10', 10),
+      preserveFailedWorkspaces: process.env.CURSOR_PRESERVE_FAILED_WORKSPACES === 'true',
+      workspaceCleanupAgeMs: parseInt(
+        process.env.CURSOR_WORKSPACE_CLEANUP_AGE_MS || String(7 * 24 * 60 * 60 * 1000),
+        10,
+      ),
+      gitUserName: process.env.CURSOR_GIT_USER_NAME || 'Dark Factory',
+      gitUserEmail: process.env.CURSOR_GIT_USER_EMAIL || 'bot@darkfactory.ai',
+    },
   };
 };

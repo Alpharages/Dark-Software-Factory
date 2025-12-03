@@ -1,0 +1,300 @@
+/**
+ * Git Operations Service Unit Tests
+ * Story 2.6: AI Provider Integration - Cursor CLI Headless Mode
+ */
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { GitOperationsService } from './git-operations.service';
+import * as childProcess from 'child_process';
+
+// Mock child_process.execFile (the service uses promisified execFile)
+jest.mock('child_process', () => ({
+  execFile: jest.fn(),
+}));
+
+describe('GitOperationsService', () => {
+  let service: GitOperationsService;
+  let mockExecFile: jest.Mock;
+
+  // Helper to mock successful execFile call
+  const mockSuccess = (stdout = '', stderr = '') => {
+    mockExecFile.mockImplementation(
+      (
+        _file: string,
+        _args: string[],
+        _opts: unknown,
+        callback: (err: Error | null, stdout: string, stderr: string) => void,
+      ) => {
+        callback(null, stdout, stderr);
+      },
+    );
+  };
+
+  // Helper to mock failed execFile call
+  const mockFailure = (error: Error) => {
+    mockExecFile.mockImplementation(
+      (
+        _file: string,
+        _args: string[],
+        _opts: unknown,
+        callback: (err: Error | null, stdout: string, stderr: string) => void,
+      ) => {
+        callback(error, '', '');
+      },
+    );
+  };
+
+  beforeEach(async () => {
+    mockExecFile = childProcess.execFile as unknown as jest.Mock;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [GitOperationsService],
+    }).compile();
+
+    service = module.get<GitOperationsService>(GitOperationsService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('clone', () => {
+    it('should clone repository to target path', async () => {
+      mockSuccess();
+
+      await service.clone('https://github.com/test/repo.git', '/tmp/workspace');
+
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['clone', 'https://github.com/test/repo.git', '/tmp/workspace'],
+        expect.objectContaining({ timeout: 120000 }),
+        expect.any(Function),
+      );
+    });
+
+    it('should clone with depth option', async () => {
+      mockSuccess();
+
+      await service.clone('https://github.com/test/repo.git', '/tmp/workspace', { depth: 1 });
+
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        expect.arrayContaining(['--depth', '1']),
+        expect.any(Object),
+        expect.any(Function),
+      );
+    });
+
+    it('should clone with branch option', async () => {
+      mockSuccess();
+
+      await service.clone('https://github.com/test/repo.git', '/tmp/workspace', {
+        branch: 'develop',
+      });
+
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        expect.arrayContaining(['--branch', 'develop']),
+        expect.any(Object),
+        expect.any(Function),
+      );
+    });
+
+    it('should throw on clone failure', async () => {
+      mockFailure(new Error('Clone failed'));
+
+      await expect(
+        service.clone('https://github.com/test/repo.git', '/tmp/workspace'),
+      ).rejects.toThrow('Git operation failed');
+    });
+  });
+
+  describe('configureUser', () => {
+    it('should configure git user name and email', async () => {
+      mockSuccess();
+
+      await service.configureUser('/tmp/workspace', 'Test User', 'test@example.com');
+
+      expect(mockExecFile).toHaveBeenCalledTimes(2);
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['config', 'user.name', 'Test User'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['config', 'user.email', 'test@example.com'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe('checkoutBranch', () => {
+    it('should checkout existing branch', async () => {
+      mockSuccess();
+
+      await service.checkoutBranch('/tmp/workspace', 'feature-branch');
+
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['checkout', 'feature-branch'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+
+    it('should create and checkout new branch', async () => {
+      mockSuccess();
+
+      await service.checkoutBranch('/tmp/workspace', 'new-branch', true);
+
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['checkout', '-b', 'new-branch'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe('getDiff', () => {
+    it('should stage changes and return diff', async () => {
+      const mockDiff = 'diff --git a/file.ts b/file.ts\n...';
+      let callCount = 0;
+      mockExecFile.mockImplementation(
+        (
+          _file: string,
+          args: string[],
+          _opts: unknown,
+          callback: (err: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          callCount++;
+          if (args.includes('add')) {
+            callback(null, '', '');
+          } else {
+            callback(null, mockDiff, '');
+          }
+        },
+      );
+
+      const diff = await service.getDiff('/tmp/workspace');
+
+      expect(diff).toBe(mockDiff);
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['add', '-A'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['diff', '--cached'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe('getChangedFiles', () => {
+    it('should return list of changed files', async () => {
+      const mockStatus = 'M  src/file1.ts\nA  src/file2.ts\nD  src/file3.ts';
+      mockSuccess(mockStatus);
+
+      const files = await service.getChangedFiles('/tmp/workspace');
+
+      expect(files).toEqual(['src/file1.ts', 'src/file2.ts', 'src/file3.ts']);
+    });
+
+    it('should return empty array when no changes', async () => {
+      mockSuccess('');
+
+      const files = await service.getChangedFiles('/tmp/workspace');
+
+      expect(files).toEqual([]);
+    });
+  });
+
+  describe('hasChanges', () => {
+    it('should return true when there are changes', async () => {
+      mockSuccess('M  src/file.ts');
+
+      const hasChanges = await service.hasChanges('/tmp/workspace');
+
+      expect(hasChanges).toBe(true);
+    });
+
+    it('should return false when no changes', async () => {
+      mockSuccess('');
+
+      const hasChanges = await service.hasChanges('/tmp/workspace');
+
+      expect(hasChanges).toBe(false);
+    });
+  });
+
+  describe('getCurrentBranch', () => {
+    it('should return current branch name', async () => {
+      mockSuccess('feature-branch\n');
+
+      const branch = await service.getCurrentBranch('/tmp/workspace');
+
+      expect(branch).toBe('feature-branch');
+    });
+  });
+
+  describe('resetChanges', () => {
+    it('should reset and clean workspace', async () => {
+      mockSuccess();
+
+      await service.resetChanges('/tmp/workspace');
+
+      expect(mockExecFile).toHaveBeenCalledTimes(2);
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['reset', '--hard', 'HEAD'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['clean', '-fd'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe('commit', () => {
+    it('should create commit and return SHA', async () => {
+      const mockSha = 'abc123def456';
+      let callCount = 0;
+      mockExecFile.mockImplementation(
+        (
+          _file: string,
+          args: string[],
+          _opts: unknown,
+          callback: (err: Error | null, stdout: string, stderr: string) => void,
+        ) => {
+          callCount++;
+          if (args.includes('rev-parse')) {
+            callback(null, mockSha + '\n', '');
+          } else {
+            callback(null, '', '');
+          }
+        },
+      );
+
+      const sha = await service.commit('/tmp/workspace', 'Test commit message');
+
+      expect(sha).toBe(mockSha);
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['commit', '-m', 'Test commit message'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+  });
+});
