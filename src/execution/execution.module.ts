@@ -13,15 +13,21 @@ import { RetryHandlerService } from './retry-handler.service';
 import { RetryClassifierService } from './retry-classifier.service';
 import { RetrySchedulerService } from './retry-scheduler.service';
 import { RetryConsumer } from './retry.consumer';
+// Story 2.10: Queue Processing
+import { AIExecutionPublisher } from './ai-execution.publisher';
+import { AIExecutionConsumer } from './ai-execution.consumer';
+import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
+// LoggerModule not needed - consumer uses NestJS Logger directly
 
 /**
  * Execution Module
  *
  * Story 2.5: FR62 - System monitors AI execution progress
  * Story 2.9: FR63 - System retries failed executions with error context
+ * Story 2.10: RabbitMQ AI Execution Queue Processing
  *
  * Provides:
  * - Execution lifecycle management
@@ -30,13 +36,14 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
  * - RabbitMQ event emission
  * - Prometheus metrics
  * - Retry logic and error handling
+ * - Queue publishing and consuming (Story 2.10)
  */
 @Module({
   imports: [
     ConfigModule,
     DatabaseModule,
     RabbitMQModule,
-    forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer
+    forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer & AIExecutionConsumer
   ],
   providers: [
     // Core services
@@ -50,6 +57,13 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
     RetryClassifierService,
     RetrySchedulerService,
     RetryConsumer,
+
+    // Queue Processing Services (Story 2.10)
+    AIExecutionPublisher,
+    AIExecutionConsumer,
+
+    // Queue Metrics Providers (Story 2.10)
+    ...queueMetricsProviders,
 
     // Prometheus metrics
     makeCounterProvider({
@@ -112,6 +126,9 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
     RetryHandlerService,
     RetryClassifierService,
     RetrySchedulerService,
+    // Story 2.10: Export queue services
+    AIExecutionPublisher,
+    AIExecutionConsumer,
   ],
 })
-export class ExecutionModule { }
+export class ExecutionModule {}
