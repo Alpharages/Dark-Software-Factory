@@ -1,7 +1,7 @@
 # Story 2.9: AI Execution Retry Logic & Error Handling
 
 **Epic:** 2 - Ticket Intake & AI Routing Engine  
-**Status:** ready-for-dev  
+**Status:** done  
 **Priority:** P1 - HIGH  
 **Effort:** 8 story points  
 **ClickUp ID:** `86evnjwag`  
@@ -31,6 +31,27 @@
 - `No provider for SentryService`
 
 **Verify prerequisites:** Check `docs/sprint-artifacts/sprint-status.yaml`
+
+
+---
+
+## Tasks/Subtasks
+
+- [x] Step 0: Verify Prerequisites
+- [x] Step 1: Create Retry Interfaces
+- [x] Step 2: Create Retry DTOs
+- [x] Step 3: Create Retry Classifier Service
+- [x] Step 4: Create Retry Scheduler Service
+- [x] Step 5: Create Retry Handler Service
+- [x] Step 5.5: Create Retry Queue Consumer
+- [x] Step 6: Create Unit Tests
+- [x] Step 7: Update Execution Module
+- [x] Step 8: Update Configuration
+- [x] Step 8.5: Update RabbitMQ Queue Configuration
+- [x] Step 8.6: Update Sentry Error Categories
+- [x] Step 9: Update Database Schema
+- [x] Step 10: Create Integration Tests
+- [x] Code Review: Fixed H1, M1, M2, M4, L1, L2 (M3, L3 deferred)
 
 ---
 

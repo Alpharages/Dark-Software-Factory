@@ -86,12 +86,17 @@ model Execution {
   routing_reason       String?
   fallback_used        Boolean          @default(false)
   original_provider    AIProvider?
+
+  // Story 2.9: Retry Context
+  error_context        String?          @db.Text  // JSON: previous retry errors
+  scheduled_retry_at   DateTime?                  // Next scheduled retry time
   
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   
   @@index([ticket_id, status])
   @@index([ai_provider, status])
+  @@index([scheduled_retry_at])  // Story 2.9: Index for retry queries
   @@map("executions")
 }
 

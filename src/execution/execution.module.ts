@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import {
   makeCounterProvider,
@@ -9,13 +9,19 @@ import { ExecutionService } from './execution.service';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
+import { RetryHandlerService } from './retry-handler.service';
+import { RetryClassifierService } from './retry-classifier.service';
+import { RetrySchedulerService } from './retry-scheduler.service';
+import { RetryConsumer } from './retry.consumer';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
+import { AiRoutingModule } from '../ai-routing/ai-routing.module';
 
 /**
  * Execution Module
  *
  * Story 2.5: FR62 - System monitors AI execution progress
+ * Story 2.9: FR63 - System retries failed executions with error context
  *
  * Provides:
  * - Execution lifecycle management
@@ -23,15 +29,27 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
  * - Audit logging for all state changes
  * - RabbitMQ event emission
  * - Prometheus metrics
+ * - Retry logic and error handling
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule, RabbitMQModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    RabbitMQModule,
+    forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer
+  ],
   providers: [
     // Core services
     ExecutionService,
     ExecutionTrackerService,
     ExecutionRepository,
     ExecutionStateMachine,
+
+    // Retry Services (Story 2.9)
+    RetryHandlerService,
+    RetryClassifierService,
+    RetrySchedulerService,
+    RetryConsumer,
 
     // Prometheus metrics
     makeCounterProvider({
@@ -55,7 +73,45 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
       help: 'Total execution retry count',
       labelNames: ['provider'],
     }),
+
+    // Retry Metrics (Story 2.9)
+    makeCounterProvider({
+      name: 'retry_attempts_total',
+      help: 'Total retry attempts',
+      labelNames: ['error_code', 'provider', 'retryable'],
+    }),
+    makeCounterProvider({
+      name: 'retry_exhausted_total',
+      help: 'Retries exhausted (permanent failures)',
+      labelNames: ['error_code'],
+    }),
+    makeCounterProvider({
+      name: 'retry_success_total',
+      help: 'Successful retry completions',
+    }),
+    makeCounterProvider({
+      name: 'retry_scheduled_total',
+      help: 'Retries scheduled',
+      labelNames: ['attempt'],
+    }),
+    makeHistogramProvider({
+      name: 'retry_delay_seconds',
+      help: 'Retry delay in seconds',
+      buckets: [1, 2, 4, 8, 16, 30, 60],
+    }),
+    makeGaugeProvider({
+      name: 'retry_active_count',
+      help: 'Currently active retries awaiting execution',
+    }),
   ],
-  exports: [ExecutionService, ExecutionTrackerService, ExecutionRepository, ExecutionStateMachine],
+  exports: [
+    ExecutionService,
+    ExecutionTrackerService,
+    ExecutionRepository,
+    ExecutionStateMachine,
+    RetryHandlerService,
+    RetryClassifierService,
+    RetrySchedulerService,
+  ],
 })
-export class ExecutionModule {}
+export class ExecutionModule { }

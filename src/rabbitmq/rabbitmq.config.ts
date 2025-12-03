@@ -50,6 +50,7 @@ export const QUEUE_NAMES = {
   DEPLOYMENT: 'deployment-queue',
   MONITORING: 'monitoring-queue',
   DEAD_LETTER: 'dead-letter-queue',
+  AI_EXECUTION_RETRY: 'ai-execution-retry-queue', // Story 2.9
 } as const;
 
 /**

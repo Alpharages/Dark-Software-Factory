@@ -33,6 +33,8 @@ describe('ExecutionTrackerService', () => {
     routing_reason: null,
     fallback_used: false,
     original_provider: null,
+    error_context: null, // Story 2.9
+    scheduled_retry_at: null, // Story 2.9
   };
 
   const mockMetricCounter = {

@@ -53,6 +53,10 @@ export enum ErrorCategory {
   RATE_LIMIT = 'rate_limit',
   NETWORK = 'network',
   UNKNOWN = 'unknown',
+
+  // Story 2.9: Retry Logic
+  AI_EXECUTION = 'ai_execution',
+  RETRY_HANDLER = 'retry_handler',
 }
 
 /**
