@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { MulterModule } from '@nestjs/platform-express';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
+import { memoryStorage } from 'multer';
 import { TicketIntakeService } from './ticket-intake.service';
 import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
@@ -8,6 +12,17 @@ import { TicketQualityController } from './ticket-quality.controller';
 import { TicketIntakeConsumer } from './ticket-intake.consumer';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
+// Story 2.12: Context Extraction
+import { ContextExtractionService } from './context-extraction.service';
+import { ContextCacheService } from './context-cache.service';
+import { ContextDocumentController } from './context-document.controller';
+import {
+  PdfExtractor,
+  MarkdownExtractor,
+  TextExtractor,
+  DocxExtractor,
+} from './extractors';
+import { contextMetricsProviders } from '../common/metrics/context-metrics.provider';
 
 // Metric names (must match service injection)
 const METRICS = {
@@ -22,6 +37,7 @@ const METRICS = {
  * FR57: Parse ticket details from ClickUp
  * FR58: Validate ticket quality
  * Story 2.11: PM-facing quality scoring API
+ * Story 2.12: Context document extraction (FR3, FR59)
  *
  * Processes incoming tickets from the webhook queue:
  * - Consumes from ticket-intake-queue (Story 2.1)
@@ -29,10 +45,36 @@ const METRICS = {
  * - Calculates quality scores
  * - Routes validated tickets to AI processing
  * - Exposes PM-facing quality scoring API
+ * - Handles context document uploads and extraction
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule, RabbitMQModule],
-  controllers: [TicketQualityController],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    RabbitMQModule,
+    // Story 2.12: Cache for context extraction
+    CacheModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        ttl: config.get('context.cacheTtlHours', 24) * 60 * 60 * 1000,
+        max: 500,
+      }),
+    }),
+    // Story 2.12: File uploads
+    MulterModule.register({
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB max
+      },
+    }),
+    // Story 2.12: Rate limiting for uploads
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
+  ],
+  controllers: [
+    TicketQualityController,
+    ContextDocumentController, // Story 2.12
+  ],
   providers: [
     // Services
     TicketIntakeService,
@@ -40,6 +82,13 @@ const METRICS = {
     TicketQualityService,
     // Consumer
     TicketIntakeConsumer,
+    // Story 2.12: Context extraction
+    ContextExtractionService,
+    ContextCacheService,
+    PdfExtractor,
+    MarkdownExtractor,
+    TextExtractor,
+    DocxExtractor,
     // Prometheus Metrics
     makeCounterProvider({
       name: METRICS.INTAKE_TOTAL,
@@ -62,7 +111,15 @@ const METRICS = {
       labelNames: ['grade'],
       buckets: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     }),
+    // Story 2.12: Context metrics
+    ...contextMetricsProviders,
   ],
-  exports: [TicketIntakeService, TicketValidatorService, TicketQualityService],
+  exports: [
+    TicketIntakeService,
+    TicketValidatorService,
+    TicketQualityService,
+    ContextExtractionService, // Story 2.12
+    ContextCacheService, // Story 2.12
+  ],
 })
 export class TicketIntakeModule {}

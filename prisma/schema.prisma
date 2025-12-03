@@ -26,8 +26,9 @@ model Ticket {
   status                TicketStatus @default(RECEIVED)
   
   // Relationships
-  executions      Execution[]
-  cost_records    CostRecord[]
+  executions         Execution[]
+  cost_records       CostRecord[]
+  context_documents  ContextDocument[]   // Story 2.12: Attached context documents
   
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
@@ -294,4 +295,60 @@ model AuditLog {
   @@index([entity_type, entity_id])
   @@index([created_at])
   @@map("audit_logs")
+}
+
+// ============================================
+// CONTEXT DOCUMENTS (Story 2.12)
+// FR3: PMs can attach context documents
+// FR59: System extracts project context
+// ============================================
+
+model ContextDocument {
+  id                String              @id @default(uuid())
+  ticket_id         String
+  ticket            Ticket              @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  
+  // Original file metadata
+  original_filename String
+  file_format       ContextFileFormat
+  file_size_bytes   Int
+  file_hash         String              @unique  // SHA-256 for deduplication
+  storage_path      String              // Path to stored file
+  
+  // Extracted content
+  extracted_text    String              @db.Text
+  extraction_status ExtractionStatus    @default(PENDING)
+  extraction_error  String?
+  
+  // Metadata for AI context
+  document_title    String?             // Extracted or provided title
+  document_type     String?             // e.g., "spec", "requirements", "domain"
+  content_summary   String?             // AI-generated summary (future)
+  
+  // Cache control
+  content_hash      String?             // Hash of extracted content
+  cached_at         DateTime?
+  cache_expires_at  DateTime?
+  
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  
+  @@index([ticket_id])
+  @@index([file_hash])
+  @@index([extraction_status])
+  @@map("context_documents")
+}
+
+enum ContextFileFormat {
+  PDF
+  MARKDOWN
+  TEXT
+  DOCX
+}
+
+enum ExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

@@ -171,5 +171,15 @@ export default () => {
       minimumThreshold: parseInt(process.env.QUALITY_MINIMUM_THRESHOLD || '50', 10),
       cacheTtlSeconds: parseInt(process.env.QUALITY_SCORE_CACHE_TTL_SECONDS || '300', 10),
     },
+
+    // Story 2.12: Context Extraction Configuration
+    // FR3: PM can attach context documents
+    // FR59: System extracts project context
+    context: {
+      maxFileSizeMb: parseInt(process.env.CONTEXT_MAX_FILE_SIZE_MB || '10', 10),
+      cacheTtlHours: parseInt(process.env.CONTEXT_CACHE_TTL_HOURS || '24', 10),
+      storagePath: process.env.CONTEXT_STORAGE_PATH || './uploads/context',
+      supportedFormats: (process.env.CONTEXT_SUPPORTED_FORMATS || 'pdf,md,txt,docx').split(','),
+    },
   };
 };

@@ -123,4 +123,12 @@ export const envValidationSchema = Joi.object({
   QUALITY_SCORE_THRESHOLD_FAIR: Joi.number().integer().min(0).max(100).default(50),
   QUALITY_MINIMUM_THRESHOLD: Joi.number().integer().min(0).max(100).default(50),
   QUALITY_SCORE_CACHE_TTL_SECONDS: Joi.number().integer().min(60).max(3600).default(300),
+
+  // Story 2.12: Context Extraction Configuration (optional - has sensible defaults)
+  // FR3: PM can attach context documents (PDF, MD, TXT, DOCX)
+  // FR59: System extracts project context
+  CONTEXT_MAX_FILE_SIZE_MB: Joi.number().integer().min(1).max(50).default(10),
+  CONTEXT_CACHE_TTL_HOURS: Joi.number().integer().min(1).max(168).default(24), // Max 1 week
+  CONTEXT_STORAGE_PATH: Joi.string().default('./uploads/context'),
+  CONTEXT_SUPPORTED_FORMATS: Joi.string().default('pdf,md,txt,docx'),
 });

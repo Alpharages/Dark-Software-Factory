@@ -124,8 +124,10 @@ development_status:
     dev_branch: "feature/2-11-quality-scoring"
     notes: "APPROVED. Code review #2 completed. FIXED: (1) Added JwtAuthGuard for JWT authentication - CRITICAL security fix, (2) Added ThrottlerGuard for rate limiting. All 34 unit tests passing. Controller guards properly configured: JwtAuthGuard + RolesGuard + ThrottlerGuard."
   2-12-project-context-extraction-attachment:
-    status: ready-for-dev
-    notes: "Story drafted with comprehensive context extraction implementation. Includes 4 format extractors (PDF, MD, TXT, DOCX), caching layer, Prometheus metrics, and integration guide for Story 2.4 prompt generation. Prerequisites: Stories 2.2, 2.4."
+    status: done
+    developer: "Amelia (Dev Agent)"
+    dev_branch: "feature/2-12-context-extraction"
+    notes: "APPROVED. Code review completed. FIXED: (1) NotFoundException in controller, (2) ParseFilePipe validation for uploads, (3) DOCUMENTS_SIZE/CACHE_HITS metrics usage, (4) Config-based cache TTL, (5) Improved E2E security tests, (6) Added uploadDocument unit tests. All 24 unit tests + 9 e2e tests passing. Security guards configured (JwtAuthGuard + RolesGuard + ThrottlerGuard)."
   epic-2-retrospective: optional
 
   epic-3: in-progress
