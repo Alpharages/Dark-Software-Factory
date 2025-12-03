@@ -21,6 +21,11 @@ import {
   CursorHeadlessProvider,
   ClaudeCodeProvider,
 } from './providers';
+// Story 2.8: Orchestration imports
+import { OrchestratorService } from './orchestrator.service';
+import { ProviderFactoryService } from './provider-factory.service';
+import { FallbackStrategyService } from './fallback-strategy.service';
+import { OrchestratorConsumer } from './orchestrator.consumer';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { ExecutionModule } from '../execution/execution.module';
@@ -58,6 +63,12 @@ import { ExecutionModule } from '../execution/execution.module';
 
     // Story 2.7: Claude Code Provider
     ClaudeCodeProvider,
+
+    // Story 2.8: Orchestration Services
+    OrchestratorService,
+    ProviderFactoryService,
+    FallbackStrategyService,
+    OrchestratorConsumer,
 
     // Story 2.3 Metrics
     // Prometheus metrics
@@ -163,6 +174,44 @@ import { ExecutionModule } from '../execution/execution.module';
       name: 'claude_cost_cents',
       help: 'Estimated cost in cents',
     }),
+
+    // Story 2.8: Orchestration Metrics
+    makeCounterProvider({
+      name: 'orchestrator_executions_total',
+      help: 'Total orchestrated executions',
+      labelNames: ['status', 'provider'],
+    }),
+    makeHistogramProvider({
+      name: 'orchestrator_execution_duration_seconds',
+      help: 'Orchestration duration in seconds',
+      labelNames: ['status'],
+      buckets: [30, 60, 120, 180, 300, 600],
+    }),
+    makeGaugeProvider({
+      name: 'orchestrator_cost_cents',
+      help: 'Estimated cost in cents',
+    }),
+    makeCounterProvider({
+      name: 'orchestrator_provider_selections_total',
+      help: 'Provider selection decisions',
+      labelNames: ['reason', 'provider'],
+    }),
+    makeCounterProvider({
+      name: 'orchestrator_fallback_total',
+      help: 'Fallback triggers',
+      labelNames: ['from_provider', 'to_provider', 'reason'],
+    }),
+    makeCounterProvider({
+      name: 'orchestrator_fallback_success_total',
+      help: 'Successful fallbacks',
+      labelNames: ['from_provider', 'to_provider'],
+    }),
+    makeHistogramProvider({
+      name: 'orchestrator_fallback_duration_seconds',
+      help: 'Fallback execution duration',
+      labelNames: ['from_provider', 'to_provider'],
+      buckets: [30, 60, 120, 180, 300],
+    }),
   ],
   exports: [
     // Story 2.3: Routing exports
@@ -179,6 +228,10 @@ import { ExecutionModule } from '../execution/execution.module';
     CursorHeadlessProvider,
     // Story 2.7: Claude Code exports
     ClaudeCodeProvider,
+    // Story 2.8: Orchestration exports
+    OrchestratorService,
+    ProviderFactoryService,
+    FallbackStrategyService,
   ],
 })
 export class AiRoutingModule {}

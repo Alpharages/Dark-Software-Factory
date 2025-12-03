@@ -103,7 +103,11 @@ development_status:
     developer: "Amelia (Dev Agent)"
     dev_branch: "feature/2-7-claude-code"
     notes: "APPROVED. Code review completed. FIXED: (1) Created cost-tracking.dto.ts with TokenUsageDto, ExecutionCostDto, ProviderCostSummaryDto and cost calculation utilities, (2) Fixed timeout memory leak - added clearTimeout in finally block, (3) Removed unused executionId parameter from executeWithTools, (4) Fixed cost tracking to use cumulative totals instead of overwriting, (5) Removed unused diff parameter from calculateConfidence, (6) Documented model choice (claude-sonnet-4-20250514) and workspacesRoot config intent. All 29 tests passing."
-  2-8-multi-provider-orchestration-fallback-logic: ready-for-dev
+  2-8-multi-provider-orchestration-fallback-logic:
+    status: done
+    developer: "Amelia (Dev Agent)"
+    dev_branch: "feature/2-8-orchestration"
+    notes: "APPROVED. Code review completed. Implemented OrchestratorService, ProviderFactoryService, FallbackStrategyService, OrchestratorConsumer. Provider selection based on complexity score (>=10 Cursor, 5-9 Claude/COMPLEXITY, <5 Claude/COST_OPTIMIZATION). Automatic fallback on retryable errors. 30 unit tests passing. All Prometheus metrics integrated."
   2-9-ai-execution-retry-logic-error-handling:
     status: ready-for-dev
     notes: "Story drafted with comprehensive retry logic implementation guide. Includes error classification, exponential backoff (1s, 2s, 4s), RabbitMQ delayed messages, and Sentry integration."

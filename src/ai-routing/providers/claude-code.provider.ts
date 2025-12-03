@@ -317,62 +317,62 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
     });
 
     try {
-    for (let i = 0; i < maxIterations; i++) {
-      // Check for cancellation
-      if (signal.aborted) {
-        throw new Error('Execution cancelled');
-      }
-
-      // Call Claude API with timeout
-      const response = await Promise.race([
-        this.client.messages.create({
-          model: this.model,
-          max_tokens: this.maxTokens,
-          tools: codeEditingTools,
-          messages,
-        }),
-        timeoutPromise,
-      ]);
-
-      totalInputTokens += response.usage.input_tokens;
-      totalOutputTokens += response.usage.output_tokens;
-
-      // Check stop reason
-      if (response.stop_reason === 'end_turn') {
-        // Claude is done - extract text response
-        finalResponse = this.extractTextContent(response.content);
-        break;
-      }
-
-      if (response.stop_reason === 'tool_use') {
-        // Process tool calls
-        const toolResults: ToolResultBlockParam[] = [];
-
-        for (const block of response.content) {
-          if (block.type === 'tool_use') {
-            toolCalls++;
-            const result = await this.executeToolCall(workspacePath, block as ToolUseBlock);
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: block.id,
-              content: result.output,
-              is_error: !result.success,
-            });
-          }
+      for (let i = 0; i < maxIterations; i++) {
+        // Check for cancellation
+        if (signal.aborted) {
+          throw new Error('Execution cancelled');
         }
 
-        // Add assistant response and tool results to messages
-        messages.push({ role: 'assistant', content: response.content });
-        messages.push({ role: 'user', content: toolResults });
-      }
-    }
+        // Call Claude API with timeout
+        const response = await Promise.race([
+          this.client.messages.create({
+            model: this.model,
+            max_tokens: this.maxTokens,
+            tools: codeEditingTools,
+            messages,
+          }),
+          timeoutPromise,
+        ]);
 
-    return {
-      finalResponse,
-      toolCalls,
-      inputTokens: totalInputTokens,
-      outputTokens: totalOutputTokens,
-    };
+        totalInputTokens += response.usage.input_tokens;
+        totalOutputTokens += response.usage.output_tokens;
+
+        // Check stop reason
+        if (response.stop_reason === 'end_turn') {
+          // Claude is done - extract text response
+          finalResponse = this.extractTextContent(response.content);
+          break;
+        }
+
+        if (response.stop_reason === 'tool_use') {
+          // Process tool calls
+          const toolResults: ToolResultBlockParam[] = [];
+
+          for (const block of response.content) {
+            if (block.type === 'tool_use') {
+              toolCalls++;
+              const result = await this.executeToolCall(workspacePath, block as ToolUseBlock);
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: block.id,
+                content: result.output,
+                is_error: !result.success,
+              });
+            }
+          }
+
+          // Add assistant response and tool results to messages
+          messages.push({ role: 'assistant', content: response.content });
+          messages.push({ role: 'user', content: toolResults });
+        }
+      }
+
+      return {
+        finalResponse,
+        toolCalls,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+      };
     } finally {
       // Clear timeout to prevent memory leak
       if (timeoutId) {

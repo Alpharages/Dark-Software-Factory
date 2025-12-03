@@ -134,5 +134,24 @@ export default () => {
       // Reserved for future provider-specific workspace isolation (currently uses shared WorkspaceService)
       workspacesRoot: process.env.CLAUDE_WORKSPACES_ROOT || '/tmp/claude-workspaces',
     },
+
+    // Story 2.8: Orchestrator Configuration
+    // Controls multi-provider orchestration and fallback behavior
+    orchestrator: {
+      // Maximum fallback attempts before giving up
+      maxFallbackAttempts: parseInt(process.env.ORCHESTRATOR_MAX_FALLBACK_ATTEMPTS || '2', 10),
+      // Delay in milliseconds before attempting fallback
+      fallbackDelayMs: parseInt(process.env.ORCHESTRATOR_FALLBACK_DELAY_MS || '1000', 10),
+      // Complexity score threshold for HIGH (routes to Cursor)
+      complexityThresholdHigh: parseInt(
+        process.env.ORCHESTRATOR_COMPLEXITY_THRESHOLD_HIGH || '10',
+        10,
+      ),
+      // Complexity score threshold for MEDIUM
+      complexityThresholdMedium: parseInt(
+        process.env.ORCHESTRATOR_COMPLEXITY_THRESHOLD_MEDIUM || '5',
+        10,
+      ),
+    },
   };
 };
