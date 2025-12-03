@@ -5,7 +5,7 @@
  */
 
 import { AIProvider } from '@prisma/client';
-import { IRoutingResult, IComplexityBreakdown } from './ai-routing.interface';
+import { IComplexityBreakdown } from './ai-routing.interface';
 
 // ⚠️ NOTE: This import requires Story 2.3's ai-routing.interface.ts to exist.
 // If import fails, Story 2.3 is not complete - see Step 0.

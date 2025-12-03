@@ -160,11 +160,9 @@ export class RetryHandlerService {
         );
 
         return { decision, scheduled: true };
-      } catch (error: any) {
-        this.logger.error(
-          `[${correlationId}] Failed to schedule retry: ${error.message}`,
-          error.stack,
-        );
+      } catch (error: unknown) {
+        const err = error as Error;
+        this.logger.error(`[${correlationId}] Failed to schedule retry: ${err.message}`, err.stack);
         // M1: If scheduling fails, treat as permanent failure
         await this.handlePermanentFailure(
           execution,
@@ -204,8 +202,10 @@ export class RetryHandlerService {
 
   /**
    * Handle permanent failure - no more retries
+   * Note: Uses `any` type because Prisma client needs regeneration after Story 2.9 schema changes
    */
   private async handlePermanentFailure(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     execution: any,
     correlationId: string,
     classification: { severity: ErrorSeverity; errorCode: string; message: string },
@@ -325,7 +325,9 @@ export class RetryHandlerService {
 
   /**
    * Calculate cumulative duration including current attempt
+   * Note: Uses `any` type because Prisma client needs regeneration after Story 2.9 schema changes
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private calculateCumulativeDuration(execution: any, currentDurationMs: number): number {
     const previousErrors = this.parsePreviousErrors(execution.error_context);
     const previousDuration = previousErrors.reduce((sum, err) => sum + (err.durationMs || 0), 0);

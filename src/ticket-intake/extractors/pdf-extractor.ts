@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseExtractor } from './base-extractor';
-import {
-  IExtractionResult,
-  ContextFileFormat,
-} from '../interfaces/context-document.interface';
+import { IExtractionResult, ContextFileFormat } from '../interfaces/context-document.interface';
 
 /**
  * PDF text extractor using pdf-parse
@@ -28,7 +25,7 @@ export class PdfExtractor extends BaseExtractor {
       // Dynamic import to avoid issues if pdf-parse is not installed
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pdfParse = require('pdf-parse');
-      
+
       const dataBuffer = await this.readFile(filePath);
       const pdfData = await pdfParse(dataBuffer);
 
@@ -62,7 +59,10 @@ export class PdfExtractor extends BaseExtractor {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`PDF extraction failed: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `PDF extraction failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return this.createErrorResult(
         `PDF extraction failed: ${errorMessage}`,
         Date.now() - startTime,

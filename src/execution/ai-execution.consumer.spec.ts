@@ -13,11 +13,11 @@ import { IExecutionCompletion, IExecutionFailure } from './interfaces';
  */
 describe('AIExecutionConsumer', () => {
   let consumer: AIExecutionConsumer;
-  let executionTracker: jest.Mocked<ExecutionTrackerService>;
-  let rabbitmqService: jest.Mocked<RabbitMQService>;
-  let orchestrator: jest.Mocked<OrchestratorService>;
+  let _executionTracker: jest.Mocked<ExecutionTrackerService>;
+  let _rabbitmqService: jest.Mocked<RabbitMQService>;
+  let _orchestrator: jest.Mocked<OrchestratorService>;
 
-  const mockMessage = {
+  const _mockMessage = {
     messageId: 'msg-123',
     timestamp: new Date().toISOString(),
     correlationId: 'corr-123',
@@ -102,9 +102,9 @@ describe('AIExecutionConsumer', () => {
     }).compile();
 
     consumer = module.get<AIExecutionConsumer>(AIExecutionConsumer);
-    executionTracker = module.get(ExecutionTrackerService);
-    rabbitmqService = module.get(RabbitMQService);
-    orchestrator = module.get(OrchestratorService);
+    _executionTracker = module.get(ExecutionTrackerService);
+    _rabbitmqService = module.get(RabbitMQService);
+    _orchestrator = module.get(OrchestratorService);
   });
 
   describe('getConsumerState', () => {
@@ -151,6 +151,7 @@ describe('AIExecutionConsumer', () => {
   describe('error classification', () => {
     it('should identify retryable errors', () => {
       // Access private method via type casting for testing
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const isRetryable = (consumer as any).isRetryableError;
 
       expect(isRetryable('TIMEOUT')).toBe(true);
@@ -160,6 +161,7 @@ describe('AIExecutionConsumer', () => {
     });
 
     it('should identify non-retryable errors', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const isRetryable = (consumer as any).isRetryableError;
 
       expect(isRetryable('INVALID_PROMPT')).toBe(false);
@@ -172,6 +174,7 @@ describe('AIExecutionConsumer', () => {
 
   describe('transient error handling', () => {
     it('should identify connection errors as requeue-able', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const shouldRequeue = (consumer as any).shouldRequeueOnError;
 
       expect(shouldRequeue(new Error('ECONNREFUSED'))).toBe(true);
@@ -181,6 +184,7 @@ describe('AIExecutionConsumer', () => {
     });
 
     it('should not requeue non-transient errors', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const shouldRequeue = (consumer as any).shouldRequeueOnError;
 
       expect(shouldRequeue(new Error('Invalid input'))).toBe(false);

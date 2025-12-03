@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseExtractor } from './base-extractor';
-import {
-  IExtractionResult,
-  ContextFileFormat,
-} from '../interfaces/context-document.interface';
+import { IExtractionResult, ContextFileFormat } from '../interfaces/context-document.interface';
 
 /**
  * Markdown text extractor
@@ -49,7 +46,10 @@ export class MarkdownExtractor extends BaseExtractor {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Markdown extraction failed: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `Markdown extraction failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return this.createErrorResult(
         `Markdown extraction failed: ${errorMessage}`,
         Date.now() - startTime,

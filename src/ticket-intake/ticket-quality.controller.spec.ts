@@ -95,9 +95,7 @@ describe('TicketQualityController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TicketQualityController],
-      providers: [
-        { provide: TicketQualityService, useValue: mockService },
-      ],
+      providers: [{ provide: TicketQualityService, useValue: mockService }],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue(mockGuard)

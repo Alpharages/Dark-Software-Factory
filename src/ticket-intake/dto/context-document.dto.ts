@@ -1,15 +1,6 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsUUID,
-  MaxLength,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsUUID, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ContextFileFormat,
-  ExtractionStatus,
-} from '../interfaces/context-document.interface';
+import { ContextFileFormat, ExtractionStatus } from '../interfaces/context-document.interface';
 
 /**
  * DTO for uploading a context document

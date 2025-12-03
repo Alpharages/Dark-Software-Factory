@@ -162,7 +162,6 @@ describe('GitOperationsService', () => {
   describe('getDiff', () => {
     it('should stage changes and return diff', async () => {
       const mockDiff = 'diff --git a/file.ts b/file.ts\n...';
-      let callCount = 0;
       mockExecFile.mockImplementation(
         (
           _file: string,
@@ -170,7 +169,6 @@ describe('GitOperationsService', () => {
           _opts: unknown,
           callback: (err: Error | null, stdout: string, stderr: string) => void,
         ) => {
-          callCount++;
           if (args.includes('add')) {
             callback(null, '', '');
           } else {
@@ -269,7 +267,6 @@ describe('GitOperationsService', () => {
   describe('commit', () => {
     it('should create commit and return SHA', async () => {
       const mockSha = 'abc123def456';
-      let callCount = 0;
       mockExecFile.mockImplementation(
         (
           _file: string,
@@ -277,7 +274,6 @@ describe('GitOperationsService', () => {
           _opts: unknown,
           callback: (err: Error | null, stdout: string, stderr: string) => void,
         ) => {
-          callCount++;
           if (args.includes('rev-parse')) {
             callback(null, mockSha + '\n', '');
           } else {

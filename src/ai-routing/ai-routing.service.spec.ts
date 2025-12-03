@@ -5,18 +5,18 @@ import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
-import { AIProvider, TicketStatus, ExecutionStatus } from '@prisma/client';
-import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';
+import { AIProvider } from '@prisma/client';
+import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { IRoutingRequest, RoutingReason } from './interfaces';
 
 describe('AIRoutingService', () => {
   let service: AIRoutingService;
-  let rabbitMQ: RabbitMQPublisherService;
-  let providerHealth: ProviderHealthService;
-  let prisma: PrismaService;
+  let _rabbitMQ: RabbitMQPublisherService;
+  let _providerHealth: ProviderHealthService;
+  let _prisma: PrismaService;
 
   const mockConfigService = {
-    get: jest.fn((key: string, defaultValue: any) => defaultValue),
+    get: jest.fn((key: string, defaultValue: unknown) => defaultValue),
   };
 
   const mockPrisma = {
@@ -75,9 +75,9 @@ describe('AIRoutingService', () => {
     }).compile();
 
     service = module.get<AIRoutingService>(AIRoutingService);
-    rabbitMQ = module.get<RabbitMQPublisherService>(RabbitMQPublisherService);
-    providerHealth = module.get<ProviderHealthService>(ProviderHealthService);
-    prisma = module.get<PrismaService>(PrismaService);
+    _rabbitMQ = module.get<RabbitMQPublisherService>(RabbitMQPublisherService);
+    _providerHealth = module.get<ProviderHealthService>(ProviderHealthService);
+    _prisma = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {

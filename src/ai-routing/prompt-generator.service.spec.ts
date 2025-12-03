@@ -4,12 +4,12 @@ import { getToken } from '@willsoto/nestjs-prometheus';
 import { PromptGeneratorService } from './prompt-generator.service';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
-import { IPromptGenerationInput, IProjectContext, PromptSection } from './interfaces';
+import { IPromptGenerationInput, IProjectContext } from './interfaces';
 
 describe('PromptGeneratorService', () => {
   let service: PromptGeneratorService;
-  let cursorBuilder: CursorPromptBuilder;
-  let claudeBuilder: ClaudeCodePromptBuilder;
+  let _cursorBuilder: CursorPromptBuilder;
+  let _claudeBuilder: ClaudeCodePromptBuilder;
 
   const mockMetrics = {
     inc: jest.fn(),
@@ -83,8 +83,8 @@ describe('PromptGeneratorService', () => {
     }).compile();
 
     service = module.get<PromptGeneratorService>(PromptGeneratorService);
-    cursorBuilder = module.get<CursorPromptBuilder>(CursorPromptBuilder);
-    claudeBuilder = module.get<ClaudeCodePromptBuilder>(ClaudeCodePromptBuilder);
+    _cursorBuilder = module.get<CursorPromptBuilder>(CursorPromptBuilder);
+    _claudeBuilder = module.get<ClaudeCodePromptBuilder>(ClaudeCodePromptBuilder);
 
     // Initialize the service
     service.onModuleInit();
@@ -231,6 +231,7 @@ describe('CursorPromptBuilder', () => {
         clickupTaskId: 'task-1',
         provider: AIProvider.CURSOR_HEADLESS,
         complexityScore: 8,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         complexityBreakdown: {} as any,
         title: 'Test Task',
         description: 'Test Description',

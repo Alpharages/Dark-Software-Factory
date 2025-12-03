@@ -107,7 +107,8 @@ export class ContextDocumentController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
           new FileTypeValidator({
-            fileType: /(pdf|text\/plain|text\/markdown|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)/,
+            fileType:
+              /(pdf|text\/plain|text\/markdown|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)/,
           }),
         ],
         fileIsRequired: true,
@@ -121,9 +122,7 @@ export class ContextDocumentController {
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    this.logger.log(
-      `[${correlationId}] Uploading document for ticket ${dto.ticketId}`,
-    );
+    this.logger.log(`[${correlationId}] Uploading document for ticket ${dto.ticketId}`);
 
     const document = await this.contextService.uploadDocument(
       dto.ticketId,
@@ -159,9 +158,7 @@ export class ContextDocumentController {
     @Param('ticketId', ParseUUIDPipe) ticketId: string,
     @CorrelationId() correlationId: string,
   ): Promise<ContextDocumentResponseDto[]> {
-    this.logger.debug(
-      `[${correlationId}] Fetching documents for ticket ${ticketId}`,
-    );
+    this.logger.debug(`[${correlationId}] Fetching documents for ticket ${ticketId}`);
 
     const documents = await this.contextService.getDocumentsForTicket(ticketId);
 
@@ -191,14 +188,9 @@ export class ContextDocumentController {
     @Param('ticketId', ParseUUIDPipe) ticketId: string,
     @CorrelationId() correlationId: string,
   ): Promise<AggregatedContextResponseDto> {
-    this.logger.log(
-      `[${correlationId}] Getting aggregated context for ticket ${ticketId}`,
-    );
+    this.logger.log(`[${correlationId}] Getting aggregated context for ticket ${ticketId}`);
 
-    const aggregated = await this.contextService.getAggregatedContext(
-      ticketId,
-      correlationId,
-    );
+    const aggregated = await this.contextService.getAggregatedContext(ticketId, correlationId);
 
     return {
       documents: aggregated.documents.map((doc, index) => ({

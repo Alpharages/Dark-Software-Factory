@@ -1,7 +1,7 @@
 # Story 2.13: Husky Pre-Commit & Pre-Push Hooks
 
 **Epic:** 2 - Ticket Intake & AI Routing Engine  
-**Status:** Ready for Review  
+**Status:** Done  
 **Priority:** P0 - BLOCKER (for Epic 3)  
 **Effort:** 3 story points  
 **Created:** Epic 2 Retrospective (2025-12-04)
@@ -255,4 +255,4 @@ After this story is complete:
 
 ## Status
 
-**Status:** Ready for Review
+**Status:** Done

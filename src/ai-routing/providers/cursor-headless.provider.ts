@@ -283,7 +283,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         stderr += data.toString();
       });
 
-      childProcess.on('close', (code, signal) => {
+      childProcess.on('close', (code, _signal) => {
         clearTimeout(timeoutId);
 
         if (timedOut) {

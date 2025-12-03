@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseExtractor } from './base-extractor';
-import {
-  IExtractionResult,
-  ContextFileFormat,
-} from '../interfaces/context-document.interface';
+import { IExtractionResult, ContextFileFormat } from '../interfaces/context-document.interface';
 
 /**
  * DOCX text extractor using mammoth
@@ -28,7 +25,7 @@ export class DocxExtractor extends BaseExtractor {
       // Dynamic import to avoid issues if mammoth is not installed
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mammoth = require('mammoth');
-      
+
       const result = await mammoth.extractRawText({ path: filePath });
       const text = result.value.trim();
 
@@ -50,7 +47,10 @@ export class DocxExtractor extends BaseExtractor {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`DOCX extraction failed: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `DOCX extraction failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return this.createErrorResult(
         `DOCX extraction failed: ${errorMessage}`,
         Date.now() - startTime,

@@ -16,12 +16,7 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { ContextExtractionService } from './context-extraction.service';
 import { ContextCacheService } from './context-cache.service';
 import { ContextDocumentController } from './context-document.controller';
-import {
-  PdfExtractor,
-  MarkdownExtractor,
-  TextExtractor,
-  DocxExtractor,
-} from './extractors';
+import { PdfExtractor, MarkdownExtractor, TextExtractor, DocxExtractor } from './extractors';
 import { contextMetricsProviders } from '../common/metrics/context-metrics.provider';
 
 // Metric names (must match service injection)

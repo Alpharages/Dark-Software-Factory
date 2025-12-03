@@ -85,7 +85,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     ticketId: string,
     repositoryUrl: string,
-    baseBranch: string = 'main',
+    _baseBranch: string = 'main',
   ): Promise<IWorkspaceInfo> {
     // Check concurrency limit
     if (this.workspaces.size >= this.maxConcurrent) {

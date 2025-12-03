@@ -15,7 +15,7 @@ describe('ProviderFactoryService', () => {
   let service: ProviderFactoryService;
   let aiExecution: jest.Mocked<AIExecutionService>;
   let complexityScorer: jest.Mocked<ComplexityScorerService>;
-  let configService: jest.Mocked<ConfigService>;
+  let _configService: jest.Mocked<ConfigService>;
 
   const mockMetrics = {
     inc: jest.fn(),
@@ -53,7 +53,7 @@ describe('ProviderFactoryService', () => {
     service = module.get<ProviderFactoryService>(ProviderFactoryService);
     aiExecution = module.get(AIExecutionService);
     complexityScorer = module.get(ComplexityScorerService);
-    configService = module.get(ConfigService);
+    _configService = module.get(ConfigService);
   });
 
   afterEach(() => {

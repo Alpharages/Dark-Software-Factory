@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+// AIProvider and ExecutionStatus may be used in full integration tests
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { AIProvider, ExecutionStatus } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { RetryHandlerService } from '../src/execution/retry-handler.service';
@@ -19,7 +21,7 @@ describe('Retry Logic (e2e)', () => {
   let retryHandler: RetryHandlerService;
   let classifier: RetryClassifierService;
   let scheduler: RetrySchedulerService;
-  let prisma: PrismaService;
+  let _prisma: PrismaService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -32,7 +34,7 @@ describe('Retry Logic (e2e)', () => {
     retryHandler = app.get<RetryHandlerService>(RetryHandlerService);
     classifier = app.get<RetryClassifierService>(RetryClassifierService);
     scheduler = app.get<RetrySchedulerService>(RetrySchedulerService);
-    prisma = app.get<PrismaService>(PrismaService);
+    _prisma = app.get<PrismaService>(PrismaService);
   });
 
   afterAll(async () => {

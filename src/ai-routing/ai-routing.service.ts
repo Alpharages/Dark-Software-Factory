@@ -74,7 +74,7 @@ export class AIRoutingService {
       }
 
       // 4. Determine routing reason and fallback status
-      const { provider, health } = availableProvider;
+      const { provider } = availableProvider;
       const fallbackUsed = provider !== preferredProvider;
       const routingReason = this.determineRoutingReason(
         complexityScore,
@@ -90,6 +90,7 @@ export class AIRoutingService {
           prompt: '', // Will be populated by Story 2.4
           status: ExecutionStatus.QUEUED,
           complexity_score: complexityScore,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           complexity_breakdown: complexityBreakdown as any,
           routing_reason: routingReason,
           fallback_used: fallbackUsed,
@@ -184,7 +185,7 @@ export class AIRoutingService {
   private async handleNoProviderAvailable(
     request: IRoutingRequest,
     complexityScore: number,
-    complexityBreakdown: any,
+    _complexityBreakdown: unknown,
   ): Promise<void> {
     const { correlationId, ticketId } = request;
 

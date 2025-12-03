@@ -29,11 +29,7 @@ export class ContextCacheService {
    */
   generateCacheKey(ticketId: string, documentHashes: string[]): string {
     const sortedHashes = [...documentHashes].sort().join(':');
-    const keyHash = crypto
-      .createHash('sha256')
-      .update(sortedHashes)
-      .digest('hex')
-      .substring(0, 16);
+    const keyHash = crypto.createHash('sha256').update(sortedHashes).digest('hex').substring(0, 16);
     return `context:${ticketId}:${keyHash}`;
   }
 

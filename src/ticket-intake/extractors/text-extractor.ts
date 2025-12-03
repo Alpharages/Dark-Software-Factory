@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseExtractor } from './base-extractor';
-import {
-  IExtractionResult,
-  ContextFileFormat,
-} from '../interfaces/context-document.interface';
+import { IExtractionResult, ContextFileFormat } from '../interfaces/context-document.interface';
 
 /**
  * Plain text extractor
@@ -41,7 +38,10 @@ export class TextExtractor extends BaseExtractor {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Text extraction failed: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `Text extraction failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return this.createErrorResult(
         `Text extraction failed: ${errorMessage}`,
         Date.now() - startTime,

@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import type { ConsumeMessage } from 'amqplib';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { OrchestratorService } from '../ai-routing/orchestrator.service';
 import { RetryHandlerService } from './retry-handler.service';
@@ -49,7 +50,7 @@ export class RetryConsumer implements OnModuleInit {
 
       await channel.consume(
         QUEUE_NAMES.AI_EXECUTION_RETRY,
-        async (msg: any) => {
+        async (msg: ConsumeMessage | null) => {
           if (!msg) return;
 
           const startTime = Date.now();
@@ -108,21 +109,23 @@ export class RetryConsumer implements OnModuleInit {
 
             // Acknowledge message
             channel.ack(msg);
-          } catch (error: any) {
+          } catch (error: unknown) {
+            const err = error as Error;
             this.logger.error(
-              `[${data?.correlationId || 'unknown'}] Error processing retry: ${error.message}`,
-              error.stack,
+              `[${data?.correlationId || 'unknown'}] Error processing retry: ${err.message}`,
+              err.stack,
             );
 
             // Reject and requeue if transient error, otherwise send to DLQ
-            const shouldRequeue = this.isTransientError(error);
+            const shouldRequeue = this.isTransientError(err);
             channel.nack(msg, false, shouldRequeue);
           }
         },
         { noAck: false }, // Manual acknowledgment
       );
-    } catch (error: any) {
-      this.logger.error(`Failed to start retry consumer: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Failed to start retry consumer: ${err.message}`);
       throw error;
     }
   }
@@ -146,7 +149,7 @@ interface RetryMessage {
   context: {
     ticketId: string;
     originalRequestTime: Date;
-    previousErrors: any[];
+    previousErrors: unknown[];
     cumulativeDurationMs: number;
     retryCount: number;
   };

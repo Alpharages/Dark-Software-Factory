@@ -106,6 +106,7 @@ describe('AIExecutionPublisher', () => {
 
     it('should use default priority of 3 when not specified', async () => {
       const dtoNoPriority = { ...validDto };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (dtoNoPriority as any).priority;
 
       await publisher.publishExecution(dtoNoPriority);

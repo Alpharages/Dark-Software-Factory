@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Histogram, Counter } from 'prom-client';
@@ -12,12 +7,7 @@ import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
 import { PrismaService } from '../database/prisma.service';
 import { ContextCacheService } from './context-cache.service';
-import {
-  PdfExtractor,
-  MarkdownExtractor,
-  TextExtractor,
-  DocxExtractor,
-} from './extractors';
+import { PdfExtractor, MarkdownExtractor, TextExtractor, DocxExtractor } from './extractors';
 import {
   ContextFileFormat,
   ExtractionStatus,
@@ -68,10 +58,7 @@ export class ContextExtractionService {
   ) {
     this.maxFileSizeBytes =
       this.configService.get<number>('context.maxFileSizeMb', 10) * 1024 * 1024;
-    this.storagePath = this.configService.get<string>(
-      'context.storagePath',
-      './uploads/context',
-    );
+    this.storagePath = this.configService.get<string>('context.storagePath', './uploads/context');
 
     // Register extractors
     this.extractors = new Map<ContextFileFormat, IExtractor>([
@@ -104,9 +91,7 @@ export class ContextExtractionService {
     const format = FILE_EXTENSIONS[ext];
 
     if (!format) {
-      errors.push(
-        `Unsupported file format: ${ext}. Supported: PDF, MD, TXT, DOCX`,
-      );
+      errors.push(`Unsupported file format: ${ext}. Supported: PDF, MD, TXT, DOCX`);
     }
 
     if (sizeBytes > this.maxFileSizeBytes) {
@@ -159,19 +144,14 @@ export class ContextExtractionService {
     }
 
     // Generate file hash for deduplication
-    const fileHash = crypto
-      .createHash('sha256')
-      .update(file.buffer)
-      .digest('hex');
+    const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
 
     // Check for duplicate
     const existing = await this.prisma.contextDocument.findUnique({
       where: { file_hash: fileHash },
     });
     if (existing && existing.ticket_id === ticketId) {
-      this.logger.debug(
-        `${logPrefix} Duplicate document for ticket ${ticketId}`,
-      );
+      this.logger.debug(`${logPrefix} Duplicate document for ticket ${ticketId}`);
       return this.mapToInterface(existing);
     }
 
@@ -198,9 +178,7 @@ export class ContextExtractionService {
 
     this.uploadsCounter.inc({ status: 'uploaded', format: validation.format! });
     this.documentsSize.observe({ format: validation.format! }, file.size);
-    this.logger.log(
-      `${logPrefix} Uploaded document ${document.id} for ticket ${ticketId}`,
-    );
+    this.logger.log(`${logPrefix} Uploaded document ${document.id} for ticket ${ticketId}`);
 
     // Trigger extraction (synchronous for now, can be async via queue in production)
     await this.extractContent(document.id, correlationId);
@@ -216,10 +194,7 @@ export class ContextExtractionService {
    * Extract content from a document
    * AC: Extracts text content from documents
    */
-  async extractContent(
-    documentId: string,
-    correlationId?: string,
-  ): Promise<IExtractionResult> {
+  async extractContent(documentId: string, correlationId?: string): Promise<IExtractionResult> {
     const logPrefix = correlationId ? `[${correlationId}]` : '';
     const timer = this.extractionDuration.startTimer();
 
@@ -236,9 +211,7 @@ export class ContextExtractionService {
       data: { extraction_status: ExtractionStatus.PROCESSING },
     });
 
-    const extractor = this.extractors.get(
-      document.file_format as ContextFileFormat,
-    );
+    const extractor = this.extractors.get(document.file_format as ContextFileFormat);
     if (!extractor) {
       const errorMsg = `No extractor for format: ${document.file_format}`;
       await this.updateExtractionError(documentId, errorMsg);
@@ -258,9 +231,7 @@ export class ContextExtractionService {
       });
 
       if (result.success && result.content) {
-        const contentHash = this.cacheService.generateContentHash(
-          result.content.text,
-        );
+        const contentHash = this.cacheService.generateContentHash(result.content.text);
 
         await this.prisma.contextDocument.update({
           where: { id: documentId },
@@ -273,10 +244,7 @@ export class ContextExtractionService {
             cached_at: new Date(),
             cache_expires_at: new Date(
               Date.now() +
-                this.configService.get<number>('context.cacheTtlHours', 24) *
-                  60 *
-                  60 *
-                  1000,
+                this.configService.get<number>('context.cacheTtlHours', 24) * 60 * 60 * 1000,
             ),
           },
         });
@@ -285,10 +253,7 @@ export class ContextExtractionService {
           `${logPrefix} Extracted ${result.content.wordCount} words from document ${documentId}`,
         );
       } else {
-        await this.updateExtractionError(
-          documentId,
-          result.error || 'Unknown extraction error',
-        );
+        await this.updateExtractionError(documentId, result.error || 'Unknown extraction error');
         this.errorsCounter.inc({
           format: document.file_format,
           reason: 'extraction_failed',
@@ -298,8 +263,7 @@ export class ContextExtractionService {
       return result;
     } catch (error) {
       timer({ format: document.file_format, status: 'error' });
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.errorsCounter.inc({
         format: document.file_format,
         reason: 'exception',
@@ -313,10 +277,7 @@ export class ContextExtractionService {
     }
   }
 
-  private async updateExtractionError(
-    documentId: string,
-    error: string,
-  ): Promise<void> {
+  private async updateExtractionError(documentId: string, error: string): Promise<void> {
     await this.prisma.contextDocument.update({
       where: { id: documentId },
       data: {
@@ -376,15 +337,10 @@ export class ContextExtractionService {
 
     // Check cache
     const documentHashes = documents.map((d) => d.file_hash);
-    const cached = await this.cacheService.getCachedContext(
-      ticketId,
-      documentHashes,
-    );
+    const cached = await this.cacheService.getCachedContext(ticketId, documentHashes);
     if (cached) {
       this.cacheHitsCounter.inc({ hit: 'true' });
-      this.logger.debug(
-        `${logPrefix} Using cached context for ticket ${ticketId}`,
-      );
+      this.logger.debug(`${logPrefix} Using cached context for ticket ${ticketId}`);
       return cached;
     }
     this.cacheHitsCounter.inc({ hit: 'false' });
@@ -394,16 +350,11 @@ export class ContextExtractionService {
       documentTitle: doc.document_title || doc.original_filename,
       documentType: doc.document_type || 'general',
       content: doc.extracted_text,
-      wordCount: doc.extracted_text
-        .split(/\s+/)
-        .filter((w) => w.length > 0).length,
+      wordCount: doc.extracted_text.split(/\s+/).filter((w) => w.length > 0).length,
       sourceFile: doc.original_filename,
     }));
 
-    const totalWordCount = contextDocuments.reduce(
-      (sum, d) => sum + d.wordCount,
-      0,
-    );
+    const totalWordCount = contextDocuments.reduce((sum, d) => sum + d.wordCount, 0);
 
     // Format for prompt injection
     const formattedContext = this.formatContextForPrompt(contextDocuments);
@@ -475,8 +426,7 @@ ${sections.join('\n')}
     try {
       await fs.unlink(document.storage_path);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(`Failed to delete file: ${errorMessage}`);
     }
 

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider, ExecutionStatus } from '@prisma/client';
+// AIProvider type comes from IAIExecutionPayload interface
+import type { ConsumeMessage, Channel } from 'amqplib';
 import { Counter, Gauge, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
@@ -106,7 +107,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       // Start consuming with manual acknowledgment
       const { consumerTag: tag } = await channel.consume(
         QUEUE_NAMES.AI_EXECUTION,
-        async (msg: any) => {
+        async (msg: ConsumeMessage | null) => {
           if (!msg) return;
 
           const startTime = Date.now();
@@ -153,20 +154,21 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             }
 
             this.processingHistogram.observe({ queue: QUEUE_NAMES.AI_EXECUTION }, duration / 1000);
-          } catch (error: any) {
+          } catch (error: unknown) {
+            const err = error as Error & { name?: string };
             // Unexpected error - reject message
             this.logger.error(
-              `[${messageData?.correlationId || 'unknown'}] Consumer error: ${error.message}`,
-              error.stack,
+              `[${messageData?.correlationId || 'unknown'}] Consumer error: ${err.message}`,
+              err.stack,
             );
 
-            const shouldRequeue = this.shouldRequeueOnError(error);
+            const shouldRequeue = this.shouldRequeueOnError(err);
             channel.nack(msg, false, shouldRequeue);
 
             this.consumerState.messagesFailed++;
             this.failedCounter.inc({
               queue: QUEUE_NAMES.AI_EXECUTION,
-              error_type: error.name || 'UnknownError',
+              error_type: err.name || 'UnknownError',
             });
           } finally {
             this.consumerState.currentMessageId = null;
@@ -180,8 +182,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       this.consumerState.startedAt = new Date();
 
       this.logger.log(`✅ AI execution consumer started (tag: ${tag})`);
-    } catch (error: any) {
-      this.logger.error(`Failed to start consumer: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Failed to start consumer: ${err.message}`);
       throw error;
     }
   }
@@ -242,16 +245,15 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           errorCode: result.error?.code,
         };
       }
-    } catch (error: any) {
-      this.logger.error(
-        `[${correlationId}] Execution ${executionId} threw error: ${error.message}`,
-      );
+    } catch (error: unknown) {
+      const err = error as Error & { code?: string };
+      this.logger.error(`[${correlationId}] Execution ${executionId} threw error: ${err.message}`);
 
       const failure: IExecutionFailure = {
         executionId,
-        errorMessage: error.message,
-        isRetryable: this.isRetryableError(error.code),
-        errorCode: error.code || 'EXECUTION_ERROR',
+        errorMessage: err.message,
+        isRetryable: this.isRetryableError(err.code),
+        errorCode: err.code || 'EXECUTION_ERROR',
       };
       await this.executionTracker.failExecution(failure, correlationId);
 
@@ -259,8 +261,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         success: false,
         executionId,
         durationMs: Date.now() - startTime,
-        errorMessage: error.message,
-        errorCode: error.code || 'EXECUTION_ERROR',
+        errorMessage: err.message,
+        errorCode: err.code || 'EXECUTION_ERROR',
       };
     }
   }
@@ -269,8 +271,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
    * Handle processing failure - determine retry or DLQ
    */
   private async handleProcessingFailure(
-    msg: any,
-    channel: any,
+    msg: ConsumeMessage,
+    channel: Channel,
     messageData: IAIExecutionMessage,
     result: IProcessingResult,
   ): Promise<void> {
@@ -348,7 +350,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         this.queueDepthGauge.set({ queue: QUEUE_NAMES.AI_EXECUTION }, stats.messageCount);
 
         this.consumerCountGauge.set({ queue: QUEUE_NAMES.AI_EXECUTION }, stats.consumerCount);
-      } catch (error) {
+      } catch {
         // Silently ignore monitoring errors
       }
     }, intervalMs);

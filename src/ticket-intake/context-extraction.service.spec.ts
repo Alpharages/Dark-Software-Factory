@@ -2,16 +2,8 @@ import { NotFoundException } from '@nestjs/common';
 import { ContextExtractionService } from './context-extraction.service';
 import { ContextCacheService } from './context-cache.service';
 import { PrismaService } from '../database/prisma.service';
-import {
-  PdfExtractor,
-  MarkdownExtractor,
-  TextExtractor,
-  DocxExtractor,
-} from './extractors';
-import {
-  ContextFileFormat,
-  ExtractionStatus,
-} from './interfaces/context-document.interface';
+import { PdfExtractor, MarkdownExtractor, TextExtractor, DocxExtractor } from './extractors';
+import { ContextFileFormat, ExtractionStatus } from './interfaces/context-document.interface';
 
 describe('ContextExtractionService', () => {
   let service: ContextExtractionService;
@@ -81,7 +73,10 @@ describe('ContextExtractionService', () => {
     mockCacheHitsCounter = { inc: jest.fn() };
 
     const mockPdfExtractor = { extract: jest.fn(), supportedFormat: ContextFileFormat.PDF };
-    const mockMarkdownExtractor = { extract: jest.fn(), supportedFormat: ContextFileFormat.MARKDOWN };
+    const mockMarkdownExtractor = {
+      extract: jest.fn(),
+      supportedFormat: ContextFileFormat.MARKDOWN,
+    };
     const mockTextExtractor = { extract: jest.fn(), supportedFormat: ContextFileFormat.TEXT };
     const mockDocxExtractor = { extract: jest.fn(), supportedFormat: ContextFileFormat.DOCX };
 
@@ -136,17 +131,13 @@ describe('ContextExtractionService', () => {
     it('should reject unsupported format', () => {
       const result = service.validateFile('image.jpg', 1024);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContainEqual(
-        expect.stringContaining('Unsupported file format'),
-      );
+      expect(result.errors).toContainEqual(expect.stringContaining('Unsupported file format'));
     });
 
     it('should reject file exceeding size limit (10MB)', () => {
       const result = service.validateFile('huge.pdf', 15 * 1024 * 1024);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContainEqual(
-        expect.stringContaining('exceeds limit'),
-      );
+      expect(result.errors).toContainEqual(expect.stringContaining('exceeds limit'));
     });
 
     it('should reject empty file', () => {
@@ -221,7 +212,15 @@ describe('ContextExtractionService', () => {
 
     it('should return cached context when available', async () => {
       const cachedContext = {
-        documents: [{ documentTitle: 'Test', documentType: 'spec', content: 'cached', wordCount: 1, sourceFile: 'test.md' }],
+        documents: [
+          {
+            documentTitle: 'Test',
+            documentType: 'spec',
+            content: 'cached',
+            wordCount: 1,
+            sourceFile: 'test.md',
+          },
+        ],
         totalWordCount: 1,
         documentCount: 1,
         formattedContext: 'cached content',
@@ -288,9 +287,7 @@ describe('ContextExtractionService', () => {
     it('should throw NotFoundException when document does not exist', async () => {
       mockPrisma.contextDocument.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteDocument('non-existent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteDocument('non-existent')).rejects.toThrow(NotFoundException);
     });
 
     it('should delete document and invalidate cache', async () => {
@@ -376,9 +373,9 @@ describe('ContextExtractionService', () => {
 
       const mockFile = createMockFile('test.md', 100, Buffer.from('content'));
 
-      await expect(
-        service.uploadDocument('non-existent-ticket', mockFile),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.uploadDocument('non-existent-ticket', mockFile)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException for unsupported file format', async () => {
@@ -386,9 +383,9 @@ describe('ContextExtractionService', () => {
 
       const mockFile = createMockFile('image.jpg', 100, Buffer.from('image'));
 
-      await expect(
-        service.uploadDocument('ticket-1', mockFile),
-      ).rejects.toThrow('Unsupported file format');
+      await expect(service.uploadDocument('ticket-1', mockFile)).rejects.toThrow(
+        'Unsupported file format',
+      );
 
       expect(mockUploadsCounter.inc).toHaveBeenCalledWith({
         status: 'rejected',
@@ -399,15 +396,9 @@ describe('ContextExtractionService', () => {
     it('should throw BadRequestException for file exceeding size limit', async () => {
       mockPrisma.ticket.findUnique.mockResolvedValue({ id: 'ticket-1' });
 
-      const mockFile = createMockFile(
-        'huge.pdf',
-        15 * 1024 * 1024,
-        Buffer.alloc(15 * 1024 * 1024),
-      );
+      const mockFile = createMockFile('huge.pdf', 15 * 1024 * 1024, Buffer.alloc(15 * 1024 * 1024));
 
-      await expect(
-        service.uploadDocument('ticket-1', mockFile),
-      ).rejects.toThrow('exceeds limit');
+      await expect(service.uploadDocument('ticket-1', mockFile)).rejects.toThrow('exceeds limit');
 
       expect(mockUploadsCounter.inc).toHaveBeenCalledWith({
         status: 'rejected',
@@ -454,9 +445,7 @@ describe('ContextExtractionService', () => {
     it('should throw NotFoundException when document does not exist', async () => {
       mockPrisma.contextDocument.findUnique.mockResolvedValue(null);
 
-      await expect(service.extractContent('non-existent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.extractContent('non-existent')).rejects.toThrow(NotFoundException);
     });
 
     it('should update status to PROCESSING before extraction', async () => {

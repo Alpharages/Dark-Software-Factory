@@ -1,8 +1,5 @@
 import { Provider } from '@nestjs/common';
-import {
-  makeHistogramProvider,
-  makeCounterProvider,
-} from '@willsoto/nestjs-prometheus';
+import { makeHistogramProvider, makeCounterProvider } from '@willsoto/nestjs-prometheus';
 import { METRICS_CONSTANTS } from './metrics.constants';
 
 /**

@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AIProvider } from '@prisma/client';
-import {
-  IPromptBuilder,
-  IPromptGenerationInput,
-  IProjectContext,
-  PromptSection,
-} from '../interfaces';
+import { IPromptBuilder, IPromptGenerationInput, IProjectContext } from '../interfaces';
 
 /**
  * Cursor CLI Headless Prompt Builder

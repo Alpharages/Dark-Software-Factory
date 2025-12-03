@@ -6,12 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { ExecutionTrackerService } from './execution-tracker.service';
-import {
-  IAIExecutionMessage,
-  IAIExecutionPayload,
-  IStartExecutionInput,
-  IExecutionFailure,
-} from './interfaces';
+import { IAIExecutionMessage, IAIExecutionPayload, IStartExecutionInput } from './interfaces';
 import { PublishExecutionDto } from './dto';
 
 /**
@@ -135,12 +130,13 @@ export class AIExecutionPublisher {
       });
 
       return { executionId, correlationId: corrId };
-    } catch (error: any) {
-      this.logger.error(`[${corrId}] Failed to publish execution: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error & { name?: string };
+      this.logger.error(`[${corrId}] Failed to publish execution: ${err.message}`);
 
       this.publishErrorsCounter.inc({
         queue: QUEUE_NAMES.AI_EXECUTION,
-        error_type: error.name || 'UnknownError',
+        error_type: err.name || 'UnknownError',
       });
 
       throw error;

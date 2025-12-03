@@ -76,11 +76,12 @@ export class PromptGeneratorService implements OnModuleInit {
       let prompt: string;
       try {
         prompt = builder.build(input, context);
-      } catch (buildError: any) {
+      } catch (buildError: unknown) {
+        const err = buildError as Error;
         this.logger.error(
-          `[${correlationId}] Failed to build prompt for ${provider}: ${buildError.message}`,
+          `[${correlationId}] Failed to build prompt for ${provider}: ${err.message}`,
         );
-        throw new Error(`Prompt generation failed: ${buildError.message}`);
+        throw new Error(`Prompt generation failed: ${err.message}`);
       }
 
       // 3. Truncate if needed
@@ -95,7 +96,6 @@ export class PromptGeneratorService implements OnModuleInit {
       }
 
       // 4. Calculate metadata
-      const estimatedTokens = builder.estimateTokens(prompt);
       const metadata = this.buildMetadata(prompt, builder, context, wasTruncated);
 
       // 5. Track metrics
@@ -116,10 +116,11 @@ export class PromptGeneratorService implements OnModuleInit {
       );
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Catch errors from getBuilder or other unhandled exceptions
+      const err = error as Error;
       this.logger.error(
-        `[${correlationId}] Error generating prompt for ${provider}: ${error.message}`,
+        `[${correlationId}] Error generating prompt for ${provider}: ${err.message}`,
       );
       throw error;
     } finally {
@@ -159,7 +160,7 @@ export class PromptGeneratorService implements OnModuleInit {
     prompt: string,
     builder: IPromptBuilder,
     context?: IProjectContext,
-    wasTruncated?: boolean,
+    _wasTruncated?: boolean,
   ): IPromptMetadata {
     // Detect which sections are included
     const sectionsIncluded: string[] = [];
@@ -196,6 +197,7 @@ export class PromptGeneratorService implements OnModuleInit {
       contextFilesIncluded: prompt.includes('```typescript') && prompt.includes('// File:'),
       relevantFilesCount: context?.relevantFiles?.length || 0,
       generatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       templateVersion: (builder as any).templateVersion || '1.0.0',
     };
   }

@@ -4,11 +4,9 @@ import {
   IsOptional,
   IsNumber,
   IsBoolean,
-  IsEnum,
   IsArray,
   ValidateNested,
   Min,
-  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ErrorSeverity, RetryDecisionReason } from '../interfaces';
