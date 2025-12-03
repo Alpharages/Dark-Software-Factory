@@ -1932,3 +1932,32 @@ This story was prepared with complete context analysis from:
 **Analysis method:** Ultimate BMad Method Story Context Engine  
 **Quality level:** Developer-ready with zero ambiguity
 
+
+## Code Review (Adversarial)
+
+**Date:** 2025-12-03
+**Reviewer:** Antigravity (Adversarial Agent)
+**Status:** PASSED (with fixes)
+
+### Findings & Fixes
+
+1.  **Naive Truncation Logic (Medium)**
+    *   **Issue:** `truncateIfNeeded` used blind string slicing, risking broken markdown structure.
+    *   **Fix:** Implemented section-aware truncation in `CursorPromptBuilder` and `ClaudeCodePromptBuilder`. Now prioritizes removing less critical sections (Project Context, Technical Requirements, Inline Files) before falling back to truncation, ensuring Task and ACs remain intact.
+
+2.  **Error Handling Scope (Medium)**
+    *   **Issue:** `getBuilder(provider)` was called outside the `try/catch` block in `PromptGeneratorService`, causing unhandled exceptions for invalid providers.
+    *   **Fix:** Moved `getBuilder` call inside the `try` block to ensure all errors are caught and logged with correlation ID context.
+
+3.  **Hardcoded Project Name (Low)**
+    *   **Issue:** `getDefaultProjectContext` had hardcoded "Dark Software Factory".
+    *   **Fix:** Updated to use `process.env.npm_package_name` (defaulting to 'Default Project').
+
+4.  **Token Estimation (Low)**
+    *   **Issue:** Approximate token counting (chars/4).
+    *   **Decision:** Accepted as sufficient for current requirements. Added comment acknowledging approximation.
+
+### Verification
+- Unit tests passed (11/11).
+- Truncation logic verified via code inspection.
+- Error handling verified via code inspection.
