@@ -5,132 +5,132 @@ import { ProviderHealthService } from './provider-health.service';
 import { PrismaService } from '../database/prisma.service';
 
 describe('ProviderHealthService', () => {
-    let service: ProviderHealthService;
-    let mockPrisma: any;
+  let service: ProviderHealthService;
+  let mockPrisma: any;
 
-    const mockConfigService = {
-        get: jest.fn((key: string, defaultValue?: any) => {
-            console.log(`[MOCK CONFIG] Requesting key: ${key}`);
-            const config: Record<string, any> = {
-                'ai.providers.cursorHeadless.enabled': true,
-                'ai.providers.cursorHeadless.maxConcurrent': 3,
-                'ai.providers.cursorHeadless.timeout': 300000,
-                'ai.providers.claudeCode.enabled': true,
-                'ai.providers.claudeCode.maxConcurrent': 5,
-                'ai.providers.claudeCode.timeout': 180000,
-            };
-            const val = config[key] ?? defaultValue;
-            console.log(`[MOCK CONFIG] Returning: ${val}`);
-            return val;
-        }),
+  const mockConfigService = {
+    get: jest.fn((key: string, defaultValue?: any) => {
+      console.log(`[MOCK CONFIG] Requesting key: ${key}`);
+      const config: Record<string, any> = {
+        'ai.providers.cursorHeadless.enabled': true,
+        'ai.providers.cursorHeadless.maxConcurrent': 3,
+        'ai.providers.cursorHeadless.timeout': 300000,
+        'ai.providers.claudeCode.enabled': true,
+        'ai.providers.claudeCode.maxConcurrent': 5,
+        'ai.providers.claudeCode.timeout': 180000,
+      };
+      const val = config[key] ?? defaultValue;
+      console.log(`[MOCK CONFIG] Returning: ${val}`);
+      return val;
+    }),
+  };
+
+  const mockMetrics = {
+    set: jest.fn(),
+    inc: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    mockPrisma = {
+      execution: {
+        count: jest.fn(),
+      },
     };
 
-    const mockMetrics = {
-        set: jest.fn(),
-        inc: jest.fn(),
-    };
+    console.log('[TEST SETUP] AIProvider:', AIProvider);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ProviderHealthService,
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: 'PROM_METRIC_AI_PROVIDER_HEALTH', useValue: mockMetrics },
+        { provide: 'PROM_METRIC_AI_PROVIDER_ACTIVE_EXECUTIONS', useValue: mockMetrics },
+        { provide: 'PROM_METRIC_AI_PROVIDER_AVAILABILITY_TOTAL', useValue: mockMetrics },
+      ],
+    }).compile();
 
-    beforeEach(async () => {
-        mockPrisma = {
-            execution: {
-                count: jest.fn(),
-            },
-        };
+    service = module.get<ProviderHealthService>(ProviderHealthService);
+    jest.clearAllMocks();
+  });
 
-        console.log('[TEST SETUP] AIProvider:', AIProvider);
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                ProviderHealthService,
-                { provide: ConfigService, useValue: mockConfigService },
-                { provide: PrismaService, useValue: mockPrisma },
-                { provide: 'PROM_METRIC_AI_PROVIDER_HEALTH', useValue: mockMetrics },
-                { provide: 'PROM_METRIC_AI_PROVIDER_ACTIVE_EXECUTIONS', useValue: mockMetrics },
-                { provide: 'PROM_METRIC_AI_PROVIDER_AVAILABILITY_TOTAL', useValue: mockMetrics },
-            ],
-        }).compile();
+  describe('getProviderHealth', () => {
+    it('should return healthy status when provider is enabled and under capacity', async () => {
+      jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
+      jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
+      mockPrisma.execution.count.mockResolvedValue(1); // 1 active execution
 
-        service = module.get<ProviderHealthService>(ProviderHealthService);
-        jest.clearAllMocks();
+      const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+
+      expect(health.isHealthy).toBe(true);
+      expect(health.activeExecutions).toBe(1);
+      expect(health.maxConcurrent).toBe(3);
+      expect(health.currentLoad).toBeLessThan(100);
     });
 
-    describe('getProviderHealth', () => {
-        it('should return healthy status when provider is enabled and under capacity', async () => {
-            jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
-            jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
-            mockPrisma.execution.count.mockResolvedValue(1); // 1 active execution
+    it('should return unhealthy when at max capacity', async () => {
+      jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
+      jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
+      mockPrisma.execution.count.mockResolvedValue(3); // At max concurrent
 
-            const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+      const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
 
-            expect(health.isHealthy).toBe(true);
-            expect(health.activeExecutions).toBe(1);
-            expect(health.maxConcurrent).toBe(3);
-            expect(health.currentLoad).toBeLessThan(100);
-        });
-
-        it('should return unhealthy when at max capacity', async () => {
-            jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
-            jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
-            mockPrisma.execution.count.mockResolvedValue(3); // At max concurrent
-
-            const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
-
-            expect(health.isHealthy).toBe(false);
-            expect(health.currentLoad).toBe(100);
-        });
-
-        it('should return unhealthy when provider disabled', async () => {
-            jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(false);
-
-            const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
-
-            expect(health.isHealthy).toBe(false);
-            expect(health.errorMessage).toContain('disabled');
-        });
+      expect(health.isHealthy).toBe(false);
+      expect(health.currentLoad).toBe(100);
     });
 
-    describe('getAvailableProvider', () => {
-        it('should return preferred provider when available', async () => {
-            jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
-            jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
-            mockPrisma.execution.count.mockResolvedValue(1);
+    it('should return unhealthy when provider disabled', async () => {
+      jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(false);
 
-            const result = await service.getAvailableProvider(AIProvider.CURSOR_HEADLESS);
+      const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
 
-            expect(result).not.toBeNull();
-            expect(result?.provider).toBe(AIProvider.CURSOR_HEADLESS);
-        });
+      expect(health.isHealthy).toBe(false);
+      expect(health.errorMessage).toContain('disabled');
+    });
+  });
 
-        it('should fallback to secondary when primary unavailable', async () => {
-            jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
-            jest.spyOn(service as any, 'getMaxConcurrent').mockImplementation((provider) => {
-                return String(provider) == 'CURSOR_HEADLESS' ? 3 : 5;
-            });
+  describe('getAvailableProvider', () => {
+    it('should return preferred provider when available', async () => {
+      jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
+      jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
+      mockPrisma.execution.count.mockResolvedValue(1);
 
-            // Cursor full (3), Claude available (2)
-            mockPrisma.execution.count.mockImplementation((args: any) => {
-                return Promise.resolve(args.where.ai_provider === AIProvider.CURSOR_HEADLESS ? 3 : 2);
-            });
+      const result = await service.getAvailableProvider(AIProvider.CURSOR_HEADLESS);
 
-            const result = await service.getAvailableProvider(AIProvider.CURSOR_HEADLESS);
-
-            expect(result?.provider).toBe(AIProvider.CLAUDE_CODE);
-        });
-
-        it('should return null when no provider available', async () => {
-            jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
-            jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
-            mockPrisma.execution.count.mockResolvedValue(10); // All over capacity
-
-            const result = await service.getAvailableProvider();
-
-            expect(result).toBeNull();
-        });
+      expect(result).not.toBeNull();
+      expect(result?.provider).toBe(AIProvider.CURSOR_HEADLESS);
     });
 
-    describe('getUnavailableDuration', () => {
-        it('should return null for healthy provider', () => {
-            const duration = service.getUnavailableDuration(AIProvider.CURSOR_HEADLESS);
-            expect(duration).toBeNull();
-        });
+    it('should fallback to secondary when primary unavailable', async () => {
+      jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
+      jest.spyOn(service as any, 'getMaxConcurrent').mockImplementation((provider) => {
+        return String(provider) == 'CURSOR_HEADLESS' ? 3 : 5;
+      });
+
+      // Cursor full (3), Claude available (2)
+      mockPrisma.execution.count.mockImplementation((args: any) => {
+        return Promise.resolve(args.where.ai_provider === AIProvider.CURSOR_HEADLESS ? 3 : 2);
+      });
+
+      const result = await service.getAvailableProvider(AIProvider.CURSOR_HEADLESS);
+
+      expect(result?.provider).toBe(AIProvider.CLAUDE_CODE);
     });
+
+    it('should return null when no provider available', async () => {
+      jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
+      jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
+      mockPrisma.execution.count.mockResolvedValue(10); // All over capacity
+
+      const result = await service.getAvailableProvider();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getUnavailableDuration', () => {
+    it('should return null for healthy provider', () => {
+      const duration = service.getUnavailableDuration(AIProvider.CURSOR_HEADLESS);
+      expect(duration).toBeNull();
+    });
+  });
 });

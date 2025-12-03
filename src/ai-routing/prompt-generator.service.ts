@@ -3,21 +3,21 @@ import { AIProvider } from '@prisma/client';
 import { Counter, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import {
-    IPromptBuilder,
-    IPromptGenerationInput,
-    IProjectContext,
-    IGeneratedPrompt,
-    IPromptMetadata,
-    PromptSection,
+  IPromptBuilder,
+  IPromptGenerationInput,
+  IProjectContext,
+  IGeneratedPrompt,
+  IPromptMetadata,
+  PromptSection,
 } from './interfaces';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
 
 /**
  * Prompt Generator Service
- * 
+ *
  * FR61: System converts ticket requirements to AI-executable prompts
- * 
+ *
  * Features:
  * - Provider-specific prompt optimization
  * - Token estimation and truncation
@@ -26,216 +26,211 @@ import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.templa
  */
 @Injectable()
 export class PromptGeneratorService implements OnModuleInit {
-    private readonly logger = new Logger(PromptGeneratorService.name);
+  private readonly logger = new Logger(PromptGeneratorService.name);
 
-    /** Map of provider to prompt builder */
-    private readonly builders: Map<AIProvider, IPromptBuilder> = new Map();
+  /** Map of provider to prompt builder */
+  private readonly builders: Map<AIProvider, IPromptBuilder> = new Map();
 
-    constructor(
-        private readonly cursorBuilder: CursorPromptBuilder,
-        private readonly claudeBuilder: ClaudeCodePromptBuilder,
-        @InjectMetric('prompt_generation_total')
-        private readonly promptCounter: Counter<string>,
-        @InjectMetric('prompt_tokens_histogram')
-        private readonly tokenHistogram: Histogram<string>,
-        @InjectMetric('prompt_generation_duration_seconds')
-        private readonly durationHistogram: Histogram<string>,
-    ) { }
+  constructor(
+    private readonly cursorBuilder: CursorPromptBuilder,
+    private readonly claudeBuilder: ClaudeCodePromptBuilder,
+    @InjectMetric('prompt_generation_total')
+    private readonly promptCounter: Counter<string>,
+    @InjectMetric('prompt_tokens_histogram')
+    private readonly tokenHistogram: Histogram<string>,
+    @InjectMetric('prompt_generation_duration_seconds')
+    private readonly durationHistogram: Histogram<string>,
+  ) {}
 
-    onModuleInit(): void {
-        // Register prompt builders
-        this.builders.set(AIProvider.CURSOR_HEADLESS, this.cursorBuilder);
-        this.builders.set(AIProvider.CLAUDE_CODE, this.claudeBuilder);
+  onModuleInit(): void {
+    // Register prompt builders
+    this.builders.set(AIProvider.CURSOR_HEADLESS, this.cursorBuilder);
+    this.builders.set(AIProvider.CLAUDE_CODE, this.claudeBuilder);
 
-        this.logger.log(
-            `Prompt generators initialized for providers: ${[...this.builders.keys()].join(', ')}`,
+    this.logger.log(
+      `Prompt generators initialized for providers: ${[...this.builders.keys()].join(', ')}`,
+    );
+  }
+
+  /**
+   * Generate AI-executable prompt for a ticket
+   *
+   * @param input - Routing result from Story 2.3
+   * @param context - Optional project context for enrichment
+   * @returns Generated prompt with metadata
+   */
+  async generatePrompt(
+    input: IPromptGenerationInput,
+    context?: IProjectContext,
+  ): Promise<IGeneratedPrompt> {
+    const { correlationId, provider, ticketId } = input;
+    const endTimer = this.durationHistogram.startTimer({ provider });
+
+    this.logger.log(`[${correlationId}] Generating ${provider} prompt for ticket ${ticketId}`);
+
+    try {
+      // 1. Get appropriate builder
+      const builder = this.getBuilder(provider);
+
+      // 2. Build the prompt (with explicit error handling)
+      let prompt: string;
+      try {
+        prompt = builder.build(input, context);
+      } catch (buildError: any) {
+        this.logger.error(
+          `[${correlationId}] Failed to build prompt for ${provider}: ${buildError.message}`,
         );
-    }
+        throw new Error(`Prompt generation failed: ${buildError.message}`);
+      }
 
-    /**
-     * Generate AI-executable prompt for a ticket
-     * 
-     * @param input - Routing result from Story 2.3
-     * @param context - Optional project context for enrichment
-     * @returns Generated prompt with metadata
-     */
-    async generatePrompt(
-        input: IPromptGenerationInput,
-        context?: IProjectContext,
-    ): Promise<IGeneratedPrompt> {
-        const { correlationId, provider, ticketId } = input;
-        const endTimer = this.durationHistogram.startTimer({ provider });
+      // 3. Truncate if needed
+      const originalLength = prompt.length;
+      prompt = builder.truncateIfNeeded(prompt);
+      const wasTruncated = prompt.length < originalLength;
 
-        this.logger.log(
-            `[${correlationId}] Generating ${provider} prompt for ticket ${ticketId}`,
+      if (wasTruncated) {
+        this.logger.warn(
+          `[${correlationId}] Prompt truncated from ${originalLength} to ${prompt.length} chars`,
         );
+      }
 
-        try {
-            // 1. Get appropriate builder
-            const builder = this.getBuilder(provider);
+      // 4. Calculate metadata
+      const estimatedTokens = builder.estimateTokens(prompt);
+      const metadata = this.buildMetadata(prompt, builder, context, wasTruncated);
 
-            // 2. Build the prompt (with explicit error handling)
-            let prompt: string;
-            try {
-                prompt = builder.build(input, context);
-            } catch (buildError: any) {
-                this.logger.error(
-                    `[${correlationId}] Failed to build prompt for ${provider}: ${buildError.message}`,
-                );
-                throw new Error(`Prompt generation failed: ${buildError.message}`);
-            }
+      // 5. Track metrics
+      this.trackMetrics(provider, metadata);
 
-            // 3. Truncate if needed
-            const originalLength = prompt.length;
-            prompt = builder.truncateIfNeeded(prompt);
-            const wasTruncated = prompt.length < originalLength;
+      // 6. Build result
+      const result: IGeneratedPrompt = {
+        correlationId,
+        ticketId,
+        provider,
+        prompt,
+        metadata,
+      };
 
-            if (wasTruncated) {
-                this.logger.warn(
-                    `[${correlationId}] Prompt truncated from ${originalLength} to ${prompt.length} chars`,
-                );
-            }
+      this.logger.log(
+        `[${correlationId}] Prompt generated: ${metadata.promptLength} chars, ` +
+          `~${metadata.estimatedTokens} tokens, ${metadata.sectionsIncluded.length} sections`,
+      );
 
-            // 4. Calculate metadata
-            const estimatedTokens = builder.estimateTokens(prompt);
-            const metadata = this.buildMetadata(prompt, builder, context, wasTruncated);
+      return result;
+    } catch (error: any) {
+      // Catch errors from getBuilder or other unhandled exceptions
+      this.logger.error(
+        `[${correlationId}] Error generating prompt for ${provider}: ${error.message}`,
+      );
+      throw error;
+    } finally {
+      endTimer();
+    }
+  }
 
-            // 5. Track metrics
-            this.trackMetrics(provider, metadata);
+  /**
+   * Generate prompt and return just the prompt string
+   * Convenience method for simple cases
+   */
+  async generatePromptString(
+    input: IPromptGenerationInput,
+    context?: IProjectContext,
+  ): Promise<string> {
+    const result = await this.generatePrompt(input, context);
+    return result.prompt;
+  }
 
-            // 6. Build result
-            const result: IGeneratedPrompt = {
-                correlationId,
-                ticketId,
-                provider,
-                prompt,
-                metadata,
-            };
+  /**
+   * Get builder for provider
+   */
+  private getBuilder(provider: AIProvider): IPromptBuilder {
+    const builder = this.builders.get(provider);
 
-            this.logger.log(
-                `[${correlationId}] Prompt generated: ${metadata.promptLength} chars, ` +
-                `~${metadata.estimatedTokens} tokens, ${metadata.sectionsIncluded.length} sections`,
-            );
-
-            return result;
-        } catch (error: any) {
-            // Catch errors from getBuilder or other unhandled exceptions
-            this.logger.error(
-                `[${correlationId}] Error generating prompt for ${provider}: ${error.message}`,
-            );
-            throw error;
-        } finally {
-            endTimer();
-        }
+    if (!builder) {
+      throw new Error(`No prompt builder registered for provider: ${provider}`);
     }
 
-    /**
-     * Generate prompt and return just the prompt string
-     * Convenience method for simple cases
-     */
-    async generatePromptString(
-        input: IPromptGenerationInput,
-        context?: IProjectContext,
-    ): Promise<string> {
-        const result = await this.generatePrompt(input, context);
-        return result.prompt;
+    return builder;
+  }
+
+  /**
+   * Build prompt metadata
+   */
+  private buildMetadata(
+    prompt: string,
+    builder: IPromptBuilder,
+    context?: IProjectContext,
+    wasTruncated?: boolean,
+  ): IPromptMetadata {
+    // Detect which sections are included
+    const sectionsIncluded: string[] = [];
+
+    if (prompt.includes('# Task:') || prompt.includes('## Task:')) {
+      sectionsIncluded.push(PromptSection.TASK_TITLE);
+    }
+    if (prompt.includes('## Description')) {
+      sectionsIncluded.push(PromptSection.DESCRIPTION);
+    }
+    if (prompt.includes('## Acceptance Criteria')) {
+      sectionsIncluded.push(PromptSection.ACCEPTANCE_CRITERIA);
+    }
+    if (prompt.includes('## Technical Requirements')) {
+      sectionsIncluded.push(PromptSection.TECHNICAL_REQUIREMENTS);
+    }
+    if (prompt.includes('## Project Context')) {
+      sectionsIncluded.push(PromptSection.PROJECT_CONTEXT);
+    }
+    if (prompt.includes('## Relevant File') || prompt.includes('File:')) {
+      sectionsIncluded.push(PromptSection.RELEVANT_FILES);
+    }
+    if (prompt.includes('Coding Standards')) {
+      sectionsIncluded.push(PromptSection.CODE_STANDARDS);
+    }
+    if (prompt.includes('## Output')) {
+      sectionsIncluded.push(PromptSection.OUTPUT_FORMAT);
     }
 
-    /**
-     * Get builder for provider
-     */
-    private getBuilder(provider: AIProvider): IPromptBuilder {
-        const builder = this.builders.get(provider);
+    return {
+      promptLength: prompt.length,
+      estimatedTokens: builder.estimateTokens(prompt),
+      sectionsIncluded,
+      contextFilesIncluded: prompt.includes('```typescript') && prompt.includes('// File:'),
+      relevantFilesCount: context?.relevantFiles?.length || 0,
+      generatedAt: new Date(),
+      templateVersion: (builder as any).templateVersion || '1.0.0',
+    };
+  }
 
-        if (!builder) {
-            throw new Error(`No prompt builder registered for provider: ${provider}`);
-        }
+  /**
+   * Track Prometheus metrics
+   */
+  private trackMetrics(provider: AIProvider, metadata: IPromptMetadata): void {
+    // Count prompts generated
+    this.promptCounter.inc({
+      provider,
+      has_context: String(metadata.contextFilesIncluded),
+    });
 
-        return builder;
-    }
+    // Track token distribution
+    this.tokenHistogram.observe({ provider }, metadata.estimatedTokens);
+  }
 
-    /**
-     * Build prompt metadata
-     */
-    private buildMetadata(
-        prompt: string,
-        builder: IPromptBuilder,
-        context?: IProjectContext,
-        wasTruncated?: boolean,
-    ): IPromptMetadata {
-        // Detect which sections are included
-        const sectionsIncluded: string[] = [];
-
-        if (prompt.includes('# Task:') || prompt.includes('## Task:')) {
-            sectionsIncluded.push(PromptSection.TASK_TITLE);
-        }
-        if (prompt.includes('## Description')) {
-            sectionsIncluded.push(PromptSection.DESCRIPTION);
-        }
-        if (prompt.includes('## Acceptance Criteria')) {
-            sectionsIncluded.push(PromptSection.ACCEPTANCE_CRITERIA);
-        }
-        if (prompt.includes('## Technical Requirements')) {
-            sectionsIncluded.push(PromptSection.TECHNICAL_REQUIREMENTS);
-        }
-        if (prompt.includes('## Project Context')) {
-            sectionsIncluded.push(PromptSection.PROJECT_CONTEXT);
-        }
-        if (prompt.includes('## Relevant File') || prompt.includes('File:')) {
-            sectionsIncluded.push(PromptSection.RELEVANT_FILES);
-        }
-        if (prompt.includes('Coding Standards')) {
-            sectionsIncluded.push(PromptSection.CODE_STANDARDS);
-        }
-        if (prompt.includes('## Output')) {
-            sectionsIncluded.push(PromptSection.OUTPUT_FORMAT);
-        }
-
-        return {
-            promptLength: prompt.length,
-            estimatedTokens: builder.estimateTokens(prompt),
-            sectionsIncluded,
-            contextFilesIncluded: prompt.includes('```typescript') && prompt.includes('// File:'),
-            relevantFilesCount: context?.relevantFiles?.length || 0,
-            generatedAt: new Date(),
-            templateVersion: (builder as any).templateVersion || '1.0.0',
-        };
-    }
-
-    /**
-     * Track Prometheus metrics
-     */
-    private trackMetrics(provider: AIProvider, metadata: IPromptMetadata): void {
-        // Count prompts generated
-        this.promptCounter.inc({
-            provider,
-            has_context: String(metadata.contextFilesIncluded),
-        });
-
-        // Track token distribution
-        this.tokenHistogram.observe(
-            { provider },
-            metadata.estimatedTokens,
-        );
-    }
-
-    /**
-     * Get default project context
-     * Called when no specific context is provided
-     */
-    getDefaultProjectContext(): IProjectContext {
-        return {
-            projectName: process.env.npm_package_name || 'Default Project',
-            techStack: ['TypeScript', 'NestJS', 'Prisma', 'PostgreSQL', 'RabbitMQ'],
-            codingStandards: [
-                'Use TypeScript strict mode',
-                'Follow NestJS conventions for modules, services, controllers',
-                'Use Prisma for database operations',
-                'Include JSDoc for public methods',
-                'Error handling with proper HTTP exceptions',
-                'Correlation IDs for request tracing',
-            ],
-            fileStructure: `src/
+  /**
+   * Get default project context
+   * Called when no specific context is provided
+   */
+  getDefaultProjectContext(): IProjectContext {
+    return {
+      projectName: process.env.npm_package_name || 'Default Project',
+      techStack: ['TypeScript', 'NestJS', 'Prisma', 'PostgreSQL', 'RabbitMQ'],
+      codingStandards: [
+        'Use TypeScript strict mode',
+        'Follow NestJS conventions for modules, services, controllers',
+        'Use Prisma for database operations',
+        'Include JSDoc for public methods',
+        'Error handling with proper HTTP exceptions',
+        'Correlation IDs for request tracing',
+      ],
+      fileStructure: `src/
 ├── modules/
 │   ├── ai-routing/
 │   ├── ticket-intake/
@@ -249,17 +244,17 @@ export class PromptGeneratorService implements OnModuleInit {
 ├── config/
 │   ├── database/
 │   └── rabbitmq/`,
-            dependencies: [
-                '@nestjs/core',
-                '@nestjs/common',
-                '@prisma/client',
-                'amqplib',
-                'class-validator',
-                'class-transformer',
-                'prom-client',
-                '@willsoto/nestjs-prometheus',
-            ],
-            relevantFiles: [],
-        };
-    }
+      dependencies: [
+        '@nestjs/core',
+        '@nestjs/common',
+        '@prisma/client',
+        'amqplib',
+        'class-validator',
+        'class-transformer',
+        'prom-client',
+        '@willsoto/nestjs-prometheus',
+      ],
+      relevantFiles: [],
+    };
+  }
 }
