@@ -129,8 +129,10 @@ development_status:
     dev_branch: "feature/2-12-context-extraction"
     notes: "APPROVED. Code review completed. FIXED: (1) NotFoundException in controller, (2) ParseFilePipe validation for uploads, (3) DOCUMENTS_SIZE/CACHE_HITS metrics usage, (4) Config-based cache TTL, (5) Improved E2E security tests, (6) Added uploadDocument unit tests. All 24 unit tests + 9 e2e tests passing. Security guards configured (JwtAuthGuard + RolesGuard + ThrottlerGuard)."
   2-13-husky-pre-commit-pre-push-hooks:
-    status: ready-for-dev
-    notes: "Created from Epic 2 retrospective. BLOCKER for Epic 3. Implements pre-commit (lint-staged) and pre-push (lint + test) hooks plus ESLint security plugin."
+    status: review
+    developer: "Amelia (Dev Agent)"
+    dev_branch: "feature/2-13-husky-hooks"
+    notes: "CODE REVIEW COMPLETE. Fixed: (1) Staged .husky/ and .lintstagedrc.json files, (2) Pre-push now uses strict lint without --fix, (3) Added pnpm-lock.yaml to File List. Pending: Team verification on their machines."
   epic-2-retrospective: done
 
   epic-3: in-progress

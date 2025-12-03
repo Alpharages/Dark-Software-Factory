@@ -2,15 +2,15 @@
 
 ## Quick Reference
 
-| Topic | Standard |
-|-------|----------|
-| Language | TypeScript (strict) |
-| Package Manager | **pnpm** (not npm) |
-| Framework | NestJS 11.x + Fastify |
-| Database | PostgreSQL 16 + Prisma |
-| Testing | Jest, >80% coverage |
-| Formatting | Prettier |
-| Linting | ESLint |
+| Topic           | Standard               |
+| --------------- | ---------------------- |
+| Language        | TypeScript (strict)    |
+| Package Manager | **pnpm** (not npm)     |
+| Framework       | NestJS 11.x + Fastify  |
+| Database        | PostgreSQL 16 + Prisma |
+| Testing         | Jest, >80% coverage    |
+| Formatting      | Prettier               |
+| Linting         | ESLint                 |
 
 ## Workflow
 
@@ -39,6 +39,7 @@ Types: feat|fix|docs|style|refactor|test|perf|chore
 ```
 
 Examples:
+
 - `feat(auth): add JWT refresh tokens`
 - `fix(db): correct migration order`
 - `docs(readme): update setup instructions`
@@ -47,7 +48,7 @@ Examples:
 
 ```typescript
 // ✅ Explicit types
-function process(ticket: TicketDto): Promise<Result> { }
+function process(ticket: TicketDto): Promise<Result> {}
 
 // ✅ NestJS decorators
 @Injectable()
@@ -57,7 +58,8 @@ export class TicketService {
 
 // ✅ DTOs with validation
 export class CreateTicketDto {
-  @IsString() @MinLength(10)
+  @IsString()
+  @MinLength(10)
   title: string;
 }
 ```
@@ -79,15 +81,50 @@ pnpm run test:cov    # Coverage report
 - [ ] Build succeeds: `pnpm run build`
 - [ ] ClickUp task linked
 
+## Git Hooks
+
+This project uses Husky for automated pre-commit and pre-push checks.
+
+| Hook         | What Runs                                       | Blocked If                   |
+| ------------ | ----------------------------------------------- | ---------------------------- |
+| `pre-commit` | lint-staged (ESLint + Prettier on staged files) | Lint errors                  |
+| `pre-push`   | Full lint + all tests                           | Lint errors or test failures |
+
+### Bypassing Hooks (Emergency Only)
+
+⚠️ **Use only in genuine emergencies** - all bypasses must be documented in PR description.
+
+```bash
+# Skip pre-commit hook
+git commit --no-verify -m "fix: emergency hotfix"
+
+# Skip pre-push hook
+git push --no-verify
+```
+
+**When bypass is acceptable:**
+
+- Critical hotfix that can't wait for full test suite
+- Known flaky test blocking urgent deployment
+- Build system issue unrelated to code changes
+
+**When bypass is NOT acceptable:**
+
+- "I don't have time to fix the lint errors"
+- "The tests are slow"
+- "I'll fix it later"
+
 ## Security
 
 - **Never commit secrets** - use `.env` (gitignored)
 - **Run security check**: `pnpm audit`
 - **No sensitive data in logs** - redact PII
+- **ESLint security plugin** - enabled to catch command injection, eval, and prototype pollution
 
 ## Architecture
 
 See `docs/architecture.md` for:
+
 - Module structure patterns
 - Database schema
 - API design conventions
