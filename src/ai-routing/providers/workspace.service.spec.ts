@@ -25,7 +25,9 @@ describe('WorkspaceService', () => {
     mockFs.mkdir.mockResolvedValue(undefined);
     mockFs.rm.mockResolvedValue(undefined);
     mockFs.readdir.mockResolvedValue([]);
-    mockFs.stat.mockResolvedValue({ mtime: new Date() } as unknown as Awaited<ReturnType<typeof fs.stat>>);
+    mockFs.stat.mockResolvedValue({ mtime: new Date() } as unknown as Awaited<
+      ReturnType<typeof fs.stat>
+    >);
     mockFs.statfs.mockResolvedValue({
       bavail: 1000000,
       bsize: 4096,
@@ -132,12 +134,7 @@ describe('WorkspaceService', () => {
 
       // 11th should fail
       await expect(
-        service.createWorkspace(
-          'exec-11',
-          'ticket-11',
-          'https://github.com/test/repo.git',
-          'main',
-        ),
+        service.createWorkspace('exec-11', 'ticket-11', 'https://github.com/test/repo.git', 'main'),
       ).rejects.toMatchObject({
         code: 'WORKSPACE_LIMIT',
         isRetryable: false,

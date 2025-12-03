@@ -19,6 +19,7 @@ import {
   WorkspaceService,
   GitOperationsService,
   CursorHeadlessProvider,
+  ClaudeCodeProvider,
 } from './providers';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
@@ -54,6 +55,9 @@ import { ExecutionModule } from '../execution/execution.module';
     WorkspaceService,
     GitOperationsService,
     CursorHeadlessProvider,
+
+    // Story 2.7: Claude Code Provider
+    ClaudeCodeProvider,
 
     // Story 2.3 Metrics
     // Prometheus metrics
@@ -133,6 +137,32 @@ import { ExecutionModule } from '../execution/execution.module';
       help: 'Workspace operations count',
       labelNames: ['operation', 'status'],
     }),
+
+    // Story 2.7: Claude Code Metrics
+    makeCounterProvider({
+      name: 'claude_executions_total',
+      help: 'Total Claude API executions',
+      labelNames: ['status'],
+    }),
+    makeHistogramProvider({
+      name: 'claude_execution_duration_seconds',
+      help: 'Claude execution duration in seconds',
+      labelNames: ['status'],
+      buckets: [5, 15, 30, 60, 90, 120],
+    }),
+    makeGaugeProvider({
+      name: 'claude_active_executions',
+      help: 'Currently active Claude executions',
+    }),
+    makeCounterProvider({
+      name: 'claude_tokens_total',
+      help: 'Total tokens used',
+      labelNames: ['type'], // input, output
+    }),
+    makeGaugeProvider({
+      name: 'claude_cost_cents',
+      help: 'Estimated cost in cents',
+    }),
   ],
   exports: [
     // Story 2.3: Routing exports
@@ -147,6 +177,8 @@ import { ExecutionModule } from '../execution/execution.module';
     AIExecutionService,
     WorkspaceService,
     CursorHeadlessProvider,
+    // Story 2.7: Claude Code exports
+    ClaudeCodeProvider,
   ],
 })
 export class AiRoutingModule {}

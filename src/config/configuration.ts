@@ -122,5 +122,17 @@ export default () => {
       gitUserName: process.env.CURSOR_GIT_USER_NAME || 'Dark Factory',
       gitUserEmail: process.env.CURSOR_GIT_USER_EMAIL || 'bot@darkfactory.ai',
     },
+
+    // Story 2.7: Anthropic Claude API Configuration
+    // Note: Claude provider reuses WorkspaceService from Story 2.6 (shared workspace management)
+    // Model: claude-sonnet-4-20250514 is the latest Sonnet model as of implementation
+    anthropic: {
+      apiKey: process.env.ANTHROPIC_API_KEY || '',
+      model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+      maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
+      timeoutMs: parseInt(process.env.ANTHROPIC_TIMEOUT_MS || '120000', 10),
+      // Reserved for future provider-specific workspace isolation (currently uses shared WorkspaceService)
+      workspacesRoot: process.env.CLAUDE_WORKSPACES_ROOT || '/tmp/claude-workspaces',
+    },
   };
 };

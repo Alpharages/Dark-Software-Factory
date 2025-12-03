@@ -17,7 +17,7 @@ import {
   IProviderHealthStatus,
   AIErrorCode,
 } from './interfaces';
-import { CursorHeadlessProvider } from './providers';
+import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '../execution/execution.service';
 import { CompleteExecutionDto, FailExecutionDto } from '../execution/dto';
 
@@ -30,11 +30,12 @@ export class AIExecutionService {
 
   constructor(
     private readonly cursorProvider: CursorHeadlessProvider,
+    private readonly claudeProvider: ClaudeCodeProvider,
     private readonly executionService: ExecutionService,
   ) {
     // Register providers
     this.providers.set(AIProvider.CURSOR_HEADLESS, this.cursorProvider);
-    // Claude provider will be added in Story 2.7
+    this.providers.set(AIProvider.CLAUDE_CODE, this.claudeProvider);
   }
 
   /**

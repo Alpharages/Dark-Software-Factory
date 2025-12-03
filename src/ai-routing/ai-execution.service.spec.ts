@@ -1,18 +1,20 @@
 /**
  * AI Execution Service Unit Tests
  * Story 2.6: AI Provider Integration - Cursor CLI Headless Mode
+ * Story 2.7: AI Provider Integration - Claude Code (Anthropic)
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { AIProvider } from '@prisma/client';
 import { AIExecutionService } from './ai-execution.service';
-import { CursorHeadlessProvider } from './providers';
+import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '../execution/execution.service';
 import { IAIExecutionInput, IAIExecutionResult, AIErrorCode } from './interfaces';
 
 describe('AIExecutionService', () => {
   let service: AIExecutionService;
   let cursorProvider: jest.Mocked<CursorHeadlessProvider>;
+  let claudeProvider: jest.Mocked<ClaudeCodeProvider>;
   let executionService: jest.Mocked<ExecutionService>;
 
   const mockInput: IAIExecutionInput = {
@@ -57,6 +59,15 @@ describe('AIExecutionService', () => {
       cancel: jest.fn(),
     };
 
+    const mockClaudeProvider = {
+      provider: AIProvider.CLAUDE_CODE,
+      maxConcurrent: 20,
+      defaultTimeoutMs: 120000,
+      execute: jest.fn(),
+      checkHealth: jest.fn(),
+      cancel: jest.fn(),
+    };
+
     const mockExecutionService = {
       markInProgress: jest.fn(),
       completeExecution: jest.fn(),
@@ -68,12 +79,14 @@ describe('AIExecutionService', () => {
       providers: [
         AIExecutionService,
         { provide: CursorHeadlessProvider, useValue: mockCursorProvider },
+        { provide: ClaudeCodeProvider, useValue: mockClaudeProvider },
         { provide: ExecutionService, useValue: mockExecutionService },
       ],
     }).compile();
 
     service = module.get<AIExecutionService>(AIExecutionService);
     cursorProvider = module.get(CursorHeadlessProvider);
+    claudeProvider = module.get(ClaudeCodeProvider);
     executionService = module.get(ExecutionService);
   });
 
@@ -117,9 +130,9 @@ describe('AIExecutionService', () => {
     });
 
     it('should throw for unregistered provider', async () => {
-      await expect(
-        service.executeWithProvider('UNKNOWN' as AIProvider, mockInput),
-      ).rejects.toThrow('Provider not registered');
+      await expect(service.executeWithProvider('UNKNOWN' as AIProvider, mockInput)).rejects.toThrow(
+        'Provider not registered',
+      );
     });
 
     it('should handle unexpected errors', async () => {
@@ -133,7 +146,7 @@ describe('AIExecutionService', () => {
         expect.objectContaining({
           executionId: mockInput.executionId,
           errorMessage: 'Unexpected failure',
-          errorCode: 'UNEXPECTED_ERROR',
+          errorCode: AIErrorCode.UNKNOWN,
         }),
         mockInput.correlationId,
         true,
@@ -177,10 +190,21 @@ describe('AIExecutionService', () => {
         activeExecutions: 0,
       });
 
+      claudeProvider.checkHealth.mockResolvedValue({
+        provider: AIProvider.CLAUDE_CODE,
+        isHealthy: true,
+        lastSuccessAt: new Date(),
+        lastFailureAt: null,
+        consecutiveFailures: 0,
+        circuitState: 'CLOSED',
+        activeExecutions: 0,
+      });
+
       const health = await service.getAllProvidersHealth();
 
-      expect(health).toHaveLength(1);
-      expect(health[0].provider).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(health).toHaveLength(2);
+      expect(health.map((h) => h.provider)).toContain(AIProvider.CURSOR_HEADLESS);
+      expect(health.map((h) => h.provider)).toContain(AIProvider.CLAUDE_CODE);
     });
   });
 

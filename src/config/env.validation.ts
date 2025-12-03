@@ -110,4 +110,10 @@ export const envValidationSchema = Joi.object({
   CURSOR_WORKSPACE_CLEANUP_AGE_MS: Joi.number().default(7 * 24 * 60 * 60 * 1000),
   CURSOR_GIT_USER_NAME: Joi.string().default('Dark Factory'),
   CURSOR_GIT_USER_EMAIL: Joi.string().email().default('bot@darkfactory.ai'),
+
+  // Story 2.7: Anthropic API Configuration (optional - provider disabled if not set)
+  ANTHROPIC_MODEL: Joi.string().default('claude-sonnet-4-20250514'),
+  ANTHROPIC_MAX_TOKENS: Joi.number().min(1000).max(100000).default(8000),
+  ANTHROPIC_TIMEOUT_MS: Joi.number().min(30000).max(300000).default(120000),
+  CLAUDE_WORKSPACES_ROOT: Joi.string().default('/tmp/claude-workspaces'),
 });
