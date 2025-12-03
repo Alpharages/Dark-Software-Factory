@@ -128,7 +128,10 @@ development_status:
     developer: "Amelia (Dev Agent)"
     dev_branch: "feature/2-12-context-extraction"
     notes: "APPROVED. Code review completed. FIXED: (1) NotFoundException in controller, (2) ParseFilePipe validation for uploads, (3) DOCUMENTS_SIZE/CACHE_HITS metrics usage, (4) Config-based cache TTL, (5) Improved E2E security tests, (6) Added uploadDocument unit tests. All 24 unit tests + 9 e2e tests passing. Security guards configured (JwtAuthGuard + RolesGuard + ThrottlerGuard)."
-  epic-2-retrospective: optional
+  2-13-husky-pre-commit-pre-push-hooks:
+    status: ready-for-dev
+    notes: "Created from Epic 2 retrospective. BLOCKER for Epic 3. Implements pre-commit (lint-staged) and pre-push (lint + test) hooks plus ESLint security plugin."
+  epic-2-retrospective: done
 
   epic-3: in-progress
   3-1-linting-integration-for-multiple-languages:
