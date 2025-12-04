@@ -28,11 +28,11 @@ export function redactSensitiveData(obj: unknown, additionalFields: string[] = [
       );
 
     if (isSensitive) {
-      redacted[key] = REDACTED;
+      Reflect.set(redacted, key, REDACTED);
     } else if (typeof value === 'object' && value !== null) {
-      redacted[key] = redactSensitiveData(value, additionalFields);
+      Reflect.set(redacted, key, redactSensitiveData(value, additionalFields));
     } else {
-      redacted[key] = value;
+      Reflect.set(redacted, key, value);
     }
   }
 

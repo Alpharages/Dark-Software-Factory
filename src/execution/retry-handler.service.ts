@@ -34,7 +34,7 @@ export class RetryHandlerService {
   private totalRetries = 0;
   private successfulRetries = 0;
   private exhaustedRetries = 0;
-  private retriesByErrorCode: Record<string, number> = {};
+  private retriesByErrorCodeMap = new Map<string, number>();
 
   /** M2: Max error history to prevent unbounded growth */
   private static readonly MAX_ERROR_HISTORY = 5;
@@ -110,7 +110,7 @@ export class RetryHandlerService {
 
     // Track metrics
     this.totalRetries++;
-    this.retriesByErrorCode[errorCode] = (this.retriesByErrorCode[errorCode] || 0) + 1;
+    this.retriesByErrorCodeMap.set(errorCode, (this.retriesByErrorCodeMap.get(errorCode) ?? 0) + 1);
     this.attemptsCounter.inc({
       error_code: errorCode,
       provider,
@@ -347,7 +347,7 @@ export class RetryHandlerService {
           ? this.totalRetries / (this.successfulRetries + this.exhaustedRetries || 1)
           : 0,
       successRate: this.totalRetries > 0 ? this.successfulRetries / this.totalRetries : 0,
-      retriesByErrorCode: { ...this.retriesByErrorCode },
+      retriesByErrorCode: Object.fromEntries(this.retriesByErrorCodeMap),
     };
   }
 }

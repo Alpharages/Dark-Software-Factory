@@ -1,4 +1,5 @@
 import { ExecutionStatus } from '@prisma/client';
+import { SafeMap } from '../../common/utils/safe-access.util';
 
 /**
  * Valid state transitions for execution status
@@ -76,11 +77,14 @@ export const STATUS_LABELS: Record<ExecutionStatus, string> = {
   [ExecutionStatus.CANCELLED]: 'Cancelled',
 };
 
+// Type-safe Map for transitions lookup
+const transitionsMap = new SafeMap(VALID_TRANSITIONS);
+
 /**
  * Check if a transition is valid
  */
 export function isValidTransition(from: ExecutionStatus, to: ExecutionStatus): boolean {
-  return VALID_TRANSITIONS[from]?.includes(to) ?? false;
+  return transitionsMap.getOrDefault(from, []).includes(to);
 }
 
 /**

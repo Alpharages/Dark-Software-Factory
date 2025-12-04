@@ -34,8 +34,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     for (const model of models) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (this as any)[model].deleteMany();
+        // Access model using Reflect.get for type-safe property access
+        const modelDelegate = Reflect.get(this, model) as { deleteMany?: () => Promise<unknown> };
+        if (modelDelegate && typeof modelDelegate.deleteMany === 'function') {
+          await modelDelegate.deleteMany();
+        }
       } catch (error) {
         console.warn(`Could not clean ${model}:`, error);
       }

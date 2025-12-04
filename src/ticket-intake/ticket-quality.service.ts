@@ -761,25 +761,37 @@ export class TicketQualityService {
    * Get grade details (emoji and message)
    */
   private getGradeDetails(grade: QualityGrade): { gradeEmoji: string; gradeMessage: string } {
-    const gradeMap: Record<QualityGrade, { gradeEmoji: string; gradeMessage: string }> = {
-      excellent: {
-        gradeEmoji: '✅',
-        gradeMessage: 'Excellent! Well-defined and ready for AI processing.',
-      },
-      good: {
-        gradeEmoji: '👍',
-        gradeMessage: 'Good quality. Minor improvements could enhance clarity.',
-      },
-      fair: {
-        gradeEmoji: '⚠️',
-        gradeMessage: 'Fair quality. Address suggestions before submitting.',
-      },
-      poor: {
-        gradeEmoji: '❌',
-        gradeMessage: 'Poor quality. Significant improvements needed.',
-      },
-    };
-    return gradeMap[grade];
+    const gradeMap = new Map<QualityGrade, { gradeEmoji: string; gradeMessage: string }>([
+      [
+        'excellent',
+        {
+          gradeEmoji: '✅',
+          gradeMessage: 'Excellent! Well-defined and ready for AI processing.',
+        },
+      ],
+      [
+        'good',
+        {
+          gradeEmoji: '👍',
+          gradeMessage: 'Good quality. Minor improvements could enhance clarity.',
+        },
+      ],
+      [
+        'fair',
+        {
+          gradeEmoji: '⚠️',
+          gradeMessage: 'Fair quality. Address suggestions before submitting.',
+        },
+      ],
+      [
+        'poor',
+        {
+          gradeEmoji: '❌',
+          gradeMessage: 'Poor quality. Significant improvements needed.',
+        },
+      ],
+    ]);
+    return gradeMap.get(grade) ?? { gradeEmoji: '❓', gradeMessage: 'Unknown quality grade.' };
   }
 
   /**
@@ -804,9 +816,11 @@ export class TicketQualityService {
     ];
 
     const suggestions: string[] = [];
+    const breakdownMap = new Map(Object.entries(breakdown));
     for (const cat of priority) {
-      if (breakdown[cat].percentage < 100) {
-        suggestions.push(...breakdown[cat].suggestions);
+      const category = breakdownMap.get(cat) as ICategoryScore | undefined;
+      if (category && category.percentage < 100) {
+        suggestions.push(...category.suggestions);
       }
       if (suggestions.length >= 5) break;
     }

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Histogram, Counter } from 'prom-client';
 import * as path from 'path';
-import * as fs from 'fs/promises';
+import { safeMkdir, safeWriteFile } from '../common/utils/safe-fs.util';
 import * as crypto from 'crypto';
 import { PrismaService } from '../database/prisma.service';
 import { ContextCacheService } from './context-cache.service';
@@ -74,7 +74,9 @@ export class ContextExtractionService {
 
   private async ensureStorageDirectory(): Promise<void> {
     try {
-      await fs.mkdir(this.storagePath, { recursive: true });
+      // Use path.parse to get filesystem root for safe mkdir
+      const fsRoot = path.parse(this.storagePath).root;
+      await safeMkdir(this.storagePath, fsRoot, { recursive: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Failed to create storage directory: ${errorMessage}`);
@@ -88,7 +90,9 @@ export class ContextExtractionService {
   validateFile(filename: string, sizeBytes: number): IFileValidation {
     const errors: string[] = [];
     const ext = path.extname(filename).toLowerCase();
-    const format = FILE_EXTENSIONS[ext];
+    // Use Map for type-safe extension lookup
+    const extensionsMap = new Map(Object.entries(FILE_EXTENSIONS));
+    const format = extensionsMap.get(ext);
 
     if (!format) {
       errors.push(`Unsupported file format: ${ext}. Supported: PDF, MD, TXT, DOCX`);
@@ -158,7 +162,7 @@ export class ContextExtractionService {
     // Store file
     const storedFilename = `${fileHash}${path.extname(file.originalname)}`;
     const storagePath = path.join(this.storagePath, storedFilename);
-    await fs.writeFile(storagePath, file.buffer);
+    await safeWriteFile(storagePath, this.storagePath, file.buffer);
 
     // Create database record
     const document = await this.prisma.contextDocument.create({
@@ -422,9 +426,10 @@ ${sections.join('\n')}
       throw new NotFoundException(`Document ${documentId} not found`);
     }
 
-    // Delete file
+    // Delete file using safe unlink with storage root validation
     try {
-      await fs.unlink(document.storage_path);
+      const { safeUnlink } = await import('../common/utils/safe-fs.util');
+      await safeUnlink(document.storage_path, this.storagePath);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(`Failed to delete file: ${errorMessage}`);

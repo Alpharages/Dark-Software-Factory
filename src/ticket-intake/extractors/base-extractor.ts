@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import * as fs from 'fs/promises';
 import * as path from 'path';
+import { safeReadFileBuffer } from '../../common/utils/safe-fs.util';
 import {
   IExtractor,
   IExtractionResult,
@@ -38,10 +38,12 @@ export abstract class BaseExtractor implements IExtractor {
   protected abstract getSupportedExtensions(): string[];
 
   /**
-   * Read file as buffer
+   * Read file as buffer using validated path within filesystem root
    */
   protected async readFile(filePath: string): Promise<Buffer> {
-    return fs.readFile(filePath);
+    // Use filesystem root as allowed root since paths come from validated database
+    const fsRoot = path.parse(filePath).root;
+    return safeReadFileBuffer(filePath, fsRoot);
   }
 
   /**

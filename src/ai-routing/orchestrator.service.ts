@@ -177,9 +177,11 @@ export class OrchestratorService {
     totalDurationMs: number,
   ): void {
     this.providerUsage[result.executedBy]++;
+
     this.executionTimes[result.executedBy].push(result.result.durationMs);
 
     // Keep only last 100 execution times for average calculation
+
     if (this.executionTimes[result.executedBy].length > 100) {
       this.executionTimes[result.executedBy].shift();
     }
@@ -198,22 +200,27 @@ export class OrchestratorService {
    * Calculate average execution times for each provider
    */
   private calculateAvgExecutionTimes(): Record<AIProvider, number> {
-    const avgTimes: Record<AIProvider, number> = {
-      [AIProvider.CURSOR_HEADLESS]: 0,
-      [AIProvider.CLAUDE_CODE]: 0,
-    };
+    // Use Map for safe iteration and storage
+    const timesMap = new Map(Object.entries(this.executionTimes));
+    const avgTimesMap = new Map<AIProvider, number>();
 
-    for (const provider of Object.keys(this.executionTimes) as AIProvider[]) {
-      const times = this.executionTimes[provider];
+    for (const [provider, times] of timesMap.entries()) {
+      const typedProvider = provider as AIProvider;
       if (times.length > 0) {
-        avgTimes[provider] = times.reduce((a, b) => a + b, 0) / times.length;
+        avgTimesMap.set(typedProvider, times.reduce((a, b) => a + b, 0) / times.length);
       } else {
         // Default estimates when no data available
-        avgTimes[provider] = provider === AIProvider.CURSOR_HEADLESS ? 120_000 : 60_000;
+        avgTimesMap.set(
+          typedProvider,
+          typedProvider === AIProvider.CURSOR_HEADLESS ? 120_000 : 60_000,
+        );
       }
     }
 
-    return avgTimes;
+    return {
+      [AIProvider.CURSOR_HEADLESS]: avgTimesMap.get(AIProvider.CURSOR_HEADLESS) ?? 120_000,
+      [AIProvider.CLAUDE_CODE]: avgTimesMap.get(AIProvider.CLAUDE_CODE) ?? 60_000,
+    };
   }
 
   /**

@@ -216,16 +216,16 @@ export class ExecutionRepository {
    */
   async updateTicketStatus(ticketId: string, status: string): Promise<void> {
     // Map execution-related statuses to ticket statuses
-    const ticketStatusMap: Record<string, string> = {
-      QUEUED: 'QUEUED',
-      IN_PROGRESS: 'AI_PROCESSING',
-      COMPLETED: 'QA_REVIEW', // Move to QA after AI completes
-      FAILED: 'FAILED',
-      TIMEOUT: 'FAILED',
-      CANCELLED: 'FAILED', // Cancelled executions mark ticket as failed
-    };
+    const ticketStatusMap = new Map<string, string>([
+      ['QUEUED', 'QUEUED'],
+      ['IN_PROGRESS', 'AI_PROCESSING'],
+      ['COMPLETED', 'QA_REVIEW'], // Move to QA after AI completes
+      ['FAILED', 'FAILED'],
+      ['TIMEOUT', 'FAILED'],
+      ['CANCELLED', 'FAILED'], // Cancelled executions mark ticket as failed
+    ]);
 
-    const ticketStatus = ticketStatusMap[status];
+    const ticketStatus = ticketStatusMap.get(status);
     if (ticketStatus) {
       await this.prisma.ticket.update({
         where: { id: ticketId },

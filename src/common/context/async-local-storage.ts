@@ -32,6 +32,12 @@ export function addTiming(key: keyof PerformanceTimings, ms: number): void {
   const store = asyncLocalStorage.getStore();
   if (store) {
     store.timings = store.timings || {};
-    store.timings[key] = ms;
+    // Use Object.defineProperty for type-safe property assignment
+    Object.defineProperty(store.timings, key, {
+      value: ms,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
   }
 }

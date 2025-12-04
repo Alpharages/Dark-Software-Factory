@@ -9,6 +9,10 @@ import {
 } from '../enums';
 import { IStateTransition } from '../interfaces';
 
+// Map-based lookups for type-safe property access
+const statusLabelsMap = new Map(Object.entries(STATUS_LABELS));
+const transitionsMap = new Map(Object.entries(VALID_TRANSITIONS));
+
 /**
  * Execution State Machine
  *
@@ -37,7 +41,7 @@ export class ExecutionStateMachine {
     // Same state is a no-op
     if (currentStatus === targetStatus) {
       this.logger.debug(
-        `[${executionId}] Status already ${STATUS_LABELS[currentStatus]}, no transition needed`,
+        `[${executionId}] Status already ${statusLabelsMap.get(currentStatus)}, no transition needed`,
       );
       return {
         executionId,
@@ -50,7 +54,7 @@ export class ExecutionStateMachine {
 
     // Validate transition
     if (!isValidTransition(currentStatus, targetStatus)) {
-      const error = `Invalid transition: ${STATUS_LABELS[currentStatus]} → ${STATUS_LABELS[targetStatus]} `;
+      const error = `Invalid transition: ${statusLabelsMap.get(currentStatus)} → ${statusLabelsMap.get(targetStatus)} `;
       this.logger.error(`[${executionId}] ${error} `);
       throw new InvalidStateTransitionError(executionId, currentStatus, targetStatus, error);
     }
@@ -65,7 +69,7 @@ export class ExecutionStateMachine {
     };
 
     this.logger.log(
-      `[${executionId}] State transition: ${STATUS_LABELS[currentStatus]} → ${STATUS_LABELS[targetStatus]} ` +
+      `[${executionId}] State transition: ${statusLabelsMap.get(currentStatus)} → ${statusLabelsMap.get(targetStatus)} ` +
         (reason ? ` (${reason})` : ''),
     );
 
@@ -118,14 +122,14 @@ export class ExecutionStateMachine {
    * Get human-readable status label
    */
   getStatusLabel(status: ExecutionStatus): string {
-    return STATUS_LABELS[status];
+    return statusLabelsMap.get(status) ?? status;
   }
 
   /**
    * Get valid next states from current state
    */
   getValidNextStates(currentStatus: ExecutionStatus): ExecutionStatus[] {
-    return VALID_TRANSITIONS[currentStatus] || [];
+    return (transitionsMap.get(currentStatus) as ExecutionStatus[]) ?? [];
   }
 }
 

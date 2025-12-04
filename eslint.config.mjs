@@ -71,4 +71,24 @@ export default tseslint.config(
       'security/detect-possible-timing-attacks': 'warn',
     },
   },
+
+  // Security utility files - these ARE the security implementation layer
+  // They must perform the underlying operations that trigger security warnings
+  // The security is provided by validation functions (validatePath, hasOwnProperty checks)
+  {
+    files: ['**/common/utils/safe-*.util.ts'],
+    rules: {
+      'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-object-injection': 'off',
+    },
+  },
+
+  // Test files - mock objects and test fixtures use dynamic property access
+  // These patterns are safe in test context where data is controlled
+  {
+    files: ['**/*.spec.ts', '**/*.test.ts', '**/test/**/*.ts'],
+    rules: {
+      'security/detect-object-injection': 'off',
+    },
+  },
 );

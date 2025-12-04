@@ -9,3 +9,4 @@ process.env.CLICKUP_API_KEY = 'test-clickup-key';
 process.env.CLICKUP_WEBHOOK_SECRET = 'test-webhook-secret-16chars';
 process.env.CURSOR_API_KEY = 'test-cursor-key';
 process.env.NODE_ENV = 'test';
+process.env.SENTRY_DSN = 'https://examplePublicKey@o0.ingest.sentry.io/0';

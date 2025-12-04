@@ -122,6 +122,9 @@ export const PROVIDER_COST_RATES: Record<string, ProviderCostRates> = {
   },
 };
 
+// Map-based cost rates lookup for type-safe access
+const costRatesMap = new Map<string, ProviderCostRates>(Object.entries(PROVIDER_COST_RATES));
+
 /**
  * Calculate cost from token usage
  */
@@ -130,7 +133,7 @@ export function calculateCost(
   inputTokens: number,
   outputTokens: number,
 ): { inputCostCents: number; outputCostCents: number; totalCostCents: number } {
-  const rates = PROVIDER_COST_RATES[provider] || { inputTokenRate: 0, outputTokenRate: 0 };
+  const rates = costRatesMap.get(provider) ?? { inputTokenRate: 0, outputTokenRate: 0 };
 
   const inputCostCents = (inputTokens / 1_000_000) * rates.inputTokenRate;
   const outputCostCents = (outputTokens / 1_000_000) * rates.outputTokenRate;

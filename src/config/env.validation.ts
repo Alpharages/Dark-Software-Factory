@@ -75,7 +75,7 @@ export const envValidationSchema = Joi.object({
   }),
 
   // Monitoring (optional but recommended)
-  SENTRY_DSN: Joi.string().uri().optional(),
+  SENTRY_DSN: Joi.string().optional().allow(''),
   SENTRY_ENVIRONMENT: Joi.string().optional(),
   SENTRY_RELEASE: Joi.string().optional(),
   SENTRY_DEBUG: Joi.boolean().default(false),

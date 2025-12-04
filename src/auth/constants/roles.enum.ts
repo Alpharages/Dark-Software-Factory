@@ -1,3 +1,5 @@
+import { SafeMap } from '../../common/utils/safe-access.util';
+
 /**
  * User roles for RBAC (Role-Based Access Control)
  * Per architecture.md Security Architecture section
@@ -82,9 +84,12 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   [Role.VIEWER]: [Permission.VIEW_DASHBOARDS],
 };
 
+// Type-safe Map for permissions lookup
+const permissionsMap = new SafeMap(ROLE_PERMISSIONS);
+
 /**
  * Helper function to check if a role has a specific permission
  */
 export function hasPermission(role: Role, permission: Permission): boolean {
-  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
+  return permissionsMap.getOrDefault(role, []).includes(permission);
 }

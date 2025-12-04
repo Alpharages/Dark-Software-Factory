@@ -20,8 +20,16 @@ import {
   ToolUseBlock,
   ToolResultBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
-import * as fs from 'fs/promises';
+import { Dirent } from 'fs';
 import * as path from 'path';
+import {
+  safeReadFileString,
+  safeMkdir,
+  safeWriteFile,
+  safeUnlink,
+  safeReaddir,
+  validatePath,
+} from '../../common/utils/safe-fs.util';
 import {
   IAIProvider,
   IAIExecutionInput,
@@ -392,22 +400,22 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
         case 'read_file': {
           const { path: filePath } = input as ReadFileInput;
           const fullPath = this.resolveSafePath(workspacePath, filePath);
-          const content = await fs.readFile(fullPath, 'utf-8');
+          const content = await safeReadFileString(fullPath, workspacePath);
           return { success: true, output: content };
         }
 
         case 'write_file': {
           const { path: filePath, content } = input as WriteFileInput;
           const fullPath = this.resolveSafePath(workspacePath, filePath);
-          await fs.mkdir(path.dirname(fullPath), { recursive: true });
-          await fs.writeFile(fullPath, content, 'utf-8');
+          await safeMkdir(path.dirname(fullPath), workspacePath, { recursive: true });
+          await safeWriteFile(fullPath, workspacePath, content, 'utf-8');
           return { success: true, output: `File written: ${filePath}` };
         }
 
         case 'edit_file': {
           const { path: filePath, old_content, new_content } = input as EditFileInput;
           const fullPath = this.resolveSafePath(workspacePath, filePath);
-          const content = await fs.readFile(fullPath, 'utf-8');
+          const content = await safeReadFileString(fullPath, workspacePath);
           if (!content.includes(old_content)) {
             return {
               success: false,
@@ -416,21 +424,21 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
             };
           }
           const newContent = content.replace(old_content, new_content);
-          await fs.writeFile(fullPath, newContent, 'utf-8');
+          await safeWriteFile(fullPath, workspacePath, newContent, 'utf-8');
           return { success: true, output: `File edited: ${filePath}` };
         }
 
         case 'list_files': {
           const { path: dirPath = '.', recursive = false } = input as ListFilesInput;
           const fullPath = this.resolveSafePath(workspacePath, dirPath);
-          const files = await this.listDirectory(fullPath, recursive);
+          const files = await this.listDirectory(fullPath, workspacePath, recursive);
           return { success: true, output: files.join('\n') };
         }
 
         case 'delete_file': {
           const { path: filePath } = input as DeleteFileInput;
           const fullPath = this.resolveSafePath(workspacePath, filePath);
-          await fs.unlink(fullPath);
+          await safeUnlink(fullPath, workspacePath);
           return { success: true, output: `File deleted: ${filePath}` };
         }
 
@@ -453,27 +461,26 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
 
   /**
    * Resolve and validate path to prevent path traversal attacks
+   * Uses validatePath from safe-fs.util for consistent security checks
    */
   private resolveSafePath(workspacePath: string, relativePath: string): string {
-    // Normalize and resolve the path
     const resolved = path.resolve(workspacePath, relativePath);
-
-    // Ensure the resolved path is within the workspace
-    if (!resolved.startsWith(path.resolve(workspacePath))) {
-      throw new Error(`Path traversal detected: ${relativePath}`);
-    }
-
-    return resolved;
+    // Use centralized path validation from safe-fs utilities
+    return validatePath(resolved, workspacePath);
   }
 
   /**
    * List directory contents
    */
-  private async listDirectory(dirPath: string, recursive: boolean): Promise<string[]> {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  private async listDirectory(
+    dirPath: string,
+    workspaceRoot: string,
+    recursive: boolean,
+  ): Promise<string[]> {
+    const entries = await safeReaddir(dirPath, workspaceRoot, { withFileTypes: true });
     const files: string[] = [];
 
-    for (const entry of entries) {
+    for (const entry of entries as Dirent[]) {
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
         if (
@@ -482,7 +489,7 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
           entry.name !== 'node_modules' &&
           entry.name !== 'dist'
         ) {
-          const subFiles = await this.listDirectory(fullPath, true);
+          const subFiles = await this.listDirectory(fullPath, workspaceRoot, true);
           files.push(...subFiles.map((f) => path.join(entry.name, f)));
         }
       } else {
@@ -505,7 +512,7 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
       const keyFiles = ['package.json', 'tsconfig.json', 'README.md'];
       for (const file of keyFiles) {
         try {
-          const content = await fs.readFile(path.join(workspacePath, file), 'utf-8');
+          const content = await safeReadFileString(path.join(workspacePath, file), workspacePath);
           contextParts.push(`### ${file}\n\`\`\`\n${content}\n\`\`\``);
         } catch {
           // File doesn't exist, skip
@@ -514,7 +521,7 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
     } else {
       for (const file of files) {
         try {
-          const content = await fs.readFile(path.join(workspacePath, file), 'utf-8');
+          const content = await safeReadFileString(path.join(workspacePath, file), workspacePath);
           contextParts.push(`### ${file}\n\`\`\`\n${content}\n\`\`\``);
         } catch {
           contextParts.push(`### ${file}\n(File not found)`);

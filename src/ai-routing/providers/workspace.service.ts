@@ -13,9 +13,11 @@ import { ConfigService } from '@nestjs/config';
 import { Gauge, Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import * as fs from 'fs/promises';
+import { Dirent } from 'fs';
 import * as path from 'path';
 import { IWorkspaceInfo, AIErrorCode, IAIExecutionError } from '../interfaces';
 import { GitOperationsService } from './git-operations.service';
+import { safeMkdir, safeReaddir, safeStat } from '../../common/utils/safe-fs.util';
 
 @Injectable()
 export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
@@ -58,8 +60,10 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     this.gitUserName = this.config.get<string>('cursor.gitUserName', 'Dark Factory');
     this.gitUserEmail = this.config.get<string>('cursor.gitUserEmail', 'bot@darkfactory.ai');
 
-    // Ensure workspace root exists
-    await fs.mkdir(this.workspacesRoot, { recursive: true });
+    // Ensure workspace root exists using resolved absolute path
+    // Use safeMkdir with "/" as root since workspacesRoot must be an absolute path
+    this.workspacesRoot = path.resolve(this.workspacesRoot);
+    await safeMkdir(this.workspacesRoot, path.parse(this.workspacesRoot).root, { recursive: true });
 
     this.logger.log(
       `Workspace service initialized: root=${this.workspacesRoot}, maxConcurrent=${this.maxConcurrent}`,
@@ -119,8 +123,8 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     try {
       this.logger.log(`[${executionId}] Creating workspace: ${workspacePath}`);
 
-      // 1. Create directory
-      await fs.mkdir(workspacePath, { recursive: true });
+      // 1. Create directory (validated within workspacesRoot)
+      await safeMkdir(workspacePath, this.workspacesRoot, { recursive: true });
 
       // 2. Clone repository (shallow clone for speed)
       await this.git.clone(repositoryUrl, workspacePath, { depth: 1 });
@@ -285,14 +289,16 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
    */
   private async cleanupOldWorkspaces(): Promise<void> {
     try {
-      const entries = await fs.readdir(this.workspacesRoot, { withFileTypes: true });
+      const entries = await safeReaddir(this.workspacesRoot, this.workspacesRoot, {
+        withFileTypes: true,
+      });
       const now = Date.now();
 
-      for (const entry of entries) {
+      for (const entry of entries as Dirent[]) {
         if (!entry.isDirectory()) continue;
 
         const dirPath = path.join(this.workspacesRoot, entry.name);
-        const stats = await fs.stat(dirPath);
+        const stats = await safeStat(dirPath, this.workspacesRoot);
         const ageMs = now - stats.mtime.getTime();
 
         if (ageMs > this.cleanupAgeMs) {

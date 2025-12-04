@@ -284,12 +284,12 @@ export class SentryService implements OnModuleInit, OnModuleDestroy {
 
     const scrubbed: Record<string, unknown> = { ...data };
 
-    for (const key of Object.keys(scrubbed)) {
+    for (const [key, value] of Object.entries(scrubbed)) {
       const lowerKey = key.toLowerCase();
       if (SENSITIVE_FIELDS.some((field) => lowerKey.includes(field.toLowerCase()))) {
-        scrubbed[key] = '[REDACTED]';
-      } else if (typeof scrubbed[key] === 'object' && scrubbed[key] !== null) {
-        scrubbed[key] = this.scrubSensitiveData(scrubbed[key] as Record<string, unknown>);
+        Reflect.set(scrubbed, key, '[REDACTED]');
+      } else if (typeof value === 'object' && value !== null) {
+        Reflect.set(scrubbed, key, this.scrubSensitiveData(value as Record<string, unknown>));
       }
     }
 

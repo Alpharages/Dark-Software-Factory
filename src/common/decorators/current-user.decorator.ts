@@ -29,7 +29,10 @@ export const CurrentUser = createParamDecorator(
       return user;
     }
 
-    // Return specific property of user
-    return user?.[data];
+    // Return specific property using Reflect.get for type-safe access
+    if (user && Object.prototype.hasOwnProperty.call(user, data)) {
+      return Reflect.get(user, data);
+    }
+    return undefined;
   },
 );

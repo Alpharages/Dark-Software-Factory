@@ -211,18 +211,20 @@ export class WebhooksService implements OnModuleDestroy {
     }
   }
 
+  // Event type mapping using Map for type-safe lookup
+  private readonly eventTypeMap = new Map<string, ClickUpEventType>([
+    ['taskCreated', ClickUpEventType.TASK_CREATED],
+    ['taskUpdated', ClickUpEventType.TASK_UPDATED],
+    ['taskStatusUpdated', ClickUpEventType.TASK_STATUS_UPDATED],
+    ['taskCommentPosted', ClickUpEventType.TASK_COMMENT_POSTED],
+    ['taskDeleted', ClickUpEventType.TASK_DELETED],
+  ]);
+
   /**
    * Parse event type string to enum
    */
   private parseEventType(event: string): ClickUpEventType | null {
-    const mapping: Record<string, ClickUpEventType> = {
-      taskCreated: ClickUpEventType.TASK_CREATED,
-      taskUpdated: ClickUpEventType.TASK_UPDATED,
-      taskStatusUpdated: ClickUpEventType.TASK_STATUS_UPDATED,
-      taskCommentPosted: ClickUpEventType.TASK_COMMENT_POSTED,
-      taskDeleted: ClickUpEventType.TASK_DELETED,
-    };
-    return mapping[event] || null;
+    return this.eventTypeMap.get(event) ?? null;
   }
 
   /**
