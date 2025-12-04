@@ -4,3 +4,4 @@
  */
 
 export * from './linting.interface';
+export * from './test-runner.interface';

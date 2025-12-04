@@ -4,3 +4,4 @@
  */
 
 export * from './linting-result.dto';
+export * from './test-result.dto';

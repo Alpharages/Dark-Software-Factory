@@ -181,5 +181,13 @@ export default () => {
       storagePath: process.env.CONTEXT_STORAGE_PATH || './uploads/context',
       supportedFormats: (process.env.CONTEXT_SUPPORTED_FORMATS || 'pdf,md,txt,docx').split(','),
     },
+
+    // Story 3.2: QA Automation Configuration
+    // FR67: Automated test execution
+    qa: {
+      testTimeoutMs: parseInt(process.env.QA_TEST_TIMEOUT_MS || '300000', 10), // 5 minutes default
+      dockerMemoryLimit: process.env.QA_DOCKER_MEMORY || '2g',
+      dockerCpuLimit: process.env.QA_DOCKER_CPUS || '2',
+    },
   };
 };

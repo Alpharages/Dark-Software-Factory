@@ -52,6 +52,11 @@ export const QA_METRICS = {
   LINTING_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_linting_total`,
   LINTING_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_linting_duration_seconds`,
   LINTING_ISSUES: `${METRICS_CONSTANTS.PREFIX}qa_linting_issues`,
+  // Story 3.2: Test execution metrics
+  TEST_EXECUTIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_test_executions_total`,
+  TEST_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_test_duration_seconds`,
+  TEST_PASSED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_tests_passed_total`,
+  TEST_FAILED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_tests_failed_total`,
 } as const;
 
 // Business Metrics - Deployments

@@ -1,7 +1,7 @@
 # Story 3.2: Automated Test Execution Framework
 
 **Epic:** 3 - Automated QA & Quality Gates  
-**Status:** ready-for-dev  
+**Status:** done  
 **Priority:** P1 - HIGH  
 **Effort:** 8 story points  
 **ClickUp ID:** `86evnjwb5`  
@@ -22,12 +22,14 @@ So that regressions and broken functionality are detected automatically.
 **Given** AI code is pushed to a feature branch  
 **When** test automation runs  
 **Then** the system:
+
 - Identifies test framework (Jest, Mocha, PyTest, etc.)
 - Runs unit tests affected by code changes
 - Runs integration tests if configured
 - Captures test results (pass/fail, duration, coverage)
 
 **And** test results include:
+
 - Total tests run, passed, failed, skipped
 - Failed test names and error messages
 - Stack traces for failures
@@ -41,6 +43,7 @@ So that regressions and broken functionality are detected automatically.
 ## Quick Implementation Summary (TL;DR)
 
 **10 Key Files in Implementation Order:**
+
 1. `src/qa-automation/interfaces/test-runner.interface.ts` - Types + correlationId
 2. `src/qa-automation/dto/test-result.dto.ts` - DTOs
 3. `src/qa-automation/parsers/test-output.parser.ts` - JSON parsers (Jest, PyTest, Go, Mocha)
@@ -58,18 +61,18 @@ So that regressions and broken functionality are detected automatically.
 
 ## ⚠️ Anti-Patterns to Avoid
 
-| ❌ DO NOT | ✅ DO INSTEAD |
-|-----------|---------------|
-| Create new `QA_METRICS` object | ADD to existing `QA_METRICS` in `metrics.constants.ts` |
-| Run tests directly on host machine | Use Docker containers for isolation |
-| Hard-code test framework commands | Use `TestFramework` enum and config detection |
-| Ignore test output parsing errors | Gracefully handle unparseable output, log & continue |
-| Store raw stdout in database | Parse structured JSON output and store normalized results |
-| Use `qa-tasks` queue name | Use `qa-check-queue` (from `QUEUE_NAMES` constant) |
-| Forget timeout enforcement | Use ConfigService `qa.testTimeoutMs` (default: 5 minutes) |
-| Mount workspace read-only | Use `:rw` - tests write `test-results.json` |
-| Skip correlationId | Propagate from caller for audit trail |
-| Use generic Sentry capture | Use `ErrorCategory.QA_AUTOMATION` for filtering |
+| ❌ DO NOT                          | ✅ DO INSTEAD                                             |
+| ---------------------------------- | --------------------------------------------------------- |
+| Create new `QA_METRICS` object     | ADD to existing `QA_METRICS` in `metrics.constants.ts`    |
+| Run tests directly on host machine | Use Docker containers for isolation                       |
+| Hard-code test framework commands  | Use `TestFramework` enum and config detection             |
+| Ignore test output parsing errors  | Gracefully handle unparseable output, log & continue      |
+| Store raw stdout in database       | Parse structured JSON output and store normalized results |
+| Use `qa-tasks` queue name          | Use `qa-check-queue` (from `QUEUE_NAMES` constant)        |
+| Forget timeout enforcement         | Use ConfigService `qa.testTimeoutMs` (default: 5 minutes) |
+| Mount workspace read-only          | Use `:rw` - tests write `test-results.json`               |
+| Skip correlationId                 | Propagate from caller for audit trail                     |
+| Use generic Sentry capture         | Use `ErrorCategory.QA_AUTOMATION` for filtering           |
 
 ---
 
@@ -91,15 +94,15 @@ Story 4.x (GitHub Integration) - pushes code
 
 ### Key Integration Points
 
-| From | Interface | To |
-|------|-----------|-----|
-| Story 3.5 `QAOrchestratorService` | calls `testRunner.runTests({ correlationId })` | This story |
-| This story | updates `QAResult.tests_passed` | Database |
-| This story | updates `QAResult.test_results` | Database (JSON) |
-| This story | updates `Ticket.status` to `QA_FAILED` | Database |
-| This story | creates `AuditLog` entry | Database |
-| Story 3.3 | reads `test_results` for coverage | This story output |
-| Story 10.4 | reads results, emits Socket.IO | PM Dashboard |
+| From                              | Interface                                      | To                |
+| --------------------------------- | ---------------------------------------------- | ----------------- |
+| Story 3.5 `QAOrchestratorService` | calls `testRunner.runTests({ correlationId })` | This story        |
+| This story                        | updates `QAResult.tests_passed`                | Database          |
+| This story                        | updates `QAResult.test_results`                | Database (JSON)   |
+| This story                        | updates `Ticket.status` to `QA_FAILED`         | Database          |
+| This story                        | creates `AuditLog` entry                       | Database          |
+| Story 3.3                         | reads `test_results` for coverage              | This story output |
+| Story 10.4                        | reads results, emits Socket.IO                 | PM Dashboard      |
 
 ---
 
@@ -107,78 +110,78 @@ Story 4.x (GitHub Integration) - pushes code
 
 ### Files to Create/Modify
 
-| File | Action | Purpose |
-|------|--------|---------|
+| File                                                    | Action | Purpose                  |
+| ------------------------------------------------------- | ------ | ------------------------ |
 | `src/qa-automation/interfaces/test-runner.interface.ts` | CREATE | Types with correlationId |
-| `src/qa-automation/interfaces/index.ts` | MODIFY | Add exports |
-| `src/qa-automation/dto/test-result.dto.ts` | CREATE | DTOs |
-| `src/qa-automation/dto/index.ts` | MODIFY | Add exports |
-| `src/qa-automation/parsers/test-output.parser.ts` | CREATE | JSON output parsers |
-| `src/qa-automation/parsers/index.ts` | CREATE | Barrel export |
-| `src/qa-automation/test-runner.service.ts` | CREATE | Core service |
-| `src/qa-automation/docker-executor.service.ts` | CREATE | Docker isolation |
-| `src/qa-automation/qa-automation.module.ts` | MODIFY | Add providers |
-| `src/common/metrics/metrics.constants.ts` | MODIFY | Add test metrics |
-| `src/qa-automation/test-runner.service.spec.ts` | CREATE | Unit tests |
-| `src/qa-automation/parsers/test-output.parser.spec.ts` | CREATE | Parser tests |
-| `test/qa-automation.e2e-spec.ts` | CREATE | E2E tests |
+| `src/qa-automation/interfaces/index.ts`                 | MODIFY | Add exports              |
+| `src/qa-automation/dto/test-result.dto.ts`              | CREATE | DTOs                     |
+| `src/qa-automation/dto/index.ts`                        | MODIFY | Add exports              |
+| `src/qa-automation/parsers/test-output.parser.ts`       | CREATE | JSON output parsers      |
+| `src/qa-automation/parsers/index.ts`                    | CREATE | Barrel export            |
+| `src/qa-automation/test-runner.service.ts`              | CREATE | Core service             |
+| `src/qa-automation/docker-executor.service.ts`          | CREATE | Docker isolation         |
+| `src/qa-automation/qa-automation.module.ts`             | MODIFY | Add providers            |
+| `src/common/metrics/metrics.constants.ts`               | MODIFY | Add test metrics         |
+| `src/qa-automation/test-runner.service.spec.ts`         | CREATE | Unit tests               |
+| `src/qa-automation/parsers/test-output.parser.spec.ts`  | CREATE | Parser tests             |
+| `test/qa-automation.e2e-spec.ts`                        | CREATE | E2E tests                |
 
 ---
 
 ## Tasks
 
-- [ ] **Task 1: Create Interfaces** (AC: #1, #2)
-  - [ ] `TestFramework` enum (JEST, MOCHA, PYTEST, GO_TEST, VITEST)
-  - [ ] `ITestCase`, `ITestSuite`, `ITestResult`, `ITestRunOptions` interfaces
-  - [ ] **Include `correlationId` in `ITestRunOptions`**
-  - [ ] Framework detection map (`TEST_FRAMEWORK_CONFIG`)
+- [x] **Task 1: Create Interfaces** (AC: #1, #2)
+  - [x] `TestFramework` enum (JEST, MOCHA, PYTEST, GO_TEST, VITEST)
+  - [x] `ITestCase`, `ITestSuite`, `ITestResult`, `ITestRunOptions` interfaces
+  - [x] **Include `correlationId` in `ITestRunOptions`**
+  - [x] Framework detection map (`TEST_FRAMEWORK_CONFIG`)
 
-- [ ] **Task 2: Create DTOs** (AC: #2)
-  - [ ] `TestCaseDto`, `TestSuiteDto`, `TestResultDto` with validators
+- [x] **Task 2: Create DTOs** (AC: #2)
+  - [x] `TestCaseDto`, `TestSuiteDto`, `TestResultDto` with validators
 
-- [ ] **Task 3: Implement Test Output Parsers** (AC: #2)
-  - [ ] `parseJestJson()` - Jest JSON reporter output
-  - [ ] `parsePyTestJson()` - PyTest JSON report output
-  - [ ] `parseGoTestJson()` - Go test JSON output (line-delimited)
-  - [ ] `parseMochaJson()` - Mocha JSON reporter output
-  - [ ] Include sample output constants for testing
+- [x] **Task 3: Implement Test Output Parsers** (AC: #2)
+  - [x] `parseJestJson()` - Jest JSON reporter output
+  - [x] `parsePyTestJson()` - PyTest JSON report output
+  - [x] `parseGoTestJson()` - Go test JSON output (line-delimited)
+  - [x] `parseMochaJson()` - Mocha JSON reporter output
+  - [x] Include sample output constants for testing
 
-- [ ] **Task 4: Implement DockerExecutorService** (AC: #1, #3)
-  - [ ] `executeInContainer()` - run in isolated Docker container
-  - [ ] **Mount workspace read-write (`:rw`)** for test output
-  - [ ] Auto-select base image based on framework
-  - [ ] Timeout from ConfigService (`qa.testTimeoutMs`)
-  - [ ] Container cleanup on completion/error
+- [x] **Task 4: Implement DockerExecutorService** (AC: #1, #3)
+  - [x] `executeInContainer()` - run in isolated Docker container
+  - [x] **Mount workspace read-write (`:rw`)** for test output
+  - [x] Auto-select base image based on framework
+  - [x] Timeout from ConfigService (`qa.testTimeoutMs`)
+  - [x] Container cleanup on completion/error
 
-- [ ] **Task 5: Implement TestRunnerService** (AC: #1, #2, #3)
-  - [ ] `runTests()` main method with framework detection
-  - [ ] **Accept and propagate `correlationId`**
-  - [ ] `detectFramework()` - analyze package.json, pyproject.toml, go.mod
-  - [ ] **Use `ErrorCategory.QA_AUTOMATION` for Sentry**
-  - [ ] Result normalization via parsers
+- [x] **Task 5: Implement TestRunnerService** (AC: #1, #2, #3)
+  - [x] `runTests()` main method with framework detection
+  - [x] **Accept and propagate `correlationId`**
+  - [x] `detectFramework()` - analyze package.json, pyproject.toml, go.mod
+  - [x] **Use `ErrorCategory.QA_AUTOMATION` for Sentry**
+  - [x] Result normalization via parsers
 
-- [ ] **Task 6: Database Integration** (AC: #3)
-  - [ ] `saveTestResult()` - store in `qa_results.test_results`
-  - [ ] `updateTicketStatus()` - set `Ticket.status = QA_FAILED` on failure
-  - [ ] **Add audit log entry via `auditLog.create()`**
+- [x] **Task 6: Database Integration** (AC: #3)
+  - [x] `saveTestResult()` - store in `qa_results.test_results`
+  - [x] `updateTicketStatus()` - set `Ticket.status = QA_FAILED` on failure
+  - [x] **Add audit log entry via `auditLog.create()`**
 
-- [ ] **Task 7: Metrics Integration** (AC: #2)
-  - [ ] ADD metrics to existing `QA_METRICS` (NOT new object)
-  - [ ] Track executions, duration, pass/fail counts by framework
+- [x] **Task 7: Metrics Integration** (AC: #2)
+  - [x] ADD metrics to existing `QA_METRICS` (NOT new object)
+  - [x] Track executions, duration, pass/fail counts by framework
 
-- [ ] **Task 8: Wire Module** (AC: All)
-  - [ ] Update `QaAutomationModule` with providers
-  - [ ] Export `TestRunnerService` for orchestrator
+- [x] **Task 8: Wire Module** (AC: All)
+  - [x] Update `QaAutomationModule` with providers
+  - [x] Export `TestRunnerService` for orchestrator
 
-- [ ] **Task 9: Unit Tests** (AC: All)
-  - [ ] Framework detection tests
-  - [ ] Parser tests for each format with sample data
-  - [ ] Service tests with mocked Docker execution
-  - [ ] >80% coverage per NFR-M1
+- [x] **Task 9: Unit Tests** (AC: All)
+  - [x] Framework detection tests
+  - [x] Parser tests for each format with sample data
+  - [x] Service tests with mocked Docker execution
+  - [x] > 80% coverage per NFR-M1
 
-- [ ] **Task 10: E2E Tests** (AC: All)
-  - [ ] Create `test/qa-automation.e2e-spec.ts`
-  - [ ] Test full flow with mocked Docker
+- [x] **Task 10: E2E Tests** (AC: All)
+  - [x] Create `test/qa-automation.e2e-spec.ts`
+  - [x] Test full flow with mocked Docker
 
 ---
 
@@ -206,17 +209,21 @@ export enum TestStatus {
 }
 
 // Framework detection configuration
-export const TEST_FRAMEWORK_CONFIG: Record<TestFramework, {
-  configFiles: string[];
-  packageIndicators: string[];
-  command: string;
-  outputFormat: string;
-  dockerImage: string;
-}> = {
+export const TEST_FRAMEWORK_CONFIG: Record<
+  TestFramework,
+  {
+    configFiles: string[];
+    packageIndicators: string[];
+    command: string;
+    outputFormat: string;
+    dockerImage: string;
+  }
+> = {
   [TestFramework.JEST]: {
     configFiles: ['jest.config.js', 'jest.config.ts', 'jest.config.json'],
     packageIndicators: ['jest'],
-    command: 'npx jest --json --outputFile=test-results.json --coverage --coverageReporters=json-summary',
+    command:
+      'npx jest --json --outputFile=test-results.json --coverage --coverageReporters=json-summary',
     outputFormat: 'jest-json',
     dockerImage: 'node:20-alpine',
   },
@@ -309,6 +316,7 @@ export interface ITestRunOptions {
 ```
 
 **File:** `src/qa-automation/interfaces/index.ts` (MODIFY - add exports)
+
 ```typescript
 export * from './linting.interface';
 export * from './test-runner.interface';
@@ -322,7 +330,15 @@ export * from './test-runner.interface';
 
 ```typescript
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsString, IsArray, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsString,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { TestFramework, TestStatus } from '../interfaces';
 
@@ -421,6 +437,7 @@ export class TestResultDto {
 ```
 
 **File:** `src/qa-automation/dto/index.ts` (MODIFY - add exports)
+
 ```typescript
 export * from './linting-result.dto';
 export * from './test-result.dto';
@@ -471,16 +488,22 @@ export const JEST_SAMPLE_OUTPUT = JSON.stringify({
   numPassedTests: 4,
   numFailedTests: 1,
   numPendingTests: 0,
-  testResults: [{
-    name: '/app/src/example.spec.ts',
-    startTime: 1700000000000,
-    endTime: 1700000001500,
-    assertionResults: [
-      { title: 'should pass', status: 'passed', duration: 50 },
-      { title: 'should fail', status: 'failed', duration: 100, 
-        failureMessages: ['Expected true to be false'] },
-    ],
-  }],
+  testResults: [
+    {
+      name: '/app/src/example.spec.ts',
+      startTime: 1700000000000,
+      endTime: 1700000001500,
+      assertionResults: [
+        { title: 'should pass', status: 'passed', duration: 50 },
+        {
+          title: 'should fail',
+          status: 'failed',
+          duration: 100,
+          failureMessages: ['Expected true to be false'],
+        },
+      ],
+    },
+  ],
 });
 
 /**
@@ -491,7 +514,11 @@ export const PYTEST_SAMPLE_OUTPUT = JSON.stringify({
   duration: 2.5,
   tests: [
     { nodeid: 'tests/test_example.py::test_one', outcome: 'passed', call: { duration: 0.1 } },
-    { nodeid: 'tests/test_example.py::test_two', outcome: 'failed', call: { duration: 0.2, longrepr: 'AssertionError' } },
+    {
+      nodeid: 'tests/test_example.py::test_two',
+      outcome: 'failed',
+      call: { duration: 0.2, longrepr: 'AssertionError' },
+    },
   ],
 });
 
@@ -532,10 +559,10 @@ export class TestOutputParser implements ITestOutputParser {
    */
   private parseJestJson(output: string): ITestResult {
     const json = JSON.parse(output);
-    
+
     const failedTests: ITestCase[] = [];
     const suites: ITestSuite[] = [];
-    
+
     for (const testFile of json.testResults || []) {
       const suite: ITestSuite = {
         name: testFile.name,
@@ -558,13 +585,12 @@ export class TestOutputParser implements ITestOutputParser {
         };
 
         suite.tests.push(testCase);
-        
+
         if (testCase.status === TestStatus.PASSED) suite.passed++;
         else if (testCase.status === TestStatus.FAILED) {
           suite.failed++;
           failedTests.push(testCase);
-        }
-        else suite.skipped++;
+        } else suite.skipped++;
       }
 
       suites.push(suite);
@@ -591,8 +617,12 @@ export class TestOutputParser implements ITestOutputParser {
       passedCount: json.numPassedTests,
       failedCount: json.numFailedTests,
       skippedCount: json.numPendingTests || 0,
-      durationMs: json.testResults?.reduce((sum: number, t: { endTime: number; startTime: number }) => 
-        sum + (t.endTime - t.startTime), 0) || 0,
+      durationMs:
+        json.testResults?.reduce(
+          (sum: number, t: { endTime: number; startTime: number }) =>
+            sum + (t.endTime - t.startTime),
+          0,
+        ) || 0,
       suites,
       failedTests,
       coverage,
@@ -606,12 +636,12 @@ export class TestOutputParser implements ITestOutputParser {
   private parsePyTestJson(output: string): ITestResult {
     const json = JSON.parse(output);
     const summary = json.summary || {};
-    
+
     const failedTests: ITestCase[] = [];
     const suites: ITestSuite[] = [];
 
     const testsByModule = new Map<string, ITestCase[]>();
-    
+
     for (const test of json.tests || []) {
       const moduleName = test.nodeid?.split('::')[0] || 'unknown';
       const testCase: ITestCase = {
@@ -637,9 +667,9 @@ export class TestOutputParser implements ITestOutputParser {
       suites.push({
         name,
         tests,
-        passed: tests.filter(t => t.status === TestStatus.PASSED).length,
-        failed: tests.filter(t => t.status === TestStatus.FAILED).length,
-        skipped: tests.filter(t => t.status === TestStatus.SKIPPED).length,
+        passed: tests.filter((t) => t.status === TestStatus.PASSED).length,
+        failed: tests.filter((t) => t.status === TestStatus.FAILED).length,
+        skipped: tests.filter((t) => t.status === TestStatus.SKIPPED).length,
         durationMs: tests.reduce((sum, t) => sum + t.durationMs, 0),
       });
     }
@@ -662,17 +692,17 @@ export class TestOutputParser implements ITestOutputParser {
    * Each line: { Action, Package, Test?, Elapsed?, Output? }
    */
   private parseGoTestJson(output: string): ITestResult {
-    const lines = output.split('\n').filter(l => l.trim());
+    const lines = output.split('\n').filter((l) => l.trim());
     const tests = new Map<string, ITestCase>();
     let totalDuration = 0;
 
     for (const line of lines) {
       try {
         const event = JSON.parse(line);
-        
+
         if (event.Test && event.Action) {
           const key = `${event.Package}::${event.Test}`;
-          
+
           if (event.Action === 'run') {
             tests.set(key, {
               name: event.Test,
@@ -680,11 +710,19 @@ export class TestOutputParser implements ITestOutputParser {
               status: TestStatus.PENDING,
               durationMs: 0,
             });
-          } else if (event.Action === 'pass' || event.Action === 'fail' || event.Action === 'skip') {
+          } else if (
+            event.Action === 'pass' ||
+            event.Action === 'fail' ||
+            event.Action === 'skip'
+          ) {
             const test = tests.get(key);
             if (test) {
-              test.status = event.Action === 'pass' ? TestStatus.PASSED :
-                           event.Action === 'fail' ? TestStatus.FAILED : TestStatus.SKIPPED;
+              test.status =
+                event.Action === 'pass'
+                  ? TestStatus.PASSED
+                  : event.Action === 'fail'
+                    ? TestStatus.FAILED
+                    : TestStatus.SKIPPED;
               test.durationMs = (event.Elapsed || 0) * 1000;
             }
           } else if (event.Action === 'output' && event.Output) {
@@ -694,7 +732,7 @@ export class TestOutputParser implements ITestOutputParser {
             }
           }
         }
-        
+
         if (event.Action === 'pass' && !event.Test && event.Elapsed) {
           totalDuration += event.Elapsed * 1000;
         }
@@ -704,15 +742,15 @@ export class TestOutputParser implements ITestOutputParser {
     }
 
     const allTests = Array.from(tests.values());
-    const failedTests = allTests.filter(t => t.status === TestStatus.FAILED);
+    const failedTests = allTests.filter((t) => t.status === TestStatus.FAILED);
 
     return {
       framework: TestFramework.GO_TEST,
       passed: failedTests.length === 0,
       totalTests: allTests.length,
-      passedCount: allTests.filter(t => t.status === TestStatus.PASSED).length,
+      passedCount: allTests.filter((t) => t.status === TestStatus.PASSED).length,
       failedCount: failedTests.length,
-      skippedCount: allTests.filter(t => t.status === TestStatus.SKIPPED).length,
+      skippedCount: allTests.filter((t) => t.status === TestStatus.SKIPPED).length,
       durationMs: totalDuration,
       suites: [],
       failedTests,
@@ -726,22 +764,24 @@ export class TestOutputParser implements ITestOutputParser {
   private parseMochaJson(output: string): ITestResult {
     const json = JSON.parse(output);
     const stats = json.stats || {};
-    
-    const failedTests: ITestCase[] = (json.failures || []).map((f: {
-      title: string;
-      fullTitle: string;
-      duration: number;
-      err?: { message?: string; stack?: string };
-      file?: string;
-    }) => ({
-      name: f.title,
-      suiteName: f.fullTitle?.replace(f.title, '').trim() || 'unknown',
-      status: TestStatus.FAILED,
-      durationMs: f.duration || 0,
-      errorMessage: f.err?.message,
-      stackTrace: f.err?.stack,
-      filePath: f.file,
-    }));
+
+    const failedTests: ITestCase[] = (json.failures || []).map(
+      (f: {
+        title: string;
+        fullTitle: string;
+        duration: number;
+        err?: { message?: string; stack?: string };
+        file?: string;
+      }) => ({
+        name: f.title,
+        suiteName: f.fullTitle?.replace(f.title, '').trim() || 'unknown',
+        status: TestStatus.FAILED,
+        durationMs: f.duration || 0,
+        errorMessage: f.err?.message,
+        stackTrace: f.err?.stack,
+        filePath: f.file,
+      }),
+    );
 
     return {
       framework: TestFramework.MOCHA,
@@ -758,21 +798,29 @@ export class TestOutputParser implements ITestOutputParser {
 
   private mapJestStatus(status: string): TestStatus {
     switch (status) {
-      case 'passed': return TestStatus.PASSED;
-      case 'failed': return TestStatus.FAILED;
+      case 'passed':
+        return TestStatus.PASSED;
+      case 'failed':
+        return TestStatus.FAILED;
       case 'pending':
       case 'skipped':
-      case 'todo': return TestStatus.SKIPPED;
-      default: return TestStatus.PENDING;
+      case 'todo':
+        return TestStatus.SKIPPED;
+      default:
+        return TestStatus.PENDING;
     }
   }
 
   private mapPyTestStatus(outcome: string): TestStatus {
     switch (outcome) {
-      case 'passed': return TestStatus.PASSED;
-      case 'failed': return TestStatus.FAILED;
-      case 'skipped': return TestStatus.SKIPPED;
-      default: return TestStatus.PENDING;
+      case 'passed':
+        return TestStatus.PASSED;
+      case 'failed':
+        return TestStatus.FAILED;
+      case 'skipped':
+        return TestStatus.SKIPPED;
+      default:
+        return TestStatus.PENDING;
     }
   }
 
@@ -794,6 +842,7 @@ export class TestOutputParser implements ITestOutputParser {
 ```
 
 **File:** `src/qa-automation/parsers/index.ts`
+
 ```typescript
 export * from './test-output.parser';
 ```
@@ -843,15 +892,15 @@ export class DockerExecutorService {
    * IMPORTANT: Workspace mounted read-write for test output files
    */
   async executeInContainer(options: IDockerRunOptions): Promise<IDockerRunResult> {
-    const { 
-      image, 
-      workspacePath, 
-      command, 
-      timeoutMs = this.defaultTimeoutMs, 
+    const {
+      image,
+      workspacePath,
+      command,
+      timeoutMs = this.defaultTimeoutMs,
       correlationId,
-      env = {} 
+      env = {},
     } = options;
-    
+
     const startTime = Date.now();
     const containerName = `dsf-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
@@ -872,7 +921,9 @@ export class DockerExecutorService {
       envArgs,
       image,
       `/bin/sh -c "${command.replace(/"/g, '\\"')}"`,
-    ].filter(Boolean).join(' ');
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     this.logger.debug(`[${correlationId}] Executing: ${dockerCommand}`);
 
@@ -896,20 +947,22 @@ export class DockerExecutorService {
 
       const timeout = setTimeout(async () => {
         timedOut = true;
-        this.logger.warn(`[${correlationId}] Container ${containerName} timed out after ${timeoutMs}ms`);
-        
+        this.logger.warn(
+          `[${correlationId}] Container ${containerName} timed out after ${timeoutMs}ms`,
+        );
+
         try {
           await execAsync(`docker kill ${containerName}`);
         } catch {
           // Container may have already exited
         }
-        
+
         child.kill('SIGKILL');
       }, timeoutMs);
 
       child.on('close', (code) => {
         clearTimeout(timeout);
-        
+
         resolve({
           exitCode: code ?? (timedOut ? 124 : 1),
           stdout,
@@ -922,7 +975,7 @@ export class DockerExecutorService {
       child.on('error', (err) => {
         clearTimeout(timeout);
         this.logger.error(`[${correlationId}] Docker execution error: ${err.message}`);
-        
+
         resolve({
           exitCode: 1,
           stdout,
@@ -999,7 +1052,8 @@ export class TestRunnerService {
     private readonly configService: ConfigService,
     private readonly sentry: SentryService,
     private readonly dockerExecutor: DockerExecutorService,
-    @InjectMetric(QA_METRICS.TEST_EXECUTIONS_TOTAL) private readonly testExecutionsCounter: Counter<string>,
+    @InjectMetric(QA_METRICS.TEST_EXECUTIONS_TOTAL)
+    private readonly testExecutionsCounter: Counter<string>,
     @InjectMetric(QA_METRICS.TEST_DURATION) private readonly testDuration: Histogram<string>,
     @InjectMetric(QA_METRICS.TEST_PASSED_TOTAL) private readonly testPassedCounter: Counter<string>,
     @InjectMetric(QA_METRICS.TEST_FAILED_TOTAL) private readonly testFailedCounter: Counter<string>,
@@ -1011,11 +1065,11 @@ export class TestRunnerService {
    * Main entry point - run tests in workspace
    */
   async runTests(options: ITestRunOptions): Promise<ITestResult> {
-    const { 
-      workspacePath, 
-      executionId, 
-      correlationId, 
-      timeoutMs = this.defaultTimeoutMs 
+    const {
+      workspacePath,
+      executionId,
+      correlationId,
+      timeoutMs = this.defaultTimeoutMs,
     } = options;
 
     // Prevent concurrent test runs on same workspace
@@ -1024,7 +1078,7 @@ export class TestRunnerService {
     }
     this.testsInProgress.set(workspacePath, true);
 
-    const framework = options.framework || await this.detectFramework(workspacePath);
+    const framework = options.framework || (await this.detectFramework(workspacePath));
     const endTimer = this.testDuration.startTimer({ framework });
 
     this.logger.log(`[${correlationId}] Starting ${framework} test execution for ${executionId}`);
@@ -1042,15 +1096,16 @@ export class TestRunnerService {
       }
 
       const config = TEST_FRAMEWORK_CONFIG[framework];
-      
+
       await this.dockerExecutor.ensureImage(config.dockerImage);
 
       // Install dependencies and run tests
-      const installCmd = framework === TestFramework.GO_TEST 
-        ? '' 
-        : framework === TestFramework.PYTEST
-          ? 'pip install -q pytest pytest-json-report pytest-cov && '
-          : 'npm ci --silent && ';
+      const installCmd =
+        framework === TestFramework.GO_TEST
+          ? ''
+          : framework === TestFramework.PYTEST
+            ? 'pip install -q pytest pytest-json-report pytest-cov && '
+            : 'npm ci --silent && ';
 
       const fullCommand = `${installCmd}${config.command}`;
 
@@ -1070,10 +1125,7 @@ export class TestRunnerService {
       // Read test results file (written by test framework)
       let testOutput: string;
       try {
-        testOutput = await fs.readFile(
-          path.join(workspacePath, 'test-results.json'),
-          'utf-8',
-        );
+        testOutput = await fs.readFile(path.join(workspacePath, 'test-results.json'), 'utf-8');
       } catch {
         testOutput = result.stdout;
       }
@@ -1081,16 +1133,16 @@ export class TestRunnerService {
       const testResult = this.parser.parse(testOutput, framework);
 
       // Track metrics
-      this.testExecutionsCounter.inc({ 
-        framework, 
-        result: testResult.passed ? 'passed' : 'failed' 
+      this.testExecutionsCounter.inc({
+        framework,
+        result: testResult.passed ? 'passed' : 'failed',
       });
       this.testPassedCounter.inc({ framework }, testResult.passedCount);
       this.testFailedCounter.inc({ framework }, testResult.failedCount);
 
       this.logger.log(
         `[${correlationId}] ${framework} tests completed: ${testResult.passedCount}/${testResult.totalTests} passed ` +
-        `(${testResult.failedCount} failed, ${testResult.skippedCount} skipped)`
+          `(${testResult.failedCount} failed, ${testResult.skippedCount} skipped)`,
       );
 
       return testResult;
@@ -1160,8 +1212,8 @@ export class TestRunnerService {
    * Save test result to database, update ticket status, and log audit entry
    */
   async saveTestResult(
-    executionId: string, 
-    result: ITestResult, 
+    executionId: string,
+    result: ITestResult,
     correlationId: string,
   ): Promise<void> {
     // 1. Save to qa_results
@@ -1176,7 +1228,7 @@ export class TestRunnerService {
       failedCount: result.failedCount,
       skippedCount: result.skippedCount,
       durationMs: result.durationMs,
-      failedTests: result.failedTests.map(t => ({
+      failedTests: result.failedTests.map((t) => ({
         name: t.name,
         suiteName: t.suiteName,
         errorMessage: t.errorMessage,
@@ -1235,7 +1287,7 @@ export class TestRunnerService {
    * Mark ticket as QA_FAILED when tests fail
    */
   private async updateTicketStatusOnFailure(
-    executionId: string, 
+    executionId: string,
     result: ITestResult,
     correlationId: string,
   ): Promise<void> {
@@ -1251,12 +1303,12 @@ export class TestRunnerService {
 
       const failedTestNames = result.failedTests
         .slice(0, 5)
-        .map(t => t.name)
+        .map((t) => t.name)
         .join(', ');
-      
+
       this.logger.warn(
         `[${correlationId}] Ticket ${execution.ticket_id} marked as QA_FAILED: ` +
-        `${result.failedCount} test(s) failed - ${failedTestNames}${result.failedCount > 5 ? '...' : ''}`
+          `${result.failedCount} test(s) failed - ${failedTestNames}${result.failedCount > 5 ? '...' : ''}`,
       );
     }
   }
@@ -1286,13 +1338,15 @@ export class TestRunnerService {
       skippedCount: 0,
       durationMs: timeoutMs,
       suites: [],
-      failedTests: [{
-        name: 'Test Execution',
-        suiteName: 'Timeout',
-        status: TestStatus.FAILED,
-        durationMs: timeoutMs,
-        errorMessage: `Test execution timed out after ${timeoutMs / 1000} seconds`,
-      }],
+      failedTests: [
+        {
+          name: 'Test Execution',
+          suiteName: 'Timeout',
+          status: TestStatus.FAILED,
+          durationMs: timeoutMs,
+          errorMessage: `Test execution timed out after ${timeoutMs / 1000} seconds`,
+        },
+      ],
       rawOutput: `TIMEOUT: Tests did not complete within ${timeoutMs}ms`,
     };
   }
@@ -1308,7 +1362,11 @@ export class TestRunnerService {
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { makeCounterProvider, makeHistogramProvider, makeGaugeProvider } from '@willsoto/nestjs-prometheus';
+import {
+  makeCounterProvider,
+  makeHistogramProvider,
+  makeGaugeProvider,
+} from '@willsoto/nestjs-prometheus';
 import { DatabaseModule } from '../database/database.module';
 import { SentryModule } from '../common/sentry/sentry.module';
 import { LinterService } from './linter.service';
@@ -1337,7 +1395,7 @@ import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constan
       help: 'Current linting issue count',
       labelNames: ['language', 'severity'],
     }),
-    
+
     // Story 3.2 - Test Runner
     TestRunnerService,
     DockerExecutorService,
@@ -1387,6 +1445,7 @@ qa: {
 **Note:** PM notification via Socket.IO is implemented in **Story 10.4 (Quality Gate Failure Notifications)**.
 
 This story stores test results in `qa_results.test_results` (JSON). Story 10.4 will:
+
 - Read results from database
 - Emit `quality-gate:failure` event via Socket.IO
 - Include failing test names and error messages for PM
@@ -1480,25 +1539,25 @@ describe('QA Automation E2E', () => {
 
 ## Prerequisites
 
-| Story | Status | Required For |
-|-------|--------|--------------|
-| Story 1.3 (Database) | ✅ done | `qa_results`, `audit_logs` tables |
-| Story 1.8 (Prometheus) | ✅ done | Metrics infrastructure |
-| Story 1.9 (Sentry) | ✅ done | Error tracking with ErrorCategory |
-| Story 3.1 (Linting) | ✅ ready-for-dev | QA pipeline sequence |
+| Story                  | Status           | Required For                      |
+| ---------------------- | ---------------- | --------------------------------- |
+| Story 1.3 (Database)   | ✅ done          | `qa_results`, `audit_logs` tables |
+| Story 1.8 (Prometheus) | ✅ done          | Metrics infrastructure            |
+| Story 1.9 (Sentry)     | ✅ done          | Error tracking with ErrorCategory |
+| Story 3.1 (Linting)    | ✅ ready-for-dev | QA pipeline sequence              |
 
 ---
 
 ## References
 
-| Source | Section |
-|--------|---------|
-| `docs/architecture.md` | qa-automation module, FR67, NFR-M1 (80% coverage) |
-| `docs/epics.md` | Story 3.2 acceptance criteria |
-| `prisma/schema.prisma` | QAResult, AuditLog, Execution models |
-| `src/common/metrics/metrics.constants.ts` | QA_METRICS |
-| `src/common/sentry/sentry.constants.ts` | ErrorCategory enum |
-| `src/ticket-intake/ticket-intake.service.ts` | Service + audit log patterns |
+| Source                                       | Section                                           |
+| -------------------------------------------- | ------------------------------------------------- |
+| `docs/architecture.md`                       | qa-automation module, FR67, NFR-M1 (80% coverage) |
+| `docs/epics.md`                              | Story 3.2 acceptance criteria                     |
+| `prisma/schema.prisma`                       | QAResult, AuditLog, Execution models              |
+| `src/common/metrics/metrics.constants.ts`    | QA_METRICS                                        |
+| `src/common/sentry/sentry.constants.ts`      | ErrorCategory enum                                |
+| `src/ticket-intake/ticket-intake.service.ts` | Service + audit log patterns                      |
 
 ---
 
@@ -1506,9 +1565,9 @@ describe('QA Automation E2E', () => {
 
 ### Change Log
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-12-02 | Story drafted | Scrum Master Bob |
+| Date       | Change                                                                                 | Author            |
+| ---------- | -------------------------------------------------------------------------------------- | ----------------- |
+| 2025-12-02 | Story drafted                                                                          | Scrum Master Bob  |
 | 2025-12-02 | Quality review: Fixed 4 critical issues, added 5 enhancements, applied 3 optimizations | Quality Validator |
 
 ### Improvements Applied
@@ -1526,4 +1585,23 @@ describe('QA Automation E2E', () => {
 
 ### File List
 
-<!-- Populated during implementation -->
+**Created:**
+
+- `src/qa-automation/interfaces/test-runner.interface.ts` - TestFramework enum, interfaces, TEST_FRAMEWORK_CONFIG
+- `src/qa-automation/dto/test-result.dto.ts` - TestCaseDto, TestSuiteDto, TestCoverageDto, TestResultDto with validators
+- `src/qa-automation/parsers/test-output.parser.ts` - JSON parsers for Jest, PyTest, Go, Mocha with sample constants
+- `src/qa-automation/parsers/test-output.parser.spec.ts` - Parser unit tests (14 tests passing)
+- `src/qa-automation/parsers/index.ts` - Barrel export for parsers
+- `src/qa-automation/docker-executor.service.ts` - Isolated Docker test execution with security controls
+- `src/qa-automation/test-runner.service.ts` - Core test execution service with framework detection
+- `src/qa-automation/test-runner.service.spec.ts` - TestRunnerService unit tests (19 tests passing)
+- `test/qa-automation.e2e-spec.ts` - E2E tests (4 tests passing)
+
+**Modified:**
+
+- `src/qa-automation/interfaces/index.ts` - Added export for test-runner.interface
+- `src/qa-automation/dto/index.ts` - Added export for test-result.dto
+- `src/qa-automation/qa-automation.module.ts` - Added TestRunnerService, DockerExecutorService, 4 test metrics providers
+- `src/common/metrics/metrics.constants.ts` - Added 4 test metrics to QA_METRICS (TEST_EXECUTIONS_TOTAL, TEST_DURATION, TEST_PASSED_TOTAL, TEST_FAILED_TOTAL)
+- `src/config/configuration.ts` - Added qa.testTimeoutMs, qa.dockerMemoryLimit, qa.dockerCpuLimit configuration
+- `docs/sprint-artifacts/sprint-status.yaml` - Updated story status to 'review'

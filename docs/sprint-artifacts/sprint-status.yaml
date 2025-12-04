@@ -156,8 +156,17 @@ development_status:
     dev_branch: "feature/3-1-linting-integration"
     notes: "APPROVED. Code review completed. FIXED: (1) Added DatabaseModule/SentryModule imports to QaAutomationModule - CRITICAL, (2) Fixed infinite recursion in lintPython with parseFlake8Output helper, (3) Added eslint.config.mjs to config detection, (4) Added 2 tests for binary not found. 33 unit tests passing."
   3-2-automated-test-execution-framework:
-    status: ready-for-dev
-    notes: "Story drafted with comprehensive test execution framework implementation guide. Includes DockerExecutorService for isolated test execution, TestOutputParser for Jest/PyTest/Go/Mocha formats, framework auto-detection, Prometheus metrics, and database integration. Prerequisites: Stories 3.1, 1.3, 1.8, 1.9."
+    id: 3-2-automated-test-execution-framework
+    title: Automated Test Execution Framework
+    status: done
+    developer: Amelia
+    dev_branch: feature/3-2-test-execution
+    completed_date: 2025-12-04
+    test_results:
+      unit_tests: 66/66 passed
+      coverage: ">80% (parsers: 96%, test-runner: 97%)"
+      e2e_tests: 4/4 passed
+    notes: "Code review completed. FIXED: (1) Marked all tasks complete, (2) Populated File List, (3) Fixed CRITICAL command injection in DockerExecutor, (4) Fixed race condition/resource leak in TestRunner, (5) Added missing TestSuiteDto, (6) Configurable Docker limits, (7) Fixed lint errors (unused imports, require calls). 66 unit + 4 E2E tests passing."
   3-3-test-coverage-calculation-enforcement:
     status: ready-for-dev
     notes: "Story drafted and quality-reviewed. Includes CoverageService, CoverageBaselineService, CoverageFileParser for file-level coverage, delta calculation, configurable thresholds (global + per-project), PM notification via Socket.IO, HTML report generation, and Prometheus metrics. Quality review fixed: ErrorCategory.QA_AUTOMATION, file-level coverage parsing, PM notification, env.validation.ts. Prerequisites: Stories 3.2, 1.3, 1.8, 1.9."
