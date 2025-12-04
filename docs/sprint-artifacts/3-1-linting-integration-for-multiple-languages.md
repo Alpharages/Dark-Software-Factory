@@ -1,7 +1,7 @@
 # Story 3.1: Linting Integration for Multiple Languages
 
 **Epic:** 3 - Automated QA & Quality Gates  
-**Status:** ready-for-dev  
+**Status:** Done  
 **Priority:** P1 - HIGH  
 **Effort:** 5 story points  
 **ClickUp ID:** `86evnjwb4`  
@@ -22,11 +22,13 @@ So that code style and syntax errors are caught automatically.
 **Given** AI generates code for a ticket  
 **When** QA automation runs  
 **Then** appropriate linters execute based on file types:
+
 - JavaScript/TypeScript: ESLint with project config
 - Python: Flake8
 - Go: golangci-lint
 
 **And** linting results include:
+
 - Error count and warning count
 - Line numbers for each issue
 - Error descriptions and suggested fixes
@@ -35,6 +37,7 @@ So that code style and syntax errors are caught automatically.
 **And** linting configuration uses project-specific rules (`.eslintrc`, `.flake8`, etc.)
 
 **And** if linting fails:
+
 - Execution marked as `QA_FAILED` in database
 - Results stored in `qa_results` table
 - PM notified with specific line numbers (via Story 10.4 Socket.IO)
@@ -44,6 +47,7 @@ So that code style and syntax errors are caught automatically.
 ## Quick Implementation Summary (TL;DR)
 
 **7 Key Files in Implementation Order:**
+
 1. `src/qa-automation/interfaces/linting.interface.ts` - Types
 2. `src/qa-automation/dto/linting-result.dto.ts` - DTOs
 3. `src/qa-automation/linter.service.ts` - Core logic
@@ -53,6 +57,7 @@ So that code style and syntax errors are caught automatically.
 7. `src/qa-automation/linter.service.spec.ts` - Unit tests
 
 **Install:**
+
 ```bash
 npm install eslint @types/eslint
 ```
@@ -61,13 +66,13 @@ npm install eslint @types/eslint
 
 ## ⚠️ Anti-Patterns to Avoid
 
-| ❌ DO NOT | ✅ DO INSTEAD |
-|-----------|---------------|
-| Create new `QA_METRICS` object | ADD to existing `QA_METRICS` in `metrics.constants.ts` |
-| Use unprefixed metric names | Always use `dsf_` prefix from `METRICS_CONSTANTS.PREFIX` |
-| Call external linters without checking binary exists | Check `flake8`/`golangci-lint` availability first |
-| Forget to import module in `app.module.ts` | Add `QaAutomationModule` to imports |
-| Use `qa-tasks` queue name | Use `qa-check-queue` (from `QUEUE_NAMES` constant) |
+| ❌ DO NOT                                            | ✅ DO INSTEAD                                            |
+| ---------------------------------------------------- | -------------------------------------------------------- |
+| Create new `QA_METRICS` object                       | ADD to existing `QA_METRICS` in `metrics.constants.ts`   |
+| Use unprefixed metric names                          | Always use `dsf_` prefix from `METRICS_CONSTANTS.PREFIX` |
+| Call external linters without checking binary exists | Check `flake8`/`golangci-lint` availability first        |
+| Forget to import module in `app.module.ts`           | Add `QaAutomationModule` to imports                      |
+| Use `qa-tasks` queue name                            | Use `qa-check-queue` (from `QUEUE_NAMES` constant)       |
 
 ---
 
@@ -89,12 +94,12 @@ Story 4.x (GitHub Integration) - pushes code
 
 ### Key Integration Points
 
-| From | Interface | To |
-|------|-----------|-----|
-| Story 3.5 `QAOrchestratorService` | calls `linterService.lintFiles()` | This story |
-| This story | updates `QAResult.linting_passed` | Database |
-| This story | updates `Ticket.status` to `QA_FAILED` | Database |
-| Story 10.4 | reads results, emits Socket.IO | PM Dashboard |
+| From                              | Interface                              | To           |
+| --------------------------------- | -------------------------------------- | ------------ |
+| Story 3.5 `QAOrchestratorService` | calls `linterService.lintFiles()`      | This story   |
+| This story                        | updates `QAResult.linting_passed`      | Database     |
+| This story                        | updates `Ticket.status` to `QA_FAILED` | Database     |
+| Story 10.4                        | reads results, emits Socket.IO         | PM Dashboard |
 
 ---
 
@@ -102,55 +107,55 @@ Story 4.x (GitHub Integration) - pushes code
 
 ### Files to Create/Modify
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/qa-automation/interfaces/linting.interface.ts` | CREATE | Types |
-| `src/qa-automation/interfaces/index.ts` | CREATE | Barrel |
-| `src/qa-automation/dto/linting-result.dto.ts` | CREATE | DTOs |
-| `src/qa-automation/dto/index.ts` | CREATE | Barrel |
-| `src/qa-automation/linter.service.ts` | CREATE | Core service |
-| `src/qa-automation/qa-automation.module.ts` | MODIFY | Add providers |
-| `src/common/metrics/metrics.constants.ts` | MODIFY | Add linting metrics |
-| `src/app.module.ts` | MODIFY | Import QaAutomationModule |
-| `src/qa-automation/linter.service.spec.ts` | CREATE | Unit tests |
+| File                                                | Action | Purpose                   |
+| --------------------------------------------------- | ------ | ------------------------- |
+| `src/qa-automation/interfaces/linting.interface.ts` | CREATE | Types                     |
+| `src/qa-automation/interfaces/index.ts`             | CREATE | Barrel                    |
+| `src/qa-automation/dto/linting-result.dto.ts`       | CREATE | DTOs                      |
+| `src/qa-automation/dto/index.ts`                    | CREATE | Barrel                    |
+| `src/qa-automation/linter.service.ts`               | CREATE | Core service              |
+| `src/qa-automation/qa-automation.module.ts`         | MODIFY | Add providers             |
+| `src/common/metrics/metrics.constants.ts`           | MODIFY | Add linting metrics       |
+| `src/app.module.ts`                                 | MODIFY | Import QaAutomationModule |
+| `src/qa-automation/linter.service.spec.ts`          | CREATE | Unit tests                |
 
 ---
 
 ## Tasks
 
-- [ ] **Task 1: Create Interfaces** (AC: #1, #2)
-  - [ ] `SupportedLanguage` enum, `LintingSeverity` enum
-  - [ ] `ILintingIssue`, `ILintingResult`, `ILintingOptions` interfaces
-  - [ ] `FILE_EXTENSION_MAP` constant
+- [x] **Task 1: Create Interfaces** (AC: #1, #2)
+  - [x] `SupportedLanguage` enum, `LintingSeverity` enum
+  - [x] `ILintingIssue`, `ILintingResult`, `ILintingOptions` interfaces
+  - [x] `FILE_EXTENSION_MAP` constant
 
-- [ ] **Task 2: Create DTOs** (AC: #2)
-  - [ ] `LintingIssueDto`, `LintingResultDto` with validators
+- [x] **Task 2: Create DTOs** (AC: #2)
+  - [x] `LintingIssueDto`, `LintingResultDto` with validators
 
-- [ ] **Task 3: Implement LinterService** (AC: #1, #3)
-  - [ ] `lintFiles()` main method with language detection
-  - [ ] `lintTypeScript()` using ESLint Node.js API
-  - [ ] `lintPython()` using Flake8 CLI
-  - [ ] `lintGo()` using golangci-lint CLI
-  - [ ] Config file auto-detection
-  - [ ] **Linter binary availability check**
+- [x] **Task 3: Implement LinterService** (AC: #1, #3)
+  - [x] `lintFiles()` main method with language detection
+  - [x] `lintTypeScript()` using ESLint Node.js API
+  - [x] `lintPython()` using Flake8 CLI
+  - [x] `lintGo()` using golangci-lint CLI
+  - [x] Config file auto-detection
+  - [x] **Linter binary availability check**
 
-- [ ] **Task 4: Database Integration** (AC: #4)
-  - [ ] `saveLintingResult()` - store in `qa_results`
-  - [ ] `updateTicketStatus()` - set `Ticket.status = QA_FAILED` on failure
+- [x] **Task 4: Database Integration** (AC: #4)
+  - [x] `saveLintingResult()` - store in `qa_results`
+  - [x] `updateTicketStatus()` - set `Ticket.status = QA_FAILED` on failure
 
-- [ ] **Task 5: Metrics Integration** (AC: #2)
-  - [ ] ADD metrics to existing `QA_METRICS` (NOT new object)
-  - [ ] Track executions, duration, issues by language
+- [x] **Task 5: Metrics Integration** (AC: #2)
+  - [x] ADD metrics to existing `QA_METRICS` (NOT new object)
+  - [x] Track executions, duration, issues by language
 
-- [ ] **Task 6: Wire Module** (AC: All)
-  - [ ] Update `QaAutomationModule` with providers
-  - [ ] **Add `QaAutomationModule` to `app.module.ts` imports**
+- [x] **Task 6: Wire Module** (AC: All)
+  - [x] Update `QaAutomationModule` with providers
+  - [x] **Add `QaAutomationModule` to `app.module.ts` imports** (already done)
 
-- [ ] **Task 7: Unit Tests** (AC: All)
-  - [ ] Language detection tests
-  - [ ] ESLint execution tests
-  - [ ] Result persistence tests
-  - [ ] >80% coverage per NFR-M1
+- [x] **Task 7: Unit Tests** (AC: All)
+  - [x] Language detection tests
+  - [x] ESLint execution tests
+  - [x] Result persistence tests
+  - [x] > 80% coverage per NFR-M1
 
 ---
 
@@ -217,6 +222,7 @@ export interface ILintingOptions {
 ```
 
 **File:** `src/qa-automation/interfaces/index.ts`
+
 ```typescript
 export * from './linting.interface';
 ```
@@ -228,6 +234,7 @@ export * from './linting.interface';
 **File:** `src/qa-automation/dto/linting-result.dto.ts`
 
 Follow pattern from `src/webhooks/dto/task-event.dto.ts`:
+
 - Use `class-validator` decorators
 - Use `@nestjs/swagger` ApiProperty decorators
 - Export `LintingIssueDto` and `LintingResultDto`
@@ -274,7 +281,7 @@ import * as fs from 'fs/promises';
 import { PrismaService } from '../database/prisma.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { QA_METRICS } from '../common/metrics/metrics.constants';
-import { ILintingResult, ILintingOptions, SupportedLanguage, /* ... */ } from './interfaces';
+import { ILintingResult, ILintingOptions, SupportedLanguage /* ... */ } from './interfaces';
 
 const execAsync = promisify(exec);
 
@@ -297,7 +304,7 @@ export class LinterService {
    */
   async lintFiles(options: ILintingOptions): Promise<ILintingResult> {
     const { workspacePath, files, timeoutMs = this.DEFAULT_TIMEOUT_MS } = options;
-    
+
     // Prevent concurrent linting of same workspace
     if (this.lintingInProgress.get(workspacePath)) {
       throw new Error(`Linting already in progress for ${workspacePath}`);
@@ -309,7 +316,7 @@ export class LinterService {
 
     try {
       let result: ILintingResult;
-      
+
       switch (language) {
         case SupportedLanguage.TYPESCRIPT:
         case SupportedLanguage.JAVASCRIPT:
@@ -352,7 +359,9 @@ export class LinterService {
     } catch {
       throw new Error(
         `Linter binary '${binary}' not found. Install with: ` +
-        (binary === 'flake8' ? 'pip install flake8' : 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest')
+          (binary === 'flake8'
+            ? 'pip install flake8'
+            : 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest'),
       );
     }
   }
@@ -406,7 +415,7 @@ export class LinterService {
         where: { id: execution.ticket_id },
         data: { status: 'QA_FAILED' },
       });
-      
+
       this.logger.warn(`Ticket ${execution.ticket_id} marked as QA_FAILED due to linting failure`);
     }
   }
@@ -424,7 +433,11 @@ export class LinterService {
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { makeCounterProvider, makeHistogramProvider, makeGaugeProvider } from '@willsoto/nestjs-prometheus';
+import {
+  makeCounterProvider,
+  makeHistogramProvider,
+  makeGaugeProvider,
+} from '@willsoto/nestjs-prometheus';
 import { DatabaseModule } from '../database/database.module';
 import { SentryModule } from '../common/sentry/sentry.module';
 import { LinterService } from './linter.service';
@@ -483,6 +496,7 @@ export class AppModule {}
 **Note:** PM notification via Socket.IO is implemented in **Story 10.4 (Quality Gate Failure Notifications)**.
 
 This story stores linting results in `qa_results` table. Story 10.4 will:
+
 - Read results from database
 - Emit `quality-gate:failure` event via Socket.IO
 - Include line numbers and error details for PM
@@ -520,13 +534,13 @@ describe('LinterService', () => {
 
 ## References
 
-| Source | Section |
-|--------|---------|
-| `docs/architecture.md` | qa-automation module structure |
-| `docs/epics.md` | Story 3.1 acceptance criteria |
-| `prisma/schema.prisma` | QAResult, Ticket models |
-| `src/common/metrics/metrics.constants.ts` | QA_METRICS, METRICS_CONSTANTS |
-| `src/webhooks/webhooks.service.ts` | Service implementation patterns |
+| Source                                    | Section                         |
+| ----------------------------------------- | ------------------------------- |
+| `docs/architecture.md`                    | qa-automation module structure  |
+| `docs/epics.md`                           | Story 3.1 acceptance criteria   |
+| `prisma/schema.prisma`                    | QAResult, Ticket models         |
+| `src/common/metrics/metrics.constants.ts` | QA_METRICS, METRICS_CONSTANTS   |
+| `src/webhooks/webhooks.service.ts`        | Service implementation patterns |
 
 ---
 
@@ -534,11 +548,42 @@ describe('LinterService', () => {
 
 ### Change Log
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-12-02 | Story drafted | Scrum Master Bob |
-| 2025-12-02 | Quality review: Fixed 5 critical issues, added 4 enhancements, applied 3 optimizations | Quality Validator |
+| Date       | Change                                                                                 | Author             |
+| ---------- | -------------------------------------------------------------------------------------- | ------------------ |
+| 2025-12-02 | Story drafted                                                                          | Scrum Master Bob   |
+| 2025-12-02 | Quality review: Fixed 5 critical issues, added 4 enhancements, applied 3 optimizations | Quality Validator  |
+| 2025-12-04 | Implementation complete: All 7 tasks done, 31 unit tests passing                       | Amelia (Dev Agent) |
+| 2025-12-04 | Code review: Fixed 1 CRITICAL, 2 HIGH, 1 MEDIUM, 1 LOW issues. 33 tests now.           | Code Reviewer      |
 
 ### File List
 
-<!-- Populated during implementation -->
+| Action | File                                                |
+| ------ | --------------------------------------------------- |
+| CREATE | `src/qa-automation/interfaces/linting.interface.ts` |
+| CREATE | `src/qa-automation/interfaces/index.ts`             |
+| CREATE | `src/qa-automation/dto/linting-result.dto.ts`       |
+| CREATE | `src/qa-automation/dto/index.ts`                    |
+| CREATE | `src/qa-automation/linter.service.ts`               |
+| MODIFY | `src/qa-automation/qa-automation.module.ts`         |
+| MODIFY | `src/common/metrics/metrics.constants.ts`           |
+| MODIFY | `src/common/sentry/sentry.constants.ts`             |
+| CREATE | `src/qa-automation/linter.service.spec.ts`          |
+
+### Implementation Notes
+
+- **Interfaces**: Comprehensive types (SupportedLanguage, LintingSeverity, ILintingIssue, ILintingResult, ILintingOptions, ILinterConfig, LINTER_CONFIGS)
+- **LinterService**: Implements multi-language linting using ESLint Node.js API for TS/JS, Flake8 CLI for Python, golangci-lint CLI for Go
+- **Database Integration**: Saves results to qa_results table, updates ticket status to QA_FAILED on linting failure
+- **Metrics**: Added LINTING_TOTAL, LINTING_DURATION, LINTING_ISSUES to QA_METRICS
+- **Tests**: 33 unit tests covering language detection, ESLint execution, metrics tracking, database persistence, binary checks
+- **Pre-existing test failures**: 15 tests in app.module.spec.ts fail due to SENTRY_DSN config (not related to this story)
+
+### Code Review Fixes Applied (2025-12-04)
+
+| Issue                                                          | Severity | Fix                                                    |
+| -------------------------------------------------------------- | -------- | ------------------------------------------------------ |
+| QaAutomationModule missing DatabaseModule/SentryModule imports | CRITICAL | Added `imports: [DatabaseModule, SentryModule]`        |
+| Infinite recursion in lintPython error handling                | HIGH     | Created `parseFlake8Output()` helper to parse directly |
+| Missing tests for binary not found scenarios                   | HIGH     | Added 2 tests for flake8/golangci-lint missing         |
+| eslint.config.mjs not in config detection                      | MEDIUM   | Added mjs/cjs extensions, prioritized flat config      |
+| File List used EXISTS instead of CREATE                        | LOW      | Corrected to CREATE for new files                      |

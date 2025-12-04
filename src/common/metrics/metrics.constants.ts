@@ -48,6 +48,10 @@ export const QA_METRICS = {
   CHECK_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_check_duration_seconds`,
   COVERAGE_PERCENT: `${METRICS_CONSTANTS.PREFIX}qa_test_coverage_percent`,
   VULNERABILITIES: `${METRICS_CONSTANTS.PREFIX}qa_security_vulnerabilities_total`,
+  // Story 3.1: Linting metrics
+  LINTING_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_linting_total`,
+  LINTING_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_linting_duration_seconds`,
+  LINTING_ISSUES: `${METRICS_CONSTANTS.PREFIX}qa_linting_issues`,
 } as const;
 
 // Business Metrics - Deployments

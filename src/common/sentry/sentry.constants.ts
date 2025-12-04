@@ -57,6 +57,9 @@ export enum ErrorCategory {
   // Story 2.9: Retry Logic
   AI_EXECUTION = 'ai_execution',
   RETRY_HANDLER = 'retry_handler',
+
+  // Story 3.1+: QA Automation
+  QA_AUTOMATION = 'qa_automation',
 }
 
 /**
