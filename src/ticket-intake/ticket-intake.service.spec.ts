@@ -98,7 +98,6 @@ describe('TicketIntakeService', () => {
     mockValidationCounter = { inc: jest.fn() };
     mockQualityHistogram = { observe: jest.fn() };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     service = new TicketIntakeService(
       mockPrisma as never,
       mockRabbitMQPublisher as never,

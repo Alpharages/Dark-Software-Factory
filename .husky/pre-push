@@ -1,2 +1,2 @@
 echo "Running pre-push checks..."
-ESLINT_USE_FLAT_CONFIG=false pnpm exec eslint "{src,apps,libs,test}/**/*.ts" --max-warnings=0 && pnpm test
+pnpm exec eslint "{src,apps,libs,test}/**/*.ts" --max-warnings=0 && pnpm test
