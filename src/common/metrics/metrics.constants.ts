@@ -57,6 +57,11 @@ export const QA_METRICS = {
   TEST_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_test_duration_seconds`,
   TEST_PASSED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_tests_passed_total`,
   TEST_FAILED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_tests_failed_total`,
+  // Story 3.3: Coverage metrics
+  COVERAGE_ANALYSIS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_coverage_analysis_total`,
+  COVERAGE_ANALYSIS_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_coverage_analysis_duration_seconds`,
+  COVERAGE_DELTA: `${METRICS_CONSTANTS.PREFIX}qa_coverage_delta`,
+  COVERAGE_THRESHOLD_FAILURES: `${METRICS_CONSTANTS.PREFIX}qa_coverage_threshold_failures_total`,
 } as const;
 
 // Business Metrics - Deployments

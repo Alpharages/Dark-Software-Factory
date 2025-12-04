@@ -352,3 +352,42 @@ enum ExtractionStatus {
   COMPLETED
   FAILED
 }
+
+// ============================================
+// COVERAGE BASELINES (Story 3.3)
+// ============================================
+
+model CoverageBaseline {
+  id            String   @id @default(uuid())
+  project_id    String
+  branch        String   @default("main")
+  
+  lines         Float    // Line coverage %
+  branches      Float    // Branch coverage %
+  functions     Float    // Function coverage %
+  statements    Float    // Statement coverage %
+  
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  
+  @@unique([project_id, branch])
+  @@index([project_id])
+  @@map("coverage_baselines")
+}
+
+// ============================================
+// PROJECT COVERAGE CONFIG (Story 3.3)
+// Per-project threshold overrides
+// ============================================
+
+model ProjectCoverageConfig {
+  id              String   @id @default(uuid())
+  project_id      String   @unique
+  threshold       Float    @default(80)  // Override global threshold
+  enforcement     Boolean  @default(true)
+  
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  
+  @@map("project_coverage_configs")
+}

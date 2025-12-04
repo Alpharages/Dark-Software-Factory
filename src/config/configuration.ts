@@ -188,6 +188,11 @@ export default () => {
       testTimeoutMs: parseInt(process.env.QA_TEST_TIMEOUT_MS || '300000', 10), // 5 minutes default
       dockerMemoryLimit: process.env.QA_DOCKER_MEMORY || '2g',
       dockerCpuLimit: process.env.QA_DOCKER_CPUS || '2',
+      // Story 3.3: Coverage Enforcement
+      coverageThreshold: parseInt(process.env.QA_COVERAGE_THRESHOLD || '80', 10),
+      coverageEnforcementEnabled: process.env.QA_COVERAGE_ENFORCEMENT !== 'false',
+      baseBranch: process.env.QA_BASE_BRANCH || 'main',
+      generateHtmlReport: process.env.QA_GENERATE_HTML_REPORT !== 'false',
     },
   };
 };

@@ -131,4 +131,10 @@ export const envValidationSchema = Joi.object({
   CONTEXT_CACHE_TTL_HOURS: Joi.number().integer().min(1).max(168).default(24), // Max 1 week
   CONTEXT_STORAGE_PATH: Joi.string().default('./uploads/context'),
   CONTEXT_SUPPORTED_FORMATS: Joi.string().default('pdf,md,txt,docx'),
+
+  // Story 3.3: Coverage Configuration
+  QA_COVERAGE_THRESHOLD: Joi.number().min(0).max(100).default(80),
+  QA_COVERAGE_ENFORCEMENT: Joi.string().valid('true', 'false').default('true'),
+  QA_BASE_BRANCH: Joi.string().default('main'),
+  QA_GENERATE_HTML_REPORT: Joi.string().valid('true', 'false').default('true'),
 });

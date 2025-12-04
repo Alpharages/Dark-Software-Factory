@@ -168,8 +168,14 @@ development_status:
       e2e_tests: 4/4 passed
     notes: "Code review completed. FIXED: (1) Marked all tasks complete, (2) Populated File List, (3) Fixed CRITICAL command injection in DockerExecutor, (4) Fixed race condition/resource leak in TestRunner, (5) Added missing TestSuiteDto, (6) Configurable Docker limits, (7) Fixed lint errors (unused imports, require calls). 66 unit + 4 E2E tests passing."
   3-3-test-coverage-calculation-enforcement:
-    status: ready-for-dev
-    notes: "Story drafted and quality-reviewed. Includes CoverageService, CoverageBaselineService, CoverageFileParser for file-level coverage, delta calculation, configurable thresholds (global + per-project), PM notification via Socket.IO, HTML report generation, and Prometheus metrics. Quality review fixed: ErrorCategory.QA_AUTOMATION, file-level coverage parsing, PM notification, env.validation.ts. Prerequisites: Stories 3.2, 1.3, 1.8, 1.9."
+    status: done
+    developer: "Amelia (Dev Agent)"
+    dev_branch: "feature/3-3-coverage-enforcement"
+    completed_date: 2025-12-04
+    test_results:
+      unit_tests: 10/10 passed
+      lint: "0 errors, 8 warnings (known security patterns)"
+    notes: "APPROVED. Code review completed. FIXED: (1) Added @Injectable() to CoverageFileParser, (2) Implemented QAResult upsert in saveResult(), (3) Added updateTicketStatusOnFailure() for AC#3 QA_FAILED status, (4) Fixed HTML report path to lcov-report/index.html, (5) Added correlationId to CoverageAnalysisDto, (6) Added 2 new unit tests. All 10 unit tests passing."
   3-4-basic-security-code-quality-checks:
     status: ready-for-dev
     notes: "Story drafted and QUALITY-REVIEWED (all improvements applied). Uses code-review.service.ts per architecture. Includes 4 scanner services with full implementations, per-scanner timeouts, context-validated secret patterns, EXCLUDED_PATHS/EXTENSIONS/FILES, Go language support, COMPLEXITY_THRESHOLDS with severity mapping, sample output constants for testing. 17 key files documented."
