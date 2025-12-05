@@ -6,6 +6,7 @@
  * Story 3.4: Basic Security & Code Quality Checks
  * Story 3.5: Quality Gate Decision Engine
  * Story 3.6: QA Results Storage & Retrieval
+ * Story 3.7: RabbitMQ QA Queue Processing
  */
 
 import { Module } from '@nestjs/common';
@@ -34,7 +35,9 @@ import { QaOrchestratorService } from './qa-orchestrator.service';
 import { QaOrchestratorConsumer } from './qa-orchestrator.consumer';
 import { QaResultsService } from './qa-results.service';
 import { QaResultsController, QualityGateController } from './qa-results.controller';
-import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constants';
+import { QaCheckPublisher } from './qa-check.publisher';
+import { QaCheckConsumer } from './qa-check.consumer';
+import { QA_METRICS, METRICS_CONSTANTS, QUEUE_METRICS } from '../common/metrics/metrics.constants';
 
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 
@@ -198,6 +201,25 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
       labelNames: ['query_type'],
       buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
     }),
+
+    // Story 3.7 - RabbitMQ QA Queue Processing
+    QaCheckPublisher,
+    QaCheckConsumer,
+    makeGaugeProvider({
+      name: QUEUE_METRICS.DEPTH,
+      help: 'Queue depth by queue name',
+      labelNames: ['queue'],
+    }),
+    makeGaugeProvider({
+      name: QUEUE_METRICS.CONSUMER_COUNT,
+      help: 'Active consumer count by queue',
+      labelNames: ['queue'],
+    }),
+    makeCounterProvider({
+      name: QUEUE_METRICS.PROCESSING_RATE,
+      help: 'Message processing rate by queue and status',
+      labelNames: ['queue', 'status'],
+    }),
   ],
   exports: [
     LinterService,
@@ -208,6 +230,8 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
     QualityGatesService,
     QaOrchestratorService,
     QaResultsService,
+    QaCheckPublisher, // Story 3.7
+    QaCheckConsumer, // Story 3.7
   ],
 })
 export class QaAutomationModule {}

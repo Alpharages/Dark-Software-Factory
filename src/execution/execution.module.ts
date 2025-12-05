@@ -20,6 +20,7 @@ import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider'
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
+import { QaAutomationModule } from '../qa-automation/qa-automation.module';
 // LoggerModule not needed - consumer uses NestJS Logger directly
 
 /**
@@ -44,6 +45,7 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
     DatabaseModule,
     RabbitMQModule,
     forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer & AIExecutionConsumer
+    QaAutomationModule, // Story 3.7: For QaCheckPublisher
   ],
   providers: [
     // Core services

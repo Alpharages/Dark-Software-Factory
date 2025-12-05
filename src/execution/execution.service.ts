@@ -15,6 +15,8 @@ import {
   FailExecutionDto,
   ExecutionResponseDto,
 } from './dto';
+import { QaCheckPublisher } from '../qa-automation/qa-check.publisher';
+import { ICodeFile } from '../qa-automation/interfaces';
 
 /**
  * Execution Service
@@ -31,6 +33,7 @@ export class ExecutionService {
   constructor(
     private readonly tracker: ExecutionTrackerService,
     private readonly stateMachine: ExecutionStateMachine,
+    private readonly qaCheckPublisher: QaCheckPublisher,
   ) {}
 
   /**
@@ -71,6 +74,7 @@ export class ExecutionService {
 
   /**
    * Complete execution with results
+   * Story 3.7 Task 5: After completion, publish to QA queue
    */
   async completeExecution(
     dto: CompleteExecutionDto,
@@ -85,7 +89,69 @@ export class ExecutionService {
       confidenceScore: dto.confidenceScore,
     };
 
-    return this.tracker.completeExecution(completion, correlationId);
+    const result = await this.tracker.completeExecution(completion, correlationId);
+
+    // Story 3.7 AC#1: Publish QA check request after successful execution
+    try {
+      // Get execution details to extract ticketId and provider
+      const execution = await this.tracker.getExecution(dto.executionId);
+      if (execution) {
+        // TODO: Story 3.7 - Replace with actual file content extraction from codeOutput
+        // For now, create mock ICodeFile objects from filesChanged array
+        const codeFiles: ICodeFile[] = dto.filesChanged.map((filePath) => ({
+          path: filePath,
+          content: dto.codeOutput, // Simplified - should extract per-file content
+          language: this.detectLanguage(filePath),
+        }));
+
+        // TODO: Story 3.7 - projectId should come from ticket or execution record
+        // For now, using ticketId as placeholder
+        const projectId = execution.ticket_id;
+
+        await this.qaCheckPublisher.publishQaCheck(
+          dto.executionId,
+          execution.ticket_id,
+          projectId,
+          codeFiles,
+          execution.ai_provider,
+          correlationId,
+        );
+
+        this.logger.log(`[${correlationId}] Published QA check for execution ${dto.executionId}`);
+      }
+    } catch (error) {
+      // Log error but don't fail execution completion
+      this.logger.error(
+        `[${correlationId}] Failed to publish QA check: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+    }
+
+    return result;
+  }
+
+  /**
+   * Detect file language from extension
+   * Story 3.7: Helper for codeFiles language detection
+   */
+  private detectLanguage(
+    filePath: string,
+  ): 'typescript' | 'javascript' | 'python' | 'go' | 'unknown' {
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'ts':
+      case 'tsx':
+        return 'typescript';
+      case 'js':
+      case 'jsx':
+        return 'javascript';
+      case 'py':
+        return 'python';
+      case 'go':
+        return 'go';
+      default:
+        return 'unknown';
+    }
   }
 
   /**

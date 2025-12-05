@@ -206,6 +206,13 @@ export default () => {
       coverageEnforcementEnabled: process.env.QA_COVERAGE_ENFORCEMENT !== 'false',
       baseBranch: process.env.QA_BASE_BRANCH || 'main',
       generateHtmlReport: process.env.QA_GENERATE_HTML_REPORT !== 'false',
+      // Story 3.7: RabbitMQ QA Queue Processing
+      check: {
+        concurrency: parseInt(process.env.QA_CHECK_CONCURRENCY || '5', 10),
+        maxRetries: parseInt(process.env.QA_CHECK_MAX_RETRIES || '3', 10),
+        timeoutMs: parseInt(process.env.QA_CHECK_TIMEOUT_MS || '300000', 10), // 5 minutes
+        depthIntervalMs: parseInt(process.env.QA_QUEUE_DEPTH_INTERVAL_MS || '30000', 10), // 30 seconds
+      },
     },
 
     // Story 3.5: Quality Gate Configuration
