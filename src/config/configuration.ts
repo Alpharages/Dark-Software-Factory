@@ -207,5 +207,24 @@ export default () => {
       baseBranch: process.env.QA_BASE_BRANCH || 'main',
       generateHtmlReport: process.env.QA_GENERATE_HTML_REPORT !== 'false',
     },
+
+    // Story 3.5: Quality Gate Configuration
+    // FR70: System blocks deployment if quality gates fail
+    qualityGate: {
+      minTestPassRate: parseInt(process.env.QG_MIN_TEST_PASS_RATE || '100', 10),
+      minCoverage: parseInt(process.env.QG_MIN_COVERAGE || '80', 10),
+      targetCoverage: parseInt(process.env.QG_TARGET_COVERAGE || '90', 10),
+      maxLintingErrors: parseInt(process.env.QG_MAX_LINTING_ERRORS || '0', 10),
+      maxLintingWarnings: parseInt(process.env.QG_MAX_LINTING_WARNINGS || '10', 10),
+      blockOnCriticalSecurity: process.env.QG_BLOCK_CRITICAL !== 'false',
+      blockOnHighSecurity: process.env.QG_BLOCK_HIGH !== 'false',
+      maxComplexity: parseInt(process.env.QG_MAX_COMPLEXITY || '20', 10),
+      allowOverride: process.env.QG_ALLOW_OVERRIDE === 'true',
+      // Per-category timeouts (ms)
+      lintingTimeoutMs: parseInt(process.env.QG_LINTING_TIMEOUT_MS || '60000', 10),
+      testingTimeoutMs: parseInt(process.env.QG_TESTING_TIMEOUT_MS || '300000', 10),
+      coverageTimeoutMs: parseInt(process.env.QG_COVERAGE_TIMEOUT_MS || '60000', 10),
+      securityTimeoutMs: parseInt(process.env.QG_SECURITY_TIMEOUT_MS || '180000', 10),
+    },
   };
 };

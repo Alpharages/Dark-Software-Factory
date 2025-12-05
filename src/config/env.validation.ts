@@ -149,4 +149,21 @@ export const envValidationSchema = Joi.object({
   SECURITY_SECRETS_SCAN_TIMEOUT_MS: Joi.number().integer().min(10000).max(120000).default(30000), // 10s-2min
   SECURITY_COMPLEXITY_SCAN_TIMEOUT_MS: Joi.number().integer().min(30000).max(300000).default(60000),
   SECURITY_PATTERN_SCAN_TIMEOUT_MS: Joi.number().integer().min(10000).max(120000).default(30000),
+
+  // Story 3.5: Quality Gate Configuration (optional - has sensible defaults)
+  // FR70: System blocks deployment if quality gates fail
+  QG_MIN_TEST_PASS_RATE: Joi.number().integer().min(0).max(100).default(100),
+  QG_MIN_COVERAGE: Joi.number().integer().min(0).max(100).default(80),
+  QG_TARGET_COVERAGE: Joi.number().integer().min(0).max(100).default(90),
+  QG_MAX_LINTING_ERRORS: Joi.number().integer().min(0).default(0),
+  QG_MAX_LINTING_WARNINGS: Joi.number().integer().min(0).default(10),
+  QG_BLOCK_CRITICAL: Joi.string().valid('true', 'false').default('true'),
+  QG_BLOCK_HIGH: Joi.string().valid('true', 'false').default('true'),
+  QG_MAX_COMPLEXITY: Joi.number().integer().min(5).max(50).default(20),
+  QG_ALLOW_OVERRIDE: Joi.string().valid('true', 'false').default('false'),
+  // Per-category timeouts
+  QG_LINTING_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
+  QG_TESTING_TIMEOUT_MS: Joi.number().integer().min(30000).max(900000).default(300000), // 30s-15min
+  QG_COVERAGE_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
+  QG_SECURITY_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10min
 });

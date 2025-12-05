@@ -69,6 +69,10 @@ export const QA_METRICS = {
   SECURITY_SECRETS_DETECTED: `${METRICS_CONSTANTS.PREFIX}qa_security_secrets_detected_total`,
   SECURITY_COMPLEXITY_ISSUES: `${METRICS_CONSTANTS.PREFIX}qa_security_complexity_issues_total`,
   SECURITY_PATTERN_FINDINGS: `${METRICS_CONSTANTS.PREFIX}qa_security_pattern_findings_total`,
+  // Story 3.5: Quality Gate metrics
+  QUALITY_GATE_EVALUATIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_quality_gate_evaluations_total`,
+  QUALITY_GATE_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_quality_gate_duration_seconds`,
+  QUALITY_SCORE_HISTOGRAM: `${METRICS_CONSTANTS.PREFIX}qa_quality_score`,
 } as const;
 
 // Business Metrics - Deployments

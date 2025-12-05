@@ -2,12 +2,9 @@
  * QA Automation Module
  * Story 3.1: Linting Integration for Multiple Languages
  * Story 3.2: Automated Test Execution Framework
- *
- * Provides:
- * - LinterService: Multi-language linting (ESLint, Flake8, golangci-lint)
- * - TestRunnerService: Multi-framework test execution (Jest, PyTest, Go, Mocha)
- * - DockerExecutorService: Isolated test execution in containers
- * - Prometheus metrics for linting and testing operations
+ * Story 3.3: Test Coverage Calculation & Enforcement
+ * Story 3.4: Basic Security & Code Quality Checks
+ * Story 3.5: Quality Gate Decision Engine
  */
 
 import { Module } from '@nestjs/common';
@@ -30,10 +27,18 @@ import { SecretsScannerService } from './scanners/secrets-scanner.service';
 import { ComplexityAnalyzerService } from './scanners/complexity-analyzer.service';
 import { SecurityPatternService } from './scanners/security-pattern.service';
 import { CodeReviewService } from './code-review.service';
+import { QualityGatesService } from './quality-gates.service';
+import { QaOrchestratorService } from './qa-orchestrator.service';
+import { QaOrchestratorConsumer } from './qa-orchestrator.consumer';
+import { QaResultsService } from './qa-results.service';
+import { QaResultsController, QualityGateController } from './qa-results.controller';
 import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constants';
 
+import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
+
 @Module({
-  imports: [DatabaseModule, SentryModule, ConfigModule],
+  imports: [DatabaseModule, SentryModule, ConfigModule, RabbitMQModule],
+  controllers: [QaResultsController, QualityGateController],
   providers: [
     // Story 3.1 - Linting
     LinterService,
@@ -145,6 +150,39 @@ import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constan
       help: 'Total security pattern violations detected',
       labelNames: ['type'],
     }),
+
+    // Story 3.5 - Quality Gate Decision Engine
+    QualityGatesService,
+    QaOrchestratorService,
+    QaOrchestratorConsumer,
+    QaResultsService,
+    makeCounterProvider({
+      name: QA_METRICS.QUALITY_GATE_EVALUATIONS_TOTAL,
+      help: 'Total quality gate evaluations',
+      labelNames: ['status', 'project_id'],
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.QUALITY_GATE_DURATION,
+      help: 'Quality gate evaluation duration in seconds',
+      buckets: METRICS_CONSTANTS.DEFAULT_BUCKETS,
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.QUALITY_SCORE_HISTOGRAM,
+      help: 'Distribution of quality scores (0-100)',
+      labelNames: ['project_id'],
+      buckets: [0, 20, 40, 60, 70, 80, 90, 100],
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.CHECKS_TOTAL,
+      help: 'Total QA checks orchestrated',
+      labelNames: ['status', 'project_id', 'result'],
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.CHECK_DURATION,
+      help: 'QA check duration in seconds',
+      labelNames: ['check_type'],
+      buckets: METRICS_CONSTANTS.DEFAULT_BUCKETS,
+    }),
   ],
   exports: [
     LinterService,
@@ -152,6 +190,9 @@ import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constan
     DockerExecutorService,
     CoverageService,
     CodeReviewService,
+    QualityGatesService,
+    QaOrchestratorService,
+    QaResultsService,
   ],
 })
 export class QaAutomationModule {}

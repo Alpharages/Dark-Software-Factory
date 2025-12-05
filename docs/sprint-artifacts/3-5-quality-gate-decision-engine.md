@@ -1,7 +1,7 @@
 # Story 3.5: Quality Gate Decision Engine
 
 **Epic:** 3 - Automated QA & Quality Gates  
-**Status:** ready-for-dev  
+**Status:** done  
 **Priority:** P1 - HIGH  
 **Effort:** 8 story points  
 **ClickUp ID:** `86evnjwb8`  
@@ -145,70 +145,70 @@ PM notified via Socket.IO, Ticket.status = QA_FAILED
 
 ## Tasks
 
-- [ ] **Task 1: Verify/Add ErrorCategory.QA_AUTOMATION** (CRITICAL)
-  - [ ] Check `src/common/sentry/sentry.constants.ts` for `QA_AUTOMATION`
-  - [ ] ADD `QA_AUTOMATION = 'qa_automation'` to ErrorCategory enum if missing
-  - [ ] This may have been added by Story 3.3/3.4 - verify before adding
+- [x] **Task 1: Verify/Add ErrorCategory.QA_AUTOMATION** (CRITICAL)
+  - [x] Check `src/common/sentry/sentry.constants.ts` for `QA_AUTOMATION`
+  - [x] ADD `QA_AUTOMATION = 'qa_automation'` to ErrorCategory enum if missing
+  - [x] This may have been added by Story 3.3/3.4 - verify before adding
 
-- [ ] **Task 2: Create Interfaces** (AC: #1, #2)
-  - [ ] `IQualityGateRule`, `IQualityGateConfig`, `IQualityGateResult`
-  - [ ] `QualityGateStatus` enum (PASSED, FAILED, WARNING)
-  - [ ] `QualityCategory` enum (LINTING, TESTING, COVERAGE, SECURITY)
-  - [ ] `QUALITY_SCORE_WEIGHTS` constant (category weights for scoring)
-  - [ ] `DEFAULT_THRESHOLDS` constant
-  - [ ] `QA_CHECK_TIMEOUTS` constant (per-category timeouts)
+- [x] **Task 2: Create Interfaces** (AC: #1, #2)
+  - [x] `IQualityGateRule`, `IQualityGateConfig`, `IQualityGateResult`
+  - [x] `QualityGateStatus` enum (PASSED, FAILED, WARNING)
+  - [x] `QualityCategory` enum (LINTING, TESTING, COVERAGE, SECURITY)
+  - [x] `QUALITY_SCORE_WEIGHTS` constant (category weights for scoring)
+  - [x] `DEFAULT_THRESHOLDS` constant
+  - [x] `QA_CHECK_TIMEOUTS` constant (per-category timeouts)
 
-- [ ] **Task 3: Create DTOs** (AC: #1, #2)
-  - [ ] Follow DTO pattern from Story 3.3/3.4
-  - [ ] `QualityGateConfigDto`, `QualityGateResultDto`, `CategoryScoreDto`
-  - [ ] `BlockingIssueDto`, `WarningIssueDto`
+- [x] **Task 3: Create DTOs** (AC: #1, #2)
+  - [x] Follow DTO pattern from Story 3.3/3.4
+  - [x] `QualityGateConfigDto`, `QualityGateResultDto`, `CategoryScoreDto`
+  - [x] `BlockingIssueDto`, `WarningIssueDto`
 
-- [ ] **Task 4: Implement QualityGatesService** (AC: All)
-  - [ ] `evaluate(executionId, qaResult)` - main decision logic
-  - [ ] `calculateQualityScore(qaResult)` - 0-100 weighted score
-  - [ ] `loadConfig(projectId)` - per-project or default config
-  - [ ] `determineBlockingIssues(qaResult)` - extract blockers
-  - [ ] `determineWarningIssues(qaResult)` - extract warnings
-  - [ ] Add `SAMPLE_QA_RESULT` and `SAMPLE_FAILING_QA_RESULT` for testing
+- [x] **Task 4: Implement QualityGatesService** (AC: All)
+  - [x] `evaluate(executionId, qaResult)` - main decision logic
+  - [x] `calculateQualityScore(qaResult)` - 0-100 weighted score
+  - [x] `loadConfig(projectId)` - per-project or default config
+  - [x] `determineBlockingIssues(qaResult)` - extract blockers
+  - [x] `determineWarningIssues(qaResult)` - extract warnings
+  - [x] Add `SAMPLE_QA_RESULT` and `SAMPLE_FAILING_QA_RESULT` for testing
 
-- [ ] **Task 5: Implement QaOrchestratorService** (AC: All)
-  - [ ] `processQaCheck(message)` - main orchestration logic
-  - [ ] Run all QA services in parallel with per-category timeouts
-  - [ ] Aggregate results, call QualityGatesService
-  - [ ] Update ticket status based on result
-  - [ ] Publish to `deployment-queue` or emit failure event
+- [x] **Task 5: Implement QaOrchestratorService** (AC: All)
+  - [x] `processQaCheck(message)` - main orchestration logic
+  - [x] Run all QA services in parallel with per-category timeouts
+  - [x] Aggregate results, call QualityGatesService
+  - [x] Update ticket status based on result
+  - [x] Publish to `deployment-queue` or emit failure event
 
-- [ ] **Task 6: Implement QaOrchestratorConsumer** (AC: All)
-  - [ ] Create `qa-orchestrator.consumer.ts`
-  - [ ] Add `@RabbitSubscribe({ queue: QUEUE_NAMES.QA_CHECK })` decorator
-  - [ ] Call `QaOrchestratorService.processQaCheck()`
-  - [ ] Handle errors with Sentry and dead-letter queue
+- [x] **Task 6: Implement QaOrchestratorConsumer** (AC: All)
+  - [x] Create `qa-orchestrator.consumer.ts`
+  - [x] Add `@RabbitSubscribe({ queue: QUEUE_NAMES.QA_CHECK })` decorator
+  - [x] Call `QaOrchestratorService.processQaCheck()`
+  - [x] Handle errors with Sentry and dead-letter queue
 
-- [ ] **Task 7: Implement QaResultsService + Controller** (AC: #3)
-  - [ ] `saveResult(executionId, result)` - save to database
-  - [ ] `getResult(executionId)` - retrieve result
-  - [ ] `getResultsByTicket(ticketId)` - query by ticket
-  - [ ] `getResultsByProject(projectId, filters)` - query with filters
-  - [ ] Create `QaResultsController` with endpoints:
-    - GET `/api/v1/qa-results/:executionId`
-    - GET `/api/v1/qa-results?ticketId={id}`
-    - GET `/api/v1/qa-results?projectId={id}&status=failed`
-    - POST `/api/v1/quality-gate/:executionId/override` (emergency override)
+- [x] **Task 7: Implement QaResultsService + Controller** (AC: #3)
+  - [x] `saveResult(executionId, result)` - save to database
+  - [x] `getResult(executionId)` - retrieve result
+  - [x] `getResultsByTicket(ticketId)` - query by ticket
+  - [x] `getResultsByProject(projectId, filters)` - query with filters
+  - [x] Create `QaResultsController` with endpoints:
+    - [x] GET `/api/v1/qa-results/:executionId`
+    - [x] GET `/api/v1/qa-results?ticketId={id}`
+    - [x] GET `/api/v1/qa-results?projectId={id}&status=failed`
+    - [x] POST `/api/v1/quality-gate/:executionId/override` (emergency override)
 
-- [ ] **Task 8: Add Quality Gate Metrics** (AC: #2)
-  - [ ] ADD to existing `QA_METRICS` in metrics.constants.ts
-  - [ ] `QUALITY_GATE_EVALUATIONS_TOTAL`, `QUALITY_GATE_DURATION`, `QUALITY_SCORE_HISTOGRAM`
+- [x] **Task 8: Add Quality Gate Metrics** (AC: #2)
+  - [x] ADD to existing `QA_METRICS` in metrics.constants.ts
+  - [x] `QUALITY_GATE_EVALUATIONS_TOTAL`, `QUALITY_GATE_DURATION`, `QUALITY_SCORE_HISTOGRAM`
 
-- [ ] **Task 9: Configuration** (AC: #2)
-  - [ ] Add quality gate config to `configuration.ts`
-  - [ ] Update `env.validation.ts` with QG_* env vars
-  - [ ] Add per-category timeout configs
+- [x] **Task 9: Configuration** (AC: #2)
+  - [x] Add quality gate config to `configuration.ts`
+  - [x] Update `env.validation.ts` with QG_* env vars
+  - [x] Add per-category timeout configs
 
-- [ ] **Task 10: Wire Module + Tests** (AC: All)
-  - [ ] Update `QaAutomationModule` with all providers
-  - [ ] Unit tests for QualityGatesService (pass/fail/warning scenarios)
-  - [ ] Unit tests for QaOrchestratorService (parallel execution, timeout handling)
-  - [ ] E2E tests for full QA pipeline
+- [x] **Task 10: Wire Module + Tests** (AC: All)
+  - [x] Update `QaAutomationModule` with all providers
+  - [x] Unit tests for QualityGatesService (pass/fail/warning scenarios)
+  - [x] Unit tests for QaOrchestratorService (parallel execution, timeout handling)
+  - [x] E2E tests for full QA pipeline
 
 ---
 
@@ -1693,6 +1693,7 @@ describe('QaOrchestratorConsumer', () => {
 |------|--------|--------|
 | 2025-12-03 | Story drafted with full implementation guide | Scrum Master Bob |
 | 2025-12-03 | Quality review: Fixed 3 critical, 4 enhancements, 3 optimizations | Quality Validator |
+| 2025-12-05 | Code review fixes: Security guards, RabbitMQ consumer, ESLint errors, QA service integration | Adversarial Code Review |
 
 ### Improvements Applied
 
@@ -1710,5 +1711,21 @@ describe('QaOrchestratorConsumer', () => {
 
 ### File List
 
-<!-- Populated during implementation -->
+**Created/Modified for Story 3.5:**
+- `src/qa-automation/interfaces/quality-gate.interface.ts` - Types and interfaces
+- `src/qa-automation/interfaces/index.ts` - Barrel export (modified)
+- `src/qa-automation/dto/quality-gate.dto.ts` - DTOs with validation
+- `src/qa-automation/dto/index.ts` - Barrel export (modified)
+- `src/qa-automation/quality-gates.service.ts` - Main quality gate engine
+- `src/qa-automation/quality-gates.service.spec.ts` - Unit tests
+- `src/qa-automation/qa-orchestrator.service.ts` - Orchestrates QA services
+- `src/qa-automation/qa-orchestrator.service.spec.ts` - Unit tests
+- `src/qa-automation/qa-orchestrator.consumer.ts` - RabbitMQ consumer
+- `src/qa-automation/qa-results.service.ts` - Storage and retrieval
+- `src/qa-automation/qa-results.controller.ts` - API endpoints
+- `src/qa-automation/qa-automation.module.ts` - Module wiring (modified)
+- `src/common/metrics/metrics.constants.ts` - Quality gate metrics (modified)
+- `src/config/configuration.ts` - Quality gate config (modified)
+- `src/config/env.validation.ts` - Env var validation (modified)
+- `test/qa-orchestrator.e2e-spec.ts` - E2E tests
 
