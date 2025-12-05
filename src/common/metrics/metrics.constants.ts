@@ -62,6 +62,13 @@ export const QA_METRICS = {
   COVERAGE_ANALYSIS_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_coverage_analysis_duration_seconds`,
   COVERAGE_DELTA: `${METRICS_CONSTANTS.PREFIX}qa_coverage_delta`,
   COVERAGE_THRESHOLD_FAILURES: `${METRICS_CONSTANTS.PREFIX}qa_coverage_threshold_failures_total`,
+  // Story 3.4: Security scanning metrics
+  SECURITY_SCANS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_security_scans_total`,
+  SECURITY_SCAN_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_security_scan_duration_seconds`,
+  SECURITY_VULNERABILITIES: `${METRICS_CONSTANTS.PREFIX}qa_security_vulnerabilities_total`,
+  SECURITY_SECRETS_DETECTED: `${METRICS_CONSTANTS.PREFIX}qa_security_secrets_detected_total`,
+  SECURITY_COMPLEXITY_ISSUES: `${METRICS_CONSTANTS.PREFIX}qa_security_complexity_issues_total`,
+  SECURITY_PATTERN_FINDINGS: `${METRICS_CONSTANTS.PREFIX}qa_security_pattern_findings_total`,
 } as const;
 
 // Business Metrics - Deployments

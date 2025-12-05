@@ -25,6 +25,11 @@ import { DockerExecutorService } from './docker-executor.service';
 import { CoverageService } from './coverage.service';
 import { CoverageBaselineService } from './coverage-baseline.service';
 import { CoverageFileParser } from './coverage-file.parser';
+import { DependencyScannerService } from './scanners/dependency-scanner.service';
+import { SecretsScannerService } from './scanners/secrets-scanner.service';
+import { ComplexityAnalyzerService } from './scanners/complexity-analyzer.service';
+import { SecurityPatternService } from './scanners/security-pattern.service';
+import { CodeReviewService } from './code-review.service';
 import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constants';
 
 @Module({
@@ -105,7 +110,48 @@ import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constan
       help: 'Total coverage threshold failures',
       labelNames: ['projectId'],
     }),
+
+    // Story 3.4 - Security Scanning
+    DependencyScannerService,
+    SecretsScannerService,
+    ComplexityAnalyzerService,
+    SecurityPatternService,
+    CodeReviewService,
+    makeCounterProvider({
+      name: QA_METRICS.SECURITY_SCANS_TOTAL,
+      help: 'Total security scans executed',
+      labelNames: ['result'],
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.SECURITY_SCAN_DURATION,
+      help: 'Security scan duration in seconds',
+      buckets: [10, 30, 60, 120, 180],
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.SECURITY_VULNERABILITIES,
+      help: 'Total security vulnerabilities detected',
+      labelNames: ['severity'],
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.SECURITY_SECRETS_DETECTED,
+      help: 'Total secrets detected in code',
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.SECURITY_COMPLEXITY_ISSUES,
+      help: 'Total code complexity issues detected',
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.SECURITY_PATTERN_FINDINGS,
+      help: 'Total security pattern violations detected',
+      labelNames: ['type'],
+    }),
   ],
-  exports: [LinterService, TestRunnerService, DockerExecutorService, CoverageService],
+  exports: [
+    LinterService,
+    TestRunnerService,
+    DockerExecutorService,
+    CoverageService,
+    CodeReviewService,
+  ],
 })
 export class QaAutomationModule {}

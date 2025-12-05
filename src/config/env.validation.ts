@@ -137,4 +137,16 @@ export const envValidationSchema = Joi.object({
   QA_COVERAGE_ENFORCEMENT: Joi.string().valid('true', 'false').default('true'),
   QA_BASE_BRANCH: Joi.string().default('main'),
   QA_GENERATE_HTML_REPORT: Joi.string().valid('true', 'false').default('true'),
+
+  // Story 3.4: Security Scanning Configuration (optional - has sensible defaults)
+  // FR68: Security vulnerability scanning, secrets detection, code complexity, OWASP patterns
+  SECURITY_BLOCK_ON_CRITICAL: Joi.string().valid('true', 'false').default('true'),
+  SECURITY_BLOCK_ON_HIGH: Joi.string().valid('true', 'false').default('true'),
+  SECURITY_MAX_COMPLEXITY: Joi.number().integer().min(10).max(50).default(20),
+  SECURITY_MAX_FUNCTION_LENGTH: Joi.number().integer().min(50).max(500).default(100),
+  SECURITY_SCAN_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10 min
+  SECURITY_DEP_SCAN_TIMEOUT_MS: Joi.number().integer().min(30000).max(300000).default(60000), // 30s-5min
+  SECURITY_SECRETS_SCAN_TIMEOUT_MS: Joi.number().integer().min(10000).max(120000).default(30000), // 10s-2min
+  SECURITY_COMPLEXITY_SCAN_TIMEOUT_MS: Joi.number().integer().min(30000).max(300000).default(60000),
+  SECURITY_PATTERN_SCAN_TIMEOUT_MS: Joi.number().integer().min(10000).max(120000).default(30000),
 });

@@ -6,3 +6,4 @@
 export * from './linting.interface';
 export * from './test-runner.interface';
 export * from './coverage.interface';
+export * from './security-scanner.interface';

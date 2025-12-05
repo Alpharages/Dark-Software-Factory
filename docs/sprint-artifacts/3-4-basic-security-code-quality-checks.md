@@ -22,12 +22,14 @@ So that vulnerabilities and code smells are detected early.
 **Given** AI code is generated  
 **When** security checks run  
 **Then** the system performs:
+
 - **Dependency vulnerability scanning** (npm audit, pip-audit, go mod verify)
 - **Secrets detection** (pattern matching for credentials, API keys)
 - **Code complexity analysis** (cyclomatic complexity, function length)
 - **Security pattern checking** (SQL injection patterns, XSS vulnerabilities, OWASP Top 10)
 
 **And** security results include:
+
 - Vulnerability severity (critical, high, medium, low)
 - Affected dependencies and versions
 - Recommended fixes or patches
@@ -40,6 +42,7 @@ So that vulnerabilities and code smells are detected early.
 ## Quick Implementation Summary (TL;DR)
 
 **17 Key Files in Implementation Order:**
+
 1. `src/common/sentry/sentry.constants.ts` - ADD `QA_AUTOMATION` to ErrorCategory (if not done)
 2. `src/qa-automation/interfaces/security-scanner.interface.ts` - Types
 3. `src/qa-automation/interfaces/index.ts` - MODIFY: add exports
@@ -64,20 +67,20 @@ So that vulnerabilities and code smells are detected early.
 
 ## ⚠️ Anti-Patterns to Avoid
 
-| ❌ DO NOT | ✅ DO INSTEAD |
-|-----------|---------------|
-| Create new metrics object | ADD to existing `QA_METRICS` in `metrics.constants.ts` |
-| Log actual secret values | Mask secrets, show only type and location |
-| Run external tools without timeout | Use per-scanner configurable timeouts |
-| Store raw scan reports | Store normalized, structured results in JSON |
-| Hard-code severity thresholds | Use ConfigService for configurable thresholds |
-| Skip correlationId | Propagate from caller for audit trail |
-| Use `qa-tasks` queue name | Use `qa-check-queue` (from `QUEUE_NAMES` constant) |
-| Forget to update QAResult | Update `code_review_passed` and `code_review_issues` |
-| Run all scanners sequentially | Run independent scanners in parallel |
-| Name service `security-scanner.service.ts` | Use `code-review.service.ts` per architecture.md |
-| Scan `node_modules/`, `.git/`, `coverage/` | Use EXCLUDED_PATHS filter |
-| Use overly broad secret patterns | Use specific patterns with context validation |
+| ❌ DO NOT                                  | ✅ DO INSTEAD                                          |
+| ------------------------------------------ | ------------------------------------------------------ |
+| Create new metrics object                  | ADD to existing `QA_METRICS` in `metrics.constants.ts` |
+| Log actual secret values                   | Mask secrets, show only type and location              |
+| Run external tools without timeout         | Use per-scanner configurable timeouts                  |
+| Store raw scan reports                     | Store normalized, structured results in JSON           |
+| Hard-code severity thresholds              | Use ConfigService for configurable thresholds          |
+| Skip correlationId                         | Propagate from caller for audit trail                  |
+| Use `qa-tasks` queue name                  | Use `qa-check-queue` (from `QUEUE_NAMES` constant)     |
+| Forget to update QAResult                  | Update `code_review_passed` and `code_review_issues`   |
+| Run all scanners sequentially              | Run independent scanners in parallel                   |
+| Name service `security-scanner.service.ts` | Use `code-review.service.ts` per architecture.md       |
+| Scan `node_modules/`, `.git/`, `coverage/` | Use EXCLUDED_PATHS filter                              |
+| Use overly broad secret patterns           | Use specific patterns with context validation          |
 
 ---
 
@@ -99,14 +102,14 @@ Story 4.x (GitHub Integration) - pushes code
 
 ### Key Integration Points
 
-| From | Interface | To |
-|------|-----------|-----|
-| Story 3.5 `QAOrchestratorService` | calls `codeReview.scan({ correlationId })` | This story |
-| This story | updates `QAResult.code_review_passed` | Database |
-| This story | updates `QAResult.code_review_issues` | Database (JSON) |
-| This story | updates `Ticket.status` to `QA_FAILED` | Database |
-| This story | creates `AuditLog` entry | Database |
-| Story 10.4 | reads results, emits Socket.IO | PM Dashboard |
+| From                              | Interface                                  | To              |
+| --------------------------------- | ------------------------------------------ | --------------- |
+| Story 3.5 `QAOrchestratorService` | calls `codeReview.scan({ correlationId })` | This story      |
+| This story                        | updates `QAResult.code_review_passed`      | Database        |
+| This story                        | updates `QAResult.code_review_issues`      | Database (JSON) |
+| This story                        | updates `Ticket.status` to `QA_FAILED`     | Database        |
+| This story                        | creates `AuditLog` entry                   | Database        |
+| Story 10.4                        | reads results, emits Socket.IO             | PM Dashboard    |
 
 ---
 
@@ -114,89 +117,89 @@ Story 4.x (GitHub Integration) - pushes code
 
 ### Files to Create/Modify
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/common/sentry/sentry.constants.ts` | MODIFY | ADD `QA_AUTOMATION` to ErrorCategory (if not present) |
-| `src/qa-automation/interfaces/security-scanner.interface.ts` | CREATE | Types |
-| `src/qa-automation/interfaces/index.ts` | MODIFY | Add exports |
-| `src/qa-automation/dto/security-result.dto.ts` | CREATE | DTOs |
-| `src/qa-automation/dto/index.ts` | MODIFY | Add exports |
-| `src/qa-automation/scanners/dependency-scanner.service.ts` | CREATE | npm audit, pip-audit, go |
-| `src/qa-automation/scanners/secrets-scanner.service.ts` | CREATE | Secrets detection |
-| `src/qa-automation/scanners/complexity-analyzer.service.ts` | CREATE | Code complexity |
-| `src/qa-automation/scanners/security-pattern.service.ts` | CREATE | OWASP patterns |
-| `src/qa-automation/scanners/index.ts` | CREATE | Barrel export |
-| `src/qa-automation/code-review.service.ts` | CREATE | Main orchestrator |
-| `src/common/metrics/metrics.constants.ts` | MODIFY | Add security metrics |
-| `src/config/configuration.ts` | MODIFY | Add security config |
-| `src/config/env.validation.ts` | MODIFY | Add env var validation |
-| `src/qa-automation/qa-automation.module.ts` | MODIFY | Add providers |
-| `src/qa-automation/code-review.service.spec.ts` | CREATE | Unit tests |
-| `test/code-review.e2e-spec.ts` | CREATE | E2E tests |
+| File                                                         | Action | Purpose                                               |
+| ------------------------------------------------------------ | ------ | ----------------------------------------------------- |
+| `src/common/sentry/sentry.constants.ts`                      | MODIFY | ADD `QA_AUTOMATION` to ErrorCategory (if not present) |
+| `src/qa-automation/interfaces/security-scanner.interface.ts` | CREATE | Types                                                 |
+| `src/qa-automation/interfaces/index.ts`                      | MODIFY | Add exports                                           |
+| `src/qa-automation/dto/security-result.dto.ts`               | CREATE | DTOs                                                  |
+| `src/qa-automation/dto/index.ts`                             | MODIFY | Add exports                                           |
+| `src/qa-automation/scanners/dependency-scanner.service.ts`   | CREATE | npm audit, pip-audit, go                              |
+| `src/qa-automation/scanners/secrets-scanner.service.ts`      | CREATE | Secrets detection                                     |
+| `src/qa-automation/scanners/complexity-analyzer.service.ts`  | CREATE | Code complexity                                       |
+| `src/qa-automation/scanners/security-pattern.service.ts`     | CREATE | OWASP patterns                                        |
+| `src/qa-automation/scanners/index.ts`                        | CREATE | Barrel export                                         |
+| `src/qa-automation/code-review.service.ts`                   | CREATE | Main orchestrator                                     |
+| `src/common/metrics/metrics.constants.ts`                    | MODIFY | Add security metrics                                  |
+| `src/config/configuration.ts`                                | MODIFY | Add security config                                   |
+| `src/config/env.validation.ts`                               | MODIFY | Add env var validation                                |
+| `src/qa-automation/qa-automation.module.ts`                  | MODIFY | Add providers                                         |
+| `src/qa-automation/code-review.service.spec.ts`              | CREATE | Unit tests                                            |
+| `test/code-review.e2e-spec.ts`                               | CREATE | E2E tests                                             |
 
 ---
 
 ## Tasks
 
-- [ ] **Task 1: Verify ErrorCategory.QA_AUTOMATION** (CRITICAL)
-  - [ ] Verify `QA_AUTOMATION = 'qa_automation'` exists in `sentry.constants.ts`
-  - [ ] Add if not present (may have been added by Story 3.3)
+- [x] **Task 1: Verify ErrorCategory.QA_AUTOMATION** (CRITICAL)
+  - [x] Verify `QA_AUTOMATION = 'qa_automation'` exists in `sentry.constants.ts`
+  - [x] Add if not present (may have been added by Story 3.3)
 
-- [ ] **Task 2: Create Interfaces** (AC: #1, #2)
-  - [ ] `SecuritySeverity`, `SecurityCheckType` enums
-  - [ ] `ISecurityVulnerability`, `ISecretFinding`, `IComplexityIssue`, `ISecurityPatternFinding`
-  - [ ] `ISecurityScanResult`, `ISecurityScanOptions`
-  - [ ] `SECRET_PATTERNS`, `OWASP_PATTERNS`, `EXCLUDED_PATHS` constants
+- [x] **Task 2: Create Interfaces** (AC: #1, #2)
+  - [x] `SecuritySeverity`, `SecurityCheckType` enums
+  - [x] `ISecurityVulnerability`, `ISecretFinding`, `IComplexityIssue`, `ISecurityPatternFinding`
+  - [x] `ISecurityScanResult`, `ISecurityScanOptions`
+  - [x] `SECRET_PATTERNS`, `OWASP_PATTERNS`, `EXCLUDED_PATHS` constants
 
-- [ ] **Task 3: Create DTOs** (AC: #2)
-  - [ ] Follow DTO pattern from Story 3.3 `CoverageResultDto`
-  - [ ] `SecurityVulnerabilityDto`, `SecretFindingDto`, `ComplexityIssueDto`
-  - [ ] `SecurityScanResultDto` with validators
+- [x] **Task 3: Create DTOs** (AC: #2)
+  - [x] Follow DTO pattern from Story 3.3 `CoverageResultDto`
+  - [x] `SecurityVulnerabilityDto`, `SecretFindingDto`, `ComplexityIssueDto`
+  - [x] `SecurityScanResultDto` with validators
 
-- [ ] **Task 4: Implement DependencyScannerService** (AC: #1)
-  - [ ] `scanNpm()` - npm audit --json
-  - [ ] `scanPip()` - pip-audit --format json
-  - [ ] `scanGo()` - go mod verify + govulncheck
-  - [ ] Auto-detect language from package files
-  - [ ] Handle missing package managers gracefully
+- [x] **Task 4: Implement DependencyScannerService** (AC: #1)
+  - [x] `scanNpm()` - npm audit --json
+  - [x] `scanPip()` - pip-audit --format json
+  - [x] `scanGo()` - go mod verify + govulncheck
+  - [x] Auto-detect language from package files
+  - [x] Handle missing package managers gracefully
 
-- [ ] **Task 5: Implement SecretsScannerService** (AC: #1)
-  - [ ] Use SECRET_PATTERNS with context validation
-  - [ ] Filter files with EXCLUDED_PATHS and extensions
-  - [ ] Mask detected values (first 4 + *** + last 4)
-  - [ ] Return file path, line number, pattern type
+- [x] **Task 5: Implement SecretsScannerService** (AC: #1)
+  - [x] Use SECRET_PATTERNS with context validation
+  - [x] Filter files with EXCLUDED_PATHS and extensions
+  - [x] Mask detected values (first 4 + \*\*\* + last 4)
+  - [x] Return file path, line number, pattern type
 
-- [ ] **Task 6: Implement ComplexityAnalyzerService** (AC: #1)
-  - [ ] Use ESLint with `eslint-plugin-complexity` rules
-  - [ ] Apply severity mapping (>30 CRITICAL, >20 HIGH, >15 MEDIUM)
-  - [ ] Check cyclomatic complexity, function length, nesting depth
+- [x] **Task 6: Implement ComplexityAnalyzerService** (AC: #1)
+  - [x] Use ESLint with `eslint-plugin-complexity` rules
+  - [x] Apply severity mapping (>30 CRITICAL, >20 HIGH, >15 MEDIUM)
+  - [x] Check cyclomatic complexity, function length, nesting depth
 
-- [ ] **Task 7: Implement SecurityPatternService** (AC: #1)
-  - [ ] Use OWASP_PATTERNS for detection
-  - [ ] Return findings with OWASP category and remediation
+- [x] **Task 7: Implement SecurityPatternService** (AC: #1)
+  - [x] Use OWASP_PATTERNS for detection
+  - [x] Return findings with OWASP category and remediation
 
-- [ ] **Task 8: Implement CodeReviewService** (AC: All)
-  - [ ] `scan()` - orchestrate all scanners in parallel
-  - [ ] Per-scanner timeout support
-  - [ ] Aggregate results, determine pass/fail
-  - [ ] Propagate correlationId throughout
+- [x] **Task 8: Implement CodeReviewService** (AC: All)
+  - [x] `scan()` - orchestrate all scanners in parallel
+  - [x] Per-scanner timeout support
+  - [x] Aggregate results, determine pass/fail
+  - [x] Propagate correlationId throughout
 
-- [ ] **Task 9: Database Integration** (AC: #3)
-  - [ ] `saveResult()` - update `QAResult.code_review_passed`, `code_review_issues`
-  - [ ] Create audit log entry
-  - [ ] Update `Ticket.status` if critical vulnerabilities
+- [x] **Task 9: Database Integration** (AC: #3)
+  - [x] `saveResult()` - update `QAResult.code_review_passed`, `code_review_issues`
+  - [x] Create audit log entry
+  - [x] Update `Ticket.status` if critical vulnerabilities
 
-- [ ] **Task 10: Metrics Integration** (AC: #2)
-  - [ ] ADD metrics to existing `QA_METRICS`
+- [x] **Task 10: Metrics Integration** (AC: #2)
+  - [x] ADD metrics to existing `QA_METRICS`
 
-- [ ] **Task 11: Configuration** (AC: #1)
-  - [ ] Add security config with per-scanner timeouts
-  - [ ] Update `env.validation.ts`
+- [x] **Task 11: Configuration** (AC: #1)
+  - [x] Add security config with per-scanner timeouts
+  - [x] Update `env.validation.ts`
 
-- [ ] **Task 12: Wire Module + Tests** (AC: All)
-  - [ ] Update `QaAutomationModule`
-  - [ ] Unit tests with sample outputs
-  - [ ] E2E tests
+- [x] **Task 12: Wire Module + Tests** (AC: All)
+  - [x] Update `QaAutomationModule`
+  - [x] Unit tests with sample outputs (9/9 passing)
+  - [x] E2E tests (6/6 passing)
 
 ---
 
@@ -306,10 +309,10 @@ export interface ISecurityPatternFinding {
   recommendation: string;
 }
 
-export type ISecurityFinding = 
-  | ISecurityVulnerability 
-  | ISecretFinding 
-  | IComplexityIssue 
+export type ISecurityFinding =
+  | ISecurityVulnerability
+  | ISecretFinding
+  | IComplexityIssue
   | ISecurityPatternFinding;
 
 export interface ISecurityScanResult {
@@ -369,72 +372,73 @@ export const COMPLEXITY_THRESHOLDS = {
 } as const;
 
 // Secret patterns with context validation (NFR-S10)
-export const SECRET_PATTERNS: { 
-  type: string; 
-  pattern: RegExp; 
+export const SECRET_PATTERNS: {
+  type: string;
+  pattern: RegExp;
   severity: SecuritySeverity;
   contextValidator?: (match: string, line: string) => boolean;
 }[] = [
-  { 
-    type: 'aws_access_key', 
-    pattern: /(?:^|[^A-Z0-9])AKIA[0-9A-Z]{16}(?:[^A-Z0-9]|$)/g, 
-    severity: SecuritySeverity.CRITICAL 
+  {
+    type: 'aws_access_key',
+    pattern: /(?:^|[^A-Z0-9])AKIA[0-9A-Z]{16}(?:[^A-Z0-9]|$)/g,
+    severity: SecuritySeverity.CRITICAL,
   },
-  { 
-    type: 'aws_secret_key', 
+  {
+    type: 'aws_secret_key',
     pattern: /(?:aws_secret_access_key|aws_secret_key)\s*[=:]\s*["']?([A-Za-z0-9/+=]{40})["']?/gi,
-    severity: SecuritySeverity.CRITICAL 
+    severity: SecuritySeverity.CRITICAL,
   },
-  { 
-    type: 'github_token', 
-    pattern: /gh[pousr]_[A-Za-z0-9_]{36,255}/g, 
-    severity: SecuritySeverity.CRITICAL 
+  {
+    type: 'github_token',
+    pattern: /gh[pousr]_[A-Za-z0-9_]{36,255}/g,
+    severity: SecuritySeverity.CRITICAL,
   },
-  { 
-    type: 'github_oauth', 
-    pattern: /gho_[A-Za-z0-9]{36}/g, 
-    severity: SecuritySeverity.CRITICAL 
+  {
+    type: 'github_oauth',
+    pattern: /gho_[A-Za-z0-9]{36}/g,
+    severity: SecuritySeverity.CRITICAL,
   },
-  { 
-    type: 'generic_api_key', 
-    pattern: /(?:api[_-]?key|apikey)\s*[=:]\s*["']([A-Za-z0-9_\-]{20,})["']/gi, 
+  {
+    type: 'generic_api_key',
+    pattern: /(?:api[_-]?key|apikey)\s*[=:]\s*["']([A-Za-z0-9_\-]{20,})["']/gi,
     severity: SecuritySeverity.HIGH,
     contextValidator: (match, line) => !line.includes('.env') && !line.includes('process.env'),
   },
-  { 
-    type: 'generic_secret', 
-    pattern: /(?:secret|token)\s*[=:]\s*["']([A-Za-z0-9_\-]{16,})["']/gi, 
+  {
+    type: 'generic_secret',
+    pattern: /(?:secret|token)\s*[=:]\s*["']([A-Za-z0-9_\-]{16,})["']/gi,
     severity: SecuritySeverity.HIGH,
     contextValidator: (match, line) => !line.includes('example') && !line.includes('placeholder'),
   },
-  { 
-    type: 'private_key', 
-    pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g, 
-    severity: SecuritySeverity.CRITICAL 
+  {
+    type: 'private_key',
+    pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g,
+    severity: SecuritySeverity.CRITICAL,
   },
-  { 
-    type: 'jwt_token', 
-    pattern: /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, 
-    severity: SecuritySeverity.HIGH 
+  {
+    type: 'jwt_token',
+    pattern: /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g,
+    severity: SecuritySeverity.HIGH,
   },
-  { 
-    type: 'database_url', 
-    pattern: /(?:postgres|mysql|mongodb|redis):\/\/[^\s"']+:[^\s"']+@[^\s"']+/gi, 
-    severity: SecuritySeverity.CRITICAL 
+  {
+    type: 'database_url',
+    pattern: /(?:postgres|mysql|mongodb|redis):\/\/[^\s"']+:[^\s"']+@[^\s"']+/gi,
+    severity: SecuritySeverity.CRITICAL,
   },
-  { 
-    type: 'slack_webhook', 
-    pattern: /https:\/\/hooks\.slack\.com\/services\/T[A-Z0-9]{8,}\/B[A-Z0-9]{8,}\/[A-Za-z0-9]{24}/g, 
-    severity: SecuritySeverity.HIGH 
+  {
+    type: 'slack_webhook',
+    pattern:
+      /https:\/\/hooks\.slack\.com\/services\/T[A-Z0-9]{8,}\/B[A-Z0-9]{8,}\/[A-Za-z0-9]{24}/g,
+    severity: SecuritySeverity.HIGH,
   },
 ];
 
 // OWASP Top 10 patterns (NFR-S9)
-export const OWASP_PATTERNS: { 
-  type: string; 
-  pattern: RegExp; 
-  category: string; 
-  severity: SecuritySeverity; 
+export const OWASP_PATTERNS: {
+  type: string;
+  pattern: RegExp;
+  category: string;
+  severity: SecuritySeverity;
   recommendation: string;
 }[] = [
   {
@@ -446,7 +450,8 @@ export const OWASP_PATTERNS: {
   },
   {
     type: 'sql_string_concat',
-    pattern: /(?:SELECT|INSERT|UPDATE|DELETE)\s+[^;]*\+\s*(?:req\.|params\.|query\.|body\.|request\.)/gi,
+    pattern:
+      /(?:SELECT|INSERT|UPDATE|DELETE)\s+[^;]*\+\s*(?:req\.|params\.|query\.|body\.|request\.)/gi,
     category: 'A03:2021-Injection',
     severity: SecuritySeverity.HIGH,
     recommendation: 'Use parameterized queries instead of string concatenation',
@@ -467,7 +472,8 @@ export const OWASP_PATTERNS: {
   },
   {
     type: 'command_injection',
-    pattern: /(?:exec|spawn|execSync|spawnSync|execFile)\s*\([^)]*(?:\$\{|req\.|params\.|query\.|body\.)/g,
+    pattern:
+      /(?:exec|spawn|execSync|spawnSync|execFile)\s*\([^)]*(?:\$\{|req\.|params\.|query\.|body\.)/g,
     category: 'A03:2021-Injection',
     severity: SecuritySeverity.CRITICAL,
     recommendation: 'Sanitize user input before shell execution or use shell: false',
@@ -481,7 +487,8 @@ export const OWASP_PATTERNS: {
   },
   {
     type: 'path_traversal',
-    pattern: /(?:readFile|writeFile|createReadStream|createWriteStream|unlink|rmdir)\s*\([^)]*(?:\+|`\$\{)/g,
+    pattern:
+      /(?:readFile|writeFile|createReadStream|createWriteStream|unlink|rmdir)\s*\([^)]*(?:\+|`\$\{)/g,
     category: 'A01:2021-Broken Access Control',
     severity: SecuritySeverity.HIGH,
     recommendation: 'Validate and sanitize file paths, use path.resolve with whitelist',
@@ -513,12 +520,21 @@ Follow pattern from Story 3.3's `coverage-result.dto.ts`. Key DTOs:
 
 ```typescript
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsString, IsArray, IsEnum, IsOptional, ValidateNested, IsDate } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsString,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  ValidateNested,
+  IsDate,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { SecuritySeverity, SecurityCheckType } from '../interfaces';
 
 // Follow same pattern as CoverageDataDto, CoverageDeltaDto, CoverageAnalysisDto
-// Create: SecurityVulnerabilityDto, SecretFindingDto, ComplexityIssueDto, 
+// Create: SecurityVulnerabilityDto, SecretFindingDto, ComplexityIssueDto,
 //         SecurityPatternFindingDto, SecurityScanSummaryDto, SecurityScanResultDto
 ```
 
@@ -535,14 +551,19 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ISecurityVulnerability, SecuritySeverity, SecurityCheckType, LANGUAGE_DETECTION_FILES } from '../interfaces';
+import {
+  ISecurityVulnerability,
+  SecuritySeverity,
+  SecurityCheckType,
+  LANGUAGE_DETECTION_FILES,
+} from '../interfaces';
 
 const execAsync = promisify(exec);
 
 // Sample output for testing
 export const NPM_AUDIT_SAMPLE_OUTPUT = JSON.stringify({
   vulnerabilities: {
-    'lodash': {
+    lodash: {
       severity: 'high',
       via: [{ title: 'Prototype Pollution', url: 'https://npmjs.com/advisories/1523' }],
       effects: [],
@@ -585,18 +606,23 @@ export class DependencyScannerService {
       try {
         await fs.access(path.join(workspacePath, file));
         return lang!;
-      } catch { /* file not found */ }
+      } catch {
+        /* file not found */
+      }
     }
     return 'unknown';
   }
 
-  private async scanNpm(workspacePath: string, correlationId: string): Promise<ISecurityVulnerability[]> {
+  private async scanNpm(
+    workspacePath: string,
+    correlationId: string,
+  ): Promise<ISecurityVulnerability[]> {
     try {
       // npm audit returns non-zero exit code if vulnerabilities found
       const { stdout } = await execAsync('npm audit --json', {
         cwd: workspacePath,
         timeout: this.timeoutMs,
-      }).catch(e => ({ stdout: e.stdout || '{}' }));
+      }).catch((e) => ({ stdout: e.stdout || '{}' }));
 
       const audit = JSON.parse(stdout);
       return this.parseNpmAudit(audit, correlationId);
@@ -608,7 +634,7 @@ export class DependencyScannerService {
 
   private parseNpmAudit(audit: any, correlationId: string): ISecurityVulnerability[] {
     const vulnerabilities: ISecurityVulnerability[] = [];
-    
+
     for (const [pkgName, vuln] of Object.entries(audit.vulnerabilities || {})) {
       const v = vuln as any;
       vulnerabilities.push({
@@ -621,20 +647,25 @@ export class DependencyScannerService {
         title: v.via?.[0]?.title || `Vulnerability in ${pkgName}`,
         description: v.via?.[0]?.url || '',
         cveId: v.via?.[0]?.cve,
-        recommendation: v.fixAvailable ? `Upgrade to ${v.fixAvailable.version}` : 'Review and replace package',
+        recommendation: v.fixAvailable
+          ? `Upgrade to ${v.fixAvailable.version}`
+          : 'Review and replace package',
       });
     }
-    
+
     this.logger.debug(`[${correlationId}] Found ${vulnerabilities.length} npm vulnerabilities`);
     return vulnerabilities;
   }
 
-  private async scanPip(workspacePath: string, correlationId: string): Promise<ISecurityVulnerability[]> {
+  private async scanPip(
+    workspacePath: string,
+    correlationId: string,
+  ): Promise<ISecurityVulnerability[]> {
     try {
       const { stdout } = await execAsync('pip-audit --format json', {
         cwd: workspacePath,
         timeout: this.timeoutMs,
-      }).catch(e => ({ stdout: e.stdout || '[]' }));
+      }).catch((e) => ({ stdout: e.stdout || '[]' }));
 
       const findings = JSON.parse(stdout);
       return findings.map((f: any) => ({
@@ -647,8 +678,8 @@ export class DependencyScannerService {
         title: f.vulnerability?.id || `Vulnerability in ${f.name}`,
         description: f.vulnerability?.description || '',
         cveId: f.vulnerability?.aliases?.[0],
-        recommendation: f.vulnerability?.fixed_versions?.[0] 
-          ? `Upgrade to ${f.vulnerability.fixed_versions[0]}` 
+        recommendation: f.vulnerability?.fixed_versions?.[0]
+          ? `Upgrade to ${f.vulnerability.fixed_versions[0]}`
           : 'Review and replace package',
       }));
     } catch (error) {
@@ -657,11 +688,14 @@ export class DependencyScannerService {
     }
   }
 
-  private async scanGo(workspacePath: string, correlationId: string): Promise<ISecurityVulnerability[]> {
+  private async scanGo(
+    workspacePath: string,
+    correlationId: string,
+  ): Promise<ISecurityVulnerability[]> {
     try {
       // First verify go.sum integrity
       await execAsync('go mod verify', { cwd: workspacePath, timeout: this.timeoutMs });
-      
+
       // Use govulncheck if available
       const { stdout } = await execAsync('govulncheck -json ./...', {
         cwd: workspacePath,
@@ -680,21 +714,31 @@ export class DependencyScannerService {
 
   private mapNpmSeverity(severity: string): SecuritySeverity {
     switch (severity?.toLowerCase()) {
-      case 'critical': return SecuritySeverity.CRITICAL;
-      case 'high': return SecuritySeverity.HIGH;
-      case 'moderate': return SecuritySeverity.MEDIUM;
-      case 'low': return SecuritySeverity.LOW;
-      default: return SecuritySeverity.INFO;
+      case 'critical':
+        return SecuritySeverity.CRITICAL;
+      case 'high':
+        return SecuritySeverity.HIGH;
+      case 'moderate':
+        return SecuritySeverity.MEDIUM;
+      case 'low':
+        return SecuritySeverity.LOW;
+      default:
+        return SecuritySeverity.INFO;
     }
   }
 
   private mapPipSeverity(severity: string): SecuritySeverity {
     switch (severity?.toUpperCase()) {
-      case 'CRITICAL': return SecuritySeverity.CRITICAL;
-      case 'HIGH': return SecuritySeverity.HIGH;
-      case 'MEDIUM': return SecuritySeverity.MEDIUM;
-      case 'LOW': return SecuritySeverity.LOW;
-      default: return SecuritySeverity.INFO;
+      case 'CRITICAL':
+        return SecuritySeverity.CRITICAL;
+      case 'HIGH':
+        return SecuritySeverity.HIGH;
+      case 'MEDIUM':
+        return SecuritySeverity.MEDIUM;
+      case 'LOW':
+        return SecuritySeverity.LOW;
+      default:
+        return SecuritySeverity.INFO;
     }
   }
 }
@@ -711,11 +755,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { 
-  ISecretFinding, 
-  SecurityCheckType, 
-  SECRET_PATTERNS, 
-  EXCLUDED_PATHS, 
+import {
+  ISecretFinding,
+  SecurityCheckType,
+  SECRET_PATTERNS,
+  EXCLUDED_PATHS,
   EXCLUDED_EXTENSIONS,
   EXCLUDED_FILES,
 } from '../interfaces';
@@ -732,7 +776,7 @@ export class SecretsScannerService {
   async scan(workspacePath: string, correlationId: string): Promise<ISecretFinding[]> {
     const findings: ISecretFinding[] = [];
     const files = await this.getSourceFiles(workspacePath);
-    
+
     this.logger.debug(`[${correlationId}] Scanning ${files.length} files for secrets`);
 
     for (const filePath of files) {
@@ -742,10 +786,10 @@ export class SecretsScannerService {
 
         for (let lineNum = 0; lineNum < lines.length; lineNum++) {
           const line = lines[lineNum];
-          
+
           for (const pattern of SECRET_PATTERNS) {
             const matches = line.matchAll(pattern.pattern);
-            
+
             for (const match of matches) {
               // Apply context validator if defined
               if (pattern.contextValidator && !pattern.contextValidator(match[0], line)) {
@@ -765,7 +809,9 @@ export class SecretsScannerService {
           }
         }
       } catch (error) {
-        this.logger.warn(`[${correlationId}] Could not scan ${filePath}: ${(error as Error).message}`);
+        this.logger.warn(
+          `[${correlationId}] Could not scan ${filePath}: ${(error as Error).message}`,
+        );
       }
     }
 
@@ -775,13 +821,13 @@ export class SecretsScannerService {
 
   private async getSourceFiles(dirPath: string): Promise<string[]> {
     const files: string[] = [];
-    
+
     const walk = async (dir: string) => {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        
+
         // Skip excluded directories
         if (entry.isDirectory()) {
           if (!EXCLUDED_PATHS.includes(entry.name as any)) {
@@ -792,7 +838,7 @@ export class SecretsScannerService {
 
         // Skip excluded files and extensions
         if (EXCLUDED_FILES.includes(entry.name as any)) continue;
-        if (EXCLUDED_EXTENSIONS.some(ext => entry.name.endsWith(ext))) continue;
+        if (EXCLUDED_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) continue;
 
         files.push(fullPath);
       }
@@ -820,9 +866,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ESLint } from 'eslint';
 import * as path from 'path';
-import { 
-  IComplexityIssue, 
-  SecuritySeverity, 
+import {
+  IComplexityIssue,
+  SecuritySeverity,
   SecurityCheckType,
   COMPLEXITY_THRESHOLDS,
 } from '../interfaces';
@@ -855,7 +901,7 @@ export class ComplexityAnalyzerService {
             sourceType: 'module',
           },
           rules: {
-            'complexity': ['error', { max: this.maxComplexity }],
+            complexity: ['error', { max: this.maxComplexity }],
             'max-lines-per-function': ['error', { max: this.maxFunctionLength }],
             'max-depth': ['error', { max: 5 }],
           },
@@ -870,7 +916,7 @@ export class ComplexityAnalyzerService {
 
           const metric = this.getMetricFromRule(message.ruleId!);
           const value = this.extractValueFromMessage(message.message);
-          
+
           issues.push({
             checkType: SecurityCheckType.COMPLEXITY,
             severity: this.getSeverityForValue(metric, value),
@@ -887,7 +933,9 @@ export class ComplexityAnalyzerService {
 
       this.logger.debug(`[${correlationId}] Found ${issues.length} complexity issues`);
     } catch (error) {
-      this.logger.error(`[${correlationId}] Complexity analysis failed: ${(error as Error).message}`);
+      this.logger.error(
+        `[${correlationId}] Complexity analysis failed: ${(error as Error).message}`,
+      );
     }
 
     return issues;
@@ -899,10 +947,14 @@ export class ComplexityAnalyzerService {
 
   private getMetricFromRule(ruleId: string): IComplexityIssue['metric'] {
     switch (ruleId) {
-      case 'complexity': return 'cyclomatic';
-      case 'max-lines-per-function': return 'function_length';
-      case 'max-depth': return 'nesting_depth';
-      default: return 'cyclomatic';
+      case 'complexity':
+        return 'cyclomatic';
+      case 'max-lines-per-function':
+        return 'function_length';
+      case 'max-depth':
+        return 'nesting_depth';
+      default:
+        return 'cyclomatic';
     }
   }
 
@@ -950,9 +1002,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { 
-  ISecurityPatternFinding, 
-  SecurityCheckType, 
+import {
+  ISecurityPatternFinding,
+  SecurityCheckType,
   OWASP_PATTERNS,
   EXCLUDED_PATHS,
 } from '../interfaces';
@@ -979,12 +1031,12 @@ export class SecurityPatternService {
 
         for (let lineNum = 0; lineNum < lines.length; lineNum++) {
           const line = lines[lineNum];
-          
+
           for (const pattern of OWASP_PATTERNS) {
             // Reset regex lastIndex for each line
             pattern.pattern.lastIndex = 0;
             const match = pattern.pattern.exec(line);
-            
+
             if (match) {
               findings.push({
                 checkType: SecurityCheckType.PATTERN,
@@ -1011,13 +1063,13 @@ export class SecurityPatternService {
   private async getSourceFiles(dirPath: string): Promise<string[]> {
     const files: string[] = [];
     const sourceExtensions = ['.ts', '.js', '.tsx', '.jsx', '.py', '.go'];
-    
+
     const walk = async (dir: string) => {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        
+
         if (entry.isDirectory()) {
           if (!EXCLUDED_PATHS.includes(entry.name as any)) {
             await walk(fullPath);
@@ -1025,7 +1077,7 @@ export class SecurityPatternService {
           continue;
         }
 
-        if (sourceExtensions.some(ext => entry.name.endsWith(ext))) {
+        if (sourceExtensions.some((ext) => entry.name.endsWith(ext))) {
           files.push(fullPath);
         }
       }
@@ -1083,11 +1135,16 @@ export class CodeReviewService {
     private readonly complexityAnalyzer: ComplexityAnalyzerService,
     private readonly securityPatternService: SecurityPatternService,
     @InjectMetric(QA_METRICS.SECURITY_SCANS_TOTAL) private readonly scansCounter: Counter<string>,
-    @InjectMetric(QA_METRICS.SECURITY_SCAN_DURATION) private readonly scanDuration: Histogram<string>,
-    @InjectMetric(QA_METRICS.SECURITY_VULNERABILITIES) private readonly vulnCounter: Counter<string>,
-    @InjectMetric(QA_METRICS.SECURITY_SECRETS_DETECTED) private readonly secretsCounter: Counter<string>,
-    @InjectMetric(QA_METRICS.SECURITY_COMPLEXITY_ISSUES) private readonly complexityCounter: Counter<string>,
-    @InjectMetric(QA_METRICS.SECURITY_PATTERN_FINDINGS) private readonly patternCounter: Counter<string>,
+    @InjectMetric(QA_METRICS.SECURITY_SCAN_DURATION)
+    private readonly scanDuration: Histogram<string>,
+    @InjectMetric(QA_METRICS.SECURITY_VULNERABILITIES)
+    private readonly vulnCounter: Counter<string>,
+    @InjectMetric(QA_METRICS.SECURITY_SECRETS_DETECTED)
+    private readonly secretsCounter: Counter<string>,
+    @InjectMetric(QA_METRICS.SECURITY_COMPLEXITY_ISSUES)
+    private readonly complexityCounter: Counter<string>,
+    @InjectMetric(QA_METRICS.SECURITY_PATTERN_FINDINGS)
+    private readonly patternCounter: Counter<string>,
   ) {
     this.blockOnCritical = this.configService.get<boolean>('security.blockOnCritical', true);
     this.blockOnHigh = this.configService.get<boolean>('security.blockOnHigh', true);
@@ -1111,14 +1168,36 @@ export class CodeReviewService {
     try {
       // Run all scanners in parallel with individual timing
       const [depResult, secretsResult, complexityResult, patternResult] = await Promise.allSettled([
-        this.runWithTiming('dependency', () => 
-          options.skipDependencyScan ? null : this.dependencyScanner.scan(workspacePath, correlationId), scannerResults),
-        this.runWithTiming('secrets', () => 
-          options.skipSecretsScan ? null : this.secretsScanner.scan(workspacePath, correlationId), scannerResults),
-        this.runWithTiming('complexity', () => 
-          options.skipComplexityScan ? null : this.complexityAnalyzer.analyze(workspacePath, correlationId), scannerResults),
-        this.runWithTiming('patterns', () => 
-          options.skipPatternScan ? null : this.securityPatternService.scan(workspacePath, correlationId), scannerResults),
+        this.runWithTiming(
+          'dependency',
+          () =>
+            options.skipDependencyScan
+              ? null
+              : this.dependencyScanner.scan(workspacePath, correlationId),
+          scannerResults,
+        ),
+        this.runWithTiming(
+          'secrets',
+          () =>
+            options.skipSecretsScan ? null : this.secretsScanner.scan(workspacePath, correlationId),
+          scannerResults,
+        ),
+        this.runWithTiming(
+          'complexity',
+          () =>
+            options.skipComplexityScan
+              ? null
+              : this.complexityAnalyzer.analyze(workspacePath, correlationId),
+          scannerResults,
+        ),
+        this.runWithTiming(
+          'patterns',
+          () =>
+            options.skipPatternScan
+              ? null
+              : this.securityPatternService.scan(workspacePath, correlationId),
+          scannerResults,
+        ),
       ]);
 
       // Extract results
@@ -1128,7 +1207,12 @@ export class CodeReviewService {
       const patternFindings = this.extractSettledResult(patternResult) || [];
 
       // Calculate summary
-      const allFindings: ISecurityFinding[] = [...vulnerabilities, ...secrets, ...complexityIssues, ...patternFindings];
+      const allFindings: ISecurityFinding[] = [
+        ...vulnerabilities,
+        ...secrets,
+        ...complexityIssues,
+        ...patternFindings,
+      ];
       const summary = this.calculateSummary(allFindings);
       const passed = this.determinePassFail(summary);
 
@@ -1151,7 +1235,7 @@ export class CodeReviewService {
 
       this.logger.log(
         `[${correlationId}] Code review complete: ${summary.totalFindings} findings ` +
-        `(${summary.criticalCount} critical, ${summary.highCount} high), passed: ${passed}`
+          `(${summary.criticalCount} critical, ${summary.highCount} high), passed: ${passed}`,
       );
 
       return result;
@@ -1193,11 +1277,11 @@ export class CodeReviewService {
   private calculateSummary(findings: ISecurityFinding[]) {
     return {
       totalFindings: findings.length,
-      criticalCount: findings.filter(f => f.severity === SecuritySeverity.CRITICAL).length,
-      highCount: findings.filter(f => f.severity === SecuritySeverity.HIGH).length,
-      mediumCount: findings.filter(f => f.severity === SecuritySeverity.MEDIUM).length,
-      lowCount: findings.filter(f => f.severity === SecuritySeverity.LOW).length,
-      infoCount: findings.filter(f => f.severity === SecuritySeverity.INFO).length,
+      criticalCount: findings.filter((f) => f.severity === SecuritySeverity.CRITICAL).length,
+      highCount: findings.filter((f) => f.severity === SecuritySeverity.HIGH).length,
+      mediumCount: findings.filter((f) => f.severity === SecuritySeverity.MEDIUM).length,
+      lowCount: findings.filter((f) => f.severity === SecuritySeverity.LOW).length,
+      infoCount: findings.filter((f) => f.severity === SecuritySeverity.INFO).length,
     };
   }
 
@@ -1215,10 +1299,10 @@ export class CodeReviewService {
     patternFindings: any[],
   ): void {
     this.scansCounter.inc({ result: passed ? 'passed' : 'failed' });
-    vulnerabilities.forEach(v => this.vulnCounter.inc({ severity: v.severity }));
+    vulnerabilities.forEach((v) => this.vulnCounter.inc({ severity: v.severity }));
     this.secretsCounter.inc({}, secrets.length);
     this.complexityCounter.inc({}, complexityIssues.length);
-    patternFindings.forEach(p => this.patternCounter.inc({ type: p.patternType }));
+    patternFindings.forEach((p) => this.patternCounter.inc({ type: p.patternType }));
   }
 
   async saveResult(executionId: string, result: ISecurityScanResult): Promise<void> {
@@ -1259,7 +1343,11 @@ export class CodeReviewService {
         entity_id: executionId,
         action: 'code_review_scanned',
         actor_type: 'system',
-        changes: { passed: result.passed, summary: result.summary, correlationId: result.correlationId },
+        changes: {
+          passed: result.passed,
+          summary: result.summary,
+          correlationId: result.correlationId,
+        },
       },
     });
 
@@ -1354,23 +1442,23 @@ describe('SecurityPatternService', () => {
 
 ## Prerequisites
 
-| Story | Status | Required For |
-|-------|--------|--------------|
-| Story 1.3 (Database) | ✅ done | `qa_results`, `audit_logs` |
-| Story 1.8 (Prometheus) | ✅ done | Metrics infrastructure |
-| Story 1.9 (Sentry) | ✅ done | Error tracking |
-| Story 3.1-3.3 | ready-for-dev | QA pipeline sequence |
+| Story                  | Status        | Required For               |
+| ---------------------- | ------------- | -------------------------- |
+| Story 1.3 (Database)   | ✅ done       | `qa_results`, `audit_logs` |
+| Story 1.8 (Prometheus) | ✅ done       | Metrics infrastructure     |
+| Story 1.9 (Sentry)     | ✅ done       | Error tracking             |
+| Story 3.1-3.3          | ready-for-dev | QA pipeline sequence       |
 
 ---
 
 ## References
 
-| Source | Section |
-|--------|---------|
+| Source                 | Section                                              |
+| ---------------------- | ---------------------------------------------------- |
 | `docs/architecture.md` | `code-review.service.ts` (line 156), NFR-S9, NFR-S10 |
-| `docs/epics.md` | Story 3.4 acceptance criteria |
-| `docs/prd.md` | FR68, NFR-S9, NFR-S10 |
-| `prisma/schema.prisma` | QAResult model |
+| `docs/epics.md`        | Story 3.4 acceptance criteria                        |
+| `docs/prd.md`          | FR68, NFR-S9, NFR-S10                                |
+| `prisma/schema.prisma` | QAResult model                                       |
 
 ---
 
@@ -1384,14 +1472,16 @@ describe('SecurityPatternService', () => {
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Antigravity (Google Deepmind)
 
 ### Change Log
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-12-02 | Story drafted | Scrum Master Bob |
-| 2025-12-02 | Quality review: Fixed 5 critical, 4 enhancements, 3 optimizations | Quality Validator |
+| Date       | Change                                                                                | Author             |
+| ---------- | ------------------------------------------------------------------------------------- | ------------------ |
+| 2025-12-02 | Story drafted                                                                         | Scrum Master Bob   |
+| 2025-12-02 | Quality review: Fixed 5 critical, 4 enhancements, 3 optimizations                     | Quality Validator  |
+| 2025-12-04 | Implementation complete: 4 scanners, CodeReviewService, 9 unit tests passing          | Amelia (Dev Agent) |
+| 2025-12-05 | Code review fixes: E2E tests (6/6), env validation (9 vars), File List, task tracking | Amelia (Dev Agent) |
 
 ### Improvements Applied
 
@@ -1411,4 +1501,41 @@ describe('SecurityPatternService', () => {
 
 ### File List
 
-<!-- Populated during implementation -->
+**Interfaces & DTOs:**
+
+- `src/qa-automation/interfaces/security-scanner.interface.ts` (299 lines, 10 SECRET_PATTERNS, 9 OWASP_PATTERNS)
+- `src/qa-automation/dto/security-result.dto.ts` (267 lines, 6 DTOs with class-validator)
+- `src/qa-automation/interfaces/index.ts` (barrel exports)
+- `src/qa-automation/dto/index.ts` (barrel exports)
+
+**Scanner Services:**
+
+- `src/qa-automation/scanners/dependency-scanner.service.ts` (npm/pip/go support, language auto-detection)
+- `src/qa-automation/scanners/secrets-scanner.service.ts` (10 patterns with context validation, masking)
+- `src/qa-automation/scanners/complexity-analyzer.service.ts` (ESLint integration, severity mapping)
+- `src/qa-automation/scanners/security-pattern.service.ts` (9 OWASP Top 10 patterns)
+- `src/qa-automation/scanners/index.ts` (barrel exports)
+
+**Main Service:**
+
+- `src/qa-automation/code-review.service.ts` (266 lines, parallel orchestration, per-scanner timing)
+- `src/qa-automation/code-review.service.spec.ts` (9/9 unit tests passing)
+
+**E2E Tests:**
+
+- `test/code-review.e2e-spec.ts` (6/6 tests passing: workflow, secret masking NFR-S4, DB persistence, ticket updates, OWASP detection, skip flags)
+
+**Configuration & Metrics:**
+
+- `src/common/metrics/metrics.constants.ts` (added 6 security metrics to QA_METRICS lines 66-71)
+- `src/config/configuration.ts` (added security config with 9 settings lines 92-103)
+- `src/config/env.validation.ts` (added 9 security env validations with Joi schemas)
+
+**Module Wiring:**
+
+- `src/qa-automation/qa-automation.module.ts` (wired all 4 scanners + CodeReviewService + 6 metric providers)
+- `package.json` (updated testRegex to support .e2e-spec.ts files)
+
+**Story Tracking:**
+
+- `docs/sprint-artifacts/sprint-status.yaml` (updated story status to 'review')

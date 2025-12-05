@@ -88,6 +88,19 @@ export default () => {
       rateLimitPerUser: parseInt(process.env.RATE_LIMIT_PER_USER || '1000', 10),
       rateLimitPerIp: parseInt(process.env.RATE_LIMIT_PER_IP || '5000', 10),
       corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3001'],
+      // Story 3.4: Security Scanning Configuration
+      blockOnCritical: process.env.SECURITY_BLOCK_ON_CRITICAL !== 'false',
+      blockOnHigh: process.env.SECURITY_BLOCK_ON_HIGH !== 'false',
+      maxComplexity: parseInt(process.env.SECURITY_MAX_COMPLEXITY || '20', 10),
+      maxFunctionLength: parseInt(process.env.SECURITY_MAX_FUNCTION_LENGTH || '100', 10),
+      scanTimeoutMs: parseInt(process.env.SECURITY_SCAN_TIMEOUT_MS || '180000', 10),
+      dependencyScanTimeoutMs: parseInt(process.env.SECURITY_DEP_SCAN_TIMEOUT_MS || '60000', 10),
+      secretsScanTimeoutMs: parseInt(process.env.SECURITY_SECRETS_SCAN_TIMEOUT_MS || '30000', 10),
+      complexityScanTimeoutMs: parseInt(
+        process.env.SECURITY_COMPLEXITY_SCAN_TIMEOUT_MS || '60000',
+        10,
+      ),
+      patternScanTimeoutMs: parseInt(process.env.SECURITY_PATTERN_SCAN_TIMEOUT_MS || '30000', 10),
     },
 
     // External Services
