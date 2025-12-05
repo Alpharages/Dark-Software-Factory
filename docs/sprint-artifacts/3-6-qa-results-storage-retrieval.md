@@ -1,11 +1,12 @@
 # Story 3.6: QA Results Storage & Retrieval
 
 **Epic:** 3 - Automated QA & Quality Gates  
-**Status:** ready-for-dev  
+**Status:** done  
 **Priority:** P1 - HIGH  
 **Effort:** 5 story points  
 **ClickUp ID:** `86evnjwb9`  
-**ClickUp URL:** https://app.clickup.com/t/86evnjwb9
+**ClickUp URL:** https://app.clickup.com/t/86evnjwb9  
+**Completed:** 2025-12-05
 
 ---
 
@@ -22,6 +23,7 @@ So that I can review quality trends and make informed decisions.
 **Given** QA checks complete  
 **When** results are stored  
 **Then** the `qa_results` table contains:
+
 - execution_id (link to execution)
 - linting_passed (boolean), linting_errors (JSON array)
 - tests_passed (boolean), test_results (JSON with pass/fail details)
@@ -31,6 +33,7 @@ So that I can review quality trends and make informed decisions.
 - created_at (timestamp)
 
 **And** results are queryable by:
+
 - Execution ID
 - Ticket ID
 - Project
@@ -38,6 +41,7 @@ So that I can review quality trends and make informed decisions.
 - Pass/fail status
 
 **And** API endpoints exist:
+
 - GET `/api/v1/qa-results/:executionId` - Get results for execution
 - GET `/api/v1/qa-results?ticketId={id}` - Get results by ticket
 - GET `/api/v1/qa-results?projectId={id}&status=failed` - Query with filters
@@ -47,6 +51,7 @@ So that I can review quality trends and make informed decisions.
 ## Quick Implementation Summary (TL;DR)
 
 **12 Key Files in Implementation Order:**
+
 1. `prisma/schema.prisma` - MODIFY: Add `@unique` on `execution_id`, relation to Execution, indexes
 2. `src/qa-automation/interfaces/qa-results.interface.ts` - Types and interfaces
 3. `src/qa-automation/interfaces/index.ts` - MODIFY: Add exports
@@ -63,6 +68,7 @@ So that I can review quality trends and make informed decisions.
 **Database:** Uses existing `QAResult` model. Add `@unique` constraint and relation to `Execution`.
 
 **Environment Variables:**
+
 ```env
 QA_RESULTS_DEFAULT_PAGE_SIZE=20
 QA_RESULTS_MAX_PAGE_SIZE=100
@@ -72,21 +78,21 @@ QA_RESULTS_MAX_PAGE_SIZE=100
 
 ## ⚠️ Anti-Patterns to Avoid
 
-| ❌ DO NOT | ✅ DO INSTEAD |
-|-----------|---------------|
-| Return all results without pagination | Use `skip`/`take` with configurable limits |
-| Query tickets table directly for each request | Use JOIN via Prisma `include` or batch queries |
-| Store raw QA output without normalization | Store normalized JSON in dedicated fields |
-| Hard-code pagination limits | Use ConfigService for configurable limits |
-| Skip correlationId in logs | Use `@CorrelationId()` decorator from `src/common/decorators` |
-| Return sensitive error details in API | Mask internal errors, return safe messages, capture to Sentry |
-| Query by project without filtering by date | Add date range filters for large datasets |
-| Create duplicate QAResult records | Use upsert pattern with execution_id as key |
-| Skip authorization checks | Use `@Roles()` decorator and `RolesGuard` for project access |
-| Return raw Prisma entities | Map to DTOs for consistent API responses |
-| Create custom Logger instances | Use `AppLogger` from `src/common/logger/app-logger.service.ts` |
-| Duplicate pagination logic | Extract to reusable private method |
-| Perform N+1 queries for metrics | Use Prisma `groupBy` or raw SQL aggregation |
+| ❌ DO NOT                                     | ✅ DO INSTEAD                                                  |
+| --------------------------------------------- | -------------------------------------------------------------- |
+| Return all results without pagination         | Use `skip`/`take` with configurable limits                     |
+| Query tickets table directly for each request | Use JOIN via Prisma `include` or batch queries                 |
+| Store raw QA output without normalization     | Store normalized JSON in dedicated fields                      |
+| Hard-code pagination limits                   | Use ConfigService for configurable limits                      |
+| Skip correlationId in logs                    | Use `@CorrelationId()` decorator from `src/common/decorators`  |
+| Return sensitive error details in API         | Mask internal errors, return safe messages, capture to Sentry  |
+| Query by project without filtering by date    | Add date range filters for large datasets                      |
+| Create duplicate QAResult records             | Use upsert pattern with execution_id as key                    |
+| Skip authorization checks                     | Use `@Roles()` decorator and `RolesGuard` for project access   |
+| Return raw Prisma entities                    | Map to DTOs for consistent API responses                       |
+| Create custom Logger instances                | Use `AppLogger` from `src/common/logger/app-logger.service.ts` |
+| Duplicate pagination logic                    | Extract to reusable private method                             |
+| Perform N+1 queries for metrics               | Use Prisma `groupBy` or raw SQL aggregation                    |
 
 ---
 
@@ -110,13 +116,13 @@ Story 8.2 (QA Review Interface) - Lead QA reviews results
 
 ### Key Integration Points
 
-| From | Interface | To |
-|------|-----------|-----|
-| Stories 3.1-3.4 | calls `qaResultsService.savePartialResult(executionId, partialData)` | This story |
-| Story 3.5 | calls `qaResultsService.updateOverallStatus(executionId, passed)` | This story |
-| PM Dashboard (5.x) | calls `GET /api/v1/qa-results/:executionId` | This story |
-| QA Review (8.x) | calls `GET /api/v1/qa-results?projectId={id}` | This story |
-| Quality Metrics | calls `GET /api/v1/qa-results/metrics/:projectId` | This story |
+| From               | Interface                                                            | To         |
+| ------------------ | -------------------------------------------------------------------- | ---------- |
+| Stories 3.1-3.4    | calls `qaResultsService.savePartialResult(executionId, partialData)` | This story |
+| Story 3.5          | calls `qaResultsService.updateOverallStatus(executionId, passed)`    | This story |
+| PM Dashboard (5.x) | calls `GET /api/v1/qa-results/:executionId`                          | This story |
+| QA Review (8.x)    | calls `GET /api/v1/qa-results?projectId={id}`                        | This story |
+| Quality Metrics    | calls `GET /api/v1/qa-results/metrics/:projectId`                    | This story |
 
 ---
 
@@ -124,81 +130,85 @@ Story 8.2 (QA Review Interface) - Lead QA reviews results
 
 ### Files to Create/Modify
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `prisma/schema.prisma` | MODIFY | Add `@unique`, relation, indexes |
-| `src/qa-automation/interfaces/qa-results.interface.ts` | CREATE | Types and interfaces |
-| `src/qa-automation/interfaces/index.ts` | MODIFY | Add exports |
-| `src/qa-automation/dto/qa-results.dto.ts` | CREATE | DTOs with validation |
-| `src/qa-automation/dto/index.ts` | MODIFY | Add exports |
-| `src/qa-automation/qa-results.service.ts` | CREATE | Storage and retrieval |
-| `src/qa-automation/qa-results.controller.ts` | CREATE | API endpoints |
-| `src/common/metrics/metrics.constants.ts` | MODIFY | Add metrics |
-| `src/config/configuration.ts` | MODIFY | Add pagination config |
-| `src/qa-automation/qa-automation.module.ts` | MODIFY | Wire providers |
-| `src/qa-automation/qa-results.service.spec.ts` | CREATE | Unit tests |
-| `test/qa-results.e2e-spec.ts` | CREATE | E2E tests |
+| File                                                   | Action | Purpose                          |
+| ------------------------------------------------------ | ------ | -------------------------------- |
+| `prisma/schema.prisma`                                 | MODIFY | Add `@unique`, relation, indexes |
+| `src/qa-automation/interfaces/qa-results.interface.ts` | CREATE | Types and interfaces             |
+| `src/qa-automation/interfaces/index.ts`                | MODIFY | Add exports                      |
+| `src/qa-automation/dto/qa-results.dto.ts`              | CREATE | DTOs with validation             |
+| `src/qa-automation/dto/index.ts`                       | MODIFY | Add exports                      |
+| `src/qa-automation/qa-results.service.ts`              | CREATE | Storage and retrieval            |
+| `src/qa-automation/qa-results.controller.ts`           | CREATE | API endpoints                    |
+| `src/common/metrics/metrics.constants.ts`              | MODIFY | Add metrics                      |
+| `src/config/configuration.ts`                          | MODIFY | Add pagination config            |
+| `src/qa-automation/qa-automation.module.ts`            | MODIFY | Wire providers                   |
+| `src/qa-automation/qa-results.service.spec.ts`         | CREATE | Unit tests                       |
+| `test/qa-results.e2e-spec.ts`                          | CREATE | E2E tests                        |
 
 ---
 
 ## Tasks
 
-- [ ] **Task 1: Update Database Schema** (AC: Performance, Data Integrity)
-  - [ ] Add `@unique` constraint to `execution_id` in QAResult model
-  - [ ] Add relation from QAResult to Execution model
-  - [ ] Add `@@index([execution_id])` to QAResult model
-  - [ ] Add `@@index([overall_passed, created_at])` for filtering queries
-  - [ ] Add `updated_at DateTime @updatedAt` field
-  - [ ] Run `npx prisma migrate dev --name add_qa_results_constraints`
-  - [ ] Verify with `\d qa_results` in psql
+- [x] **Task 1: Update Database Schema** (AC: Performance, Data Integrity)
+  - [x] Add `@unique` constraint to `execution_id` in QAResult model
+  - [x] Add relation from QAResult to Execution model
+  - [x] Add `@@index([execution_id])` to QAResult model (implicit via @unique)
+  - [x] Add `@@index([overall_passed, created_at])` for filtering queries
+  - [x] Add `updated_at DateTime @updatedAt` field
+  - [x] Run `npx prisma migrate dev --name add_qa_results_story_3_6`
+  - [x] Verified with Prisma generate
 
-- [ ] **Task 2: Create Interfaces** (AC: #1)
-  - [ ] `IQaResultCreate`, `IQaResultUpdate`, `IQaResultPartial`, `IQaResultQuery`
-  - [ ] `IQaResultResponse`, `IQaResultsPageResponse`
-  - [ ] `QaResultFilterStatus` enum (all, passed, failed)
+- [x] **Task 2: Create Interfaces** (AC: #1)
+  - [x] `IQaResultCreate`, `IQaResultUpdate`, `IQaResultPartial`, `IQaResultQuery`
+  - [x] `IQaResult`, `IQaResultWithExecution`, `IQaResultsPageResponse`
+  - [x] `QaResultFilterStatus` enum (all, passed, failed)
+  - [x] `IQaResultMetrics`, `IPageInfo` interfaces
 
-- [ ] **Task 3: Create DTOs** (AC: #1, #2)
-  - [ ] `QaResultDto` - main response DTO with OpenAPI examples
-  - [ ] `QaResultsQueryDto` - query parameters
-  - [ ] `QaResultsPageDto` - paginated response
-  - [ ] `CreateQaResultDto`, `UpdateQaResultDto`
-  - [ ] `QaResultMetricsDto` - aggregated metrics
+- [x] **Task 3: Create DTOs** (AC: #1, #2)
+  - [x] `QaResultDto` - main response DTO with OpenAPI examples
+  - [x] `QaResultsQueryDto` - query parameters with validation
+  - [x] `QaResultsPageDto` - paginated response
+  - [x] `CreateQaResultDto`, `UpdateQaResultDto`
+  - [x] `QaResultMetricsDto` - aggregated metrics
+  - [x] `QualityGateOverrideDto` - override request with validation
 
-- [ ] **Task 4: Implement QaResultsService** (AC: All)
-  - [ ] `create(executionId, data)` - create new result (internal only)
-  - [ ] `savePartialResult(executionId, partialData)` - **CRITICAL: used by Stories 3.1-3.4**
-  - [ ] `findByExecutionId(executionId)` - single result lookup
-  - [ ] `findByTicketId(ticketId, filters)` - results for ticket
-  - [ ] `findByProjectId(projectId, filters)` - results for project with pagination
-  - [ ] `updateOverallStatus(executionId, passed)` - update after gate evaluation
-  - [ ] `getMetrics(projectId, dateRange)` - aggregated metrics (use Prisma groupBy)
-  - [ ] Extract pagination logic to `buildPaginatedResponse()` helper
-  - [ ] Use `AppLogger` from `src/common/logger/app-logger.service.ts`
-  - [ ] Add Sentry error capture with `@SentryCapture()` decorator
+- [x] **Task 4: Implement QaResultsService** (AC: All)
+  - [x] `create(executionId, data)` - create new result (internal only)
+  - [x] `savePartialResult(executionId, partialData)` - **CRITICAL: used by Stories 3.1-3.4**
+  - [x] `findByExecutionId(executionId)` - single result lookup
+  - [x] `findByTicketId(ticketId, filters)` - results for ticket
+  - [x] `findByProjectId(projectId, filters)` - results for project with pagination
+  - [x] `updateOverallStatus(executionId, passed)` - update after gate evaluation
+  - [x] `getMetrics(projectId, dateRange)` - aggregated metrics
+  - [x] `overrideQualityGate(executionId, reason, approvedBy)` - emergency override
+  - [x] Extract pagination logic to `buildPaginatedResponse()` helper
+  - [x] Uses `LoggerService` from `src/common/logger/logger.service.ts`
+  - [x] Injects `SentryService` for error capture
 
-- [ ] **Task 5: Implement QaResultsController** (AC: #3)
-  - [ ] `GET /api/v1/qa-results/:executionId` - single result
-  - [ ] `GET /api/v1/qa-results` - query with filters
-  - [ ] `GET /api/v1/qa-results/metrics/:projectId` - metrics endpoint
-  - [ ] Apply `@UseGuards(JwtAuthGuard, RolesGuard)` for authentication
-  - [ ] Apply `@Roles(Role.LEAD_QA, Role.PM, Role.ADMIN)` for authorization
-  - [ ] Use `@CorrelationId()` decorator for request tracing
-  - [ ] Add OpenAPI response examples for better documentation
+- [x] **Task 5: Implement QaResultsController** (AC: #3)
+  - [x] `GET /api/v1/qa-results/:executionId` - single result
+  - [x] `GET /api/v1/qa-results` - query with filters
+  - [x] `GET /api/v1/qa-results/metrics/:projectId` - metrics endpoint
+  - [x] Apply `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)` for authentication
+  - [x] Apply `@Roles(Role.QA, Role.PM, Role.TL, Role.MANAGER, Role.ADMIN)` for authorization
+  - [x] Use `@CorrelationId()` decorator for request tracing
+  - [x] Add OpenAPI response examples for better documentation
+  - [x] `QualityGateController` with `POST /:executionId/override` endpoint
 
-- [ ] **Task 6: Add Metrics** (AC: Performance tracking)
-  - [ ] Add `QA_RESULTS_QUERIES_TOTAL` to `QA_METRICS` in metrics.constants.ts
-  - [ ] Add `QA_RESULTS_QUERY_DURATION` histogram
+- [x] **Task 6: Add Metrics** (AC: Performance tracking)
+  - [x] Add `QA_RESULTS_QUERIES_TOTAL` to `QA_METRICS` in metrics.constants.ts
+  - [x] Add `QA_RESULTS_QUERY_DURATION` histogram
 
-- [ ] **Task 7: Configuration** (AC: #2)
-  - [ ] Add `qa.results.defaultPageSize` config (default: 20)
-  - [ ] Add `qa.results.maxPageSize` config (default: 100)
-  - [ ] Document environment variables in `.env.example`
+- [x] **Task 7: Configuration** (AC: #2)
+  - [x] Add `qualityGate.results.defaultPageSize` config (default: 20)
+  - [x] Add `qualityGate.results.maxPageSize` config (default: 100)
+  - [x] Document environment variables in `.env.example`
 
-- [ ] **Task 8: Wire Module + Tests** (AC: All)
-  - [ ] Update `QaAutomationModule` with providers and controllers
-  - [ ] Unit tests for QaResultsService (>80% coverage target)
-  - [ ] E2E tests for API endpoints
-  - [ ] Verify `savePartialResult()` method works for upstream stories
+- [x] **Task 8: Wire Module + Tests** (AC: All)
+  - [x] Update `QaAutomationModule` with providers and controllers
+  - [x] Unit tests for QaResultsService (31 tests, >80% coverage)
+  - [x] E2E tests for API endpoints (test/qa-results.e2e-spec.ts)
+  - [x] Verified `savePartialResult()` method works for upstream stories
 
 ---
 
@@ -216,25 +226,25 @@ Story 8.2 (QA Review Interface) - Lead QA reviews results
 model QAResult {
   id                  String   @id @default(uuid())
   execution_id        String   @unique  // CRITICAL: Must be unique for upsert pattern
-  
+
   linting_passed      Boolean  @default(false)
   linting_errors      Json?
-  
+
   tests_passed        Boolean  @default(false)
   test_results        Json?
   test_coverage       Float?
-  
+
   code_review_passed  Boolean  @default(false)
   code_review_issues  Json?
-  
+
   overall_passed      Boolean  @default(false)
-  
+
   created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt
-  
+
   // Relation to Execution model
   execution           Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
-  
+
   @@index([overall_passed, created_at])  // For status + date filtering
   @@map("qa_results")
 }
@@ -244,6 +254,7 @@ model QAResult {
 ```
 
 After modifying, run:
+
 ```bash
 npx prisma migrate dev --name add_qa_results_constraints
 npx prisma generate
@@ -411,18 +422,18 @@ export class QaResultDto {
   @ApiProperty({ description: 'Linting check passed', example: true })
   linting_passed: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Linting errors details',
-    example: { errors: [{ file: 'src/app.ts', line: 10, message: 'Unexpected any' }] }
+    example: { errors: [{ file: 'src/app.ts', line: 10, message: 'Unexpected any' }] },
   })
   linting_errors?: Record<string, unknown> | null;
 
   @ApiProperty({ description: 'Tests passed', example: true })
   tests_passed: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Test results details',
-    example: { total: 50, passed: 48, failed: 2, skipped: 0 }
+    example: { total: 50, passed: 48, failed: 2, skipped: 0 },
   })
   test_results?: Record<string, unknown> | null;
 
@@ -432,9 +443,9 @@ export class QaResultDto {
   @ApiProperty({ description: 'Code review passed', example: true })
   code_review_passed: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Code review issues',
-    example: { issues: [{ severity: 'warning', message: 'Unused variable' }] }
+    example: { issues: [{ severity: 'warning', message: 'Unused variable' }] },
   })
   code_review_issues?: Record<string, unknown> | null;
 
@@ -486,7 +497,7 @@ export class QaResultsQueryDto {
   @IsString()
   projectId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Filter by status',
     enum: QaResultFilterStatus,
     default: QaResultFilterStatus.ALL,
@@ -732,7 +743,7 @@ import {
  * QA Results Service
  * Story 3.6: Storage and retrieval of QA results
  * FR38: Lead QA can view automated QA results for each ticket
- * 
+ *
  * Key Methods:
  * - savePartialResult(): Called by Stories 3.1-3.4 to store individual check results
  * - updateOverallStatus(): Called by Story 3.5 after quality gate evaluation
@@ -761,23 +772,23 @@ export class QaResultsService {
    * Save partial QA result - CRITICAL METHOD for Stories 3.1-3.4 integration
    * Each QA check story calls this to store their specific results.
    * Uses upsert pattern to handle concurrent updates safely.
-   * 
+   *
    * @example Story 3.1 (Linting):
-   * await qaResultsService.savePartialResult(executionId, { 
-   *   linting_passed: true, 
-   *   linting_errors: [] 
+   * await qaResultsService.savePartialResult(executionId, {
+   *   linting_passed: true,
+   *   linting_errors: []
    * });
-   * 
+   *
    * @example Story 3.2 (Testing):
-   * await qaResultsService.savePartialResult(executionId, { 
-   *   tests_passed: false, 
-   *   test_results: { failed: ['test1'] } 
+   * await qaResultsService.savePartialResult(executionId, {
+   *   tests_passed: false,
+   *   test_results: { failed: ['test1'] }
    * });
    */
   @SentryCapture()
   async savePartialResult(executionId: string, partialData: IQaResultPartial): Promise<IQaResult> {
-    this.logger.debug(`Saving partial QA result for execution ${executionId}`, { 
-      fields: Object.keys(partialData) 
+    this.logger.debug(`Saving partial QA result for execution ${executionId}`, {
+      fields: Object.keys(partialData),
     });
 
     const result = await this.prisma.qAResult.upsert({
@@ -794,13 +805,23 @@ export class QaResultsService {
         overall_passed: false, // Will be set by Story 3.5
       },
       update: {
-        ...(partialData.linting_passed !== undefined && { linting_passed: partialData.linting_passed }),
-        ...(partialData.linting_errors !== undefined && { linting_errors: partialData.linting_errors }),
+        ...(partialData.linting_passed !== undefined && {
+          linting_passed: partialData.linting_passed,
+        }),
+        ...(partialData.linting_errors !== undefined && {
+          linting_errors: partialData.linting_errors,
+        }),
         ...(partialData.tests_passed !== undefined && { tests_passed: partialData.tests_passed }),
         ...(partialData.test_results !== undefined && { test_results: partialData.test_results }),
-        ...(partialData.test_coverage !== undefined && { test_coverage: partialData.test_coverage }),
-        ...(partialData.code_review_passed !== undefined && { code_review_passed: partialData.code_review_passed }),
-        ...(partialData.code_review_issues !== undefined && { code_review_issues: partialData.code_review_issues }),
+        ...(partialData.test_coverage !== undefined && {
+          test_coverage: partialData.test_coverage,
+        }),
+        ...(partialData.code_review_passed !== undefined && {
+          code_review_passed: partialData.code_review_passed,
+        }),
+        ...(partialData.code_review_issues !== undefined && {
+          code_review_issues: partialData.code_review_issues,
+        }),
       },
     });
 
@@ -834,8 +855,12 @@ export class QaResultsService {
         ...(data.tests_passed !== undefined && { tests_passed: data.tests_passed }),
         ...(data.test_results !== undefined && { test_results: data.test_results }),
         ...(data.test_coverage !== undefined && { test_coverage: data.test_coverage }),
-        ...(data.code_review_passed !== undefined && { code_review_passed: data.code_review_passed }),
-        ...(data.code_review_issues !== undefined && { code_review_issues: data.code_review_issues }),
+        ...(data.code_review_passed !== undefined && {
+          code_review_passed: data.code_review_passed,
+        }),
+        ...(data.code_review_issues !== undefined && {
+          code_review_issues: data.code_review_issues,
+        }),
         ...(data.overall_passed !== undefined && { overall_passed: data.overall_passed }),
       },
     });
@@ -865,8 +890,12 @@ export class QaResultsService {
         ...(data.tests_passed !== undefined && { tests_passed: data.tests_passed }),
         ...(data.test_results !== undefined && { test_results: data.test_results }),
         ...(data.test_coverage !== undefined && { test_coverage: data.test_coverage }),
-        ...(data.code_review_passed !== undefined && { code_review_passed: data.code_review_passed }),
-        ...(data.code_review_issues !== undefined && { code_review_issues: data.code_review_issues }),
+        ...(data.code_review_passed !== undefined && {
+          code_review_passed: data.code_review_passed,
+        }),
+        ...(data.code_review_issues !== undefined && {
+          code_review_issues: data.code_review_issues,
+        }),
         ...(data.overall_passed !== undefined && { overall_passed: data.overall_passed }),
       },
     });
@@ -1039,15 +1068,18 @@ export class QaResultsService {
       const passRate = totalExecutions > 0 ? (passedCount / totalExecutions) * 100 : 0;
       const averageCoverage = aggregates._avg.test_coverage ?? 0;
 
-      const lintingPassRate = totalExecutions > 0
-        ? (results.filter((r) => r.linting_passed).length / totalExecutions) * 100
-        : 0;
-      const testPassRate = totalExecutions > 0
-        ? (results.filter((r) => r.tests_passed).length / totalExecutions) * 100
-        : 0;
-      const securityPassRate = totalExecutions > 0
-        ? (results.filter((r) => r.code_review_passed).length / totalExecutions) * 100
-        : 0;
+      const lintingPassRate =
+        totalExecutions > 0
+          ? (results.filter((r) => r.linting_passed).length / totalExecutions) * 100
+          : 0;
+      const testPassRate =
+        totalExecutions > 0
+          ? (results.filter((r) => r.tests_passed).length / totalExecutions) * 100
+          : 0;
+      const securityPassRate =
+        totalExecutions > 0
+          ? (results.filter((r) => r.code_review_passed).length / totalExecutions) * 100
+          : 0;
 
       // Calculate daily trends
       const trendMap = new Map<string, { passed: number; failed: number; coverage: number[] }>();
@@ -1073,9 +1105,10 @@ export class QaResultsService {
           date,
           passed: data.passed,
           failed: data.failed,
-          coverage: data.coverage.length > 0
-            ? Math.round(data.coverage.reduce((a, b) => a + b, 0) / data.coverage.length)
-            : 0,
+          coverage:
+            data.coverage.length > 0
+              ? Math.round(data.coverage.reduce((a, b) => a + b, 0) / data.coverage.length)
+              : 0,
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -1258,20 +1291,8 @@ export class QaResultsService {
 **File:** `src/qa-automation/qa-results.controller.ts`
 
 ```typescript
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/strategies/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -1302,8 +1323,8 @@ export class QaResultsController {
   @Roles(Role.LEAD_QA, Role.PM, Role.ADMIN)
   @ApiOperation({ summary: 'Get QA metrics for a project' })
   @ApiParam({ name: 'projectId', description: 'Project ID' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'QA metrics retrieved successfully',
     type: QaResultMetricsDto,
   })
@@ -1327,8 +1348,8 @@ export class QaResultsController {
   @Roles(Role.LEAD_QA, Role.PM, Role.DEVELOPER, Role.ADMIN)
   @ApiOperation({ summary: 'Get QA result by execution ID' })
   @ApiParam({ name: 'executionId', description: 'Execution ID' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'QA result retrieved successfully',
     type: QaResultWithExecutionDto,
   })
@@ -1345,8 +1366,8 @@ export class QaResultsController {
   @Get()
   @Roles(Role.LEAD_QA, Role.PM, Role.DEVELOPER, Role.ADMIN)
   @ApiOperation({ summary: 'Query QA results with filters' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'QA results retrieved successfully',
     type: QaResultsPageDto,
   })
@@ -1567,11 +1588,11 @@ describe('QA Results API (e2e)', () => {
 
 ## Prerequisites
 
-| Story | Status | Required For |
-|-------|--------|--------------|
-| Story 1.3 (Database) | ✅ done | `qa_results` table exists |
-| Story 1.6 (Auth) | ✅ done | JWT authentication, RolesGuard |
-| Story 1.8 (Prometheus) | ✅ done | Metrics infrastructure |
+| Story                  | Status  | Required For                   |
+| ---------------------- | ------- | ------------------------------ |
+| Story 1.3 (Database)   | ✅ done | `qa_results` table exists      |
+| Story 1.6 (Auth)       | ✅ done | JWT authentication, RolesGuard |
+| Story 1.8 (Prometheus) | ✅ done | Metrics infrastructure         |
 
 **Note:** Stories 3.1-3.5 will use this service to store results via `savePartialResult()`, but are not strict prerequisites. The storage service can be implemented first.
 
@@ -1579,16 +1600,16 @@ describe('QA Results API (e2e)', () => {
 
 ## References
 
-| Source | Section |
-|--------|---------|
-| `docs/architecture.md` | Line 1642: QAResult model |
-| `docs/epics.md` | Story 3.6 acceptance criteria |
-| `docs/prd.md` | FR38: Lead QA can view automated QA results |
-| `prisma/schema.prisma` | QAResult model definition |
-| `src/common/guards/roles.guard.ts` | RolesGuard implementation |
-| `src/common/decorators/correlation-id.decorator.ts` | CorrelationId decorator |
-| `src/common/logger/app-logger.service.ts` | AppLogger service |
-| `src/common/sentry/decorators/sentry-capture.decorator.ts` | SentryCapture decorator |
+| Source                                                     | Section                                     |
+| ---------------------------------------------------------- | ------------------------------------------- |
+| `docs/architecture.md`                                     | Line 1642: QAResult model                   |
+| `docs/epics.md`                                            | Story 3.6 acceptance criteria               |
+| `docs/prd.md`                                              | FR38: Lead QA can view automated QA results |
+| `prisma/schema.prisma`                                     | QAResult model definition                   |
+| `src/common/guards/roles.guard.ts`                         | RolesGuard implementation                   |
+| `src/common/decorators/correlation-id.decorator.ts`        | CorrelationId decorator                     |
+| `src/common/logger/app-logger.service.ts`                  | AppLogger service                           |
+| `src/common/sentry/decorators/sentry-capture.decorator.ts` | SentryCapture decorator                     |
 
 ---
 
@@ -1615,11 +1636,32 @@ The `savePartialResult()` method is **critical** for Stories 3.1-3.4 integration
 
 ### Change Log
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-12-03 | Story drafted with comprehensive implementation guide | Scrum Master Bob |
+| Date       | Change                                                                                                                                  | Author           |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| 2025-12-03 | Story drafted with comprehensive implementation guide                                                                                   | Scrum Master Bob |
 | 2025-12-03 | Enhanced with validation improvements: @unique constraint, savePartialResult(), Sentry, RolesGuard, AppLogger, pagination consolidation | Scrum Master Bob |
+| 2025-12-05 | IMPLEMENTED: All tasks completed. 31 unit tests, E2E tests, SentryService integration                                                   | Dev Agent        |
+| 2025-12-05 | CODE REVIEW: Fixed 4 HIGH, 5 MEDIUM issues. Added E2E tests, SentryService, QualityGateOverrideDto                                      | Dev Agent        |
 
 ### File List
 
-<!-- Populated during implementation -->
+**Created:**
+
+- `src/qa-automation/interfaces/qa-results.interface.ts` - Types and interfaces (10 exports)
+- `src/qa-automation/dto/qa-results.dto.ts` - DTOs with validation (12 classes)
+- `src/qa-automation/qa-results.service.spec.ts` - Unit tests (31 tests)
+- `test/qa-results.e2e-spec.ts` - E2E tests (20+ tests)
+- `prisma/migrations/20251205153217_add_qa_results_story_3_6/` - Database migration
+
+**Modified:**
+
+- `prisma/schema.prisma` - Added @unique, relation, indexes, updated_at to QAResult
+- `src/qa-automation/interfaces/index.ts` - Added qa-results.interface export
+- `src/qa-automation/dto/index.ts` - Added qa-results.dto export
+- `src/qa-automation/qa-results.service.ts` - Complete rewrite with 15 methods
+- `src/qa-automation/qa-results.controller.ts` - Enhanced with metrics endpoint, guards
+- `src/qa-automation/qa-automation.module.ts` - Added metrics providers
+- `src/common/metrics/metrics.constants.ts` - Added QA*RESULTS*\* metrics
+- `src/config/configuration.ts` - Added qualityGate.results config
+- `.env.example` - Added QA*RESULTS*\* environment variables
+- `docs/sprint-artifacts/sprint-status.yaml` - Updated status to done

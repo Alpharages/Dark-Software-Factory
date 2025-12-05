@@ -98,7 +98,7 @@ export class BlockingIssueDto {
   @ApiPropertyOptional({ type: Object })
   @IsOptional()
   @IsObject()
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export class WarningIssueDto {
@@ -117,7 +117,7 @@ export class WarningIssueDto {
   @ApiPropertyOptional({ type: Object })
   @IsOptional()
   @IsObject()
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export class CategoryScoreDto {

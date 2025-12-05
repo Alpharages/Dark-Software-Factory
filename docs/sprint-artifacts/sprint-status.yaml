@@ -195,10 +195,25 @@ development_status:
       lint: "0 errors on Story 3.5 files"
     notes: "APPROVED. Code review completed 2025-12-05. FIXED: (1) Added JwtAuthGuard, RolesGuard, ThrottlerGuard to QaResultsController and QualityGateController - CRITICAL security fix, (2) Rewrote QaOrchestratorConsumer to extend RabbitMQConsumerBase with proper OnModuleInit lifecycle, (3) Replaced hardcoded SAMPLE_QA_RESULT with actual QA service integration (LinterService, TestRunnerService, CoverageService, CodeReviewService) using Promise.allSettled, (4) Fixed 27 ESLint errors by creating IQaResultInput interface and using proper Prisma types, (5) Populated File List with 16 implementation files, (6) Updated Change Log. All acceptance criteria verified. Quality gate engine operational."
   3-6-qa-results-storage-retrieval:
-    status: in-progress
+    status: done
     developer: "Amelia (Dev Agent)"
     dev_branch: "feature/3-6-qa-results-storage"
-    notes: "Story drafted with comprehensive implementation guide. Includes QaResultsService, QaResultsController, DTOs, interfaces, metrics, pagination, and aggregated metrics endpoint. Uses existing QAResult Prisma model with added indexes. Prerequisites: 1.3, 1.6, 1.8."
+    completed_date: 2025-12-05
+    verification:
+      unit_tests: 31/31 passed
+      e2e_tests: 20+ tests created (test/qa-results.e2e-spec.ts)
+      lint: "0 new errors on Story 3.6 files"
+    code_review:
+      date: 2025-12-05
+      issues_found: "4 HIGH, 5 MEDIUM, 3 LOW"
+      issues_fixed: "4 HIGH, 4 MEDIUM, 1 LOW"
+      fixes_applied:
+        - "Added SentryService injection for error tracking"
+        - "Created test/qa-results.e2e-spec.ts with 20+ E2E tests"
+        - "Created QualityGateOverrideDto with validation"
+        - "Updated story tasks, file list, changelog"
+        - "Staged migration file"
+    notes: "APPROVED. Code review completed 2025-12-05. Implemented QA Results Storage & Retrieval with: (1) Database schema updated with @unique, relation, indexes, updated_at, (2) qa-results.interface.ts with 10 types, (3) qa-results.dto.ts with 12 DTOs including QualityGateOverrideDto, (4) QaResultsService with 15 methods, SentryService integration, (5) QaResultsController + QualityGateController with guards, (6) QA_RESULTS_* metrics, (7) qualityGate.results config, (8) 31 unit tests + 20+ E2E tests."
   3-7-rabbitmq-qa-queue-processing:
     status: ready-for-dev
     notes: "Story drafted with comprehensive implementation guide. Includes QaCheckPublisher, QaCheckConsumer extending RabbitMQConsumerBase, QaOrchestratorService with parallel check execution using Promise.allSettled(). Integrates with Stories 3.1-3.6. 17 key files documented."

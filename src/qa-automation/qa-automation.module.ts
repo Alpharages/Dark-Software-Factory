@@ -5,6 +5,7 @@
  * Story 3.3: Test Coverage Calculation & Enforcement
  * Story 3.4: Basic Security & Code Quality Checks
  * Story 3.5: Quality Gate Decision Engine
+ * Story 3.6: QA Results Storage & Retrieval
  */
 
 import { Module } from '@nestjs/common';
@@ -16,6 +17,7 @@ import {
 } from '@willsoto/nestjs-prometheus';
 import { DatabaseModule } from '../database/database.module';
 import { SentryModule } from '../common/sentry/sentry.module';
+import { LoggerModule } from '../common/logger/logger.module';
 import { LinterService } from './linter.service';
 import { TestRunnerService } from './test-runner.service';
 import { DockerExecutorService } from './docker-executor.service';
@@ -37,7 +39,7 @@ import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constan
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 
 @Module({
-  imports: [DatabaseModule, SentryModule, ConfigModule, RabbitMQModule],
+  imports: [DatabaseModule, SentryModule, ConfigModule, RabbitMQModule, LoggerModule],
   controllers: [QaResultsController, QualityGateController],
   providers: [
     // Story 3.1 - Linting
@@ -182,6 +184,19 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
       help: 'QA check duration in seconds',
       labelNames: ['check_type'],
       buckets: METRICS_CONSTANTS.DEFAULT_BUCKETS,
+    }),
+
+    // Story 3.6 - QA Results Storage & Retrieval
+    makeCounterProvider({
+      name: QA_METRICS.QA_RESULTS_QUERIES_TOTAL,
+      help: 'Total number of QA results queries',
+      labelNames: ['query_type'],
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.QA_RESULTS_QUERY_DURATION,
+      help: 'QA results query duration in seconds',
+      labelNames: ['query_type'],
+      buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
     }),
   ],
   exports: [

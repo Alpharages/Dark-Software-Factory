@@ -1,4 +1,8 @@
 import { TicketStatus } from '@prisma/client';
+import { ILintingResult } from './linting.interface';
+import { ITestResult } from './test-runner.interface';
+import { ICoverageAnalysis } from './coverage.interface';
+import { ISecurityScanResult } from './security-scanner.interface';
 
 /**
  * Quality Gate Decision Engine Interfaces
@@ -81,14 +85,14 @@ export interface IBlockingIssue {
   type: BlockerType;
   category: QualityCategory;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface IWarningIssue {
   type: WarningType;
   category: QualityCategory;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface ICategoryScore {
@@ -132,9 +136,9 @@ export interface IQaOrchestrationResult {
   executionId: string;
   correlationId: string;
   status: 'passed' | 'failed';
-  lintingResult: any; // From Story 3.1
-  testResult: any; // From Story 3.2
-  coverageResult: any; // From Story 3.3
-  securityResult: any; // From Story 3.4
+  lintingResult: ILintingResult; // From Story 3.1
+  testResult: ITestResult; // From Story 3.2
+  coverageResult: ICoverageAnalysis; // From Story 3.3
+  securityResult: ISecurityScanResult; // From Story 3.4
   qualityGateResult: IQualityGateResult;
 }

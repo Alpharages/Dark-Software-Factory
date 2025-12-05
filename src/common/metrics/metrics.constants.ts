@@ -73,6 +73,9 @@ export const QA_METRICS = {
   QUALITY_GATE_EVALUATIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_quality_gate_evaluations_total`,
   QUALITY_GATE_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_quality_gate_duration_seconds`,
   QUALITY_SCORE_HISTOGRAM: `${METRICS_CONSTANTS.PREFIX}qa_quality_score`,
+  // Story 3.6: QA Results Storage & Retrieval metrics
+  QA_RESULTS_QUERIES_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_results_queries_total`,
+  QA_RESULTS_QUERY_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_results_query_duration_seconds`,
 } as const;
 
 // Business Metrics - Deployments

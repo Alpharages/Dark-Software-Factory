@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { QualityGatesService, SAMPLE_QA_RESULT, IQaResultInput } from './quality-gates.service';
+import { QualityGatesService, SAMPLE_QA_RESULT } from './quality-gates.service';
 import { QualityCategory, QualityGateStatus } from './interfaces/quality-gate.interface';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { QA_METRICS } from '../common/metrics/metrics.constants';

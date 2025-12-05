@@ -95,6 +95,9 @@ model Execution {
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   
+  // Story 3.6: QA Results relation
+  qa_result         QAResult?
+  
   @@index([ticket_id, status])
   @@index([ai_provider, status])
   @@index([scheduled_retry_at])  // Story 2.9: Index for retry queries
@@ -116,27 +119,33 @@ enum ExecutionStatus {
 }
 
 // ============================================
-// QA RESULTS
+// QA RESULTS (Story 3.6)
+// FR38: Lead QA can view automated QA results
 // ============================================
 
 model QAResult {
   id                  String   @id @default(uuid())
-  execution_id        String
+  execution_id        String   @unique  // CRITICAL: Must be unique for upsert pattern
   
-  linting_passed      Boolean
+  linting_passed      Boolean  @default(false)
   linting_errors      Json?
   
-  tests_passed        Boolean
+  tests_passed        Boolean  @default(false)
   test_results        Json?
   test_coverage       Float?
   
-  code_review_passed  Boolean
+  code_review_passed  Boolean  @default(false)
   code_review_issues  Json?
   
-  overall_passed      Boolean
+  overall_passed      Boolean  @default(false)
   
   created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
   
+  // Relation to Execution model
+  execution           Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+  
+  @@index([overall_passed, created_at])  // For status + date filtering
   @@map("qa_results")
 }
 
