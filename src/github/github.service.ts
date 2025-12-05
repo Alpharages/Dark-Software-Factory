@@ -69,6 +69,26 @@ export class GitHubService {
     );
   }
 
+  async getBaseCommitSha(
+    owner: string,
+    repo: string,
+    branch: string,
+    installationId?: string,
+  ): Promise<string> {
+    return this.clientService.execute(
+      async (client: Octokit) => {
+        const { data } = await client.git.getRef({
+          owner,
+          repo,
+          ref: `heads/${branch}`,
+        });
+        return data.object.sha;
+      },
+      installationId,
+      'getBaseCommitSha',
+    );
+  }
+
   async createPullRequest(
     owner: string,
     repo: string,
