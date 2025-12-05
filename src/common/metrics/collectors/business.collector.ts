@@ -134,6 +134,7 @@ export class BusinessCollector {
       [LABELS.STATUS]: data.status,
     };
     if (data.projectId) labels[LABELS.PROJECT] = data.projectId;
+    if (data.aiProvider) labels[LABELS.PROVIDER] = data.aiProvider;
 
     this.qaChecksTotal.inc(labels);
     this.qaCheckDuration.observe(labels, data.duration);
@@ -143,8 +144,10 @@ export class BusinessCollector {
     }
   }
 
-  incrementVulnerabilities(severity: string, count: number = 1): void {
-    this.qaVulnerabilities.inc({ [LABELS.SEVERITY]: severity }, count);
+  incrementVulnerabilities(severity: string, count: number = 1, projectId?: string): void {
+    const labels: Record<string, string> = { [LABELS.SEVERITY]: severity };
+    if (projectId) labels[LABELS.PROJECT] = projectId;
+    this.qaVulnerabilities.inc(labels, count);
   }
 
   // ============= Deployment Metrics =============

@@ -68,8 +68,8 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     this.businessCollector.recordQACheck(data);
   }
 
-  incrementVulnerabilities(severity: string, count: number = 1): void {
-    this.businessCollector.incrementVulnerabilities(severity, count);
+  incrementVulnerabilities(severity: string, count: number = 1, projectId?: string): void {
+    this.businessCollector.incrementVulnerabilities(severity, count, projectId);
   }
 
   // ============= Deployment Metrics =============

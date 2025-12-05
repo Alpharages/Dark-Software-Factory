@@ -7,6 +7,7 @@
  * Story 3.5: Quality Gate Decision Engine
  * Story 3.6: QA Results Storage & Retrieval
  * Story 3.7: RabbitMQ QA Queue Processing
+ * Story 3.8: QA Metrics & Prometheus Integration
  */
 
 import { Module } from '@nestjs/common';
@@ -19,6 +20,7 @@ import {
 import { DatabaseModule } from '../database/database.module';
 import { SentryModule } from '../common/sentry/sentry.module';
 import { LoggerModule } from '../common/logger/logger.module';
+import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { LinterService } from './linter.service';
 import { TestRunnerService } from './test-runner.service';
 import { DockerExecutorService } from './docker-executor.service';
@@ -37,12 +39,20 @@ import { QaResultsService } from './qa-results.service';
 import { QaResultsController, QualityGateController } from './qa-results.controller';
 import { QaCheckPublisher } from './qa-check.publisher';
 import { QaCheckConsumer } from './qa-check.consumer';
-import { QA_METRICS, METRICS_CONSTANTS, QUEUE_METRICS } from '../common/metrics/metrics.constants';
+import { QaMetricsService } from './qa-metrics.service';
+import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constants';
 
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 
 @Module({
-  imports: [DatabaseModule, SentryModule, ConfigModule, RabbitMQModule, LoggerModule],
+  imports: [
+    DatabaseModule,
+    SentryModule,
+    ConfigModule,
+    RabbitMQModule,
+    LoggerModule,
+    AppMetricsModule,
+  ],
   controllers: [QaResultsController, QualityGateController],
   providers: [
     // Story 3.1 - Linting
@@ -205,21 +215,11 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
     // Story 3.7 - RabbitMQ QA Queue Processing
     QaCheckPublisher,
     QaCheckConsumer,
-    makeGaugeProvider({
-      name: QUEUE_METRICS.DEPTH,
-      help: 'Queue depth by queue name',
-      labelNames: ['queue'],
-    }),
-    makeGaugeProvider({
-      name: QUEUE_METRICS.CONSUMER_COUNT,
-      help: 'Active consumer count by queue',
-      labelNames: ['queue'],
-    }),
-    makeCounterProvider({
-      name: QUEUE_METRICS.PROCESSING_RATE,
-      help: 'Message processing rate by queue and status',
-      labelNames: ['queue', 'status'],
-    }),
+
+    // Story 3.8 - QA Metrics & Prometheus Integration
+    QaMetricsService,
+    // Note: QUEUE_METRICS are registered in AppMetricsModule (Story 1.8)
+    // Don't duplicate here to avoid Prometheus registration errors
   ],
   exports: [
     LinterService,
@@ -232,6 +232,7 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
     QaResultsService,
     QaCheckPublisher, // Story 3.7
     QaCheckConsumer, // Story 3.7
+    QaMetricsService, // Story 3.8
   ],
 })
 export class QaAutomationModule {}

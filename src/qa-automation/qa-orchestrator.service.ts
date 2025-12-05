@@ -1,13 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Counter, Histogram } from 'prom-client';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '../database/prisma.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { ErrorCategory } from '../common/sentry/sentry.constants';
-import { QA_METRICS } from '../common/metrics/metrics.constants';
 import { EXCHANGE_NAMES, ROUTING_KEYS, QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { QualityGatesService } from './quality-gates.service';
+import { QaMetricsService } from './qa-metrics.service';
 import { LinterService } from './linter.service';
 import { TestRunnerService } from './test-runner.service';
 import { CoverageService } from './coverage.service';
@@ -65,10 +63,7 @@ export class QaOrchestratorService {
     private readonly coverageService: CoverageService,
     private readonly codeReviewService: CodeReviewService,
     private readonly rabbitPublisher: RabbitMQPublisherService,
-    @InjectMetric(QA_METRICS.CHECKS_TOTAL)
-    private readonly checksCounter: Counter<string>,
-    @InjectMetric(QA_METRICS.CHECK_DURATION)
-    private readonly checkDuration: Histogram<string>,
+    private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
   ) {}
 
   /**
@@ -77,9 +72,8 @@ export class QaOrchestratorService {
    *       evaluates gate, publishes result events
    */
   async runQaChecks(message: IQaQueueMessage, correlationId: string): Promise<IQaQueueResult> {
-    const { executionId, ticketId } = message;
+    const { executionId, ticketId, projectId, aiProvider } = message;
     const startTime = Date.now();
-    const endTimer = this.checkDuration.startTimer({ check_type: 'full' });
 
     this.logger.log(`[${correlationId}] Starting parallel QA checks for execution ${executionId}`);
 
@@ -150,9 +144,19 @@ export class QaOrchestratorService {
         `[${correlationId}] QA checks completed: ${overallPassed ? 'PASSED' : 'FAILED'} (${totalDuration}ms)`,
       );
 
+      // Record overall gate decision metric (Story 3.8)
+      this.qaMetrics.recordGateDecision(overallPassed, {
+        projectId,
+        aiProvider,
+      });
+
       return result;
     } catch (error) {
-      this.checksCounter.inc({ status: 'error' });
+      // Record error metric (Story 3.8)
+      this.qaMetrics.recordCheckError('linting', 'error', Date.now() - startTime, {
+        projectId,
+        aiProvider,
+      });
       this.logger.error(
         `[${correlationId}] QA checks failed: ${(error as Error).message}`,
         (error as Error).stack,
@@ -164,8 +168,6 @@ export class QaOrchestratorService {
       });
 
       throw error;
-    } finally {
-      endTimer();
     }
   }
 
@@ -183,7 +185,6 @@ export class QaOrchestratorService {
       skipCategories = [],
     } = message;
     const startTime = Date.now();
-    const endTimer = this.checkDuration.startTimer({ check_type: 'full' });
 
     this.logger.log(`[${correlationId}] Starting QA orchestration for execution ${executionId}`);
 
@@ -232,7 +233,8 @@ export class QaOrchestratorService {
 
       // Notify via RabbitMQ
       if (overallPassed) {
-        this.checksCounter.inc({ status: 'passed' });
+        // Record metrics using QaMetricsService (Story 3.8)
+        this.qaMetrics.recordGateDecision(true, { projectId });
         this.logger.log(`[${correlationId}] QA check PASSED for execution ${executionId}`);
 
         // Publish QA_CHECK_COMPLETED event
@@ -266,7 +268,8 @@ export class QaOrchestratorService {
           environment: 'staging',
         });
       } else {
-        this.checksCounter.inc({ status: 'failed' });
+        // Record failed gate decision (Story 3.8)
+        this.qaMetrics.recordGateDecision(false, { projectId });
         this.logger.warn(`[${correlationId}] QA check FAILED for execution ${executionId}`);
 
         // Publish QA_CHECK_FAILED event
@@ -363,7 +366,8 @@ export class QaOrchestratorService {
         qualityGateResult: gateResult,
       };
     } catch (error) {
-      this.checksCounter.inc({ status: 'error' });
+      // Record error metric (Story 3.8)
+      this.qaMetrics.recordCheckError('linting', 'error', Date.now() - startTime, { projectId });
       this.logger.error(
         `[${correlationId}] QA orchestration failed: ${(error as Error).message} `,
         (error as Error).stack,
@@ -376,7 +380,6 @@ export class QaOrchestratorService {
 
       throw error;
     } finally {
-      endTimer();
       this.logger.log(
         `[${correlationId}] QA orchestration completed in ${Date.now() - startTime} ms`,
       );
@@ -663,7 +666,6 @@ export class QaOrchestratorService {
     _correlationId: string,
   ): Promise<{ type: QaCheckType; passed: boolean; data: unknown; duration: number }> {
     const startTime = Date.now();
-    const endTimer = this.checkDuration.startTimer({ check_type: 'linting' });
 
     try {
       // TODO: Replace with actual LinterService call (Story 3.1)
@@ -674,7 +676,13 @@ export class QaOrchestratorService {
         linting_errors: result.errors as never,
       });
 
-      endTimer();
+      const duration = Date.now() - startTime;
+      // Record linting check metric (Story 3.8)
+      this.qaMetrics.recordCheckComplete('linting', result.passed, duration, {
+        projectId: message.projectId,
+        aiProvider: message.aiProvider,
+      });
+
       return {
         type: 'linting',
         passed: result.passed,
@@ -682,7 +690,6 @@ export class QaOrchestratorService {
         duration: Date.now() - startTime,
       };
     } catch (error) {
-      endTimer();
       this.sentry.captureException(error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'linting' },
@@ -705,7 +712,6 @@ export class QaOrchestratorService {
     _correlationId: string,
   ): Promise<{ type: QaCheckType; passed: boolean; data: unknown; duration: number }> {
     const startTime = Date.now();
-    const endTimer = this.checkDuration.startTimer({ check_type: 'testing' });
 
     try {
       // TODO: Replace with actual TestRunnerService call (Story 3.2)
@@ -716,7 +722,13 @@ export class QaOrchestratorService {
         test_results: result.results as never,
       });
 
-      endTimer();
+      const duration = Date.now() - startTime;
+      // Record testing check metric (Story 3.8)
+      this.qaMetrics.recordCheckComplete('testing', result.passed, duration, {
+        projectId: message.projectId,
+        aiProvider: message.aiProvider,
+      });
+
       return {
         type: 'testing',
         passed: result.passed,
@@ -724,7 +736,6 @@ export class QaOrchestratorService {
         duration: Date.now() - startTime,
       };
     } catch (error) {
-      endTimer();
       this.sentry.captureException(error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'testing' },
@@ -747,7 +758,6 @@ export class QaOrchestratorService {
     _correlationId: string,
   ): Promise<{ type: QaCheckType; passed: boolean; data: unknown; duration: number }> {
     const startTime = Date.now();
-    const endTimer = this.checkDuration.startTimer({ check_type: 'coverage' });
 
     try {
       // TODO: Replace with actual CoverageService call (Story 3.3)
@@ -756,10 +766,14 @@ export class QaOrchestratorService {
 
       await this.savePartialQaResult(message.executionId, { test_coverage: coverage });
 
-      endTimer();
-      return { type: 'coverage', passed, data: coverage, duration: Date.now() - startTime };
+      const duration = Date.now() - startTime;
+      // Record coverage metric (Story 3.8)
+      if (message.projectId) {
+        this.qaMetrics.setCoverage(message.projectId, coverage);
+      }
+
+      return { type: 'coverage', passed, data: coverage, duration };
     } catch (error) {
-      endTimer();
       this.sentry.captureException(error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'coverage' },
@@ -779,7 +793,6 @@ export class QaOrchestratorService {
     _correlationId: string,
   ): Promise<{ type: QaCheckType; passed: boolean; data: unknown; duration: number }> {
     const startTime = Date.now();
-    const endTimer = this.checkDuration.startTimer({ check_type: 'security' });
 
     try {
       // TODO: Replace with actual CodeReviewService call (Story 3.4)
@@ -790,7 +803,13 @@ export class QaOrchestratorService {
         code_review_issues: result.issues as never,
       });
 
-      endTimer();
+      const duration = Date.now() - startTime;
+      // Record security check metric (Story 3.8)
+      this.qaMetrics.recordCheckComplete('security', result.passed, duration, {
+        projectId: message.projectId,
+        aiProvider: message.aiProvider,
+      });
+
       return {
         type: 'security',
         passed: result.passed,
@@ -798,7 +817,6 @@ export class QaOrchestratorService {
         duration: Date.now() - startTime,
       };
     } catch (error) {
-      endTimer();
       this.sentry.captureException(error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'security' },

@@ -227,8 +227,16 @@ development_status:
       build: "✅ Compiles successfully"
     notes: "APPROVED. Code review completed 2025-12-05. FIXES APPLIED: (1) TypeScript compilation errors in processQaCheck() - proper interface types, (2) Logger anti-pattern in consumer - now uses LoggerService, (3) Error handling added to publishQaResultEvent() with Sentry, (4) Story status and File List updated. Implemented RabbitMQ QA Queue Processing: QaCheckPublisher, QaCheckConsumer with queue depth monitoring, QaOrchestratorService.runQaChecks() with parallel execution, wired to ExecutionService. All 7 tasks complete. 6 new files, 11 modified files. Build: passing."
   3-8-qa-metrics-prometheus-integration:
-    status: ready-for-dev
-    notes: "Story drafted and QUALITY-REVIEWED (all improvements applied). EXTENDS Story 1.8 - uses existing BusinessCollector/MetricsService, NO new collector. Fixed: label registrations for provider/project_id, module name (AppMetricsModule), metric type issues. Creates only QaMetricsService facade. 6 key files documented."
+    status: done
+    developer: "Amelia (Dev Agent)"
+    dev_branch: "feature/3-8-qa-metrics"
+    completed_date: 2025-12-05
+    code_review_date: 2025-12-05
+    verification:
+      unit_tests: 18/18 passed
+      build: "✅ Successful"
+      lint: "0 errors on Story 3.8 files"
+    notes: "APPROVED. Code review completed 2025-12-05. FIXED: (1) Removed duplicate QUEUE_METRICS from qa-automation.module.ts - CRITICAL, (2) Integrated QaMetricsService into QaOrchestratorService as per Story 3.8 requirements - HIGH, (3) Added error handling and validation to QaMetricsService methods - MEDIUM, (4) Fixed File List accuracy (6 files, not 4) - HIGH. Extended Story 1.8 metrics with provider/project_id labels. Created QaMetricsService facade with defensive programming. Updated BusinessCollector and QaOrchestratorService. 2 new files, 6 modified files. All acceptance criteria met."
   epic-3-retrospective: optional
 
   epic-4: backlog

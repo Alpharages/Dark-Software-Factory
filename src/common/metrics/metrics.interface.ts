@@ -46,9 +46,10 @@ export interface AIExecutionMetricData {
  */
 export interface QACheckMetricData {
   checkType: string;
-  status: 'passed' | 'failed';
+  status: 'passed' | 'failed' | 'timeout' | 'error';
   duration: number;
   projectId?: string;
+  aiProvider?: string;
   coverage?: number;
 }
 

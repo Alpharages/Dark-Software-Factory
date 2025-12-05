@@ -141,13 +141,13 @@ import {
     makeCounterProvider({
       name: QA_METRICS.CHECKS_TOTAL,
       help: 'Total number of QA checks performed',
-      labelNames: [LABELS.CHECK_TYPE, LABELS.STATUS, LABELS.PROJECT],
+      labelNames: [LABELS.CHECK_TYPE, LABELS.STATUS, LABELS.PROJECT, LABELS.PROVIDER],
     }),
     makeHistogramProvider({
       name: QA_METRICS.CHECK_DURATION,
       help: 'Duration of QA checks in seconds',
-      labelNames: [LABELS.CHECK_TYPE, LABELS.STATUS, LABELS.PROJECT],
-      buckets: [0.1, 0.5, 1, 5, 10, 30, 60],
+      labelNames: [LABELS.CHECK_TYPE, LABELS.STATUS, LABELS.PROJECT, LABELS.PROVIDER],
+      buckets: [0.1, 0.5, 1, 5, 10, 30, 60, 120, 300],
     }),
     makeGaugeProvider({
       name: QA_METRICS.COVERAGE_PERCENT,
@@ -157,7 +157,7 @@ import {
     makeCounterProvider({
       name: QA_METRICS.VULNERABILITIES,
       help: 'Total security vulnerabilities detected',
-      labelNames: [LABELS.SEVERITY],
+      labelNames: [LABELS.SEVERITY, LABELS.PROJECT],
     }),
 
     // Deployment Metrics

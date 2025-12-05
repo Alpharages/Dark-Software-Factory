@@ -1,7 +1,7 @@
 # Story 3.8: QA Metrics & Prometheus Integration
 
 **Epic:** 3 - Automated QA & Quality Gates  
-**Status:** ready-for-dev  
+**Status:** Ready for Review  
 **Priority:** P2 - MEDIUM  
 **Effort:** 3 story points  
 **ClickUp ID:** `86evnjwbe`  
@@ -22,6 +22,7 @@ So that I can monitor quality trends and system health.
 **Given** QA checks are running  
 **When** metrics are collected  
 **Then** Prometheus metrics include:
+
 - `dsf_qa_checks_total{status, check_type, project_id, provider}`
 - `dsf_qa_check_duration_seconds{check_type, project_id, provider}`
 - `dsf_qa_test_coverage_percent{project_id}`
@@ -29,6 +30,7 @@ So that I can monitor quality trends and system health.
 - `dsf_queue_depth{queue="qa-check"}`
 
 **And** Grafana queries can visualize:
+
 - QA pass rate: `sum(rate(dsf_qa_checks_total{status="passed"}[5m])) / sum(rate(dsf_qa_checks_total[5m])) * 100`
 - Check duration P95: `histogram_quantile(0.95, sum(rate(dsf_qa_check_duration_seconds_bucket[5m])) by (le, check_type))`
 - Vulnerabilities: `sum by (severity) (dsf_qa_security_vulnerabilities_total)`
@@ -40,14 +42,14 @@ So that I can monitor quality trends and system health.
 
 **6 Key Files:**
 
-| # | File | Action | Purpose |
-|---|------|--------|---------|
-| 1 | `src/common/metrics/metrics.module.ts` | MODIFY | Add `provider` label to QA metrics, add `project_id` to vulnerabilities |
-| 2 | `src/common/metrics/metrics.interface.ts` | MODIFY | Extend `QACheckMetricData` with `aiProvider` |
-| 3 | `src/common/metrics/collectors/business.collector.ts` | MODIFY | Update `recordQACheck()` to use provider label |
-| 4 | `src/qa-automation/qa-metrics.service.ts` | CREATE | High-level QA metrics facade |
-| 5 | `src/qa-automation/qa-automation.module.ts` | MODIFY | Import AppMetricsModule, add QaMetricsService |
-| 6 | `src/qa-automation/qa-metrics.service.spec.ts` | CREATE | Unit tests |
+| #   | File                                                  | Action | Purpose                                                                 |
+| --- | ----------------------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| 1   | `src/common/metrics/metrics.module.ts`                | MODIFY | Add `provider` label to QA metrics, add `project_id` to vulnerabilities |
+| 2   | `src/common/metrics/metrics.interface.ts`             | MODIFY | Extend `QACheckMetricData` with `aiProvider`                            |
+| 3   | `src/common/metrics/collectors/business.collector.ts` | MODIFY | Update `recordQACheck()` to use provider label                          |
+| 4   | `src/qa-automation/qa-metrics.service.ts`             | CREATE | High-level QA metrics facade                                            |
+| 5   | `src/qa-automation/qa-automation.module.ts`           | MODIFY | Import AppMetricsModule, add QaMetricsService                           |
+| 6   | `src/qa-automation/qa-metrics.service.spec.ts`        | CREATE | Unit tests                                                              |
 
 **🚨 CRITICAL:** This story EXTENDS Story 1.8 infrastructure. Do NOT create a new collector or parallel metrics system.
 
@@ -55,14 +57,14 @@ So that I can monitor quality trends and system health.
 
 ## ⚠️ Anti-Patterns to Avoid
 
-| ❌ DO NOT | ✅ DO INSTEAD |
-|-----------|---------------|
-| Create new `QaCollector` class | Use existing `BusinessCollector` (already has QA metrics) |
-| Inject individual `@InjectMetric()` in QA services | Inject `MetricsService` or `QaMetricsService` facade |
-| Reference `MetricsModule` | Use `AppMetricsModule` (actual class name) |
-| Call `.inc()` on `QUEUE_METRICS.PROCESSING_RATE` | Use `QueueCollector.updateQueueMetrics()` (it's a Gauge, not Counter) |
-| Register duplicate metric providers | Update existing providers in `AppMetricsModule` |
-| Add labels not in registration | First update `labelNames` array in provider registration |
+| ❌ DO NOT                                          | ✅ DO INSTEAD                                                         |
+| -------------------------------------------------- | --------------------------------------------------------------------- |
+| Create new `QaCollector` class                     | Use existing `BusinessCollector` (already has QA metrics)             |
+| Inject individual `@InjectMetric()` in QA services | Inject `MetricsService` or `QaMetricsService` facade                  |
+| Reference `MetricsModule`                          | Use `AppMetricsModule` (actual class name)                            |
+| Call `.inc()` on `QUEUE_METRICS.PROCESSING_RATE`   | Use `QueueCollector.updateQueueMetrics()` (it's a Gauge, not Counter) |
+| Register duplicate metric providers                | Update existing providers in `AppMetricsModule`                       |
+| Add labels not in registration                     | First update `labelNames` array in provider registration              |
 
 ---
 
@@ -71,41 +73,45 @@ So that I can monitor quality trends and system health.
 ### Already Implemented - USE THESE:
 
 **BusinessCollector** (`src/common/metrics/collectors/business.collector.ts`):
+
 - `recordQACheck(data)` - Records check count + duration
 - `incrementVulnerabilities(severity, count)` - Records security issues
 
 **MetricsService** (`src/common/metrics/metrics.service.ts`):
+
 - `recordQACheck(data)` - Facade for BusinessCollector
 - `incrementVulnerabilities(severity, count)` - Facade for BusinessCollector
 
 **QueueCollector** (`src/common/metrics/collectors/queue.collector.ts`):
+
 - `updateQueueMetrics(data)` - Sets queue depth, processing rate, consumer count
 
 ---
 
 ## Tasks
 
-- [ ] **Task 1: Update Metric Registrations** (CRITICAL - do this first)
-  - [ ] Add `LABELS.PROVIDER` to `QA_METRICS.CHECKS_TOTAL` labelNames
-  - [ ] Add `LABELS.PROVIDER` to `QA_METRICS.CHECK_DURATION` labelNames
-  - [ ] Add `LABELS.PROJECT` to `QA_METRICS.VULNERABILITIES` labelNames
+- [x] **Task 1: Update Metric Registrations** (CRITICAL - do this first)
+  - [x] Add `LABELS.PROVIDER` to `QA_METRICS.CHECKS_TOTAL` labelNames
+  - [x] Add `LABELS.PROVIDER` to `QA_METRICS.CHECK_DURATION` labelNames
+  - [x] Add `LABELS.PROJECT` to `QA_METRICS.VULNERABILITIES` labelNames
 
-- [ ] **Task 2: Extend Interface**
-  - [ ] Add `aiProvider?: string` to `QACheckMetricData`
+- [x] **Task 2: Extend Interface**
+  - [x] Add `aiProvider?: string` to `QACheckMetricData`
 
-- [ ] **Task 3: Update BusinessCollector**
-  - [ ] Update `recordQACheck()` to include provider in labels
+- [x] **Task 3: Update BusinessCollector**
+  - [x] Update `recordQACheck()` to include provider in labels
+  - [x] Update `incrementVulnerabilities()` to accept projectId parameter
 
-- [ ] **Task 4: Create QaMetricsService**
-  - [ ] Inject `MetricsService` (NOT individual metrics)
-  - [ ] Implement convenience methods for QA module
+- [x] **Task 4: Create QaMetricsService**
+  - [x] Inject `MetricsService` (NOT individual metrics)
+  - [x] Implement convenience methods for QA module
 
-- [ ] **Task 5: Wire Module**
-  - [ ] Import `AppMetricsModule` in `QaAutomationModule`
-  - [ ] Add `QaMetricsService` to providers and exports
+- [x] **Task 5: Wire Module**
+  - [x] Import `AppMetricsModule` in `QaAutomationModule`
+  - [x] Add `QaMetricsService` to providers and exports
 
-- [ ] **Task 6: Tests**
-  - [ ] Unit tests for QaMetricsService (>80% coverage)
+- [x] **Task 6: Tests**
+  - [x] Unit tests for QaMetricsService (18/18 passing, >80% coverage)
 
 ---
 
@@ -587,21 +593,21 @@ avg by (provider) (
 
 ## Prerequisites
 
-| Story | Status | Required For |
-|-------|--------|--------------|
+| Story                  | Status  | Required For                                              |
+| ---------------------- | ------- | --------------------------------------------------------- |
 | Story 1.8 (Prometheus) | ✅ done | `AppMetricsModule`, `MetricsService`, `BusinessCollector` |
-| Story 1.7 (Winston) | ✅ done | `LoggerService` |
+| Story 1.7 (Winston)    | ✅ done | `LoggerService`                                           |
 
 ---
 
 ## References
 
-| Source | Section |
-|--------|---------|
-| `src/common/metrics/metrics.module.ts` | `AppMetricsModule` - update provider registrations |
-| `src/common/metrics/metrics.service.ts` | `MetricsService` - facade pattern |
-| `src/common/metrics/collectors/business.collector.ts` | `BusinessCollector` - QA metric methods |
-| `src/common/metrics/metrics.constants.ts` | `QA_METRICS`, `LABELS` constants |
+| Source                                                | Section                                            |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| `src/common/metrics/metrics.module.ts`                | `AppMetricsModule` - update provider registrations |
+| `src/common/metrics/metrics.service.ts`               | `MetricsService` - facade pattern                  |
+| `src/common/metrics/collectors/business.collector.ts` | `BusinessCollector` - QA metric methods            |
+| `src/common/metrics/metrics.constants.ts`             | `QA_METRICS`, `LABELS` constants                   |
 
 ---
 
@@ -616,13 +622,54 @@ avg by (provider) (
 5. **Convert ms to seconds** before recording duration
 6. **QUEUE_METRICS.PROCESSING_RATE is a Gauge** - use `.set()` not `.inc()`
 
+### Implementation Summary
+
+**Completed:** 2025-12-05
+
+**All Acceptance Criteria Met:**
+
+- ✅ AC#1: Prometheus metrics include provider and project_id labels
+- ✅ AC#2: Grafana queries supported (P95, pass rate, vulnerabilities, coverage)
+- ✅ QaMetricsService facade created for QA module convenience
+- ✅ Extended existing BusinessCollector (no duplicate metrics)
+- ✅ 18 unit tests passing with >80% coverage
+
+**Technical Implementation:**
+
+- Updated 3 metric registrations in AppMetricsModule (CHECKS_TOTAL, CHECK_DURATION, VULNERABILITIES)
+- Extended QACheckMetricData interface with aiProvider field and additional status types
+- Updated BusinessCollector.recordQACheck() to include provider label
+- Updated BusinessCollector.incrementVulnerabilities() to accept projectId parameter
+- Created QaMetricsService with 5 convenience methods (recordCheckComplete, recordCheckError, setCoverage, recordVulnerabilities, recordGateDecision)
+- Wired AppMetricsModule into QaAutomationModule
+
+**Testing:**
+
+- 18/18 unit tests passing
+- Build: ✅ Successful
+- Lint: 0 errors on Story 3.8 files
+
 ### Change Log
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-12-03 | Story drafted | Scrum Master Bob |
-| 2025-12-03 | Quality review: Fixed 5 critical issues, 4 enhancements, 3 LLM optimizations | Quality Validator |
+| Date       | Change                                                                                                                                                      | Author                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| 2025-12-03 | Story drafted                                                                                                                                               | Scrum Master Bob            |
+| 2025-12-03 | Quality review: Fixed 5 critical issues, 4 enhancements, 3 LLM optimizations                                                                                | Quality Validator           |
+| 2025-12-05 | Implementation complete: All 6 tasks done, 18 unit tests passing                                                                                            | Amelia (Dev Agent)          |
+| 2025-12-05 | Code review completed: Fixed 3 HIGH, 4 MEDIUM issues (duplicate metrics, QaOrchestratorService integration, error handling, validation, file list accuracy) | Code Reviewer (Adversarial) |
 
 ### File List
 
-<!-- Populated during implementation -->
+**New Files (2):**
+
+- `src/qa-automation/qa-metrics.service.ts` - QA metrics facade service with error handling and validation
+- `src/qa-automation/qa-metrics.service.spec.ts` - Unit tests (18 tests)
+
+**Modified Files (6):**
+
+- `src/common/metrics/metrics.module.ts` - Added provider labels to QA metrics
+- `src/common/metrics/metrics.interface.ts` - Extended QACheckMetricData with aiProvider
+- `src/common/metrics/collectors/business.collector.ts` - Updated recordQACheck and incrementVulnerabilities
+- `src/common/metrics/metrics.service.ts` - Updated incrementVulnerabilities signature
+- `src/qa-automation/qa-automation.module.ts` - Imported AppMetricsModule, added QaMetricsService, removed duplicate QUEUE_METRICS
+- `src/qa-automation/qa-orchestrator.service.ts` - Integrated QaMetricsService facade (Story 3.8 requirement)
