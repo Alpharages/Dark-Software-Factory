@@ -153,6 +153,24 @@ model QAResult {
 // GITHUB INTEGRATION
 // ============================================
 
+model GitHubInstallation {
+  id              String   @id @default(uuid())
+  installation_id String   @unique @map("installation_id") // ID from GitHub
+  account_login   String   @map("account_login")           // Org or User name
+  account_id      String   @map("account_id")              // GitHub Account ID
+  account_type    String   @map("account_type")            // User or Organization
+  
+  access_token    String?  @db.Text                        // Cached token
+  expires_at      DateTime?
+  
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@index([account_login])
+  @@map("github_installations")
+}
+
+
 model GitHubPush {
   id              String       @id @default(uuid())
   execution_id    String

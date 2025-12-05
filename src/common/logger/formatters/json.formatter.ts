@@ -1,5 +1,5 @@
 import { format } from 'winston';
-import { redactSensitiveData } from './sensitive-data.redactor';
+import { redactSensitiveData, redactString } from './sensitive-data.redactor';
 
 const { combine, timestamp, errors, json, printf } = format;
 
@@ -25,7 +25,7 @@ export const jsonFormatter = (serviceName: string, redactFields: string[] = []) 
         requestId,
         correlationId,
         service: serviceName,
-        message: typeof message === 'string' ? message : JSON.stringify(message),
+        message: typeof message === 'string' ? redactString(message) : JSON.stringify(message),
         context: redactSensitiveData({ ...(context as object), ...(rest as object) }, redactFields),
       };
 
@@ -52,6 +52,9 @@ export const prettyFormatter = (serviceName: string, redactFields: string[] = []
           ? `\n  ${JSON.stringify(redactSensitiveData(rest, redactFields), null, 2).replace(/\n/g, '\n  ')}`
           : '';
       const stackStr = stack ? `\n${stack}` : '';
-      return `${ts} ${level} ${reqId}${corrId} ${message}${contextStr}${stackStr}`;
+      const cleanMessage =
+        typeof message === 'string' ? redactString(message) : JSON.stringify(message);
+
+      return `${ts} ${level} ${reqId}${corrId} ${cleanMessage}${contextStr}${stackStr}`;
     }),
   );

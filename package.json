@@ -67,6 +67,8 @@
     "@nestjs/platform-fastify": "^11.1.9",
     "@nestjs/swagger": "^11.2.3",
     "@nestjs/throttler": "^6.4.0",
+    "@octokit/app": "^16.1.2",
+    "@octokit/rest": "^22.0.1",
     "@prisma/client": "5.22.0",
     "@sentry/node": "^10.27.0",
     "@sentry/profiling-node": "^10.27.0",
@@ -140,6 +142,10 @@
     "testEnvironment": "node",
     "setupFilesAfterEnv": [
       "<rootDir>/../test/jest-setup.ts"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@octokit/rest$": "<rootDir>/../test/mocks/octokit.mock.ts",
+      "^src/(.*)$": "<rootDir>/$1"
+    }
   }
 }

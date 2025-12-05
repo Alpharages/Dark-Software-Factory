@@ -23,7 +23,7 @@ import { ExecutionModule } from './execution/execution.module';
 
 // Quality & Deployment
 import { QaAutomationModule } from './qa-automation/qa-automation.module';
-import { GithubModule } from './github/github.module';
+import { GitHubModule } from './github/github.module';
 import { DeploymentModule } from './deployment/deployment.module';
 
 // Monitoring & Metrics
@@ -79,7 +79,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
 
     // Quality & Deployment
     QaAutomationModule,
-    GithubModule,
+    GitHubModule,
     DeploymentModule,
 
     // Monitoring & Metrics

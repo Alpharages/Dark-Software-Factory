@@ -22,6 +22,7 @@ export class RabbitMQPublisherService {
     queueName: string,
     payload: unknown,
     correlationId?: string,
+    delay?: number,
   ): Promise<boolean> {
     try {
       const channel = this.rabbitMQService.getChannel();
@@ -33,13 +34,20 @@ export class RabbitMQPublisherService {
         payload,
       };
 
-      const sent = channel.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const options: any = {
         persistent: true, // Survive broker restarts
         contentType: 'application/json',
         correlationId: message.correlationId,
         messageId: message.messageId,
         timestamp: Date.now(),
-      });
+      };
+
+      if (delay && delay > 0) {
+        options.headers = { 'x-delay': delay };
+      }
+
+      const sent = channel.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), options);
 
       if (sent) {
         this.logger.debug(`Message published to ${queueName}: ${message.messageId}`);

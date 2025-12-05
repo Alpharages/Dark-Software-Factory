@@ -10,7 +10,7 @@ import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from './ai-routing/ai-routing.module';
 import { ExecutionModule } from './execution/execution.module';
 import { QaAutomationModule } from './qa-automation/qa-automation.module';
-import { GithubModule } from './github/github.module';
+import { GitHubModule } from './github/github.module';
 import { DeploymentModule } from './deployment/deployment.module';
 import { ProductionMonitoringModule } from './production-monitoring/production-monitoring.module';
 import { CostTrackingModule } from './cost-tracking/cost-tracking.module';
@@ -55,7 +55,7 @@ describe('AppModule', () => {
       AiRoutingModule,
       ExecutionModule,
       QaAutomationModule,
-      GithubModule,
+      GitHubModule,
       DeploymentModule,
       ProductionMonitoringModule,
       CostTrackingModule,

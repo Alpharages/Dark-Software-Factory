@@ -78,6 +78,13 @@ export const QA_METRICS = {
   QA_RESULTS_QUERY_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_results_query_duration_seconds`,
 } as const;
 
+// GitHub Metrics
+export const GITHUB_METRICS = {
+  OPERATIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_operations_total`,
+  RATE_LIMIT_HITS: `${METRICS_CONSTANTS.PREFIX}github_rate_limit_hits_total`,
+  RATE_LIMIT_REMAINING: `${METRICS_CONSTANTS.PREFIX}github_rate_limit_remaining`,
+} as const;
+
 // Business Metrics - Deployments
 export const DEPLOYMENT_METRICS = {
   TOTAL: `${METRICS_CONSTANTS.PREFIX}deployments_total`,

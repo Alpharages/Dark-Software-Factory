@@ -6,6 +6,7 @@ import {
   DATABASE_METRICS,
   ERROR_METRICS,
   CICD_METRICS,
+  GITHUB_METRICS,
   LABELS,
 } from '../metrics.constants';
 import { DatabaseMetricData } from '../metrics.interface';
@@ -54,6 +55,16 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
 
     @InjectMetric(CICD_METRICS.PIPELINE_DURATION)
     private readonly cicdPipelineDuration: Histogram,
+
+    // GitHub Metrics
+    @InjectMetric(GITHUB_METRICS.OPERATIONS_TOTAL)
+    private readonly githubOperationsTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.RATE_LIMIT_HITS)
+    private readonly githubRateLimitHits: Counter,
+
+    @InjectMetric(GITHUB_METRICS.RATE_LIMIT_REMAINING)
+    private readonly githubRateLimitRemaining: Gauge,
   ) {}
 
   onModuleInit() {
@@ -132,5 +143,19 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
     if (duration !== undefined) {
       this.cicdPipelineDuration.observe({ [LABELS.PROVIDER]: provider }, duration);
     }
+  }
+
+  // ============= GitHub Metrics =============
+
+  incrementGitHubOperation(operation: string, status: string): void {
+    this.githubOperationsTotal.inc({ operation, status });
+  }
+
+  incrementGitHubRateLimitHit(): void {
+    this.githubRateLimitHits.inc();
+  }
+
+  setGitHubRateLimitRemaining(remaining: number): void {
+    this.githubRateLimitRemaining.set(remaining);
   }
 }

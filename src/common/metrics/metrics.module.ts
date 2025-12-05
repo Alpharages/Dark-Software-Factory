@@ -24,6 +24,7 @@ import {
   WEBSOCKET_METRICS,
   ERROR_METRICS,
   CICD_METRICS,
+  GITHUB_METRICS,
   METRICS_CONSTANTS,
   LABELS,
 } from './metrics.constants';
@@ -316,6 +317,21 @@ import {
       help: 'CI/CD pipeline duration in seconds',
       labelNames: [LABELS.PROVIDER],
       buckets: [10, 30, 60, 120, 300, 600, 1800], // Up to 30 minutes
+    }),
+
+    // GitHub Metrics (Story 4.1)
+    makeCounterProvider({
+      name: GITHUB_METRICS.OPERATIONS_TOTAL,
+      help: 'Total GitHub operations',
+      labelNames: ['operation', 'status'],
+    }),
+    makeCounterProvider({
+      name: GITHUB_METRICS.RATE_LIMIT_HITS,
+      help: 'Total GitHub rate limit hits',
+    }),
+    makeGaugeProvider({
+      name: GITHUB_METRICS.RATE_LIMIT_REMAINING,
+      help: 'GitHub rate limit remaining',
     }),
   ],
   exports: [MetricsService],

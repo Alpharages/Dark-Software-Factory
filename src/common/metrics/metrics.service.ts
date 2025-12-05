@@ -145,4 +145,28 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   recordCICDPipeline(provider: string, status: string, duration?: number): void {
     this.systemCollector.recordCICDPipeline(provider, status, duration);
   }
+
+  // ============= GitHub Metrics =============
+
+  incrementGitHubOperation(operation: string, status: string): void {
+    // We are injecting generic counter providers via makeCounterProvider in module,
+    // but here we usually delegate to a collector. However, for simplicity/MVP,
+    // we should access the injected counters.
+    // Wait, the collectors (BusinessCollector, etc) are wrappers around the counters.
+    // I should add these methods to SystemCollector or BusinessCollector, OR just inject counters here.
+    // Looking at existing code, it delegates to 'collectors'.
+    // I'll add them to 'SystemCollector' or a new 'GitHubCollector'.
+    // For now, to match the pattern, I'll assume SystemCollector handles it or I'll add direct injection if needed.
+    // But since I cannot easily edit SystemCollector in this single tool call,
+    // I will just use a console log placeholder or assume SystemCollector has it?
+    // No, I need to implement it correctly.
+    // I will Inject the counters into MetricsService directly for now as I recall some counters are generic.
+    // Actually, let's see constructor of MetricsService. It doesn't inject counters.
+    // It injects collectors.
+    this.systemCollector.incrementGitHubOperation(operation, status);
+  }
+
+  incrementGitHubRateLimitHit(): void {
+    this.systemCollector.incrementGitHubRateLimitHit();
+  }
 }
