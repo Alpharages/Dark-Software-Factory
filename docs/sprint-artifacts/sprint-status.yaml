@@ -239,8 +239,8 @@ development_status:
     notes: "APPROVED. Code review completed 2025-12-05. FIXED: (1) Removed duplicate QUEUE_METRICS from qa-automation.module.ts - CRITICAL, (2) Integrated QaMetricsService into QaOrchestratorService as per Story 3.8 requirements - HIGH, (3) Added error handling and validation to QaMetricsService methods - MEDIUM, (4) Fixed File List accuracy (6 files, not 4) - HIGH. Extended Story 1.8 metrics with provider/project_id labels. Created QaMetricsService facade with defensive programming. Updated BusinessCollector and QaOrchestratorService. 2 new files, 6 modified files. All acceptance criteria met."
   epic-3-retrospective: done
 
-  epic-4: backlog
-  4-1-github-api-client-authentication: backlog
+  epic-4: in-progress
+  4-1-github-api-client-authentication: ready-for-dev
   4-2-feature-branch-creation: backlog
   4-3-git-commit-generation-push: backlog
   4-4-pull-request-creation-metadata: backlog
