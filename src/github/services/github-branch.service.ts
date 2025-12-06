@@ -125,6 +125,7 @@ export class GitHubBranchService {
       const duration = Date.now() - startTime;
 
       this.metrics.incrementGitHubOperation('create_branch', 'success');
+      this.metrics.recordGitHubOperationDuration('create_branch', duration, repository);
 
       this.logger.info('Feature branch created successfully', {
         executionId,
@@ -366,21 +367,36 @@ export class GitHubBranchService {
 
   /**
    * AC#6: Determines account type from repository owner
+   *
+   * NOTE: This is a simple heuristic. For production accuracy, consider:
+   * 1. Querying GitHub API: GET /users/{owner} or /orgs/{owner}
+   * 2. Caching results per repository owner
+   * 3. Using configuration mapping for known repositories
+   *
+   * Current heuristic: organizations typically use kebab-case or have uppercase
+   * TODO: Replace with GitHub API call or configuration-based lookup
    */
   private getAccountType(repository: string): string {
-    // Simple heuristic: organizations typically have uppercase or special chars
-    // Real implementation would query GitHub API or use cached data
     const owner = repository.split('/')[0];
+    // Heuristic: orgs often have hyphens or uppercase; personal accounts often lowercase
     return owner.includes('-') || /[A-Z]/.test(owner) ? 'organization' : 'user';
   }
 
   /**
    * Gets repository from environment/config
-   * TODO: Make configurable per project
+   * TODO: Future enhancement - retrieve from execution.project.repository
    */
   private getRepository(): string {
-    // Placeholder - should come from execution context or config
-    return process.env.DEFAULT_REPOSITORY || 'owner/repo';
+    const repository = process.env.DEFAULT_REPOSITORY;
+
+    if (!repository) {
+      throw new Error(
+        'DEFAULT_REPOSITORY environment variable is required for GitHub operations. ' +
+          'Please configure it in your .env file (format: owner/repo)',
+      );
+    }
+
+    return repository;
   }
 
   /**

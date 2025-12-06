@@ -4,6 +4,7 @@ import { GitHubService } from '../github.service';
 import { PrismaService } from '../../database/prisma.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
+import { RabbitMQPublisherService } from '../../rabbitmq/rabbitmq-publisher.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { GitHubStatus } from '@prisma/client';
 import {
@@ -16,8 +17,9 @@ describe('GitHubBranchService', () => {
   let service: GitHubBranchService;
   let githubService: jest.Mocked<GitHubService>;
   let prismaService: jest.Mocked<PrismaService>;
-  let _sentryService: jest.Mocked<SentryService>;
+  let sentryService: jest.Mocked<SentryService>;
   let metricsService: jest.Mocked<MetricsService>;
+  let publisherService: jest.Mocked<RabbitMQPublisherService>;
   let logger: { info: jest.Mock; error: jest.Mock; warn: jest.Mock; debug: jest.Mock };
 
   const mockExecution: {
@@ -49,6 +51,9 @@ describe('GitHubBranchService', () => {
   };
 
   beforeEach(async () => {
+    // Setup environment for getRepository()
+    process.env.DEFAULT_REPOSITORY = 'owner/repo';
+
     const mockLogger = {
       info: jest.fn(),
       error: jest.fn(),
@@ -63,6 +68,7 @@ describe('GitHubBranchService', () => {
           provide: GitHubService,
           useValue: {
             getRepository: jest.fn(),
+            getBaseCommitSha: jest.fn(),
             createBranch: jest.fn(),
           },
         },
@@ -90,6 +96,13 @@ describe('GitHubBranchService', () => {
           useValue: {
             incrementGitHubOperation: jest.fn(),
             incrementGitHubRateLimitHit: jest.fn(),
+            recordGitHubOperationDuration: jest.fn(),
+          },
+        },
+        {
+          provide: RabbitMQPublisherService,
+          useValue: {
+            publishToQueue: jest.fn(),
           },
         },
         {
@@ -102,13 +115,17 @@ describe('GitHubBranchService', () => {
     service = module.get<GitHubBranchService>(GitHubBranchService);
     githubService = module.get(GitHubService) as jest.Mocked<GitHubService>;
     prismaService = module.get(PrismaService) as jest.Mocked<PrismaService>;
-    _sentryService = module.get(SentryService) as jest.Mocked<SentryService>;
+    sentryService = module.get(SentryService) as jest.Mocked<SentryService>;
     metricsService = module.get(MetricsService) as jest.Mocked<MetricsService>;
+    publisherService = module.get(
+      RabbitMQPublisherService,
+    ) as jest.Mocked<RabbitMQPublisherService>;
     logger = module.get(WINSTON_MODULE_PROVIDER);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    delete process.env.DEFAULT_REPOSITORY;
   });
 
   describe('createBranchForExecution', () => {
@@ -121,6 +138,7 @@ describe('GitHubBranchService', () => {
         visibility: 'private',
         htmlUrl: 'https://github.com/owner/repo',
       });
+      githubService.getBaseCommitSha.mockResolvedValue('base-sha-abc123');
       githubService.createBranch.mockResolvedValue(undefined);
       (prismaService.gitHubPush.create as jest.Mock).mockResolvedValue(mockGitHubPush);
     });

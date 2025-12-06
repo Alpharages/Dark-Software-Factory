@@ -83,6 +83,12 @@ export const GITHUB_METRICS = {
   OPERATIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_operations_total`,
   RATE_LIMIT_HITS: `${METRICS_CONSTANTS.PREFIX}github_rate_limit_hits_total`,
   RATE_LIMIT_REMAINING: `${METRICS_CONSTANTS.PREFIX}github_rate_limit_remaining`,
+  // Story 4.3: Commit and push metrics
+  COMMITS_CREATED_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_commits_created_total`,
+  COMMIT_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}github_commit_duration_seconds`,
+  PUSH_SUCCESS_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_push_success_total`,
+  FILES_PUSHED_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_files_pushed_total`,
+  COMMIT_SIZE_BYTES: `${METRICS_CONSTANTS.PREFIX}github_commit_size_bytes`,
 } as const;
 
 // Business Metrics - Deployments

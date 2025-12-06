@@ -65,6 +65,22 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
 
     @InjectMetric(GITHUB_METRICS.RATE_LIMIT_REMAINING)
     private readonly githubRateLimitRemaining: Gauge,
+
+    // Story 4.3: Commit metrics
+    @InjectMetric(GITHUB_METRICS.COMMITS_CREATED_TOTAL)
+    private readonly githubCommitsCreatedTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.COMMIT_DURATION_SECONDS)
+    private readonly githubCommitDuration: Histogram,
+
+    @InjectMetric(GITHUB_METRICS.PUSH_SUCCESS_TOTAL)
+    private readonly githubPushSuccessTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.FILES_PUSHED_TOTAL)
+    private readonly githubFilesPushedTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.COMMIT_SIZE_BYTES)
+    private readonly githubCommitSizeBytes: Histogram,
   ) {}
 
   onModuleInit() {
@@ -157,5 +173,28 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
 
   setGitHubRateLimitRemaining(remaining: number): void {
     this.githubRateLimitRemaining.set(remaining);
+  }
+
+  // Story 4.3: GitHub commit metrics
+  incrementGitHubCommitsCreated(status: string, repository: string, aiProvider: string): void {
+    this.githubCommitsCreatedTotal.inc({ status, repository, ai_provider: aiProvider });
+  }
+
+  recordGitHubOperationDuration(operation: string, duration: number, repository?: string): void {
+    const labels = repository ? { repository, operation } : { operation };
+    this.githubCommitDuration.observe(labels, duration / 1000); // Convert ms to s
+  }
+
+  incrementGitHubPushSuccess(repository: string, branchType: string = 'feature'): void {
+    this.githubPushSuccessTotal.inc({ repository, branch_type: branchType });
+  }
+
+  incrementGitHubFilesPushed(fileType: string, repository?: string): void {
+    const labels = repository ? { repository, file_type: fileType } : { file_type: fileType };
+    this.githubFilesPushedTotal.inc(labels);
+  }
+
+  recordGitHubCommitSize(sizeBytes: number, repository: string): void {
+    this.githubCommitSizeBytes.observe({ repository }, sizeBytes);
   }
 }

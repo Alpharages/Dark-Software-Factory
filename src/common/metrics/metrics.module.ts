@@ -319,7 +319,7 @@ import {
       buckets: [10, 30, 60, 120, 300, 600, 1800], // Up to 30 minutes
     }),
 
-    // GitHub Metrics (Story 4.1)
+    // GitHub Metrics (Story 4.1, 4.3)
     makeCounterProvider({
       name: GITHUB_METRICS.OPERATIONS_TOTAL,
       help: 'Total GitHub operations',
@@ -332,6 +332,34 @@ import {
     makeGaugeProvider({
       name: GITHUB_METRICS.RATE_LIMIT_REMAINING,
       help: 'GitHub rate limit remaining',
+    }),
+    // Story 4.3: Commit-specific metrics
+    makeCounterProvider({
+      name: GITHUB_METRICS.COMMITS_CREATED_TOTAL,
+      help: 'Total GitHub commits created',
+      labelNames: ['status', 'repository', 'ai_provider'],
+    }),
+    makeHistogramProvider({
+      name: GITHUB_METRICS.COMMIT_DURATION_SECONDS,
+      help: 'GitHub commit operation duration',
+      labelNames: ['repository', 'operation'],
+      buckets: [0.5, 1, 2, 5, 10, 30, 60],
+    }),
+    makeCounterProvider({
+      name: GITHUB_METRICS.PUSH_SUCCESS_TOTAL,
+      help: 'Total successful GitHub pushes',
+      labelNames: ['repository', 'branch_type'],
+    }),
+    makeCounterProvider({
+      name: GITHUB_METRICS.FILES_PUSHED_TOTAL,
+      help: 'Total files pushed to GitHub',
+      labelNames: ['repository', 'file_type'],
+    }),
+    makeHistogramProvider({
+      name: GITHUB_METRICS.COMMIT_SIZE_BYTES,
+      help: 'GitHub commit size in bytes',
+      labelNames: ['repository'],
+      buckets: [1024, 10240, 102400, 1024000, 10240000, 102400000], // 1KB to 100MB
     }),
   ],
   exports: [MetricsService],
