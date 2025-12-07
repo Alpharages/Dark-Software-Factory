@@ -278,11 +278,11 @@ development_status:
       FULL AC#1-6 COVERAGE: AI delegation working, PR template implemented, parsing functional, database updates verified, error handling operational, metrics recorded.
     completed_at: "2025-12-07"
   4-5-ci-cd-pipeline-trigger-monitoring:
-    status: backlog
-    notes: "SCOPE UNCHANGED: Still needed to monitor GitHub Actions status, record deployments in database, provide CI/CD status for PM dashboard (Epic 5). Essential for observability."
+    status: ready-for-dev
+    notes: "Story drafted 2025-12-07. Comprehensive context from architecture.md CI/CD integration, previous stories 4.1-4.4, ADR Epic 4 delegation. Triggers GitHub Actions workflows, monitors status via Checks API, updates deployments table, synchronizes ClickUp ticket status. Includes provider detection, polling strategy (30s intervals, exponential backoff), error handling (rate limits, timeouts), and Prometheus metrics. Essential for automatic deployment pipeline completion."
   4-6-deployment-status-synchronization:
-    status: backlog
-    notes: "SCOPE UNCHANGED: Required for Epic 5 PM dashboard deployment timelines. Synchronizes deployment status from GitHub/CI to ClickUp tickets. Essential for PM visibility."
+    status: ready-for-dev
+    notes: "Story drafted 2025-12-07. Comprehensive context from Story 4.5 CI/CD monitoring, ClickUp Service (2.1), architecture patterns. Synchronizes deployment status (COMPLETED/FAILED/ROLLED_BACK) from GitHub Actions to ClickUp tickets with formatted comments. Includes status mapping per environment, error sanitization (SecretsScanner), graceful degradation (do not fail deployment on ClickUp errors), retry logic for transient API failures, Socket.IO event emission for real-time dashboard updates. Essential for PM visibility into deployment completion and Epic 5 PM dashboard integration."
   4-7-github-push-error-handling-rollback:
     status: revised-scope
     approach: "SIMPLIFIED - AI AGENTS HANDLE RETRIES"
