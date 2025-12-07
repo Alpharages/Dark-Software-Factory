@@ -17,9 +17,9 @@ describe('GitHubBranchService', () => {
   let service: GitHubBranchService;
   let githubService: jest.Mocked<GitHubService>;
   let prismaService: jest.Mocked<PrismaService>;
-  let sentryService: jest.Mocked<SentryService>;
+  let _sentryService: jest.Mocked<SentryService>;
   let metricsService: jest.Mocked<MetricsService>;
-  let publisherService: jest.Mocked<RabbitMQPublisherService>;
+  let _publisherService: jest.Mocked<RabbitMQPublisherService>;
   let logger: { info: jest.Mock; error: jest.Mock; warn: jest.Mock; debug: jest.Mock };
 
   const mockExecution: {
@@ -115,9 +115,9 @@ describe('GitHubBranchService', () => {
     service = module.get<GitHubBranchService>(GitHubBranchService);
     githubService = module.get(GitHubService) as jest.Mocked<GitHubService>;
     prismaService = module.get(PrismaService) as jest.Mocked<PrismaService>;
-    sentryService = module.get(SentryService) as jest.Mocked<SentryService>;
+    _sentryService = module.get(SentryService) as jest.Mocked<SentryService>;
     metricsService = module.get(MetricsService) as jest.Mocked<MetricsService>;
-    publisherService = module.get(
+    _publisherService = module.get(
       RabbitMQPublisherService,
     ) as jest.Mocked<RabbitMQPublisherService>;
     logger = module.get(WINSTON_MODULE_PROVIDER);
