@@ -5,6 +5,7 @@ import { GitHubAuthService } from './github-auth.service';
 import { GitHubClientService } from './github-client.service';
 import { GitHubBranchService } from './services/github-branch.service';
 import { GitHubCommitOrchestrator } from './services/github-commit-orchestrator.service';
+import { GitHubPROrchestrator } from './services/github-pr-orchestrator.service';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
@@ -28,7 +29,8 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
     GitHubClientService,
     GitHubBranchService,
     GitHubCommitOrchestrator,
+    GitHubPROrchestrator,
   ],
-  exports: [GitHubService, GitHubBranchService, GitHubCommitOrchestrator],
+  exports: [GitHubService, GitHubBranchService, GitHubCommitOrchestrator, GitHubPROrchestrator],
 })
 export class GitHubModule {}
