@@ -21,7 +21,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly businessCollector: BusinessCollector,
     private readonly systemCollector: SystemCollector,
     private readonly queueCollector: QueueCollector,
-  ) {}
+  ) { }
 
   onModuleInit() {
     this.logger.log('Prometheus metrics service initialized', 'MetricsService');
@@ -80,6 +80,10 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
 
   setDeploymentSuccessRate(environment: string, rate: number): void {
     this.businessCollector.setDeploymentSuccessRate(environment, rate);
+  }
+
+  recordDeploymentRollback(environment: string): void {
+    this.businessCollector.incrementDeploymentRollback(environment);
   }
 
   // ============= Cost Metrics =============
@@ -179,5 +183,10 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
 
   recordGitHubCommitSize(sizeBytes: number, repository: string): void {
     this.systemCollector.recordGitHubCommitSize(sizeBytes, repository);
+  }
+
+  // Story 4.7: GitHub Error Metrics
+  recordGitHubError(operation: string, errorType: string): void {
+    this.systemCollector.incrementGitHubError(operation, errorType);
   }
 }

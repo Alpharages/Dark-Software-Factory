@@ -1,25 +1,13 @@
-/**
- * GitHub Commit Orchestrator Service
- *  * Story 4.3: Git Commit Generation & Push
- * Delegates git commit and push operations to AI agents
- *
- * AC#1: AI-Delegated Git Commit & Push
- * AC#3: Parse AI Agent Output
- * AC#4: Database Record Updates
- * AC#5: Error Handling & Resilience
- * AC#6: Observability & Metrics
- */
-
 import { Injectable, Inject } from '@nestjs/common';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { AIProvider } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { SentryService } from '../../common/sentry/sentry.service';
-import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
+import { MetricsService } from '../../common/metrics/metrics.service';
 import { OrchestratorService } from '../../ai-routing/orchestrator.service';
 import { GitHubService } from '../github.service';
+import { GitHubErrorMonitor } from './github-error-monitor.service';
 import {
   CommitTask,
   CommitTaskContext,
@@ -45,9 +33,9 @@ export class GitHubCommitOrchestrator {
     private readonly prisma: PrismaService,
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
-    private readonly sentry: SentryService,
+    private readonly errorMonitor: GitHubErrorMonitor,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-  ) {}
+  ) { }
 
   /**
    * Orchestrates git commit and push operations via AI delegation
@@ -58,6 +46,8 @@ export class GitHubCommitOrchestrator {
     correlationId?: string,
   ): Promise<CommitOrchestrationResult> {
     const startTime = Date.now();
+    let execution: any = null;
+    let githubPush: any = null;
 
     this.logger.info('Starting commit orchestration', {
       executionId,
@@ -66,7 +56,7 @@ export class GitHubCommitOrchestrator {
 
     try {
       // Load execution with ticket and github_push relations
-      const execution = await this.prisma.execution.findUnique({
+      execution = await this.prisma.execution.findUnique({
         where: { id: executionId },
         include: { ticket: true },
       });
@@ -75,7 +65,7 @@ export class GitHubCommitOrchestrator {
         throw new Error(`Execution ${executionId} not found`);
       }
 
-      const githubPush = await this.prisma.gitHubPush.findFirst({
+      githubPush = await this.prisma.gitHubPush.findFirst({
         where: { execution_id: executionId },
       });
 
@@ -160,22 +150,53 @@ export class GitHubCommitOrchestrator {
           },
         });
 
+        const error = new Error(parsedResult.error || 'Commit failed - no SHA returned');
+
+        // Use monitor for non-throwing errors too if needed, but here we return false
+        // AC#5: Error handling logic delegates to monitor
+        await this.errorMonitor.handleGitHubError({
+          operation: 'commit',
+          executionId,
+          ticketId,
+          repository: githubPush.repository,
+          branchName: githubPush.branch_name,
+          error,
+          correlationId,
+          aiProvider: execution.ai_provider,
+          taskInstructions: gitTask.instructions,
+          aiOutput: aiResult,
+        });
+
         return {
           success: false,
-          error: parsedResult.error || 'Commit failed - no SHA returned',
+          error: error.message,
         };
       }
 
       // Validate commit SHA format
       if (!validateCommitSha(parsedResult.commitSha)) {
+        const error = new Error(`Invalid commit SHA format received from AI: ${parsedResult.commitSha}`);
         this.logger.error('Invalid commit SHA format', {
           executionId,
           commitSha: parsedResult.commitSha,
         });
 
+        await this.errorMonitor.handleGitHubError({
+          operation: 'commit',
+          executionId,
+          ticketId,
+          repository: githubPush.repository,
+          branchName: githubPush.branch_name,
+          error,
+          correlationId,
+          aiProvider: execution.ai_provider,
+          taskInstructions: gitTask.instructions,
+          aiOutput: aiResult,
+        });
+
         return {
           success: false,
-          error: 'Invalid commit SHA format received from AI',
+          error: error.message,
         };
       }
 
@@ -213,8 +234,16 @@ export class GitHubCommitOrchestrator {
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      // AC#5: Error handling
-      await this.handleError(error as Error, executionId, correlationId);
+      // AC#5: Comprehensive error handling delegated to monitor
+      await this.handleError(
+        error as Error,
+        executionId,
+        execution?.ticket?.clickup_task_id,
+        githubPush?.repository,
+        githubPush?.branch_name,
+        execution?.ai_provider,
+        correlationId,
+      );
 
       this.logger.error('Commit orchestration failed', {
         executionId,
@@ -405,25 +434,22 @@ Return format (JSON):
   private async handleError(
     error: Error,
     executionId: string,
+    ticketId: string | undefined,
+    repository: string | undefined,
+    branchName: string | undefined,
+    aiProvider: string | undefined,
     correlationId?: string,
   ): Promise<void> {
-    this.logger.error('Commit orchestration error', {
+    // Delegate to error monitor
+    await this.errorMonitor.handleGitHubError({
+      operation: 'commit',
       executionId,
-      error: error.message,
-      stack: error.stack,
+      ticketId: ticketId || 'unknown',
+      repository: repository || 'unknown',
+      branchName: branchName || 'unknown',
+      error,
       correlationId,
+      aiProvider,
     });
-
-    // Capture in Sentry
-    this.sentry.captureException(error, {
-      extra: {
-        executionId,
-        operation: 'github_commit_push',
-        correlationId,
-      },
-    });
-
-    // TODO: Notify PM via ClickUp (Story 2.1 integration)
-    // await this.clickup.addComment(ticketId, '⚠️ Commit/push failed - manual intervention required');
   }
 }

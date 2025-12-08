@@ -5,6 +5,7 @@
  * Story 3.7: RabbitMQ QA Queue Processing
  */
 
+export * from './linting-fix.dto';
 export * from './linting-result.dto';
 export * from './test-result.dto';
 export * from './coverage-result.dto';

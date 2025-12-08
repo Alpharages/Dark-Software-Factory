@@ -67,6 +67,11 @@ export class BusinessCollector {
     @InjectMetric(DEPLOYMENT_METRICS.SUCCESS_RATE)
     private readonly deploymentSuccessRate: Gauge,
 
+    // Story 4.7: Rollbacks
+    @InjectMetric(DEPLOYMENT_METRICS.ROLLBACKS_TOTAL)
+    private readonly deploymentRollbacksTotal: Counter,
+
+
     // Cost Metrics
     @InjectMetric(COST_METRICS.PER_PROJECT)
     private readonly costPerProject: Histogram,
@@ -86,7 +91,7 @@ export class BusinessCollector {
 
     @InjectMetric(PM_METRICS.PROJECTS_ACTIVE)
     private readonly pmProjectsActive: Gauge,
-  ) {}
+  ) { }
 
   // ============= Ticket Metrics =============
 
@@ -165,6 +170,10 @@ export class BusinessCollector {
 
   setDeploymentSuccessRate(environment: string, rate: number): void {
     this.deploymentSuccessRate.set({ [LABELS.ENVIRONMENT]: environment }, rate);
+  }
+
+  incrementDeploymentRollback(environment: string): void {
+    this.deploymentRollbacksTotal.inc({ [LABELS.ENVIRONMENT]: environment });
   }
 
   // ============= Cost Metrics =============

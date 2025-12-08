@@ -20,6 +20,7 @@ import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { OrchestratorService } from '../../ai-routing/orchestrator.service';
 import { GitHubService } from '../github.service';
+import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { PRTask, PRTaskContext, QAResultsSummary } from '../interfaces/pr-task.interface';
 import { PROrchestrationResult } from '../interfaces/pr-result.interface';
 import { parseAIPRResponse } from '../utils/pr-response-parser';
@@ -36,8 +37,9 @@ export class GitHubPROrchestrator {
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
+    private readonly errorMonitor: GitHubErrorMonitor,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-  ) {}
+  ) { }
 
   /**
    * Orchestrates PR creation via AI delegation
@@ -48,6 +50,8 @@ export class GitHubPROrchestrator {
     correlationId?: string,
   ): Promise<PROrchestrationResult> {
     const startTime = Date.now();
+    let execution: any = null;
+    let githubPush: any = null;
 
     this.logger.info('Starting PR orchestration', {
       executionId,
@@ -56,7 +60,7 @@ export class GitHubPROrchestrator {
 
     try {
       // Load execution with ticket relation
-      const execution = await this.prisma.execution.findUnique({
+      execution = await this.prisma.execution.findUnique({
         where: { id: executionId },
         include: { ticket: true },
       });
@@ -65,7 +69,7 @@ export class GitHubPROrchestrator {
         throw new Error(`Execution ${executionId} not found`);
       }
 
-      const githubPush = await this.prisma.gitHubPush.findFirst({
+      githubPush = await this.prisma.gitHubPush.findFirst({
         where: { execution_id: executionId },
       });
 
@@ -87,18 +91,18 @@ export class GitHubPROrchestrator {
 
       const qaResults: QAResultsSummary = qaResult
         ? {
-            linting_passed: qaResult.linting_passed || false,
-            tests_passed: qaResult.tests_passed || false,
-            test_coverage: qaResult.test_coverage || undefined,
-            code_review_passed: qaResult.code_review_passed || false,
-            qa_summary_details: '', // TODO: Extract from qa_result details
-          }
+          linting_passed: qaResult.linting_passed || false,
+          tests_passed: qaResult.tests_passed || false,
+          test_coverage: qaResult.test_coverage || undefined,
+          code_review_passed: qaResult.code_review_passed || false,
+          qa_summary_details: '', // TODO: Extract from qa_result details
+        }
         : {
-            linting_passed: false,
-            tests_passed: false,
-            code_review_passed: false,
-            qa_summary_details: 'QA results not found',
-          };
+          linting_passed: false,
+          tests_passed: false,
+          code_review_passed: false,
+          qa_summary_details: 'QA results not found',
+        };
 
       // AC#2: Build PR description
       const prDescriptionContext: PRDescriptionContext = {
@@ -160,9 +164,24 @@ export class GitHubPROrchestrator {
         // Record failure
         this.metrics.incrementGitHubOperation('pr_create', 'failed');
 
+        const error = new Error(parsedResult.error || 'PR creation failed - no URL returned');
+
+        await this.errorMonitor.handleGitHubError({
+          operation: 'pr_creation',
+          executionId,
+          ticketId,
+          repository: githubPush.repository,
+          branchName: githubPush.branch_name,
+          error,
+          correlationId,
+          aiProvider: execution.ai_provider,
+          taskInstructions: prTask.instructions,
+          aiOutput: aiResult,
+        });
+
         return {
           success: false,
-          error: parsedResult.error || 'PR creation failed - no URL returned',
+          error: error.message,
         };
       }
 
@@ -212,7 +231,15 @@ export class GitHubPROrchestrator {
       const duration = Date.now() - startTime;
 
       // AC#5: Error handling
-      await this.handleError(error as Error, executionId, correlationId);
+      await this.handleError(
+        error as Error,
+        executionId,
+        execution?.ticket?.clickup_task_id,
+        githubPush?.repository,
+        githubPush?.branch_name,
+        execution?.ai_provider,
+        correlationId,
+      );
 
       this.logger.error('PR orchestration failed', {
         executionId,
@@ -355,26 +382,23 @@ Return format (JSON):
   private async handleError(
     error: Error,
     executionId: string,
+    ticketId: string | undefined,
+    repository: string | undefined,
+    branchName: string | undefined,
+    aiProvider: string | undefined,
     correlationId?: string,
   ): Promise<void> {
-    this.logger.error('PR orchestration error', {
+    // Delegate to error monitor
+    await this.errorMonitor.handleGitHubError({
+      operation: 'pr_creation',
       executionId,
-      error: error.message,
-      stack: error.stack,
+      ticketId: ticketId || 'unknown',
+      repository: repository || 'unknown',
+      branchName: branchName || 'unknown',
+      error,
       correlationId,
+      aiProvider,
     });
-
-    // Capture in Sentry
-    this.sentry.captureException(error, {
-      extra: {
-        executionId,
-        operation: 'github_pr_create',
-        correlationId,
-      },
-    });
-
-    // TODO: Notify PM via ClickUp (Story 2.1 integration)
-    // await this.clickup.addComment(ticketId, '⚠️ PR creation failed - manual intervention required');
   }
 
   /**

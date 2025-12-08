@@ -19,6 +19,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { LintingSeverity, SupportedLanguage } from '../interfaces';
+import { LintingFixDto } from './linting-fix.dto';
 
 /**
  * DTO for a single linting issue
@@ -97,26 +98,6 @@ export class LintingIssueDto {
   @ValidateNested()
   @Type(() => LintingFixDto)
   fix?: LintingFixDto;
-}
-
-/**
- * DTO for linting fix suggestion
- */
-export class LintingFixDto {
-  @ApiProperty({
-    description: 'Description of the suggested fix',
-    example: 'Remove unused variable',
-  })
-  @IsString()
-  description!: string;
-
-  @ApiPropertyOptional({
-    description: 'Replacement text if available',
-    example: '',
-  })
-  @IsOptional()
-  @IsString()
-  replacementText?: string;
 }
 
 /**

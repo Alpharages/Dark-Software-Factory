@@ -89,6 +89,8 @@ export const GITHUB_METRICS = {
   PUSH_SUCCESS_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_push_success_total`,
   FILES_PUSHED_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_files_pushed_total`,
   COMMIT_SIZE_BYTES: `${METRICS_CONSTANTS.PREFIX}github_commit_size_bytes`,
+  // Story 4.7: Error handling metrics
+  ERRORS_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_operation_errors_total`,
 } as const;
 
 // Business Metrics - Deployments
@@ -96,6 +98,8 @@ export const DEPLOYMENT_METRICS = {
   TOTAL: `${METRICS_CONSTANTS.PREFIX}deployments_total`,
   DURATION: `${METRICS_CONSTANTS.PREFIX}deployment_duration_seconds`,
   SUCCESS_RATE: `${METRICS_CONSTANTS.PREFIX}deployment_success_rate`,
+  // Story 4.7: Rollback metrics
+  ROLLBACKS_TOTAL: `${METRICS_CONSTANTS.PREFIX}deployment_rollback_total`,
 } as const;
 
 // Business Metrics - Costs

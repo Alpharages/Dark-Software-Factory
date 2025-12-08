@@ -81,7 +81,11 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
 
     @InjectMetric(GITHUB_METRICS.COMMIT_SIZE_BYTES)
     private readonly githubCommitSizeBytes: Histogram,
-  ) {}
+
+    // Story 4.7: GitHub Errors
+    @InjectMetric(GITHUB_METRICS.ERRORS_TOTAL)
+    private readonly githubOperationErrorsTotal: Counter,
+  ) { }
 
   onModuleInit() {
     this.startSystemMetricsCollection();
@@ -196,5 +200,10 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
 
   recordGitHubCommitSize(sizeBytes: number, repository: string): void {
     this.githubCommitSizeBytes.observe({ repository }, sizeBytes);
+  }
+
+  // Story 4.7: GitHub Error Metrics
+  incrementGitHubError(operation: string, errorType: string): void {
+    this.githubOperationErrorsTotal.inc({ operation, error_type: errorType });
   }
 }

@@ -8,6 +8,8 @@ import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { WebhooksService } from '../../webhooks/webhooks.service';
 import { GitHubService } from '../github.service';
+import { DeploymentStatusSync } from './deployment-status-sync.service';
+import { GitHubErrorMonitor } from './github-error-monitor.service';
 
 /**
  * TODO: Comprehensive Prisma mocking with new schema fields
@@ -36,6 +38,11 @@ describe('DeploymentOrchestrator', () => {
   const mockAuditLog = { log: jest.fn() };
   const mockSentry = { captureException: jest.fn(), captureMessage: jest.fn() };
   const mockLogger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
+  const mockDeploymentStatusSync = { syncToClickUp: jest.fn().mockResolvedValue(undefined) };
+  const mockGitHubErrorMonitor = {
+    handleGitHubError: jest.fn(),
+    handleDeploymentFailure: jest.fn(),
+  };
 
   const mockConfig = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,6 +71,8 @@ describe('DeploymentOrchestrator', () => {
         { provide: SentryService, useValue: mockSentry },
         { provide: LoggerService, useValue: mockLogger },
         { provide: ConfigService, useValue: mockConfig },
+        { provide: DeploymentStatusSync, useValue: mockDeploymentStatusSync },
+        { provide: GitHubErrorMonitor, useValue: mockGitHubErrorMonitor },
       ],
     }).compile();
 

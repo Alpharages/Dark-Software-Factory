@@ -10,6 +10,7 @@ import { SentryService } from '../../common/sentry/sentry.service';
 import { WebhooksService } from '../../webhooks/webhooks.service';
 import { GitHubService } from '../github.service';
 import { DeploymentStatusSync } from './deployment-status-sync.service';
+import { GitHubErrorMonitor } from './github-error-monitor.service';
 import {
   DeploymentConfig,
   GitHubWorkflow,
@@ -42,6 +43,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
     private readonly logger: LoggerService,
     private readonly config: ConfigService,
     private readonly deploymentStatusSync: DeploymentStatusSync,
+    private readonly errorMonitor: GitHubErrorMonitor,
   ) {
     this.DEFAULT_WORKFLOW_ID = this.config.get<string>('github.defaultWorkflowId', 'deploy.yml');
     this.POLL_INTERVAL_MS = this.config.get<number>('deployment.pollInterval', 30000); // 30s
@@ -126,16 +128,14 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         repository: dto.repository,
       });
 
-      this.sentry.captureException(err, {
-        tags: {
-          operation: 'trigger_deployment',
-          repository: dto.repository,
-          environment: dto.environment,
-        },
-        extra: {
-          githubPushId: dto.githubPushId,
-          branchName: dto.branchName,
-        },
+      await this.errorMonitor.handleGitHubError({
+        operation: 'deployment',
+        executionId: dto.executionId || '',
+        ticketId: dto.ticketId || '',
+        repository: dto.repository || '',
+        branchName: dto.branchName || '',
+        error: err,
+        environment: dto.environment || '',
       });
 
       throw error;
@@ -364,7 +364,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
   }
 
   /**
-   * AC#3: Start polling for deployment status
+   * AC#3: Start polling for status updates
    */
   private startPolling(deploymentId: string, runId: number, repository: string): void {
     const initialInterval = this.POLL_INTERVAL_MS;
@@ -485,11 +485,13 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
   private async updateDeploymentStatus(
     deploymentId: string,
     runStatus: GitHubRunStatus,
-    _repository: string,
+    repository: string,
   ): Promise<void> {
     const deployment = await this.prisma.deployment.findUnique({
       where: { id: deploymentId },
-      include: { github_push: true },
+      include: {
+        github_push: true,
+      },
     });
 
     if (!deployment) {
@@ -504,16 +506,39 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       return; // No change
     }
 
+    // Handle FAILURE with ErrorMonitor
+    if ((newStatus as DeploymentStatus) === DeploymentStatus.FAILED) {
+      // Load execution details to get tickets
+      const ghPush = await this.prisma.gitHubPush.findUnique({
+        where: { id: deployment.github_push_id },
+      });
+      const execution = await this.prisma.execution.findUnique({
+        where: { id: ghPush?.execution_id || '' },
+        include: { ticket: true },
+      });
+
+      await this.errorMonitor.handleDeploymentFailure({
+        deploymentId,
+        status: 'FAILED',
+        environment: deployment.environment,
+        ticketId: execution?.ticket?.clickup_task_id || 'unknown',
+        repository,
+        branchName: ghPush?.branch_name || 'unknown',
+        errorMessage: 'Deployment failed in CI/CD pipeline',
+        buildId: deployment.build_id || undefined,
+        cicdBuildUrl: undefined,
+        correlationId: execution?.id,
+      });
+      return;
+    }
+
     // Update deployment record
     await this.prisma.deployment.update({
       where: { id: deploymentId },
       data: {
         status: newStatus,
         deployed_at: newStatus === DeploymentStatus.COMPLETED ? new Date() : undefined,
-        error_message:
-          newStatus === DeploymentStatus.FAILED && runStatus.conclusion === 'failure'
-            ? 'Deployment failed in CI/CD pipeline'
-            : undefined,
+        error_message: undefined,
       },
     });
 
@@ -607,18 +632,29 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
   /**
    * AC#5: Handle deployment timeout (30 minutes)
    */
-  private async handleTimeout(deploymentId: string, _repository: string): Promise<void> {
+  private async handleTimeout(deploymentId: string, repository: string): Promise<void> {
     this.logger.warn('Deployment timeout reached', { deploymentId });
 
-    await this.prisma.deployment.update({
-      where: { id: deploymentId },
-      data: {
-        status: DeploymentStatus.FAILED,
-        error_message: 'Deployment timed out after 30 minutes',
-      },
+    // Delegate to error monitor
+    const deployment = await this.prisma.deployment.findUnique({ where: { id: deploymentId } });
+    const ghPush = await this.prisma.gitHubPush.findUnique({
+      where: { id: deployment?.github_push_id || '' },
+    });
+    const execution = await this.prisma.execution.findUnique({
+      where: { id: ghPush?.execution_id || '' },
+      include: { ticket: true },
     });
 
-    this.sentry.captureMessage('Deployment timeout');
+    await this.errorMonitor.handleDeploymentFailure({
+      deploymentId,
+      status: 'FAILED',
+      environment: deployment?.environment || 'unknown',
+      ticketId: execution?.ticket?.clickup_task_id || 'unknown',
+      repository,
+      branchName: ghPush?.branch_name || 'unknown',
+      errorMessage: 'Deployment timed out after 30 minutes',
+      buildId: deployment?.build_id || undefined,
+    });
 
     this.pollingStates.delete(deploymentId);
   }
@@ -635,20 +671,25 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       deploymentId,
     });
 
-    await this.prisma.deployment.update({
-      where: { id: deploymentId },
-      data: {
-        status: DeploymentStatus.FAILED,
-        error_message: `Status polling failed: ${error.message}`,
-      },
+    // Delegate to error monitor
+    const deployment = await this.prisma.deployment.findUnique({ where: { id: deploymentId } });
+    const ghPush = await this.prisma.gitHubPush.findUnique({
+      where: { id: deployment?.github_push_id || '' },
+    });
+    const execution = await this.prisma.execution.findUnique({
+      where: { id: ghPush?.execution_id || '' },
+      include: { ticket: true },
     });
 
-    this.sentry.captureException(error, {
-      tags: {
-        operation: 'deployment_polling',
-        deployment_id: deploymentId,
-        repository,
-      },
+    await this.errorMonitor.handleDeploymentFailure({
+      deploymentId,
+      status: 'FAILED',
+      environment: deployment?.environment || 'unknown',
+      ticketId: execution?.ticket?.clickup_task_id || 'unknown',
+      repository,
+      branchName: ghPush?.branch_name || 'unknown',
+      errorMessage: `Status polling failed: ${error.message}`,
+      buildId: deployment?.build_id || undefined,
     });
 
     this.pollingStates.delete(deploymentId);
