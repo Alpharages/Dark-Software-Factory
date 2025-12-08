@@ -17,6 +17,14 @@ export class GitHubService {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
+  /**
+   * Get authenticated Octokit client for direct API access
+   * Used by services that need low-level GitHub API operations
+   */
+  async getAuthenticatedClient(installationId?: string): Promise<Octokit> {
+    return this.clientService.getClient(installationId);
+  }
+
   async getRepository(
     owner: string,
     repo: string,

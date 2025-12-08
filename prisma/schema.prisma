@@ -184,6 +184,9 @@ model GitHubPush {
   push_status     GitHubStatus @default(PENDING)
   error_message   String?      @db.Text
   
+  // Relationships
+  deployments     Deployment[]
+  
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt
   
@@ -206,17 +209,22 @@ enum GitHubStatus {
 model Deployment {
   id              String           @id @default(uuid())
   github_push_id  String
+  github_push     GitHubPush       @relation(fields: [github_push_id], references: [id])
   
   environment     String           // dev, staging, production
   cicd_provider   String           // github-actions, jenkins, etc.
-  build_id        String?
+  build_id        String?          // Provider-specific build/run ID
+  workflow_id     String?          // GitHub Actions workflow ID (from API response)
   
   status          DeploymentStatus @default(TRIGGERED)
   deployed_at     DateTime?
+  error_message   String?          @db.Text
   
   created_at      DateTime         @default(now())
   updated_at      DateTime         @updatedAt
   
+  @@index([github_push_id])
+  @@index([status, environment])
   @@map("deployments")
 }
 

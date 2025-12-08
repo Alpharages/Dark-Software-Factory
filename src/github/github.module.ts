@@ -6,12 +6,15 @@ import { GitHubClientService } from './github-client.service';
 import { GitHubBranchService } from './services/github-branch.service';
 import { GitHubCommitOrchestrator } from './services/github-commit-orchestrator.service';
 import { GitHubPROrchestrator } from './services/github-pr-orchestrator.service';
+import { DeploymentOrchestrator } from './services/deployment-orchestrator.service';
+import { DeploymentTriggerConsumer } from './services/deployment-trigger.consumer';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { DatabaseModule } from '../database/database.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -22,6 +25,7 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
     SentryModule,
     RabbitMQModule,
     AiRoutingModule,
+    WebhooksModule,
   ],
   providers: [
     GitHubService,
@@ -30,7 +34,15 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
     GitHubBranchService,
     GitHubCommitOrchestrator,
     GitHubPROrchestrator,
+    DeploymentOrchestrator,
+    DeploymentTriggerConsumer,
   ],
-  exports: [GitHubService, GitHubBranchService, GitHubCommitOrchestrator, GitHubPROrchestrator],
+  exports: [
+    GitHubService,
+    GitHubBranchService,
+    GitHubCommitOrchestrator,
+    GitHubPROrchestrator,
+    DeploymentOrchestrator,
+  ],
 })
 export class GitHubModule {}

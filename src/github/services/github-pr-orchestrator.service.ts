@@ -24,6 +24,7 @@ import { PRTask, PRTaskContext, QAResultsSummary } from '../interfaces/pr-task.i
 import { PROrchestrationResult } from '../interfaces/pr-result.interface';
 import { parseAIPRResponse } from '../utils/pr-response-parser';
 import { buildPRDescription, PRDescriptionContext } from '../utils/pr-description-builder';
+import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 
 @Injectable()
 export class GitHubPROrchestrator {
@@ -31,6 +32,7 @@ export class GitHubPROrchestrator {
     private readonly orchestrator: OrchestratorService,
     private readonly githubService: GitHubService,
     private readonly prisma: PrismaService,
+    private readonly rabbitMQ: RabbitMQService,
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
@@ -177,6 +179,22 @@ export class GitHubPROrchestrator {
       const duration = Date.now() - startTime;
       this.metrics.incrementGitHubOperation('pr_create', 'success');
       this.metrics.recordGitHubOperationDuration('pr_create', duration, githubPush.repository);
+
+      // Story 4.5: Publish deployment trigger message
+      await this.publishDeploymentTrigger(
+        {
+          executionId,
+          githubPushId: githubPush.id,
+          repository: githubPush.repository,
+          branchName: githubPush.branch_name,
+          commitSha: githubPush.commit_sha || '',
+          prUrl: parsedResult.prUrl!,
+          prNumber: parsedResult.prNumber!,
+          ticketId,
+          environment: 'dev', // Default to dev environment
+        },
+        correlationId,
+      );
 
       this.logger.info('PR orchestration completed successfully', {
         executionId,
@@ -357,5 +375,56 @@ Return format (JSON):
 
     // TODO: Notify PM via ClickUp (Story 2.1 integration)
     // await this.clickup.addComment(ticketId, '⚠️ PR creation failed - manual intervention required');
+  }
+
+  /**
+   * Story 4.5 Integration: Publish deployment trigger message
+   * Publishes to github-pr-created-queue for DeploymentTriggerConsumer
+   */
+  private async publishDeploymentTrigger(
+    payload: {
+      executionId: string;
+      githubPushId: string;
+      repository: string;
+      branchName: string;
+      commitSha: string;
+      prUrl: string;
+      prNumber: number;
+      ticketId: string;
+      environment: 'dev' | 'staging' | 'production';
+    },
+    correlationId?: string,
+  ): Promise<void> {
+    try {
+      await this.rabbitMQ.publishToQueue('github-pr-created-queue', payload, {
+        correlationId: correlationId || payload.executionId,
+        persistent: true,
+        headers: {
+          'x-correlation-id': correlationId || payload.executionId,
+          'x-execution-id': payload.executionId,
+          'x-pr-number': payload.prNumber.toString(),
+        },
+      });
+
+      this.logger.info('Published deployment trigger message', {
+        executionId: payload.executionId,
+        prNumber: payload.prNumber,
+        queue: 'github-pr-created-queue',
+      });
+    } catch (error) {
+      // Log error but don't fail PR creation
+      this.logger.error('Failed to publish deployment trigger', {
+        executionId: payload.executionId,
+        error: (error as Error).message,
+      });
+
+      this.sentry.captureException(error as Error, {
+        extra: {
+          operation: 'publish_deployment_trigger',
+          executionId: payload.executionId,
+          prNumber: payload.prNumber,
+        },
+      });
+    }
   }
 }
