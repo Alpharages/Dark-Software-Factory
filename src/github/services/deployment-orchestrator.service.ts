@@ -11,6 +11,7 @@ import { WebhooksService } from '../../webhooks/webhooks.service';
 import { GitHubService } from '../github.service';
 import { DeploymentStatusSync } from './deployment-status-sync.service';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
+import { DeploymentSuccessRateCalculator } from './deployment-success-rate-calculator.service';
 import {
   DeploymentConfig,
   GitHubWorkflow,
@@ -24,6 +25,7 @@ interface PollingState {
   attempts: number;
   nextInterval: number;
   timeoutHandle: NodeJS.Timeout;
+  environment: string;
 }
 
 @Injectable()
@@ -44,6 +46,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly deploymentStatusSync: DeploymentStatusSync,
     private readonly errorMonitor: GitHubErrorMonitor,
+    private readonly successRateCalculator: DeploymentSuccessRateCalculator,
   ) {
     this.DEFAULT_WORKFLOW_ID = this.config.get<string>('github.defaultWorkflowId', 'deploy.yml');
     this.POLL_INTERVAL_MS = this.config.get<number>('deployment.pollInterval', 30000); // 30s
@@ -111,8 +114,13 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         workflowId: config.workflowId || this.DEFAULT_WORKFLOW_ID,
       });
 
+      // Story 4.8 Metric: Increment in-progress gauge
+      this.metrics.incrementGauge('deployment_in_progress', 1, {
+        environment: dto.environment,
+      });
+
       // Start polling for status updates (AC#3)
-      this.startPolling(deployment.id, runId, dto.repository);
+      this.startPolling(deployment.id, runId, dto.repository, dto.environment);
 
       this.logger.log('Deployment triggered successfully', {
         deploymentId: deployment.id,
@@ -344,7 +352,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         build_id: data.buildId,
         workflow_id: data.workflowId,
         status: DeploymentStatus.TRIGGERED,
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any, // Cast to any to resolve generated type mismatch
     });
 
     // Audit log (AC#6)
@@ -366,7 +375,12 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
   /**
    * AC#3: Start polling for status updates
    */
-  private startPolling(deploymentId: string, runId: number, repository: string): void {
+  private startPolling(
+    deploymentId: string,
+    runId: number,
+    repository: string,
+    environment: string,
+  ): void {
     const initialInterval = this.POLL_INTERVAL_MS;
     const startTime = Date.now();
 
@@ -379,13 +393,34 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         }
 
         // Poll status (AC#3)
+        const pollStart = Date.now();
         const status = await this.pollDeploymentStatus(repository, runId);
+        const pollDuration = (Date.now() - pollStart) / 1000;
+
+        // AC#2: Record polling duration metric
+        this.metrics.recordHistogram('cicd_workflow_poll_duration_seconds', pollDuration, {
+          environment,
+        });
 
         // Update deployment (AC#3)
         await this.updateDeploymentStatus(deploymentId, status, repository);
 
         // Check if terminal status reached
         if (this.isTerminalStatus(status.conclusion)) {
+          // Decrement in-progress gauge on failure
+          const deployment = await this.prisma.deployment.findUnique({
+            where: { id: deploymentId },
+          });
+          if (deployment) {
+            this.metrics.decrementGauge('deployment_in_progress', 1, {
+              environment: deployment.environment,
+            });
+            await this.successRateCalculator.update(
+              deployment.environment,
+              DeploymentStatus.FAILED,
+            );
+          }
+
           this.pollingStates.delete(deploymentId);
           return;
         }
@@ -400,6 +435,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
           attempts: attempts + 1,
           nextInterval,
           timeoutHandle,
+          environment,
         });
       } catch (error) {
         const err = error as Error;
@@ -420,6 +456,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
             attempts: attempts + 1,
             nextInterval,
             timeoutHandle,
+            environment,
           });
         } else {
           await this.handlePollingFailure(deploymentId, err, repository);
@@ -436,6 +473,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       attempts: 0,
       nextInterval: initialInterval,
       timeoutHandle,
+      environment,
     });
   }
 
@@ -492,7 +530,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       include: {
         github_push: true,
       },
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
 
     if (!deployment) {
       this.logger.warn('Deployment not found for status update', { deploymentId });
@@ -539,7 +578,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         status: newStatus,
         deployed_at: newStatus === DeploymentStatus.COMPLETED ? new Date() : undefined,
         error_message: undefined,
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any, // Cast to any for error_message metadata
     });
 
     // Audit log (AC#6)
@@ -554,6 +594,14 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
 
     // Record metrics (AC#6)
     if (this.isTerminalStatus(runStatus.conclusion)) {
+      // Story 4.8 Metric: Decrement in-progress gauge
+      this.metrics.decrementGauge('deployment_in_progress', 1, {
+        environment: deployment.environment,
+      });
+
+      // Update success rate
+      await this.successRateCalculator.update(deployment.environment, newStatus);
+
       const duration = deployment.created_at
         ? (new Date().getTime() - new Date(deployment.created_at).getTime()) / 1000
         : 0;
@@ -656,6 +704,19 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       buildId: deployment?.build_id || undefined,
     });
 
+    // Decrement in-progress gauge on timeout
+    if (deployment) {
+      this.metrics.decrementGauge('deployment_in_progress', 1, {
+        environment: deployment.environment,
+      });
+      // Update success rate logic? Timeout implies FAILED.
+      // errorMonitor handles DB update to FAILED, so eventually successRateCalculator needs update?
+      // Since we don't call updateDeploymentStatus here, we should update rates manually or rely on errorMonitor?
+      // errorMonitor doesn't call successRateCalculator.
+      // So update here.
+      await this.successRateCalculator.update(deployment.environment, DeploymentStatus.FAILED);
+    }
+
     this.pollingStates.delete(deploymentId);
   }
 
@@ -691,6 +752,14 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       errorMessage: `Status polling failed: ${error.message}`,
       buildId: deployment?.build_id || undefined,
     });
+
+    // Decrement in-progress gauge on polling failure
+    if (deployment) {
+      this.metrics.decrementGauge('deployment_in_progress', 1, {
+        environment: deployment.environment,
+      });
+      await this.successRateCalculator.update(deployment.environment, DeploymentStatus.FAILED);
+    }
 
     this.pollingStates.delete(deploymentId);
   }

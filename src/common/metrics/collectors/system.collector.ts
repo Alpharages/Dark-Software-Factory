@@ -14,6 +14,8 @@ import { DatabaseMetricData } from '../metrics.interface';
 @Injectable()
 export class SystemCollector implements OnModuleInit, OnModuleDestroy {
   private systemMetricsInterval!: NodeJS.Timeout;
+  private readonly metrics: Map<string, Counter<string> | Gauge<string> | Histogram<string>> =
+    new Map();
 
   constructor(
     // System Metrics
@@ -56,6 +58,9 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
     @InjectMetric(CICD_METRICS.PIPELINE_DURATION)
     private readonly cicdPipelineDuration: Histogram,
 
+    @InjectMetric(CICD_METRICS.WORKFLOW_POLL_DURATION)
+    private readonly cicdWorkflowPollDuration: Histogram,
+
     // GitHub Metrics
     @InjectMetric(GITHUB_METRICS.OPERATIONS_TOTAL)
     private readonly githubOperationsTotal: Counter,
@@ -88,7 +93,61 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    this.registerMetrics();
     this.startSystemMetricsCollection();
+  }
+
+  private registerMetrics() {
+    this.metrics.set(CICD_METRICS.PIPELINE_TRIGGERS, this.cicdPipelineTriggers);
+    this.metrics.set(CICD_METRICS.PIPELINE_DURATION, this.cicdPipelineDuration);
+    this.metrics.set(CICD_METRICS.WORKFLOW_POLL_DURATION, this.cicdWorkflowPollDuration);
+  }
+
+  // ============= Generic Methods (Story 4.8) =============
+
+  incrementGenericCounter(name: string, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'inc' in metric) {
+      (metric as Counter<string>).inc(labels || {});
+      return true;
+    }
+    return false;
+  }
+
+  recordGenericHistogram(name: string, value: number, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'observe' in metric) {
+      (metric as Histogram<string>).observe(labels || {}, value);
+      return true;
+    }
+    return false;
+  }
+
+  setGenericGauge(name: string, value: number, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'set' in metric) {
+      (metric as Gauge<string>).set(labels || {}, value);
+      return true;
+    }
+    return false;
+  }
+
+  incrementGenericGauge(name: string, value: number = 1, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'inc' in metric) {
+      (metric as Gauge<string>).inc(labels || {}, value);
+      return true;
+    }
+    return false;
+  }
+
+  decrementGenericGauge(name: string, value: number = 1, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'dec' in metric) {
+      (metric as Gauge<string>).dec(labels || {}, value);
+      return true;
+    }
+    return false;
   }
 
   onModuleDestroy() {

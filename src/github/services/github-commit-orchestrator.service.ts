@@ -16,6 +16,8 @@ import {
 import { CommitPushResult } from '../interfaces/commit-result.interface';
 import { parseAIResponse, validateCommitSha } from '../utils/commit-response-parser';
 import { createCommitMessageContext, buildCommitMessage } from '../utils/commit-message-context';
+import { getFileCountBucket } from '../utils/file-count-bucket.util';
+import { classifyGitHubError } from '../utils/classify-github-error.util';
 
 export interface CommitOrchestrationResult {
   success: boolean;
@@ -152,6 +154,17 @@ export class GitHubCommitOrchestrator {
           execution.ai_provider,
         );
 
+        // Story 4.8 Metric
+        this.metrics.incrementCounter('github_push_total', {
+          status: 'failed',
+          repository: githubPush.repository,
+          error_type: 'unknown',
+        });
+        this.metrics.incrementCounter('github_commit_total', {
+          status: 'failed',
+          repository: githubPush.repository,
+        });
+
         // Update GitHub push status to FAILED
         await this.prisma.gitHubPush.update({
           where: { id: githubPush.id },
@@ -213,6 +226,10 @@ export class GitHubCommitOrchestrator {
         };
       }
 
+      // Count files for bucket
+      const fileCount = parsedResult.filesChanged || 0;
+      const bucket = getFileCountBucket(fileCount);
+
       // AC#4: Update database
       await this.updateDatabase(githubPush.id, parsedResult, executionId, {
         repository: githubPush.repository,
@@ -230,6 +247,21 @@ export class GitHubCommitOrchestrator {
         execution.ai_provider,
       );
       this.metrics.recordGitHubOperationDuration('commit', duration, githubPush.repository);
+
+      // Story 4.8 Metrics
+      this.metrics.incrementCounter('github_push_total', {
+        status: 'success',
+        error_type: 'none',
+        repository: githubPush.repository,
+      });
+      this.metrics.incrementCounter('github_commit_total', {
+        status: 'success',
+        repository: githubPush.repository,
+      });
+      this.metrics.recordHistogram('github_push_duration_seconds', duration / 1000, {
+        repository: githubPush.repository,
+        file_count_bucket: bucket,
+      });
 
       this.logger.info('Commit orchestration completed successfully', {
         executionId,
@@ -262,6 +294,16 @@ export class GitHubCommitOrchestrator {
         executionId,
         error: (error as Error).message,
         duration,
+      });
+
+      this.metrics.incrementCounter('github_push_total', {
+        status: 'failed',
+        error_type: classifyGitHubError(error),
+        repository: githubPush?.repository || 'unknown',
+      });
+      this.metrics.incrementCounter('github_commit_total', {
+        status: 'failed',
+        repository: githubPush?.repository || 'unknown',
       });
 
       return {

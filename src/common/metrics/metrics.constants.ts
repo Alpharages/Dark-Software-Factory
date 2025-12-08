@@ -91,6 +91,15 @@ export const GITHUB_METRICS = {
   COMMIT_SIZE_BYTES: `${METRICS_CONSTANTS.PREFIX}github_commit_size_bytes`,
   // Story 4.7: Error handling metrics
   ERRORS_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_operation_errors_total`,
+  // Story 4.8: New Metrics
+  PUSH_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_push_total`,
+  PR_CREATED_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_pr_created_total`,
+  BRANCH_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_branch_total`,
+  COMMIT_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_commit_total`,
+  API_CALLS_TOTAL: `${METRICS_CONSTANTS.PREFIX}github_api_calls_total`,
+  PUSH_DURATION: `${METRICS_CONSTANTS.PREFIX}github_push_duration_seconds`,
+  API_CALL_DURATION: `${METRICS_CONSTANTS.PREFIX}github_api_call_duration_seconds`,
+  PR_CREATION_DURATION: `${METRICS_CONSTANTS.PREFIX}github_pr_creation_duration_seconds`,
 } as const;
 
 // Business Metrics - Deployments
@@ -100,6 +109,8 @@ export const DEPLOYMENT_METRICS = {
   SUCCESS_RATE: `${METRICS_CONSTANTS.PREFIX}deployment_success_rate`,
   // Story 4.7: Rollback metrics
   ROLLBACKS_TOTAL: `${METRICS_CONSTANTS.PREFIX}deployment_rollback_total`,
+  // Story 4.8: New Metrics
+  IN_PROGRESS: `${METRICS_CONSTANTS.PREFIX}deployment_in_progress`,
 } as const;
 
 // Business Metrics - Costs
@@ -159,6 +170,7 @@ export const ERROR_METRICS = {
 export const CICD_METRICS = {
   PIPELINE_TRIGGERS: `${METRICS_CONSTANTS.PREFIX}cicd_pipeline_triggers_total`,
   PIPELINE_DURATION: `${METRICS_CONSTANTS.PREFIX}cicd_pipeline_duration_seconds`,
+  WORKFLOW_POLL_DURATION: `${METRICS_CONSTANTS.PREFIX}cicd_workflow_poll_duration_seconds`,
 } as const;
 
 // Alert Thresholds Configuration (NFR-O6, NFR-O7, NFR-O8)

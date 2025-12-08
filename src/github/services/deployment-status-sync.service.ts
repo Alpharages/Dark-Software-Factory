@@ -465,12 +465,17 @@ ${prLine}**Deployment Logs:** [View Logs](${buildUrl})`;
   ): void {
     const statusLabel = success ? 'success' : 'failed';
 
-    // Use MetricsService methods for deployment tracking
-    this.metrics.recordDeployment({
+    // Use specific sync metrics (Story 4.6/4.8)
+    this.metrics.incrementCounter('deployment_status_sync_total', {
       environment,
       status: statusLabel,
-      duration: duration || 0,
     });
+
+    if (duration !== undefined) {
+      this.metrics.recordHistogram('deployment_status_sync_duration_seconds', duration, {
+        environment,
+      });
+    }
 
     // Record errors if failed
     if (!success && errorType) {

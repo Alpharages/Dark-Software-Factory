@@ -174,6 +174,10 @@ export class GitHubPROrchestrator {
 
         // Record failure
         this.metrics.incrementGitHubOperation('pr_create', 'failed');
+        this.metrics.incrementCounter('github_pr_created_total', {
+          status: 'failed',
+          repository: githubPush.repository,
+        });
 
         const error = new Error(parsedResult.error || 'PR creation failed - no URL returned');
 
@@ -210,6 +214,15 @@ export class GitHubPROrchestrator {
       this.metrics.incrementGitHubOperation('pr_create', 'success');
       this.metrics.recordGitHubOperationDuration('pr_create', duration, githubPush.repository);
 
+      // Story 4.8 Metrics
+      this.metrics.incrementCounter('github_pr_created_total', {
+        status: 'success',
+        repository: githubPush.repository,
+      });
+      this.metrics.recordHistogram('github_pr_creation_duration_seconds', duration / 1000, {
+        repository: githubPush.repository,
+      });
+
       // Story 4.5: Publish deployment trigger message
       await this.publishDeploymentTrigger(
         {
@@ -240,6 +253,11 @@ export class GitHubPROrchestrator {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
+
+      this.metrics.incrementCounter('github_pr_created_total', {
+        status: 'failed',
+        repository: githubPush?.repository || 'unknown',
+      });
 
       // AC#5: Error handling
       await this.handleError(

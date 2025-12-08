@@ -8,6 +8,7 @@ import {
   DEPLOYMENT_METRICS,
   COST_METRICS,
   PM_METRICS,
+  GITHUB_METRICS,
   LABELS,
 } from '../metrics.constants';
 import {
@@ -20,6 +21,9 @@ import {
 
 @Injectable()
 export class BusinessCollector {
+  private readonly metrics: Map<string, Counter<string> | Gauge<string> | Histogram<string>> =
+    new Map();
+
   constructor(
     // Ticket Metrics
     @InjectMetric(TICKET_METRICS.RECEIVED_TOTAL)
@@ -90,7 +94,101 @@ export class BusinessCollector {
 
     @InjectMetric(PM_METRICS.PROJECTS_ACTIVE)
     private readonly pmProjectsActive: Gauge,
-  ) {}
+
+    // Story 4.8: New Metrics
+    @InjectMetric(DEPLOYMENT_METRICS.IN_PROGRESS)
+    private readonly deploymentInProgress: Gauge,
+
+    @InjectMetric(GITHUB_METRICS.PUSH_TOTAL)
+    private readonly githubPushTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.PR_CREATED_TOTAL)
+    private readonly githubPrCreatedTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.BRANCH_TOTAL)
+    private readonly githubBranchTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.COMMIT_TOTAL)
+    private readonly githubCommitTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.API_CALLS_TOTAL)
+    private readonly githubApiCallsTotal: Counter,
+
+    @InjectMetric(GITHUB_METRICS.PUSH_DURATION)
+    private readonly githubPushDuration: Histogram,
+
+    @InjectMetric(GITHUB_METRICS.API_CALL_DURATION)
+    private readonly githubApiCallDuration: Histogram,
+
+    @InjectMetric(GITHUB_METRICS.PR_CREATION_DURATION)
+    private readonly githubPrCreationDuration: Histogram,
+  ) {
+    this.registerMetrics();
+  }
+
+  private registerMetrics() {
+    // Register metrics for generic lookup
+    this.metrics.set(GITHUB_METRICS.PUSH_TOTAL, this.githubPushTotal);
+    this.metrics.set(GITHUB_METRICS.PR_CREATED_TOTAL, this.githubPrCreatedTotal);
+    this.metrics.set(GITHUB_METRICS.BRANCH_TOTAL, this.githubBranchTotal);
+    this.metrics.set(GITHUB_METRICS.COMMIT_TOTAL, this.githubCommitTotal);
+    this.metrics.set(GITHUB_METRICS.API_CALLS_TOTAL, this.githubApiCallsTotal);
+    this.metrics.set(GITHUB_METRICS.PUSH_DURATION, this.githubPushDuration);
+    this.metrics.set(GITHUB_METRICS.API_CALL_DURATION, this.githubApiCallDuration);
+    this.metrics.set(GITHUB_METRICS.PR_CREATION_DURATION, this.githubPrCreationDuration);
+    this.metrics.set(DEPLOYMENT_METRICS.IN_PROGRESS, this.deploymentInProgress);
+    this.metrics.set(DEPLOYMENT_METRICS.TOTAL, this.deploymentsTotal);
+    this.metrics.set(DEPLOYMENT_METRICS.DURATION, this.deploymentDuration);
+    this.metrics.set(DEPLOYMENT_METRICS.SUCCESS_RATE, this.deploymentSuccessRate);
+    this.metrics.set(DEPLOYMENT_METRICS.ROLLBACKS_TOTAL, this.deploymentRollbacksTotal);
+  }
+
+  // ============= Generic Methods (Story 4.8) =============
+
+  incrementGenericCounter(name: string, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'inc' in metric) {
+      (metric as Counter<string>).inc(labels || {});
+      return true;
+    }
+    return false;
+  }
+
+  recordGenericHistogram(name: string, value: number, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'observe' in metric) {
+      (metric as Histogram<string>).observe(labels || {}, value);
+      return true;
+    }
+    return false;
+  }
+
+  setGenericGauge(name: string, value: number, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'set' in metric) {
+      (metric as Gauge<string>).set(labels || {}, value);
+      return true;
+    }
+    return false;
+  }
+
+  incrementGenericGauge(name: string, value: number = 1, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'inc' in metric) {
+      (metric as Gauge<string>).inc(labels || {}, value);
+      return true;
+    }
+    return false;
+  }
+
+  decrementGenericGauge(name: string, value: number = 1, labels?: Record<string, string>): boolean {
+    const metric = this.metrics.get(name);
+    if (metric && 'dec' in metric) {
+      (metric as Gauge<string>).dec(labels || {}, value);
+      return true;
+    }
+    return false;
+  }
 
   // ============= Ticket Metrics =============
 

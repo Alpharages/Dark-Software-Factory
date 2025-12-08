@@ -21,6 +21,7 @@ import {
 } from '../exceptions/github.exceptions';
 import { GitHubStatus, ExecutionStatus } from '@prisma/client';
 import { RabbitMQPublisherService } from '../../rabbitmq/rabbitmq-publisher.service';
+import { classifyGitHubError } from '../utils/classify-github-error.util';
 
 /**
  * GitHub Branch Service
@@ -125,6 +126,7 @@ export class GitHubBranchService {
       const duration = Date.now() - startTime;
 
       this.metrics.incrementGitHubOperation('create_branch', 'success');
+      this.metrics.incrementCounter('github_branch_total', { status: 'success', repository });
       this.metrics.recordGitHubOperationDuration('create_branch', duration, repository);
 
       this.logger.info('Feature branch created successfully', {
@@ -144,7 +146,13 @@ export class GitHubBranchService {
       await this.handleBranchCreationError(error as Error, executionId, options, duration);
 
       // Record failure
+      // Record failure
       this.metrics.incrementGitHubOperation('create_branch', 'failed');
+      this.metrics.incrementCounter('github_branch_total', {
+        status: 'failed',
+        repository: this.getRepository(),
+        error_type: classifyGitHubError(error),
+      });
 
       throw error;
     }
@@ -175,7 +183,14 @@ export class GitHubBranchService {
       const err = error as { status?: number; message?: string };
 
       // Handle 422: Branch already exists
+      // Handle 422: Branch already exists
       if (err.status === 422) {
+        // Record conflict
+        this.metrics.incrementCounter('github_branch_total', {
+          status: 'conflict',
+          repository: `${owner}/${repo}`,
+        });
+
         if (isRetry) {
           // Retry: Reuse existing branch (idempotent)
           this.logger.info('Reusing existing branch for retry', {

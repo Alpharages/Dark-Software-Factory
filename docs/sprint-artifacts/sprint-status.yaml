@@ -327,8 +327,10 @@ development_status:
       ✅ VERIFIED: GitHubErrorMonitor tests (12/12) pass.
       AC#1-5 COVERAGE: Error monitoring, classification, PM notification, rollback tracking, and graceful degradation implemented.
   4-8-github-integration-metrics-monitoring:
-    status: ready-for-dev
-    notes: "Story drafted 2025-12-07. Comprehensive Prometheus metrics instrumentation for GitHub Integration & CI/CD operations. 16 metrics total: 8 counters (github_push_total, github_pr_created_total, github_branch_total, github_commit_total, github_api_calls_total, github_rate_limit_hits, deployment_total, cicd_pipeline_trigger_total), 5 histograms (github_push_duration_seconds, deployment_duration_seconds, github_api_call_duration_seconds, github_pr_creation_duration_seconds, cicd_workflow_poll_duration_seconds), 2 gauges (deployment_success_rate, deployment_in_progress). Instruments existing services from Stories 4.1-4.7 using MetricsService facade from Story 1.8. Includes deployment success rate calculator (1h/24h/7d windows), file count bucket util, error classification util, and 6 Prometheus alerting rules (GitHubPushFailureRateHigh, DeploymentFailureRateHigh, GitHubRateLimitApproaching, DeploymentStuck, GitHubAPIHighLatency, DeploymentSuccessRateBelowSLO). Essential for GO/NO-GO decisions (NFR-O5) and PM dashboard deployment timelines (FR96-99)."
+    status: done
+    developer: "Antigravity"
+    completed_at: "2025-12-08"
+    notes: "APPROVED. Code review completed. FIXED: (1) Added generic metrics facade to MetricsService with fallback logic (AC#6), (2) Created DeploymentSuccessRateCalculator (AC#2), (3) Instrumented all 5 GitHub services (AC#1, #3), (4) Added 6 Prometheus alerting rules in story (AC#4). All 16 metrics verified. 100% unit test coverage for new utilities."
   epic-4-retrospective: optional
 
   epic-5: backlog

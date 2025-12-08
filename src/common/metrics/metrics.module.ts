@@ -176,6 +176,11 @@ import {
     makeGaugeProvider({
       name: DEPLOYMENT_METRICS.SUCCESS_RATE,
       help: 'Deployment success rate per environment',
+      labelNames: [LABELS.ENVIRONMENT, 'time_window'],
+    }),
+    makeGaugeProvider({
+      name: DEPLOYMENT_METRICS.IN_PROGRESS,
+      help: 'Current deployments in progress',
       labelNames: [LABELS.ENVIRONMENT],
     }),
 
@@ -318,6 +323,12 @@ import {
       labelNames: [LABELS.PROVIDER],
       buckets: [10, 30, 60, 120, 300, 600, 1800], // Up to 30 minutes
     }),
+    makeHistogramProvider({
+      name: CICD_METRICS.WORKFLOW_POLL_DURATION,
+      help: 'Time spent polling deployment status',
+      labelNames: [LABELS.ENVIRONMENT],
+      buckets: [5, 10, 30, 60, 120, 300],
+    }),
 
     // GitHub Metrics (Story 4.1, 4.3)
     makeCounterProvider({
@@ -360,6 +371,51 @@ import {
       help: 'GitHub commit size in bytes',
       labelNames: ['repository'],
       buckets: [1024, 10240, 102400, 1024000, 10240000, 102400000], // 1KB to 100MB
+    }),
+
+    // Story 4.8: New GitHub Metrics
+    makeCounterProvider({
+      name: GITHUB_METRICS.PUSH_TOTAL,
+      help: 'Total GitHub push operations',
+      labelNames: ['status', LABELS.ERROR_TYPE, 'repository'],
+    }),
+    makeCounterProvider({
+      name: GITHUB_METRICS.PR_CREATED_TOTAL,
+      help: 'Total PR creation attempts',
+      labelNames: ['status', 'repository'],
+    }),
+    makeCounterProvider({
+      name: GITHUB_METRICS.BRANCH_TOTAL,
+      help: 'Total branch creation operations',
+      labelNames: ['status', 'repository'],
+    }),
+    makeCounterProvider({
+      name: GITHUB_METRICS.COMMIT_TOTAL,
+      help: 'Total commit generation and push operations',
+      labelNames: ['status', 'repository'],
+    }),
+    makeCounterProvider({
+      name: GITHUB_METRICS.API_CALLS_TOTAL,
+      help: 'Total GitHub API calls',
+      labelNames: ['operation', 'status', 'account_type'],
+    }),
+    makeHistogramProvider({
+      name: GITHUB_METRICS.PUSH_DURATION,
+      help: 'Time to push commits to GitHub',
+      labelNames: ['repository', 'file_count_bucket'],
+      buckets: [0.5, 1, 2, 5, 10, 30, 60],
+    }),
+    makeHistogramProvider({
+      name: GITHUB_METRICS.API_CALL_DURATION,
+      help: 'GitHub API call latency',
+      labelNames: ['operation', 'account_type'],
+      buckets: [0.1, 0.5, 1, 2, 5, 10],
+    }),
+    makeHistogramProvider({
+      name: GITHUB_METRICS.PR_CREATION_DURATION,
+      help: 'Time to create PR via API',
+      labelNames: ['repository'],
+      buckets: [0.5, 1, 2, 5, 10],
     }),
   ],
   exports: [MetricsService],

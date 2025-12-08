@@ -10,6 +10,7 @@ import { WebhooksService } from '../../webhooks/webhooks.service';
 import { GitHubService } from '../github.service';
 import { DeploymentStatusSync } from './deployment-status-sync.service';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
+import { DeploymentSuccessRateCalculator } from './deployment-success-rate-calculator.service';
 
 /**
  * TODO: Comprehensive Prisma mocking with new schema fields
@@ -34,6 +35,9 @@ describe('DeploymentOrchestrator', () => {
   const mockMetrics = {
     recordDeployment: jest.fn(),
     recordCICDPipeline: jest.fn(),
+    incrementCounter: jest.fn(),
+    setGauge: jest.fn(),
+    decrementGauge: jest.fn(),
   };
   const mockAuditLog = { log: jest.fn() };
   const mockSentry = { captureException: jest.fn(), captureMessage: jest.fn() };
@@ -73,6 +77,10 @@ describe('DeploymentOrchestrator', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: DeploymentStatusSync, useValue: mockDeploymentStatusSync },
         { provide: GitHubErrorMonitor, useValue: mockGitHubErrorMonitor },
+        {
+          provide: DeploymentSuccessRateCalculator,
+          useValue: { update: jest.fn() },
+        },
       ],
     }).compile();
 

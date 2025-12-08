@@ -189,4 +189,31 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   recordGitHubError(operation: string, errorType: string): void {
     this.systemCollector.incrementGitHubError(operation, errorType);
   }
+
+  // ============= Generic Metrics Facade (Story 4.8) =============
+
+  incrementCounter(name: string, labels?: Record<string, string>): void {
+    if (this.systemCollector.incrementGenericCounter(name, labels)) return;
+    this.businessCollector.incrementGenericCounter(name, labels);
+  }
+
+  recordHistogram(name: string, value: number, labels?: Record<string, string>): void {
+    if (this.systemCollector.recordGenericHistogram(name, value, labels)) return;
+    this.businessCollector.recordGenericHistogram(name, value, labels);
+  }
+
+  setGauge(name: string, value: number, labels?: Record<string, string>): void {
+    if (this.systemCollector.setGenericGauge(name, value, labels)) return;
+    this.businessCollector.setGenericGauge(name, value, labels);
+  }
+
+  incrementGauge(name: string, value: number = 1, labels?: Record<string, string>): void {
+    if (this.systemCollector.incrementGenericGauge(name, value, labels)) return;
+    this.businessCollector.incrementGenericGauge(name, value, labels);
+  }
+
+  decrementGauge(name: string, value: number = 1, labels?: Record<string, string>): void {
+    if (this.systemCollector.decrementGenericGauge(name, value, labels)) return;
+    this.businessCollector.decrementGenericGauge(name, value, labels);
+  }
 }

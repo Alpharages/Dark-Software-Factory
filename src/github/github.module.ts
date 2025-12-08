@@ -10,6 +10,7 @@ import { DeploymentOrchestrator } from './services/deployment-orchestrator.servi
 import { DeploymentTriggerConsumer } from './services/deployment-trigger.consumer';
 import { DeploymentStatusSync } from './services/deployment-status-sync.service';
 import { GitHubErrorMonitor } from './services/github-error-monitor.service';
+import { DeploymentSuccessRateCalculator } from './services/deployment-success-rate-calculator.service';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
@@ -42,6 +43,7 @@ import { ClickUpModule } from '../clickup/clickup.module';
     DeploymentTriggerConsumer,
     DeploymentStatusSync,
     GitHubErrorMonitor,
+    DeploymentSuccessRateCalculator,
   ],
   exports: [
     GitHubService,
@@ -51,6 +53,7 @@ import { ClickUpModule } from '../clickup/clickup.module';
     DeploymentOrchestrator,
     DeploymentStatusSync,
     GitHubErrorMonitor,
+    DeploymentSuccessRateCalculator,
   ],
 })
 export class GitHubModule {}

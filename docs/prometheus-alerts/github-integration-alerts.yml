@@ -1,0 +1,82 @@
+groups:
+  - name: github_integration
+    interval: 15s
+    rules:
+      - alert: GitHubPushFailureRateHigh
+        expr: |
+          (
+            rate(dsf_github_push_total{status="failed"}[5m])
+            /
+            rate(dsf_github_push_total[5m])
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: github_integration
+        annotations:
+          summary: 'GitHub push failure rate above 10%'
+          description: '{{ $value | humanizePercentage }} of GitHub pushes failed in the last 5 minutes'
+          runbook: 'https://docs.darkfactory.io/runbooks/github-push-failures'
+
+      - alert: DeploymentFailureRateHigh
+        expr: |
+          (
+            rate(dsf_deployments_total{status="failed"}[1h])
+            /
+            rate(dsf_deployments_total[1h])
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          component: deployment
+        annotations:
+          summary: 'Deployment failure rate above 5% (environment: {{ $labels.environment }})'
+          description: '{{ $value | humanizePercentage }} of deployments failed in the last hour'
+          action: 'Alert operations team and tech lead immediately'
+
+      - alert: GitHubRateLimitApproaching
+        expr: dsf_github_rate_limit_hits_total > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: github_api
+        annotations:
+          summary: 'GitHub rate limit hit (installation: {{ $labels.installation_id }})'
+          description: 'GitHub API rate limit was hit. System will throttle automatically.'
+          action: 'Monitor task queue depth. Reduce concurrent GitHub operations if needed.'
+
+      - alert: DeploymentStuck
+        expr: dsf_deployment_in_progress > 0
+        for: 30m
+        labels:
+          severity: critical
+          component: deployment
+        annotations:
+          summary: 'Deployment stuck in progress (environment: {{ $labels.environment }})'
+          description: 'Deployment has been in progress for > 30 minutes without status change'
+          action: 'Check CI/CD pipeline logs. May need manual intervention or rollback.'
+
+      - alert: GitHubAPIHighLatency
+        expr: histogram_quantile(0.95, rate(dsf_github_api_call_duration_seconds_bucket[5m])) > 3
+        for: 5m
+        labels:
+          severity: warning
+          component: github_api
+        annotations:
+          summary: 'GitHub API p95 latency above 3 seconds'
+          description: '95th percentile GitHub API latency: {{ $value }}s'
+          action: 'Check GitHub status page. Verify network connectivity.'
+
+  - name: deployment_sla
+    interval: 15s
+    rules:
+      - alert: DeploymentSuccessRateBelowSLO
+        expr: dsf_deployment_success_rate{time_window="24h"} < 95
+        for: 10m
+        labels:
+          severity: warning
+          component: deployment
+        annotations:
+          summary: 'Deployment success rate below SLO (environment: {{ $labels.environment }})'
+          description: '24h success rate: {{ $value }}% (SLO: 95%)'
+          action: 'Review failed deployments. Identify recurring failure patterns.'
