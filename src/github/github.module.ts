@@ -53,5 +53,4 @@ import { ClickUpModule } from '../clickup/clickup.module';
     GitHubErrorMonitor,
   ],
 })
-export class GitHubModule { }
-
+export class GitHubModule {}

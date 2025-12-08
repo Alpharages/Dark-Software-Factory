@@ -71,7 +71,6 @@ export class BusinessCollector {
     @InjectMetric(DEPLOYMENT_METRICS.ROLLBACKS_TOTAL)
     private readonly deploymentRollbacksTotal: Counter,
 
-
     // Cost Metrics
     @InjectMetric(COST_METRICS.PER_PROJECT)
     private readonly costPerProject: Histogram,
@@ -91,7 +90,7 @@ export class BusinessCollector {
 
     @InjectMetric(PM_METRICS.PROJECTS_ACTIVE)
     private readonly pmProjectsActive: Gauge,
-  ) { }
+  ) {}
 
   // ============= Ticket Metrics =============
 

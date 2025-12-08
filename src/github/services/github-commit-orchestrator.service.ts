@@ -35,7 +35,7 @@ export class GitHubCommitOrchestrator {
     private readonly metrics: MetricsService,
     private readonly errorMonitor: GitHubErrorMonitor,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-  ) { }
+  ) {}
 
   /**
    * Orchestrates git commit and push operations via AI delegation
@@ -46,8 +46,19 @@ export class GitHubCommitOrchestrator {
     correlationId?: string,
   ): Promise<CommitOrchestrationResult> {
     const startTime = Date.now();
-    let execution: any = null;
-    let githubPush: any = null;
+    let execution: {
+      ticket: { clickup_task_id: string; title: string; description: string };
+      ai_provider: AIProvider;
+      complexity_score: number | null;
+      code_output: string | null;
+      files_changed: unknown;
+    } | null = null;
+
+    let githubPush: {
+      id: string;
+      repository: string;
+      branch_name: string;
+    } | null = null;
 
     this.logger.info('Starting commit orchestration', {
       executionId,
@@ -175,7 +186,9 @@ export class GitHubCommitOrchestrator {
 
       // Validate commit SHA format
       if (!validateCommitSha(parsedResult.commitSha)) {
-        const error = new Error(`Invalid commit SHA format received from AI: ${parsedResult.commitSha}`);
+        const error = new Error(
+          `Invalid commit SHA format received from AI: ${parsedResult.commitSha}`,
+        );
         this.logger.error('Invalid commit SHA format', {
           executionId,
           commitSha: parsedResult.commitSha,

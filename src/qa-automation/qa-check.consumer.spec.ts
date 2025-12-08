@@ -72,14 +72,17 @@ describe('QaCheckConsumer', () => {
         { provide: LoggerService, useValue: mockLoggerService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: `PROM_METRIC_${QUEUE_METRICS.DEPTH}`, useValue: mockQueueDepthGauge },
+        { provide: `PROM_METRIC_DSF_QUEUE_DEPTH`, useValue: mockQueueDepthGauge },
         {
           provide: `PROM_METRIC_${QUEUE_METRICS.CONSUMER_COUNT}`,
           useValue: mockConsumerCountGauge,
         },
+        { provide: `PROM_METRIC_DSF_QUEUE_CONSUMER_COUNT`, useValue: mockConsumerCountGauge },
         {
           provide: `PROM_METRIC_${QUEUE_METRICS.PROCESSING_RATE}`,
           useValue: mockProcessingRateCounter,
         },
+        { provide: `PROM_METRIC_DSF_QUEUE_PROCESSING_RATE`, useValue: mockProcessingRateCounter },
       ],
     }).compile();
 

@@ -85,7 +85,7 @@ export class SystemCollector implements OnModuleInit, OnModuleDestroy {
     // Story 4.7: GitHub Errors
     @InjectMetric(GITHUB_METRICS.ERRORS_TOTAL)
     private readonly githubOperationErrorsTotal: Counter,
-  ) { }
+  ) {}
 
   onModuleInit() {
     this.startSystemMetricsCollection();

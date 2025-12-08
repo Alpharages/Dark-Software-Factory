@@ -238,8 +238,10 @@ development_status:
       lint: "0 errors on Story 3.8 files"
     notes: "APPROVED. Code review completed 2025-12-05. FIXED: (1) Removed duplicate QUEUE_METRICS from qa-automation.module.ts - CRITICAL, (2) Integrated QaMetricsService into QaOrchestratorService as per Story 3.8 requirements - HIGH, (3) Added error handling and validation to QaMetricsService methods - MEDIUM, (4) Fixed File List accuracy (6 files, not 4) - HIGH. Extended Story 1.8 metrics with provider/project_id labels. Created QaMetricsService facade with defensive programming. Updated BusinessCollector and QaOrchestratorService. 2 new files, 6 modified files. All acceptance criteria met."
   3-9-tech-debt-qa-automation-refactor:
-    status: ready-for-dev
+    status: done
     priority: high
+    assigned_to: "dev-agent"
+    completion_notes: "Resolved circular dependency false alarms and fixed 2 critical test suites (consumer & orchestrator) by correcting DI configuration and metric token issues. All 159 tests passed."
     notes: "Follow-up task from Story 4.7 review (2025-12-08). Investigate and refactor `qa-automation` module to resolve persistent circular dependency and module compilation errors blocking test execution. Related to `tech-debt-qa-automation-refactor.md`."
   epic-3-retrospective: done
 

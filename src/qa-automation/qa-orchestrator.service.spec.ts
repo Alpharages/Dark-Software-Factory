@@ -9,6 +9,13 @@ import { QA_METRICS } from '../common/metrics/metrics.constants';
 import { ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 
+import { ConfigService } from '@nestjs/config';
+import { LinterService } from './linter.service';
+import { TestRunnerService } from './test-runner.service';
+import { CoverageService } from './coverage.service';
+import { CodeReviewService } from './code-review.service';
+import { QaMetricsService } from './qa-metrics.service';
+
 describe('QaOrchestratorService', () => {
   let service: QaOrchestratorService;
   let prisma: PrismaService;
@@ -34,8 +41,35 @@ describe('QaOrchestratorService', () => {
     captureException: jest.fn(),
   };
 
+  const mockConfigService = {
+    get: jest.fn(),
+  };
+
   const mockQualityGatesService = {
     evaluate: jest.fn(),
+  };
+
+  const mockLinterService = {
+    lintFiles: jest.fn(),
+  };
+
+  const mockTestRunnerService = {
+    runTests: jest.fn(),
+  };
+
+  const mockCoverageService = {
+    analyzeCoverage: jest.fn(),
+  };
+
+  const mockCodeReviewService = {
+    scan: jest.fn(),
+  };
+
+  const mockQaMetricsService = {
+    recordGateDecision: jest.fn(),
+    recordCheckError: jest.fn(),
+    recordCheckComplete: jest.fn(),
+    setCoverage: jest.fn(),
   };
 
   const mockRabbitPublisher = {
@@ -57,7 +91,13 @@ describe('QaOrchestratorService', () => {
         QaOrchestratorService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: SentryService, useValue: mockSentryService },
+        { provide: ConfigService, useValue: mockConfigService },
         { provide: QualityGatesService, useValue: mockQualityGatesService },
+        { provide: LinterService, useValue: mockLinterService },
+        { provide: TestRunnerService, useValue: mockTestRunnerService },
+        { provide: CoverageService, useValue: mockCoverageService },
+        { provide: CodeReviewService, useValue: mockCodeReviewService },
+        { provide: QaMetricsService, useValue: mockQaMetricsService },
         { provide: RabbitMQPublisherService, useValue: mockRabbitPublisher },
         { provide: getToken(QA_METRICS.CHECKS_TOTAL), useValue: mockCounter },
         { provide: getToken(QA_METRICS.CHECK_DURATION), useValue: mockHistogram },
@@ -183,10 +223,13 @@ describe('QaOrchestratorService', () => {
       // Verify Sentry reporting
       expect(mockSentryService.captureException).toHaveBeenCalled();
 
-      // Verify error metrics
-      expect(mockCounter.inc).toHaveBeenCalledWith({
-        status: 'error',
-      });
+      // Verify error metrics via Facade
+      expect(mockQaMetricsService.recordCheckError).toHaveBeenCalledWith(
+        'linting',
+        'error',
+        expect.any(Number),
+        expect.objectContaining({ projectId: mockMessage.projectId }),
+      );
     });
   });
 });

@@ -39,7 +39,7 @@ export class GitHubPROrchestrator {
     private readonly sentry: SentryService,
     private readonly errorMonitor: GitHubErrorMonitor,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-  ) { }
+  ) {}
 
   /**
    * Orchestrates PR creation via AI delegation
@@ -50,8 +50,19 @@ export class GitHubPROrchestrator {
     correlationId?: string,
   ): Promise<PROrchestrationResult> {
     const startTime = Date.now();
-    let execution: any = null;
-    let githubPush: any = null;
+    let execution: {
+      ticket: { clickup_task_id: string; title: string; description: string };
+      ai_provider: string;
+      complexity_score: number | null;
+      confidence_score: number | null;
+    } | null = null;
+
+    let githubPush: {
+      id: string;
+      repository: string;
+      branch_name: string;
+      commit_sha: string | null;
+    } | null = null;
 
     this.logger.info('Starting PR orchestration', {
       executionId,
@@ -91,18 +102,18 @@ export class GitHubPROrchestrator {
 
       const qaResults: QAResultsSummary = qaResult
         ? {
-          linting_passed: qaResult.linting_passed || false,
-          tests_passed: qaResult.tests_passed || false,
-          test_coverage: qaResult.test_coverage || undefined,
-          code_review_passed: qaResult.code_review_passed || false,
-          qa_summary_details: '', // TODO: Extract from qa_result details
-        }
+            linting_passed: qaResult.linting_passed || false,
+            tests_passed: qaResult.tests_passed || false,
+            test_coverage: qaResult.test_coverage || undefined,
+            code_review_passed: qaResult.code_review_passed || false,
+            qa_summary_details: '', // TODO: Extract from qa_result details
+          }
         : {
-          linting_passed: false,
-          tests_passed: false,
-          code_review_passed: false,
-          qa_summary_details: 'QA results not found',
-        };
+            linting_passed: false,
+            tests_passed: false,
+            code_review_passed: false,
+            qa_summary_details: 'QA results not found',
+          };
 
       // AC#2: Build PR description
       const prDescriptionContext: PRDescriptionContext = {

@@ -21,7 +21,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly businessCollector: BusinessCollector,
     private readonly systemCollector: SystemCollector,
     private readonly queueCollector: QueueCollector,
-  ) { }
+  ) {}
 
   onModuleInit() {
     this.logger.log('Prometheus metrics service initialized', 'MetricsService');
