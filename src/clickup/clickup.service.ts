@@ -1,0 +1,382 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { SentryService } from '../common/sentry/sentry.service';
+import axios, { AxiosInstance, AxiosError } from 'axios';
+
+interface ClickUpStatus {
+  id: string;
+  status: string;
+  orderindex: number;
+  color: string;
+}
+
+interface ClickUpTask {
+  id: string;
+  name: string;
+  status?: {
+    status: string;
+    statuses?: ClickUpStatus[];
+  };
+}
+
+/**
+ * ClickUp API Integration Service
+ * Story 4.6: Deployment Status Synchronization
+ *
+ * Responsibilities:
+ * - Update ticket status via ClickUp API
+ * - Add comments to tickets with markdown formatting
+ * - Retry logic with exponential backoff (3 attempts: 1s, 2s, 4s)
+ * - Rate limit detection and handling (HTTP 429)
+ * - Status name → ID resolution with 1-hour cache TTL
+ */
+@Injectable()
+export class ClickUpService {
+  private readonly logger = new Logger(ClickUpService.name);
+  private readonly client: AxiosInstance;
+  private readonly statusNameToIdCache = new Map<string, { id: string; expiresAt: Date }>();
+  private readonly retryAttempts: number;
+  private readonly retryBackoffMs: number;
+
+  constructor(
+    private readonly config: ConfigService,
+    private readonly sentry: SentryService,
+  ) {
+    const apiKey = this.config.get<string>('CLICKUP_API_KEY');
+
+    // C5: Validate CLICKUP_API_KEY is configured
+    if (!apiKey) {
+      throw new Error('CLICKUP_API_KEY is required but not configured in environment');
+    }
+
+    const baseURL = this.config.get<string>(
+      'CLICKUP_API_BASE_URL',
+      'https://api.clickup.com/api/v2',
+    );
+
+    this.client = axios.create({
+      baseURL,
+      headers: {
+        Authorization: apiKey,
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000, // 10 second timeout
+    });
+
+    this.retryAttempts = this.config.get<number>('CLICKUP_RETRY_ATTEMPTS', 3);
+    this.retryBackoffMs = this.config.get<number>('CLICKUP_RETRY_BACKOFF_MS', 1000);
+  }
+
+  /**
+   * Update ClickUp task status
+   * AC#1: Status name → ID resolution with caching
+   * AC#3: Retry with exponential backoff
+   *
+   * @param ticketId - ClickUp task ID
+   * @param statusName - Human-readable status name (e.g., "Deployed")
+   * @param options - Optional correlation ID for logging
+   * @returns true if successful, false otherwise
+   */
+  async updateStatus(
+    ticketId: string,
+    statusName: string,
+    options?: { correlationId?: string },
+  ): Promise<boolean> {
+    const correlationId = options?.correlationId || 'clickup-update-status';
+
+    try {
+      // Check cache first
+      const cached = this.statusNameToIdCache.get(statusName);
+      if (cached && cached.expiresAt > new Date()) {
+        this.logger.debug(`Status ID cache hit for "${statusName}"`, {
+          correlationId,
+          statusName,
+          statusId: cached.id,
+        });
+        return await this.updateStatusById(ticketId, cached.id, correlationId);
+      }
+
+      // Resolve status name → ID via ClickUp API
+      const statusId = await this.resolveStatusId(ticketId, statusName, correlationId);
+
+      // Cache with 1-hour TTL
+      this.statusNameToIdCache.set(statusName, {
+        id: statusId,
+        expiresAt: new Date(Date.now() + 3600000), // 1 hour
+      });
+
+      return await this.updateStatusById(ticketId, statusId, correlationId);
+    } catch (error) {
+      this.logger.error('Failed to update ClickUp status after all retries', {
+        correlationId,
+        ticketId,
+        statusName,
+        error: (error as Error).message,
+      });
+
+      this.sentry.captureException(error as Error, {
+        tags: { operation: 'clickup_update_status' },
+        extra: { ticketId, statusName, correlationId },
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Add comment to ClickUp task
+   * AC#2: Markdown comment formatting
+   * AC#3: Retry with exponential backoff
+   *
+   * @param ticketId - ClickUp task ID
+   * @param comment - Markdown-formatted comment text
+   * @param options - Optional correlation ID for logging
+   * @returns true if successful, false otherwise
+   */
+  async addComment(
+    ticketId: string,
+    comment: string,
+    options?: { correlationId?: string },
+  ): Promise<boolean> {
+    const correlationId = options?.correlationId || 'clickup-add-comment';
+    const maxLength = this.config.get<number>('CLICKUP_MAX_COMMENT_LENGTH', 20000);
+
+    // Truncate comment if too long
+    const truncatedComment = comment.length > maxLength ? comment.substring(0, maxLength) : comment;
+
+    if (comment.length > maxLength) {
+      this.logger.warn('Comment truncated to ClickUp max length', {
+        correlationId,
+        ticketId,
+        originalLength: comment.length,
+        maxLength,
+      });
+    }
+
+    const operation = async () => {
+      const response = await this.client.post(`/task/${ticketId}/comment`, {
+        comment_text: truncatedComment,
+        notify_all: false, // Don't spam team with notifications
+      });
+
+      return response.status === 200;
+    };
+
+    try {
+      const success = await this.retryWithBackoff(operation, correlationId);
+
+      if (success) {
+        this.logger.log('ClickUp comment added successfully', {
+          correlationId,
+          ticketId,
+          commentLength: truncatedComment.length,
+        });
+      }
+
+      return success;
+    } catch (error) {
+      this.logger.error('Failed to add ClickUp comment after all retries', {
+        correlationId,
+        ticketId,
+        error: (error as Error).message,
+      });
+
+      this.sentry.captureException(error as Error, {
+        tags: { operation: 'clickup_add_comment' },
+        extra: { ticketId, commentLength: truncatedComment.length, correlationId },
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Resolve status name to status ID using ClickUp API
+   * Fetches task details to get available statuses
+   *
+   * @param ticketId - ClickUp task ID
+   * @param statusName - Human-readable status name
+   * @param correlationId - Correlation ID for logging
+   * @returns Status ID
+   */
+  private async resolveStatusId(
+    ticketId: string,
+    statusName: string,
+    correlationId: string,
+  ): Promise<string> {
+    try {
+      // Get task details to find status ID
+      const response = await this.client.get<ClickUpTask>(`/task/${ticketId}`);
+      const task = response.data;
+
+      // Find matching status in task's list
+      const status = task.status?.statuses?.find(
+        (s: ClickUpStatus) => s.status.toLowerCase() === statusName.toLowerCase(),
+      );
+
+      if (status) {
+        this.logger.debug('Resolved status name to ID', {
+          correlationId,
+          statusName,
+          statusId: status.id,
+        });
+        return status.id;
+      }
+
+      // Fallback: use status name directly if no match found
+      this.logger.warn('Status name not found in task statuses, using name as ID fallback', {
+        correlationId,
+        ticketId,
+        statusName,
+      });
+
+      return statusName;
+    } catch (error) {
+      this.logger.warn('Failed to resolve status ID, using status name as fallback', {
+        correlationId,
+        ticketId,
+        statusName,
+        error: (error as Error).message,
+      });
+
+      return statusName;
+    }
+  }
+
+  /**
+   * Update task status by ID
+   * Internal method with retry logic
+   *
+   * @param ticketId - ClickUp task ID
+   * @param statusId - ClickUp status ID
+   * @param correlationId - Correlation ID for logging
+   * @returns true if successful
+   */
+  private async updateStatusById(
+    ticketId: string,
+    statusId: string,
+    correlationId: string,
+  ): Promise<boolean> {
+    const operation = async () => {
+      const response = await this.client.put(`/task/${ticketId}`, {
+        status: statusId,
+      });
+
+      return response.status === 200;
+    };
+
+    const success = await this.retryWithBackoff(operation, correlationId);
+
+    if (success) {
+      this.logger.log('ClickUp status updated successfully', {
+        correlationId,
+        ticketId,
+        statusId,
+      });
+    }
+
+    return success;
+  }
+
+  /**
+   * Retry operation with exponential backoff
+   * AC#3: 3 attempts with 1s, 2s, 4s delays
+   *
+   * @param operation - Async operation to retry
+   * @param correlationId - Correlation ID for logging
+   * @returns Result of successful operation
+   */
+  private async retryWithBackoff<T>(
+    operation: () => Promise<T>,
+    correlationId: string,
+  ): Promise<T> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error as Error;
+        const axiosError = error as AxiosError;
+
+        // AC#3: Check for rate limit (HTTP 429)
+        if (axiosError.response?.status === 429) {
+          const rateLimitReset = this.extractRateLimitReset(axiosError);
+          this.logger.warn('ClickUp rate limit hit', {
+            correlationId,
+            attempt,
+            rateLimitReset: rateLimitReset ? new Date(rateLimitReset * 1000) : 'unknown',
+          });
+
+          // For rate limits, we should use delayed retry queue (Story 4.1 pattern)
+          // For now, just throw to fail fast
+          throw new Error('ClickUp rate limit exceeded');
+        }
+
+        // Check if error is retryable
+        if (!this.isRetryableError(axiosError) || attempt === this.retryAttempts) {
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = this.retryBackoffMs * Math.pow(2, attempt - 1);
+        this.logger.warn(`ClickUp API retry attempt ${attempt}/${this.retryAttempts}`, {
+          correlationId,
+          attempt,
+          delay,
+          error: (error as Error).message,
+        });
+
+        await this.sleep(delay);
+      }
+    }
+
+    throw lastError!;
+  }
+
+  /**
+   * Extract rate limit reset time from response headers
+   *
+   * @param error - Axios error with response
+   * @returns Unix timestamp of rate limit reset, or null
+   */
+  private extractRateLimitReset(error: AxiosError): number | null {
+    const resetHeader = error.response?.headers['x-ratelimit-reset'];
+    if (resetHeader) {
+      return parseInt(resetHeader as string, 10);
+    }
+    return null;
+  }
+
+  /**
+   * Check if error is retryable
+   * Transient errors: network issues, 5xx server errors, timeouts
+   *
+   * @param error - Error to check
+   * @returns true if retryable
+   */
+  private isRetryableError(error: AxiosError): boolean {
+    // Network errors (no response)
+    if (!error.response) {
+      return (
+        error.code === 'ECONNRESET' ||
+        error.code === 'ETIMEDOUT' ||
+        error.code === 'ENOTFOUND' ||
+        error.code === 'ECONNREFUSED'
+      );
+    }
+
+    // Server errors (5xx)
+    const status = error.response.status;
+    return status >= 500 && status < 600;
+  }
+
+  /**
+   * Sleep for specified milliseconds
+   *
+   * @param ms - Milliseconds to sleep
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}

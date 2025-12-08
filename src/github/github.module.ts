@@ -8,6 +8,7 @@ import { GitHubCommitOrchestrator } from './services/github-commit-orchestrator.
 import { GitHubPROrchestrator } from './services/github-pr-orchestrator.service';
 import { DeploymentOrchestrator } from './services/deployment-orchestrator.service';
 import { DeploymentTriggerConsumer } from './services/deployment-trigger.consumer';
+import { DeploymentStatusSync } from './services/deployment-status-sync.service';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
@@ -15,6 +16,7 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { DatabaseModule } from '../database/database.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { ClickUpModule } from '../clickup/clickup.module';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     RabbitMQModule,
     AiRoutingModule,
     WebhooksModule,
+    ClickUpModule,
   ],
   providers: [
     GitHubService,
@@ -36,6 +39,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     GitHubPROrchestrator,
     DeploymentOrchestrator,
     DeploymentTriggerConsumer,
+    DeploymentStatusSync,
   ],
   exports: [
     GitHubService,
@@ -43,6 +47,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     GitHubCommitOrchestrator,
     GitHubPROrchestrator,
     DeploymentOrchestrator,
+    DeploymentStatusSync,
   ],
 })
 export class GitHubModule {}

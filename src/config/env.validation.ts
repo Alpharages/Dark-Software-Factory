@@ -166,4 +166,13 @@ export const envValidationSchema = Joi.object({
   QG_TESTING_TIMEOUT_MS: Joi.number().integer().min(30000).max(900000).default(300000), // 30s-15min
   QG_COVERAGE_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
   QG_SECURITY_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10min
+
+  // Story 4.6: Deployment Status Synchronization (optional - has sensible defaults)
+  CLICKUP_STATUS_DEPLOYED: Joi.string().default('Deployed'),
+  CLICKUP_STATUS_DEPLOY_FAILED: Joi.string().default('Deployment Failed'),
+  CLICKUP_STATUS_ROLLED_BACK: Joi.string().default('Rolled Back'),
+  CLICKUP_MAX_COMMENT_LENGTH: Joi.number().integer().min(1000).max(50000).default(20000),
+  CLICKUP_RETRY_ATTEMPTS: Joi.number().integer().min(1).max(10).default(3),
+  CLICKUP_RETRY_BACKOFF_MS: Joi.number().integer().min(100).max(5000).default(1000),
+  CLICKUP_API_BASE_URL: Joi.string().uri().default('https://api.clickup.com/api/v2'),
 });

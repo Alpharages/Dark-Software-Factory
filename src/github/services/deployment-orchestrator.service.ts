@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DeploymentStatus, Deployment, GitHubPush } from '@prisma/client';
+import { DeploymentStatus } from '@prisma/client';
 import * as yaml from 'js-yaml';
 import { PrismaService } from '../../database/prisma.service';
 import { LoggerService } from '../../common/logger/logger.service';
@@ -9,6 +9,7 @@ import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { WebhooksService } from '../../webhooks/webhooks.service';
 import { GitHubService } from '../github.service';
+import { DeploymentStatusSync } from './deployment-status-sync.service';
 import {
   DeploymentConfig,
   GitHubWorkflow,
@@ -40,6 +41,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
     private readonly sentry: SentryService,
     private readonly logger: LoggerService,
     private readonly config: ConfigService,
+    private readonly deploymentStatusSync: DeploymentStatusSync,
   ) {
     this.DEFAULT_WORKFLOW_ID = this.config.get<string>('github.defaultWorkflowId', 'deploy.yml');
     this.POLL_INTERVAL_MS = this.config.get<number>('deployment.pollInterval', 30000); // 30s
@@ -483,7 +485,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
   private async updateDeploymentStatus(
     deploymentId: string,
     runStatus: GitHubRunStatus,
-    repository: string,
+    _repository: string,
   ): Promise<void> {
     const deployment = await this.prisma.deployment.findUnique({
       where: { id: deploymentId },
@@ -503,7 +505,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
     }
 
     // Update deployment record
-    const updatedDeployment = await this.prisma.deployment.update({
+    await this.prisma.deployment.update({
       where: { id: deploymentId },
       data: {
         status: newStatus,
@@ -545,8 +547,12 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         duration,
       });
 
-      // Update ClickUp (AC#4)
-      await this.syncToClickUp(updatedDeployment, deployment.github_push, repository);
+      // Update ClickUp (AC#4) - Story 4.6 integration
+      // Fire-and-forget: Do NOT await, do NOT block deployment updates
+      this.deploymentStatusSync.syncToClickUp(deploymentId).catch((error) => {
+        // Logged to Sentry within syncToClickUp, just prevent unhandled rejection
+        this.logger.error('ClickUp sync failed (non-blocking)', error.message, { deploymentId });
+      });
     }
 
     this.logger.log('Deployment status updated', {
@@ -596,122 +602,6 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
     const base = this.POLL_INTERVAL_MS;
     const backoff = Math.min(base * (attempts + 1), 120000); // Max 2 minutes
     return backoff;
-  }
-
-  /**
-   * AC#4: Sync deployment status to ClickUp
-   *
-   * TODO: ClickUp integration deferred - WebhooksService doesn't have updateTaskStatus/addTaskComment yet
-   * This needs to be implemented in a future story or as part of Story 4.6
-   */
-  private async syncToClickUp(
-    deployment: Deployment,
-    githubPush: GitHubPush,
-    repository: string,
-  ): Promise<void> {
-    try {
-      // Get ticket ID from execution
-      const execution = await this.prisma.execution.findFirst({
-        where: { id: githubPush.execution_id },
-        include: { ticket: true },
-      });
-
-      if (!execution?.ticket) {
-        this.logger.warn('Cannot sync to ClickUp: ticket not found', {
-          deploymentId: deployment.id,
-          executionId: githubPush.execution_id,
-        });
-        return;
-      }
-
-      const ticketId = execution.ticket.clickup_task_id;
-      const [owner, repo] = repository.split('/');
-
-      // Prepare comment content
-      const comment = this.buildClickUpComment(deployment, githubPush, owner, repo);
-
-      // Update ticket status (DEFERRED: WebhooksService doesn't have these methods yet)
-      // const statusName = this.getClickUpStatus(deployment.status, deployment.environment);
-      // await this.webhooks.updateTaskStatus(ticketId, statusName);
-      // await this.webhooks.addTaskComment(ticketId, comment);
-
-      this.logger.log('ClickUp sync deferred - manually update ticket', {
-        deploymentId: deployment.id,
-        ticketId,
-        comment: comment.substring(0, 100),
-      });
-    } catch (error) {
-      const err = error as Error;
-      // Graceful degradation (AC#5)
-      this.logger.error('Failed to sync to ClickUp', err.stack || err.message, {
-        deploymentId: deployment.id,
-      });
-
-      this.sentry.captureException(err, {
-        tags: {
-          operation: 'clickup_sync',
-          deployment_id: deployment.id,
-        },
-      });
-    }
-  }
-
-  /**
-   * AC#4: Build ClickUp comment with deployment details
-   */
-  private buildClickUpComment(
-    deployment: Deployment,
-    githubPush: GitHubPush,
-    owner: string,
-    repo: string,
-  ): string {
-    const commitUrl = `https://github.com/${owner}/${repo}/commit/${githubPush.commit_sha}`;
-    const buildUrl = `https://github.com/${owner}/${repo}/actions/runs/${deployment.build_id}`;
-
-    if (deployment.status === DeploymentStatus.COMPLETED) {
-      return `✅ **Deployment Successful** (${deployment.environment})
-
-📦 **Environment:** ${deployment.environment}
-🚀 **Deployed at:** ${deployment.deployed_at ? new Date(deployment.deployed_at).toISOString() : 'N/A'}
-📝 **Commit:** [${githubPush.commit_sha?.substring(0, 7)}](${commitUrl})
-🔗 **PR:** [#${githubPush.pr_number}](${githubPush.pr_url})
-📊 **Build:** [View logs](${buildUrl})`;
-    } else if (deployment.status === DeploymentStatus.FAILED) {
-      return `❌ **Deployment Failed** (${deployment.environment})
-
-📦 **Environment:** ${deployment.environment}
-⚠️ **Error:** ${deployment.error_message || 'Pipeline failed'}
-📝 **Commit:** [${githubPush.commit_sha?.substring(0, 7)}](${commitUrl})
-🔗 **PR:** [#${githubPush.pr_number}](${githubPush.pr_url})
-📊 **Build logs:** [View details](${buildUrl})
-
-**Required Actions:**
-- Review build logs for error details
-- Fix issues and push new commit
-- Deployment will auto-retry on new push`;
-    } else if (deployment.status === DeploymentStatus.ROLLED_BACK) {
-      return `🔄 **Deployment Rolled Back** (${deployment.environment})
-
-📦 **Environment:** ${deployment.environment}
-⚠️ **Reason:** ${deployment.error_message || 'Rollback triggered'}
-📊 **Build logs:** [View details](${buildUrl})`;
-    }
-
-    return '';
-  }
-
-  /**
-   * AC#4: Get ClickUp status name based on deployment status
-   */
-  private getClickUpStatus(status: DeploymentStatus, _environment: string): string {
-    if (status === DeploymentStatus.COMPLETED) {
-      return this.config.get<string>('clickup.statusDeployed', 'Deployed');
-    } else if (status === DeploymentStatus.FAILED) {
-      return this.config.get<string>('clickup.statusDeployFailed', 'Deployment Failed');
-    } else if (status === DeploymentStatus.ROLLED_BACK) {
-      return this.config.get<string>('clickup.statusRolledBack', 'Rolled Back');
-    }
-    return 'In Progress';
   }
 
   /**
