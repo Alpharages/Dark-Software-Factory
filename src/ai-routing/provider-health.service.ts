@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AIProvider } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
@@ -16,7 +16,7 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
  * Per architecture: Auto-fallback when primary unavailable
  */
 @Injectable()
-export class ProviderHealthService implements OnModuleInit {
+export class ProviderHealthService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ProviderHealthService.name);
 
   // In-memory health cache (updated periodically)
@@ -45,6 +45,13 @@ export class ProviderHealthService implements OnModuleInit {
     this.healthCheckInterval = setInterval(() => this.checkAllProviders(), 30000);
 
     this.logger.log('Provider health monitoring initialized');
+  }
+
+  onModuleDestroy(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
   }
 
   /**

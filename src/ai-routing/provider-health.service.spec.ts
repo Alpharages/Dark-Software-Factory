@@ -54,6 +54,13 @@ describe('ProviderHealthService', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    // Clean up the interval timer to prevent open handles
+    if (service) {
+      service.onModuleDestroy();
+    }
+  });
+
   describe('getProviderHealth', () => {
     it('should return healthy status when provider is enabled and under capacity', async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

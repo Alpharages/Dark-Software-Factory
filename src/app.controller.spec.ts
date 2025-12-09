@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -83,6 +84,7 @@ describe('AppController', () => {
 
 describe('Swagger Configuration', () => {
   let module: TestingModule;
+  let app: INestApplication | null;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -110,12 +112,20 @@ describe('Swagger Configuration', () => {
     }).compile();
   });
 
+  afterEach(async () => {
+    // Close app instance after each test to prevent open handles
+    if (app) {
+      await app.close();
+      app = null;
+    }
+  });
+
   afterAll(async () => {
     await module.close();
   });
 
   it('should generate valid OpenAPI document', () => {
-    const app = module.createNestApplication();
+    app = module.createNestApplication();
 
     const config = new DocumentBuilder()
       .setTitle('Test API')
@@ -132,7 +142,7 @@ describe('Swagger Configuration', () => {
   });
 
   it('should include JWT security scheme', () => {
-    const app = module.createNestApplication();
+    app = module.createNestApplication();
 
     const config = new DocumentBuilder()
       .setTitle('Test API')

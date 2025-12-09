@@ -47,6 +47,10 @@ describe('WebhooksService', () => {
   });
 
   afterEach(() => {
+    // Clean up the interval timer to prevent open handles
+    if (service) {
+      service.onModuleDestroy();
+    }
     jest.clearAllMocks();
   });
 
