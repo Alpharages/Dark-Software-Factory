@@ -121,6 +121,7 @@ export class GitHubCommentTemplates {
       pr_creation: 'Pull Request Creation',
       deployment: 'Deployment',
     };
+    // eslint-disable-next-line security/detect-object-injection
     return labels[operationType] || operationType;
   }
 
