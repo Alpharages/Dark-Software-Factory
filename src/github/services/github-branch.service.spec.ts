@@ -97,6 +97,8 @@ describe('GitHubBranchService', () => {
             incrementGitHubOperation: jest.fn(),
             incrementGitHubRateLimitHit: jest.fn(),
             recordGitHubOperationDuration: jest.fn(),
+            incrementCounter: jest.fn(),
+            recordHistogram: jest.fn(),
           },
         },
         {

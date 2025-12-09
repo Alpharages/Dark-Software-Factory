@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import {
   makeCounterProvider,
@@ -42,7 +42,7 @@ import { ExecutionModule } from '../execution/execution.module';
  * - AIRoutingConsumer: Process routing queue
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule, RabbitMQModule, ExecutionModule],
+  imports: [ConfigModule, DatabaseModule, RabbitMQModule, forwardRef(() => ExecutionModule)],
   providers: [
     // Story 2.3: Routing services
     AIRoutingService,

@@ -38,6 +38,7 @@ describe('DeploymentOrchestrator', () => {
     incrementCounter: jest.fn(),
     setGauge: jest.fn(),
     decrementGauge: jest.fn(),
+    recordHistogram: jest.fn(),
   };
   const mockAuditLog = { log: jest.fn() };
   const mockSentry = { captureException: jest.fn(), captureMessage: jest.fn() };

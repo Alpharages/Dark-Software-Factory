@@ -10,6 +10,7 @@ import {
   PromptMetadataSnapshotDto,
 } from './dto';
 import { IStateTransition } from './interfaces';
+import { QaCheckPublisher } from '../qa-automation/qa-check.publisher'; // Story 3.7 integration
 
 describe('ExecutionService', () => {
   let service: ExecutionService;
@@ -74,6 +75,13 @@ describe('ExecutionService', () => {
             canComplete: jest.fn(),
             isTerminal: jest.fn(),
             transition: jest.fn(),
+          },
+        },
+        {
+          // Story 3.7: QaCheckPublisher added to ExecutionService constructor
+          provide: QaCheckPublisher,
+          useValue: {
+            publishQaCheck: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

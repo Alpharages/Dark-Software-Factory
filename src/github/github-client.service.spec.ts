@@ -103,13 +103,15 @@ describe('GitHubClientService', () => {
       expect(metricsService.incrementGitHubOperation).toHaveBeenCalledWith('test_op', 'failure');
       expect(logger.warn).toHaveBeenCalled();
 
-      // Verify RabbitMQ publishing
+      // Verify RabbitMQ publishing (publishToQueue has 4 params: queue, payload, correlationId, delayMs)
       expect(publisherService.publishToQueue).toHaveBeenCalledWith(
         'github-retry-queue',
         expect.objectContaining({
           context: 'test_op',
           error: 'Too Many Requests',
         }),
+        undefined, // correlationId
+        expect.any(Number), // delayMs
       );
     });
 

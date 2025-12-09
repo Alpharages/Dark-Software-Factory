@@ -7,7 +7,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL") // Removed for Prisma 7
+  // Note: Prisma 7 requires DATABASE_URL in prisma.config.ts or adapter in PrismaClient constructor
+  // For development/test: set DATABASE_URL env var
+  // url is configured at runtime via PrismaClient constructor
 }
 
 

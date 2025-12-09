@@ -4,6 +4,7 @@
  *
  * Run: npx ts-node test/integration/validate-qa-ai-delegation.ts
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Test } from '@nestjs/testing';
 import { AiQaOrchestrator } from '../../src/qa-automation/ai-qa-orchestrator.service';
@@ -31,11 +32,17 @@ async function validateQaAiDelegation() {
   const projectDir = process.cwd(); // Dark Software Factory root
   const ticketId = 'VALIDATION-3-10';
 
+  interface QACheckResult {
+    status: string;
+    aiProvider?: string;
+    data?: unknown; // Matches IQaResult from AiQaOrchestrator
+  }
+
   const results = {
-    lint: null as unknown,
-    test: null as unknown,
-    coverage: null as unknown,
-    security: null as unknown,
+    lint: null as QACheckResult | null,
+    test: null as QACheckResult | null,
+    coverage: null as QACheckResult | null,
+    security: null as QACheckResult | null,
     timings: {} as Record<string, number>,
   };
 
@@ -52,8 +59,8 @@ async function validateQaAiDelegation() {
     console.log(`   Status: ${results.lint.status}`);
     console.log(`   Duration: ${results.timings.lint}ms`);
     console.log(`   AI Provider: ${results.lint.aiProvider}`);
-    console.log(`   Errors: ${results.lint.data?.errorCount || 0}`);
-    console.log(`   Warnings: ${results.lint.data?.warningCount || 0}`);
+    console.log(`   Errors: ${(results.lint.data as any)?.errorCount || 0}`);
+    console.log(`   Warnings: ${(results.lint.data as any)?.warningCount || 0}`);
     console.log(
       `   Performance: ${results.timings.lint < 60000 ? '✅ PASS' : '❌ FAIL'} (target: <60s)\n`,
     );
@@ -74,9 +81,9 @@ async function validateQaAiDelegation() {
     console.log(`   Status: ${results.test.status}`);
     console.log(`   Duration: ${results.timings.test}ms`);
     console.log(`   AI Provider: ${results.test.aiProvider}`);
-    console.log(`   Total Tests: ${results.test.data?.totalTests || 'N/A'}`);
-    console.log(`   Passed: ${results.test.data?.passedCount || 'N/A'}`);
-    console.log(`   Failed: ${results.test.data?.failedCount || 'N/A'}`);
+    console.log(`   Total Tests: ${(results.test.data as any)?.totalTests || 'N/A'}`);
+    console.log(`   Passed: ${(results.test.data as any)?.passedCount || 'N/A'}`);
+    console.log(`   Failed: ${(results.test.data as any)?.failedCount || 'N/A'}`);
     console.log(
       `   Performance: ${results.timings.test < 300000 ? '✅ PASS' : '❌ FAIL'} (target: <5min)\n`,
     );
@@ -97,10 +104,10 @@ async function validateQaAiDelegation() {
     console.log(`   Status: ${results.coverage.status}`);
     console.log(`   Duration: ${results.timings.coverage}ms`);
     console.log(`   AI Provider: ${results.coverage.aiProvider}`);
-    console.log(`   Overall Coverage: ${results.coverage.data?.overall || 'N/A'}%`);
-    console.log(`   Lines: ${results.coverage.data?.lines || 'N/A'}%`);
-    console.log(`   Branches: ${results.coverage.data?.branches || 'N/A'}%`);
-    console.log(`   Functions: ${results.coverage.data?.functions || 'N/A'}%`);
+    console.log(`   Overall Coverage: ${(results.coverage.data as any)?.overall || 'N/A'}%`);
+    console.log(`   Lines: ${(results.coverage.data as any)?.lines || 'N/A'}%`);
+    console.log(`   Branches: ${(results.coverage.data as any)?.branches || 'N/A'}%`);
+    console.log(`   Functions: ${(results.coverage.data as any)?.functions || 'N/A'}%`);
     console.log(
       `   Performance: ${results.timings.coverage < 60000 ? '✅ PASS' : '❌ FAIL'} (target: <60s)\n`,
     );
@@ -121,10 +128,10 @@ async function validateQaAiDelegation() {
     console.log(`   Status: ${results.security.status}`);
     console.log(`   Duration: ${results.timings.security}ms`);
     console.log(`   AI Provider: ${results.security.aiProvider}`);
-    console.log(`   Critical: ${results.security.data?.criticalCount || 0}`);
-    console.log(`   High: ${results.security.data?.highCount || 0}`);
-    console.log(`   Medium: ${results.security.data?.mediumCount || 0}`);
-    console.log(`   Low: ${results.security.data?.lowCount || 0}`);
+    console.log(`   Critical: ${(results.security.data as any)?.criticalCount || 0}`);
+    console.log(`   High: ${(results.security.data as any)?.highCount || 0}`);
+    console.log(`   Medium: ${(results.security.data as any)?.mediumCount || 0}`);
+    console.log(`   Low: ${(results.security.data as any)?.lowCount || 0}`);
     console.log(
       `   Performance: ${results.timings.security < 180000 ? '✅ PASS' : '❌ FAIL'} (target: <3min)\n`,
     );
@@ -138,7 +145,7 @@ async function validateQaAiDelegation() {
   console.log('='.repeat(60));
 
   const passCount = [results.lint, results.test, results.coverage, results.security].filter(
-    (r) => r?.status === 'PASSED',
+    (r): r is QACheckResult => r !== null && r?.status === 'PASSED',
   ).length;
   const totalTests = 4;
 

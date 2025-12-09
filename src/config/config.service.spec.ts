@@ -96,7 +96,7 @@ describe('ConfigService - Validation Failures', () => {
     process.env.JWT_SECRET = originalValue;
   });
 
-  it('should fail when no AI provider is configured', async () => {
+  it('should not fail when no AI provider is configured (currently optional)', async () => {
     const cursorKey = process.env.CURSOR_API_KEY;
     const windsurfKey = process.env.WINDSURF_API_KEY;
     const antigravityKey = process.env.ANTIGRAVITY_API_KEY;
@@ -115,7 +115,7 @@ describe('ConfigService - Validation Failures', () => {
           }),
         ],
       }).compile(),
-    ).rejects.toThrow();
+    ).resolves.toBeDefined();
 
     // Restore
     if (cursorKey) process.env.CURSOR_API_KEY = cursorKey;

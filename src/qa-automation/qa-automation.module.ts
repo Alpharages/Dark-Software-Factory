@@ -10,7 +10,7 @@
  * Story 3.8: QA Metrics & Prometheus Integration
  */
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
 import { DatabaseModule } from '../database/database.module';
@@ -39,7 +39,7 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     RabbitMQModule,
     LoggerModule,
     AppMetricsModule,
-    AiRoutingModule, // Story 3.10: AiQaOrchestrator needs OrchestratorService
+    forwardRef(() => AiRoutingModule), // Story 3.10: AiQaOrchestrator needs OrchestratorService (circular dep fix)
   ],
   controllers: [QaResultsController, QualityGateController],
   providers: [

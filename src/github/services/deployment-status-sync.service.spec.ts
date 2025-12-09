@@ -75,6 +75,8 @@ describe('DeploymentStatusSync', () => {
           useValue: {
             recordDeployment: jest.fn(),
             incrementErrors: jest.fn(),
+            incrementCounter: jest.fn(), // Story 4.6 fix
+            recordHistogram: jest.fn(), // Story 4.6 fix
           },
         },
         {
@@ -136,11 +138,16 @@ describe('DeploymentStatusSync', () => {
         expect.stringContaining('🚀 **Deployment Successful**'),
         expect.any(Object),
       );
-      expect(metrics.recordDeployment).toHaveBeenCalledWith({
+      // Service uses Story 4.8 metrics API (incrementCounter + recordHistogram)
+      expect(metrics.incrementCounter).toHaveBeenCalledWith('deployment_status_sync_total', {
         environment: 'production',
         status: 'success',
-        duration: expect.any(Number),
       });
+      expect(metrics.recordHistogram).toHaveBeenCalledWith(
+        'deployment_status_sync_duration_seconds',
+        expect.any(Number),
+        { environment: 'production' },
+      );
       expect(auditLog.log).toHaveBeenCalled();
     });
 
@@ -184,7 +191,8 @@ describe('DeploymentStatusSync', () => {
 
       await service.syncToClickUp('deployment-123');
 
-      expect(metrics.recordDeployment).toHaveBeenCalledWith(
+      expect(metrics.incrementCounter).toHaveBeenCalledWith(
+        'deployment_status_sync_total',
         expect.objectContaining({ status: 'failed' }),
       );
       expect(auditLog.log).toHaveBeenCalledWith(
@@ -203,7 +211,8 @@ describe('DeploymentStatusSync', () => {
 
       await service.syncToClickUp('deployment-123');
 
-      expect(metrics.recordDeployment).toHaveBeenCalledWith(
+      expect(metrics.incrementCounter).toHaveBeenCalledWith(
+        'deployment_status_sync_total',
         expect.objectContaining({ status: 'success' }),
       );
     });

@@ -14,6 +14,8 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { SentryService } from '../../common/sentry/sentry.service';
+import { GitHubErrorMonitor } from './github-error-monitor.service';
+import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 
 describe('GitHubPROrchestrator', () => {
   let service: GitHubPROrchestrator;
@@ -21,7 +23,8 @@ describe('GitHubPROrchestrator', () => {
   let prismaService: jest.Mocked<PrismaService>;
   let auditService: jest.Mocked<AuditLogService>;
   let metricsService: jest.Mocked<MetricsService>;
-  let sentryService: jest.Mocked<SentryService>;
+  let _sentryService: jest.Mocked<SentryService>;
+  let errorMonitor: jest.Mocked<GitHubErrorMonitor>;
   let _logger: jest.Mocked<Logger>;
 
   const mockExecution = {
@@ -109,6 +112,8 @@ describe('GitHubPROrchestrator', () => {
           useValue: {
             incrementGitHubOperation: jest.fn(),
             recordGitHubOperationDuration: jest.fn(),
+            incrementCounter: jest.fn(),
+            recordHistogram: jest.fn(),
           },
         },
         {
@@ -119,6 +124,29 @@ describe('GitHubPROrchestrator', () => {
           provide: WINSTON_MODULE_PROVIDER,
           useValue: mockLogger,
         },
+        {
+          provide: GitHubErrorMonitor,
+          useValue: {
+            recordError: jest.fn(),
+            classifyError: jest.fn().mockReturnValue({
+              severity: 'medium',
+              retryable: true,
+              category: 'github_api',
+            }),
+            sanitizeError: jest.fn().mockImplementation((msg: string) => msg),
+            checkForRollback: jest.fn().mockResolvedValue(false),
+            handleGitHubError: jest.fn(),
+          },
+        },
+        {
+          provide: RabbitMQService,
+          useValue: {
+            publish: jest.fn().mockResolvedValue(undefined),
+            publishToQueue: jest.fn().mockResolvedValue(undefined),
+            subscribe: jest.fn(),
+            getChannel: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -127,7 +155,8 @@ describe('GitHubPROrchestrator', () => {
     prismaService = module.get(PrismaService);
     auditService = module.get(AuditLogService);
     metricsService = module.get(MetricsService);
-    sentryService = module.get(SentryService);
+    _sentryService = module.get(SentryService);
+    errorMonitor = module.get(GitHubErrorMonitor);
     _logger = module.get(WINSTON_MODULE_PROVIDER);
   });
 
@@ -266,7 +295,7 @@ describe('GitHubPROrchestrator', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('AI execution timeout');
-      expect(sentryService.captureException).toHaveBeenCalled();
+      expect(errorMonitor.handleGitHubError).toHaveBeenCalled();
     });
 
     it('should handle parsing failure', async () => {
@@ -302,22 +331,20 @@ describe('GitHubPROrchestrator', () => {
       const result = await service.createPullRequest('exec-123');
 
       expect(result.success).toBe(false);
-      expect(sentryService.captureException).toHaveBeenCalled();
+      expect(errorMonitor.handleGitHubError).toHaveBeenCalled();
     });
 
-    it('should log errors to Sentry', async () => {
+    it('should forward errors to error monitor', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockRejectedValue(
         new Error('Execution not found'),
       );
 
       await service.createPullRequest('exec-123');
 
-      expect(sentryService.captureException).toHaveBeenCalledWith(
-        expect.any(Error),
+      expect(errorMonitor.handleGitHubError).toHaveBeenCalledWith(
         expect.objectContaining({
-          extra: expect.objectContaining({
-            executionId: 'exec-123',
-          }),
+          executionId: 'exec-123',
+          operation: 'pr_creation',
         }),
       );
     });

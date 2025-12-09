@@ -17,6 +17,8 @@ import { AuditLogService } from '../../common/audit/audit-log.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { AIProvider } from '@prisma/client';
+import { GitHubErrorMonitor } from './github-error-monitor.service';
+import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 
 describe('GitHubCommitOrchestrator', () => {
   let service: GitHubCommitOrchestrator;
@@ -85,6 +87,8 @@ describe('GitHubCommitOrchestrator', () => {
           useValue: {
             incrementGitHubCommitsCreated: jest.fn(),
             recordGitHubOperationDuration: jest.fn(),
+            incrementCounter: jest.fn(),
+            recordHistogram: jest.fn(),
           },
         },
         {
@@ -99,6 +103,29 @@ describe('GitHubCommitOrchestrator', () => {
             info: jest.fn(),
             error: jest.fn(),
             warn: jest.fn(),
+          },
+        },
+        {
+          provide: GitHubErrorMonitor,
+          useValue: {
+            recordError: jest.fn(),
+            classifyError: jest.fn().mockReturnValue({
+              severity: 'medium',
+              retryable: true,
+              category: 'github_api',
+            }),
+            sanitizeError: jest.fn().mockImplementation((msg: string) => msg),
+            checkForRollback: jest.fn().mockResolvedValue(false),
+            handleGitHubError: jest.fn(),
+          },
+        },
+        {
+          provide: RabbitMQService,
+          useValue: {
+            publish: jest.fn().mockResolvedValue(undefined),
+            publishToQueue: jest.fn().mockResolvedValue(undefined),
+            subscribe: jest.fn(),
+            getChannel: jest.fn(),
           },
         },
       ],

@@ -78,7 +78,9 @@ describe('WorkspaceService', () => {
     await service.onModuleInit();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Cleanup the service to stop the cleanup scheduler
+    await service.onModuleDestroy();
     jest.clearAllMocks();
   });
 
@@ -90,14 +92,14 @@ describe('WorkspaceService', () => {
 
       const workspace = await service.createWorkspace(
         'exec-123',
-        'ticket-456',
+        '456',
         'https://github.com/test/repo.git',
         'main',
       );
 
-      expect(workspace.id).toContain('ticket-456');
+      expect(workspace.id).toContain('456');
       expect(workspace.status).toBe('READY');
-      expect(workspace.ticketId).toBe('ticket-456');
+      expect(workspace.ticketId).toBe('456');
       expect(workspace.executionId).toBe('exec-123');
       expect(workspace.branchName).toBe('feature/ticket-456');
 
@@ -145,12 +147,7 @@ describe('WorkspaceService', () => {
       gitService.clone.mockRejectedValue(new Error('Clone failed'));
 
       await expect(
-        service.createWorkspace(
-          'exec-123',
-          'ticket-456',
-          'https://github.com/test/repo.git',
-          'main',
-        ),
+        service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main'),
       ).rejects.toMatchObject({
         code: 'CLONE_FAILED',
         isRetryable: true,
@@ -169,12 +166,7 @@ describe('WorkspaceService', () => {
       gitService.configureUser.mockResolvedValue();
       gitService.checkoutBranch.mockResolvedValue();
 
-      await service.createWorkspace(
-        'exec-123',
-        'ticket-456',
-        'https://github.com/test/repo.git',
-        'main',
-      );
+      await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
 
       const workspace = service.getWorkspace('exec-123');
 
@@ -194,12 +186,7 @@ describe('WorkspaceService', () => {
       gitService.configureUser.mockResolvedValue();
       gitService.checkoutBranch.mockResolvedValue();
 
-      await service.createWorkspace(
-        'exec-123',
-        'ticket-456',
-        'https://github.com/test/repo.git',
-        'main',
-      );
+      await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
 
       service.updateWorkspaceStatus('exec-123', 'EXECUTING');
 
@@ -221,12 +208,7 @@ describe('WorkspaceService', () => {
       gitService.getDiff.mockResolvedValue('diff --git a/file.ts...');
       gitService.getChangedFiles.mockResolvedValue(['src/file.ts']);
 
-      await service.createWorkspace(
-        'exec-123',
-        'ticket-456',
-        'https://github.com/test/repo.git',
-        'main',
-      );
+      await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
 
       const changes = await service.extractChanges('exec-123');
 
@@ -245,12 +227,7 @@ describe('WorkspaceService', () => {
       gitService.configureUser.mockResolvedValue();
       gitService.checkoutBranch.mockResolvedValue();
 
-      await service.createWorkspace(
-        'exec-123',
-        'ticket-456',
-        'https://github.com/test/repo.git',
-        'main',
-      );
+      await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
 
       await service.cleanupWorkspace('exec-123', true);
 
@@ -263,12 +240,7 @@ describe('WorkspaceService', () => {
       gitService.configureUser.mockResolvedValue();
       gitService.checkoutBranch.mockResolvedValue();
 
-      await service.createWorkspace(
-        'exec-123',
-        'ticket-456',
-        'https://github.com/test/repo.git',
-        'main',
-      );
+      await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
       service.updateWorkspaceStatus('exec-123', 'FAILED');
 
       await service.cleanupWorkspace('exec-123', false);

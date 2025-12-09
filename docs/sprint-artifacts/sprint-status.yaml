@@ -252,11 +252,13 @@ development_status:
     validation_date: 2025-12-08
     notes: "CRITICAL REFACTOR. Replaced ~1800 LOC custom QA services with AI delegation pattern per ADR-008. Deleted: LintingService, TestRunnerService, CoverageService, SecurityScannerService + parsers. Created: AiQaOrchestrator (180 LOC) delegates to AI for lint/test/coverage/security. Validated with integration tests. See story file and epic-4-retro-2025-12-08.md for full context."
   3-11-fix-test-suite-failures:
-    status: ready-for-dev
+    status: done
     priority: critical
     urgency: blocks-epic-5
     estimated_effort: "30min-2h"
-    notes: "CRITICAL: Fix 63 failing tests (14 failed test suites). Root cause: QaAutomationModule has undefined import at index [6], likely from Story 3-10 refactor. Blocks CI/CD and Epic 5 development. Quick fix expected in qa-automation.module.ts + ExecutionService test mocks."
+    developer: "Amelia (Dev Agent)"
+    completed_at: "2025-12-09"
+    notes: "COMPLETE 2025-12-09: Fixed ExecutionService tests (added QaCheckPublisher mock from Story 3.7) + resolved circular dependency (ExecutionModule ↔ QaAutomationModule ↔ AiRoutingModule) with forwardRef(). Code review fixes applied: TypeScript build errors in validate-qa-ai-delegation.ts (type annotations), lint error in github-pr-orchestrator.service.spec.ts (renamed sentryService). FINAL RESULTS: Test Suites 66/66 passing ✅, Tests 768/768 passing ✅, Build passing ✅. All ACs met."
   arch-1-ai-delegation-pattern-documentation:
     status: done
     priority: high

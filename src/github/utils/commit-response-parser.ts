@@ -25,13 +25,24 @@ export function parseAIResponse(aiOutput: string): CommitPushResult {
     };
   } catch {
     // Fallback: regex extraction from text output
-    // Match format like: [main abc123...] or "commit abc123..."
-    const shaMatch = aiOutput.match(/(?:commit\s+|[\s])([a-f0-9]{40})(?:[\s]|$)/i);
-    if (shaMatch) {
-      return {
-        success: true,
-        commitSha: shaMatch[1],
-      };
+    // Match formats:
+    // 1. [main abc123def456...] - git commit output with branch name
+    // 2. commit abc123def456... - git log output
+    // 3. standalone 40-char hex - raw SHA
+    const patterns = [
+      /\[\w+\s+([a-f0-9]{40})\]/i, // [branch sha] format
+      /commit\s+([a-f0-9]{40})/i, // git log format
+      /\b([a-f0-9]{40})\b/i, // standalone SHA
+    ];
+
+    for (const pattern of patterns) {
+      const shaMatch = aiOutput.match(pattern);
+      if (shaMatch) {
+        return {
+          success: true,
+          commitSha: shaMatch[1],
+        };
+      }
     }
 
     return {

@@ -8,6 +8,7 @@ import { getToken } from '@willsoto/nestjs-prometheus';
 import { QA_METRICS } from '../common/metrics/metrics.constants';
 import { ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
+import { AiQaOrchestrator } from './ai-qa-orchestrator.service';
 
 import { ConfigService } from '@nestjs/config';
 // Story 3.10: Deleted services - replaced by AI delegation
@@ -79,6 +80,13 @@ describe('QaOrchestratorService', () => {
     publishToQueue: jest.fn(),
   };
 
+  const mockAiQaOrchestrator = {
+    executeLintCheck: jest.fn(),
+    executeTestRun: jest.fn(),
+    executeCoverageAnalysis: jest.fn(),
+    executeSecurityScan: jest.fn(),
+  };
+
   const mockCounter = {
     inc: jest.fn(),
   };
@@ -95,6 +103,7 @@ describe('QaOrchestratorService', () => {
         { provide: SentryService, useValue: mockSentryService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: QualityGatesService, useValue: mockQualityGatesService },
+        { provide: AiQaOrchestrator, useValue: mockAiQaOrchestrator },
         // Story 3.10: Deleted service providers - replaced by AI delegation
         // { provide: LinterService, useValue: mockLinterService },
         // { provide: TestRunnerService, useValue: mockTestRunnerService },

@@ -183,6 +183,12 @@ import {
       help: 'Current deployments in progress',
       labelNames: [LABELS.ENVIRONMENT],
     }),
+    // Story 4.7: Rollback Metrics
+    makeCounterProvider({
+      name: DEPLOYMENT_METRICS.ROLLBACKS_TOTAL,
+      help: 'Total deployment rollbacks',
+      labelNames: [LABELS.ENVIRONMENT, LABELS.STATUS],
+    }),
 
     // Cost Metrics
     makeHistogramProvider({
@@ -416,6 +422,12 @@ import {
       help: 'Time to create PR via API',
       labelNames: ['repository'],
       buckets: [0.5, 1, 2, 5, 10],
+    }),
+    // Story 4.7: GitHub Error Metrics
+    makeCounterProvider({
+      name: GITHUB_METRICS.ERRORS_TOTAL,
+      help: 'Total GitHub operation errors',
+      labelNames: ['operation', 'error_type'],
     }),
   ],
   exports: [MetricsService],
