@@ -10,10 +10,11 @@ import { ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 
 import { ConfigService } from '@nestjs/config';
-import { LinterService } from './linter.service';
-import { TestRunnerService } from './test-runner.service';
-import { CoverageService } from './coverage.service';
-import { CodeReviewService } from './code-review.service';
+// Story 3.10: Deleted services - replaced by AI delegation
+// import { LinterService } from './linter.service';
+// import { TestRunnerService } from './test-runner.service';
+// import { CoverageService } from './coverage.service';
+// import { CodeReviewService } from './code-review.service';
 import { QaMetricsService } from './qa-metrics.service';
 
 describe('QaOrchestratorService', () => {
@@ -49,21 +50,22 @@ describe('QaOrchestratorService', () => {
     evaluate: jest.fn(),
   };
 
-  const mockLinterService = {
-    lintFiles: jest.fn(),
-  };
+  // Story 3.10: Deleted service mocks - replaced by AI delegation
+  // const mockLinterService = {
+  //   lintFiles: jest.fn(),
+  // };
 
-  const mockTestRunnerService = {
-    runTests: jest.fn(),
-  };
+  // const mockTestRunnerService = {
+  //   runTests: jest.fn(),
+  // };
 
-  const mockCoverageService = {
-    analyzeCoverage: jest.fn(),
-  };
+  // const mockCoverageService = {
+  //   analyzeCoverage: jest.fn(),
+  // };
 
-  const mockCodeReviewService = {
-    scan: jest.fn(),
-  };
+  // const mockCodeReviewService = {
+  //   scan: jest.fn(),
+  // };
 
   const mockQaMetricsService = {
     recordGateDecision: jest.fn(),
@@ -93,10 +95,11 @@ describe('QaOrchestratorService', () => {
         { provide: SentryService, useValue: mockSentryService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: QualityGatesService, useValue: mockQualityGatesService },
-        { provide: LinterService, useValue: mockLinterService },
-        { provide: TestRunnerService, useValue: mockTestRunnerService },
-        { provide: CoverageService, useValue: mockCoverageService },
-        { provide: CodeReviewService, useValue: mockCodeReviewService },
+        // Story 3.10: Deleted service providers - replaced by AI delegation
+        // { provide: LinterService, useValue: mockLinterService },
+        // { provide: TestRunnerService, useValue: mockTestRunnerService },
+        // { provide: CoverageService, useValue: mockCoverageService },
+        // { provide: CodeReviewService, useValue: mockCodeReviewService },
         { provide: QaMetricsService, useValue: mockQaMetricsService },
         { provide: RabbitMQPublisherService, useValue: mockRabbitPublisher },
         { provide: getToken(QA_METRICS.CHECKS_TOTAL), useValue: mockCounter },

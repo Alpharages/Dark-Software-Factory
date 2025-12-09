@@ -6,15 +6,18 @@ import { ErrorCategory } from '../common/sentry/sentry.constants';
 import { EXCHANGE_NAMES, ROUTING_KEYS, QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { QualityGatesService } from './quality-gates.service';
 import { QaMetricsService } from './qa-metrics.service';
-import { LinterService } from './linter.service';
-import { TestRunnerService } from './test-runner.service';
-import { CoverageService } from './coverage.service';
-import { CodeReviewService } from './code-review.service';
+import { AiQaOrchestrator } from './ai-qa-orchestrator.service'; // Story 3.10
+// Story 3.10: Deleted services - replaced by AI delegation
+// import { LinterService } from './linter.service';
+// import { TestRunnerService } from './test-runner.service';
+// import { CoverageService } from './coverage.service';
+// import { CodeReviewService } from './code-review.service';
 import {
   IQaCheckMessage,
   IQaOrchestrationResult,
   QualityCategory,
   ILintingResult,
+  ILintingIssue,
   ITestResult,
   ICoverageAnalysis,
   ISecurityScanResult,
@@ -58,10 +61,13 @@ export class QaOrchestratorService {
     private readonly sentry: SentryService,
     private readonly configService: ConfigService,
     private readonly qualityGatesService: QualityGatesService,
-    private readonly linterService: LinterService,
-    private readonly testRunnerService: TestRunnerService,
-    private readonly coverageService: CoverageService,
-    private readonly codeReviewService: CodeReviewService,
+    // Story 3.10: AiQaOrchestrator replaces deleted services
+    private readonly aiQaOrchestrator: AiQaOrchestrator,
+    // Story 3.10: Temporarily commented - will be replaced with AiQaOrchestrator
+    // private readonly linterService: LinterService,
+    // private readonly testRunnerService: TestRunnerService,
+    // private readonly coverageService: CoverageService,
+    // private readonly codeReviewService: CodeReviewService,
     private readonly rabbitPublisher: RabbitMQPublisherService,
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
   ) {}
@@ -404,12 +410,30 @@ export class QaOrchestratorService {
     const timeoutMs = this.configService.get<number>('qualityGate.lintingTimeoutMs', 60000);
     this.logger.debug(`[${correlationId}] Running linting with timeout ${timeoutMs}ms`);
 
-    return Promise.race([
-      this.linterService.lintFiles({ workspacePath, files: ['.'] }),
-      new Promise<ILintingResult>((_, reject) =>
-        setTimeout(() => reject(new Error('Linting timeout')), timeoutMs),
-      ),
-    ]);
+    // Story 3.10: Use AiQaOrchestrator instead of deleted LinterService
+    try {
+      const result = await this.aiQaOrchestrator.executeLintCheck(correlationId, workspacePath);
+      if (result.status === 'ERROR') {
+        throw new Error(`Lint check failed: ${JSON.stringify(result.data)}`);
+      }
+      // Convert AiQaOrchestrator result to ILintingResult format
+      const data = result.data as Record<string, unknown>;
+      return {
+        passed: result.status === 'PASSED',
+        errorCount: (data.errorCount as number) || 0,
+        warningCount: (data.warningCount as number) || 0,
+        infoCount: 0,
+        issues: (data.issues as ILintingIssue[]) || [],
+        language: SupportedLanguage.TYPESCRIPT,
+        filesLinted: [],
+        durationMs: result.duration,
+      };
+    } catch (error) {
+      this.logger.error(
+        `[${correlationId}] AI-delegated lint check failed: ${(error as Error).message}`,
+      );
+      return null;
+    }
   }
 
   /**
@@ -429,13 +453,16 @@ export class QaOrchestratorService {
     const timeoutMs = this.configService.get<number>('qualityGate.testingTimeoutMs', 300000);
     this.logger.debug(`[${correlationId}] Running tests with timeout ${timeoutMs}ms`);
 
-    return this.testRunnerService.runTests({
-      workspacePath,
-      executionId,
-      correlationId,
-      timeoutMs,
-      collectCoverage: true,
-    });
+    // Story 3.10: Service replaced by AI delegation - return placeholder for now
+    // return this.testRunnerService.runTests({
+    //   workspacePath,
+    //   executionId,
+    //   correlationId,
+    //   timeoutMs,
+    //   collectCoverage: true,
+    // });
+    this.logger.warn(`[${correlationId}] TestRunnerService replaced by AI delegation (Story 3.10)`);
+    return null;
   }
 
   /**
@@ -456,25 +483,28 @@ export class QaOrchestratorService {
     const timeoutMs = this.configService.get<number>('qualityGate.coverageTimeoutMs', 60000);
     this.logger.debug(`[${correlationId}] Analyzing coverage with timeout ${timeoutMs}ms`);
 
-    return Promise.race([
-      this.coverageService.analyzeCoverage(
-        {
-          passed: true,
-          totalTests: 0,
-          passedCount: 0,
-          failedCount: 0,
-          skippedCount: 0,
-          durationMs: 0,
-          suites: [],
-          failedTests: [],
-          framework: TestFramework.JEST,
-        },
-        { workspacePath, projectId, executionId, correlationId },
-      ),
-      new Promise<ICoverageAnalysis>((_, reject) =>
-        setTimeout(() => reject(new Error('Coverage analysis timeout')), timeoutMs),
-      ),
-    ]);
+    // Story 3.10: Service replaced by AI delegation - return placeholder for now
+    // return Promise.race([
+    //   this.coverageService.analyzeCoverage(
+    //     {
+    //       passed: true,
+    //       totalTests: 0,
+    //       passedCount: 0,
+    //       failedCount: 0,
+    //       skippedCount: 0,
+    //       durationMs: 0,
+    //       suites: [],
+    //       failedTests: [],
+    //       framework: TestFramework.JEST,
+    //     },
+    //     { workspacePath, projectId, executionId, correlationId },
+    //   ),
+    //   new Promise<ICoverageAnalysis>((_, reject) =>
+    //     setTimeout(() => reject(new Error('Coverage analysis timeout')), timeoutMs),
+    //   ),
+    // ]);
+    this.logger.warn(`[${correlationId}] CoverageService replaced by AI delegation (Story 3.10)`);
+    return null;
   }
 
   /**
@@ -495,17 +525,20 @@ export class QaOrchestratorService {
     const timeoutMs = this.configService.get<number>('qualityGate.securityTimeoutMs', 180000);
     this.logger.debug(`[${correlationId}] Running security scan with timeout ${timeoutMs}ms`);
 
-    return Promise.race([
-      this.codeReviewService.scan({
-        workspacePath,
-        projectId,
-        executionId,
-        correlationId,
-      }),
-      new Promise<ISecurityScanResult>((_, reject) =>
-        setTimeout(() => reject(new Error('Security scan timeout')), timeoutMs),
-      ),
-    ]);
+    // Story 3.10: Service replaced by AI delegation - return placeholder for now
+    // return Promise.race([
+    //   this.codeReviewService.scan({
+    //     workspacePath,
+    //     projectId,
+    //     executionId,
+    //     correlationId,
+    //   }),
+    //   new Promise<ISecurityScanResult>((_, reject) =>
+    //     setTimeout(() => reject(new Error('Security scan timeout')), timeoutMs),
+    //   ),
+    // ]);
+    this.logger.warn(`[${correlationId}] CodeReviewService replaced by AI delegation (Story 3.10)`);
+    return null;
   }
 
   // ============ Result Aggregation ============
@@ -660,6 +693,7 @@ export class QaOrchestratorService {
 
   /**
    * Run linting check (Story 3.7 version - uses code files from message)
+   * H2-H4 FIX: Actually call AiQaOrchestrator instead of returning placeholders
    */
   private async runLintingCheck(
     message: IQaQueueMessage,
@@ -668,25 +702,34 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // TODO: Replace with actual LinterService call (Story 3.1)
-      const result = { passed: true, errors: [] };
+      // H4 FIX: Extract projectDir from ticket's project_id
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: message.ticketId },
+        select: { project_id: true },
+      });
+
+      // Use project_id directly (no Project table in schema)
+      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+
+      // H2 FIX: Actually call AiQaOrchestrator instead of placeholder
+      const result = await this.aiQaOrchestrator.executeLintCheck(message.ticketId, projectDir);
 
       await this.savePartialQaResult(message.executionId, {
-        linting_passed: result.passed,
-        linting_errors: result.errors as never,
+        linting_passed: result.status === 'PASSED',
+        linting_errors: result.data as never,
       });
 
       const duration = Date.now() - startTime;
       // Record linting check metric (Story 3.8)
-      this.qaMetrics.recordCheckComplete('linting', result.passed, duration, {
+      this.qaMetrics.recordCheckComplete('linting', result.status === 'PASSED', duration, {
         projectId: message.projectId,
         aiProvider: message.aiProvider,
       });
 
       return {
         type: 'linting',
-        passed: result.passed,
-        data: result.errors,
+        passed: result.status === 'PASSED',
+        data: result.data,
         duration: Date.now() - startTime,
       };
     } catch (error) {
@@ -706,6 +749,7 @@ export class QaOrchestratorService {
 
   /**
    * Run testing check (Story 3.7 version)
+   * H2-H4 FIX: Actually call AiQaOrchestrator instead of returning placeholders
    */
   private async runTestingCheck(
     message: IQaQueueMessage,
@@ -714,25 +758,31 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // TODO: Replace with actual TestRunnerService call (Story 3.2)
-      const result = { passed: true, results: { total: 0, passed: 0, failed: 0 } };
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: message.ticketId },
+        select: { project_id: true },
+      });
+
+      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+
+      const result = await this.aiQaOrchestrator.executeTestRun(message.ticketId, projectDir);
 
       await this.savePartialQaResult(message.executionId, {
-        tests_passed: result.passed,
-        test_results: result.results as never,
+        tests_passed: result.status === 'PASSED',
+        test_results: result.data as never,
       });
 
       const duration = Date.now() - startTime;
       // Record testing check metric (Story 3.8)
-      this.qaMetrics.recordCheckComplete('testing', result.passed, duration, {
+      this.qaMetrics.recordCheckComplete('testing', result.status === 'PASSED', duration, {
         projectId: message.projectId,
         aiProvider: message.aiProvider,
       });
 
       return {
         type: 'testing',
-        passed: result.passed,
-        data: result.results,
+        passed: result.status === 'PASSED',
+        data: result.data,
         duration: Date.now() - startTime,
       };
     } catch (error) {
@@ -752,6 +802,7 @@ export class QaOrchestratorService {
 
   /**
    * Run coverage check (Story 3.7 version)
+   * H2-H4 FIX: Actually call AiQaOrchestrator instead of returning placeholders
    */
   private async runCoverageCheck(
     message: IQaQueueMessage,
@@ -760,33 +811,49 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // TODO: Replace with actual CoverageService call (Story 3.3)
-      const coverage = 80.0;
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: message.ticketId },
+        select: { project_id: true },
+      });
+      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+
+      const result = await this.aiQaOrchestrator.executeCoverageAnalysis(
+        message.ticketId,
+        projectDir,
+      );
+
+      const coverage = (result.data as Record<string, unknown>).overall as number;
       const passed = coverage >= 70.0;
 
       await this.savePartialQaResult(message.executionId, { test_coverage: coverage });
 
       const duration = Date.now() - startTime;
       // Record coverage metric (Story 3.8)
-      if (message.projectId) {
-        this.qaMetrics.setCoverage(message.projectId, coverage);
-      }
+      this.qaMetrics.recordCheckComplete('coverage', passed, duration, {
+        projectId: message.projectId,
+        aiProvider: message.aiProvider,
+      });
+      this.qaMetrics.setCoverage(message.ticketId, coverage);
 
-      return { type: 'coverage', passed, data: coverage, duration };
+      return {
+        type: 'coverage',
+        passed,
+        data: coverage,
+        duration,
+      };
     } catch (error) {
       this.sentry.captureException(error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'coverage' },
       });
 
-      await this.savePartialQaResult(message.executionId, { test_coverage: null });
-
-      return { type: 'coverage', passed: false, data: null, duration: Date.now() - startTime };
+      return { type: 'coverage', passed: false, data: 0, duration: Date.now() - startTime };
     }
   }
 
   /**
    * Run security check (Story 3.7 version)
+   * H2-H4 FIX: Actually call AiQaOrchestrator instead of returning placeholders
    */
   private async runSecurityCheck(
     message: IQaQueueMessage,
@@ -795,36 +862,36 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // TODO: Replace with actual CodeReviewService call (Story 3.4)
-      const result = { passed: true, issues: [] };
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: message.ticketId },
+        select: { project_id: true },
+      });
+      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+
+      const result = await this.aiQaOrchestrator.executeSecurityScan(message.ticketId, projectDir);
 
       await this.savePartialQaResult(message.executionId, {
-        code_review_passed: result.passed,
-        code_review_issues: result.issues as never,
+        code_review_passed: result.status === 'PASSED',
+        code_review_issues: result.data as never,
       });
 
       const duration = Date.now() - startTime;
-      // Record security check metric (Story 3.8)
-      this.qaMetrics.recordCheckComplete('security', result.passed, duration, {
+      // Record security metric (Story 3.8)
+      this.qaMetrics.recordCheckComplete('security', result.status === 'PASSED', duration, {
         projectId: message.projectId,
         aiProvider: message.aiProvider,
       });
 
       return {
         type: 'security',
-        passed: result.passed,
-        data: result.issues,
-        duration: Date.now() - startTime,
+        passed: result.status === 'PASSED',
+        data: result.data,
+        duration,
       };
     } catch (error) {
       this.sentry.captureException(error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'security' },
-      });
-
-      await this.savePartialQaResult(message.executionId, {
-        code_review_passed: false,
-        code_review_issues: { error: (error as Error).message } as never,
       });
 
       return { type: 'security', passed: false, data: [], duration: Date.now() - startTime };

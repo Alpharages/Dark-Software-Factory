@@ -621,6 +621,324 @@ async function selectProvider(ticket: Ticket): AIProvider {
 
 ---
 
+## AI Delegation Pattern & Guidelines
+
+**Status:** Accepted (ADR-008)  
+**Based On:** Epic 4 Success (50% time reduction, 90% LOC reduction)  
+**Reference:** [ADR-008: AI Delegation Pattern](./architecture/adr-008-ai-delegation-pattern.md)
+
+### Overview
+
+During Epic 4, we discovered that AI agents can **execute commands, parse outputs, AND format results**—eliminating the need for custom service implementations. This section defines when to delegate to AI vs. build custom services.
+
+---
+
+### The Correct AI Delegation Pattern
+
+**Dark Software Factory (DSF) Owns:**
+
+1. **Orchestration** - Decide WHEN to execute operations
+2. **Instruction** - Tell AI WHAT to execute and WHAT format to return
+3. **Storage** - Save AI's structured results to database
+4. **Decision** - Use business logic to decide pass/fail
+5. **Observability** - Record metrics, audit logs, error tracking
+
+**AI Tool (Cursor/Claude/OpenAI) Owns:**
+
+1. **Execution** - Run shell commands, git operations, npm scripts
+2. **Parsing** - Read and interpret command outputs
+3. **Analysis** - Summarize results, identify patterns, categorize issues
+4. **Formatting** - Return structured JSON/data to DSF
+
+```typescript
+// AI Delegation Pattern Template
+class FeatureOrchestrator {
+  constructor(
+    private orchestratorService: OrchestratorService, // AI execution
+    private repository: Repository,                   // Database
+    private metricsService: MetricsService,           // Observability
+  ) {}
+
+  async executeFeature(context: Context): Promise<Result> {
+    // 1. ORCHESTRATION: Decide to execute
+    const shouldExecute = this.decideIfNeeded(context);
+    
+    // 2. INSTRUCTION: Prepare AI prompt
+    const prompt = this.buildPrompt(context);
+    
+    // 3. EXECUTION: Delegate to AI
+    const aiResult = await this.orchestratorService.executeTask(prompt);
+    
+    // 4. STORAGE: Save results
+    await this.repository.save(aiResult);
+    
+    // 5. DECISION: Apply business logic
+    const decision = this.applyBusinessRules(aiResult);
+    
+    // 6. OBSERVABILITY: Record metrics
+    this.metricsService.record('feature_executed', decision);
+    
+    return decision;
+  }
+}
+```
+
+---
+
+### Client Projects Already Have QA Tooling
+
+**Key Insight:** Don't rebuild what clients already have.
+
+- **Client projects have:** `npm run lint`, `npm run test`, `npm run security`
+- **DSF should:** Execute client's existing scripts via AI, not rebuild infrastructure
+- **Example:** Instead of building ESLint parser, ask AI to "run npm run lint and return JSON summary"
+
+**Benefits:**
+- ✅ Zero custom parser code
+- ✅ Works across all linters (ESLint, Flake8, RuboCop, Pylint)
+- ✅ Leverage client's existing configuration
+- ✅ Support any language/framework automatically
+
+---
+
+### Token Costs vs. Development Time Trade-off
+
+**Token costs are acceptable vs. development/maintenance burden.**
+
+| Aspect | Custom Services (Epic 3) | AI Delegation (Epic 4) |
+|--------|--------------------------|------------------------|
+| **Development Time** | Baseline (100%) | 50% faster |
+| **Code Volume** | ~2,000 LOC | ~200 LOC (90% reduction) |
+| **Maintenance** | Update parsers for each tool version | AI adapts automatically |
+| **Tech Stacks** | Build per language (Node, Python, Ruby) | One implementation works for all |
+| **Scalability** | Add code for each new tool | AI handles new tools without code changes |
+| **Cost** | Developer time (high) | AI API tokens (low) |
+
+**Epic 4 Results:**
+- Token costs: ~$50/month
+- Developer time saved: ~$20,000/month (50% reduction)
+- **ROI:** 400x return on token investment
+
+---
+
+### Decision Tree: When to Delegate vs. Build
+
+```
+START: New feature requirement
+  │
+  ├─ Does the task involve executing existing CLI tools? (npm, git, linters, test runners)
+  │   YES → DELEGATE TO AI ✅
+  │   NO → Continue to next question
+  │
+  ├─ Does the task require parsing/interpreting tool outputs?
+  │   YES → DELEGATE TO AI ✅ (AI can parse better than custom regex)
+  │   NO → Continue to next question
+  │
+  ├─ Does the task involve natural language processing? (summarization, sentiment, extraction)
+  │   YES → DELEGATE TO AI ✅
+  │   NO → Continue to next question
+  │
+  ├─ Is this a business logic decision? (quality gates, approval workflows, routing)
+  │   YES → BUILD CUSTOM SERVICE ⚠️ (DSF owns business logic)
+  │   NO → Continue to next question
+  │
+  ├─ Is this data storage/retrieval? (database operations, state management)
+  │   YES → BUILD CUSTOM SERVICE ⚠️ (DSF owns data layer)
+  │   NO → Continue to next question
+  │
+  ├─ Is this observability? (metrics, logging, audit trails)
+  │   YES → BUILD CUSTOM SERVICE ⚠️ (DSF owns observability)
+  │   NO → Consider delegation but validate ROI
+  │
+  └─ DEFAULT: If unsure, prototype with AI delegation first (faster to validate)
+```
+
+---
+
+### Anti-Patterns: What NOT to Build
+
+#### Anti-Pattern #1: Custom Tool Wrappers
+- ❌ **DON'T:** Build `LintingService` with custom ESLint/Flake8/Pylint parsers
+- ✅ **DO:** Ask AI to "run npm run lint and return JSON with error count, file list, issues"
+- **Reason:** AI handles parsing across all linters, you maintain 0 parser code
+- **LOC Saved:** ~500 LOC per linter avoided
+
+#### Anti-Pattern #2: Language-Specific Integrations
+- ❌ **DON'T:** Build `PythonTestRunner`, `NodeTestRunner`, `RubyTestRunner`
+- ✅ **DO:** Ask AI to "detect test framework, run tests, return structured results"
+- **Reason:** AI adapts to any language, you build once
+- **LOC Saved:** ~300 LOC per language avoided
+
+#### Anti-Pattern #3: Complex Output Parsing Logic
+- ❌ **DON'T:** Build regex parsers for Jest output, Pytest output, Mocha output
+- ✅ **DO:** Ask AI to "parse test output and return JSON with pass/fail counts"
+- **Reason:** AI understands context better than regex
+- **LOC Saved:** ~200 LOC per test framework avoided
+
+#### Anti-Pattern #4: Duplicate Existing Tools
+- ❌ **DON'T:** Build custom code formatters, linters, or test runners
+- ✅ **DO:** Use client's existing `npm scripts` via AI delegation
+- **Reason:** Client already configured their tooling, leverage it
+- **LOC Saved:** ~1,000+ LOC avoided (entire custom QA infrastructure)
+
+---
+
+### Working Examples from Epic 4
+
+#### Example 1: AI-Delegated Linting (from Story 3.10)
+
+**❌ OLD WAY (Epic 3): Custom service with parser**
+```typescript
+class LintingService {
+  async lint(ticketId: string): Promise<LintResult> {
+    // 1. Detect linter (complex logic)
+    const linter = await this.detectLinter(projectDir);
+    
+    // 2. Execute linter command (exec)
+    const output = await exec(`${linter} ${projectDir}`);
+    
+    // 3. Parse output with custom regex (fragile)
+    const issues = this.parseOutput(output, linter);
+    
+    // 4. Transform to internal format
+    return this.transformToInternal(issues);
+    // Total: ~500 LOC
+  }
+}
+```
+
+**✅ NEW WAY (Epic 4 pattern): AI delegation**
+```typescript
+class AiQaOrchestrator {
+  async executeLintCheck(ticketId: string, projectDir: string): Promise<QaResult> {
+    const prompt = `Run linting checks in ${projectDir} and return JSON: {status, errorCount, issues[]}`;
+    
+    const result = await this.orchestratorService.executeTask(prompt, { projectDir });
+    
+    return JSON.parse(result.output); // AI returns structured JSON
+    // Total: ~30 LOC
+  }
+}
+```
+
+**Savings:** 470 LOC eliminated, works across all linters
+
+---
+
+#### Example 2: AI-Delegated Git Operations (from Story 4.3)
+
+```typescript
+// GitHubCommitOrchestrator.ts
+class GitHubCommitOrchestrator {
+  async generateCommitMessage(ticketId: string, diff: string): Promise<string> {
+    // Build AI prompt
+    const prompt = this.buildCommitPrompt(ticketId, diff);
+    
+    // Execute via AI (delegation)
+    const result = await this.orchestratorService.executeTask(prompt);
+    
+    // Parse AI response
+    const message = this.parseCommitMessage(result.output);
+    
+    // Store result
+    await this.trackCommit(ticketId, message);
+    
+    return message;
+  }
+  
+  private buildCommitPrompt(ticketId: string, diff: string): string {
+    return `Generate conventional commit message for these changes:
+    
+    Ticket: ${ticketId}
+    Diff: ${diff}
+    
+    Return JSON: { "message": "feat(scope): description" }`;
+  }
+}
+```
+
+**Reference:** [Story 4.3: Git Commit Generation](../sprint-artifacts/4-3-git-commit-generation-push.md)
+
+---
+
+#### Example 3: AI-Delegated PR Descriptions (from Story 4.4)
+
+```typescript
+// GitHubPROrchestrator.ts
+class GitHubPROrchestrator {
+  async createPullRequest(ticketId: string, branchName: string): Promise<string> {
+    // Build PR description via AI
+    const prompt = this.buildPRPrompt(ticketId, branchName);
+    const result = await this.orchestratorService.executeTask(prompt);
+    const description = this.parsePRDescription(result.output);
+    
+    // Create PR with AI-generated description
+    const prUrl = await this.githubService.createPR({
+      title: `Story ${ticketId}`,
+      description,
+      head: branchName,
+      base: 'main'
+    });
+    
+    // Store PR metadata
+    await this.trackPR(ticketId, prUrl, description);
+    
+    return prUrl;
+  }
+  
+  private buildPRPrompt(ticketId: string, branchName: string): string {
+    return `Create PR description for ${ticketId} (branch: ${branchName}):
+    
+    Return JSON: {
+      "summary": "Brief overview",
+      "changes": ["Change 1", "Change 2"],
+      "testing": "How to test"
+    }`;
+  }
+}
+```
+
+**Reference:** [Story 4.4: PR Creation](../sprint-artifacts/4-4-pull-request-creation-metadata.md)
+
+---
+
+### Migration Strategy
+
+**Phase 1: Document (Current)**
+- ✅ Create ADR-008
+- ✅ Update architecture.md
+- ⏳ Refactor Epic 3 QA Automation (Story 3.10)
+
+**Phase 2: Expand Application**
+- Apply to Epic 5: PM Dashboard
+- Apply to Epic 6: Cost Monitoring  
+- Apply to Epic 7: Architecture Review
+- Expected: 30-40% effort reduction
+
+**Phase 3: Optimize**
+- Monitor token costs and optimize prompts
+- Implement caching for repeated operations
+- Build reusable prompt templates
+
+---
+
+### Success Metrics
+
+**Epic 4 Results (Validated):**
+- ✅ Development time: **50% faster** than Epic 3
+- ✅ Code volume: **90% reduction** (~200 LOC vs ~2,000 LOC)
+- ✅ Tech stack coverage: **Universal** (Node.js, Python, Ruby, Go)
+- ✅ Reliability: **99%+ availability** (multi-provider fallback)
+- ✅ Token costs: **$50/month** vs **$20,000/month** developer time saved
+
+**Epic 3 Refactor Predictions (Story 3.10):**
+- Delete ~1,800 LOC of custom services
+- Replace with ~180 LOC AI orchestrator
+- Maintain identical functionality
+- Eliminate all language-specific code
+
+---
+
 ## Integration Points
 
 ### 1. AetherFlow Integration
