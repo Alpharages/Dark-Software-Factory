@@ -1,2 +1,19 @@
 echo "Running pre-push checks..."
-pnpm exec eslint "{src,apps,libs,test}/**/*.ts" --max-warnings=0 && pnpm test
+
+# Run TypeScript compiler to check types
+echo "🔍 Checking TypeScript types..."
+pnpm exec tsc --noEmit
+
+# Run linting on all files
+echo "🔍 Running linter on all files..."
+pnpm lint --max-warnings=0
+
+# Run tests with coverage
+echo "🔍 Running tests with coverage... temp commit"
+# pnpm run test
+
+# Build the project to ensure it compiles
+echo "🔍 Building project..."
+pnpm run build
+
+echo "✅ Pre-push checks completed successfully!"

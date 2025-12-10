@@ -2,14 +2,11 @@
 // Architecture Reference: docs/architecture.md (Data Architecture section)
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
 }
 
 datasource db {
   provider = "postgresql"
-  // Note: Prisma 7 requires DATABASE_URL in prisma.config.ts or adapter in PrismaClient constructor
-  // For development/test: set DATABASE_URL env var
-  // url is configured at runtime via PrismaClient constructor
 }
 
 
