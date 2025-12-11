@@ -1,6 +1,5 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Injectable } from '@nestjs/common';
+import { LoggerService } from '../../common/logger/logger.service';
 import { PrismaService } from '../../database/prisma.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
@@ -37,7 +36,7 @@ export class GitHubBranchService {
     private readonly sentry: SentryService,
     private readonly metrics: MetricsService,
     private readonly publisher: RabbitMQPublisherService,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -71,7 +70,7 @@ export class GitHubBranchService {
       const ticketId = execution.ticket.clickup_task_id;
       const repository = this.getRepository(); // From env or config
 
-      this.logger.info('Creating feature branch', {
+      this.logger.log('Creating feature branch', {
         executionId,
         ticketId,
         repository,
@@ -129,7 +128,7 @@ export class GitHubBranchService {
       this.metrics.incrementCounter('github_branch_total', { status: 'success', repository });
       this.metrics.recordGitHubOperationDuration('create_branch', duration, repository);
 
-      this.logger.info('Feature branch created successfully', {
+      this.logger.log('Feature branch created successfully', {
         executionId,
         ticketId,
         branchName: result.branchName,
@@ -193,7 +192,7 @@ export class GitHubBranchService {
 
         if (isRetry) {
           // Retry: Reuse existing branch (idempotent)
-          this.logger.info('Reusing existing branch for retry', {
+          this.logger.log('Reusing existing branch for retry', {
             branchName,
             repository: `${owner}/${repo}`,
           });
@@ -206,7 +205,7 @@ export class GitHubBranchService {
         } else {
           // New execution: Generate unique name with timestamp
           const uniqueBranchName = generateUniqueBranchName(ticketId, title);
-          this.logger.info('Branch exists, generating unique name', {
+          this.logger.log('Branch exists, generating unique name', {
             originalBranch: branchName,
             uniqueBranch: uniqueBranchName,
             repository: `${owner}/${repo}`,
@@ -258,7 +257,7 @@ export class GitHubBranchService {
     // Categorize errors and handle accordingly
     if (error instanceof GitHubAuthError) {
       // Non-retryable: Auth failure
-      this.logger.error('GitHub authentication failed', {
+      this.logger.warn('GitHub authentication failed', {
         executionId,
         error: error.message,
         correlationId,
@@ -300,7 +299,7 @@ export class GitHubBranchService {
       );
     } else if (error instanceof GitHubPermissionError) {
       // Non-retryable: Permission denied
-      this.logger.error('GitHub permission denied', {
+      this.logger.warn('GitHub permission denied', {
         executionId,
         operation: error.operation,
         correlationId,
@@ -317,7 +316,7 @@ export class GitHubBranchService {
       await this.updateExecutionStatus(executionId, 'FAILED');
     } else if (error instanceof GitHubResourceNotFoundError) {
       // Non-retryable: Repository not found
-      this.logger.error('GitHub repository not found', {
+      this.logger.warn('GitHub repository not found', {
         executionId,
         error: error.message,
         correlationId,
@@ -353,7 +352,7 @@ export class GitHubBranchService {
       );
     } else {
       // Unknown error
-      this.logger.error('Unexpected error during branch creation', {
+      this.logger.warn('Unexpected error during branch creation', {
         executionId,
         error: error.message,
         stack: error.stack,

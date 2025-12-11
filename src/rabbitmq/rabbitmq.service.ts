@@ -103,7 +103,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         durable: true,
         deadLetterExchange: EXCHANGE_NAMES.DEAD_LETTER_EXCHANGE,
         deadLetterRoutingKey: `dlx-${queueName}`,
-        messageTtl: 3600000,
+        // messageTtl removed - can be set per-message if needed
       });
 
       this.logger.log(`Queue created: ${queueName}`);
@@ -201,7 +201,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       durable: true,
       deadLetterExchange: EXCHANGE_NAMES.DEAD_LETTER_EXCHANGE,
       deadLetterRoutingKey: `dlx-${queue}`,
-      messageTtl: 3600000, // 1 hour
+      // messageTtl removed - can be set per-message if needed
     });
 
     // Publish message

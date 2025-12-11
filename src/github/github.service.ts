@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Inject } from '@nestjs/common';
 import { GitHubClientService } from './github-client.service';
 import { AuditLogService } from '../common/audit/audit-log.service';
 import { SentryService } from '../common/sentry/sentry.service';
+import { LoggerService } from '../common/logger/logger.service';
 import { GitHubRepoDetails } from './interfaces/github.interfaces';
 import { Octokit } from '@octokit/rest';
 
@@ -14,7 +12,7 @@ export class GitHubService {
     private readonly clientService: GitHubClientService,
     private readonly auditLog: AuditLogService,
     private readonly sentry: SentryService,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -62,7 +60,7 @@ export class GitHubService {
           sha: baseSha,
         });
 
-        this.logger.info(`Created branch ${branchName} in ${owner}/${repo}`);
+        this.logger.log(`Created branch ${branchName} in ${owner}/${repo}`);
 
         await this.auditLog.log({
           action: 'create_branch',
@@ -229,7 +227,7 @@ export class GitHubService {
           sha: newCommitSha,
         });
 
-        this.logger.info(`Pushed commit to ${owner}/${repo}/${branch}: ${message}`);
+        this.logger.log(`Pushed commit to ${owner}/${repo}/${branch}: ${message}`);
 
         await this.auditLog.log({
           action: 'push_commit',

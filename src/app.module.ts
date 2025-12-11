@@ -29,7 +29,6 @@ import { DeploymentModule } from './deployment/deployment.module';
 // Monitoring & Metrics
 import { ProductionMonitoringModule } from './production-monitoring/production-monitoring.module';
 import { CostTrackingModule } from './cost-tracking/cost-tracking.module';
-import { MetricsModule } from './metrics/metrics.module';
 
 // User interfaces
 import { DashboardsModule } from './dashboards/dashboards.module';
@@ -85,7 +84,6 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Monitoring & Metrics
     ProductionMonitoringModule,
     CostTrackingModule,
-    MetricsModule,
 
     // User interfaces
     DashboardsModule,

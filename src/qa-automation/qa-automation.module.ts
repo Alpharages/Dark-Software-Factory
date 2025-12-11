@@ -1,18 +1,10 @@
-/**
- * QA Automation Module
- * Story 3.1: Linting Integration for Multiple Languages
- * Story 3.2: Automated Test Execution Framework
- * Story 3.3: Test Coverage Calculation & Enforcement
- * Story 3.4: Basic Security & Code Quality Checks
- * Story 3.5: Quality Gate Decision Engine
- * Story 3.6: QA Results Storage & Retrieval
- * Story 3.7: RabbitMQ QA Queue Processing
- * Story 3.8: QA Metrics & Prometheus Integration
- */
-
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
+import {
+  makeCounterProvider,
+  makeHistogramProvider,
+  makeGaugeProvider,
+} from '@willsoto/nestjs-prometheus';
 import { DatabaseModule } from '../database/database.module';
 import { SentryModule } from '../common/sentry/sentry.module';
 import { LoggerModule } from '../common/logger/logger.module';
@@ -25,7 +17,12 @@ import { QaResultsController, QualityGateController } from './qa-results.control
 import { QaCheckPublisher } from './qa-check.publisher';
 import { QaCheckConsumer } from './qa-check.consumer';
 import { QaMetricsService } from './qa-metrics.service';
-import { QA_METRICS, METRICS_CONSTANTS } from '../common/metrics/metrics.constants';
+import {
+  QA_METRICS,
+  QUEUE_METRICS,
+  METRICS_CONSTANTS,
+  LABELS,
+} from '../common/metrics/metrics.constants';
 import { AiQaOrchestrator } from './ai-qa-orchestrator.service'; // Story 3.10
 
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
@@ -95,11 +92,26 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     // Story 3.7 - RabbitMQ QA Queue Processing
     QaCheckPublisher,
     QaCheckConsumer,
+    // Queue metrics needed by QaCheckConsumer
+    makeGaugeProvider({
+      name: QUEUE_METRICS.DEPTH,
+      help: 'Current queue depth',
+      labelNames: [LABELS.QUEUE],
+    }),
+    makeGaugeProvider({
+      name: QUEUE_METRICS.CONSUMER_COUNT,
+      help: 'Number of active consumers',
+      labelNames: [LABELS.QUEUE],
+    }),
+    makeGaugeProvider({
+      name: QUEUE_METRICS.PROCESSING_RATE,
+      help: 'Queue processing rate (messages per minute)',
+      labelNames: [LABELS.QUEUE],
+    }),
 
     // Story 3.8 - QA Metrics & Prometheus Integration
     QaMetricsService,
-    // Note: QUEUE_METRICS are registered in AppMetricsModule (Story 1.8)
-    // Don't duplicate here to avoid Prometheus registration errors
+    // Note: Other QUEUE_METRICS are registered in AppMetricsModule (Story 1.8)
   ],
   exports: [
     AiQaOrchestrator, // Story 3.10

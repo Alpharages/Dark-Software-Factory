@@ -1,6 +1,5 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Injectable } from '@nestjs/common';
+import { LoggerService } from '../../common/logger/logger.service';
 import { AIProvider } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
@@ -36,7 +35,7 @@ export class GitHubCommitOrchestrator {
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
     private readonly errorMonitor: GitHubErrorMonitor,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -62,7 +61,7 @@ export class GitHubCommitOrchestrator {
       branch_name: string;
     } | null = null;
 
-    this.logger.info('Starting commit orchestration', {
+    this.logger.log('Starting commit orchestration', {
       executionId,
       correlationId,
     });
@@ -125,7 +124,7 @@ export class GitHubCommitOrchestrator {
       );
 
       // Delegate to AI provider
-      this.logger.info('Delegating commit task to AI provider', {
+      this.logger.log('Delegating commit task to AI provider', {
         executionId,
         provider: execution.ai_provider,
         repository: githubPush.repository,
@@ -142,7 +141,7 @@ export class GitHubCommitOrchestrator {
       const parsedResult = parseAIResponse(aiResult);
 
       if (!parsedResult.success || !parsedResult.commitSha) {
-        this.logger.error('Commit failed or SHA missing', {
+        this.logger.warn('Commit failed or SHA missing', {
           executionId,
           error: parsedResult.error,
         });
@@ -202,7 +201,7 @@ export class GitHubCommitOrchestrator {
         const error = new Error(
           `Invalid commit SHA format received from AI: ${parsedResult.commitSha}`,
         );
-        this.logger.error('Invalid commit SHA format', {
+        this.logger.warn('Invalid commit SHA format', {
           executionId,
           commitSha: parsedResult.commitSha,
         });
@@ -263,7 +262,7 @@ export class GitHubCommitOrchestrator {
         file_count_bucket: bucket,
       });
 
-      this.logger.info('Commit orchestration completed successfully', {
+      this.logger.log('Commit orchestration completed successfully', {
         executionId,
         commitSha: parsedResult.commitSha,
         filesChanged: parsedResult.filesChanged,
@@ -290,7 +289,7 @@ export class GitHubCommitOrchestrator {
         correlationId,
       );
 
-      this.logger.error('Commit orchestration failed', {
+      this.logger.warn('Commit orchestration failed', {
         executionId,
         error: (error as Error).message,
         duration,
@@ -476,7 +475,7 @@ Return format (JSON):
       },
     });
 
-    this.logger.info('Database updated with commit results', {
+    this.logger.log('Database updated with commit results', {
       executionId,
       commitSha: result.commitSha,
       status: 'COMMITTED',

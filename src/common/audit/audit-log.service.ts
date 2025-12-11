@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Inject } from '@nestjs/common';
+import { LoggerService } from '../logger';
 
 @Injectable()
 export class AuditLogService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly logger: LoggerService,
   ) {}
 
   async log(params: {
@@ -37,9 +35,12 @@ export class AuditLogService {
         },
       });
 
-      this.logger.info(`Audit: ${action} on ${entityType} ${entityId}`, { ...params });
+      this.logger.log(`Audit: ${action} on ${entityType} ${entityId}`, {
+        context: 'AuditLog',
+        ...params,
+      });
     } catch (error) {
-      this.logger.error(`Failed to create audit log`, { error, params });
+      this.logger.error(`Failed to create audit log`, JSON.stringify(error), 'AuditLog');
       // We don't throw here to avoid failing the main operation just because audit logging failed,
       // but in high security contexts we might want to throw.
     }

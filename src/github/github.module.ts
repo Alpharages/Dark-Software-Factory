@@ -14,6 +14,7 @@ import { DeploymentSuccessRateCalculator } from './services/deployment-success-r
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
+import { LoggerModule } from '../common/logger/logger.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { DatabaseModule } from '../database/database.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
@@ -27,6 +28,7 @@ import { ClickUpModule } from '../clickup/clickup.module';
     AuditLogModule,
     AppMetricsModule,
     SentryModule,
+    LoggerModule, // Required for winston logger injection
     RabbitMQModule,
     AiRoutingModule,
     WebhooksModule,

@@ -11,13 +11,12 @@
  * AC#6: Observability & Metrics
  */
 
-import { Injectable, Inject } from '@nestjs/common';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
+import { LoggerService } from '../../common/logger/logger.service';
 import { OrchestratorService } from '../../ai-routing/orchestrator.service';
 import { GitHubService } from '../github.service';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
@@ -38,7 +37,7 @@ export class GitHubPROrchestrator {
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
     private readonly errorMonitor: GitHubErrorMonitor,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -64,7 +63,7 @@ export class GitHubPROrchestrator {
       commit_sha: string | null;
     } | null = null;
 
-    this.logger.info('Starting PR orchestration', {
+    this.logger.log('Starting PR orchestration', {
       executionId,
       correlationId,
     });
@@ -150,7 +149,7 @@ export class GitHubPROrchestrator {
       );
 
       // Delegate to AI provider
-      this.logger.info('Delegating PR task to AI provider', {
+      this.logger.log('Delegating PR task to AI provider', {
         executionId,
         provider: execution.ai_provider,
         repository: githubPush.repository,
@@ -167,7 +166,7 @@ export class GitHubPROrchestrator {
       const parsedResult = parseAIPRResponse(aiResult);
 
       if (!parsedResult.success || !parsedResult.prUrl) {
-        this.logger.error('PR creation failed or URL missing', {
+        this.logger.warn('PR creation failed or URL missing', {
           executionId,
           error: parsedResult.error,
         });
@@ -239,7 +238,7 @@ export class GitHubPROrchestrator {
         correlationId,
       );
 
-      this.logger.info('PR orchestration completed successfully', {
+      this.logger.log('PR orchestration completed successfully', {
         executionId,
         prUrl: parsedResult.prUrl,
         prNumber: parsedResult.prNumber,
@@ -270,7 +269,7 @@ export class GitHubPROrchestrator {
         correlationId,
       );
 
-      this.logger.error('PR orchestration failed', {
+      this.logger.warn('PR orchestration failed', {
         executionId,
         error: (error as Error).message,
         duration,
@@ -397,7 +396,7 @@ Return format (JSON):
       },
     });
 
-    this.logger.info('Database updated with PR results', {
+    this.logger.log('Database updated with PR results', {
       executionId,
       prUrl: result.prUrl,
       prNumber: result.prNumber,
@@ -459,14 +458,14 @@ Return format (JSON):
         },
       });
 
-      this.logger.info('Published deployment trigger message', {
+      this.logger.log('Published deployment trigger message', {
         executionId: payload.executionId,
         prNumber: payload.prNumber,
         queue: 'github-pr-created-queue',
       });
     } catch (error) {
       // Log error but don't fail PR creation
-      this.logger.error('Failed to publish deployment trigger', {
+      this.logger.warn('Failed to publish deployment trigger', {
         executionId: payload.executionId,
         error: (error as Error).message,
       });

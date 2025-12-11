@@ -1,7 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Inject } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
 import { GitHubAuthService } from './github-auth.service';
 import {
@@ -14,6 +11,7 @@ import { MetricsService } from '../common/metrics/metrics.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { ErrorCategory } from '../common/sentry/sentry.constants';
+import { LoggerService } from '../common/logger/logger.service';
 
 @Injectable()
 export class GitHubClientService {
@@ -22,7 +20,7 @@ export class GitHubClientService {
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
     private readonly publisher: RabbitMQPublisherService,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly logger: LoggerService,
   ) {}
 
   async getClient(installationId?: string): Promise<Octokit> {
@@ -95,7 +93,7 @@ export class GitHubClientService {
           delay,
         )
         .catch((err) =>
-          this.logger.error(`Failed to publish to retry queue: ${err.message}`, err.stack),
+          this.logger.warn(`Failed to publish to retry queue: ${err.message}`, err.stack),
         );
 
       throw new GitHubRateLimitError(resetTime);
@@ -125,7 +123,7 @@ export class GitHubClientService {
     }
 
     // Default catch-all
-    this.logger.error(`GitHub API Error in ${context}`, { error: err });
+    this.logger.warn(`GitHub API Error in ${context}: ${err.message || err}`, context);
 
     this.sentry.captureException(err, {
       category: ErrorCategory.GITHUB,

@@ -10,13 +10,12 @@
  * - AC#5: Graceful degradation
  */
 
-import { Injectable, Inject } from '@nestjs/common';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
+import { LoggerService } from '../../common/logger/logger.service';
 import { ClickUpService } from '../../clickup/clickup.service';
 import { ErrorSeverity } from '../../common/sentry/sentry.constants';
 import { ErrorClassifier, GitHubErrorType, ErrorClassification } from '../utils/error-classifier';
@@ -77,7 +76,7 @@ export class GitHubErrorMonitor {
     private readonly metrics: MetricsService,
     private readonly audit: AuditLogService,
     private readonly clickup: ClickUpService,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -87,7 +86,7 @@ export class GitHubErrorMonitor {
   async handleGitHubError(context: GitHubErrorContext): Promise<void> {
     const classification = ErrorClassifier.classify(context.error);
 
-    this.logger.error('GitHub operation failed', {
+    this.logger.warn('GitHub operation failed', {
       operation: context.operation,
       executionId: context.executionId,
       ticketId: context.ticketId,
@@ -118,7 +117,7 @@ export class GitHubErrorMonitor {
    * Handle deployment failure (AC#3)
    */
   async handleDeploymentFailure(context: DeploymentFailureContext): Promise<void> {
-    this.logger.error('Deployment failed', {
+    this.logger.warn('Deployment failed', {
       deploymentId: context.deploymentId,
       status: context.status,
       environment: context.environment,
@@ -404,7 +403,7 @@ export class GitHubErrorMonitor {
         },
       });
     } catch (error) {
-      this.logger.error('Failed to update deployment status', {
+      this.logger.warn('Failed to update deployment status', {
         deploymentId: context.deploymentId,
         error: (error as Error).message,
       });
@@ -428,7 +427,7 @@ export class GitHubErrorMonitor {
       });
     } catch (error) {
       // AC#5: Log but don't fail - graceful degradation
-      this.logger.error('Failed to update execution status', {
+      this.logger.warn('Failed to update execution status', {
         executionId,
         error: (error as Error).message,
       });

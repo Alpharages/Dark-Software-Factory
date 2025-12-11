@@ -1,1 +1,13 @@
+# Run lint-staged (ESLint + Prettier)
+echo "🔍 Running lint-staged..."
 pnpm exec lint-staged
+
+# Run TypeScript compiler to check types
+echo "🔍 Checking TypeScript types..."
+pnpm exec tsc --noEmit
+
+# Run linting on all files
+echo "🔍 Running linter on all files..."
+pnpm lint --max-warnings=0
+
+echo "✅ Pre-commit checks completed successfully!"
