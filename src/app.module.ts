@@ -36,6 +36,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 
 // External integrations
 import { IntegrationModule } from './integration/integration.module';
+import { ClickUpModule } from './clickup/clickup.module';
 
 // Common
 import { CorrelationIdMiddleware } from './common/middleware';
@@ -91,6 +92,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
 
     // External integrations
     IntegrationModule,
+    ClickUpModule,
   ],
   controllers: [AppController],
   providers: [

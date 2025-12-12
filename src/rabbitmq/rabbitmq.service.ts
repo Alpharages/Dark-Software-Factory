@@ -92,8 +92,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     // Messages here wait for 5 minutes (TTL) then dead-letter back to AI_ROUTING
     await this.channel.assertQueue(QUEUE_NAMES.AI_ROUTING_WAIT, {
       durable: true,
-      deadLetterExchange: '', // Default exchange
-      deadLetterRoutingKey: QUEUE_NAMES.AI_ROUTING, // Route back to main queue
+      arguments: {
+        'x-dead-letter-exchange': '', // Default exchange
+        'x-dead-letter-routing-key': QUEUE_NAMES.AI_ROUTING, // Route back to main queue
+      },
       messageTtl: 300000, // 5 minutes
     });
     this.logger.log(`Queue created: ${QUEUE_NAMES.AI_ROUTING_WAIT} (TTL: 5m)`);
@@ -101,8 +103,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     for (const queueName of queues) {
       await this.channel.assertQueue(queueName, {
         durable: true,
-        deadLetterExchange: EXCHANGE_NAMES.DEAD_LETTER_EXCHANGE,
-        deadLetterRoutingKey: `dlx-${queueName}`,
+        arguments: {
+          'x-dead-letter-exchange': EXCHANGE_NAMES.DEAD_LETTER_EXCHANGE,
+          'x-dead-letter-routing-key': `dlx-${queueName}`,
+        },
         // messageTtl removed - can be set per-message if needed
       });
 
@@ -199,8 +203,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     // Ensure queue exists
     await this.channel.assertQueue(queue, {
       durable: true,
-      deadLetterExchange: EXCHANGE_NAMES.DEAD_LETTER_EXCHANGE,
-      deadLetterRoutingKey: `dlx-${queue}`,
+      arguments: {
+        'x-dead-letter-exchange': EXCHANGE_NAMES.DEAD_LETTER_EXCHANGE,
+        'x-dead-letter-routing-key': `dlx-${queue}`,
+      },
       // messageTtl removed - can be set per-message if needed
     });
 

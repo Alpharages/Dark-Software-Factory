@@ -61,6 +61,7 @@ export const ModelName = {
   ContextDocument: 'ContextDocument',
   CoverageBaseline: 'CoverageBaseline',
   ProjectCoverageConfig: 'ProjectCoverageConfig',
+  WebhookEvent: 'WebhookEvent',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -299,6 +300,17 @@ export const ProjectCoverageConfigScalarFieldEnum = {
 export type ProjectCoverageConfigScalarFieldEnum =
   (typeof ProjectCoverageConfigScalarFieldEnum)[keyof typeof ProjectCoverageConfigScalarFieldEnum];
 
+export const WebhookEventScalarFieldEnum = {
+  id: 'id',
+  source: 'source',
+  event_type: 'event_type',
+  payload: 'payload',
+  processed_at: 'processed_at',
+} as const;
+
+export type WebhookEventScalarFieldEnum =
+  (typeof WebhookEventScalarFieldEnum)[keyof typeof WebhookEventScalarFieldEnum];
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc',
@@ -313,6 +325,12 @@ export const NullableJsonNullValueInput = {
 
 export type NullableJsonNullValueInput =
   (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput];
+
+export const JsonNullValueInput = {
+  JsonNull: 'JsonNull',
+} as const;
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput];
 
 export const QueryMode = {
   default: 'default',

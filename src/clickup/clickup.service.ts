@@ -379,4 +379,72 @@ export class ClickUpService {
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  /**
+   * Get tasks from a ClickUp list (for polling)
+   * Filters by date_updated to get incremental updates
+   *
+   * @param options - Query options
+   * @returns List of tasks with updates
+   */
+  async getTasks(options: {
+    list_id: string;
+    space_id?: string;
+    date_updated_gt?: number;
+    order_by?: 'updated';
+  }): Promise<{
+    tasks: Array<{
+      id: string;
+      name: string;
+      status: { status: string; color: string };
+      date_updated: string;
+      assignees?: Array<{ id: number; username: string }>;
+      custom_fields?: Array<{ id: string; name: string; value: unknown }>;
+    }>;
+  }> {
+    try {
+      const params: Record<string, string> = {
+        order_by: options.order_by || 'updated',
+        reverse: 'true', // Most recent first
+      };
+
+      // Add date filter if provided
+      if (options.date_updated_gt) {
+        params.date_updated_gt = options.date_updated_gt.toString();
+      }
+
+      const response = await this.client.get(`/list/${options.list_id}/task`, {
+        params,
+      });
+
+      this.logger.debug('Fetched tasks from ClickUp list', {
+        listId: options.list_id,
+        taskCount: response.data.tasks?.length || 0,
+      });
+
+      return {
+        tasks: response.data.tasks || [],
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+
+      // Check for rate limit
+      if (axiosError.response?.status === 429) {
+        const rateLimitReset = this.extractRateLimitReset(axiosError);
+        this.logger.warn('ClickUp rate limit hit while fetching tasks', {
+          listId: options.list_id,
+          rateLimitReset: rateLimitReset ? new Date(rateLimitReset * 1000) : 'unknown',
+        });
+
+        throw new Error('ClickUp rate limit exceeded');
+      }
+
+      this.logger.error('Failed to fetch tasks from ClickUp', {
+        listId: options.list_id,
+        error: (error as Error).message,
+      });
+
+      throw error;
+    }
+  }
 }

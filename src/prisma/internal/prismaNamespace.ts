@@ -388,6 +388,7 @@ export const ModelName = {
   ContextDocument: 'ContextDocument',
   CoverageBaseline: 'CoverageBaseline',
   ProjectCoverageConfig: 'ProjectCoverageConfig',
+  WebhookEvent: 'WebhookEvent',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -420,7 +421,8 @@ export type TypeMap<
       | 'auditLog'
       | 'contextDocument'
       | 'coverageBaseline'
-      | 'projectCoverageConfig';
+      | 'projectCoverageConfig'
+      | 'webhookEvent';
     txIsolationLevel: TransactionIsolationLevel;
   };
   model: {
@@ -1396,6 +1398,82 @@ export type TypeMap<
         };
       };
     };
+    WebhookEvent: {
+      payload: Prisma.$WebhookEventPayload<ExtArgs>;
+      fields: Prisma.WebhookEventFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.WebhookEventFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.WebhookEventFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>;
+        };
+        findFirst: {
+          args: Prisma.WebhookEventFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.WebhookEventFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>;
+        };
+        findMany: {
+          args: Prisma.WebhookEventFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>[];
+        };
+        create: {
+          args: Prisma.WebhookEventCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>;
+        };
+        createMany: {
+          args: Prisma.WebhookEventCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.WebhookEventCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>[];
+        };
+        delete: {
+          args: Prisma.WebhookEventDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>;
+        };
+        update: {
+          args: Prisma.WebhookEventUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>;
+        };
+        deleteMany: {
+          args: Prisma.WebhookEventDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.WebhookEventUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.WebhookEventUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>[];
+        };
+        upsert: {
+          args: Prisma.WebhookEventUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebhookEventPayload>;
+        };
+        aggregate: {
+          args: Prisma.WebhookEventAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWebhookEvent>;
+        };
+        groupBy: {
+          args: Prisma.WebhookEventGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.WebhookEventGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.WebhookEventCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.WebhookEventCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
   };
 } & {
   other: {
@@ -1655,6 +1733,17 @@ export const ProjectCoverageConfigScalarFieldEnum = {
 export type ProjectCoverageConfigScalarFieldEnum =
   (typeof ProjectCoverageConfigScalarFieldEnum)[keyof typeof ProjectCoverageConfigScalarFieldEnum];
 
+export const WebhookEventScalarFieldEnum = {
+  id: 'id',
+  source: 'source',
+  event_type: 'event_type',
+  payload: 'payload',
+  processed_at: 'processed_at',
+} as const;
+
+export type WebhookEventScalarFieldEnum =
+  (typeof WebhookEventScalarFieldEnum)[keyof typeof WebhookEventScalarFieldEnum];
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc',
@@ -1669,6 +1758,12 @@ export const NullableJsonNullValueInput = {
 
 export type NullableJsonNullValueInput =
   (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput];
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull,
+} as const;
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput];
 
 export const QueryMode = {
   default: 'default',
@@ -1995,6 +2090,7 @@ export type GlobalOmitConfig = {
   contextDocument?: Prisma.ContextDocumentOmit;
   coverageBaseline?: Prisma.CoverageBaselineOmit;
   projectCoverageConfig?: Prisma.ProjectCoverageConfigOmit;
+  webhookEvent?: Prisma.WebhookEventOmit;
 };
 
 /* Types for Logging */

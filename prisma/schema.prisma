@@ -426,3 +426,20 @@ model ProjectCoverageConfig {
   
   @@map("project_coverage_configs")
 }
+
+// ============================================
+// WEBHOOK EVENTS (Idempotency)
+// Tracks processed webhooks to prevent duplicate processing
+// ============================================
+
+model WebhookEvent {
+  id            String   @id // webhook_id from ClickUp/GitHub
+  source        String   // "clickup", "github"
+  event_type    String   // Event type from provider
+  payload       Json     // Full webhook payload for debugging
+  processed_at  DateTime @default(now())
+  
+  @@index([source, event_type, processed_at])
+  @@map("webhook_events")
+}
+

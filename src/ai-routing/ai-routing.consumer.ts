@@ -33,8 +33,14 @@ export class AIRoutingConsumer extends RabbitMQConsumerBase implements OnModuleI
     try {
       const channel = this.rabbitMQService.getChannel();
 
-      // Ensure queue exists
-      await channel.assertQueue(QUEUE_NAMES.AI_ROUTING, { durable: true });
+      // Ensure queue exists (config must match rabbitmq.service.ts)
+      await channel.assertQueue(QUEUE_NAMES.AI_ROUTING, {
+        durable: true,
+        arguments: {
+          'x-dead-letter-exchange': 'dlx-exchange',
+          'x-dead-letter-routing-key': `dlx-${QUEUE_NAMES.AI_ROUTING}`,
+        },
+      });
 
       // Set prefetch for controlled concurrency (process 3 at a time)
       await channel.prefetch(3);

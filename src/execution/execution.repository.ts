@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIProvider, ExecutionStatus, Execution, Prisma } from '@prisma/client';
+import { AIProvider, ExecutionStatus, Execution, Prisma } from '@/prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { IExecutionAuditLog } from './interfaces';
 

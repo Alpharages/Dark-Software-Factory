@@ -20,4 +20,5 @@ export type * from './models/AuditLog';
 export type * from './models/ContextDocument';
 export type * from './models/CoverageBaseline';
 export type * from './models/ProjectCoverageConfig';
+export type * from './models/WebhookEvent';
 export type * from './commonInputTypes';

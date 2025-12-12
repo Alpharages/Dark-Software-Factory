@@ -64,8 +64,14 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
     try {
       const channel = this.rabbitMQService.getChannel();
 
-      // Ensure queue exists
-      await channel.assertQueue(QUEUE_NAMES.AI_EXECUTION, { durable: true });
+      // Ensure queue exists (config must match rabbitmq.service.ts)
+      await channel.assertQueue(QUEUE_NAMES.AI_EXECUTION, {
+        durable: true,
+        arguments: {
+          'x-dead-letter-exchange': 'dlx-exchange',
+          'x-dead-letter-routing-key': `dlx-${QUEUE_NAMES.AI_EXECUTION}`,
+        },
+      });
 
       // Set prefetch for controlled concurrency (process 2 at a time for AI execution)
       await channel.prefetch(2);

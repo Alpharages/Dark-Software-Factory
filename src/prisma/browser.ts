@@ -81,3 +81,8 @@ export type CoverageBaseline = Prisma.CoverageBaselineModel;
  *
  */
 export type ProjectCoverageConfig = Prisma.ProjectCoverageConfigModel;
+/**
+ * Model WebhookEvent
+ *
+ */
+export type WebhookEvent = Prisma.WebhookEventModel;
