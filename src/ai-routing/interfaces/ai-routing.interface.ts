@@ -98,6 +98,7 @@ export interface IProviderHealth {
 export interface IRoutingResult {
   correlationId: string;
   ticketId: string;
+  executionId: string;
   clickupTaskId: string;
   provider: AIProvider;
   complexityScore: number;
@@ -107,6 +108,8 @@ export interface IRoutingResult {
   description: string;
   acceptanceCriteria: string;
   projectId: string;
+  repositoryUrl: string;
   tags: string[];
   routedAt: string;
 }
+

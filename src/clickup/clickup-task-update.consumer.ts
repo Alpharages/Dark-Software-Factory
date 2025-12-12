@@ -15,6 +15,8 @@ import { AuditLogService } from '../common/audit/audit-log.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { RabbitMQConsumerBase } from '../rabbitmq/rabbitmq-consumer.base';
 import { TicketStatus } from '@prisma/client';
+import { ClickUpService } from './clickup.service';
+import { ConfigService } from '@nestjs/config';
 
 interface ClickUpTaskUpdateMessage {
   task_id: string;
@@ -41,6 +43,8 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
     private readonly audit: AuditLogService,
+    private readonly clickup: ClickUpService,
+    private readonly config: ConfigService,
   ) {
     super();
   }
@@ -141,14 +145,36 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
           source: message.source,
         });
 
+        // Fetch full task details from ClickUp API to get description
+        let taskDescription = '';
+        try {
+          const fullTask = await this.clickup.getTask(message.task_id);
+          taskDescription = fullTask.description || fullTask.text_content || '';
+          this.loggerService.debug('Fetched full task details from ClickUp', {
+            taskId: message.task_id,
+            hasDescription: !!taskDescription,
+          });
+        } catch (error) {
+          this.loggerService.warn('Failed to fetch task description from ClickUp', {
+            taskId: message.task_id,
+            error: (error as Error).message,
+          });
+        }
+
+        // Get repository URL from config fallback (temporary until Story 4.9)
+        const defaultRepository = this.config.get<string>(
+          'github.defaultRepository',
+          'https://github.com/default-org/default-repo',
+        );
+
         // Auto-create ticket for production polling workflow
         // This ensures new ClickUp tasks are automatically synced to database
         ticket = await this.prisma.ticket.create({
           data: {
             clickup_task_id: message.task_id,
-            project_id: 'clickup-polling', // Default project ID
+            project_id: defaultRepository, // Fallback until Story 4.9 implements Projects table
             title: message.name || `Task ${message.task_id}`,
-            description: '', // Will be enriched later if needed
+            description: taskDescription, // Now includes fetched description
             acceptance_criteria: '',
             ticket_quality_score: 0, // Not validated through intake flow
             status:
@@ -192,7 +218,7 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
             payload: {
               taskId: message.task_id,
               taskName: message.name || `Task ${message.task_id}`,
-              taskDescription: '',
+              taskDescription: taskDescription, // Include fetched description
               taskUrl: `https://app.clickup.com/t/${message.task_id}`,
               listId: 'clickup-polling',
               projectId: 'clickup-polling',

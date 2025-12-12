@@ -32,7 +32,7 @@ export class AIRoutingService {
     private readonly routingDuration: Histogram<string>,
     @InjectMetric('ai_complexity_score')
     private readonly complexityHisto: Histogram<string>,
-  ) {}
+  ) { }
 
   /**
    * Route a ticket to the appropriate AI provider
@@ -124,6 +124,7 @@ export class AIRoutingService {
       const routingResult: IRoutingResult = {
         correlationId,
         ticketId,
+        executionId: execution.id,
         clickupTaskId: request.clickupTaskId,
         provider,
         complexityScore,
@@ -133,6 +134,7 @@ export class AIRoutingService {
         description: request.description,
         acceptanceCriteria: request.acceptanceCriteria,
         projectId: request.projectId,
+        repositoryUrl: this.configService.get<string>('github.defaultRepository', ''),
         tags: request.tags,
         routedAt: new Date().toISOString(),
       };
@@ -167,7 +169,7 @@ export class AIRoutingService {
 
       this.logger.log(
         `[${correlationId}] Routing complete: ${provider} (complexity=${complexityScore}, ` +
-          `reason=${routingReason}, fallback=${fallbackUsed})`,
+        `reason=${routingReason}, fallback=${fallbackUsed})`,
       );
 
       endTimer();

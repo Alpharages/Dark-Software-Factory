@@ -447,4 +447,42 @@ export class ClickUpService {
       throw error;
     }
   }
+
+  /**
+   * Get full details of a single task including description
+   *
+   * @param taskId - ClickUp task ID
+   * @returns Full task details
+   */
+  async getTask(taskId: string): Promise<{
+    id: string;
+    name: string;
+    description: string;
+    status: { status: string };
+    text_content?: string;
+  }> {
+    try {
+      const response = await this.client.get(`/task/${taskId}`);
+
+      this.logger.debug('Fetched task details from ClickUp', {
+        taskId,
+        hasDescription: !!response.data.description,
+      });
+
+      return {
+        id: response.data.id,
+        name: response.data.name,
+        description: response.data.description || response.data.text_content || '',
+        status: response.data.status,
+        text_content: response.data.text_content,
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch task from ClickUp', {
+        taskId,
+        error: (error as Error).message,
+      });
+
+      throw error;
+    }
+  }
 }

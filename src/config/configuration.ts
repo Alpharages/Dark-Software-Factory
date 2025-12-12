@@ -54,6 +54,7 @@ export default () => {
     // GitHub Integration
     github: {
       token: process.env.GITHUB_TOKEN,
+      defaultRepository: process.env.GITHUB_DEFAULT_REPOSITORY,
       appId: process.env.GITHUB_APP_ID ? parseInt(process.env.GITHUB_APP_ID, 10) : undefined,
       privateKeyPath: process.env.GITHUB_APP_PRIVATE_KEY_PATH,
     },

@@ -67,6 +67,16 @@ export const envValidationSchema = Joi.object({
   GITHUB_APP_ID: Joi.number().optional(),
   GITHUB_APP_PRIVATE_KEY_PATH: Joi.string().optional(),
 
+  // GitHub Repository Mapping (Story 4.9) - Temporary fallback
+  GITHUB_DEFAULT_REPOSITORY: Joi.string()
+    .uri({ scheme: ['http', 'https', 'git'] })
+    .required()
+    .messages({
+      'any.required':
+        'GITHUB_DEFAULT_REPOSITORY is required until Story 4.9 implements Projects table. Example: https://github.com/your-org/your-repo',
+      'string.uri': 'GITHUB_DEFAULT_REPOSITORY must be a valid repository URL',
+    }),
+
   // ClickUp Integration (REQUIRED)
   CLICKUP_API_KEY: Joi.string().required(),
   CLICKUP_WEBHOOK_SECRET: Joi.string().min(16).required().messages({

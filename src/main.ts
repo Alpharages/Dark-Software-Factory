@@ -46,6 +46,9 @@ async function bootstrap() {
   const logger = app.get(LoggerService);
   app.useLogger(logger);
 
+  // Enable graceful shutdown to properly close all connections
+  app.enableShutdownHooks();
+
   // Only enable Swagger in non-production environments
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -54,10 +57,10 @@ async function bootstrap() {
       .setTitle('Dark Software Factory API')
       .setDescription(
         'AI Dev Tool Orchestrator API - Automates the pipeline from PM tickets to deployed code.\n\n' +
-          '## Authentication\n' +
-          'Most endpoints require JWT Bearer authentication. Use the Authorize button to set your token.\n\n' +
-          '## Roles\n' +
-          'Valid roles: `ADMIN`, `MANAGER`, `PM`, `TL`, `QA`, `VIEWER`',
+        '## Authentication\n' +
+        'Most endpoints require JWT Bearer authentication. Use the Authorize button to set your token.\n\n' +
+        '## Roles\n' +
+        'Valid roles: `ADMIN`, `MANAGER`, `PM`, `TL`, `QA`, `VIEWER`',
       )
       .setVersion('1.0.0')
       .setContact(
@@ -95,6 +98,22 @@ async function bootstrap() {
 
   await app.listen(3000, '0.0.0.0');
   logger.log(`Application is running on: ${await app.getUrl()}`);
+
+  // Graceful shutdown handlers
+  const shutdownHandler = async (signal: string) => {
+    logger.log(`Received ${signal}, starting graceful shutdown...`);
+    try {
+      await app.close();
+      logger.log('Application closed successfully');
+      process.exit(0);
+    } catch (error) {
+      logger.error(`Error during shutdown: ${error}`);
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => shutdownHandler('SIGTERM'));
+  process.on('SIGINT', () => shutdownHandler('SIGINT'));
 }
 
 // Wrap bootstrap in try-catch and capture errors to Sentry

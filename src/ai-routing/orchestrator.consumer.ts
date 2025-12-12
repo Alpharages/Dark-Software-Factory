@@ -9,39 +9,21 @@
  */
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { AIProvider } from '@prisma/client';
 import * as amqp from 'amqplib';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { RabbitMQConsumerBase } from '../rabbitmq/rabbitmq-consumer.base';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { OrchestratorService } from './orchestrator.service';
-import { IOrchestrationInput } from './interfaces';
-
-/**
- * Queue message structure for orchestration requests
- */
-interface IOrchestrationMessage {
-  correlationId: string;
-  ticketId: string;
-  executionId: string;
-  prompt: string;
-  repositoryUrl: string;
-  baseBranch?: string;
-  targetFiles?: string[];
-  tags?: string[];
-  estimatedFilesCount?: number;
-  providerOverride?: AIProvider;
-  allowFallback?: boolean;
-  timeoutMs?: number;
-  title?: string;
-  acceptanceCriteria?: string;
-}
+import { PromptGeneratorService } from './prompt-generator.service';
+import { IOrchestrationInput, IRoutingResult } from './interfaces';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../database/prisma.service';
 
 /**
  * Orchestrator Queue Consumer
  *
- * Consumes from: ai-execution-queue (or dedicated orchestration queue)
- * Delegates to OrchestratorService for intelligent provider selection and fallback
+ * Consumes from: ai-execution-queue (receives IRoutingResult from routing service)
+ * Generates prompts, updates execution records, and delegates to OrchestratorService
  */
 @Injectable()
 export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModuleInit {
@@ -50,6 +32,9 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
   constructor(
     private readonly rabbitMQService: RabbitMQService,
     private readonly orchestrator: OrchestratorService,
+    private readonly promptGenerator: PromptGeneratorService,
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
   ) {
     super();
   }
@@ -94,39 +79,57 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
   }
 
   /**
-   * Process incoming orchestration request (implements abstract from base)
+   * Process incoming routing result (implements abstract from base)
    */
   protected async processMessage(payload: unknown, correlationId: string): Promise<void> {
-    const message = payload as IOrchestrationMessage;
-    const ticketId = message.ticketId;
+    const routingResult = payload as IRoutingResult;
+    const { ticketId, executionId, provider } = routingResult;
 
-    this.logger.log(`[${correlationId}] Processing orchestration request for ticket ${ticketId}`);
+    this.logger.log(`[${correlationId}] Processing routing result for ticket ${ticketId}`);
+    this.logger.log(
+      `[${correlationId}] Provider selected: primary=${provider}, fallback=null, complexity=${routingResult.complexityScore}`,
+    );
 
-    // Convert message to orchestration input
+    // 1. Generate prompt from routing result
+    const promptResult = await this.promptGenerator.generatePrompt(routingResult);
+    this.logger.log(
+      `[${correlationId}] Prompt generated: ${promptResult.metadata.promptLength} chars`,
+    );
+
+    // 2. Update execution record with prompt
+    await this.prisma.execution.update({
+      where: { id: executionId },
+      data: { prompt: promptResult.prompt },
+    });
+
+    // 3. Get repository URL from config
+    const repositoryUrl = this.configService.get<string>('github.defaultRepository', '');
+
+    this.logger.log(
+      `[${correlationId}] Retrieved repository URL: "${repositoryUrl}" (from config github.defaultRepository)`,
+    );
+
+    if (!repositoryUrl) {
+      throw new Error('github.defaultRepository not configured in .env');
+    }
+
+    // 4. Convert to orchestration input
     const input: IOrchestrationInput = {
-      correlationId: message.correlationId || correlationId,
-      executionId: message.executionId,
-      ticketId: message.ticketId,
-      prompt: message.prompt,
-      repositoryUrl: message.repositoryUrl,
-      baseBranch: message.baseBranch,
-      targetFiles: message.targetFiles,
-      tags: message.tags,
-      estimatedFilesCount: message.estimatedFilesCount,
-      providerOverride: message.providerOverride,
-      allowFallback: message.allowFallback ?? true,
-      timeoutMs: message.timeoutMs,
-      title: message.title,
-      acceptanceCriteria: message.acceptanceCriteria,
+      correlationId,
+      executionId,
+      ticketId,
+      prompt: promptResult.prompt,
+      repositoryUrl,
+      allowFallback: true,
     };
 
-    // Execute orchestration
+    // 5. Execute orchestration
     const result = await this.orchestrator.execute(input);
 
     if (result.success) {
       this.logger.log(
         `[${correlationId}] Orchestration completed: ` +
-          `provider=${result.executedBy}, files=${result.filesChanged.length}`,
+        `provider=${result.executedBy}, files=${result.filesChanged.length}`,
       );
     } else {
       // Throw error to trigger retry logic in base class

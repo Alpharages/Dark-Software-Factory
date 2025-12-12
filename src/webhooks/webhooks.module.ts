@@ -8,9 +8,9 @@ import {
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksService } from './webhooks.service';
 import { WebhookSignatureGuard } from './guards';
-import { DatabaseModule } from '../database/database.module';
-import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
-import { AppMetricsModule, WEBHOOK_METRICS, LABELS } from '../common/metrics';
+import { DatabaseModule } from '@/database/database.module';
+import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
+import { AppMetricsModule, WEBHOOK_METRICS, LABELS } from '@/common/metrics';
 
 /**
  * Webhooks Module

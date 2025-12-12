@@ -68,7 +68,7 @@ import { ExecutionModule } from '../execution/execution.module';
     OrchestratorService,
     ProviderFactoryService,
     FallbackStrategyService,
-    OrchestratorConsumer,
+    // OrchestratorConsumer, // DISABLED: Conflicts with AIExecutionConsumer on ai-execution-queue
 
     // Story 2.3 Metrics
     // Prometheus metrics
@@ -234,4 +234,4 @@ import { ExecutionModule } from '../execution/execution.module';
     FallbackStrategyService,
   ],
 })
-export class AiRoutingModule {}
+export class AiRoutingModule { }
