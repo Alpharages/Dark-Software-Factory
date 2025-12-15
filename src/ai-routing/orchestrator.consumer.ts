@@ -129,7 +129,7 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
     if (result.success) {
       this.logger.log(
         `[${correlationId}] Orchestration completed: ` +
-        `provider=${result.executedBy}, files=${result.filesChanged.length}`,
+          `provider=${result.executedBy}, files=${result.filesChanged.length}`,
       );
     } else {
       // Throw error to trigger retry logic in base class

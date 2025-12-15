@@ -318,16 +318,16 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
    * Customize based on your ClickUp workflow
    */
   private mapClickUpStatusToTicketStatus(clickUpStatus: string): string | null {
-    const statusMap: Record<string, string> = {
-      'to do': 'QUEUED',
-      'in progress': 'AI_PROCESSING',
-      review: 'QA_REVIEW',
-      deployed: 'DEPLOYED',
-      done: 'COMPLETED',
-      closed: 'COMPLETED',
-    };
+    const statusMap = new Map<string, string>([
+      ['to do', 'QUEUED'],
+      ['in progress', 'AI_PROCESSING'],
+      ['review', 'QA_REVIEW'],
+      ['deployed', 'DEPLOYED'],
+      ['done', 'COMPLETED'],
+      ['closed', 'COMPLETED'],
+    ]);
 
     const normalized = clickUpStatus.toLowerCase();
-    return statusMap[normalized] || null;
+    return statusMap.get(normalized) || null;
   }
 }

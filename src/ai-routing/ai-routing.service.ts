@@ -34,7 +34,7 @@ export class AIRoutingService {
     private readonly routingDuration: Histogram<string>,
     @InjectMetric('ai_complexity_score')
     private readonly complexityHisto: Histogram<string>,
-  ) { }
+  ) {}
 
   /**
    * Route a ticket to the appropriate AI provider
@@ -175,7 +175,11 @@ export class AIRoutingService {
         allowFallback: true,
       };
 
-      await this.rabbitMQ.publishToQueue(QUEUE_NAMES.AI_EXECUTION, aiExecutionPayload, correlationId);
+      await this.rabbitMQ.publishToQueue(
+        QUEUE_NAMES.AI_EXECUTION,
+        aiExecutionPayload,
+        correlationId,
+      );
 
       // 9. Publish routing event
       await this.rabbitMQ.publishToExchange(
@@ -206,7 +210,7 @@ export class AIRoutingService {
 
       this.logger.log(
         `[${correlationId}] Routing complete: ${provider} (complexity=${complexityScore}, ` +
-        `reason=${routingReason}, fallback=${fallbackUsed})`,
+          `reason=${routingReason}, fallback=${fallbackUsed})`,
       );
 
       endTimer();

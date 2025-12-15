@@ -70,7 +70,7 @@ export class QaOrchestratorService {
     // private readonly codeReviewService: CodeReviewService,
     private readonly rabbitPublisher: RabbitMQPublisherService,
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
-  ) { }
+  ) {}
 
   /**
    * Story 3.7: Run QA checks for post-execution code files
@@ -414,7 +414,11 @@ export class QaOrchestratorService {
 
     // Story 3.10: Use AiQaOrchestrator instead of deleted LinterService
     try {
-      const result = await this.aiQaOrchestrator.executeLintCheck(ticketId, executionId, workspacePath);
+      const result = await this.aiQaOrchestrator.executeLintCheck(
+        ticketId,
+        executionId,
+        workspacePath,
+      );
       if (result.status === 'ERROR') {
         throw new Error(`Lint check failed: ${JSON.stringify(result.data)}`);
       }
@@ -572,16 +576,16 @@ export class QaOrchestratorService {
       code_review_passed: security?.passed ?? true,
       code_review_issues: security
         ? {
-          summary: {
-            criticalCount: security.summary.criticalCount,
-            highCount: security.summary.highCount,
-            mediumCount: security.summary.mediumCount,
-          },
-          complexityIssues: security.complexityIssues.map((i) => ({
-            function: i.functionName,
-            complexity: i.value,
-          })),
-        }
+            summary: {
+              criticalCount: security.summary.criticalCount,
+              highCount: security.summary.highCount,
+              mediumCount: security.summary.mediumCount,
+            },
+            complexityIssues: security.complexityIssues.map((i) => ({
+              function: i.functionName,
+              complexity: i.value,
+            })),
+          }
         : null,
     };
   }

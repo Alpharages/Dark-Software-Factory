@@ -8,16 +8,16 @@
  * Pattern: DSF orchestrates WHEN → AI executes + parses → DSF stores + decides
  */
 
-import {Injectable, Logger} from '@nestjs/common';
-import {SentryService} from '@/common/sentry/sentry.service';
-import {ErrorCategory} from '@/common/sentry/sentry.constants';
-import {OrchestratorService} from '@/ai-routing/orchestrator.service';
-import {QaMetricsService} from './qa-metrics.service';
-import {PrismaService} from '@/database/prisma.service';
-import {renderLintInstruction} from './templates/lint-instruction.template';
-import {renderTestInstruction} from './templates/test-instruction.template';
-import {renderSecurityInstruction} from './templates/security-instruction.template';
-import {renderCoverageInstruction} from './templates/coverage-instruction.template';
+import { Injectable, Logger } from '@nestjs/common';
+import { SentryService } from '@/common/sentry/sentry.service';
+import { ErrorCategory } from '@/common/sentry/sentry.constants';
+import { OrchestratorService } from '@/ai-routing/orchestrator.service';
+import { QaMetricsService } from './qa-metrics.service';
+import { PrismaService } from '@/database/prisma.service';
+import { renderLintInstruction } from './templates/lint-instruction.template';
+import { renderTestInstruction } from './templates/test-instruction.template';
+import { renderSecurityInstruction } from './templates/security-instruction.template';
+import { renderCoverageInstruction } from './templates/coverage-instruction.template';
 
 /**
  * QA Result interface (simplified from Story 3.6)
@@ -25,7 +25,7 @@ import {renderCoverageInstruction} from './templates/coverage-instruction.templa
 export interface IQaResult {
   executionId: string;
   checkType: 'linting' | 'testing' | 'security' | 'coverage';
-  status: 'PASSED' | 'FAILED' | 'ERROR';
+  status: 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED';
   data: unknown;
   duration: number;
   aiProvider?: string;
@@ -40,8 +40,7 @@ export class AiQaOrchestrator {
     private readonly qaMetrics: QaMetricsService, // Story 3.8
     private readonly sentry: SentryService, // Story 1.9
     private readonly prisma: PrismaService, // Database access
-  ) {
-  }
+  ) {}
 
   /**
    * Execute lint check via AI delegation
@@ -162,7 +161,7 @@ export class AiQaOrchestrator {
       const instruction = instructionRenderer(projectDir, ticketId);
 
       // 2. Delegate to AI with retry logic (AC#6)
-      const {result: parsedResult, aiProvider} = await this.executeWithRetry(
+      const { result: parsedResult, aiProvider } = await this.executeWithRetry(
         ticketId,
         executionId,
         instruction,
@@ -177,7 +176,9 @@ export class AiQaOrchestrator {
       await this.saveQaResult(executionId, checkType, parsedResult, duration, aiProvider);
 
       // 4. Record metrics
-      this.qaMetrics.recordCheckComplete(checkType, parsedResult.status === 'PASSED', duration, {
+      // NOT_CONFIGURED is treated as successful (tool not found, but not an error)
+      const isPassed = parsedResult.status === 'PASSED' || parsedResult.status === 'NOT_CONFIGURED';
+      this.qaMetrics.recordCheckComplete(checkType, isPassed, duration, {
         projectId: ticketId,
         aiProvider,
       });
@@ -187,12 +188,21 @@ export class AiQaOrchestrator {
         postMetricsCallback(parsedResult);
       }
 
-      this.logger.log(`[${ticketId}] ${checkType} check complete: ${parsedResult.status} in ${duration}ms`);
+      // Log NOT_CONFIGURED as info, not a failure
+      if (parsedResult.status === 'NOT_CONFIGURED') {
+        this.logger.log(
+          `[${ticketId}] ${checkType} check skipped: tooling not configured. ${parsedResult.summary || ''}`,
+        );
+      } else {
+        this.logger.log(
+          `[${ticketId}] ${checkType} check complete: ${parsedResult.status} in ${duration}ms`,
+        );
+      }
 
       return {
         executionId,
         checkType,
-        status: parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR',
+        status: parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED',
         data: parsedResult,
         duration,
         aiProvider,
@@ -250,7 +260,7 @@ export class AiQaOrchestrator {
       }
 
       const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
-      return {result: parsedResult, aiProvider: aiResponse.executedBy};
+      return { result: parsedResult, aiProvider: aiResponse.executedBy };
     } catch (error) {
       lastError = error as Error;
 
@@ -279,7 +289,7 @@ export class AiQaOrchestrator {
     }
 
     const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
-    return {result: parsedResult, aiProvider: aiResponse.executedBy};
+    return { result: parsedResult, aiProvider: aiResponse.executedBy };
   }
 
   /**
@@ -335,7 +345,7 @@ export class AiQaOrchestrator {
       } else if (checkType === 'security') {
         dbData.code_review_passed = data.status === 'PASSED';
         dbData.code_review_issues = {
-          summary: data.summary || {critical: 0, high: 0, medium: 0},
+          summary: data.summary || { critical: 0, high: 0, medium: 0 },
           vulnerabilities: data.vulnerabilities || [],
           secrets: data.secrets || [],
         };
@@ -345,16 +355,16 @@ export class AiQaOrchestrator {
 
       // Upsert pattern - create or update
       const existing = await this.prisma.qAResult.findFirst({
-        where: {execution_id: executionId},
+        where: { execution_id: executionId },
       });
 
       if (existing) {
         await this.prisma.qAResult.update({
-          where: {id: existing.id},
+          where: { id: existing.id },
           data: dbData as never,
         });
       } else {
-        await this.prisma.qAResult.create({data: dbData as never});
+        await this.prisma.qAResult.create({ data: dbData as never });
       }
 
       this.logger.debug(
@@ -384,7 +394,7 @@ export class AiQaOrchestrator {
         checkType as 'linting' | 'testing' | 'coverage' | 'security',
         'error', // Changed from 'database_error' to 'error'
         duration,
-        {projectId: executionId, aiProvider},
+        { projectId: executionId, aiProvider },
       );
 
       // Re-throw to propagate error (don't silently swallow)
@@ -409,7 +419,7 @@ export class AiQaOrchestrator {
     // Log to Sentry
     this.sentry.captureException(error, {
       category: ErrorCategory.QA_AUTOMATION,
-      extra: {ticketId, checkType, duration},
+      extra: { ticketId, checkType, duration },
     });
 
     // Record error metric
@@ -417,14 +427,14 @@ export class AiQaOrchestrator {
       checkType as 'linting' | 'testing' | 'coverage' | 'security',
       'error',
       duration,
-      {projectId: ticketId},
+      { projectId: ticketId },
     );
 
     return {
       executionId: ticketId,
       checkType: checkType as 'linting' | 'testing' | 'security' | 'coverage',
       status: 'ERROR',
-      data: {error: error.message},
+      data: { error: error.message },
       duration,
     };
   }

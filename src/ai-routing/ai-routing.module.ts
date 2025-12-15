@@ -25,10 +25,9 @@ import {
 import { OrchestratorService } from './orchestrator.service';
 import { ProviderFactoryService } from './provider-factory.service';
 import { FallbackStrategyService } from './fallback-strategy.service';
-import { OrchestratorConsumer } from './orchestrator.consumer';
-import { DatabaseModule } from '../database/database.module';
-import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
-import { ExecutionModule } from '../execution/execution.module';
+import { DatabaseModule } from '@/database/database.module';
+import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
+import { ExecutionModule } from '@/execution/execution.module';
 
 /**
  * AI Routing Module
@@ -234,4 +233,4 @@ import { ExecutionModule } from '../execution/execution.module';
     FallbackStrategyService,
   ],
 })
-export class AiRoutingModule { }
+export class AiRoutingModule {}

@@ -14,7 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { AIProvider } from '@prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { spawn, execFile, execSync, ChildProcess } from 'child_process';
+import { execFile, execSync, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import {
   IAIProvider,
@@ -76,7 +76,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
 
     this.logger.log(
       `Cursor Headless Provider initialized: cli=${this.cliPath}, ` +
-      `available=${this.isCliAvailable}, timeout=${this.defaultTimeoutMs}ms`,
+        `available=${this.isCliAvailable}, timeout=${this.defaultTimeoutMs}ms`,
     );
   }
 
@@ -135,7 +135,9 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         baseBranch,
       );
       workspacePath = workspaceInfo.path;
-      this.logger.log(`[${correlationId}]    ✅ Workspace created at: ${workspacePath} (${Date.now() - phase1Start}ms)`);
+      this.logger.log(
+        `[${correlationId}]    ✅ Workspace created at: ${workspacePath} (${Date.now() - phase1Start}ms)`,
+      );
 
       // 2. Update workspace status
       this.workspace.updateWorkspaceStatus(executionId, 'EXECUTING');
@@ -151,20 +153,26 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         targetFiles,
         timeout,
       );
-      this.logger.log(`[${correlationId}]    ✅ CLI execution completed (${Date.now() - phase2Start}ms)`);
+      this.logger.log(
+        `[${correlationId}]    ✅ CLI execution completed (${Date.now() - phase2Start}ms)`,
+      );
 
       // 4. Extract changes
       const phase3Start = Date.now();
       this.logger.log(`[${correlationId}] 🔍 Phase 3/3: Extracting changes from workspace`);
       const { diff, filesChanged } = await this.workspace.extractChanges(executionId);
-      this.logger.log(`[${correlationId}]    ✅ Found ${filesChanged.length} changed file(s), ${diff.length} bytes diff (${Date.now() - phase3Start}ms)`);
+      this.logger.log(
+        `[${correlationId}]    ✅ Found ${filesChanged.length} changed file(s), ${diff.length} bytes diff (${Date.now() - phase3Start}ms)`,
+      );
 
       // 5. Calculate confidence score
       const confidenceScore = this.calculateConfidence(filesChanged, diff);
 
       // 6. Check if any changes were made
       if (filesChanged.length === 0) {
-        this.logger.warn(`[${correlationId}] ⚠️  No changes detected - CLI completed but no files modified`);
+        this.logger.warn(
+          `[${correlationId}] ⚠️  No changes detected - CLI completed but no files modified`,
+        );
         this.circuitBreaker.recordFailure();
         return this.createFailedResult(startTime, workspacePath, {
           code: AIErrorCode.NO_CHANGES,
@@ -184,7 +192,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
 
       this.logger.log(
         `[${correlationId}] Cursor execution completed: ${filesChanged.length} files, ` +
-        `${diff.length} bytes diff, ${durationMs}ms`,
+          `${diff.length} bytes diff, ${durationMs}ms`,
       );
 
       return {
@@ -262,9 +270,6 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         ? `Focus changes only in these files if possible:\n${targetFiles.map((f) => `- ${f}`).join('\n')}\n\n${prompt}`
         : prompt;
 
-    // Build args array (safe from injection when using spawn)
-    const args = ['-p', '--force', '--output-format', 'text', scopedPrompt];
-
     this.logger.log(`[${executionId}] 🚀 Starting Cursor CLI execution`);
     this.logger.log(`[${executionId}]    Command: ${this.cliPath}`);
     this.logger.log(`[${executionId}]    Args: -p --force --output-format text "<prompt>"`);
@@ -296,31 +301,42 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         this.logger.debug(`[${executionId}]    Output preview: ${stdout.substring(0, 200)}...`);
 
         resolve({ stdout, stderr: '' });
-      } catch (error: any) {
+      } catch (error) {
         this.logger.log(`[${executionId}] 🏁 CLI process completed with error`);
 
+        // Type assertion for execSync error object
+        const execError = error as {
+          killed?: boolean;
+          signal?: string;
+          status?: number;
+          stdout?: Buffer;
+          stderr?: Buffer;
+          message?: string;
+        };
+
         // Check if it's a timeout
-        if (error.killed || error.signal === 'SIGTERM') {
+        if (execError.killed || execError.signal === 'SIGTERM') {
           this.logger.error(`[${executionId}] ⏱️  CLI execution timed out after ${timeout}ms`);
           reject({
             code: AIErrorCode.TIMEOUT,
             message: `Cursor CLI timed out after ${timeout}ms`,
             isRetryable: true,
-            exitCode: error.status,
+            exitCode: execError.status,
           });
           return;
         }
 
         // Other errors
-        const exitCode = error.status || 0;
-        const stdout = error.stdout?.toString() || '';
-        const stderr = error.stderr?.toString() || '';
+        const exitCode = execError.status || 0;
+        const stdout = execError.stdout?.toString() || '';
+        const stderr = execError.stderr?.toString() || '';
 
         this.logger.debug(`[${executionId}]    stdout length: ${stdout.length} bytes`);
         this.logger.debug(`[${executionId}]    stderr length: ${stderr.length} bytes`);
 
         if (exitCode !== 0) {
-          const mappedCode = exitCode === 127 ? AIErrorCode.CLI_NOT_FOUND : AIErrorCode.PROCESS_CRASH;
+          const mappedCode =
+            exitCode === 127 ? AIErrorCode.CLI_NOT_FOUND : AIErrorCode.PROCESS_CRASH;
           this.logger.error(`[${executionId}] ❌ CLI failed with exit code ${exitCode}`);
           this.logger.error(`[${executionId}]    Error type: ${mappedCode}`);
           if (stderr) this.logger.error(`[${executionId}]    stderr: ${stderr.substring(0, 500)}`);
@@ -339,7 +355,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         // Shouldn't reach here
         reject({
           code: AIErrorCode.UNKNOWN,
-          message: error.message || 'Unknown error',
+          message: execError.message || 'Unknown error',
           isRetryable: true,
         });
       }
@@ -416,12 +432,12 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         ? error.message
         : typeof error === 'object' && error !== null
           ? (() => {
-            try {
-              return JSON.stringify(error);
-            } catch {
-              return String(error);
-            }
-          })()
+              try {
+                return JSON.stringify(error);
+              } catch {
+                return String(error);
+              }
+            })()
           : String(error);
     const errorObj = error as Record<string, unknown>;
 

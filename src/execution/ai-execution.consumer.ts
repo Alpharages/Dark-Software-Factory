@@ -323,7 +323,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       });
 
       channel.ack(msg);
-      this.logger.log(`[${correlationId}] Message republished for retry (attempt ${nextRetryCount + 1})`);
+      this.logger.log(
+        `[${correlationId}] Message republished for retry (attempt ${nextRetryCount + 1})`,
+      );
     } else {
       // Max retries exceeded or non-retryable - send to DLQ
       channel.nack(msg, false, false); // Don't requeue - goes to DLQ

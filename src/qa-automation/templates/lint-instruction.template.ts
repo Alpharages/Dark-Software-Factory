@@ -19,15 +19,20 @@ Steps:
    - requirements.txt, Pipfile (Python projects)
    - Gemfile (Ruby projects)
 
- 2. Execute the linting command:
+ 2. IF NO LINTER IS FOUND:
+   - Return status: "NOT_CONFIGURED"
+   - Include a helpful message explaining what linter could be added
+   - DO NOT fail or return an error
+
+ 3. IF LINTER IS FOUND, execute the linting command:
    - Node.js: npm run lint OR npx eslint .
    - Python: flake8 . OR pylint **/*.py
    - Ruby: rubocop
    - Go: golangci-lint run
 
-3. Parse the output and return this EXACT JSON structure:
+4. Parse the output and return this EXACT JSON structure:
 {
-  "status": "PASSED" | "FAILED",
+  "status": "PASSED" | "FAILED" | "NOT_CONFIGURED",
   "errorCount": <number>,
   "warningCount": <number>,
   "filesChecked": <number>,
@@ -43,10 +48,11 @@ Steps:
   ],
   "summary": "<human-readable summary>",
   "executionTime": "<duration in ms>",
-  "toolUsed": "<tool name and version>"
+  "toolUsed": "<tool name and version or 'none' if NOT_CONFIGURED>"
 }
 
 CRITICAL: Return ONLY the JSON object, no additional text.
+If no linter is configured, return status "NOT_CONFIGURED" with a helpful summary - do NOT treat this as an error.
 `;
 
 /**

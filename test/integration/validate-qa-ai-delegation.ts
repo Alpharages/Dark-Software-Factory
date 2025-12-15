@@ -98,7 +98,11 @@ async function validateQaAiDelegation() {
 
   try {
     const startCoverage = Date.now();
-    results.coverage = await aiQaOrchestrator.executeCoverageAnalysis(ticketId, executionId, projectDir);
+    results.coverage = await aiQaOrchestrator.executeCoverageAnalysis(
+      ticketId,
+      executionId,
+      projectDir,
+    );
     results.timings.coverage = Date.now() - startCoverage;
 
     console.log('✅ Coverage Analysis Result:');
@@ -122,7 +126,11 @@ async function validateQaAiDelegation() {
 
   try {
     const startSecurity = Date.now();
-    results.security = await aiQaOrchestrator.executeSecurityScan(ticketId, executionId, projectDir);
+    results.security = await aiQaOrchestrator.executeSecurityScan(
+      ticketId,
+      executionId,
+      projectDir,
+    );
     results.timings.security = Date.now() - startSecurity;
 
     console.log('✅ Security Scan Result:');
