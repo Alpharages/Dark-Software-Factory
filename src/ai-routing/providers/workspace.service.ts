@@ -135,6 +135,10 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       // 4. Create feature branch
       await this.git.checkoutBranch(workspacePath, branchName, true);
 
+      // Note: Dependencies are NOT installed here
+      // AI providers (Cursor, Claude) will handle dependency installation
+      // as part of their natural workflow when they detect missing deps
+
       workspace.status = 'READY';
       this.operationsCounter.inc({ operation: 'create', status: 'success' });
 

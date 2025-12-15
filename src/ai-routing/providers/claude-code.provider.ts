@@ -548,12 +548,14 @@ ${taskPrompt}
 
 ## Instructions
 
-1. First, use read_file or list_files to understand the codebase structure
-2. Plan your changes carefully
-3. Use write_file to create new files
-4. Use edit_file to modify existing files (provide exact content to replace)
-5. Make all necessary changes to complete the task
-6. Ensure code follows existing patterns and conventions`;
+1. First, check if dependencies are missing (e.g., no node_modules/, vendor/, venv/, etc.)
+2. If dependencies are missing, install them using the appropriate package manager for this project
+3. Use read_file or list_files to understand the codebase structure
+4. Plan your changes carefully
+5. Use write_file to create new files
+6. Use edit_file to modify existing files (provide exact content to replace)
+7. Make all necessary changes to complete the task
+8. Ensure code follows existing patterns and conventions`;
   }
 
   /**

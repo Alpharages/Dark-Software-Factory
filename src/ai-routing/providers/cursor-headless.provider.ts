@@ -265,10 +265,16 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
   ): Promise<{ stdout: string; stderr: string }> {
     // Cursor Headless CLI (docs): `cursor-agent -p --force "<prompt>"`
     // We rely on WorkspaceService extracting changes from the workspace after the CLI finishes.
+
+    //AI-native dependency installation: Let Cursor CLI detect and install deps automatically
+    const dependencyHint = `IMPORTANT: Before making any code changes, check if dependencies are missing (e.g., no node_modules/, vendor/, venv/, etc.). If so, install them using the appropriate package manager for this project.
+
+`;
+
     const scopedPrompt =
       targetFiles && targetFiles.length > 0
-        ? `Focus changes only in these files if possible:\n${targetFiles.map((f) => `- ${f}`).join('\n')}\n\n${prompt}`
-        : prompt;
+        ? `${dependencyHint}Focus changes only in these files if possible:\n${targetFiles.map((f) => `- ${f}`).join('\n')}\n\n${prompt}`
+        : `${dependencyHint}${prompt}`;
 
     this.logger.log(`[${executionId}] 🚀 Starting Cursor CLI execution`);
     this.logger.log(`[${executionId}]    Command: ${this.cliPath}`);

@@ -55,32 +55,51 @@ export class AIExecutionService {
       throw new Error(`Provider not registered: ${provider}`);
     }
 
-    // Mark execution as in progress
-    await this.executionService.markInProgress(executionId, correlationId);
+    // FIX: Check current execution status before attempting transition
+    // QA automation reuses execution IDs, so skip state management if already terminal
+    const currentExecution = await this.executionService.getExecution(executionId);
+    const isTerminalStatus =
+      currentExecution && this.executionService.isTerminal(currentExecution.status);
+
+    // Only mark as in progress if not already in a terminal state
+    if (!isTerminalStatus) {
+      await this.executionService.markInProgress(executionId, correlationId);
+    } else {
+      this.logger.debug(
+        `[${correlationId}] Skipping markInProgress for execution ${executionId} - already in terminal state: ${currentExecution.status}`,
+      );
+    }
 
     try {
       // Execute
       const result = await aiProvider.execute(input);
 
-      // Update execution status based on result
-      if (result.success) {
-        const completeDto: CompleteExecutionDto = {
-          executionId,
-          codeOutput: result.codeDiff || '',
-          filesChanged: result.filesChanged,
-          confidenceScore: result.confidenceScore,
-        };
-        await this.executionService.completeExecution(completeDto, correlationId);
+      // Only update execution status if we're managing this execution
+      if (!isTerminalStatus) {
+        // Update execution status based on result
+        if (result.success) {
+          const completeDto: CompleteExecutionDto = {
+            executionId,
+            codeOutput: result.codeDiff || '',
+            filesChanged: result.filesChanged,
+            confidenceScore: result.confidenceScore,
+          };
+          await this.executionService.completeExecution(completeDto, correlationId);
+        } else {
+          const failDto: FailExecutionDto = {
+            executionId,
+            errorMessage: result.error?.message || 'Unknown error',
+            errorCode: result.error?.code,
+          };
+          await this.executionService.failExecution(
+            failDto,
+            correlationId,
+            result.error?.isRetryable ?? true,
+          );
+        }
       } else {
-        const failDto: FailExecutionDto = {
-          executionId,
-          errorMessage: result.error?.message || 'Unknown error',
-          errorCode: result.error?.code,
-        };
-        await this.executionService.failExecution(
-          failDto,
-          correlationId,
-          result.error?.isRetryable ?? true,
+        this.logger.debug(
+          `[${correlationId}] Skipping status update for terminal execution ${executionId}`,
         );
       }
 
@@ -88,12 +107,17 @@ export class AIExecutionService {
     } catch (error: unknown) {
       // Handle unexpected errors
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const failDto: FailExecutionDto = {
-        executionId,
-        errorMessage,
-        errorCode: AIErrorCode.UNKNOWN,
-      };
-      await this.executionService.failExecution(failDto, correlationId, true);
+
+      // Only update status if we're managing this execution
+      if (!isTerminalStatus) {
+        const failDto: FailExecutionDto = {
+          executionId,
+          errorMessage,
+          errorCode: AIErrorCode.UNKNOWN,
+        };
+        await this.executionService.failExecution(failDto, correlationId, true);
+      }
+
       throw error;
     }
   }
