@@ -76,7 +76,7 @@ describe('AiQaOrchestrator', () => {
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 
-      const result = await service.executeLintCheck('ticket-1', '/project/path');
+      const result = await service.executeLintCheck('ticket-1', 'exec-1', '/project/path');
 
       expect(result.status).toBe('PASSED');
       expect(result.checkType).toBe('linting');
@@ -86,7 +86,7 @@ describe('AiQaOrchestrator', () => {
     it('should handle AI provider failure with fallback', async () => {
       orchestratorService.execute.mockRejectedValue(new Error('AI provider unavailable'));
 
-      const result = await service.executeLintCheck('ticket-1', '/project/path');
+      const result = await service.executeLintCheck('ticket-1', 'exec-1', '/project/path');
 
       expect(result.status).toBe('ERROR');
       expect(sentry.captureException).toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe('AiQaOrchestrator', () => {
         .mockResolvedValueOnce(invalidResponse as never)
         .mockResolvedValueOnce(validResponse as never);
 
-      const result = await service.executeLintCheck('ticket-1', '/project/path');
+      const result = await service.executeLintCheck('ticket-1', 'exec-1', '/project/path');
 
       expect(result.status).toBe('PASSED');
       expect(orchestratorService.execute).toHaveBeenCalledTimes(2);
@@ -129,7 +129,7 @@ describe('AiQaOrchestrator', () => {
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 
-      const result = await service.executeTestRun('ticket-1', '/project/path');
+      const result = await service.executeTestRun('ticket-1', 'exec-1', '/project/path');
 
       expect(result.status).toBe('PASSED');
       expect(result.checkType).toBe('testing');
@@ -148,7 +148,7 @@ describe('AiQaOrchestrator', () => {
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 
-      const result = await service.executeSecurityScan('ticket-1', '/project/path');
+      const result = await service.executeSecurityScan('ticket-1', 'exec-1', '/project/path');
 
       expect(result.status).toBe('PASSED');
       expect(result.checkType).toBe('security');
@@ -167,7 +167,7 @@ describe('AiQaOrchestrator', () => {
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 
-      const result = await service.executeCoverageAnalysis('ticket-1', '/project/path');
+      const result = await service.executeCoverageAnalysis('ticket-1', 'exec-1', '/project/path');
 
       expect(result.status).toBe('PASSED');
       expect(result.checkType).toBe('coverage');

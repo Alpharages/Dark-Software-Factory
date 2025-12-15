@@ -70,7 +70,7 @@ export class QaOrchestratorService {
     // private readonly codeReviewService: CodeReviewService,
     private readonly rabbitPublisher: RabbitMQPublisherService,
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
-  ) {}
+  ) { }
 
   /**
    * Story 3.7: Run QA checks for post-execution code files
@@ -203,7 +203,7 @@ export class QaOrchestratorService {
 
       // Run all QA checks in parallel with per-category timeouts
       const [lintingResult, testResult, coverageResult, securityResult] = await Promise.allSettled([
-        this.runLinting(workspacePath, correlationId, skipCategories),
+        this.runLinting(ticketId, executionId, workspacePath, correlationId, skipCategories),
         this.runTests(workspacePath, executionId, correlationId, skipCategories),
         this.runCoverage(workspacePath, projectId, executionId, correlationId, skipCategories),
         this.runSecurityChecks(
@@ -398,6 +398,8 @@ export class QaOrchestratorService {
    * Run linting check using LinterService (Story 3.1)
    */
   private async runLinting(
+    ticketId: string,
+    executionId: string,
     workspacePath: string,
     correlationId: string,
     skipCategories: QualityCategory[],
@@ -412,7 +414,7 @@ export class QaOrchestratorService {
 
     // Story 3.10: Use AiQaOrchestrator instead of deleted LinterService
     try {
-      const result = await this.aiQaOrchestrator.executeLintCheck(correlationId, workspacePath);
+      const result = await this.aiQaOrchestrator.executeLintCheck(ticketId, executionId, workspacePath);
       if (result.status === 'ERROR') {
         throw new Error(`Lint check failed: ${JSON.stringify(result.data)}`);
       }
@@ -570,16 +572,16 @@ export class QaOrchestratorService {
       code_review_passed: security?.passed ?? true,
       code_review_issues: security
         ? {
-            summary: {
-              criticalCount: security.summary.criticalCount,
-              highCount: security.summary.highCount,
-              mediumCount: security.summary.mediumCount,
-            },
-            complexityIssues: security.complexityIssues.map((i) => ({
-              function: i.functionName,
-              complexity: i.value,
-            })),
-          }
+          summary: {
+            criticalCount: security.summary.criticalCount,
+            highCount: security.summary.highCount,
+            mediumCount: security.summary.mediumCount,
+          },
+          complexityIssues: security.complexityIssues.map((i) => ({
+            function: i.functionName,
+            complexity: i.value,
+          })),
+        }
         : null,
     };
   }
@@ -712,7 +714,11 @@ export class QaOrchestratorService {
       const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
 
       // H2 FIX: Actually call AiQaOrchestrator instead of placeholder
-      const result = await this.aiQaOrchestrator.executeLintCheck(message.ticketId, projectDir);
+      const result = await this.aiQaOrchestrator.executeLintCheck(
+        message.ticketId,
+        message.executionId,
+        projectDir,
+      );
 
       await this.savePartialQaResult(message.executionId, {
         linting_passed: result.status === 'PASSED',
@@ -765,7 +771,11 @@ export class QaOrchestratorService {
 
       const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
 
-      const result = await this.aiQaOrchestrator.executeTestRun(message.ticketId, projectDir);
+      const result = await this.aiQaOrchestrator.executeTestRun(
+        message.ticketId,
+        message.executionId,
+        projectDir,
+      );
 
       await this.savePartialQaResult(message.executionId, {
         tests_passed: result.status === 'PASSED',
@@ -819,6 +829,7 @@ export class QaOrchestratorService {
 
       const result = await this.aiQaOrchestrator.executeCoverageAnalysis(
         message.ticketId,
+        message.executionId,
         projectDir,
       );
 
@@ -868,7 +879,11 @@ export class QaOrchestratorService {
       });
       const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
 
-      const result = await this.aiQaOrchestrator.executeSecurityScan(message.ticketId, projectDir);
+      const result = await this.aiQaOrchestrator.executeSecurityScan(
+        message.ticketId,
+        message.executionId,
+        projectDir,
+      );
 
       await this.savePartialQaResult(message.executionId, {
         code_review_passed: result.status === 'PASSED',

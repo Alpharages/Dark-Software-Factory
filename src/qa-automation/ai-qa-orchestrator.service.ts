@@ -8,16 +8,16 @@
  * Pattern: DSF orchestrates WHEN → AI executes + parses → DSF stores + decides
  */
 
-import { Injectable, Logger } from '@nestjs/common';
-import { SentryService } from '../common/sentry/sentry.service';
-import { ErrorCategory } from '../common/sentry/sentry.constants';
-import { OrchestratorService } from '../ai-routing/orchestrator.service';
-import { QaMetricsService } from './qa-metrics.service';
-import { PrismaService } from '../database/prisma.service';
-import { renderLintInstruction } from './templates/lint-instruction.template';
-import { renderTestInstruction } from './templates/test-instruction.template';
-import { renderSecurityInstruction } from './templates/security-instruction.template';
-import { renderCoverageInstruction } from './templates/coverage-instruction.template';
+import {Injectable, Logger} from '@nestjs/common';
+import {SentryService} from '@/common/sentry/sentry.service';
+import {ErrorCategory} from '@/common/sentry/sentry.constants';
+import {OrchestratorService} from '@/ai-routing/orchestrator.service';
+import {QaMetricsService} from './qa-metrics.service';
+import {PrismaService} from '@/database/prisma.service';
+import {renderLintInstruction} from './templates/lint-instruction.template';
+import {renderTestInstruction} from './templates/test-instruction.template';
+import {renderSecurityInstruction} from './templates/security-instruction.template';
+import {renderCoverageInstruction} from './templates/coverage-instruction.template';
 
 /**
  * QA Result interface (simplified from Story 3.6)
@@ -40,30 +40,131 @@ export class AiQaOrchestrator {
     private readonly qaMetrics: QaMetricsService, // Story 3.8
     private readonly sentry: SentryService, // Story 1.9
     private readonly prisma: PrismaService, // Database access
-  ) {}
+  ) {
+  }
 
   /**
    * Execute lint check via AI delegation
    * AC#2: Core method - detect tooling, generate prompt, delegate to AI, parse, store, record metrics
+   * @param ticketId
+   * @param executionId
+   * @param projectDir
    * @param allowFallback - Whether to allow fallback to secondary AI provider (default: true)
    */
   async executeLintCheck(
     ticketId: string,
+    executionId: string,
     projectDir: string,
     allowFallback = true,
   ): Promise<IQaResult> {
-    const startTime = Date.now();
-    const checkType = 'linting';
+    return this.executeQaCheck(
+      ticketId,
+      executionId,
+      projectDir,
+      'linting',
+      renderLintInstruction,
+      allowFallback,
+    );
+  }
 
-    this.logger.log(`[${ticketId}] Starting AI-delegated lint check for ${projectDir}`);
+  /**
+   * Execute test run via AI delegation
+   * AC#2: Same pattern as lint check
+   */
+  async executeTestRun(
+    ticketId: string,
+    executionId: string,
+    projectDir: string,
+    allowFallback = true,
+  ): Promise<IQaResult> {
+    return this.executeQaCheck(
+      ticketId,
+      executionId,
+      projectDir,
+      'testing',
+      renderTestInstruction,
+      allowFallback,
+    );
+  }
+
+  /**
+   * Execute security scan via AI delegation
+   */
+  async executeSecurityScan(
+    ticketId: string,
+    executionId: string,
+    projectDir: string,
+    allowFallback = true,
+  ): Promise<IQaResult> {
+    return this.executeQaCheck(
+      ticketId,
+      executionId,
+      projectDir,
+      'security',
+      renderSecurityInstruction,
+      allowFallback,
+    );
+  }
+
+  /**
+   * Execute coverage analysis via AI delegation
+   */
+  async executeCoverageAnalysis(
+    ticketId: string,
+    executionId: string,
+    projectDir: string,
+    allowFallback = true,
+  ): Promise<IQaResult> {
+    return this.executeQaCheck(
+      ticketId,
+      executionId,
+      projectDir,
+      'coverage',
+      renderCoverageInstruction,
+      allowFallback,
+      // Additional callback for coverage-specific metric (Story 3.8)
+      (parsedResult) => {
+        if (parsedResult.overall !== undefined) {
+          this.qaMetrics.setCoverage(ticketId, parsedResult.overall as number);
+        }
+      },
+    );
+  }
+
+  // ============ Helper Methods ============
+
+  /**
+   * Common execution pattern for all QA checks
+   * Reduces code duplication across executeTestRun, executeLintCheck, executeSecurityScan, executeCoverageAnalysis
+   * @param ticketId - Ticket ID for correlation
+   * @param executionId - Execution ID for database tracking
+   * @param projectDir - Project directory path
+   * @param checkType - Type of QA check being performed
+   * @param instructionRenderer - Function to generate the AI instruction
+   * @param allowFallback - Whether to allow fallback to secondary AI provider
+   * @param postMetricsCallback - Optional callback for additional metrics (e.g., coverage)
+   */
+  private async executeQaCheck(
+    ticketId: string,
+    executionId: string,
+    projectDir: string,
+    checkType: 'linting' | 'testing' | 'security' | 'coverage',
+    instructionRenderer: (projectDir: string, ticketId: string) => string,
+    allowFallback = true,
+    postMetricsCallback?: (parsedResult: Record<string, unknown>) => void,
+  ): Promise<IQaResult> {
+    const startTime = Date.now();
+
+    this.logger.log(`[${ticketId}] Starting AI-delegated ${checkType} check for ${projectDir}`);
 
     try {
       // 1. Generate AI instruction
-      const instruction = renderLintInstruction(projectDir, ticketId);
+      const instruction = instructionRenderer(projectDir, ticketId);
 
       // 2. Delegate to AI with retry logic (AC#6)
-      const { result: parsedResult, aiProvider } = await this.executeWithRetry(
+      const {result: parsedResult, aiProvider} = await this.executeWithRetry(
         ticketId,
+        executionId,
         instruction,
         projectDir,
         checkType,
@@ -73,7 +174,7 @@ export class AiQaOrchestrator {
       const duration = Date.now() - startTime;
 
       // 3. Save to database with detailed results (H5 fix)
-      await this.saveQaResult(ticketId, checkType, parsedResult, duration, aiProvider);
+      await this.saveQaResult(executionId, checkType, parsedResult, duration, aiProvider);
 
       // 4. Record metrics
       this.qaMetrics.recordCheckComplete(checkType, parsedResult.status === 'PASSED', duration, {
@@ -81,154 +182,15 @@ export class AiQaOrchestrator {
         aiProvider,
       });
 
-      this.logger.log(`[${ticketId}] Lint check complete: ${parsedResult.status} in ${duration}ms`);
-
-      return {
-        executionId: ticketId,
-        checkType,
-        status: parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR',
-        data: parsedResult,
-        duration,
-        aiProvider,
-      };
-    } catch (error) {
-      return this.handleCheckError(ticketId, checkType, error as Error, startTime);
-    }
-  }
-
-  /**
-   * Execute test run via AI delegation
-   * AC#2: Same pattern as lint check
-   */
-  async executeTestRun(
-    ticketId: string,
-    projectDir: string,
-    allowFallback = true,
-  ): Promise<IQaResult> {
-    const startTime = Date.now();
-    const checkType = 'testing';
-
-    this.logger.log(`[${ticketId}] Starting AI-delegated test run for ${projectDir}`);
-
-    try {
-      const instruction = renderTestInstruction(projectDir, ticketId);
-
-      const { result: parsedResult, aiProvider } = await this.executeWithRetry(
-        ticketId,
-        instruction,
-        projectDir,
-        checkType,
-        allowFallback,
-      );
-
-      const duration = Date.now() - startTime;
-
-      await this.saveQaResult(ticketId, checkType, parsedResult, duration, aiProvider);
-
-      this.qaMetrics.recordCheckComplete(checkType, parsedResult.status === 'PASSED', duration, {
-        projectId: ticketId,
-        aiProvider,
-      });
-
-      return {
-        executionId: ticketId,
-        checkType,
-        status: parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR',
-        data: parsedResult,
-        duration,
-        aiProvider,
-      };
-    } catch (error) {
-      return this.handleCheckError(ticketId, checkType, error as Error, startTime);
-    }
-  }
-
-  /**
-   * Execute security scan via AI delegation
-   */
-  async executeSecurityScan(
-    ticketId: string,
-    projectDir: string,
-    allowFallback = true,
-  ): Promise<IQaResult> {
-    const startTime = Date.now();
-    const checkType = 'security';
-
-    this.logger.log(`[${ticketId}] Starting AI-delegated security scan for ${projectDir}`);
-
-    try {
-      const instruction = renderSecurityInstruction(projectDir, ticketId);
-
-      const { result: parsedResult, aiProvider } = await this.executeWithRetry(
-        ticketId,
-        instruction,
-        projectDir,
-        checkType,
-        allowFallback,
-      );
-
-      const duration = Date.now() - startTime;
-
-      await this.saveQaResult(ticketId, checkType, parsedResult, duration, aiProvider);
-
-      this.qaMetrics.recordCheckComplete(checkType, parsedResult.status === 'PASSED', duration, {
-        projectId: ticketId,
-        aiProvider,
-      });
-
-      return {
-        executionId: ticketId,
-        checkType,
-        status: parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR',
-        data: parsedResult,
-        duration,
-        aiProvider,
-      };
-    } catch (error) {
-      return this.handleCheckError(ticketId, checkType, error as Error, startTime);
-    }
-  }
-
-  /**
-   * Execute coverage analysis via AI delegation
-   */
-  async executeCoverageAnalysis(
-    ticketId: string,
-    projectDir: string,
-    allowFallback = true,
-  ): Promise<IQaResult> {
-    const startTime = Date.now();
-    const checkType = 'coverage';
-
-    this.logger.log(`[${ticketId}] Starting AI-delegated coverage analysis for ${projectDir}`);
-
-    try {
-      const instruction = renderCoverageInstruction(projectDir, ticketId);
-
-      const { result: parsedResult, aiProvider } = await this.executeWithRetry(
-        ticketId,
-        instruction,
-        projectDir,
-        checkType,
-        allowFallback,
-      );
-
-      const duration = Date.now() - startTime;
-
-      await this.saveQaResult(ticketId, checkType, parsedResult, duration, aiProvider);
-
-      this.qaMetrics.recordCheckComplete(checkType, parsedResult.status === 'PREFIX', duration, {
-        projectId: ticketId,
-        aiProvider,
-      });
-
-      // Also set coverage metric (Story 3.8)
-      if (parsedResult.overall !== undefined) {
-        this.qaMetrics.setCoverage(ticketId, parsedResult.overall as number);
+      // 5. Execute any additional post-metrics logic (e.g., coverage-specific metrics)
+      if (postMetricsCallback) {
+        postMetricsCallback(parsedResult);
       }
 
+      this.logger.log(`[${ticketId}] ${checkType} check complete: ${parsedResult.status} in ${duration}ms`);
+
       return {
-        executionId: ticketId,
+        executionId,
         checkType,
         status: parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR',
         data: parsedResult,
@@ -239,8 +201,6 @@ export class AiQaOrchestrator {
       return this.handleCheckError(ticketId, checkType, error as Error, startTime);
     }
   }
-
-  // ============ Helper Methods ============
 
   /**
    * Parse JSON response from AI
@@ -266,6 +226,7 @@ export class AiQaOrchestrator {
    */
   private async executeWithRetry(
     ticketId: string,
+    executionId: string,
     instruction: string,
     projectDir: string,
     checkType: string,
@@ -278,7 +239,7 @@ export class AiQaOrchestrator {
       const aiResponse = await this.orchestratorService.execute({
         ticketId,
         correlationId: ticketId,
-        executionId: ticketId,
+        executionId,
         prompt: instruction,
         repositoryUrl: projectDir,
         allowFallback,
@@ -289,7 +250,7 @@ export class AiQaOrchestrator {
       }
 
       const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
-      return { result: parsedResult, aiProvider: aiResponse.executedBy };
+      return {result: parsedResult, aiProvider: aiResponse.executedBy};
     } catch (error) {
       lastError = error as Error;
 
@@ -307,7 +268,7 @@ export class AiQaOrchestrator {
     const aiResponse = await this.orchestratorService.execute({
       ticketId,
       correlationId: `${ticketId}-retry`,
-      executionId: ticketId,
+      executionId,
       prompt: retryInstruction,
       repositoryUrl: projectDir,
       allowFallback,
@@ -318,7 +279,7 @@ export class AiQaOrchestrator {
     }
 
     const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
-    return { result: parsedResult, aiProvider: aiResponse.executedBy };
+    return {result: parsedResult, aiProvider: aiResponse.executedBy};
   }
 
   /**
@@ -328,7 +289,7 @@ export class AiQaOrchestrator {
    * H6 FIX: Proper error handling with Sentry + metrics
    */
   private async saveQaResult(
-    ticketId: string,
+    executionId: string,
     checkType: string,
     data: Record<string, unknown>,
     duration: number,
@@ -347,7 +308,7 @@ export class AiQaOrchestrator {
         code_review_issues?: unknown;
         test_coverage?: number;
       }> = {
-        execution_id: ticketId,
+        execution_id: executionId,
         overall_passed: data.status === 'PASSED',
       };
 
@@ -374,7 +335,7 @@ export class AiQaOrchestrator {
       } else if (checkType === 'security') {
         dbData.code_review_passed = data.status === 'PASSED';
         dbData.code_review_issues = {
-          summary: data.summary || { critical: 0, high: 0, medium: 0 },
+          summary: data.summary || {critical: 0, high: 0, medium: 0},
           vulnerabilities: data.vulnerabilities || [],
           secrets: data.secrets || [],
         };
@@ -384,26 +345,26 @@ export class AiQaOrchestrator {
 
       // Upsert pattern - create or update
       const existing = await this.prisma.qAResult.findFirst({
-        where: { execution_id: ticketId },
+        where: {execution_id: executionId},
       });
 
       if (existing) {
         await this.prisma.qAResult.update({
-          where: { id: existing.id },
+          where: {id: existing.id},
           data: dbData as never,
         });
       } else {
-        await this.prisma.qAResult.create({ data: dbData as never });
+        await this.prisma.qAResult.create({data: dbData as never});
       }
 
       this.logger.debug(
-        `[${ticketId}] Saved ${checkType} result to database (aiProvider: ${aiProvider})`,
+        `[${executionId}] Saved ${checkType} result to database (aiProvider: ${aiProvider})`,
       );
     } catch (error) {
       // H6 FIX: Proper error handling - alert Sentry, record metric, and re-throw
       const err = error as Error;
       this.logger.error(
-        `[${ticketId}] CRITICAL: Failed to save ${checkType} result: ${err.message}`,
+        `[${executionId}] CRITICAL: Failed to save ${checkType} result: ${err.message}`,
         err.stack,
       );
 
@@ -411,7 +372,7 @@ export class AiQaOrchestrator {
       this.sentry.captureException(err, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: {
-          ticketId,
+          executionId,
           checkType,
           aiProvider,
           operation: 'database_save',
@@ -423,7 +384,7 @@ export class AiQaOrchestrator {
         checkType as 'linting' | 'testing' | 'coverage' | 'security',
         'error', // Changed from 'database_error' to 'error'
         duration,
-        { projectId: ticketId, aiProvider },
+        {projectId: executionId, aiProvider},
       );
 
       // Re-throw to propagate error (don't silently swallow)
@@ -448,7 +409,7 @@ export class AiQaOrchestrator {
     // Log to Sentry
     this.sentry.captureException(error, {
       category: ErrorCategory.QA_AUTOMATION,
-      extra: { ticketId, checkType, duration },
+      extra: {ticketId, checkType, duration},
     });
 
     // Record error metric
@@ -456,14 +417,14 @@ export class AiQaOrchestrator {
       checkType as 'linting' | 'testing' | 'coverage' | 'security',
       'error',
       duration,
-      { projectId: ticketId },
+      {projectId: ticketId},
     );
 
     return {
       executionId: ticketId,
       checkType: checkType as 'linting' | 'testing' | 'security' | 'coverage',
       status: 'ERROR',
-      data: { error: error.message },
+      data: {error: error.message},
       duration,
     };
   }

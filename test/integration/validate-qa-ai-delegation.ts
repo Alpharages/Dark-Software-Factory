@@ -31,6 +31,7 @@ async function validateQaAiDelegation() {
 
   const projectDir = process.cwd(); // Dark Software Factory root
   const ticketId = 'VALIDATION-3-10';
+  const executionId = 'exec-validation-3-10';
 
   interface QACheckResult {
     status: string;
@@ -52,7 +53,7 @@ async function validateQaAiDelegation() {
 
   try {
     const startLint = Date.now();
-    results.lint = await aiQaOrchestrator.executeLintCheck(ticketId, projectDir);
+    results.lint = await aiQaOrchestrator.executeLintCheck(ticketId, executionId, projectDir);
     results.timings.lint = Date.now() - startLint;
 
     console.log('✅ Lint Check Result:');
@@ -74,7 +75,7 @@ async function validateQaAiDelegation() {
 
   try {
     const startTest = Date.now();
-    results.test = await aiQaOrchestrator.executeTestRun(ticketId, projectDir);
+    results.test = await aiQaOrchestrator.executeTestRun(ticketId, executionId, projectDir);
     results.timings.test = Date.now() - startTest;
 
     console.log('✅ Test Run Result:');
@@ -97,7 +98,7 @@ async function validateQaAiDelegation() {
 
   try {
     const startCoverage = Date.now();
-    results.coverage = await aiQaOrchestrator.executeCoverageAnalysis(ticketId, projectDir);
+    results.coverage = await aiQaOrchestrator.executeCoverageAnalysis(ticketId, executionId, projectDir);
     results.timings.coverage = Date.now() - startCoverage;
 
     console.log('✅ Coverage Analysis Result:');
@@ -121,7 +122,7 @@ async function validateQaAiDelegation() {
 
   try {
     const startSecurity = Date.now();
-    results.security = await aiQaOrchestrator.executeSecurityScan(ticketId, projectDir);
+    results.security = await aiQaOrchestrator.executeSecurityScan(ticketId, executionId, projectDir);
     results.timings.security = Date.now() - startSecurity;
 
     console.log('✅ Security Scan Result:');

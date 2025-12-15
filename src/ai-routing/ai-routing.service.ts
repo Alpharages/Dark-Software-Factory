@@ -6,6 +6,7 @@ import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service
 import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
+import { PromptGeneratorService } from './prompt-generator.service';
 import { IRoutingRequest, IRoutingDecision, IRoutingResult, RoutingReason } from './interfaces';
 import { Counter, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -26,6 +27,7 @@ export class AIRoutingService {
     private readonly rabbitMQ: RabbitMQPublisherService,
     private readonly complexityScorer: ComplexityScorerService,
     private readonly providerHealth: ProviderHealthService,
+    private readonly promptGenerator: PromptGeneratorService,
     @InjectMetric('ai_routing_total')
     private readonly routingCounter: Counter<string>,
     @InjectMetric('ai_routing_duration_seconds')
@@ -138,7 +140,42 @@ export class AIRoutingService {
         tags: request.tags,
         routedAt: new Date().toISOString(),
       };
-      await this.rabbitMQ.publishToQueue(QUEUE_NAMES.AI_EXECUTION, routingResult, correlationId);
+
+      // 8a. Generate prompt now (so ai-execution-queue has everything AIExecutionConsumer needs)
+      const generated = await this.promptGenerator.generatePrompt({
+        correlationId,
+        ticketId,
+        clickupTaskId: request.clickupTaskId,
+        provider,
+        complexityScore,
+        complexityBreakdown,
+        title: request.title,
+        description: request.description,
+        acceptanceCriteria: request.acceptanceCriteria,
+        projectId: request.projectId,
+        tags: request.tags,
+        routedAt: routingResult.routedAt,
+      });
+
+      // Persist prompt on execution record (execution.prompt is required by OrchestratorService)
+      await this.prisma.execution.update({
+        where: { id: execution.id },
+        data: { prompt: generated.prompt },
+      });
+
+      // 8b. Publish AI execution payload (matches src/execution/interfaces/queue.interface.ts)
+      const aiExecutionPayload = {
+        ticketId,
+        executionId: execution.id,
+        aiProvider: provider,
+        priority: 3,
+        prompt: generated.prompt,
+        repositoryUrl: routingResult.repositoryUrl,
+        projectId: request.projectId,
+        allowFallback: true,
+      };
+
+      await this.rabbitMQ.publishToQueue(QUEUE_NAMES.AI_EXECUTION, aiExecutionPayload, correlationId);
 
       // 9. Publish routing event
       await this.rabbitMQ.publishToExchange(

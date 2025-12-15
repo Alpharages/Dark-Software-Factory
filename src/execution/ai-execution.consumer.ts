@@ -198,6 +198,25 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     const startTime = Date.now();
 
     try {
+      // If we get duplicate/late deliveries, don't try to "restart" a terminal execution.
+      const existing = await this.executionTracker.getExecution(executionId);
+      if (
+        existing?.status === 'COMPLETED' ||
+        existing?.status === 'FAILED' ||
+        existing?.status === 'TIMEOUT' ||
+        existing?.status === 'CANCELLED'
+      ) {
+        this.logger.warn(
+          `[${correlationId}] Skipping message: execution ${executionId} already terminal (${existing.status})`,
+        );
+        return {
+          success: true,
+          executionId,
+          durationMs: Date.now() - startTime,
+          executedBy: payload.aiProvider,
+        };
+      }
+
       // 1. Mark execution as in-progress
       await this.executionTracker.markInProgress(executionId, correlationId);
 
@@ -277,26 +296,41 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     result: IProcessingResult,
   ): Promise<void> {
     const { correlationId } = messageData;
-    const retryCount = (msg.properties.headers?.['x-retry-count'] || 0) + 1;
+    const currentRetryCount = Number(msg.properties.headers?.['x-retry-count'] ?? 0);
+    const nextRetryCount = currentRetryCount + 1;
     const maxRetries = 3;
 
     this.logger.warn(
-      `[${correlationId}] Execution failed (attempt ${retryCount}/${maxRetries}): ${result.errorMessage}`,
+      `[${correlationId}] Execution failed (attempt ${nextRetryCount}/${maxRetries}): ${result.errorMessage}`,
     );
 
-    if (retryCount < maxRetries && this.isRetryableError(result.errorCode)) {
-      // Requeue with updated retry count
-      // Note: In production, use delayed message plugin for backoff
-      channel.nack(msg, false, true); // Requeue immediately for simplicity
+    if (nextRetryCount < maxRetries && this.isRetryableError(result.errorCode)) {
+      // Re-publish with incremented retry header so it can eventually DLQ.
+      // Note: In production we should use a delayed retry/backoff mechanism.
+      const newHeaders = {
+        ...(msg.properties.headers ?? {}),
+        'x-retry-count': nextRetryCount,
+      };
 
-      this.logger.log(`[${correlationId}] Message requeued for retry (attempt ${retryCount + 1})`);
+      channel.sendToQueue(QUEUE_NAMES.AI_EXECUTION, msg.content, {
+        persistent: true,
+        contentType: msg.properties.contentType,
+        correlationId: msg.properties.correlationId,
+        messageId: msg.properties.messageId,
+        timestamp: msg.properties.timestamp,
+        appId: msg.properties.appId,
+        headers: newHeaders,
+      });
+
+      channel.ack(msg);
+      this.logger.log(`[${correlationId}] Message republished for retry (attempt ${nextRetryCount + 1})`);
     } else {
       // Max retries exceeded or non-retryable - send to DLQ
       channel.nack(msg, false, false); // Don't requeue - goes to DLQ
 
       this.consumerState.messagesFailed++;
 
-      this.logger.error(`[${correlationId}] Message sent to DLQ after ${retryCount} attempts`);
+      this.logger.error(`[${correlationId}] Message sent to DLQ after ${nextRetryCount} attempts`);
 
       this.failedCounter.inc({
         queue: QUEUE_NAMES.AI_EXECUTION,
@@ -315,6 +349,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       'INVALID_REPOSITORY',
       'AUTHENTICATION_ERROR',
       'PERMISSION_DENIED',
+      'CLI_NOT_FOUND',
       'CANCELLED',
     ];
     return !nonRetryable.includes(errorCode || '');

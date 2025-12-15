@@ -124,7 +124,9 @@ export default () => {
 
     // Story 2.6: Cursor CLI Headless Configuration
     cursor: {
-      cliPath: process.env.CURSOR_CLI_PATH || 'cursor',
+      // Cursor docs recommend `cursor-agent` for headless automation:
+      // https://cursor.com/docs/cli/headless
+      cliPath: process.env.CURSOR_CLI_PATH || 'cursor-agent',
       headlessTimeoutMs: parseInt(process.env.CURSOR_HEADLESS_TIMEOUT_MS || '300000', 10),
       workspacesRoot: process.env.CURSOR_WORKSPACES_ROOT || '/tmp/cursor-workspaces',
       maxConcurrentWorkspaces: parseInt(process.env.CURSOR_MAX_CONCURRENT_WORKSPACES || '10', 10),

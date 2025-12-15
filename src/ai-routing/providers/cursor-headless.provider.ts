@@ -3,7 +3,7 @@
  * Story 2.6: AI Provider Integration - Cursor CLI Headless Mode
  *
  * PRIMARY AI provider for complex, multi-file code generation.
- * Uses Cursor's official CLI with --headless flag for server-side execution.
+ * Uses Cursor's official Headless CLI (`cursor-agent`) in print mode for server-side execution.
  *
  * Architecture Reference: ADR-003 (Cursor CLI Headless Mode)
  * FR65: Execute AI code generation
@@ -14,7 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { AIProvider } from '@prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { spawn, execFile, ChildProcess } from 'child_process';
+import { spawn, execFile, execSync, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import {
   IAIProvider,
@@ -65,7 +65,9 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    this.cliPath = this.config.get<string>('cursor.cliPath', 'cursor');
+    // Cursor docs: headless automation uses `cursor-agent` (print mode + --force)
+    // See: https://cursor.com/docs/cli/headless
+    this.cliPath = this.config.get<string>('cursor.cliPath', 'cursor-agent');
     this.maxConcurrent = this.config.get<number>('cursor.maxConcurrentWorkspaces', 10);
     this.defaultTimeoutMs = this.config.get<number>('cursor.headlessTimeoutMs', 300_000);
 
@@ -74,7 +76,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
 
     this.logger.log(
       `Cursor Headless Provider initialized: cli=${this.cliPath}, ` +
-        `available=${this.isCliAvailable}, timeout=${this.defaultTimeoutMs}ms`,
+      `available=${this.isCliAvailable}, timeout=${this.defaultTimeoutMs}ms`,
     );
   }
 
@@ -124,6 +126,8 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
 
     try {
       // 1. Create workspace
+      const phase1Start = Date.now();
+      this.logger.log(`[${correlationId}] 📁 Phase 1/3: Creating workspace for ticket ${ticketId}`);
       const workspaceInfo = await this.workspace.createWorkspace(
         executionId,
         ticketId,
@@ -131,12 +135,15 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         baseBranch,
       );
       workspacePath = workspaceInfo.path;
+      this.logger.log(`[${correlationId}]    ✅ Workspace created at: ${workspacePath} (${Date.now() - phase1Start}ms)`);
 
       // 2. Update workspace status
       this.workspace.updateWorkspaceStatus(executionId, 'EXECUTING');
       this.activeGauge.inc();
 
       // 3. Execute Cursor CLI
+      const phase2Start = Date.now();
+      this.logger.log(`[${correlationId}] 🤖 Phase 2/3: Executing Cursor CLI`);
       const cliResult = await this.executeCursorCli(
         executionId,
         workspacePath,
@@ -144,15 +151,20 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         targetFiles,
         timeout,
       );
+      this.logger.log(`[${correlationId}]    ✅ CLI execution completed (${Date.now() - phase2Start}ms)`);
 
       // 4. Extract changes
+      const phase3Start = Date.now();
+      this.logger.log(`[${correlationId}] 🔍 Phase 3/3: Extracting changes from workspace`);
       const { diff, filesChanged } = await this.workspace.extractChanges(executionId);
+      this.logger.log(`[${correlationId}]    ✅ Found ${filesChanged.length} changed file(s), ${diff.length} bytes diff (${Date.now() - phase3Start}ms)`);
 
       // 5. Calculate confidence score
       const confidenceScore = this.calculateConfidence(filesChanged, diff);
 
       // 6. Check if any changes were made
       if (filesChanged.length === 0) {
+        this.logger.warn(`[${correlationId}] ⚠️  No changes detected - CLI completed but no files modified`);
         this.circuitBreaker.recordFailure();
         return this.createFailedResult(startTime, workspacePath, {
           code: AIErrorCode.NO_CHANGES,
@@ -172,7 +184,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
 
       this.logger.log(
         `[${correlationId}] Cursor execution completed: ${filesChanged.length} files, ` +
-          `${diff.length} bytes diff, ${durationMs}ms`,
+        `${diff.length} bytes diff, ${durationMs}ms`,
       );
 
       return {
@@ -243,78 +255,94 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
     targetFiles?: string[],
     timeout: number = this.defaultTimeoutMs,
   ): Promise<{ stdout: string; stderr: string }> {
+    // Cursor Headless CLI (docs): `cursor-agent -p --force "<prompt>"`
+    // We rely on WorkspaceService extracting changes from the workspace after the CLI finishes.
+    const scopedPrompt =
+      targetFiles && targetFiles.length > 0
+        ? `Focus changes only in these files if possible:\n${targetFiles.map((f) => `- ${f}`).join('\n')}\n\n${prompt}`
+        : prompt;
+
     // Build args array (safe from injection when using spawn)
-    const args = ['--headless', '--dir', workspacePath, '--apply', prompt, '--wait'];
+    const args = ['-p', '--force', '--output-format', 'text', scopedPrompt];
 
-    if (targetFiles && targetFiles.length > 0) {
-      args.push('--files', targetFiles.join(','));
-    }
+    this.logger.log(`[${executionId}] 🚀 Starting Cursor CLI execution`);
+    this.logger.log(`[${executionId}]    Command: ${this.cliPath}`);
+    this.logger.log(`[${executionId}]    Args: -p --force --output-format text "<prompt>"`);
+    this.logger.log(`[${executionId}]    Working dir: ${workspacePath}`);
+    this.logger.log(`[${executionId}]    Timeout: ${timeout}ms`);
+    this.logger.debug(`[${executionId}]    Prompt preview: ${prompt.substring(0, 100)}...`);
 
-    this.logger.debug(`[${executionId}] Executing: ${this.cliPath} --headless ...`);
-
+    // Use execSync wrapped in Promise - proven to work (completes in ~15s)
+    // execFile was timing out for unknown reasons
     return new Promise((resolve, reject) => {
-      let stdout = '';
-      let stderr = '';
-      let timedOut = false;
+      // Build command string
+      const quotedPrompt = scopedPrompt.replace(/"/g, '\\"');
+      const command = `${this.cliPath} -p --force --output-format text "${quotedPrompt}"`;
 
-      const childProcess = spawn(this.cliPath, args, {
-        cwd: workspacePath,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      this.logger.debug(`[${executionId}] Executing CLI command...`);
 
-      // Store process reference for cancellation
-      this.activeExecutions.set(executionId, childProcess);
+      try {
+        const stdout = execSync(command, {
+          cwd: workspacePath,
+          timeout,
+          encoding: 'utf8',
+          maxBuffer: 50 * 1024 * 1024, // 50MB
+          stdio: 'pipe',
+        });
 
-      // Set timeout
-      const timeoutId = setTimeout(() => {
-        timedOut = true;
-        childProcess.kill('SIGTERM');
-      }, timeout);
+        this.logger.log(`[${executionId}] 🏁 CLI process completed`);
+        this.logger.debug(`[${executionId}]    stdout length: ${stdout.length} bytes`);
+        this.logger.log(`[${executionId}] ✅ CLI execution completed successfully`);
+        this.logger.debug(`[${executionId}]    Output preview: ${stdout.substring(0, 200)}...`);
 
-      childProcess.stdout?.on('data', (data: Buffer) => {
-        stdout += data.toString();
-        // Prevent memory overflow
-        if (stdout.length > 50 * 1024 * 1024) {
-          childProcess.kill('SIGTERM');
-        }
-      });
+        resolve({ stdout, stderr: '' });
+      } catch (error: any) {
+        this.logger.log(`[${executionId}] 🏁 CLI process completed with error`);
 
-      childProcess.stderr?.on('data', (data: Buffer) => {
-        stderr += data.toString();
-      });
-
-      childProcess.on('close', (code, _signal) => {
-        clearTimeout(timeoutId);
-
-        if (timedOut) {
+        // Check if it's a timeout
+        if (error.killed || error.signal === 'SIGTERM') {
+          this.logger.error(`[${executionId}] ⏱️  CLI execution timed out after ${timeout}ms`);
           reject({
             code: AIErrorCode.TIMEOUT,
             message: `Cursor CLI timed out after ${timeout}ms`,
             isRetryable: true,
-            exitCode: code,
+            exitCode: error.status,
           });
-        } else if (code !== 0) {
+          return;
+        }
+
+        // Other errors
+        const exitCode = error.status || 0;
+        const stdout = error.stdout?.toString() || '';
+        const stderr = error.stderr?.toString() || '';
+
+        this.logger.debug(`[${executionId}]    stdout length: ${stdout.length} bytes`);
+        this.logger.debug(`[${executionId}]    stderr length: ${stderr.length} bytes`);
+
+        if (exitCode !== 0) {
+          const mappedCode = exitCode === 127 ? AIErrorCode.CLI_NOT_FOUND : AIErrorCode.PROCESS_CRASH;
+          this.logger.error(`[${executionId}] ❌ CLI failed with exit code ${exitCode}`);
+          this.logger.error(`[${executionId}]    Error type: ${mappedCode}`);
+          if (stderr) this.logger.error(`[${executionId}]    stderr: ${stderr.substring(0, 500)}`);
+          if (stdout) this.logger.debug(`[${executionId}]    stdout: ${stdout.substring(0, 500)}`);
+
           reject({
-            code: AIErrorCode.PROCESS_CRASH,
-            message: `Cursor CLI exited with code ${code}`,
-            isRetryable: this.isRetryableExit(code ?? undefined),
-            exitCode: code,
+            code: mappedCode,
+            message: `Cursor CLI exited with code ${exitCode}`,
+            isRetryable: mappedCode !== AIErrorCode.CLI_NOT_FOUND && this.isRetryableExit(exitCode),
+            exitCode,
             rawOutput: stderr || stdout,
           });
-        } else {
-          resolve({ stdout, stderr });
+          return;
         }
-      });
 
-      childProcess.on('error', (error) => {
-        clearTimeout(timeoutId);
+        // Shouldn't reach here
         reject({
-          code: AIErrorCode.PROCESS_CRASH,
-          message: error.message,
+          code: AIErrorCode.UNKNOWN,
+          message: error.message || 'Unknown error',
           isRetryable: true,
-          rawOutput: stderr,
         });
-      });
+      }
     });
   }
 
@@ -383,7 +411,18 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
       }
     }
 
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null
+          ? (() => {
+            try {
+              return JSON.stringify(error);
+            } catch {
+              return String(error);
+            }
+          })()
+          : String(error);
     const errorObj = error as Record<string, unknown>;
 
     return {

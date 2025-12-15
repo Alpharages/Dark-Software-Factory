@@ -67,12 +67,12 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     makeCounterProvider({
       name: QA_METRICS.CHECKS_TOTAL,
       help: 'Total QA checks orchestrated',
-      labelNames: ['status', 'project_id', 'result'],
+      labelNames: ['check_type', 'status', 'project_id', 'provider'],
     }),
     makeHistogramProvider({
       name: QA_METRICS.CHECK_DURATION,
       help: 'QA check duration in seconds',
-      labelNames: ['check_type'],
+      labelNames: ['check_type', 'status', 'project_id', 'provider'],
       buckets: METRICS_CONSTANTS.DEFAULT_BUCKETS,
     }),
 
@@ -106,7 +106,7 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     makeGaugeProvider({
       name: QUEUE_METRICS.PROCESSING_RATE,
       help: 'Queue processing rate (messages per minute)',
-      labelNames: [LABELS.QUEUE],
+      labelNames: [LABELS.QUEUE, LABELS.STATUS],
     }),
 
     // Story 3.8 - QA Metrics & Prometheus Integration
@@ -123,4 +123,4 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     QaMetricsService, // Story 3.8
   ],
 })
-export class QaAutomationModule {}
+export class QaAutomationModule { }
