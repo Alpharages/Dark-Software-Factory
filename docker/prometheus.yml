@@ -9,9 +9,16 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # AI Dev Orchestrator metrics
-  - job_name: 'dsf-app'
+  # AI Dev Orchestrator metrics (Docker service)
+  - job_name: 'dsf-app-docker'
     static_configs:
       - targets: ['app:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # AI Dev Orchestrator metrics (Local development on host)
+  - job_name: 'dsf-app-local'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
     metrics_path: '/metrics'
     scrape_interval: 10s
