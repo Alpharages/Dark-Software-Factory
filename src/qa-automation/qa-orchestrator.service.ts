@@ -708,20 +708,23 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // H4 FIX: Extract projectDir from ticket's project_id
+      // Extract repository URL from ticket's project_id
       const ticket = await this.prisma.ticket.findUnique({
         where: { id: message.ticketId },
         select: { project_id: true },
       });
 
-      // Use project_id directly (no Project table in schema)
-      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+      // Use project_id directly as repository URL (it already contains the full GitHub URL)
+      const repositoryUrl = ticket?.project_id || '';
+      if (!repositoryUrl) {
+        throw new Error('Repository URL not found in ticket');
+      }
 
-      // H2 FIX: Actually call AiQaOrchestrator instead of placeholder
+      // Call AiQaOrchestrator with repository URL
       const result = await this.aiQaOrchestrator.executeLintCheck(
         message.ticketId,
         message.executionId,
-        projectDir,
+        repositoryUrl,
       );
 
       await this.savePartialQaResult(message.executionId, {
@@ -773,12 +776,16 @@ export class QaOrchestratorService {
         select: { project_id: true },
       });
 
-      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+      // Use project_id directly as repository URL (it already contains the full GitHub URL)
+      const repositoryUrl = ticket?.project_id || '';
+      if (!repositoryUrl) {
+        throw new Error('Repository URL not found in ticket');
+      }
 
       const result = await this.aiQaOrchestrator.executeTestRun(
         message.ticketId,
         message.executionId,
-        projectDir,
+        repositoryUrl,
       );
 
       await this.savePartialQaResult(message.executionId, {
@@ -829,12 +836,17 @@ export class QaOrchestratorService {
         where: { id: message.ticketId },
         select: { project_id: true },
       });
-      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+
+      // Use project_id directly as repository URL (it already contains the full GitHub URL)
+      const repositoryUrl = ticket?.project_id || '';
+      if (!repositoryUrl) {
+        throw new Error('Repository URL not found in ticket');
+      }
 
       const result = await this.aiQaOrchestrator.executeCoverageAnalysis(
         message.ticketId,
         message.executionId,
-        projectDir,
+        repositoryUrl,
       );
 
       const coverage = (result.data as Record<string, unknown>).overall as number;
@@ -881,12 +893,17 @@ export class QaOrchestratorService {
         where: { id: message.ticketId },
         select: { project_id: true },
       });
-      const projectDir = ticket?.project_id ? `/projects/${ticket.project_id}` : '/tmp/unknown';
+
+      // Use project_id directly as repository URL (it already contains the full GitHub URL)
+      const repositoryUrl = ticket?.project_id || '';
+      if (!repositoryUrl) {
+        throw new Error('Repository URL not found in ticket');
+      }
 
       const result = await this.aiQaOrchestrator.executeSecurityScan(
         message.ticketId,
         message.executionId,
-        projectDir,
+        repositoryUrl,
       );
 
       await this.savePartialQaResult(message.executionId, {
