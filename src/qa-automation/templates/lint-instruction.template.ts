@@ -51,6 +51,11 @@ Steps:
   "toolUsed": "<tool name and version or 'none' if NOT_CONFIGURED>"
 }
 
+5. IMPORTANT: Save the JSON result to a file in the workspace directory:
+   - Write the above JSON to: {projectDir}/qa-results/lint-results.json
+   - Create the qa-results directory if it doesn't exist
+   - This file is required for the system to detect completion
+
 CRITICAL: Return ONLY the JSON object, no additional text.
 If no linter is configured, return status "NOT_CONFIGURED" with a helpful summary - do NOT treat this as an error.
 `;

@@ -6,6 +6,7 @@ import { GitHubClientService } from './github-client.service';
 import { GitHubBranchService } from './services/github-branch.service';
 import { GitHubCommitOrchestrator } from './services/github-commit-orchestrator.service';
 import { GitHubPROrchestrator } from './services/github-pr-orchestrator.service';
+import { GitHubPushTriggerConsumer } from './services/github-push-trigger.consumer';
 import { DeploymentOrchestrator } from './services/deployment-orchestrator.service';
 import { DeploymentTriggerConsumer } from './services/deployment-trigger.consumer';
 import { DeploymentStatusSync } from './services/deployment-status-sync.service';
@@ -41,6 +42,7 @@ import { ClickUpModule } from '../clickup/clickup.module';
     GitHubBranchService,
     GitHubCommitOrchestrator,
     GitHubPROrchestrator,
+    GitHubPushTriggerConsumer,
     DeploymentOrchestrator,
     DeploymentTriggerConsumer,
     DeploymentStatusSync,
@@ -58,4 +60,4 @@ import { ClickUpModule } from '../clickup/clickup.module';
     DeploymentSuccessRateCalculator,
   ],
 })
-export class GitHubModule {}
+export class GitHubModule { }

@@ -48,13 +48,13 @@ export class OrchestratorService {
     private readonly durationHistogram: Histogram<string>,
     @InjectMetric('orchestrator_cost_cents')
     private readonly costGauge: Gauge<string>,
-  ) {}
+  ) { }
 
   /**
    * Execute AI code generation with intelligent orchestration
    */
   async execute(input: IOrchestrationInput): Promise<IOrchestrationResult> {
-    const { correlationId, ticketId } = input;
+    const { correlationId, ticketId, providerOverride } = input;
 
     const startTime = Date.now();
     this.totalExecutions++;
@@ -62,13 +62,25 @@ export class OrchestratorService {
     this.logger.log(`[${correlationId}] Orchestrating AI execution for ticket ${ticketId}`);
 
     try {
-      // 1. Select provider
-      const selection = await this.providerFactory.selectProvider(input);
+      let selection: { primary: AIProvider; fallback: AIProvider | null; complexityScore: number };
 
-      this.logger.log(
-        `[${correlationId}] Provider selected: primary=${selection.primary}, ` +
+      // Check if provider override is specified (e.g., for commit operations)
+      if (providerOverride) {
+        this.logger.log(`[${correlationId}] Using provider override: ${providerOverride}`);
+        selection = {
+          primary: providerOverride,
+          fallback: null, // No fallback when using override
+          complexityScore: 50, // Default complexity
+        };
+      } else {
+        // 1. Select provider via AI routing
+        selection = await this.providerFactory.selectProvider(input);
+
+        this.logger.log(
+          `[${correlationId}] Provider selected: primary=${selection.primary}, ` +
           `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
-      );
+        );
+      }
 
       // 2. Execute with fallback strategy
       const executionResult = await this.fallbackStrategy.executeWithFallback(
@@ -106,7 +118,7 @@ export class OrchestratorService {
 
         this.logger.log(
           `[${correlationId}] Orchestration successful: provider=${result.executedBy}, ` +
-            `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
+          `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
         );
       } else {
         this.executionsCounter.inc({

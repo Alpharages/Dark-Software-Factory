@@ -46,6 +46,11 @@ Steps:
   "toolsUsed": ["<tool 1>", "<tool 2>"]
 }
 
+4. IMPORTANT: Save the JSON result to a file in the workspace directory:
+   - Write the above JSON to: {projectDir}/qa-results/security-results.json
+   - Create the qa-results directory if it doesn't exist
+   - This file is required for the system to detect completion
+
 CRITICAL: Return ONLY the JSON object, no additional text.
 `;
 

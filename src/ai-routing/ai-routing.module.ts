@@ -224,6 +224,7 @@ import { ExecutionModule } from '@/execution/execution.module';
     // Story 2.6: AI Execution exports
     AIExecutionService,
     WorkspaceService,
+    GitOperationsService,
     CursorHeadlessProvider,
     // Story 2.7: Claude Code exports
     ClaudeCodeProvider,
@@ -233,4 +234,4 @@ import { ExecutionModule } from '@/execution/execution.module';
     FallbackStrategyService,
   ],
 })
-export class AiRoutingModule {}
+export class AiRoutingModule { }

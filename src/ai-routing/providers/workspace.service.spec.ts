@@ -168,14 +168,14 @@ describe('WorkspaceService', () => {
 
       await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
 
-      const workspace = service.getWorkspace('exec-123');
+      const workspace = await service.getWorkspace('exec-123');
 
       expect(workspace).toBeDefined();
       expect(workspace?.executionId).toBe('exec-123');
     });
 
-    it('should return undefined for non-existent workspace', () => {
-      const workspace = service.getWorkspace('non-existent');
+    it('should return undefined for non-existent workspace', async () => {
+      const workspace = await service.getWorkspace('non-existent');
       expect(workspace).toBeUndefined();
     });
   });
@@ -188,15 +188,15 @@ describe('WorkspaceService', () => {
 
       await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
 
-      service.updateWorkspaceStatus('exec-123', 'EXECUTING');
+      await service.updateWorkspaceStatus('exec-123', 'EXECUTING');
 
-      const workspace = service.getWorkspace('exec-123');
+      const workspace = await service.getWorkspace('exec-123');
       expect(workspace?.status).toBe('EXECUTING');
     });
 
-    it('should do nothing for non-existent workspace', () => {
+    it('should do nothing for non-existent workspace', async () => {
       // Should not throw
-      service.updateWorkspaceStatus('non-existent', 'EXECUTING');
+      await service.updateWorkspaceStatus('non-existent', 'EXECUTING');
     });
   });
 
@@ -247,7 +247,8 @@ describe('WorkspaceService', () => {
 
       // Should NOT be deleted (preserveFailedWorkspaces = true)
       expect(mockFs.rm).not.toHaveBeenCalled();
-      expect(service.getWorkspace('exec-123')).toBeDefined();
+      const workspace = await service.getWorkspace('exec-123');
+      expect(workspace).toBeDefined();
     });
   });
 
@@ -270,7 +271,7 @@ describe('WorkspaceService', () => {
         'main',
       );
 
-      const workspaces = service.getActiveWorkspaces();
+      const workspaces = await service.getActiveWorkspaces();
 
       expect(workspaces).toHaveLength(2);
     });
@@ -282,7 +283,7 @@ describe('WorkspaceService', () => {
       gitService.configureUser.mockResolvedValue();
       gitService.checkoutBranch.mockResolvedValue();
 
-      expect(service.getActiveCount()).toBe(0);
+      expect(await service.getActiveCount()).toBe(0);
 
       await service.createWorkspace(
         'exec-1',
@@ -291,7 +292,7 @@ describe('WorkspaceService', () => {
         'main',
       );
 
-      expect(service.getActiveCount()).toBe(1);
+      expect(await service.getActiveCount()).toBe(1);
     });
   });
 

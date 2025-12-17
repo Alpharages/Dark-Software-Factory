@@ -115,6 +115,25 @@ export class GitOperationsService {
   }
 
   /**
+   * Push commits to remote repository
+   */
+  async push(
+    workspacePath: string,
+    repositoryUrl: string,
+    branchName: string,
+  ): Promise<void> {
+    // Set remote URL (in case it changed or has auth tokens)
+    await this.execGit(
+      ['remote', 'set-url', 'origin', repositoryUrl],
+      workspacePath,
+      'Set remote URL',
+    );
+
+    // Push to remote
+    await this.execGit(['push', 'origin', branchName], workspacePath, `Push to ${branchName}`);
+  }
+
+  /**
    * Check if there are any changes
    */
   async hasChanges(workspacePath: string): Promise<boolean> {

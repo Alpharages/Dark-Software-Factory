@@ -103,7 +103,7 @@ describe('AI Execution (e2e)', () => {
 
   afterAll(async () => {
     // Cleanup any remaining workspaces
-    const workspaces = workspaceService.getActiveWorkspaces();
+    const workspaces = await workspaceService.getActiveWorkspaces();
     for (const ws of workspaces) {
       await workspaceService.cleanupWorkspace(ws.executionId, true);
     }
@@ -138,14 +138,14 @@ describe('AI Execution (e2e)', () => {
 
   describe('Workspace Management', () => {
     it('should track active workspace count', async () => {
-      const activeCount = workspaceService.getActiveCount();
+      const activeCount = await workspaceService.getActiveCount();
       expect(typeof activeCount).toBe('number');
       expect(activeCount).toBeGreaterThanOrEqual(0);
     });
 
-    it('should return empty workspaces list initially', () => {
+    it('should return empty workspaces list initially', async () => {
       // After cleanup, should be empty
-      const workspaces = workspaceService.getActiveWorkspaces();
+      const workspaces = await workspaceService.getActiveWorkspaces();
       expect(workspaces).toBeInstanceOf(Array);
     });
   });

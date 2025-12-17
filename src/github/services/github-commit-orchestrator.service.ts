@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { LoggerService } from '../../common/logger/logger.service';
+import { LoggerService } from '@/common/logger/logger.service';
 import { AIProvider } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { AuditLogService } from '../../common/audit/audit-log.service';
-import { MetricsService } from '../../common/metrics/metrics.service';
-import { OrchestratorService } from '../../ai-routing/orchestrator.service';
+import { PrismaService } from '@/database/prisma.service';
+import { AuditLogService } from '@/common/audit/audit-log.service';
+import { MetricsService } from '@/common/metrics/metrics.service';
+import { OrchestratorService } from '@/ai-routing/orchestrator.service';
 import { GitHubService } from '../github.service';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import {
@@ -17,6 +17,8 @@ import { parseAIResponse, validateCommitSha } from '../utils/commit-response-par
 import { createCommitMessageContext, buildCommitMessage } from '../utils/commit-message-context';
 import { getFileCountBucket } from '../utils/file-count-bucket.util';
 import { classifyGitHubError } from '../utils/classify-github-error.util';
+import { WorkspaceService } from '@/ai-routing/providers';
+import { GitOperationsService } from '@/ai-routing/providers/git-operations.service';
 
 export interface CommitOrchestrationResult {
   success: boolean;
@@ -36,7 +38,9 @@ export class GitHubCommitOrchestrator {
     private readonly metrics: MetricsService,
     private readonly errorMonitor: GitHubErrorMonitor,
     private readonly logger: LoggerService,
-  ) {}
+    private readonly workspaceService: WorkspaceService,
+    private readonly gitOps: GitOperationsService,
+  ) { }
 
   /**
    * Orchestrates git commit and push operations via AI delegation
@@ -361,40 +365,92 @@ Return format (JSON):
   }
 
   /**
-   * Calls AI provider to execute commit task via OrchestratorService
-   * AC#1: Actual AI delegation (not mock)
+   * Performs git commit and push operations directly in the existing workspace
+   * AC#1: Direct git operations (no AI delegation needed for commit/push)
    */
   private async callAIProvider(
     task: CommitTask,
     provider: AIProvider,
     repository: string,
   ): Promise<string> {
-    // Build proper orchestration input
-    const input = {
-      executionId: task.context.executionId,
-      ticketId: task.context.ticketId,
-      correlationId: task.context.executionId,
-      prompt: task.instructions,
-      repositoryUrl: `https://github.com/${repository}.git`, // Required by IAIExecutionInput
-      workspacePath: process.cwd(),
-      providerOverride: provider,
-      title: task.context.ticketTitle,
-      description: task.context.ticketDescription,
-      acceptanceCriteria: task.context.acceptanceCriteria?.join('\n') || '',
-    };
+    const executionId = task.context.executionId;
 
-    const result = await this.orchestrator.execute(input);
+    // Get existing workspace (where code was already generated)
+    const workspace = await this.workspaceService.getWorkspace(executionId);
 
-    if (!result.success) {
-      throw new Error(`AI provider execution failed: ${result.error?.message || 'Unknown error'}`);
+    if (!workspace) {
+      throw new Error(`Workspace not found for execution ${executionId}`);
     }
 
-    // Return the code output as a string
-    // For commit operations, we expect the AI to return JSON with commitSha
+    this.logger.log('Using existing workspace for commit and push', {
+      executionId,
+      workspacePath: workspace.path,
+    });
+
+    // Check if there are any changes to commit
+    const hasChanges = await this.gitOps.hasChanges(workspace.path);
+
+    if (!hasChanges) {
+      this.logger.warn('No changes to commit', { executionId });
+      throw new Error('No changes to commit in workspace');
+    }
+
+    // Get list of changed files before committing
+    const filesChanged = await this.gitOps.getChangedFiles(workspace.path);
+
+    // Build commit message from context
+    const commitContext = createCommitMessageContext(
+      task.context.ticketId,
+      task.context.ticketTitle,
+      task.context.ticketDescription,
+      filesChanged,
+      provider,
+      executionId,
+      task.context.complexityScore || 50,
+    );
+
+    const commitMessage = buildCommitMessage(commitContext, task.context.ticketDescription);
+
+    this.logger.log('Creating commit', {
+      executionId,
+      message: commitMessage,
+      filesCount: filesChanged.length,
+    });
+
+    // Perform git commit
+    const commitSha = await this.gitOps.commit(
+      workspace.path,
+      commitMessage,
+    );
+
+    this.logger.log('Commit created successfully', {
+      executionId,
+      commitSha,
+    });
+
+    // Perform git push
+    this.logger.log('Pushing to remote', {
+      executionId,
+      repository,
+      branch: workspace.branchName,
+    });
+
+    await this.gitOps.push(
+      workspace.path,
+      repository,
+      workspace.branchName,
+    );
+
+    this.logger.log('Push completed successfully', {
+      executionId,
+      commitSha,
+    });
+
+    // Return result in expected format
     return JSON.stringify({
-      commitSha: result.codeDiff || '', // Use codeDiff as proxy for commit SHA
-      filesChanged: result.filesChanged?.length || 0,
-      commitMessage: 'Generated by AI',
+      commitSha,
+      filesChanged: filesChanged.length,
+      commitMessage,
     });
   }
 

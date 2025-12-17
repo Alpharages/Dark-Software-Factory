@@ -15,16 +15,16 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import * as fs from 'fs/promises';
 import { Dirent } from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { IWorkspaceInfo, AIErrorCode, IAIExecutionError } from '../interfaces';
 import { GitOperationsService } from './git-operations.service';
 import { safeMkdir, safeReaddir, safeStat } from '../../common/utils/safe-fs.util';
+import { PrismaService } from '../../database/prisma.service';
+import { WorkspaceStatus } from '@/prisma/client';
 
 @Injectable()
 export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WorkspaceService.name);
-
-  /** Active workspaces map */
-  private readonly workspaces: Map<string, IWorkspaceInfo> = new Map();
 
   /** Cleanup interval reference */
   private cleanupIntervalId?: NodeJS.Timeout;
@@ -40,11 +40,12 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly config: ConfigService,
     private readonly git: GitOperationsService,
+    private readonly prisma: PrismaService,
     @InjectMetric('cursor_workspaces_active')
     private readonly activeGauge: Gauge<string>,
     @InjectMetric('cursor_workspace_operations_total')
     private readonly operationsCounter: Counter<string>,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     this.workspacesRoot = this.config.get<string>(
@@ -69,6 +70,9 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       `Workspace service initialized: root=${this.workspacesRoot}, maxConcurrent=${this.maxConcurrent}`,
     );
 
+    // Recover workspaces from database after restart
+    await this.recoverWorkspaces();
+
     // Start periodic cleanup
     this.startCleanupScheduler();
   }
@@ -92,7 +96,8 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     _baseBranch: string = 'main',
   ): Promise<IWorkspaceInfo> {
     // Check concurrency limit
-    if (this.workspaces.size >= this.maxConcurrent) {
+    const activeCount = await this.getActiveCount();
+    if (activeCount >= this.maxConcurrent) {
       throw this.createError(
         AIErrorCode.WORKSPACE_LIMIT,
         `Maximum concurrent workspaces (${this.maxConcurrent}) reached`,
@@ -102,50 +107,82 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
     // Sanitize ticketId to prevent path traversal attacks
     const sanitizedTicketId = ticketId.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const workspaceId = `ticket-${sanitizedTicketId}-${Date.now()}`;
+    // Use UUID instead of timestamp to prevent collisions when multiple workspaces
+    // are created simultaneously (e.g., parallel QA checks)
+    const uniqueId = crypto.randomUUID();
+    const workspaceId = `ticket-${sanitizedTicketId}-${uniqueId}`;
     const workspacePath = path.join(this.workspacesRoot, workspaceId);
     const branchName = `feature/ticket-${ticketId}`;
 
-    const workspace: IWorkspaceInfo = {
-      id: workspaceId,
-      path: workspacePath,
-      ticketId,
-      executionId,
-      repositoryUrl,
-      branchName,
-      createdAt: new Date(),
-      status: 'CREATING',
-    };
-
-    this.workspaces.set(executionId, workspace);
-    this.updateMetrics();
+    // Create workspace record in database
+    await this.prisma.workspace.create({
+      data: {
+        workspace_id: workspaceId,
+        execution_id: executionId,
+        ticket_id: ticketId,
+        workspace_path: workspacePath,
+        repository_url: repositoryUrl || null,
+        branch_name: branchName,
+        status: WorkspaceStatus.CREATING,
+      },
+    });
+    await this.updateMetrics();
 
     try {
       this.logger.log(`[${executionId}] Creating workspace: ${workspacePath}`);
 
-      // 1. Create directory (validated within workspacesRoot)
-      await safeMkdir(workspacePath, this.workspacesRoot, { recursive: true });
+      // 1. Clean up any existing directory from previous failed runs
+      // This prevents "directory already exists" errors from git clone
+      try {
+        await fs.rm(workspacePath, { recursive: true, force: true });
+      } catch {
+        // Directory may not exist, ignore
+      }
 
-      // 2. Clone repository (shallow clone for speed)
-      await this.git.clone(repositoryUrl, workspacePath, { depth: 1 });
+      // 2. Clone repository only if URL is provided
+      // Skip cloning if repositoryUrl is empty (e.g., for commit message generation)
+      if (repositoryUrl && repositoryUrl.trim() !== '') {
+        this.logger.log(`[${executionId}] Cloning repository`);
+        // Note: git clone will create the target directory itself
+        await this.git.clone(repositoryUrl, workspacePath, { depth: 1 });
 
-      // 3. Configure git user for commits
-      await this.git.configureUser(workspacePath, this.gitUserName, this.gitUserEmail);
+        // 3. Configure git user for commits
+        await this.git.configureUser(workspacePath, this.gitUserName, this.gitUserEmail);
 
-      // 4. Create feature branch
-      await this.git.checkoutBranch(workspacePath, branchName, true);
+        // 4. Create feature branch
+        await this.git.checkoutBranch(workspacePath, branchName, true);
+      } else {
+        this.logger.log(`[${executionId}] Skipping git clone - no repository URL`);
+        // Create workspace directory manually since git clone won't do it
+        await fs.mkdir(workspacePath, { recursive: true });
+      }
 
       // Note: Dependencies are NOT installed here
       // AI providers (Cursor, Claude) will handle dependency installation
       // as part of their natural workflow when they detect missing deps
 
-      workspace.status = 'READY';
+      // Update workspace status to READY
+      await this.prisma.workspace.update({
+        where: { execution_id: executionId },
+        data: { status: WorkspaceStatus.READY },
+      });
+
       this.operationsCounter.inc({ operation: 'create', status: 'success' });
 
       this.logger.log(`[${executionId}] Workspace ready: ${workspacePath}`);
-      return workspace;
+
+      return this.mapToWorkspaceInfo(
+        await this.prisma.workspace.findUniqueOrThrow({
+          where: { execution_id: executionId },
+        }),
+      );
     } catch (error: unknown) {
-      workspace.status = 'FAILED';
+      // Update workspace status to FAILED
+      await this.prisma.workspace.update({
+        where: { execution_id: executionId },
+        data: { status: WorkspaceStatus.FAILED },
+      }).catch(() => { });
+
       this.operationsCounter.inc({ operation: 'create', status: 'error' });
 
       // Cleanup failed workspace
@@ -164,18 +201,23 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get workspace info by execution ID
    */
-  getWorkspace(executionId: string): IWorkspaceInfo | undefined {
-    return this.workspaces.get(executionId);
+  async getWorkspace(executionId: string): Promise<IWorkspaceInfo | undefined> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { execution_id: executionId },
+    });
+    return workspace ? this.mapToWorkspaceInfo(workspace) : undefined;
   }
 
   /**
    * Update workspace status
    */
-  updateWorkspaceStatus(executionId: string, status: IWorkspaceInfo['status']): void {
-    const workspace = this.workspaces.get(executionId);
-    if (workspace) {
-      workspace.status = status;
-    }
+  async updateWorkspaceStatus(executionId: string, status: IWorkspaceInfo['status']): Promise<void> {
+    await this.prisma.workspace.update({
+      where: { execution_id: executionId },
+      data: { status: this.mapToDbStatus(status) },
+    }).catch((error) => {
+      this.logger.warn(`Failed to update workspace status for ${executionId}: ${error.message}`);
+    });
   }
 
   /**
@@ -185,7 +227,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     diff: string;
     filesChanged: string[];
   }> {
-    const workspace = this.workspaces.get(executionId);
+    const workspace = await this.getWorkspace(executionId);
     if (!workspace) {
       throw new Error(`Workspace not found: ${executionId}`);
     }
@@ -212,7 +254,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
    * Cleanup workspace after execution
    */
   async cleanupWorkspace(executionId: string, force: boolean = false): Promise<void> {
-    const workspace = this.workspaces.get(executionId);
+    const workspace = await this.getWorkspace(executionId);
     if (!workspace) {
       return;
     }
@@ -225,11 +267,25 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    workspace.status = 'CLEANING';
+    // Update status to CLEANING
+    await this.prisma.workspace.update({
+      where: { execution_id: executionId },
+      data: { status: WorkspaceStatus.CLEANING },
+    }).catch(() => { });
 
     try {
       await fs.rm(workspace.path, { recursive: true, force: true });
       this.logger.log(`[${executionId}] Workspace cleaned: ${workspace.path}`);
+
+      // Update status to CLEANED
+      await this.prisma.workspace.update({
+        where: { execution_id: executionId },
+        data: {
+          status: WorkspaceStatus.CLEANED,
+          cleaned_at: new Date(),
+        },
+      });
+
       this.operationsCounter.inc({ operation: 'cleanup', status: 'success' });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -237,23 +293,35 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       this.operationsCounter.inc({ operation: 'cleanup', status: 'error' });
       // Don't throw - cleanup failures shouldn't block execution
     } finally {
-      this.workspaces.delete(executionId);
-      this.updateMetrics();
+      await this.updateMetrics();
     }
   }
 
   /**
    * Get all active workspaces
    */
-  getActiveWorkspaces(): IWorkspaceInfo[] {
-    return Array.from(this.workspaces.values());
+  async getActiveWorkspaces(): Promise<IWorkspaceInfo[]> {
+    const workspaces = await this.prisma.workspace.findMany({
+      where: {
+        status: {
+          in: [WorkspaceStatus.CREATING, WorkspaceStatus.READY, WorkspaceStatus.IN_USE],
+        },
+      },
+    });
+    return workspaces.map((w) => this.mapToWorkspaceInfo(w));
   }
 
   /**
    * Get workspace count
    */
-  getActiveCount(): number {
-    return this.workspaces.size;
+  async getActiveCount(): Promise<number> {
+    return this.prisma.workspace.count({
+      where: {
+        status: {
+          in: [WorkspaceStatus.CREATING, WorkspaceStatus.READY, WorkspaceStatus.IN_USE],
+        },
+      },
+    });
   }
 
   /**
@@ -319,8 +387,113 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
   /**
    * Update Prometheus metrics
    */
-  private updateMetrics(): void {
-    this.activeGauge.set(this.workspaces.size);
+  private async updateMetrics(): Promise<void> {
+    const count = await this.getActiveCount();
+    this.activeGauge.set(count);
+  }
+
+  /**
+   * Recover workspaces from database after restart
+   */
+  private async recoverWorkspaces(): Promise<void> {
+    try {
+      const activeWorkspaces = await this.prisma.workspace.findMany({
+        where: {
+          status: {
+            in: [WorkspaceStatus.CREATING, WorkspaceStatus.READY, WorkspaceStatus.IN_USE],
+          },
+        },
+      });
+
+      this.logger.log(`Recovering ${activeWorkspaces.length} workspace(s) from database`);
+
+      for (const workspace of activeWorkspaces) {
+        // Check if directory still exists
+        const exists = await this.directoryExists(workspace.workspace_path);
+
+        if (!exists) {
+          // Directory gone, mark as cleaned
+          this.logger.warn(
+            `Workspace directory missing for ${workspace.execution_id}, marking as CLEANED`,
+          );
+          await this.prisma.workspace.update({
+            where: { id: workspace.id },
+            data: {
+              status: WorkspaceStatus.CLEANED,
+              cleaned_at: new Date(),
+            },
+          });
+        } else {
+          this.logger.log(
+            `Recovered workspace for execution ${workspace.execution_id}: ${workspace.workspace_path}`,
+          );
+        }
+      }
+
+      await this.updateMetrics();
+      this.logger.log('Workspace recovery completed');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to recover workspaces: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Check if directory exists
+   */
+  private async directoryExists(dirPath: string): Promise<boolean> {
+    try {
+      const stats = await fs.stat(dirPath);
+      return stats.isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Map database workspace to IWorkspaceInfo
+   */
+  private mapToWorkspaceInfo(workspace: any): IWorkspaceInfo {
+    return {
+      id: workspace.workspace_id,
+      path: workspace.workspace_path,
+      ticketId: workspace.ticket_id,
+      executionId: workspace.execution_id,
+      repositoryUrl: workspace.repository_url || '',
+      branchName: workspace.branch_name,
+      createdAt: workspace.created_at,
+      status: this.mapFromDbStatus(workspace.status),
+    };
+  }
+
+  /**
+   * Map IWorkspaceInfo status to database WorkspaceStatus
+   */
+  private mapToDbStatus(status: IWorkspaceInfo['status']): WorkspaceStatus {
+    const statusMap: Partial<Record<IWorkspaceInfo['status'], WorkspaceStatus>> = {
+      CREATING: WorkspaceStatus.CREATING,
+      READY: WorkspaceStatus.READY,
+      EXECUTING: WorkspaceStatus.IN_USE,
+      COMPLETED: WorkspaceStatus.READY,
+      FAILED: WorkspaceStatus.FAILED,
+      CLEANING: WorkspaceStatus.CLEANING,
+    };
+    return statusMap[status] || WorkspaceStatus.READY;
+  }
+
+  /**
+   * Map database WorkspaceStatus to IWorkspaceInfo status
+   */
+  private mapFromDbStatus(status: WorkspaceStatus): IWorkspaceInfo['status'] {
+    const statusMap: Record<WorkspaceStatus, IWorkspaceInfo['status']> = {
+      [WorkspaceStatus.CREATING]: 'CREATING',
+      [WorkspaceStatus.READY]: 'READY',
+      [WorkspaceStatus.IN_USE]: 'EXECUTING',
+      [WorkspaceStatus.FAILED]: 'FAILED',
+      [WorkspaceStatus.CLEANING]: 'CLEANING',
+      [WorkspaceStatus.CLEANED]: 'COMPLETED',
+    };
+    return statusMap[status];
   }
 
   /**

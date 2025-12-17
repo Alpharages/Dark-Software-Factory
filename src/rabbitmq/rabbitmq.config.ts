@@ -80,6 +80,9 @@ export const ROUTING_KEYS = {
   QA_CHECK_COMPLETED: 'qa.check.completed',
   QA_CHECK_FAILED: 'qa.check.failed',
 
+  // GitHub Push (QA → GitHub workflow trigger)
+  GITHUB_PUSH_TRIGGER: 'github.push.trigger',
+
   // Deployment
   DEPLOYMENT_TRIGGERED: 'deployment.triggered',
   DEPLOYMENT_COMPLETED: 'deployment.completed',

@@ -443,3 +443,39 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
+// ============================================
+// WORKSPACE PERSISTENCE (Story 2.6)
+// Tracks workspace lifecycle across restarts
+// ============================================
+
+model Workspace {
+  id              String          @id @default(uuid())
+  workspace_id    String          @unique  // ticket-{ticketId}-{uuid}
+  execution_id    String          @unique
+  ticket_id       String
+  
+  workspace_path  String          // Full path to workspace directory
+  repository_url  String?
+  branch_name     String
+  
+  status          WorkspaceStatus @default(CREATING)
+  
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  cleaned_at      DateTime?       // When workspace was cleaned up
+  
+  @@index([execution_id])
+  @@index([ticket_id])
+  @@index([status, created_at])
+  @@map("workspaces")
+}
+
+enum WorkspaceStatus {
+  CREATING
+  READY
+  IN_USE
+  FAILED
+  CLEANING
+  CLEANED
+}
+
