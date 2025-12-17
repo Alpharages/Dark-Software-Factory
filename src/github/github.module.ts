@@ -60,4 +60,4 @@ import { ClickUpModule } from '../clickup/clickup.module';
     DeploymentSuccessRateCalculator,
   ],
 })
-export class GitHubModule { }
+export class GitHubModule {}

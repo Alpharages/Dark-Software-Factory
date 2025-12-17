@@ -123,4 +123,4 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     QaMetricsService, // Story 3.8
   ],
 })
-export class QaAutomationModule { }
+export class QaAutomationModule {}

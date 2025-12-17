@@ -76,7 +76,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
 
     this.logger.log(
       `Cursor Headless Provider initialized: cli=${this.cliPath}, ` +
-      `available=${this.isCliAvailable}, timeout=${this.defaultTimeoutMs}ms`,
+        `available=${this.isCliAvailable}, timeout=${this.defaultTimeoutMs}ms`,
     );
   }
 
@@ -192,7 +192,7 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
 
       this.logger.log(
         `[${correlationId}] Cursor execution completed: ${filesChanged.length} files, ` +
-        `${diff.length} bytes diff, ${durationMs}ms`,
+          `${diff.length} bytes diff, ${durationMs}ms`,
       );
 
       return {
@@ -439,12 +439,12 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
         ? error.message
         : typeof error === 'object' && error !== null
           ? (() => {
-            try {
-              return JSON.stringify(error);
-            } catch {
-              return String(error);
-            }
-          })()
+              try {
+                return JSON.stringify(error);
+              } catch {
+                return String(error);
+              }
+            })()
           : String(error);
     const errorObj = error as Record<string, unknown>;
 

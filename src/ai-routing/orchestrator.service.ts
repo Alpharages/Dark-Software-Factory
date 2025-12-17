@@ -48,7 +48,7 @@ export class OrchestratorService {
     private readonly durationHistogram: Histogram<string>,
     @InjectMetric('orchestrator_cost_cents')
     private readonly costGauge: Gauge<string>,
-  ) { }
+  ) {}
 
   /**
    * Execute AI code generation with intelligent orchestration
@@ -78,7 +78,7 @@ export class OrchestratorService {
 
         this.logger.log(
           `[${correlationId}] Provider selected: primary=${selection.primary}, ` +
-          `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
+            `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
         );
       }
 
@@ -118,7 +118,7 @@ export class OrchestratorService {
 
         this.logger.log(
           `[${correlationId}] Orchestration successful: provider=${result.executedBy}, ` +
-          `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
+            `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
         );
       } else {
         this.executionsCounter.inc({

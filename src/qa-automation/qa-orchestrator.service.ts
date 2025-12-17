@@ -72,7 +72,7 @@ export class QaOrchestratorService {
     // private readonly codeReviewService: CodeReviewService,
     private readonly rabbitPublisher: RabbitMQPublisherService,
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
-  ) { }
+  ) {}
 
   /**
    * Story 3.7: Run QA checks for post-execution code files
@@ -197,11 +197,15 @@ export class QaOrchestratorService {
         try {
           if (this.workspaceService) {
             await this.workspaceService.cleanupWorkspace(executionId, true);
-            this.logger.log(`[${correlationId}] Workspace cleaned up after QA failure: ${executionId}`);
+            this.logger.log(
+              `[${correlationId}] Workspace cleaned up after QA failure: ${executionId}`,
+            );
           }
         } catch (cleanupError) {
           const err = cleanupError as Error;
-          this.logger.warn(`[${correlationId}] Failed to cleanup workspace after QA failure: ${err.message}`);
+          this.logger.warn(
+            `[${correlationId}] Failed to cleanup workspace after QA failure: ${err.message}`,
+          );
         }
       }
 
@@ -635,16 +639,16 @@ export class QaOrchestratorService {
       code_review_passed: security?.passed ?? true,
       code_review_issues: security
         ? {
-          summary: {
-            criticalCount: security.summary.criticalCount,
-            highCount: security.summary.highCount,
-            mediumCount: security.summary.mediumCount,
-          },
-          complexityIssues: security.complexityIssues.map((i) => ({
-            function: i.functionName,
-            complexity: i.value,
-          })),
-        }
+            summary: {
+              criticalCount: security.summary.criticalCount,
+              highCount: security.summary.highCount,
+              mediumCount: security.summary.mediumCount,
+            },
+            complexityIssues: security.complexityIssues.map((i) => ({
+              function: i.functionName,
+              complexity: i.value,
+            })),
+          }
         : null,
     };
   }

@@ -45,7 +45,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     private readonly activeGauge: Gauge<string>,
     @InjectMetric('cursor_workspace_operations_total')
     private readonly operationsCounter: Counter<string>,
-  ) { }
+  ) {}
 
   async onModuleInit(): Promise<void> {
     this.workspacesRoot = this.config.get<string>(
@@ -154,6 +154,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       } else {
         this.logger.log(`[${executionId}] Skipping git clone - no repository URL`);
         // Create workspace directory manually since git clone won't do it
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         await fs.mkdir(workspacePath, { recursive: true });
       }
 
@@ -178,10 +179,12 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       );
     } catch (error: unknown) {
       // Update workspace status to FAILED
-      await this.prisma.workspace.update({
-        where: { execution_id: executionId },
-        data: { status: WorkspaceStatus.FAILED },
-      }).catch(() => { });
+      await this.prisma.workspace
+        .update({
+          where: { execution_id: executionId },
+          data: { status: WorkspaceStatus.FAILED },
+        })
+        .catch(() => {});
 
       this.operationsCounter.inc({ operation: 'create', status: 'error' });
 
@@ -211,13 +214,18 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
   /**
    * Update workspace status
    */
-  async updateWorkspaceStatus(executionId: string, status: IWorkspaceInfo['status']): Promise<void> {
-    await this.prisma.workspace.update({
-      where: { execution_id: executionId },
-      data: { status: this.mapToDbStatus(status) },
-    }).catch((error) => {
-      this.logger.warn(`Failed to update workspace status for ${executionId}: ${error.message}`);
-    });
+  async updateWorkspaceStatus(
+    executionId: string,
+    status: IWorkspaceInfo['status'],
+  ): Promise<void> {
+    await this.prisma.workspace
+      .update({
+        where: { execution_id: executionId },
+        data: { status: this.mapToDbStatus(status) },
+      })
+      .catch((error) => {
+        this.logger.warn(`Failed to update workspace status for ${executionId}: ${error.message}`);
+      });
   }
 
   /**
@@ -268,10 +276,12 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Update status to CLEANING
-    await this.prisma.workspace.update({
-      where: { execution_id: executionId },
-      data: { status: WorkspaceStatus.CLEANING },
-    }).catch(() => { });
+    await this.prisma.workspace
+      .update({
+        where: { execution_id: executionId },
+        data: { status: WorkspaceStatus.CLEANING },
+      })
+      .catch(() => {});
 
     try {
       await fs.rm(workspace.path, { recursive: true, force: true });
@@ -443,6 +453,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
    */
   private async directoryExists(dirPath: string): Promise<boolean> {
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       const stats = await fs.stat(dirPath);
       return stats.isDirectory();
     } catch {
@@ -453,7 +464,19 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
   /**
    * Map database workspace to IWorkspaceInfo
    */
-  private mapToWorkspaceInfo(workspace: any): IWorkspaceInfo {
+  private mapToWorkspaceInfo(workspace: {
+    id: string;
+    workspace_id: string;
+    execution_id: string;
+    ticket_id: string;
+    workspace_path: string;
+    repository_url: string | null;
+    branch_name: string;
+    status: WorkspaceStatus;
+    created_at: Date;
+    updated_at: Date;
+    cleaned_at: Date | null;
+  }): IWorkspaceInfo {
     return {
       id: workspace.workspace_id,
       path: workspace.workspace_path,
@@ -478,6 +501,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       FAILED: WorkspaceStatus.FAILED,
       CLEANING: WorkspaceStatus.CLEANING,
     };
+    // eslint-disable-next-line security/detect-object-injection
     return statusMap[status] || WorkspaceStatus.READY;
   }
 
@@ -493,6 +517,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       [WorkspaceStatus.CLEANING]: 'CLEANING',
       [WorkspaceStatus.CLEANED]: 'COMPLETED',
     };
+    // eslint-disable-next-line security/detect-object-injection
     return statusMap[status];
   }
 

@@ -112,7 +112,7 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
 
       this.logger.log(
         `Claude Code Provider initialized: model=${this.model}, ` +
-        `maxTokens=${this.maxTokens}, timeout=${this.timeoutMs}ms`,
+          `maxTokens=${this.maxTokens}, timeout=${this.timeoutMs}ms`,
       );
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -231,7 +231,7 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
 
       this.logger.log(
         `[${correlationId}] Claude execution completed: ${filesChanged.length} files, ` +
-        `${result.inputTokens} input tokens, ${result.outputTokens} output tokens, ${durationMs}ms`,
+          `${result.inputTokens} input tokens, ${result.outputTokens} output tokens, ${durationMs}ms`,
       );
 
       return {

@@ -40,7 +40,7 @@ export class GitHubCommitOrchestrator {
     private readonly logger: LoggerService,
     private readonly workspaceService: WorkspaceService,
     private readonly gitOps: GitOperationsService,
-  ) { }
+  ) {}
 
   /**
    * Orchestrates git commit and push operations via AI delegation
@@ -418,10 +418,7 @@ Return format (JSON):
     });
 
     // Perform git commit
-    const commitSha = await this.gitOps.commit(
-      workspace.path,
-      commitMessage,
-    );
+    const commitSha = await this.gitOps.commit(workspace.path, commitMessage);
 
     this.logger.log('Commit created successfully', {
       executionId,
@@ -435,11 +432,7 @@ Return format (JSON):
       branch: workspace.branchName,
     });
 
-    await this.gitOps.push(
-      workspace.path,
-      repository,
-      workspace.branchName,
-    );
+    await this.gitOps.push(workspace.path, repository, workspace.branchName);
 
     this.logger.log('Push completed successfully', {
       executionId,

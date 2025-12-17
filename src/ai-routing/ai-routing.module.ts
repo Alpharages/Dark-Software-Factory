@@ -234,4 +234,4 @@ import { ExecutionModule } from '@/execution/execution.module';
     FallbackStrategyService,
   ],
 })
-export class AiRoutingModule { }
+export class AiRoutingModule {}
