@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider, TicketStatus, ExecutionStatus } from '@prisma/client';
+import { AIProvider, TicketStatus, ExecutionStatus } from '@/prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';

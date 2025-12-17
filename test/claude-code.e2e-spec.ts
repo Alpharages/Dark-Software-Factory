@@ -8,7 +8,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { ConfigModule } from '@nestjs/config';
 import { AIExecutionService } from '../src/ai-routing/ai-execution.service';
 import { ClaudeCodeProvider } from '../src/ai-routing/providers';

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionRepository } from './execution.repository';
 import { PrismaService } from '../database/prisma.service';
-import { ExecutionStatus, AIProvider } from '@prisma/client';
+import { ExecutionStatus, AIProvider } from '@/prisma/client';
 import { IExecutionAuditLog } from './interfaces';
 
 describe('ExecutionRepository', () => {

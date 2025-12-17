@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionService } from './execution.service';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionStateMachine, InvalidStateTransitionError } from './state-machine';
-import { ExecutionStatus, AIProvider } from '@prisma/client';
+import { ExecutionStatus, AIProvider } from '@/prisma/client';
 import {
   StartExecutionDto,
   CompleteExecutionDto,

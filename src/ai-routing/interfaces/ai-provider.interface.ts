@@ -6,7 +6,7 @@
  * Story 2.6: AI Provider Integration - Cursor CLI Headless Mode
  */
 
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 
 /**
  * Input for AI code generation

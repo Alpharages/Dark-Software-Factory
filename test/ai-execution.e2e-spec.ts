@@ -9,7 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import {
   makeGaugeProvider,
   makeCounterProvider,

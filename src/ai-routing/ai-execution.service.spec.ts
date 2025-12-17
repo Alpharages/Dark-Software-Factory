@@ -5,7 +5,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { AIExecutionService } from './ai-execution.service';
 import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '../execution/execution.service';

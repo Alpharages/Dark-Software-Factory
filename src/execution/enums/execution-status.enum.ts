@@ -1,4 +1,4 @@
-import { ExecutionStatus } from '@prisma/client';
+import { ExecutionStatus } from '@/prisma/client';
 import { SafeMap } from '../../common/utils/safe-access.util';
 
 /**

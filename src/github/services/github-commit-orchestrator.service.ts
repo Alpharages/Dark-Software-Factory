@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LoggerService } from '@/common/logger/logger.service';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { AuditLogService } from '@/common/audit/audit-log.service';
 import { MetricsService } from '@/common/metrics/metrics.service';

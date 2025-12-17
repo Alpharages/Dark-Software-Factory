@@ -4,7 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { OrchestratorService } from './orchestrator.service';
 import { ProviderFactoryService } from './provider-factory.service';
 import { FallbackStrategyService } from './fallback-strategy.service';

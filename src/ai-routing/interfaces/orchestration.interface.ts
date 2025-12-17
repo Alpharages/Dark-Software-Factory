@@ -5,7 +5,7 @@
  * FR60-65: AI code generation orchestration
  */
 
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { IAIExecutionInput, IAIExecutionResult } from './ai-provider.interface';
 
 /**

@@ -11,7 +11,7 @@
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { execFile, execSync, ChildProcess } from 'child_process';

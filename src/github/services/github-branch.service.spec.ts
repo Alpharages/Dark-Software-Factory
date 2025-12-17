@@ -6,7 +6,7 @@ import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { RabbitMQPublisherService } from '../../rabbitmq/rabbitmq-publisher.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { GitHubStatus } from '@prisma/client';
+import { GitHubStatus } from '@/prisma/client';
 import {
   generateBranchName,
   validateBranchName,

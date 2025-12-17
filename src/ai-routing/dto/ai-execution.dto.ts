@@ -4,7 +4,7 @@
  * FR65: Execute AI code generation
  */
 
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { IsString, IsNotEmpty, IsOptional, IsArray, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 

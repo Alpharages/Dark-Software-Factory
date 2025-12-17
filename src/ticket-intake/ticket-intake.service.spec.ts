@@ -1,4 +1,4 @@
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 import { TicketIntakeService } from './ticket-intake.service';
 import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';

@@ -1,4 +1,4 @@
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 import { ILintingResult } from './linting.interface';
 import { ITestResult } from './test-runner.interface';
 import { ICoverageAnalysis } from './coverage.interface';

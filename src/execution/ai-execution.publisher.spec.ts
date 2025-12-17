@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { AIExecutionPublisher } from './ai-execution.publisher';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';

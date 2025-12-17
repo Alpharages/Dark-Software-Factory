@@ -5,7 +5,7 @@ import { OrchestratorService } from '../ai-routing/orchestrator.service';
 import { QaMetricsService } from './qa-metrics.service';
 import { PrismaService } from '../database/prisma.service';
 import { SentryService } from '../common/sentry/sentry.service';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 
 describe('AiQaOrchestrator', () => {
   let service: AiQaOrchestrator;

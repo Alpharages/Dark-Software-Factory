@@ -17,7 +17,7 @@ import {
   QUALITY_SCORE_WEIGHTS,
   DEFAULT_THRESHOLDS,
 } from './interfaces';
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 
 /**
  * Input type for QA results to be evaluated by quality gates

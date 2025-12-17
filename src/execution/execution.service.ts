@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ExecutionStatus, Execution } from '@prisma/client';
+import { ExecutionStatus, Execution } from '@/prisma/client';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionStateMachine } from './state-machine';
 import {

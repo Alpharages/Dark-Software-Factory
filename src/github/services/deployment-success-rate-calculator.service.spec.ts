@@ -3,7 +3,7 @@ import { DeploymentSuccessRateCalculator } from './deployment-success-rate-calcu
 import { PrismaService } from '../../database/prisma.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { LoggerService } from '../../common/logger';
-import { DeploymentStatus } from '@prisma/client';
+import { DeploymentStatus } from '@/prisma/client';
 
 describe('DeploymentSuccessRateCalculator', () => {
   let service: DeploymentSuccessRateCalculator;

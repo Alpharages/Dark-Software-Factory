@@ -5,7 +5,7 @@ import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { IRoutingRequest, RoutingReason } from './interfaces';
 

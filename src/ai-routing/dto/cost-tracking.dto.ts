@@ -7,7 +7,7 @@
 
 import { IsNumber, IsString, IsEnum, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 
 /**
  * Token usage for a single execution

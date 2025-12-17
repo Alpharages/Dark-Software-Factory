@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DeploymentStatus } from '@prisma/client';
+import { DeploymentStatus } from '@/prisma/client';
 import * as yaml from 'js-yaml';
 import { PrismaService } from '../../database/prisma.service';
 import { LoggerService } from '../../common/logger/logger.service';

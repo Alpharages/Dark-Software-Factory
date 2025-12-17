@@ -4,7 +4,7 @@
  * Architecture Reference: Multi-Provider AI Strategy
  */
 
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 
 /**
  * Routing request from ticket-intake (matches Story 2.2 output)

@@ -12,7 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 
 /**
  * DTO for AI Execution queue message payload

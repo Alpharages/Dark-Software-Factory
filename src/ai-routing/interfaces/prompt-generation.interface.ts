@@ -4,7 +4,7 @@
  * Architecture Reference: Multi-Provider Prompt Engineering
  */
 
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { IComplexityBreakdown } from './ai-routing.interface';
 
 // ⚠️ NOTE: This import requires Story 2.3's ai-routing.interface.ts to exist.

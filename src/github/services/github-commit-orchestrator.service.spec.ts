@@ -16,7 +16,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { SentryService } from '../../common/sentry/sentry.service';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 

@@ -28,7 +28,7 @@ import {
   QaCheckType,
   SupportedLanguage,
 } from './interfaces';
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 
 /**

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import {
   IPromptBuilder,
   IPromptGenerationInput,

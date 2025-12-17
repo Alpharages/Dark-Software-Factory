@@ -5,7 +5,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { ClaudeCodeProvider } from './claude-code.provider';
 import { WorkspaceService } from './workspace.service';
 import { IAIExecutionInput, AIErrorCode } from '../interfaces';

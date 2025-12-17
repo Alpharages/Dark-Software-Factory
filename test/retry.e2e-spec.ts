@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 // AIProvider and ExecutionStatus may be used in full integration tests
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AIProvider, ExecutionStatus } from '@prisma/client';
+import { AIProvider, ExecutionStatus } from '@/prisma/client';
 import { AppModule } from '../src/app.module';
 import { RetryHandlerService } from '../src/execution/retry-handler.service';
 import { RetryClassifierService } from '../src/execution/retry-classifier.service';

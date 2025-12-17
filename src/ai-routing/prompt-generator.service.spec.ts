@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { PromptGeneratorService } from './prompt-generator.service';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';

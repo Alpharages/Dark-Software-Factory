@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
-import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
-import { ExecutionStatus, AIProvider } from '@prisma/client';
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
+import { ExecutionStatus, AIProvider } from '@/prisma/client';
 
 describe('ExecutionTrackerService', () => {
   let service: ExecutionTrackerService;

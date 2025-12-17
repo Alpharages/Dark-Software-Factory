@@ -18,7 +18,7 @@ import {
   GitHubResourceNotFoundError,
   GitHubNetworkError,
 } from '../exceptions/github.exceptions';
-import { GitHubStatus, ExecutionStatus } from '@prisma/client';
+import { GitHubStatus, ExecutionStatus } from '@/prisma/client';
 import { RabbitMQPublisherService } from '../../rabbitmq/rabbitmq-publisher.service';
 import { classifyGitHubError } from '../utils/classify-github-error.util';
 

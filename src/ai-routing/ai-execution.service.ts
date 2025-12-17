@@ -9,7 +9,6 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { AIProvider } from '@prisma/client';
 import {
   IAIProvider,
   IAIExecutionInput,
@@ -20,6 +19,7 @@ import {
 import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '../execution/execution.service';
 import { CompleteExecutionDto, FailExecutionDto } from '../execution/dto';
+import { AIProvider } from '@/prisma/enums';
 
 @Injectable()
 export class AIExecutionService {

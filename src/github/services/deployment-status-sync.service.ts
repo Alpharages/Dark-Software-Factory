@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DeploymentStatus } from '@prisma/client';
+import { DeploymentStatus } from '@/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ClickUpService } from '../../clickup/clickup.service';
 import { MetricsService } from '../../common/metrics/metrics.service';

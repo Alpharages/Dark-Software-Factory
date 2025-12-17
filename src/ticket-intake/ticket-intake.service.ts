@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Counter, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';

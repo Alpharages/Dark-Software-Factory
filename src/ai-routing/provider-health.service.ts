@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { IProviderHealth } from './interfaces';
 import { Counter, Gauge } from 'prom-client';

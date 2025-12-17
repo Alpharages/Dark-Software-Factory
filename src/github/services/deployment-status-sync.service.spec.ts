@@ -7,7 +7,7 @@ import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { ConfigService } from '@nestjs/config';
-import { DeploymentStatus } from '@prisma/client';
+import { DeploymentStatus } from '@/prisma/client';
 
 describe('DeploymentStatusSync', () => {
   let service: DeploymentStatusSync;

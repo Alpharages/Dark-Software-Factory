@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AIProvider, ExecutionStatus } from '@prisma/client';
+import { AIProvider, ExecutionStatus } from '@/prisma/client';
 import { RetryHandlerService } from './retry-handler.service';
 import { RetryClassifierService } from './retry-classifier.service';
 import { RetrySchedulerService } from './retry-scheduler.service';

@@ -1,4 +1,4 @@
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import {
   IsString,
   IsNotEmpty,

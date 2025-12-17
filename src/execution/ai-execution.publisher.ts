@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIProvider, Execution } from '@prisma/client';
+import { AIProvider, Execution } from '@/prisma/client';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { v4 as uuidv4 } from 'uuid';

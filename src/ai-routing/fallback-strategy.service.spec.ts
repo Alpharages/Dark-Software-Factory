@@ -5,7 +5,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { FallbackStrategyService } from './fallback-strategy.service';
 import { AIExecutionService } from './ai-execution.service';
 import { IOrchestrationInput, AIErrorCode } from './interfaces';

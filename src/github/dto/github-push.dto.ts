@@ -1,4 +1,4 @@
-import { GitHubStatus } from '@prisma/client';
+import { GitHubStatus } from '@/prisma/client';
 
 /**
  * DTO for GitHub push record

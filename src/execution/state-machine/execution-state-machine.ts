@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ExecutionStatus } from '@prisma/client';
+import { ExecutionStatus } from '@/prisma/client';
 import {
   isValidTransition,
   isTerminalStatus,

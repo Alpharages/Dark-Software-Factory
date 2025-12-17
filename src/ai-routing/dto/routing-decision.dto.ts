@@ -1,4 +1,4 @@
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { RoutingReason, IComplexityBreakdown } from '../interfaces';
 
 export class ComplexityBreakdownDto implements IComplexityBreakdown {

@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ExecutionStatus, Execution } from '@prisma/client';
+import { ExecutionStatus, Execution } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';

@@ -5,7 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { QaAutomationModule } from '../src/qa-automation/qa-automation.module';
 import { QaOrchestratorService } from '../src/qa-automation/qa-orchestrator.service';
 import { PrismaService } from '../src/database/prisma.service';
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 import { RabbitMQPublisherService } from '../src/rabbitmq/rabbitmq-publisher.service';
 import { RabbitMQService } from '../src/rabbitmq/rabbitmq.service';
 

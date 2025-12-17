@@ -5,7 +5,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 import { ProviderFactoryService } from './provider-factory.service';
 import { AIExecutionService } from './ai-execution.service';
 import { ComplexityScorerService } from './complexity-scorer.service';

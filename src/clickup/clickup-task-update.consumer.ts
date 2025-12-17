@@ -14,7 +14,7 @@ import { SentryService } from '../common/sentry/sentry.service';
 import { AuditLogService } from '../common/audit/audit-log.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { RabbitMQConsumerBase } from '../rabbitmq/rabbitmq-consumer.base';
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 import { ClickUpService } from './clickup.service';
 import { ConfigService } from '@nestjs/config';
 

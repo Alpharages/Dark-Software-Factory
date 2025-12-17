@@ -4,7 +4,7 @@
  * Architecture Reference: Data Architecture - Execution model
  */
 
-import { AIProvider, ExecutionStatus } from '@prisma/client';
+import { AIProvider, ExecutionStatus } from '@/prisma/client';
 
 /**
  * Input for starting a new execution

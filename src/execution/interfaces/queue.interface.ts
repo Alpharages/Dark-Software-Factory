@@ -3,7 +3,7 @@
  * Story 2.10: RabbitMQ AI Execution Queue Processing
  */
 
-import { AIProvider } from '@prisma/client';
+import { AIProvider } from '@/prisma/client';
 
 /**
  * Message published to ai-execution-queue

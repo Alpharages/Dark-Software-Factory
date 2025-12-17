@@ -3,7 +3,7 @@ import { PrismaService } from '../database/prisma.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { QualityGatesService } from './quality-gates.service';
 import { QaOrchestratorService } from './qa-orchestrator.service';
-import { TicketStatus } from '@prisma/client';
+import { TicketStatus } from '@/prisma/client';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { QA_METRICS } from '../common/metrics/metrics.constants';
 import { ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';
