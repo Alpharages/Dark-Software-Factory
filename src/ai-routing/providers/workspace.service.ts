@@ -95,6 +95,35 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     repositoryUrl: string,
     _baseBranch: string = 'main',
   ): Promise<IWorkspaceInfo> {
+    // Check if workspace already exists for this execution
+    const existingWorkspace = await this.prisma.workspace.findUnique({
+      where: { execution_id: executionId },
+    });
+
+    if (existingWorkspace) {
+      // If workspace exists and is in a usable state, return it
+      if (
+        existingWorkspace.status === WorkspaceStatus.READY ||
+        existingWorkspace.status === WorkspaceStatus.IN_USE
+      ) {
+        this.logger.log(
+          `[${executionId}] Reusing existing workspace: ${existingWorkspace.workspace_path}`,
+        );
+        return this.mapToWorkspaceInfo(existingWorkspace);
+      }
+
+      // If workspace exists but is failed/cleaned, clean it up first
+      if (
+        existingWorkspace.status === WorkspaceStatus.FAILED ||
+        existingWorkspace.status === WorkspaceStatus.CLEANED
+      ) {
+        this.logger.warn(
+          `[${executionId}] Existing workspace in ${existingWorkspace.status} state, recreating`,
+        );
+        await this.cleanupWorkspace(executionId, true);
+      }
+    }
+
     // Check concurrency limit
     const activeCount = await this.getActiveCount();
     if (activeCount >= this.maxConcurrent) {

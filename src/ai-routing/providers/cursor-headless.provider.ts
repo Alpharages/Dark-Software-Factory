@@ -23,6 +23,9 @@ import {
   IProviderHealthStatus,
   AIErrorCode,
   IAIExecutionError,
+  IAIPromptExecutor,
+  IAIPromptExecutionInput,
+  IAIPromptExecutionResult,
 } from '../interfaces';
 import { WorkspaceService } from './workspace.service';
 import { CircuitBreaker, CircuitState } from './circuit-breaker';
@@ -30,7 +33,7 @@ import { CircuitBreaker, CircuitState } from './circuit-breaker';
 const execFileAsync = promisify(execFile);
 
 @Injectable()
-export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
+export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, OnModuleInit {
   private readonly logger = new Logger(CursorHeadlessProvider.name);
 
   readonly provider = AIProvider.CURSOR_HEADLESS;
@@ -252,6 +255,59 @@ export class CursorHeadlessProvider implements IAIProvider, OnModuleInit {
     // Workspace cleanup is now handled by GitHubCommitOrchestrator after push
     // This allows QA and commit operations to use the workspace
     // await this.workspace.cleanupWorkspace(executionId, true);
+  }
+
+  /**
+   * Execute AI prompt on existing workspace (Standalone method)
+   * NEW: Implements IAIPromptExecutor interface
+   *
+   * This method allows any module to execute AI prompts on existing workspaces
+   * without managing workspace lifecycle or triggering execution completion.
+   *
+   * Use cases:
+   * - Commit message generation
+   * - PR description generation
+   * - Code review comments
+   * - Documentation generation
+   */
+  async executePrompt(input: IAIPromptExecutionInput): Promise<IAIPromptExecutionResult> {
+    const { workspacePath, prompt, timeoutMs, contextFiles } = input;
+    const timeout = timeoutMs || this.defaultTimeoutMs;
+    const startTime = Date.now();
+
+    this.logger.log(`Executing standalone prompt on workspace: ${workspacePath}`);
+
+    try {
+      // Execute Cursor CLI on existing workspace
+      const result = await this.executeCursorCli(
+        'prompt-execution',
+        workspacePath,
+        prompt,
+        contextFiles,
+        timeout,
+      );
+
+      const durationMs = Date.now() - startTime;
+      this.logger.log(`Prompt execution completed in ${durationMs}ms`);
+
+      return {
+        success: true,
+        response: result.stdout,
+        durationMs,
+      };
+    } catch (error: unknown) {
+      const durationMs = Date.now() - startTime;
+      const parsedError = this.parseError(error);
+
+      this.logger.error(`Prompt execution failed: ${parsedError.message}`);
+
+      return {
+        success: false,
+        response: '',
+        durationMs,
+        error: parsedError,
+      };
+    }
   }
 
   /**
