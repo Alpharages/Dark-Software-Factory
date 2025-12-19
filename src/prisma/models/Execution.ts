@@ -59,6 +59,10 @@ export type ExecutionMinAggregateOutputType = {
   original_provider: $Enums.AIProvider | null;
   error_context: string | null;
   scheduled_retry_at: Date | null;
+  base_branch: string | null;
+  branch_selection_log: string | null;
+  risk_level: $Enums.PRRiskLevel | null;
+  circular_dep_detected: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -83,6 +87,10 @@ export type ExecutionMaxAggregateOutputType = {
   original_provider: $Enums.AIProvider | null;
   error_context: string | null;
   scheduled_retry_at: Date | null;
+  base_branch: string | null;
+  branch_selection_log: string | null;
+  risk_level: $Enums.PRRiskLevel | null;
+  circular_dep_detected: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -109,6 +117,11 @@ export type ExecutionCountAggregateOutputType = {
   original_provider: number;
   error_context: number;
   scheduled_retry_at: number;
+  base_branch: number;
+  branch_selection_log: number;
+  file_modifications: number;
+  risk_level: number;
+  circular_dep_detected: number;
   created_at: number;
   updated_at: number;
   _all: number;
@@ -148,6 +161,10 @@ export type ExecutionMinAggregateInputType = {
   original_provider?: true;
   error_context?: true;
   scheduled_retry_at?: true;
+  base_branch?: true;
+  branch_selection_log?: true;
+  risk_level?: true;
+  circular_dep_detected?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -172,6 +189,10 @@ export type ExecutionMaxAggregateInputType = {
   original_provider?: true;
   error_context?: true;
   scheduled_retry_at?: true;
+  base_branch?: true;
+  branch_selection_log?: true;
+  risk_level?: true;
+  circular_dep_detected?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -198,6 +219,11 @@ export type ExecutionCountAggregateInputType = {
   original_provider?: true;
   error_context?: true;
   scheduled_retry_at?: true;
+  base_branch?: true;
+  branch_selection_log?: true;
+  file_modifications?: true;
+  risk_level?: true;
+  circular_dep_detected?: true;
   created_at?: true;
   updated_at?: true;
   _all?: true;
@@ -314,6 +340,11 @@ export type ExecutionGroupByOutputType = {
   original_provider: $Enums.AIProvider | null;
   error_context: string | null;
   scheduled_retry_at: Date | null;
+  base_branch: string | null;
+  branch_selection_log: string | null;
+  file_modifications: runtime.JsonValue | null;
+  risk_level: $Enums.PRRiskLevel | null;
+  circular_dep_detected: boolean;
   created_at: Date;
   updated_at: Date;
   _count: ExecutionCountAggregateOutputType | null;
@@ -360,12 +391,24 @@ export type ExecutionWhereInput = {
   original_provider?: Prisma.EnumAIProviderNullableFilter<'Execution'> | $Enums.AIProvider | null;
   error_context?: Prisma.StringNullableFilter<'Execution'> | string | null;
   scheduled_retry_at?: Prisma.DateTimeNullableFilter<'Execution'> | Date | string | null;
+  base_branch?: Prisma.StringNullableFilter<'Execution'> | string | null;
+  branch_selection_log?: Prisma.StringNullableFilter<'Execution'> | string | null;
+  file_modifications?: Prisma.JsonNullableFilter<'Execution'>;
+  risk_level?: Prisma.EnumPRRiskLevelNullableFilter<'Execution'> | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
   created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
   qa_result?: Prisma.XOR<
     Prisma.QAResultNullableScalarRelationFilter,
     Prisma.QAResultWhereInput
+  > | null;
+  aiDecisionLogs?: Prisma.AIDecisionLogListRelationFilter;
+  fileLocks?: Prisma.FileLockListRelationFilter;
+  aiCostLogs?: Prisma.AICostLogListRelationFilter;
+  archive?: Prisma.XOR<
+    Prisma.WorkspaceArchiveNullableScalarRelationFilter,
+    Prisma.WorkspaceArchiveWhereInput
   > | null;
 };
 
@@ -391,10 +434,19 @@ export type ExecutionOrderByWithRelationInput = {
   original_provider?: Prisma.SortOrderInput | Prisma.SortOrder;
   error_context?: Prisma.SortOrderInput | Prisma.SortOrder;
   scheduled_retry_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  base_branch?: Prisma.SortOrderInput | Prisma.SortOrder;
+  branch_selection_log?: Prisma.SortOrderInput | Prisma.SortOrder;
+  file_modifications?: Prisma.SortOrderInput | Prisma.SortOrder;
+  risk_level?: Prisma.SortOrderInput | Prisma.SortOrder;
+  circular_dep_detected?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   ticket?: Prisma.TicketOrderByWithRelationInput;
   qa_result?: Prisma.QAResultOrderByWithRelationInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogOrderByRelationAggregateInput;
+  fileLocks?: Prisma.FileLockOrderByRelationAggregateInput;
+  aiCostLogs?: Prisma.AICostLogOrderByRelationAggregateInput;
+  archive?: Prisma.WorkspaceArchiveOrderByWithRelationInput;
 };
 
 export type ExecutionWhereUniqueInput = Prisma.AtLeast<
@@ -423,12 +475,24 @@ export type ExecutionWhereUniqueInput = Prisma.AtLeast<
     original_provider?: Prisma.EnumAIProviderNullableFilter<'Execution'> | $Enums.AIProvider | null;
     error_context?: Prisma.StringNullableFilter<'Execution'> | string | null;
     scheduled_retry_at?: Prisma.DateTimeNullableFilter<'Execution'> | Date | string | null;
+    base_branch?: Prisma.StringNullableFilter<'Execution'> | string | null;
+    branch_selection_log?: Prisma.StringNullableFilter<'Execution'> | string | null;
+    file_modifications?: Prisma.JsonNullableFilter<'Execution'>;
+    risk_level?: Prisma.EnumPRRiskLevelNullableFilter<'Execution'> | $Enums.PRRiskLevel | null;
+    circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
     created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
     ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
     qa_result?: Prisma.XOR<
       Prisma.QAResultNullableScalarRelationFilter,
       Prisma.QAResultWhereInput
+    > | null;
+    aiDecisionLogs?: Prisma.AIDecisionLogListRelationFilter;
+    fileLocks?: Prisma.FileLockListRelationFilter;
+    aiCostLogs?: Prisma.AICostLogListRelationFilter;
+    archive?: Prisma.XOR<
+      Prisma.WorkspaceArchiveNullableScalarRelationFilter,
+      Prisma.WorkspaceArchiveWhereInput
     > | null;
   },
   'id'
@@ -456,6 +520,11 @@ export type ExecutionOrderByWithAggregationInput = {
   original_provider?: Prisma.SortOrderInput | Prisma.SortOrder;
   error_context?: Prisma.SortOrderInput | Prisma.SortOrder;
   scheduled_retry_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  base_branch?: Prisma.SortOrderInput | Prisma.SortOrder;
+  branch_selection_log?: Prisma.SortOrderInput | Prisma.SortOrder;
+  file_modifications?: Prisma.SortOrderInput | Prisma.SortOrder;
+  risk_level?: Prisma.SortOrderInput | Prisma.SortOrder;
+  circular_dep_detected?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   _count?: Prisma.ExecutionCountOrderByAggregateInput;
@@ -501,6 +570,14 @@ export type ExecutionScalarWhereWithAggregatesInput = {
     | Date
     | string
     | null;
+  base_branch?: Prisma.StringNullableWithAggregatesFilter<'Execution'> | string | null;
+  branch_selection_log?: Prisma.StringNullableWithAggregatesFilter<'Execution'> | string | null;
+  file_modifications?: Prisma.JsonNullableWithAggregatesFilter<'Execution'>;
+  risk_level?:
+    | Prisma.EnumPRRiskLevelNullableWithAggregatesFilter<'Execution'>
+    | $Enums.PRRiskLevel
+    | null;
+  circular_dep_detected?: Prisma.BoolWithAggregatesFilter<'Execution'> | boolean;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'Execution'> | Date | string;
 };
@@ -526,10 +603,19 @@ export type ExecutionCreateInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput;
 };
 
 export type ExecutionUncheckedCreateInput = {
@@ -554,9 +640,18 @@ export type ExecutionUncheckedCreateInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput;
 };
 
 export type ExecutionUpdateInput = {
@@ -583,10 +678,19 @@ export type ExecutionUpdateInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput;
 };
 
 export type ExecutionUncheckedUpdateInput = {
@@ -614,9 +718,18 @@ export type ExecutionUncheckedUpdateInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput;
 };
 
 export type ExecutionCreateManyInput = {
@@ -641,6 +754,11 @@ export type ExecutionCreateManyInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
 };
@@ -669,6 +787,11 @@ export type ExecutionUpdateManyMutationInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -698,6 +821,11 @@ export type ExecutionUncheckedUpdateManyInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -734,6 +862,11 @@ export type ExecutionCountOrderByAggregateInput = {
   original_provider?: Prisma.SortOrder;
   error_context?: Prisma.SortOrder;
   scheduled_retry_at?: Prisma.SortOrder;
+  base_branch?: Prisma.SortOrder;
+  branch_selection_log?: Prisma.SortOrder;
+  file_modifications?: Prisma.SortOrder;
+  risk_level?: Prisma.SortOrder;
+  circular_dep_detected?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -765,6 +898,10 @@ export type ExecutionMaxOrderByAggregateInput = {
   original_provider?: Prisma.SortOrder;
   error_context?: Prisma.SortOrder;
   scheduled_retry_at?: Prisma.SortOrder;
+  base_branch?: Prisma.SortOrder;
+  branch_selection_log?: Prisma.SortOrder;
+  risk_level?: Prisma.SortOrder;
+  circular_dep_detected?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -789,6 +926,10 @@ export type ExecutionMinOrderByAggregateInput = {
   original_provider?: Prisma.SortOrder;
   error_context?: Prisma.SortOrder;
   scheduled_retry_at?: Prisma.SortOrder;
+  base_branch?: Prisma.SortOrder;
+  branch_selection_log?: Prisma.SortOrder;
+  risk_level?: Prisma.SortOrder;
+  circular_dep_detected?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -803,6 +944,11 @@ export type ExecutionSumOrderByAggregateInput = {
 export type ExecutionScalarRelationFilter = {
   is?: Prisma.ExecutionWhereInput;
   isNot?: Prisma.ExecutionWhereInput;
+};
+
+export type ExecutionNullableScalarRelationFilter = {
+  is?: Prisma.ExecutionWhereInput | null;
+  isNot?: Prisma.ExecutionWhereInput | null;
 };
 
 export type ExecutionCreateNestedManyWithoutTicketInput = {
@@ -931,6 +1077,10 @@ export type NullableEnumAIProviderFieldUpdateOperationsInput = {
   set?: $Enums.AIProvider | null;
 };
 
+export type NullableEnumPRRiskLevelFieldUpdateOperationsInput = {
+  set?: $Enums.PRRiskLevel | null;
+};
+
 export type ExecutionCreateNestedOneWithoutQa_resultInput = {
   create?: Prisma.XOR<
     Prisma.ExecutionCreateWithoutQa_resultInput,
@@ -957,6 +1107,114 @@ export type ExecutionUpdateOneRequiredWithoutQa_resultNestedInput = {
   >;
 };
 
+export type ExecutionCreateNestedOneWithoutAiDecisionLogsInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiDecisionLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiDecisionLogsInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutAiDecisionLogsInput;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+};
+
+export type ExecutionUpdateOneWithoutAiDecisionLogsNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiDecisionLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiDecisionLogsInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutAiDecisionLogsInput;
+  upsert?: Prisma.ExecutionUpsertWithoutAiDecisionLogsInput;
+  disconnect?: Prisma.ExecutionWhereInput | boolean;
+  delete?: Prisma.ExecutionWhereInput | boolean;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.ExecutionUpdateToOneWithWhereWithoutAiDecisionLogsInput,
+      Prisma.ExecutionUpdateWithoutAiDecisionLogsInput
+    >,
+    Prisma.ExecutionUncheckedUpdateWithoutAiDecisionLogsInput
+  >;
+};
+
+export type ExecutionCreateNestedOneWithoutFileLocksInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutFileLocksInput,
+    Prisma.ExecutionUncheckedCreateWithoutFileLocksInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutFileLocksInput;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+};
+
+export type ExecutionUpdateOneRequiredWithoutFileLocksNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutFileLocksInput,
+    Prisma.ExecutionUncheckedCreateWithoutFileLocksInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutFileLocksInput;
+  upsert?: Prisma.ExecutionUpsertWithoutFileLocksInput;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.ExecutionUpdateToOneWithWhereWithoutFileLocksInput,
+      Prisma.ExecutionUpdateWithoutFileLocksInput
+    >,
+    Prisma.ExecutionUncheckedUpdateWithoutFileLocksInput
+  >;
+};
+
+export type ExecutionCreateNestedOneWithoutAiCostLogsInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiCostLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiCostLogsInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutAiCostLogsInput;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+};
+
+export type ExecutionUpdateOneWithoutAiCostLogsNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiCostLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiCostLogsInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutAiCostLogsInput;
+  upsert?: Prisma.ExecutionUpsertWithoutAiCostLogsInput;
+  disconnect?: Prisma.ExecutionWhereInput | boolean;
+  delete?: Prisma.ExecutionWhereInput | boolean;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.ExecutionUpdateToOneWithWhereWithoutAiCostLogsInput,
+      Prisma.ExecutionUpdateWithoutAiCostLogsInput
+    >,
+    Prisma.ExecutionUncheckedUpdateWithoutAiCostLogsInput
+  >;
+};
+
+export type ExecutionCreateNestedOneWithoutArchiveInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutArchiveInput,
+    Prisma.ExecutionUncheckedCreateWithoutArchiveInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutArchiveInput;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+};
+
+export type ExecutionUpdateOneRequiredWithoutArchiveNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutArchiveInput,
+    Prisma.ExecutionUncheckedCreateWithoutArchiveInput
+  >;
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutArchiveInput;
+  upsert?: Prisma.ExecutionUpsertWithoutArchiveInput;
+  connect?: Prisma.ExecutionWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.ExecutionUpdateToOneWithWhereWithoutArchiveInput,
+      Prisma.ExecutionUpdateWithoutArchiveInput
+    >,
+    Prisma.ExecutionUncheckedUpdateWithoutArchiveInput
+  >;
+};
+
 export type ExecutionCreateWithoutTicketInput = {
   id?: string;
   ai_provider: $Enums.AIProvider;
@@ -978,9 +1236,18 @@ export type ExecutionCreateWithoutTicketInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput;
 };
 
 export type ExecutionUncheckedCreateWithoutTicketInput = {
@@ -1004,9 +1271,18 @@ export type ExecutionUncheckedCreateWithoutTicketInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput;
 };
 
 export type ExecutionCreateOrConnectWithoutTicketInput = {
@@ -1075,6 +1351,11 @@ export type ExecutionScalarWhereInput = {
   original_provider?: Prisma.EnumAIProviderNullableFilter<'Execution'> | $Enums.AIProvider | null;
   error_context?: Prisma.StringNullableFilter<'Execution'> | string | null;
   scheduled_retry_at?: Prisma.DateTimeNullableFilter<'Execution'> | Date | string | null;
+  base_branch?: Prisma.StringNullableFilter<'Execution'> | string | null;
+  branch_selection_log?: Prisma.StringNullableFilter<'Execution'> | string | null;
+  file_modifications?: Prisma.JsonNullableFilter<'Execution'>;
+  risk_level?: Prisma.EnumPRRiskLevelNullableFilter<'Execution'> | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
   created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
 };
@@ -1100,9 +1381,18 @@ export type ExecutionCreateWithoutQa_resultInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput;
 };
 
 export type ExecutionUncheckedCreateWithoutQa_resultInput = {
@@ -1127,8 +1417,17 @@ export type ExecutionUncheckedCreateWithoutQa_resultInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput;
 };
 
 export type ExecutionCreateOrConnectWithoutQa_resultInput = {
@@ -1183,9 +1482,18 @@ export type ExecutionUpdateWithoutQa_resultInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput;
 };
 
 export type ExecutionUncheckedUpdateWithoutQa_resultInput = {
@@ -1213,8 +1521,713 @@ export type ExecutionUncheckedUpdateWithoutQa_resultInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput;
+};
+
+export type ExecutionCreateWithoutAiDecisionLogsInput = {
+  id?: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
+  qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput;
+};
+
+export type ExecutionUncheckedCreateWithoutAiDecisionLogsInput = {
+  id?: string;
+  ticket_id: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput;
+};
+
+export type ExecutionCreateOrConnectWithoutAiDecisionLogsInput = {
+  where: Prisma.ExecutionWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiDecisionLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiDecisionLogsInput
+  >;
+};
+
+export type ExecutionUpsertWithoutAiDecisionLogsInput = {
+  update: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutAiDecisionLogsInput,
+    Prisma.ExecutionUncheckedUpdateWithoutAiDecisionLogsInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiDecisionLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiDecisionLogsInput
+  >;
+  where?: Prisma.ExecutionWhereInput;
+};
+
+export type ExecutionUpdateToOneWithWhereWithoutAiDecisionLogsInput = {
+  where?: Prisma.ExecutionWhereInput;
+  data: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutAiDecisionLogsInput,
+    Prisma.ExecutionUncheckedUpdateWithoutAiDecisionLogsInput
+  >;
+};
+
+export type ExecutionUpdateWithoutAiDecisionLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
+  qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput;
+};
+
+export type ExecutionUncheckedUpdateWithoutAiDecisionLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput;
+};
+
+export type ExecutionCreateWithoutFileLocksInput = {
+  id?: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
+  qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput;
+};
+
+export type ExecutionUncheckedCreateWithoutFileLocksInput = {
+  id?: string;
+  ticket_id: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput;
+};
+
+export type ExecutionCreateOrConnectWithoutFileLocksInput = {
+  where: Prisma.ExecutionWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutFileLocksInput,
+    Prisma.ExecutionUncheckedCreateWithoutFileLocksInput
+  >;
+};
+
+export type ExecutionUpsertWithoutFileLocksInput = {
+  update: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutFileLocksInput,
+    Prisma.ExecutionUncheckedUpdateWithoutFileLocksInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutFileLocksInput,
+    Prisma.ExecutionUncheckedCreateWithoutFileLocksInput
+  >;
+  where?: Prisma.ExecutionWhereInput;
+};
+
+export type ExecutionUpdateToOneWithWhereWithoutFileLocksInput = {
+  where?: Prisma.ExecutionWhereInput;
+  data: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutFileLocksInput,
+    Prisma.ExecutionUncheckedUpdateWithoutFileLocksInput
+  >;
+};
+
+export type ExecutionUpdateWithoutFileLocksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
+  qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput;
+};
+
+export type ExecutionUncheckedUpdateWithoutFileLocksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput;
+};
+
+export type ExecutionCreateWithoutAiCostLogsInput = {
+  id?: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
+  qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput;
+};
+
+export type ExecutionUncheckedCreateWithoutAiCostLogsInput = {
+  id?: string;
+  ticket_id: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput;
+};
+
+export type ExecutionCreateOrConnectWithoutAiCostLogsInput = {
+  where: Prisma.ExecutionWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiCostLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiCostLogsInput
+  >;
+};
+
+export type ExecutionUpsertWithoutAiCostLogsInput = {
+  update: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutAiCostLogsInput,
+    Prisma.ExecutionUncheckedUpdateWithoutAiCostLogsInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutAiCostLogsInput,
+    Prisma.ExecutionUncheckedCreateWithoutAiCostLogsInput
+  >;
+  where?: Prisma.ExecutionWhereInput;
+};
+
+export type ExecutionUpdateToOneWithWhereWithoutAiCostLogsInput = {
+  where?: Prisma.ExecutionWhereInput;
+  data: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutAiCostLogsInput,
+    Prisma.ExecutionUncheckedUpdateWithoutAiCostLogsInput
+  >;
+};
+
+export type ExecutionUpdateWithoutAiCostLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
+  qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput;
+};
+
+export type ExecutionUncheckedUpdateWithoutAiCostLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput;
+};
+
+export type ExecutionCreateWithoutArchiveInput = {
+  id?: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
+  qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput;
+};
+
+export type ExecutionUncheckedCreateWithoutArchiveInput = {
+  id?: string;
+  ticket_id: string;
+  ai_provider: $Enums.AIProvider;
+  prompt: string;
+  status?: $Enums.ExecutionStatus;
+  confidence_score?: number | null;
+  started_at?: Date | string | null;
+  completed_at?: Date | string | null;
+  failed_at?: Date | string | null;
+  error_message?: string | null;
+  code_output?: string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: number;
+  max_retries?: number;
+  complexity_score?: number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: string | null;
+  fallback_used?: boolean;
+  original_provider?: $Enums.AIProvider | null;
+  error_context?: string | null;
+  scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput;
+  fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput;
+};
+
+export type ExecutionCreateOrConnectWithoutArchiveInput = {
+  where: Prisma.ExecutionWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutArchiveInput,
+    Prisma.ExecutionUncheckedCreateWithoutArchiveInput
+  >;
+};
+
+export type ExecutionUpsertWithoutArchiveInput = {
+  update: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutArchiveInput,
+    Prisma.ExecutionUncheckedUpdateWithoutArchiveInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ExecutionCreateWithoutArchiveInput,
+    Prisma.ExecutionUncheckedCreateWithoutArchiveInput
+  >;
+  where?: Prisma.ExecutionWhereInput;
+};
+
+export type ExecutionUpdateToOneWithWhereWithoutArchiveInput = {
+  where?: Prisma.ExecutionWhereInput;
+  data: Prisma.XOR<
+    Prisma.ExecutionUpdateWithoutArchiveInput,
+    Prisma.ExecutionUncheckedUpdateWithoutArchiveInput
+  >;
+};
+
+export type ExecutionUpdateWithoutArchiveInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
+  qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput;
+};
+
+export type ExecutionUncheckedUpdateWithoutArchiveInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider;
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus;
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number;
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  original_provider?:
+    | Prisma.NullableEnumAIProviderFieldUpdateOperationsInput
+    | $Enums.AIProvider
+    | null;
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput;
 };
 
 export type ExecutionCreateManyTicketInput = {
@@ -1238,6 +2251,11 @@ export type ExecutionCreateManyTicketInput = {
   original_provider?: $Enums.AIProvider | null;
   error_context?: string | null;
   scheduled_retry_at?: Date | string | null;
+  base_branch?: string | null;
+  branch_selection_log?: string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: $Enums.PRRiskLevel | null;
+  circular_dep_detected?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
 };
@@ -1266,9 +2284,18 @@ export type ExecutionUpdateWithoutTicketInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput;
 };
 
 export type ExecutionUncheckedUpdateWithoutTicketInput = {
@@ -1295,9 +2322,18 @@ export type ExecutionUncheckedUpdateWithoutTicketInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput;
+  aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput;
+  archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput;
 };
 
 export type ExecutionUncheckedUpdateManyWithoutTicketInput = {
@@ -1324,8 +2360,70 @@ export type ExecutionUncheckedUpdateManyWithoutTicketInput = {
     | null;
   error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+/**
+ * Count Type ExecutionCountOutputType
+ */
+
+export type ExecutionCountOutputType = {
+  aiDecisionLogs: number;
+  fileLocks: number;
+  aiCostLogs: number;
+};
+
+export type ExecutionCountOutputTypeSelect<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  aiDecisionLogs?: boolean | ExecutionCountOutputTypeCountAiDecisionLogsArgs;
+  fileLocks?: boolean | ExecutionCountOutputTypeCountFileLocksArgs;
+  aiCostLogs?: boolean | ExecutionCountOutputTypeCountAiCostLogsArgs;
+};
+
+/**
+ * ExecutionCountOutputType without action
+ */
+export type ExecutionCountOutputTypeDefaultArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the ExecutionCountOutputType
+   */
+  select?: Prisma.ExecutionCountOutputTypeSelect<ExtArgs> | null;
+};
+
+/**
+ * ExecutionCountOutputType without action
+ */
+export type ExecutionCountOutputTypeCountAiDecisionLogsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.AIDecisionLogWhereInput;
+};
+
+/**
+ * ExecutionCountOutputType without action
+ */
+export type ExecutionCountOutputTypeCountFileLocksArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.FileLockWhereInput;
+};
+
+/**
+ * ExecutionCountOutputType without action
+ */
+export type ExecutionCountOutputTypeCountAiCostLogsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.AICostLogWhereInput;
 };
 
 export type ExecutionSelect<
@@ -1353,10 +2451,20 @@ export type ExecutionSelect<
     original_provider?: boolean;
     error_context?: boolean;
     scheduled_retry_at?: boolean;
+    base_branch?: boolean;
+    branch_selection_log?: boolean;
+    file_modifications?: boolean;
+    risk_level?: boolean;
+    circular_dep_detected?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
     qa_result?: boolean | Prisma.Execution$qa_resultArgs<ExtArgs>;
+    aiDecisionLogs?: boolean | Prisma.Execution$aiDecisionLogsArgs<ExtArgs>;
+    fileLocks?: boolean | Prisma.Execution$fileLocksArgs<ExtArgs>;
+    aiCostLogs?: boolean | Prisma.Execution$aiCostLogsArgs<ExtArgs>;
+    archive?: boolean | Prisma.Execution$archiveArgs<ExtArgs>;
+    _count?: boolean | Prisma.ExecutionCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['execution']
 >;
@@ -1386,6 +2494,11 @@ export type ExecutionSelectCreateManyAndReturn<
     original_provider?: boolean;
     error_context?: boolean;
     scheduled_retry_at?: boolean;
+    base_branch?: boolean;
+    branch_selection_log?: boolean;
+    file_modifications?: boolean;
+    risk_level?: boolean;
+    circular_dep_detected?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -1418,6 +2531,11 @@ export type ExecutionSelectUpdateManyAndReturn<
     original_provider?: boolean;
     error_context?: boolean;
     scheduled_retry_at?: boolean;
+    base_branch?: boolean;
+    branch_selection_log?: boolean;
+    file_modifications?: boolean;
+    risk_level?: boolean;
+    circular_dep_detected?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -1447,6 +2565,11 @@ export type ExecutionSelectScalar = {
   original_provider?: boolean;
   error_context?: boolean;
   scheduled_retry_at?: boolean;
+  base_branch?: boolean;
+  branch_selection_log?: boolean;
+  file_modifications?: boolean;
+  risk_level?: boolean;
+  circular_dep_detected?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
 };
@@ -1475,6 +2598,11 @@ export type ExecutionOmit<
   | 'original_provider'
   | 'error_context'
   | 'scheduled_retry_at'
+  | 'base_branch'
+  | 'branch_selection_log'
+  | 'file_modifications'
+  | 'risk_level'
+  | 'circular_dep_detected'
   | 'created_at'
   | 'updated_at',
   ExtArgs['result']['execution']
@@ -1484,6 +2612,11 @@ export type ExecutionInclude<
 > = {
   ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
   qa_result?: boolean | Prisma.Execution$qa_resultArgs<ExtArgs>;
+  aiDecisionLogs?: boolean | Prisma.Execution$aiDecisionLogsArgs<ExtArgs>;
+  fileLocks?: boolean | Prisma.Execution$fileLocksArgs<ExtArgs>;
+  aiCostLogs?: boolean | Prisma.Execution$aiCostLogsArgs<ExtArgs>;
+  archive?: boolean | Prisma.Execution$archiveArgs<ExtArgs>;
+  _count?: boolean | Prisma.ExecutionCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type ExecutionIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
@@ -1503,6 +2636,10 @@ export type $ExecutionPayload<
   objects: {
     ticket: Prisma.$TicketPayload<ExtArgs>;
     qa_result: Prisma.$QAResultPayload<ExtArgs> | null;
+    aiDecisionLogs: Prisma.$AIDecisionLogPayload<ExtArgs>[];
+    fileLocks: Prisma.$FileLockPayload<ExtArgs>[];
+    aiCostLogs: Prisma.$AICostLogPayload<ExtArgs>[];
+    archive: Prisma.$WorkspaceArchivePayload<ExtArgs> | null;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1527,6 +2664,11 @@ export type $ExecutionPayload<
       original_provider: $Enums.AIProvider | null;
       error_context: string | null;
       scheduled_retry_at: Date | null;
+      base_branch: string | null;
+      branch_selection_log: string | null;
+      file_modifications: runtime.JsonValue | null;
+      risk_level: $Enums.PRRiskLevel | null;
+      circular_dep_detected: boolean;
       created_at: Date;
       updated_at: Date;
     },
@@ -2094,6 +3236,52 @@ export interface Prisma__ExecutionClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  aiDecisionLogs<T extends Prisma.Execution$aiDecisionLogsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Execution$aiDecisionLogsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$AIDecisionLogPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  fileLocks<T extends Prisma.Execution$fileLocksArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Execution$fileLocksArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$FileLockPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  aiCostLogs<T extends Prisma.Execution$aiCostLogsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Execution$aiCostLogsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$AICostLogPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  archive<T extends Prisma.Execution$archiveArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Execution$archiveArgs<ExtArgs>>,
+  ): Prisma.Prisma__WorkspaceArchiveClient<
+    runtime.Types.Result.GetResult<
+      Prisma.$WorkspaceArchivePayload<ExtArgs>,
+      T,
+      'findUniqueOrThrow',
+      GlobalOmitOptions
+    > | null,
+    null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2146,6 +3334,11 @@ export interface ExecutionFieldRefs {
   readonly original_provider: Prisma.FieldRef<'Execution', 'AIProvider'>;
   readonly error_context: Prisma.FieldRef<'Execution', 'String'>;
   readonly scheduled_retry_at: Prisma.FieldRef<'Execution', 'DateTime'>;
+  readonly base_branch: Prisma.FieldRef<'Execution', 'String'>;
+  readonly branch_selection_log: Prisma.FieldRef<'Execution', 'String'>;
+  readonly file_modifications: Prisma.FieldRef<'Execution', 'Json'>;
+  readonly risk_level: Prisma.FieldRef<'Execution', 'PRRiskLevel'>;
+  readonly circular_dep_detected: Prisma.FieldRef<'Execution', 'Boolean'>;
   readonly created_at: Prisma.FieldRef<'Execution', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'Execution', 'DateTime'>;
 }
@@ -2595,6 +3788,107 @@ export type Execution$qa_resultArgs<
    */
   include?: Prisma.QAResultInclude<ExtArgs> | null;
   where?: Prisma.QAResultWhereInput;
+};
+
+/**
+ * Execution.aiDecisionLogs
+ */
+export type Execution$aiDecisionLogsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the AIDecisionLog
+   */
+  select?: Prisma.AIDecisionLogSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the AIDecisionLog
+   */
+  omit?: Prisma.AIDecisionLogOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AIDecisionLogInclude<ExtArgs> | null;
+  where?: Prisma.AIDecisionLogWhereInput;
+  orderBy?:
+    | Prisma.AIDecisionLogOrderByWithRelationInput
+    | Prisma.AIDecisionLogOrderByWithRelationInput[];
+  cursor?: Prisma.AIDecisionLogWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.AIDecisionLogScalarFieldEnum | Prisma.AIDecisionLogScalarFieldEnum[];
+};
+
+/**
+ * Execution.fileLocks
+ */
+export type Execution$fileLocksArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the FileLock
+   */
+  select?: Prisma.FileLockSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the FileLock
+   */
+  omit?: Prisma.FileLockOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FileLockInclude<ExtArgs> | null;
+  where?: Prisma.FileLockWhereInput;
+  orderBy?: Prisma.FileLockOrderByWithRelationInput | Prisma.FileLockOrderByWithRelationInput[];
+  cursor?: Prisma.FileLockWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.FileLockScalarFieldEnum | Prisma.FileLockScalarFieldEnum[];
+};
+
+/**
+ * Execution.aiCostLogs
+ */
+export type Execution$aiCostLogsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the AICostLog
+   */
+  select?: Prisma.AICostLogSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the AICostLog
+   */
+  omit?: Prisma.AICostLogOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AICostLogInclude<ExtArgs> | null;
+  where?: Prisma.AICostLogWhereInput;
+  orderBy?: Prisma.AICostLogOrderByWithRelationInput | Prisma.AICostLogOrderByWithRelationInput[];
+  cursor?: Prisma.AICostLogWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.AICostLogScalarFieldEnum | Prisma.AICostLogScalarFieldEnum[];
+};
+
+/**
+ * Execution.archive
+ */
+export type Execution$archiveArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the WorkspaceArchive
+   */
+  select?: Prisma.WorkspaceArchiveSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the WorkspaceArchive
+   */
+  omit?: Prisma.WorkspaceArchiveOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WorkspaceArchiveInclude<ExtArgs> | null;
+  where?: Prisma.WorkspaceArchiveWhereInput;
 };
 
 /**

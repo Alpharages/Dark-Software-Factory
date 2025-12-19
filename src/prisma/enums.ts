@@ -26,6 +26,40 @@ export const TicketStatus = {
 
 export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus];
 
+export const FileLockStatus = {
+  LOCKED: 'LOCKED',
+  RELEASED: 'RELEASED',
+} as const;
+
+export type FileLockStatus = (typeof FileLockStatus)[keyof typeof FileLockStatus];
+
+export const DependencyStatus = {
+  WAITING: 'WAITING',
+  BLOCKED: 'BLOCKED',
+  RESOLVED: 'RESOLVED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type DependencyStatus = (typeof DependencyStatus)[keyof typeof DependencyStatus];
+
+export const ArchiveStatus = {
+  PENDING: 'PENDING',
+  ARCHIVING: 'ARCHIVING',
+  ARCHIVED: 'ARCHIVED',
+  FAILED: 'FAILED',
+} as const;
+
+export type ArchiveStatus = (typeof ArchiveStatus)[keyof typeof ArchiveStatus];
+
+export const PRRiskLevel = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  CRITICAL: 'CRITICAL',
+} as const;
+
+export type PRRiskLevel = (typeof PRRiskLevel)[keyof typeof PRRiskLevel];
+
 export const AIProvider = {
   CURSOR_HEADLESS: 'CURSOR_HEADLESS',
   CLAUDE_CODE: 'CLAUDE_CODE',

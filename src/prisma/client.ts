@@ -115,3 +115,28 @@ export type WebhookEvent = Prisma.WebhookEventModel;
  *
  */
 export type Workspace = Prisma.WorkspaceModel;
+/**
+ * Model AIDecisionLog
+ *
+ */
+export type AIDecisionLog = Prisma.AIDecisionLogModel;
+/**
+ * Model FileLock
+ *
+ */
+export type FileLock = Prisma.FileLockModel;
+/**
+ * Model AICostLog
+ *
+ */
+export type AICostLog = Prisma.AICostLogModel;
+/**
+ * Model TicketDependency
+ *
+ */
+export type TicketDependency = Prisma.TicketDependencyModel;
+/**
+ * Model WorkspaceArchive
+ *
+ */
+export type WorkspaceArchive = Prisma.WorkspaceArchiveModel;

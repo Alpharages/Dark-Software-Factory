@@ -1,4 +1,5 @@
 # Architecture Document: AI Dev Tool Orchestrator
+
 ## Dark Software Factory
 
 **Date:** 2025-11-20  
@@ -23,15 +24,18 @@ The AI Dev Tool Orchestrator is a **separate NestJS microservice** that extends 
 ### First Implementation Story
 
 **Command:**
+
 ```bash
 npx @nestjs/cli new ai-dev-orchestrator --package-manager npm
 ```
 
 **Options during setup:**
-- Package manager: npm  
+
+- Package manager: npm
 - Enable strict TypeScript: Yes
 
 **This establishes the base architecture with:**
+
 - ✅ TypeScript configuration with strict mode
 - ✅ NestJS modular structure (controllers, services, modules)
 - ✅ Built-in testing framework (Jest)
@@ -43,27 +47,28 @@ npx @nestjs/cli new ai-dev-orchestrator --package-manager npm
 
 ## Decision Summary Table
 
-| Category | Decision | Version | Rationale | Affects FRs | Provided By |
-|----------|----------|---------|-----------|-------------|-------------|
-| **Foundation** | Separate NestJS Microservice | 10.x | Clean separation from AetherFlow, enterprise structure, protects 80% infrastructure | All 136 FRs | User Decision |
-| **Language** | TypeScript (Strict Mode) | 5.x | Type safety critical for multi-system integration, consistency with AetherFlow | All FRs | NestJS Starter |
-| **Database** | Separate PostgreSQL | 16.x | Service independence, data encapsulation, scalable | FR56-95 (System) | User Decision |
-| **ORM** | Prisma | 5.x | Type-safe queries, migrations, excellent DX | FR56-95 (System) | Recommended |
-| **Message Queue** | RabbitMQ | 3.13.x | Robust message broker, reliable async communication, retry logic | FR60-78, Jobs | User Decision |
-| **Real-time** | Socket.IO | 4.x | Dashboard real-time updates, matches AetherFlow pattern | FR96-115 (Dashboards) | Recommended |
-| **HTTP Client** | Axios | 1.x | AI provider API calls, GitHub, ClickUp integration | FR60-78 (Integration) | Recommended |
-| **Logging** | Winston | 3.x | Structured JSON logging, audit trail | NFR-O1-4 (Observability) | Recommended |
-| **Monitoring** | Prometheus + Grafana | Latest | Metrics exposure, dashboard visualization | NFR-O5-11 (Monitoring) | Recommended |
-| **Error Tracking** | Sentry | Latest | Production error monitoring, alerting | NFR-R4-7 (Reliability) | Recommended |
-| **Testing** | Jest + Supertest | NestJS built-in | Test coverage >80% requirement | NFR-M1 (Maintainability) | NestJS Starter |
-| **Authentication** | Separate Auth Service (JWT) | Custom | Service independence, dedicated auth management | NFR-S1-2 (Security) | User Decision |
-| **Config Management** | @nestjs/config + dotenv | NestJS built-in | Environment-based configuration | NFR-M4 (Maintainability) | NestJS Starter |
-| **Validation** | class-validator + class-transformer | NestJS built-in | Request validation, DTO transformation | NFR-S4 (Security) | NestJS Starter |
-| **API Documentation** | Swagger/OpenAPI | @nestjs/swagger | Internal API documentation for AetherFlow integration | Integration | Recommended |
-| **Deployment** | Docker + Docker Compose | Latest | Containerization, runs alongside AetherFlow | NFR-M7 (Operations) | Recommended |
-| **Code Style** | ESLint + Prettier | NestJS built-in | Code consistency across AI-generated code | NFR-M2 (Maintainability) | NestJS Starter |
+| Category              | Decision                            | Version         | Rationale                                                                           | Affects FRs              | Provided By    |
+| --------------------- | ----------------------------------- | --------------- | ----------------------------------------------------------------------------------- | ------------------------ | -------------- |
+| **Foundation**        | Separate NestJS Microservice        | 10.x            | Clean separation from AetherFlow, enterprise structure, protects 80% infrastructure | All 136 FRs              | User Decision  |
+| **Language**          | TypeScript (Strict Mode)            | 5.x             | Type safety critical for multi-system integration, consistency with AetherFlow      | All FRs                  | NestJS Starter |
+| **Database**          | Separate PostgreSQL                 | 16.x            | Service independence, data encapsulation, scalable                                  | FR56-95 (System)         | User Decision  |
+| **ORM**               | Prisma                              | 5.x             | Type-safe queries, migrations, excellent DX                                         | FR56-95 (System)         | Recommended    |
+| **Message Queue**     | RabbitMQ                            | 3.13.x          | Robust message broker, reliable async communication, retry logic                    | FR60-78, Jobs            | User Decision  |
+| **Real-time**         | Socket.IO                           | 4.x             | Dashboard real-time updates, matches AetherFlow pattern                             | FR96-115 (Dashboards)    | Recommended    |
+| **HTTP Client**       | Axios                               | 1.x             | AI provider API calls, GitHub, ClickUp integration                                  | FR60-78 (Integration)    | Recommended    |
+| **Logging**           | Winston                             | 3.x             | Structured JSON logging, audit trail                                                | NFR-O1-4 (Observability) | Recommended    |
+| **Monitoring**        | Prometheus + Grafana                | Latest          | Metrics exposure, dashboard visualization                                           | NFR-O5-11 (Monitoring)   | Recommended    |
+| **Error Tracking**    | Sentry                              | Latest          | Production error monitoring, alerting                                               | NFR-R4-7 (Reliability)   | Recommended    |
+| **Testing**           | Jest + Supertest                    | NestJS built-in | Test coverage >80% requirement                                                      | NFR-M1 (Maintainability) | NestJS Starter |
+| **Authentication**    | Separate Auth Service (JWT)         | Custom          | Service independence, dedicated auth management                                     | NFR-S1-2 (Security)      | User Decision  |
+| **Config Management** | @nestjs/config + dotenv             | NestJS built-in | Environment-based configuration                                                     | NFR-M4 (Maintainability) | NestJS Starter |
+| **Validation**        | class-validator + class-transformer | NestJS built-in | Request validation, DTO transformation                                              | NFR-S4 (Security)        | NestJS Starter |
+| **API Documentation** | Swagger/OpenAPI                     | @nestjs/swagger | Internal API documentation for AetherFlow integration                               | Integration              | Recommended    |
+| **Deployment**        | Docker + Docker Compose             | Latest          | Containerization, runs alongside AetherFlow                                         | NFR-M7 (Operations)      | Recommended    |
+| **Code Style**        | ESLint + Prettier                   | NestJS built-in | Code consistency across AI-generated code                                           | NFR-M2 (Maintainability) | NestJS Starter |
 
 **Key Architectural Decisions:**
+
 - ✅ **Multi-Provider AI Strategy:** Cursor CLI Headless (primary) + Claude Code (fallback)
 - ✅ **Cursor CLI Headless Mode:** Official approach for AI code generation (not custom APIs)
 - ✅ **Claude Code:** Anthropic's autonomous coding agent as secondary provider for flexibility
@@ -117,11 +122,11 @@ ai-dev-orchestrator/
 │   ├── rabbitmq/                        # RabbitMQ infrastructure
 │   │   ├── rabbitmq.module.ts
 │   │   ├── rabbitmq.service.ts          # Connection management
-│   │   ├── publishers/                   
+│   │   ├── publishers/
 │   │   │   ├── ai-task.publisher.ts     # Publish AI execution tasks
 │   │   │   ├── qa-task.publisher.ts     # Publish QA tasks
 │   │   │   └── deployment-task.publisher.ts
-│   │   └── consumers/                   
+│   │   └── consumers/
 │   │       ├── ai-task.consumer.ts      # Consume and process AI tasks
 │   │       ├── qa-task.consumer.ts      # Consume and process QA tasks
 │   │       └── deployment-task.consumer.ts
@@ -289,14 +294,15 @@ ai-dev-orchestrator/
 
 ### PM Capabilities (FR1-23) → Dashboards & Integration Modules
 
-| FR Range | Capability Area | Architecture Components |
-|----------|----------------|------------------------|
-| FR1-7 | Ticket Creation & Management | `integration/aetherflow.service.ts`, `integration/clickup.service.ts`, `dashboards/pm-dashboard.controller.ts` |
-| FR8-14 | AI Project Orchestration | `execution/execution.service.ts`, `dashboards/pm-dashboard.controller.ts`, `realtime/realtime.gateway.ts` |
-| FR15-19 | Workload & Capacity Management | `metrics/metrics.service.ts`, `dashboards/pm-dashboard.controller.ts`, Alert system |
-| FR20-23 | Client Communication | `integration/clickup.service.ts`, PM dashboard API endpoints |
+| FR Range | Capability Area                | Architecture Components                                                                                        |
+| -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| FR1-7    | Ticket Creation & Management   | `integration/aetherflow.service.ts`, `integration/clickup.service.ts`, `dashboards/pm-dashboard.controller.ts` |
+| FR8-14   | AI Project Orchestration       | `execution/execution.service.ts`, `dashboards/pm-dashboard.controller.ts`, `realtime/realtime.gateway.ts`      |
+| FR15-19  | Workload & Capacity Management | `metrics/metrics.service.ts`, `dashboards/pm-dashboard.controller.ts`, Alert system                            |
+| FR20-23  | Client Communication           | `integration/clickup.service.ts`, PM dashboard API endpoints                                                   |
 
 **Implementation Notes:**
+
 - PM dashboard APIs expose data aggregated from multiple services
 - Real-time Socket.IO updates push execution status to PM dashboards
 - AetherFlow service handles BMAD PM Agent interactions
@@ -305,12 +311,13 @@ ai-dev-orchestrator/
 
 ### Technical Lead Capabilities (FR24-33) → Review Queues & Validation
 
-| FR Range | Capability Area | Architecture Components |
-|----------|----------------|------------------------|
-| FR24-29 | Architecture Validation | `dashboards/orchestrator-dashboard.controller.ts`, Review queue APIs, ADR logging |
-| FR30-33 | AI Capability Management | `ai-routing/routing-strategy.ts`, `execution/execution-tracker.service.ts`, Escalation handlers |
+| FR Range | Capability Area          | Architecture Components                                                                         |
+| -------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| FR24-29  | Architecture Validation  | `dashboards/orchestrator-dashboard.controller.ts`, Review queue APIs, ADR logging               |
+| FR30-33  | AI Capability Management | `ai-routing/routing-strategy.ts`, `execution/execution-tracker.service.ts`, Escalation handlers |
 
 **Implementation Notes:**
+
 - Architecture Decision Records (ADRs) logged in database with AI rationale
 - Review queue prioritization based on risk scoring
 - Escalation triggers when AI confidence score below threshold
@@ -319,12 +326,13 @@ ai-dev-orchestrator/
 
 ### Lead QA Capabilities (FR34-43) → Quality Automation & Dashboards
 
-| FR Range | Capability Area | Architecture Components |
-|----------|----------------|------------------------|
-| FR34-40 | Quality Review & Gates | `qa-automation/quality-gates.service.ts`, `dashboards/qa-dashboard.controller.ts`, Sampling service |
-| FR41-43 | QA Metrics & Analysis | `metrics/metrics.service.ts`, `dashboards/qa-dashboard.controller.ts`, Prometheus metrics |
+| FR Range | Capability Area        | Architecture Components                                                                             |
+| -------- | ---------------------- | --------------------------------------------------------------------------------------------------- |
+| FR34-40  | Quality Review & Gates | `qa-automation/quality-gates.service.ts`, `dashboards/qa-dashboard.controller.ts`, Sampling service |
+| FR41-43  | QA Metrics & Analysis  | `metrics/metrics.service.ts`, `dashboards/qa-dashboard.controller.ts`, Prometheus metrics           |
 
 **Implementation Notes:**
+
 - Statistical sampling implemented with configurable percentage (default 20%)
 - Quality gates configured per project type
 - Bug escape rate tracked via production monitoring integration
@@ -333,13 +341,14 @@ ai-dev-orchestrator/
 
 ### Manager/Leadership Capabilities (FR44-55) → Business Dashboards
 
-| FR Range | Capability Area | Architecture Components |
-|----------|----------------|------------------------|
-| FR44-48 | Business Oversight | `cost-tracking/cost-tracker.service.ts`, `dashboards/cost-dashboard.controller.ts`, Project portfolio APIs |
-| FR49-52 | Workforce Management | `metrics/metrics.service.ts`, Early warning system, `dashboards/decision-dashboard.controller.ts` |
-| FR53-55 | Client Relationship | Client health scoring service, CRM integration endpoints |
+| FR Range | Capability Area      | Architecture Components                                                                                    |
+| -------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| FR44-48  | Business Oversight   | `cost-tracking/cost-tracker.service.ts`, `dashboards/cost-dashboard.controller.ts`, Project portfolio APIs |
+| FR49-52  | Workforce Management | `metrics/metrics.service.ts`, Early warning system, `dashboards/decision-dashboard.controller.ts`          |
+| FR53-55  | Client Relationship  | Client health scoring service, CRM integration endpoints                                                   |
 
 **Implementation Notes:**
+
 - GO/NO-GO decision dashboard pulls from all metrics services
 - Early warning indicators match Pre-mortem analysis risks
 - Cost caps enforced via `cost-tracking/budget-monitor.service.ts`
@@ -348,17 +357,18 @@ ai-dev-orchestrator/
 
 ### AI Orchestrator System (FR56-95) → Core Orchestration Engine
 
-| FR Range | Capability Area | Architecture Components |
-|----------|----------------|------------------------|
-| FR56-59 | Webhook & Task Intake | `webhooks/webhooks.controller.ts`, `ticket-intake/ticket-intake.service.ts`, RabbitMQ publisher |
-| FR60-65 | AI Tool Routing & Execution | `ai-routing/ai-routing.service.ts`, `providers/cursor.provider.ts`, etc., `execution/execution.service.ts` |
-| FR66-71 | Automated QA & Quality Gates | `qa-automation/qa-orchestrator.service.ts`, All QA subservices, RabbitMQ consumer |
-| FR72-78 | GitHub Integration & Deployment | `github/github.service.ts`, `deployment/deployment.service.ts`, CI/CD providers |
-| FR79-84 | Self-Healing & Production Monitoring | `production-monitoring/monitoring.service.ts`, `log-analyzer.service.ts`, Auto-ticket creation |
-| FR85-90 | Cost Tracking & Optimization | `cost-tracking/cost-tracker.service.ts`, `budget-monitor.service.ts`, Real-time cost calculation |
-| FR91-95 | Execution Metrics & Logging | `metrics/metrics.service.ts`, `prometheus.service.ts`, Winston logger, Audit trail |
+| FR Range | Capability Area                      | Architecture Components                                                                                    |
+| -------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| FR56-59  | Webhook & Task Intake                | `webhooks/webhooks.controller.ts`, `ticket-intake/ticket-intake.service.ts`, RabbitMQ publisher            |
+| FR60-65  | AI Tool Routing & Execution          | `ai-routing/ai-routing.service.ts`, `providers/cursor.provider.ts`, etc., `execution/execution.service.ts` |
+| FR66-71  | Automated QA & Quality Gates         | `qa-automation/qa-orchestrator.service.ts`, All QA subservices, RabbitMQ consumer                          |
+| FR72-78  | GitHub Integration & Deployment      | `github/github.service.ts`, `deployment/deployment.service.ts`, CI/CD providers                            |
+| FR79-84  | Self-Healing & Production Monitoring | `production-monitoring/monitoring.service.ts`, `log-analyzer.service.ts`, Auto-ticket creation             |
+| FR85-90  | Cost Tracking & Optimization         | `cost-tracking/cost-tracker.service.ts`, `budget-monitor.service.ts`, Real-time cost calculation           |
+| FR91-95  | Execution Metrics & Logging          | `metrics/metrics.service.ts`, `prometheus.service.ts`, Winston logger, Audit trail                         |
 
 **Implementation Notes:**
+
 - RabbitMQ queues for: `ai-tasks`, `qa-tasks`, `deployment-tasks`, `monitoring-tasks`
 - Each queue has dedicated consumer with retry logic (3 attempts with exponential backoff)
 - All state transitions logged to database and Prometheus metrics
@@ -368,15 +378,16 @@ ai-dev-orchestrator/
 
 ### Dashboard & Monitoring (FR96-115) → Real-Time Interfaces
 
-| FR Range | Capability Area | Architecture Components |
-|----------|----------------|------------------------|
-| FR96-99 | PM Dashboard | `dashboards/pm-dashboard.controller.ts`, Socket.IO events, Dashboard DTOs |
-| FR100-104 | Orchestrator Monitoring | `dashboards/orchestrator-dashboard.controller.ts`, System health endpoints, Queue metrics |
-| FR105-108 | Cost Monitoring Dashboard | `dashboards/cost-dashboard.controller.ts`, Cost aggregation, Trend analysis |
-| FR109-111 | Quality Dashboard | `dashboards/qa-dashboard.controller.ts`, Quality metrics aggregation, Bug rate tracking |
-| FR112-115 | GO/NO-GO Decision Dashboard | `dashboards/decision-dashboard.controller.ts`, Phase gate criteria, Success metrics |
+| FR Range  | Capability Area             | Architecture Components                                                                   |
+| --------- | --------------------------- | ----------------------------------------------------------------------------------------- |
+| FR96-99   | PM Dashboard                | `dashboards/pm-dashboard.controller.ts`, Socket.IO events, Dashboard DTOs                 |
+| FR100-104 | Orchestrator Monitoring     | `dashboards/orchestrator-dashboard.controller.ts`, System health endpoints, Queue metrics |
+| FR105-108 | Cost Monitoring Dashboard   | `dashboards/cost-dashboard.controller.ts`, Cost aggregation, Trend analysis               |
+| FR109-111 | Quality Dashboard           | `dashboards/qa-dashboard.controller.ts`, Quality metrics aggregation, Bug rate tracking   |
+| FR112-115 | GO/NO-GO Decision Dashboard | `dashboards/decision-dashboard.controller.ts`, Phase gate criteria, Success metrics       |
 
 **Implementation Notes:**
+
 - All dashboard controllers expose REST APIs consumed by AetherFlow frontend
 - Socket.IO gateway (`realtime/realtime.gateway.ts`) pushes updates to connected clients
 - Dashboard data refreshes: Real-time (Socket.IO) + Polling fallback (every 30s)
@@ -385,11 +396,12 @@ ai-dev-orchestrator/
 
 ### Knowledge Base (FR116-120) → Phase 2 - Future Architecture
 
-| FR Range | Capability Area | Architecture Components (Phase 2) |
-|----------|----------------|-----------------------------------|
+| FR Range  | Capability Area       | Architecture Components (Phase 2)                                                        |
+| --------- | --------------------- | ---------------------------------------------------------------------------------------- |
 | FR116-120 | Knowledge Base System | `knowledge-base` module (to be built), Vector database integration, AI context injection |
 
 **Phase 2 Design Notes:**
+
 - Consider Pinecone or Weaviate for vector storage
 - Automatic knowledge extraction from successful tickets
 - Context injection into AI prompts before execution
@@ -398,11 +410,12 @@ ai-dev-orchestrator/
 
 ### Client Portal (FR121-127) → Phase 3 - Future Architecture
 
-| FR Range | Capability Area | Architecture Components (Phase 3) |
-|----------|----------------|-----------------------------------|
-| FR121-127 | Client Portal | `client-portal` module (to be built), Separate client-facing API, Transparency views |
+| FR Range  | Capability Area | Architecture Components (Phase 3)                                                    |
+| --------- | --------------- | ------------------------------------------------------------------------------------ |
+| FR121-127 | Client Portal   | `client-portal` module (to be built), Separate client-facing API, Transparency views |
 
 **Phase 3 Design Notes:**
+
 - Separate client-facing REST API with different auth
 - Read-only access to project status, metrics, AI involvement transparency
 - Client preference management (opt-in/opt-out AI)
@@ -411,13 +424,14 @@ ai-dev-orchestrator/
 
 ### Advanced Capabilities (FR128-136) → Phase 3 - Future Architecture
 
-| FR Range | Capability Area | Architecture Components (Phase 3) |
-|----------|----------------|-----------------------------------|
-| FR128-130 | Predictive Analytics | ML models, Historical data analysis, Cost/complexity prediction |
-| FR131-133 | Multi-Provider Strategy | Enhanced routing logic, Fallback providers, Performance comparison |
-| FR134-136 | Advanced Self-Healing | Autonomous fix generation, Testing sandbox, Auto-deployment with rollback |
+| FR Range  | Capability Area         | Architecture Components (Phase 3)                                         |
+| --------- | ----------------------- | ------------------------------------------------------------------------- |
+| FR128-130 | Predictive Analytics    | ML models, Historical data analysis, Cost/complexity prediction           |
+| FR131-133 | Multi-Provider Strategy | Enhanced routing logic, Fallback providers, Performance comparison        |
+| FR134-136 | Advanced Self-Healing   | Autonomous fix generation, Testing sandbox, Auto-deployment with rollback |
 
 **Phase 3 Design Notes:**
+
 - ML models trained on historical project data for predictions
 - Multi-provider routing based on task type, cost, performance, availability
 - Advanced self-healing requires sandboxed test environment for fix validation
@@ -427,6 +441,7 @@ ai-dev-orchestrator/
 ## Technology Stack Details
 
 ### Backend Framework
+
 - **NestJS 10.x** - Enterprise-grade Node.js framework
   - Modular architecture with dependency injection
   - Decorators for clean, declarative code
@@ -434,6 +449,7 @@ ai-dev-orchestrator/
   - Extensive ecosystem of official packages
 
 ### Database Layer
+
 - **PostgreSQL 16.x** - Separate database instance
   - ACID transactions for state management
   - JSON/JSONB support for flexible schemas
@@ -447,6 +463,7 @@ ai-dev-orchestrator/
   - Connection pooling and performance optimization
 
 ### Message Queue
+
 - **RabbitMQ 3.13.x** - Message broker
   - Reliable message delivery with acknowledgments
   - Dead letter queues for failed messages
@@ -461,6 +478,7 @@ ai-dev-orchestrator/
   - Retry logic configuration
 
 ### Real-Time Communication
+
 - **Socket.IO 4.x** - WebSocket library
   - Bidirectional event-based communication
   - Automatic reconnection
@@ -471,6 +489,7 @@ ai-dev-orchestrator/
 ### AI Code Generation - Multi-Provider Strategy
 
 **Primary: Cursor CLI (Headless Mode)**
+
 - Official CLI: `cursor --headless --dir /path --apply "prompt"`
 - Server-side execution (no GUI required)
 - Full repository context awareness
@@ -480,6 +499,7 @@ ai-dev-orchestrator/
 - Supports concurrent execution (multiple workspaces)
 
 **Cursor Headless Features:**
+
 - `--headless`: Runs without GUI (server-ready)
 - `--dir`: Specifies workspace directory
 - `--apply`: AI prompt for code generation
@@ -487,6 +507,7 @@ ai-dev-orchestrator/
 - `--wait`: Wait for completion before exiting
 
 **Secondary: Claude Code (Anthropic)**
+
 - Anthropic's autonomous coding agent
 - Programmatic access to Claude 3.5 Sonnet with extended context
 - Excellent code generation capabilities
@@ -495,6 +516,7 @@ ai-dev-orchestrator/
 - Lower cost per token than some alternatives
 
 **Claude Code Integration:**
+
 - API-based integration via Anthropic SDK
 - Agentic workflow: prompt → plan → code → verify
 - Extended context window (200K+ tokens)
@@ -503,6 +525,7 @@ ai-dev-orchestrator/
 - Structured output for code changes
 
 **Multi-Provider Strategy:**
+
 ```typescript
 // Provider selection logic
 async function selectProvider(ticket: Ticket): AIProvider {
@@ -510,17 +533,18 @@ async function selectProvider(ticket: Ticket): AIProvider {
   if (await cursorProvider.isAvailable()) {
     return cursorProvider;
   }
-  
+
   // Fallback to Claude Code
   if (await claudeProvider.isAvailable()) {
     return claudeProvider;
   }
-  
+
   throw new Error('No AI providers available');
 }
 ```
 
 **Why Multi-Provider Approach:**
+
 - ✅ **Risk Mitigation:** One provider fails → auto-switch to backup
 - ✅ **Flexibility:** Choose best provider per ticket type
 - ✅ **Cost Optimization:** Use cheaper provider for simple tasks
@@ -528,6 +552,7 @@ async function selectProvider(ticket: Ticket): AIProvider {
 - ✅ **Validation:** Compare outputs from different providers
 
 ### HTTP Client & External APIs
+
 - **Axios 1.x** - Promise-based HTTP client
   - Interceptors for auth, logging, retries
   - Request/response transformation
@@ -535,11 +560,13 @@ async function selectProvider(ticket: Ticket): AIProvider {
   - Support for cancellation tokens
 
 **External APIs:**
+
 - GitHub REST API v3 (Octokit client)
 - ClickUp API v2
 - AetherFlow internal APIs
 
 ### Logging & Monitoring
+
 - **Winston 3.x** - Logging library
   - Structured JSON logging
   - Multiple transports (console, file, remote)
@@ -564,6 +591,7 @@ async function selectProvider(ticket: Ticket): AIProvider {
   - Alerts via Slack/email
 
 ### Authentication & Authorization
+
 - **Separate Auth Service** - JWT-based
   - Issues JWTs with user claims (userId, role, permissions)
   - Token refresh mechanism
@@ -576,6 +604,7 @@ async function selectProvider(ticket: Ticket): AIProvider {
   - Custom strategies for future auth methods
 
 ### Testing
+
 - **Jest** - Testing framework (NestJS built-in)
   - Unit tests (mocking services)
   - Integration tests (with test database)
@@ -586,6 +615,7 @@ async function selectProvider(ticket: Ticket): AIProvider {
   - E2E testing for complete flows
 
 ### Deployment & DevOps
+
 - **Docker** - Containerization
   - Multi-stage builds for optimized images
   - Separate images for development and production
@@ -604,6 +634,7 @@ async function selectProvider(ticket: Ticket): AIProvider {
   - Health check verification
 
 ### Code Quality
+
 - **ESLint** - Linting (NestJS built-in)
   - TypeScript rules
   - NestJS-specific rules
@@ -655,29 +686,29 @@ During Epic 4, we discovered that AI agents can **execute commands, parse output
 class FeatureOrchestrator {
   constructor(
     private orchestratorService: OrchestratorService, // AI execution
-    private repository: Repository,                   // Database
-    private metricsService: MetricsService,           // Observability
+    private repository: Repository, // Database
+    private metricsService: MetricsService, // Observability
   ) {}
 
   async executeFeature(context: Context): Promise<Result> {
     // 1. ORCHESTRATION: Decide to execute
     const shouldExecute = this.decideIfNeeded(context);
-    
+
     // 2. INSTRUCTION: Prepare AI prompt
     const prompt = this.buildPrompt(context);
-    
+
     // 3. EXECUTION: Delegate to AI
     const aiResult = await this.orchestratorService.executeTask(prompt);
-    
+
     // 4. STORAGE: Save results
     await this.repository.save(aiResult);
-    
+
     // 5. DECISION: Apply business logic
     const decision = this.applyBusinessRules(aiResult);
-    
+
     // 6. OBSERVABILITY: Record metrics
     this.metricsService.record('feature_executed', decision);
-    
+
     return decision;
   }
 }
@@ -694,6 +725,7 @@ class FeatureOrchestrator {
 - **Example:** Instead of building ESLint parser, ask AI to "run npm run lint and return JSON summary"
 
 **Benefits:**
+
 - ✅ Zero custom parser code
 - ✅ Works across all linters (ESLint, Flake8, RuboCop, Pylint)
 - ✅ Leverage client's existing configuration
@@ -705,16 +737,17 @@ class FeatureOrchestrator {
 
 **Token costs are acceptable vs. development/maintenance burden.**
 
-| Aspect | Custom Services (Epic 3) | AI Delegation (Epic 4) |
-|--------|--------------------------|------------------------|
-| **Development Time** | Baseline (100%) | 50% faster |
-| **Code Volume** | ~2,000 LOC | ~200 LOC (90% reduction) |
-| **Maintenance** | Update parsers for each tool version | AI adapts automatically |
-| **Tech Stacks** | Build per language (Node, Python, Ruby) | One implementation works for all |
-| **Scalability** | Add code for each new tool | AI handles new tools without code changes |
-| **Cost** | Developer time (high) | AI API tokens (low) |
+| Aspect               | Custom Services (Epic 3)                | AI Delegation (Epic 4)                    |
+| -------------------- | --------------------------------------- | ----------------------------------------- |
+| **Development Time** | Baseline (100%)                         | 50% faster                                |
+| **Code Volume**      | ~2,000 LOC                              | ~200 LOC (90% reduction)                  |
+| **Maintenance**      | Update parsers for each tool version    | AI adapts automatically                   |
+| **Tech Stacks**      | Build per language (Node, Python, Ruby) | One implementation works for all          |
+| **Scalability**      | Add code for each new tool              | AI handles new tools without code changes |
+| **Cost**             | Developer time (high)                   | AI API tokens (low)                       |
 
 **Epic 4 Results:**
+
 - Token costs: ~$50/month
 - Developer time saved: ~$20,000/month (50% reduction)
 - **ROI:** 400x return on token investment
@@ -758,24 +791,28 @@ START: New feature requirement
 ### Anti-Patterns: What NOT to Build
 
 #### Anti-Pattern #1: Custom Tool Wrappers
+
 - ❌ **DON'T:** Build `LintingService` with custom ESLint/Flake8/Pylint parsers
 - ✅ **DO:** Ask AI to "run npm run lint and return JSON with error count, file list, issues"
 - **Reason:** AI handles parsing across all linters, you maintain 0 parser code
 - **LOC Saved:** ~500 LOC per linter avoided
 
 #### Anti-Pattern #2: Language-Specific Integrations
+
 - ❌ **DON'T:** Build `PythonTestRunner`, `NodeTestRunner`, `RubyTestRunner`
 - ✅ **DO:** Ask AI to "detect test framework, run tests, return structured results"
 - **Reason:** AI adapts to any language, you build once
 - **LOC Saved:** ~300 LOC per language avoided
 
 #### Anti-Pattern #3: Complex Output Parsing Logic
+
 - ❌ **DON'T:** Build regex parsers for Jest output, Pytest output, Mocha output
 - ✅ **DO:** Ask AI to "parse test output and return JSON with pass/fail counts"
 - **Reason:** AI understands context better than regex
 - **LOC Saved:** ~200 LOC per test framework avoided
 
 #### Anti-Pattern #4: Duplicate Existing Tools
+
 - ❌ **DON'T:** Build custom code formatters, linters, or test runners
 - ✅ **DO:** Use client's existing `npm scripts` via AI delegation
 - **Reason:** Client already configured their tooling, leverage it
@@ -788,18 +825,19 @@ START: New feature requirement
 #### Example 1: AI-Delegated Linting (from Story 3.10)
 
 **❌ OLD WAY (Epic 3): Custom service with parser**
+
 ```typescript
 class LintingService {
   async lint(ticketId: string): Promise<LintResult> {
     // 1. Detect linter (complex logic)
     const linter = await this.detectLinter(projectDir);
-    
+
     // 2. Execute linter command (exec)
     const output = await exec(`${linter} ${projectDir}`);
-    
+
     // 3. Parse output with custom regex (fragile)
     const issues = this.parseOutput(output, linter);
-    
+
     // 4. Transform to internal format
     return this.transformToInternal(issues);
     // Total: ~500 LOC
@@ -808,13 +846,14 @@ class LintingService {
 ```
 
 **✅ NEW WAY (Epic 4 pattern): AI delegation**
+
 ```typescript
 class AiQaOrchestrator {
   async executeLintCheck(ticketId: string, projectDir: string): Promise<QaResult> {
     const prompt = `Run linting checks in ${projectDir} and return JSON: {status, errorCount, issues[]}`;
-    
+
     const result = await this.orchestratorService.executeTask(prompt, { projectDir });
-    
+
     return JSON.parse(result.output); // AI returns structured JSON
     // Total: ~30 LOC
   }
@@ -833,19 +872,19 @@ class GitHubCommitOrchestrator {
   async generateCommitMessage(ticketId: string, diff: string): Promise<string> {
     // Build AI prompt
     const prompt = this.buildCommitPrompt(ticketId, diff);
-    
+
     // Execute via AI (delegation)
     const result = await this.orchestratorService.executeTask(prompt);
-    
+
     // Parse AI response
     const message = this.parseCommitMessage(result.output);
-    
+
     // Store result
     await this.trackCommit(ticketId, message);
-    
+
     return message;
   }
-  
+
   private buildCommitPrompt(ticketId: string, diff: string): string {
     return `Generate conventional commit message for these changes:
     
@@ -871,21 +910,21 @@ class GitHubPROrchestrator {
     const prompt = this.buildPRPrompt(ticketId, branchName);
     const result = await this.orchestratorService.executeTask(prompt);
     const description = this.parsePRDescription(result.output);
-    
+
     // Create PR with AI-generated description
     const prUrl = await this.githubService.createPR({
       title: `Story ${ticketId}`,
       description,
       head: branchName,
-      base: 'main'
+      base: 'main',
     });
-    
+
     // Store PR metadata
     await this.trackPR(ticketId, prUrl, description);
-    
+
     return prUrl;
   }
-  
+
   private buildPRPrompt(ticketId: string, branchName: string): string {
     return `Create PR description for ${ticketId} (branch: ${branchName}):
     
@@ -905,17 +944,20 @@ class GitHubPROrchestrator {
 ### Migration Strategy
 
 **Phase 1: Document (Current)**
+
 - ✅ Create ADR-008
 - ✅ Update architecture.md
 - ⏳ Refactor Epic 3 QA Automation (Story 3.10)
 
 **Phase 2: Expand Application**
+
 - Apply to Epic 5: PM Dashboard
-- Apply to Epic 6: Cost Monitoring  
+- Apply to Epic 6: Cost Monitoring
 - Apply to Epic 7: Architecture Review
 - Expected: 30-40% effort reduction
 
 **Phase 3: Optimize**
+
 - Monitor token costs and optimize prompts
 - Implement caching for repeated operations
 - Build reusable prompt templates
@@ -925,6 +967,7 @@ class GitHubPROrchestrator {
 ### Success Metrics
 
 **Epic 4 Results (Validated):**
+
 - ✅ Development time: **50% faster** than Epic 3
 - ✅ Code volume: **90% reduction** (~200 LOC vs ~2,000 LOC)
 - ✅ Tech stack coverage: **Universal** (Node.js, Python, Ruby, Go)
@@ -932,6 +975,7 @@ class GitHubPROrchestrator {
 - ✅ Token costs: **$50/month** vs **$20,000/month** developer time saved
 
 **Epic 3 Refactor Predictions (Story 3.10):**
+
 - Delete ~1,800 LOC of custom services
 - Replace with ~180 LOC AI orchestrator
 - Maintain identical functionality
@@ -946,17 +990,20 @@ class GitHubPROrchestrator {
 **Communication:** HTTP/REST + Shared Event Bus (optional)
 
 **Orchestrator → AetherFlow:**
+
 - Call BMAD PM Agent for ticket enhancement
 - Query project context and metadata
 - Update ticket status in ClickUp via AetherFlow
 - Access client information
 
 **AetherFlow → Orchestrator:**
+
 - Fetch dashboard data via REST APIs
 - Receive real-time updates via Socket.IO
 - Trigger manual interventions (approve, reject, escalate)
 
 **Shared Resources:**
+
 - Socket.IO namespace isolation (AetherFlow: `/aetherflow`, Orchestrator: `/orchestrator`)
 - Optional: Shared Redis for Socket.IO adapter (if scaling horizontally)
 
@@ -965,11 +1012,13 @@ class GitHubPROrchestrator {
 **Communication:** Webhooks (inbound) + REST API (outbound)
 
 **ClickUp → Orchestrator:**
+
 - Webhook events: `taskCreated`, `taskUpdated`, `taskStatusChanged`
 - Payload includes: task details, custom fields, comments, attachments
 - Webhook endpoint: `POST /webhooks/clickup` (secured with signature verification)
 
 **Orchestrator → ClickUp:**
+
 - Create fix tickets for production issues
 - Update task status (in-progress, deployed, failed)
 - Add comments with execution details
@@ -985,14 +1034,14 @@ class GitHubPROrchestrator {
 
 #### **Why GitHub App vs Personal Access Tokens?**
 
-| Feature | GitHub App | Personal Access Token (PAT) |
-|---------|-----------|----------------------------|
-| **Multi-Account** | ✅ Install on multiple accounts | ❌ Tied to one account |
-| **Repository Scope** | ✅ Per-installation permissions | ❌ All repos or none |
-| **Security** | ✅ App credentials + installation tokens | ⚠️ Personal credentials |
-| **Revocation** | ✅ Per-installation (granular) | ❌ All-or-nothing |
-| **Rate Limits** | ✅ Higher limits (5,000/hour) | ⚠️ Lower (1,000/hour) |
-| **Auditability** | ✅ Clear bot actor | ⚠️ Appears as user |
+| Feature              | GitHub App                               | Personal Access Token (PAT) |
+| -------------------- | ---------------------------------------- | --------------------------- |
+| **Multi-Account**    | ✅ Install on multiple accounts          | ❌ Tied to one account      |
+| **Repository Scope** | ✅ Per-installation permissions          | ❌ All repos or none        |
+| **Security**         | ✅ App credentials + installation tokens | ⚠️ Personal credentials     |
+| **Revocation**       | ✅ Per-installation (granular)           | ❌ All-or-nothing           |
+| **Rate Limits**      | ✅ Higher limits (5,000/hour)            | ⚠️ Lower (1,000/hour)       |
+| **Auditability**     | ✅ Clear bot actor                       | ⚠️ Appears as user          |
 
 **Recommendation:** Use GitHub App ✅
 
@@ -1001,6 +1050,7 @@ class GitHubPROrchestrator {
 #### **GitHub App Setup**
 
 **1. Create GitHub App:**
+
 ```
 Navigate to: https://github.com/settings/apps/new
 
@@ -1016,7 +1066,7 @@ Permissions:
   ✅ Pull Requests: Read & Write (create PRs)
   ✅ Metadata: Read (repository info)
   ✅ Workflows: Read & Write (trigger CI/CD)
-  
+
 - Organization Permissions:
   ❌ None needed for basic functionality
 
@@ -1027,6 +1077,7 @@ Events (Subscribe to):
 ```
 
 **2. Install App on Multiple Accounts:**
+
 ```
 After creating the app, you'll receive:
 - App ID: 123456
@@ -1058,7 +1109,7 @@ import { Octokit } from '@octokit/rest';
 export class GitHubAuthService {
   private app: App;
   private installationTokens: Map<number, { token: string; expiresAt: Date }> = new Map();
-  
+
   constructor() {
     // Initialize GitHub App
     this.app = new App({
@@ -1066,85 +1117,81 @@ export class GitHubAuthService {
       privateKey: process.env.GITHUB_APP_PRIVATE_KEY,
     });
   }
-  
+
   /**
    * Get authenticated Octokit client for a specific repository
    */
   async getOctokitForRepo(repoUrl: string): Promise<Octokit> {
     // 1. Parse repository URL
     const { owner, repo } = this.parseRepoUrl(repoUrl);
-    
+
     // 2. Find which installation has access to this repository
     const installationId = await this.getInstallationForRepo(owner, repo);
-    
+
     // 3. Get installation access token (cached with expiry)
     const token = await this.getInstallationToken(installationId);
-    
+
     // 4. Return authenticated Octokit client
     return new Octokit({ auth: token });
   }
-  
+
   /**
    * Get or refresh installation access token
    */
   private async getInstallationToken(installationId: number): Promise<string> {
     const cached = this.installationTokens.get(installationId);
-    
+
     // Return cached if not expired (tokens valid for 1 hour)
     if (cached && cached.expiresAt > new Date()) {
       return cached.token;
     }
-    
+
     // Generate new installation token
     const { token, expiresAt } = await this.app.octokit.request(
       'POST /app/installations/{installation_id}/access_tokens',
-      { installation_id: installationId }
+      { installation_id: installationId },
     );
-    
+
     // Cache token
     this.installationTokens.set(installationId, {
       token,
-      expiresAt: new Date(expiresAt)
+      expiresAt: new Date(expiresAt),
     });
-    
+
     return token;
   }
-  
+
   /**
    * Find which installation has access to a repository
    */
-  private async getInstallationForRepo(
-    owner: string,
-    repo: string
-  ): Promise<number> {
+  private async getInstallationForRepo(owner: string, repo: string): Promise<number> {
     // Check cache first
     const cached = await this.getRepoInstallationFromCache(owner, repo);
     if (cached) return cached;
-    
+
     // Query GitHub API for all installations
     const installations = await this.app.octokit.request('GET /app/installations');
-    
+
     // Check each installation's accessible repositories
     for (const installation of installations.data) {
-      const repos = await this.app.octokit.request(
-        'GET /installation/repositories',
-        { installation_id: installation.id }
-      );
-      
+      const repos = await this.app.octokit.request('GET /installation/repositories', {
+        installation_id: installation.id,
+      });
+
       const hasAccess = repos.data.repositories.some(
-        r => r.owner.login === owner && r.name === repo
+        (r) => r.owner.login === owner && r.name === repo,
       );
-      
+
       if (hasAccess) {
         // Cache the mapping
         await this.cacheRepoInstallation(owner, repo, installation.id);
         return installation.id;
       }
     }
-    
+
     throw new Error(`No GitHub App installation has access to ${owner}/${repo}`);
   }
-  
+
   private parseRepoUrl(repoUrl: string): { owner: string; repo: string } {
     // Parse: https://github.com/owner/repo or git@github.com:owner/repo.git
     const match = repoUrl.match(/github\.com[\/:]([^\/]+)\/([^\/\.]+)/);
@@ -1166,22 +1213,22 @@ model GitHubInstallation {
   installationId    Int      @unique // GitHub installation ID
   accountLogin      String   // GitHub username or org name
   accountType       String   // 'User' | 'Organization'
-  
+
   installedBy       String   // Who installed the app
   installedAt       DateTime
-  
+
   // Permissions granted
   permissions       Json
-  
+
   // Status
   suspended         Boolean  @default(false)
   suspendedAt       DateTime?
-  
+
   repositories      GitHubRepository[]
-  
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  
+
   @@index([installationId])
   @@index([accountLogin])
 }
@@ -1189,23 +1236,23 @@ model GitHubInstallation {
 model GitHubRepository {
   id                String   @id @default(uuid())
   installationId    Int      // Links to GitHubInstallation
-  
+
   owner             String   // Repository owner
   name              String   // Repository name
   fullName          String   // "owner/repo"
-  
+
   private           Boolean
   defaultBranch     String   @default("main")
-  
+
   // Cached for performance
   lastSyncedAt      DateTime?
-  
+
   installation      GitHubInstallation @relation(fields: [installationId], references: [installationId])
   tickets           Ticket[]
-  
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  
+
   @@unique([owner, name])
   @@index([installationId])
   @@index([fullName])
@@ -1222,9 +1269,9 @@ model GitHubRepository {
 export class GitHubService {
   constructor(
     private authService: GitHubAuthService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
   ) {}
-  
+
   /**
    * Create a pull request (works across any installed account)
    */
@@ -1232,12 +1279,12 @@ export class GitHubService {
     repoUrl: string,
     ticket: Ticket,
     branchName: string,
-    diff: string
+    diff: string,
   ): Promise<PullRequest> {
     // 1. Get authenticated client for this specific repository
     const octokit = await this.authService.getOctokitForRepo(repoUrl);
     const { owner, repo } = this.parseRepoUrl(repoUrl);
-    
+
     // 2. Create pull request
     const pr = await octokit.pulls.create({
       owner,
@@ -1247,35 +1294,32 @@ export class GitHubService {
       base: 'main', // or get from repo.defaultBranch
       body: this.buildPRDescription(ticket, diff),
     });
-    
+
     // 3. Add labels
     await octokit.issues.addLabels({
       owner,
       repo,
       issue_number: pr.data.number,
-      labels: ['ai-generated', 'dark-factory']
+      labels: ['ai-generated', 'dark-factory'],
     });
-    
+
     return pr.data;
   }
-  
+
   /**
    * Clone repository with authentication
    */
-  async cloneRepository(
-    repoUrl: string,
-    targetPath: string
-  ): Promise<void> {
+  async cloneRepository(repoUrl: string, targetPath: string): Promise<void> {
     // Get installation token for this repo
     const octokit = await this.authService.getOctokitForRepo(repoUrl);
     const token = await this.authService.getInstallationToken(
-      await this.authService.getInstallationForRepo(owner, repo)
+      await this.authService.getInstallationForRepo(owner, repo),
     );
-    
+
     // Clone using token
     const { owner, repo } = this.parseRepoUrl(repoUrl);
     const authenticatedUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
-    
+
     await execAsync(`git clone --depth 1 ${authenticatedUrl} ${targetPath}`);
   }
 }
@@ -1297,25 +1341,25 @@ export class GitHubWebhookController {
   async handleWebhook(@Body() payload: any, @Headers('x-hub-signature-256') signature: string) {
     // Verify webhook signature
     this.verifySignature(payload, signature);
-    
+
     switch (payload.action) {
       case 'created':
         // App installed on a new account
         await this.handleInstallationCreated(payload.installation);
         break;
-        
+
       case 'deleted':
         // App uninstalled
         await this.handleInstallationDeleted(payload.installation);
         break;
-        
+
       case 'repositories_added':
         // New repositories granted access
         await this.syncRepositories(payload.installation.id);
         break;
     }
   }
-  
+
   private async handleInstallationCreated(installation: any) {
     // Store installation in database
     await this.prisma.gitHubInstallation.create({
@@ -1326,17 +1370,17 @@ export class GitHubWebhookController {
         installedBy: installation.sender?.login,
         installedAt: new Date(),
         permissions: installation.permissions,
-      }
+      },
     });
-    
+
     // Sync accessible repositories
     await this.syncRepositories(installation.id);
   }
-  
+
   private async syncRepositories(installationId: number) {
     const octokit = await this.authService.getOctokitForInstallation(installationId);
     const { data } = await octokit.request('GET /installation/repositories');
-    
+
     for (const repo of data.repositories) {
       await this.prisma.gitHubRepository.upsert({
         where: { fullName: repo.full_name },
@@ -1344,7 +1388,7 @@ export class GitHubWebhookController {
           installationId,
           private: repo.private,
           defaultBranch: repo.default_branch,
-          lastSyncedAt: new Date()
+          lastSyncedAt: new Date(),
         },
         create: {
           installationId,
@@ -1353,8 +1397,8 @@ export class GitHubWebhookController {
           fullName: repo.full_name,
           private: repo.private,
           defaultBranch: repo.default_branch,
-          lastSyncedAt: new Date()
-        }
+          lastSyncedAt: new Date(),
+        },
       });
     }
   }
@@ -1366,6 +1410,7 @@ export class GitHubWebhookController {
 #### **User Experience: Connecting GitHub Accounts**
 
 **1. In AetherFlow Dashboard:**
+
 ```
 Settings → Integrations → GitHub
 
@@ -1380,18 +1425,19 @@ Shows list of connected accounts:
 ```
 
 **2. Installation Flow:**
+
 ```
 Click "Add Another GitHub Account/Org"
   ↓
 Redirect to GitHub:
   "Dark Software Factory wants to access repositories on [Account]"
-  
+
   Select repositories:
   ⬜ All repositories
   ☑️ Only select repositories:
      ☑️ client-project-1
      ☑️ client-project-2
-  
+
   [Install] button
   ↓
 Redirect back to AetherFlow:
@@ -1405,21 +1451,23 @@ Redirect back to AetherFlow:
 #### **Security Considerations**
 
 **1. Private Key Storage:**
+
 ```typescript
 // Store GitHub App private key securely
 // Option A: Environment variable (development)
-GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
+GITHUB_APP_PRIVATE_KEY = '-----BEGIN RSA PRIVATE KEY-----\n...';
 
 // Option B: Secrets manager (production)
 const privateKey = await secretsManager.getSecret('github-app-private-key');
 ```
 
 **2. Webhook Signature Verification:**
+
 ```typescript
 private verifySignature(payload: any, signature: string): void {
   const hmac = crypto.createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET);
   const digest = 'sha256=' + hmac.update(JSON.stringify(payload)).digest('hex');
-  
+
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
     throw new UnauthorizedException('Invalid webhook signature');
   }
@@ -1427,6 +1475,7 @@ private verifySignature(payload: any, signature: string): void {
 ```
 
 **3. Token Expiry Handling:**
+
 - Installation tokens expire after 1 hour
 - Auto-refresh before expiry
 - Graceful retry on 401 errors
@@ -1436,6 +1485,7 @@ private verifySignature(payload: any, signature: string): void {
 #### **Summary: Multi-Account GitHub Strategy**
 
 **Architecture:**
+
 ```
 Dark Factory Orchestrator
   ↓
@@ -1451,6 +1501,7 @@ Ticket arrives → Parse repo URL → Find installation → Get token → Clone/
 ```
 
 **Benefits:**
+
 - ✅ **One app, multiple accounts** (no PAT juggling)
 - ✅ **Granular permissions** (per-repo selection)
 - ✅ **Automatic token management** (refresh before expiry)
@@ -1473,19 +1524,21 @@ cursor --headless \
 ```
 
 **Integration Pattern:**
+
 ```typescript
 // Cursor headless provider
 async function generateCodeWithCursor(prompt: string, workspaceDir: string) {
   const command = `cursor --headless --dir "${workspaceDir}" --apply "${prompt}" --wait`;
   const { stdout, stderr } = await execAsync(command, {
     timeout: 300000, // 5 min
-    maxBuffer: 10 * 1024 * 1024
+    maxBuffer: 10 * 1024 * 1024,
   });
   return stdout;
 }
 ```
 
 **Advantages:**
+
 - ✅ Full repository context automatically
 - ✅ Multi-file editing with awareness
 - ✅ Semantic codebase understanding
@@ -1496,6 +1549,7 @@ async function generateCodeWithCursor(prompt: string, workspaceDir: string) {
 #### **Secondary: Claude Code (Anthropic)**
 
 **Integration via Anthropic API:**
+
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -1505,20 +1559,23 @@ const anthropic = new Anthropic({
 ```
 
 **Integration Pattern:**
+
 ```typescript
 // Claude Code provider
 async function generateCodeWithClaudeCode(prompt: string, context: CodeContext) {
   // Build enhanced context with file contents
   const enhancedPrompt = buildClaudeCodePrompt(prompt, context);
-  
+
   // Use Claude with extended context and tool use
   const message = await anthropic.messages.create({
     model: 'claude-3-5-sonnet-20241022',
     max_tokens: 8000,
-    messages: [{
-      role: 'user',
-      content: enhancedPrompt
-    }],
+    messages: [
+      {
+        role: 'user',
+        content: enhancedPrompt,
+      },
+    ],
     tools: [
       {
         name: 'edit_file',
@@ -1527,18 +1584,19 @@ async function generateCodeWithClaudeCode(prompt: string, context: CodeContext) 
           type: 'object',
           properties: {
             path: { type: 'string' },
-            content: { type: 'string' }
-          }
-        }
-      }
-    ]
+            content: { type: 'string' },
+          },
+        },
+      },
+    ],
   });
-  
+
   return parseClaudeCodeResponse(message);
 }
 ```
 
 **Context Building:**
+
 ```typescript
 function buildClaudePrompt(ticket: Ticket, context: CodeContext): string {
   return `
@@ -1571,6 +1629,7 @@ Output format: Provide complete file contents with clear file paths.
 ```
 
 **Advantages:**
+
 - ✅ Official Anthropic CLI
 - ✅ Excellent code generation quality
 - ✅ Lower cost per token
@@ -1586,27 +1645,27 @@ Output format: Provide complete file contents with clear file paths.
 export class AIProviderFactory {
   async getProvider(ticket: Ticket, context: CodeContext): Promise<AIProvider> {
     const complexity = this.assessComplexity(ticket);
-    
+
     // Route based on complexity and availability
     if (complexity === 'high' || ticket.requiresMultiFileEdit) {
       // Try Cursor first (better for complex tasks)
       if (await this.cursorProvider.isAvailable()) {
         return this.cursorProvider;
       }
-      
+
       // Fallback to Claude
       return this.claudeProvider;
     }
-    
+
     // For simple tasks, use Claude (faster, cheaper)
     if (await this.claudeProvider.isAvailable()) {
       return this.claudeProvider;
     }
-    
+
     // Fallback to Cursor
     return this.cursorProvider;
   }
-  
+
   private assessComplexity(ticket: Ticket): 'low' | 'medium' | 'high' {
     const indicators = {
       filesCount: ticket.relevantFiles?.length || 1,
@@ -1614,7 +1673,7 @@ export class AIProviderFactory {
       acceptanceCriteriaCount: ticket.acceptanceCriteria.length,
       hasArchitectureChanges: ticket.tags?.includes('architecture'),
     };
-    
+
     // Complexity scoring logic
     if (indicators.filesCount > 3 || indicators.hasArchitectureChanges) {
       return 'high';
@@ -1632,6 +1691,7 @@ export class AIProviderFactory {
 #### **Workspace Management (Both Providers)**
 
 **Workspace Isolation:**
+
 - Each ticket gets isolated workspace: `/tmp/ai-workspaces/ticket-{id}`
 - Fresh git clone per execution
 - Feature branch created: `feature/ticket-{id}`
@@ -1639,6 +1699,7 @@ export class AIProviderFactory {
 - Auto-cleanup after PR creation
 
 **Common Flow:**
+
 1. **Prepare:** Clone repo, checkout branch
 2. **Generate:** Call Cursor or Claude based on routing
 3. **Collect:** Git diff to capture changes
@@ -1650,6 +1711,7 @@ export class AIProviderFactory {
 **Communication:** REST API (GitHub API v3)
 
 **Orchestrator → GitHub:**
+
 - Create branches: `feature/ticket-{ticketId}`
 - Push code commits
 - Create pull requests with traceability links
@@ -1657,6 +1719,7 @@ export class AIProviderFactory {
 - Merge PRs (if auto-merge enabled)
 
 **GitHub → Orchestrator (Webhooks - Optional):**
+
 - PR status updates
 - Deployment success/failure notifications
 
@@ -1667,16 +1730,19 @@ export class AIProviderFactory {
 **Communication:** Trigger endpoints (HTTP) + Status webhooks
 
 **Supported CI/CD Platforms:**
+
 - GitHub Actions (workflow dispatch)
 - Jenkins (build trigger API)
 - GitLab CI (pipeline trigger)
 - Generic webhook endpoint
 
 **Orchestrator → CI/CD:**
+
 - Trigger deployment after GitHub push
 - Pass parameters (branch, environment, configuration)
 
 **CI/CD → Orchestrator:**
+
 - Status webhooks (deployment success/failure)
 - Logs and metrics
 
@@ -1685,11 +1751,13 @@ export class AIProviderFactory {
 **Communication:** Log streaming + Metrics APIs
 
 **Monitoring Sources:**
+
 - Application logs (via logging aggregators: CloudWatch, Datadog, ELK)
 - Error tracking (Sentry webhooks)
 - APM tools (New Relic, Datadog APM)
 
 **Orchestrator Actions:**
+
 - Parse error logs for actionable issues
 - Create fix tickets automatically
 - Alert PM/TL for critical failures
@@ -1701,44 +1769,52 @@ export class AIProviderFactory {
 ### Naming Conventions
 
 **TypeScript Files & Classes:**
+
 - Files: `kebab-case.ts` (e.g., `ticket-intake.service.ts`)
 - Classes: `PascalCase` (e.g., `TicketIntakeService`)
 - Interfaces: `PascalCase` with `I` prefix (e.g., `ITicketData`)
 - DTOs: `PascalCase` with `.dto.ts` suffix (e.g., `CreateTicketDto`)
 
 **REST API Endpoints:**
+
 - Routes: `/kebab-case` (e.g., `/api/v1/pm-dashboard`)
 - Path parameters: `:camelCase` (e.g., `/tickets/:ticketId`)
 - Query parameters: `camelCase` (e.g., `?projectId=123&includeMetrics=true`)
 
 **Database Tables & Columns:**
+
 - Tables: `snake_case` plural (e.g., `ai_executions`, `cost_records`)
 - Columns: `snake_case` (e.g., `ticket_id`, `execution_status`, `cost_in_cents`)
 - Foreign keys: `{table}_id` (e.g., `ticket_id`, `project_id`)
 - Timestamps: `created_at`, `updated_at` (automatic via Prisma)
 
 **RabbitMQ Queues & Exchanges:**
+
 - Queues: `kebab-case` (e.g., `ai-execution-queue`, `qa-check-queue`)
 - Exchanges: `kebab-case` (e.g., `orchestrator-events`)
 - Routing keys: `dot.notation` (e.g., `ai.execution.started`, `qa.check.completed`)
 
 **Environment Variables:**
+
 - Format: `SCREAMING_SNAKE_CASE` (e.g., `DATABASE_URL`, `RABBITMQ_HOST`)
 - Prefix by service: `ORCHESTRATOR_*` (e.g., `ORCHESTRATOR_PORT`)
 
 ### Structure Patterns
 
 **Module Organization:**
+
 - One module per domain concept (e.g., `ai-routing`, `qa-automation`)
 - Each module contains: `module.ts`, `controller.ts` (if API), `service.ts`, `dto/` folder
 - Shared utilities in `common/` at root level
 
 **Test File Location:**
+
 - Co-located with source: `ticket-intake.service.spec.ts` next to `ticket-intake.service.ts`
 - E2E tests in separate `test/e2e/` folder
 - Test utilities in `test/utils/`
 
 **DTO Organization:**
+
 - Request DTOs: `create-*.dto.ts`, `update-*.dto.ts`
 - Response DTOs: `*-response.dto.ts`
 - Validation decorators from `class-validator` on all DTO properties
@@ -1746,6 +1822,7 @@ export class AIProviderFactory {
 ### Format Patterns
 
 **API Response Wrapper:**
+
 ```typescript
 {
   "success": boolean,
@@ -1759,6 +1836,7 @@ export class AIProviderFactory {
 ```
 
 **Error Format:**
+
 ```typescript
 {
   "code": string,        // e.g., "AI_EXECUTION_TIMEOUT"
@@ -1769,12 +1847,14 @@ export class AIProviderFactory {
 ```
 
 **Date/Time Format:**
+
 - API responses: ISO 8601 strings (e.g., `"2025-11-20T10:30:00.000Z"`)
 - Database: PostgreSQL TIMESTAMP WITH TIME ZONE
 - Internal: JavaScript Date objects
 - Library: Use native Date, avoid moment.js (deprecated)
 
 **Cost Storage:**
+
 - Store in cents (integer) to avoid floating-point issues
 - Display: Convert to dollars with 2 decimal places
 - Currency: USD (hardcoded for Phase 1, configurable Phase 2)
@@ -1782,6 +1862,7 @@ export class AIProviderFactory {
 ### Communication Patterns
 
 **RabbitMQ Message Format:**
+
 ```typescript
 {
   "messageId": string (UUID),
@@ -1794,11 +1875,13 @@ export class AIProviderFactory {
 ```
 
 **Socket.IO Event Naming:**
+
 - Client → Server: `camelCase` (e.g., `subscribeToProject`)
 - Server → Client: `kebab-case` (e.g., `execution-progress-update`)
 - Event payload: JSON object with typed structure
 
 **HTTP Headers:**
+
 - Authorization: `Authorization: Bearer {jwt}`
 - Request ID: `X-Request-ID: {uuid}`
 - Correlation ID: `X-Correlation-ID: {uuid}` (for tracing across services)
@@ -1806,29 +1889,33 @@ export class AIProviderFactory {
 ### Lifecycle Patterns
 
 **Loading States:**
+
 - Initial: `null` (not yet loaded)
 - Loading: `{ status: 'loading' }`
 - Success: `{ status: 'success', data: T }`
 - Error: `{ status: 'error', error: Error }`
 
 **Error Recovery:**
+
 - Retry logic: 3 attempts with exponential backoff (1s, 2s, 4s)
 - Circuit breaker: Open after 5 consecutive failures, close after 30s success
 - Fallback: Dead letter queue for manual intervention
 
 **State Transitions:**
+
 ```
 Ticket Lifecycle:
-received → validated → queued → ai_processing → qa_review → 
+received → validated → queued → ai_processing → qa_review →
 github_push → deploying → deployed → monitoring
 
-Error states: validation_failed, ai_failed, qa_failed, 
+Error states: validation_failed, ai_failed, qa_failed,
 deploy_failed → Each creates fix ticket
 ```
 
 ### Consistency Patterns
 
 **Logging Format:**
+
 ```typescript
 {
   "level": "info" | "warn" | "error" | "debug",
@@ -1843,11 +1930,13 @@ deploy_failed → Each creates fix ticket
 ```
 
 **Audit Trail:**
+
 - All state changes logged to `audit_log` table
 - Includes: actor (user/system), action, before/after state, timestamp
 - Immutable records (no updates, only inserts)
 
 **User-Facing Error Messages:**
+
 - Technical errors: "An unexpected error occurred. Request ID: {uuid}"
 - Validation errors: Specific field errors with suggestions
 - Business logic errors: Clear explanation with next steps
@@ -1881,14 +1970,14 @@ model Ticket {
   acceptance_criteria String @db.Text
   ticket_quality_score Int
   status          TicketStatus @default(RECEIVED)
-  
+
   // Relationships
   executions      Execution[]
   cost_records    CostRecord[]
-  
+
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
-  
+
   @@index([project_id, status])
   @@index([created_at])
   @@map("tickets")
@@ -1915,28 +2004,28 @@ model Execution {
   id                String    @id @default(uuid())
   ticket_id         String
   ticket            Ticket    @relation(fields: [ticket_id], references: [id])
-  
+
   ai_provider       AIProvider
   prompt            String    @db.Text
   status            ExecutionStatus @default(QUEUED)
   confidence_score  Float?
-  
+
   started_at        DateTime?
   completed_at      DateTime?
   failed_at         DateTime?
   error_message     String?   @db.Text
-  
+
   // Generated code
   code_output       String?   @db.Text
   files_changed     Json?     // Array of file paths
-  
+
   // Retry tracking
   retry_count       Int       @default(0)
   max_retries       Int       @default(3)
-  
+
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
-  
+
   @@index([ticket_id, status])
   @@index([ai_provider, status])
   @@map("executions")
@@ -1961,21 +2050,21 @@ enum ExecutionStatus {
 model QAResult {
   id            String   @id @default(uuid())
   execution_id  String
-  
+
   linting_passed      Boolean
   linting_errors      Json?
-  
+
   tests_passed        Boolean
   test_results        Json?
   test_coverage       Float?
-  
+
   code_review_passed  Boolean
   code_review_issues  Json?
-  
+
   overall_passed      Boolean
-  
+
   created_at    DateTime @default(now())
-  
+
   @@map("qa_results")
 }
 
@@ -1983,19 +2072,19 @@ model QAResult {
 model GitHubPush {
   id              String   @id @default(uuid())
   execution_id    String
-  
+
   repository      String
   branch_name     String
   commit_sha      String?
   pr_number       Int?
   pr_url          String?
-  
+
   push_status     GitHubStatus @default(PENDING)
   error_message   String?  @db.Text
-  
+
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
-  
+
   @@map("github_pushes")
 }
 
@@ -2012,17 +2101,17 @@ enum GitHubStatus {
 model Deployment {
   id              String   @id @default(uuid())
   github_push_id  String
-  
+
   environment     String   // dev, staging, production
   cicd_provider   String   // github-actions, jenkins, etc.
   build_id        String?
-  
+
   status          DeploymentStatus @default(TRIGGERED)
   deployed_at     DateTime?
-  
+
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
-  
+
   @@map("deployments")
 }
 
@@ -2039,16 +2128,16 @@ model CostRecord {
   id              String   @id @default(uuid())
   ticket_id       String
   ticket          Ticket   @relation(fields: [ticket_id], references: [id])
-  
+
   ai_provider     AIProvider
   operation_type  String   // code_generation, review, etc.
-  
+
   tokens_used     Int?
   api_calls       Int      @default(1)
   cost_in_cents   Int      // Store as cents to avoid floating point
-  
+
   created_at      DateTime @default(now())
-  
+
   @@index([ticket_id])
   @@index([ai_provider, created_at])
   @@map("cost_records")
@@ -2057,20 +2146,20 @@ model CostRecord {
 // Production Monitoring
 model ProductionError {
   id                String   @id @default(uuid())
-  
+
   application       String
   error_type        String
   error_message     String   @db.Text
   stack_trace       String?  @db.Text
-  
+
   severity          ErrorSeverity
-  
+
   fix_ticket_id     String?  // ClickUp task ID if auto-created
   resolved          Boolean  @default(false)
-  
+
   occurred_at       DateTime
   created_at        DateTime @default(now())
-  
+
   @@index([application, severity, resolved])
   @@map("production_errors")
 }
@@ -2085,14 +2174,14 @@ enum ErrorSeverity {
 // Metrics & Analytics
 model Metric {
   id          String   @id @default(uuid())
-  
+
   metric_name String
   metric_type String   // counter, gauge, histogram
   value       Float
   labels      Json?    // Key-value pairs for filtering
-  
+
   recorded_at DateTime @default(now())
-  
+
   @@index([metric_name, recorded_at])
   @@map("metrics")
 }
@@ -2100,28 +2189,247 @@ model Metric {
 // Audit Trail
 model AuditLog {
   id              String   @id @default(uuid())
-  
+
   entity_type     String   // ticket, execution, deployment
   entity_id       String
   action          String   // created, updated, status_changed
-  
+
   actor_type      String   // user, system
   actor_id        String?  // user ID if human, null if system
-  
+
   before_state    Json?
   after_state     Json?
-  
+
   created_at      DateTime @default(now())
-  
+
   @@index([entity_type, entity_id])
   @@index([created_at])
   @@map("audit_logs")
 }
+
+// ============================================
+// V3 MODELS (Epic 11: Phase 1 Foundation & Safety)
+// Added in migration: 20251219173120_add_v3_models
+// ============================================
+
+// V3 ENUMS
+enum FileLockStatus {
+  LOCKED
+  RELEASED
+}
+
+enum DependencyStatus {
+  WAITING
+  BLOCKED
+  RESOLVED
+  CANCELLED
+}
+
+enum ArchiveStatus {
+  PENDING
+  ARCHIVING
+  ARCHIVED
+  FAILED
+}
+
+enum PRRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// AI Decision Log - Complete audit trail of AI decisions
+// Purpose: Track every AI decision for transparency, debugging, and low-confidence alerts
+model AIDecisionLog {
+  id           String   @id @default(uuid())
+  timestamp    DateTime @default(now())
+  agent_name   String   // AI agent that made the decision
+  action       String   // Action taken (e.g., "branch_selection", "file_lock_request")
+  reasoning    String   @db.Text  // AI's reasoning for the decision
+  ticket_id    String
+  execution_id String?
+  input_data   Json     // Input context for decision
+  output_data  Json     // Decision output/result
+  confidence   Float    // Confidence score 0-1 (for low-confidence alerts)
+
+  // Relation to Execution (optional - intake decisions have no execution)
+  execution    Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+
+  @@index([ticket_id, timestamp])  // Timeline queries by ticket
+  @@index([execution_id])
+  @@index([agent_name])
+  @@index([timestamp])
+  @@map("ai_decision_logs")
+}
+
+// File Lock - Prevent concurrent modification conflicts
+// Purpose: Ensure only one ticket can modify a file at a time
+model FileLock {
+  id           String         @id @default(uuid())
+  ticket_id    String
+  execution_id String
+  file_path    String         // Relative path within repo
+  locked_at    DateTime       @default(now())
+  released_at  DateTime?
+  status       FileLockStatus @default(LOCKED)
+
+  // Relation to Execution (cascade delete - locks are execution-scoped)
+  execution    Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@unique([ticket_id, file_path])  // One lock per file per ticket
+  @@index([execution_id])
+  @@index([status])
+  @@index([ticket_id])
+  @@map("file_locks")
+}
+
+// AI Cost Log - Track AI invocation costs
+// Purpose: Detailed cost tracking for billing and optimization
+model AICostLog {
+  id              String     @id @default(uuid())
+  execution_id    String?
+  ticket_id       String?
+  timestamp       DateTime   @default(now())
+
+  ai_provider     AIProvider
+  model_name      String     // e.g., "claude-3-5-sonnet", "gpt-4"
+  operation_type  String     // e.g., "code_generation", "review"
+
+  tokens_input    Int?
+  tokens_output   Int?
+  tokens_total    Int?
+  cost_usd        Decimal    @db.Decimal(10, 6)  // Precise cost tracking
+
+  // Relation to Execution (preserve cost history even if execution deleted)
+  execution       Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+
+  @@index([execution_id])
+  @@index([ticket_id, timestamp])
+  @@index([ai_provider, timestamp])
+  @@map("ai_cost_logs")
+}
+
+// Ticket Dependency - Manage ticket dependencies with circular detection
+// Purpose: Track dependencies between tickets and detect circular references
+model TicketDependency {
+  id                String           @id @default(uuid())
+  ticket_id         String           // Dependent ticket
+  depends_on        String           // Blocking ticket ID
+  status            DependencyStatus @default(WAITING)
+  circular_detected Boolean          @default(false)
+  created_at        DateTime         @default(now())
+  resolved_at       DateTime?
+
+  @@unique([ticket_id, depends_on])  // Prevent duplicate dependency links
+  @@index([ticket_id])
+  @@index([depends_on])
+  @@index([status])
+  @@map("ticket_dependencies")
+}
+
+// Workspace Archive - Storage management with compression tracking
+// Purpose: Archive completed workspaces to manage storage costs
+model WorkspaceArchive {
+  id                  String        @id @default(uuid())
+  execution_id        String        @unique
+  workspace_path      String
+  archive_path        String?       // S3/local path to archived workspace
+  size_bytes          BigInt
+  compressed_size     BigInt?
+  status              ArchiveStatus @default(PENDING)
+  archived_at         DateTime?
+  error_message       String?       @db.Text
+
+  // Relation to Execution (one-to-one, cascade delete)
+  execution           Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([archived_at])
+  @@map("workspace_archives")
+}
+
+// V3 EXECUTION MODEL UPDATES
+// The Execution model (defined earlier) was updated with:
+// - base_branch: Selected base branch for PR
+// - branch_selection_log: AI decision log for branch selection
+// - file_modifications: Detailed file change metadata (JSON)
+// - risk_level: PR risk assessment (PRRiskLevel enum)
+// - circular_dep_detected: Dependency cycle flag (boolean)
+// - aiDecisionLogs: One-to-many relation
+// - fileLocks: One-to-many relation
+// - aiCostLogs: One-to-many relation
+// - archive: One-to-one relation
 ```
+
+### V3 Schema Changes (Epic 11)
+
+**Migration:** `20251219173120_add_v3_models`  
+**Date:** 2025-12-19  
+**Purpose:** Phase 1 Foundation & Safety infrastructure for v3 features
+
+**New Models (5):**
+
+1. **AIDecisionLog** - Complete audit trail of all AI decisions
+   - Tracks decision-making process for transparency
+   - Enables low-confidence alerts (confidence < threshold)
+   - Preserves history even if execution deleted (`onDelete: SetNull`)
+   - Indexed for timeline queries by ticket and execution
+
+2. **FileLock** - Concurrent modification prevention
+   - One lock per file per ticket (unique constraint)
+   - Prevents merge conflicts from parallel development
+   - Cascade deletes with execution (locks are execution-scoped)
+   - Status tracking: LOCKED → RELEASED
+
+3. **AICostLog** - Granular AI cost tracking
+   - Per-invocation cost tracking with precise decimal storage
+   - Tracks token usage (input/output/total) and model information
+   - Supports both execution-scoped and pre-execution costs
+   - Preserves cost history for billing (`onDelete: SetNull`)
+
+4. **TicketDependency** - Dependency management
+   - Tracks dependencies between tickets
+   - Circular dependency detection flag
+   - Status lifecycle: WAITING → RESOLVED/BLOCKED/CANCELLED
+   - Prevents duplicate dependency links (unique constraint)
+
+5. **WorkspaceArchive** - Storage management
+   - Tracks workspace archival for storage cost optimization
+   - Records original and compressed sizes
+   - S3 or local archive path storage
+   - One-to-one relation with Execution (`onDelete: Cascade`)
+
+**Execution Model Enhancements:**
+
+- `base_branch` - Selected base branch for PR creation
+- `branch_selection_log` - AI reasoning for branch selection
+- `file_modifications` - Detailed file change metadata (JSON)
+- `risk_level` - PR risk assessment (LOW/MEDIUM/HIGH/CRITICAL)
+- `circular_dep_detected` - Boolean flag for dependency cycles
+
+**New Enums (4):**
+
+- `FileLockStatus`: LOCKED, RELEASED
+- `DependencyStatus`: WAITING, BLOCKED, RESOLVED, CANCELLED
+- `ArchiveStatus`: PENDING, ARCHIVING, ARCHIVED, FAILED
+- `PRRiskLevel`: LOW, MEDIUM, HIGH, CRITICAL
+
+**onDelete Behaviors:**
+
+- **SetNull**: AIDecisionLog, AICostLog (preserve audit/cost history)
+- **Cascade**: FileLock, WorkspaceArchive (execution-scoped data)
+
+**Index Strategy:**
+
+- Composite indexes for common query patterns (ticket_id + timestamp)
+- Single indexes on foreign keys and status fields
+- Unique constraints for business logic enforcement
 
 ### Database Indexes Strategy
 
 **Query Patterns Optimized:**
+
 1. Fetch tickets by project and status (for PM dashboard)
 2. Fetch executions by status (for orchestrator monitoring)
 3. Fetch cost records by date range and provider (for cost dashboard)
@@ -2129,6 +2437,7 @@ model AuditLog {
 5. Fetch production errors by severity and resolved status
 
 **Index Maintenance:**
+
 - Automatic via Prisma migrations
 - Monitor index usage via PostgreSQL `pg_stat_user_indexes`
 - Add indexes based on slow query analysis in production
@@ -2142,10 +2451,12 @@ model AuditLog {
 **GET `/api/v1/pm-dashboard/projects`**
 
 Query Parameters:
+
 - `pmId`: string (required)
 - `status`: string (optional) - filter by project status
 
 Response:
+
 ```typescript
 {
   "success": true,
@@ -2177,6 +2488,7 @@ Response:
 **POST `/api/v1/executions`**
 
 Request:
+
 ```typescript
 {
   "ticketId": "uuid",
@@ -2190,6 +2502,7 @@ Request:
 ```
 
 Response:
+
 ```typescript
 {
   "success": true,
@@ -2205,6 +2518,7 @@ Response:
 **GET `/api/v1/executions/:executionId`**
 
 Response:
+
 ```typescript
 {
   "success": true,
@@ -2232,11 +2546,13 @@ Response:
 **GET `/api/v1/costs/summary`**
 
 Query Parameters:
+
 - `startDate`: ISO 8601 string
 - `endDate`: ISO 8601 string
 - `projectId`: string (optional)
 
 Response:
+
 ```typescript
 {
   "success": true,
@@ -2259,6 +2575,7 @@ Response:
 ### WebSocket Events (Socket.IO)
 
 **Client → Server:**
+
 ```typescript
 // Subscribe to execution updates
 socket.emit('subscribe-execution', { executionId: 'uuid' });
@@ -2268,13 +2585,14 @@ socket.emit('subscribe-cost-alerts', { projectId: 'uuid' });
 ```
 
 **Server → Client:**
+
 ```typescript
 // Execution progress update
 socket.emit('execution-progress-update', {
   executionId: 'uuid',
   status: 'IN_PROGRESS',
   progress: 45,
-  currentStep: 'Running tests'
+  currentStep: 'Running tests',
 });
 
 // Cost alert
@@ -2282,7 +2600,7 @@ socket.emit('cost-alert', {
   projectId: 'uuid',
   currentCostCents: number,
   budgetCents: number,
-  percentOfBudget: number
+  percentOfBudget: number,
 });
 ```
 
@@ -2306,6 +2624,7 @@ socket.emit('cost-alert', {
 ### Authorization (RBAC)
 
 **Roles:**
+
 - `ADMIN` - Full access
 - `MANAGER` - Business oversight, all dashboards
 - `PM` - Create tickets, view own projects, approve code
@@ -2315,16 +2634,17 @@ socket.emit('cost-alert', {
 
 **Permission Matrix:**
 
-| Resource | ADMIN | MANAGER | PM | TL | QA | VIEWER |
-|----------|-------|---------|----|----|----|----|
-| Create Ticket | ✓ | ✓ | ✓ | - | - | - |
-| Approve Code | ✓ | ✓ | ✓ | - | - | - |
-| Review Architecture | ✓ | - | - | ✓ | - | - |
-| Approve Deployment | ✓ | - | - | - | ✓ | - |
-| View Dashboards | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Configure System | ✓ | - | - | - | - | - |
+| Resource            | ADMIN | MANAGER | PM  | TL  | QA  | VIEWER |
+| ------------------- | ----- | ------- | --- | --- | --- | ------ |
+| Create Ticket       | ✓     | ✓       | ✓   | -   | -   | -      |
+| Approve Code        | ✓     | ✓       | ✓   | -   | -   | -      |
+| Review Architecture | ✓     | -       | -   | ✓   | -   | -      |
+| Approve Deployment  | ✓     | -       | -   | -   | ✓   | -      |
+| View Dashboards     | ✓     | ✓       | ✓   | ✓   | ✓   | ✓      |
+| Configure System    | ✓     | -       | -   | -   | -   | -      |
 
 **Implementation:**
+
 ```typescript
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('PM', 'ADMIN')
@@ -2335,21 +2655,25 @@ createTicket() { }
 ### API Security
 
 **Rate Limiting:**
+
 - Per user: 1000 requests/hour
 - Per IP: 5000 requests/hour
 - Webhook endpoint: 100 requests/minute
 
 **CORS:**
+
 - Allow: AetherFlow frontend origin
 - Methods: GET, POST, PUT, DELETE
 - Credentials: true (for cookies)
 
 **Input Validation:**
+
 - All DTOs validated with `class-validator`
 - Sanitize HTML/SQL injection attempts
 - Maximum payload size: 10MB
 
 **Secrets Management:**
+
 - Environment variables for all secrets
 - Never commit `.env` files
 - Use secret management service (AWS Secrets Manager, HashiCorp Vault) in production
@@ -2358,16 +2682,19 @@ createTicket() { }
 ### Data Protection
 
 **Encryption:**
+
 - Data at rest: PostgreSQL transparent encryption
 - Data in transit: TLS 1.3 for all HTTP connections
 - Secrets: Encrypted env variables in deployment
 
 **Sensitive Data:**
+
 - API keys: Encrypted in database, decrypted at runtime
 - User data: GDPR compliant, anonymization available
 - Logs: Redact sensitive fields (passwords, tokens, PII)
 
 **Audit Trail:**
+
 - All data modifications logged to `audit_logs` table
 - Immutable records
 - Retention: 7 years for compliance
@@ -2387,22 +2714,26 @@ createTicket() { }
 ### Optimization Strategies
 
 **Database:**
+
 - Connection pooling: Max 20 connections
 - Query optimization: Use indexes, avoid N+1
 - Pagination: Max 100 items per page
 - Read replicas: Consider if read-heavy
 
 **Caching:**
+
 - Redis for frequently accessed data (dashboard aggregations)
 - TTL: 30 seconds for real-time data, 5 minutes for historical
 - Cache invalidation on state changes
 
 **Async Processing:**
+
 - All AI executions via RabbitMQ queues
 - Non-blocking I/O for HTTP calls
 - Worker pools for CPU-intensive tasks (test running)
 
 **Load Testing Targets:**
+
 - 50+ concurrent AI executions
 - 100+ concurrent dashboard users
 - 1000 requests/second to APIs
@@ -2414,6 +2745,7 @@ createTicket() { }
 ### Container Strategy
 
 **Production Deployment:**
+
 ```yaml
 services:
   orchestrator:
@@ -2430,11 +2762,11 @@ services:
 
   postgres:
     image: postgres:16
-    volumes: [ './data:/var/lib/postgresql/data' ]
+    volumes: ['./data:/var/lib/postgresql/data']
 
   rabbitmq:
     image: rabbitmq:3.13-management
-    volumes: [ './rabbitmq-data:/var/lib/rabbitmq' ]
+    volumes: ['./rabbitmq-data:/var/lib/rabbitmq']
 ```
 
 ### Infrastructure
@@ -2442,17 +2774,20 @@ services:
 **Hosting:** Cloud provider (AWS/DigitalOcean/GCP)
 
 **Services:**
+
 - Orchestrator: 3 instances (load balanced)
 - PostgreSQL: Single instance (consider replication Phase 2)
 - RabbitMQ: Single instance (consider clustering Phase 2)
 - Redis: Single instance (for Socket.IO adapter)
 
 **Monitoring:**
+
 - Prometheus: Scrapes `/metrics` every 15s
 - Grafana: Visualization dashboards
 - Sentry: Error tracking and alerts
 
 **Backups:**
+
 - Database: Daily automated backups, 30-day retention
 - RabbitMQ: Queue persistence enabled
 
@@ -2518,6 +2853,7 @@ npm run test:e2e
 **Decision:** Build separate NestJS microservice rather than module within AetherFlow.
 
 **Consequences:**
+
 - ✅ Clean separation protects existing infrastructure
 - ✅ Independent scaling and deployment
 - ✅ Technology choice flexibility
@@ -2535,6 +2871,7 @@ npm run test:e2e
 **Decision:** Use separate PostgreSQL instance, not shared with AetherFlow.
 
 **Consequences:**
+
 - ✅ Service independence and data encapsulation
 - ✅ Independent scaling
 - ✅ Clearer boundaries
@@ -2551,6 +2888,7 @@ npm run test:e2e
 **Context:** Need programmatic AI code generation with full repository context for automated ticket-to-code pipeline.
 
 **Options Considered:**
+
 1. Custom integration with AI APIs (GPT-4, Claude) - requires building context engine
 2. Cursor local API (unofficial, undocumented)
 3. VSCode extension development (3-4 weeks, maintenance burden)
@@ -2560,6 +2898,7 @@ npm run test:e2e
 **Decision:** Use Cursor's official `cursor --headless` CLI command for AI code generation.
 
 **Rationale:**
+
 - ✅ Official, documented, maintained by Cursor team
 - ✅ Purpose-built for automation and CI/CD
 - ✅ Full Cursor AI power (Claude/GPT-4 with repository context)
@@ -2571,6 +2910,7 @@ npm run test:e2e
 - ✅ Available TODAY (https://cursor.com/docs/cli/overview)
 
 **Consequences:**
+
 - ✅ Can start building immediately (no research phase)
 - ✅ Leverages Cursor's AI capabilities without reimplementation
 - ✅ Official support reduces maintenance burden
@@ -2581,6 +2921,7 @@ npm run test:e2e
 - ⚠️ Need workspace isolation strategy
 
 **Implementation Notes:**
+
 - Execute via Node.js `child_process`: `cursor --headless --dir /path --apply "prompt"`
 - Workspace per ticket: `/tmp/cursor-workspaces/ticket-{id}`
 - Results collected via git diff
@@ -2597,6 +2938,7 @@ npm run test:e2e
 **Decision:** Use RabbitMQ over alternatives (Bull/Redis, AWS SQS, Kafka).
 
 **Rationale:**
+
 - Proven reliability with acknowledgments
 - Dead letter queue support
 - Management UI for monitoring
@@ -2604,6 +2946,7 @@ npm run test:e2e
 - Not as heavy as Kafka for Phase 1 scale
 
 **Consequences:**
+
 - ✅ Reliable message delivery
 - ✅ Built-in retry logic
 - ✅ Easy to monitor
@@ -2621,11 +2964,13 @@ npm run test:e2e
 **Decision:** Separate JWT-based auth service, not shared with AetherFlow.
 
 **Rationale:**
+
 - Service independence principle
 - Dedicated auth management
 - Future flexibility for different auth methods
 
 **Consequences:**
+
 - ✅ Clean service boundaries
 - ✅ Dedicated auth management
 - ❌ Additional service to build/maintain
@@ -2643,6 +2988,7 @@ npm run test:e2e
 **Decision:** Add Claude Code (Anthropic's autonomous coding agent) as secondary AI provider alongside Cursor headless.
 
 **Rationale:**
+
 - ✅ Anthropic's official autonomous coding agent
 - ✅ Excellent code generation quality (Claude 3.5 Sonnet)
 - ✅ Lower cost per token than some alternatives
@@ -2654,11 +3000,13 @@ npm run test:e2e
 - ✅ Extended context window (200K+ tokens)
 
 **Routing Strategy:**
+
 - **Cursor:** Complex tasks, multi-file edits, architecture changes
 - **Claude Code:** Simple to medium tasks, focused changes, autonomous coding
 - **Fallback:** Cursor fails → Claude Code, Claude Code fails → escalate
 
 **Consequences:**
+
 - ✅ Reduced single-provider dependency risk
 - ✅ Cost optimization (use cheaper provider when appropriate)
 - ✅ Flexibility in provider selection
@@ -2669,6 +3017,7 @@ npm run test:e2e
 - ⚠️ Need provider selection logic in orchestrator
 
 **Implementation:**
+
 - Install SDK: `npm install @anthropic-ai/sdk`
 - Configure: `export ANTHROPIC_API_KEY="sk-ant-..."`
 - Integrate: Via Anthropic API with extended context and tool use
@@ -2685,6 +3034,7 @@ npm run test:e2e
 **Decision:** Use Socket.IO to match AetherFlow's existing pattern.
 
 **Consequences:**
+
 - ✅ Consistency with AetherFlow
 - ✅ Bidirectional communication
 - ✅ Automatic reconnection
@@ -2698,6 +3048,7 @@ npm run test:e2e
 ### Overview
 
 The orchestrator uses a **dual-provider approach** for AI code generation:
+
 - **Primary:** Cursor CLI headless mode (full repo context, multi-file editing)
 - **Secondary:** Claude Code (Anthropic's autonomous coding agent)
 
@@ -2716,6 +3067,7 @@ cursor --headless \
 ```
 
 **Flags:**
+
 - `--headless`: Run without GUI (server-ready, low resources)
 - `--dir`: Workspace directory (isolated per ticket)
 - `--apply`: AI prompt (ticket description + acceptance criteria)
@@ -2730,21 +3082,24 @@ cursor --headless \
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 const response = await anthropic.messages.create({
   model: 'claude-3-5-sonnet-20241022',
   max_tokens: 8000,
-  messages: [{
-    role: 'user',
-    content: `${contextFiles}\n\n${ticketPrompt}`
-  }],
-  tools: codeEditingTools // File operations, etc.
+  messages: [
+    {
+      role: 'user',
+      content: `${contextFiles}\n\n${ticketPrompt}`,
+    },
+  ],
+  tools: codeEditingTools, // File operations, etc.
 });
 ```
 
 **Features:**
+
 - Extended context window (200K+ tokens)
 - Tool use for file operations
 - Multi-turn conversation
@@ -2752,6 +3107,7 @@ const response = await anthropic.messages.create({
 - Autonomous planning and execution
 
 **Installation:**
+
 ```bash
 # Install Anthropic SDK
 npm install @anthropic-ai/sdk
@@ -2779,6 +3135,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
 **Lifecycle:**
+
 1. **Create:** `git clone {repo} /tmp/cursor-workspaces/ticket-{id}-{timestamp}`
 2. **Branch:** `git checkout -b feature/ticket-{id}`
 3. **Execute:** `cursor --headless --dir /tmp/cursor-workspaces/ticket-{id}-{timestamp} --apply "{prompt}"`
@@ -2798,7 +3155,7 @@ Description:
 ${ticket.description}
 
 Acceptance Criteria:
-${ticket.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}
+${ticket.acceptanceCriteria.map((ac) => `- ${ac}`).join('\n')}
 
 Technical Requirements:
 - Follow existing code patterns in this repository
@@ -2817,6 +3174,7 @@ Context:
 ```
 
 **Key Elements:**
+
 - ✅ Clear task title
 - ✅ Detailed description
 - ✅ Explicit acceptance criteria
@@ -2832,37 +3190,36 @@ Context:
 async function executeAIGeneration(ticket: Ticket, context: CodeContext) {
   // 1. Prepare isolated workspace
   const workspaceDir = await prepareWorkspace(ticket, context);
-  
+
   // 2. Select provider based on task complexity
   const provider = await providerFactory.getProvider(ticket, context);
   // => CursorHeadlessProvider or ClaudeCLIProvider
-  
+
   try {
     // 3. Execute with selected provider
     const result = await provider.execute(ticket, workspaceDir, context);
-    
+
     // 4. Collect results
     const changes = await collectChanges(workspaceDir);
-    
+
     // 5. Validate generated code
     await validateCode(workspaceDir, changes);
-    
+
     // 6. Create commit
     await commitChanges(workspaceDir, ticket);
-    
+
     // 7. Push to GitHub
     await pushToGitHub(workspaceDir, ticket);
-    
+
     // 8. Track metrics
     await trackExecution(ticket, provider, result);
-    
+
     return {
       success: true,
       provider: provider.name,
       filesModified: changes.files,
-      executionTimeMs: result.executionTime
+      executionTimeMs: result.executionTime,
     };
-    
   } catch (error) {
     // 9. Fallback on failure
     if (provider.name === 'cursor' && error.retryable) {
@@ -2871,7 +3228,6 @@ async function executeAIGeneration(ticket: Ticket, context: CodeContext) {
       return executeWithProvider(fallbackProvider, ticket, workspaceDir, context);
     }
     throw error;
-    
   } finally {
     // 10. Cleanup
     await cleanupWorkspace(workspaceDir);
@@ -2884,27 +3240,29 @@ async function executeAIGeneration(ticket: Ticket, context: CodeContext) {
 #### **Provider-Specific Execution**
 
 **Cursor Headless Provider:**
+
 ```typescript
 async execute(ticket: Ticket, workspace: string, context: CodeContext) {
   const prompt = buildCursorPrompt(ticket);
   const command = `cursor --headless --dir "${workspace}" --apply "${prompt}" --wait`;
-  
+
   const { stdout } = await execAsync(command, {
     timeout: 300000, // 5 min
     maxBuffer: 10 * 1024 * 1024
   });
-  
+
   return { executionTime: Date.now() - start, output: stdout };
 }
 ```
 
 **Claude Code Provider:**
+
 ```typescript
 async execute(ticket: Ticket, workspace: string, context: CodeContext) {
   // 1. Build enhanced prompt with file contents
   const prompt = buildClaudeCodePrompt(ticket, context);
   const fileContents = await loadRelevantFiles(workspace, context.relevantFiles);
-  
+
   // 2. Create message with extended context
   const response = await anthropic.messages.create({
     model: 'claude-3-5-sonnet-20241022',
@@ -2925,10 +3283,10 @@ async execute(ticket: Ticket, workspace: string, context: CodeContext) {
       }
     }]
   });
-  
+
   // 3. Process tool use and apply changes
   const changes = await processClaudeCodeResponse(response, workspace);
-  
+
   return { executionTime: Date.now() - start, changes };
 }
 ```
@@ -2945,7 +3303,7 @@ const AI_EXECUTION_QUEUE = {
   name: 'ai-execution-queue',
   concurrency: 10, // 10 concurrent Cursor instances
   prefetch: 1,
-  durable: true
+  durable: true,
 };
 
 // Worker pool
@@ -2953,11 +3311,12 @@ const cursorWorkerPool = {
   maxWorkers: 10,
   minWorkers: 2,
   idleTimeout: 300000, // 5 min
-  maxQueueSize: 100
+  maxQueueSize: 100,
 };
 ```
 
 **Limits:**
+
 - Start conservatively: 5-10 concurrent Cursor instances
 - Monitor: CPU, memory, disk I/O
 - Scale horizontally: Multiple orchestrator nodes if needed
@@ -2967,27 +3326,29 @@ const cursorWorkerPool = {
 
 **Common Failures:**
 
-| Error | Cause | Mitigation |
-|-------|-------|------------|
-| Timeout | Cursor execution >5 min | Increase timeout, split ticket |
-| Out of Memory | Large repository | Increase container memory, shallow clone |
-| Git Conflict | Concurrent edits | Rebase and retry |
-| Cursor Crash | AI model issue | Retry with exponential backoff |
-| Invalid Prompt | Malformed ticket | Ticket validation before routing |
+| Error          | Cause                   | Mitigation                               |
+| -------------- | ----------------------- | ---------------------------------------- |
+| Timeout        | Cursor execution >5 min | Increase timeout, split ticket           |
+| Out of Memory  | Large repository        | Increase container memory, shallow clone |
+| Git Conflict   | Concurrent edits        | Rebase and retry                         |
+| Cursor Crash   | AI model issue          | Retry with exponential backoff           |
+| Invalid Prompt | Malformed ticket        | Ticket validation before routing         |
 
 **Retry Strategy:**
+
 ```typescript
 const retryConfig = {
   maxRetries: 3,
   backoff: 'exponential', // 1s, 2s, 4s
   retryableErrors: ['timeout', 'cursor-crash', 'network-error'],
-  nonRetryableErrors: ['invalid-prompt', 'auth-failed']
+  nonRetryableErrors: ['invalid-prompt', 'auth-failed'],
 };
 ```
 
 ### Cost Tracking
 
 **Metrics to Track:**
+
 - Cursor API usage (if metered)
 - Execution time per ticket
 - Success rate (% completed without errors)
@@ -2995,6 +3356,7 @@ const retryConfig = {
 - Workspace disk usage
 
 **Implementation:**
+
 ```typescript
 // Track cost after each execution
 await costTracker.record({
@@ -3003,7 +3365,7 @@ await costTracker.record({
   success: true,
   retries: 2,
   filesModified: 5,
-  provider: 'cursor-headless'
+  provider: 'cursor-headless',
 });
 
 // Calculate cost (if metered by Cursor)
@@ -3015,6 +3377,7 @@ const estimatedCost = (executionTime / 1000) * CURSOR_COST_PER_SECOND;
 **Before deploying to production:**
 
 #### **Cursor CLI Validation:**
+
 - [ ] Verify `cursor --headless` command exists
 - [ ] Test single execution end-to-end
 - [ ] Test concurrent execution (5-10 instances)
@@ -3027,6 +3390,7 @@ const estimatedCost = (executionTime / 1000) * CURSOR_COST_PER_SECOND;
 - [ ] Document Cursor license requirements for headless
 
 #### **Claude Code Validation:**
+
 - [ ] Install Anthropic SDK (`npm install @anthropic-ai/sdk`)
 - [ ] Configure API key (`export ANTHROPIC_API_KEY="sk-ant-..."`)
 - [ ] Test single code generation task via API
@@ -3039,6 +3403,7 @@ const estimatedCost = (executionTime / 1000) * CURSOR_COST_PER_SECOND;
 - [ ] Validate autonomous multi-turn conversations
 
 #### **Multi-Provider Logic:**
+
 - [ ] Provider selection works based on complexity
 - [ ] Fallback triggers correctly on failure
 - [ ] Both providers tracked in metrics
@@ -3066,14 +3431,14 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 if command -v cursor &> /dev/null; then
     echo "✅ Cursor CLI found: $(which cursor)"
-    
+
     # Test headless execution
     mkdir -p /tmp/cursor-test
     cd /tmp/cursor-test
     git init > /dev/null 2>&1
     echo 'test' > test.txt
     git add . && git commit -m "init" > /dev/null 2>&1
-    
+
     if timeout 60s cursor --headless --dir /tmp/cursor-test --apply "Add a hello function" --wait 2>&1; then
         echo "✅ Cursor headless works!"
         CURSOR_AVAILABLE=true
@@ -3097,7 +3462,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Check if Anthropic SDK is installed
 if npm list @anthropic-ai/sdk &> /dev/null || npm list -g @anthropic-ai/sdk &> /dev/null; then
     echo "✅ Anthropic SDK found"
-    
+
     # Test API key
     if [ -z "$ANTHROPIC_API_KEY" ]; then
         echo "⚠️  ANTHROPIC_API_KEY not set"
@@ -3176,36 +3541,36 @@ model AIExecutionCost {
   id              String   @id @default(uuid())
   ticketId        String
   executionId     String   @unique
-  
+
   // Provider details
   provider        String   // 'cursor' | 'claude'
   model           String?  // For API-based providers (e.g., 'claude-3-5-sonnet')
-  
+
   // Execution metrics
   executionTimeMs Int      // Total execution time in milliseconds
   filesModified   Int      // Number of files changed
   linesChanged    Int      // Total lines added/removed
-  
+
   // Cost tracking
   estimatedCost   Decimal  @db.Decimal(10, 4) // USD
   apiCalls        Json?    // Detailed API call log for metered providers
   tokensUsed      Int?     // For token-based providers
-  
+
   // Context details
   promptLength    Int      // Characters in prompt
   contextFiles    Int      // Number of files provided as context
-  
+
   // Outcome
   success         Boolean
   retries         Int      @default(0)
   fallbackUsed    Boolean  @default(false)
-  
+
   // Relationships
   ticket          Ticket   @relation(fields: [ticketId], references: [id])
   execution       Execution @relation(fields: [executionId], references: [id])
-  
+
   createdAt       DateTime @default(now())
-  
+
   @@index([ticketId])
   @@index([provider])
   @@index([createdAt])
@@ -3214,29 +3579,29 @@ model AIExecutionCost {
 model DailyCostSummary {
   id              String   @id @default(uuid())
   date            DateTime @db.Date
-  
+
   // Provider breakdown
   cursorCost      Decimal  @db.Decimal(10, 2) // Fixed license cost allocated per day
   claudeCost      Decimal  @db.Decimal(10, 2) // Actual API usage cost
   totalCost       Decimal  @db.Decimal(10, 2)
-  
+
   // Execution counts
   cursorExecutions Int     @default(0)
   claudeExecutions Int     @default(0)
   totalExecutions  Int     @default(0)
-  
+
   // Success metrics
   successRate     Decimal  @db.Decimal(5, 2) // Percentage
   fallbackRate    Decimal  @db.Decimal(5, 2) // Percentage
-  
+
   // Budget tracking
   budgetLimit     Decimal  @db.Decimal(10, 2)
   budgetRemaining Decimal  @db.Decimal(10, 2)
   budgetAlertSent Boolean  @default(false)
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   @@unique([date])
   @@index([date])
 }
@@ -3251,38 +3616,36 @@ export class CostCalculatorService {
   // Cursor: Fixed license cost allocated per execution
   private readonly CURSOR_MONTHLY_LICENSE = 2500; // $2,500/month
   private readonly ESTIMATED_EXECUTIONS_PER_MONTH = 100;
-  private readonly CURSOR_COST_PER_EXECUTION = 
+  private readonly CURSOR_COST_PER_EXECUTION =
     this.CURSOR_MONTHLY_LICENSE / this.ESTIMATED_EXECUTIONS_PER_MONTH; // $25
-  
+
   // Claude: Token-based pricing
-  private readonly CLAUDE_INPUT_COST_PER_1M_TOKENS = 3.00;   // $3/1M tokens
-  private readonly CLAUDE_OUTPUT_COST_PER_1M_TOKENS = 15.00; // $15/1M tokens
-  
+  private readonly CLAUDE_INPUT_COST_PER_1M_TOKENS = 3.0; // $3/1M tokens
+  private readonly CLAUDE_OUTPUT_COST_PER_1M_TOKENS = 15.0; // $15/1M tokens
+
   async calculateCursorCost(execution: Execution): Promise<number> {
     // Cursor uses fixed per-execution cost
     // (Alternatively, could track actual license seats used)
     return this.CURSOR_COST_PER_EXECUTION;
   }
-  
-  async calculateClaudeCost(
-    promptTokens: number,
-    completionTokens: number
-  ): Promise<number> {
+
+  async calculateClaudeCost(promptTokens: number, completionTokens: number): Promise<number> {
     const inputCost = (promptTokens / 1_000_000) * this.CLAUDE_INPUT_COST_PER_1M_TOKENS;
     const outputCost = (completionTokens / 1_000_000) * this.CLAUDE_OUTPUT_COST_PER_1M_TOKENS;
     return inputCost + outputCost;
   }
-  
+
   async trackExecution(
     ticketId: string,
     executionId: string,
     provider: 'cursor' | 'claude',
-    metrics: ExecutionMetrics
+    metrics: ExecutionMetrics,
   ): Promise<AIExecutionCost> {
-    const cost = provider === 'cursor'
-      ? await this.calculateCursorCost(metrics)
-      : await this.calculateClaudeCost(metrics.tokensInput, metrics.tokensOutput);
-    
+    const cost =
+      provider === 'cursor'
+        ? await this.calculateCursorCost(metrics)
+        : await this.calculateClaudeCost(metrics.tokensInput, metrics.tokensOutput);
+
     return await this.prisma.aIExecutionCost.create({
       data: {
         ticketId,
@@ -3295,8 +3658,8 @@ export class CostCalculatorService {
         tokensUsed: metrics.tokensInput + metrics.tokensOutput,
         success: metrics.success,
         retries: metrics.retries,
-        fallbackUsed: metrics.fallbackUsed
-      }
+        fallbackUsed: metrics.fallbackUsed,
+      },
     });
   }
 }
@@ -3309,32 +3672,32 @@ export class CostCalculatorService {
 
 export class BudgetMonitorService {
   private readonly DAILY_BUDGET_DEFAULT = 100; // $100/day
-  
+
   async checkBudget(): Promise<BudgetStatus> {
     const today = new Date().toISOString().split('T')[0];
     const summary = await this.getDailySummary(today);
-    
+
     if (summary.totalCost >= summary.budgetLimit * 0.9) {
       // 90% threshold - send warning
       await this.sendBudgetAlert({
         level: 'warning',
         usage: summary.totalCost,
         limit: summary.budgetLimit,
-        remaining: summary.budgetRemaining
+        remaining: summary.budgetRemaining,
       });
     }
-    
+
     if (summary.totalCost >= summary.budgetLimit) {
       // Budget exceeded - pause executions
       await this.pauseExecutions({
         reason: 'Daily budget exceeded',
         budget: summary.budgetLimit,
-        spent: summary.totalCost
+        spent: summary.totalCost,
       });
-      
+
       return { exceeded: true, paused: true };
     }
-    
+
     return { exceeded: false, remaining: summary.budgetRemaining };
   }
 }
@@ -3353,62 +3716,55 @@ export class WorkspaceService {
   private readonly WORKSPACES_ROOT = '/workspaces';
   private readonly MAX_CONCURRENT_WORKSPACES = 10;
   private readonly WORKSPACE_TIMEOUT_MS = 600_000; // 10 minutes
-  
+
   /**
    * Complete workspace lifecycle for a ticket
    */
   async executeInIsolatedWorkspace(
     ticket: Ticket,
-    execution: (workspacePath: string) => Promise<void>
+    execution: (workspacePath: string) => Promise<void>,
   ): Promise<void> {
     const workspaceId = `ticket-${ticket.id}-${Date.now()}`;
     const workspacePath = `${this.WORKSPACES_ROOT}/${workspaceId}`;
-    
+
     try {
       // 1. Check concurrency limit
       await this.enforceWorkspaceLimit();
-      
+
       // 2. Create workspace
       await this.createWorkspace(workspacePath, ticket.linkedRepo);
-      
+
       // 3. Execute AI generation
-      await Promise.race([
-        execution(workspacePath),
-        this.timeout(this.WORKSPACE_TIMEOUT_MS)
-      ]);
-      
+      await Promise.race([execution(workspacePath), this.timeout(this.WORKSPACE_TIMEOUT_MS)]);
+
       // 4. Extract results (git diff)
       const changes = await this.extractChanges(workspacePath);
       return changes;
-      
     } finally {
       // 5. Always cleanup (even on error)
       await this.cleanupWorkspace(workspacePath);
     }
   }
-  
+
   /**
    * Create isolated workspace by cloning repository
    */
-  private async createWorkspace(
-    workspacePath: string,
-    repoUrl: string
-  ): Promise<void> {
+  private async createWorkspace(workspacePath: string, repoUrl: string): Promise<void> {
     // Create directory
     await fs.mkdir(workspacePath, { recursive: true });
-    
+
     // Clone repository with shallow clone (faster)
     await execAsync(`git clone --depth 1 ${repoUrl} ${workspacePath}`, {
-      timeout: 120_000 // 2 minute timeout
+      timeout: 120_000, // 2 minute timeout
     });
-    
+
     // Configure git for commits
     await execAsync(`git config user.name "Dark Factory"`, { cwd: workspacePath });
     await execAsync(`git config user.email "bot@darkfactory.ai"`, { cwd: workspacePath });
-    
+
     this.logger.log(`Workspace created: ${workspacePath}`);
   }
-  
+
   /**
    * Cleanup workspace after execution
    */
@@ -3421,19 +3777,19 @@ export class WorkspaceService {
       // Don't throw - cleanup failures shouldn't block execution
     }
   }
-  
+
   /**
    * Enforce concurrent workspace limit
    */
   private async enforceWorkspaceLimit(): Promise<void> {
     const activeWorkspaces = await this.getActiveWorkspaceCount();
-    
+
     if (activeWorkspaces >= this.MAX_CONCURRENT_WORKSPACES) {
       // Wait for a workspace to free up (with timeout)
       await this.waitForWorkspaceSlot(30_000); // 30s timeout
     }
   }
-  
+
   /**
    * Extract git changes from workspace
    */
@@ -3452,38 +3808,38 @@ export class WorkspaceService {
 export class ResourceManagerService {
   private readonly MAX_DISK_USAGE_GB = 50; // 50GB limit
   private readonly CLEANUP_THRESHOLD_GB = 40; // Cleanup at 40GB
-  
+
   /**
    * Monitor and manage disk usage
    */
   async monitorDiskUsage(): Promise<void> {
     const usage = await this.getDiskUsage(WORKSPACES_ROOT);
-    
+
     if (usage.usedGB > this.CLEANUP_THRESHOLD_GB) {
       // Clean up old workspaces
       await this.cleanupOldWorkspaces();
     }
-    
+
     if (usage.usedGB > this.MAX_DISK_USAGE_GB) {
       // Critical - pause new executions
       await this.pauseNewExecutions({
         reason: 'Disk space critical',
         usage: usage.usedGB,
-        limit: this.MAX_DISK_USAGE_GB
+        limit: this.MAX_DISK_USAGE_GB,
       });
     }
   }
-  
+
   /**
    * Clean up orphaned workspaces (older than 1 hour)
    */
   private async cleanupOldWorkspaces(): Promise<void> {
     const oneHourAgo = Date.now() - 3_600_000;
     const workspaces = await fs.readdir(WORKSPACES_ROOT);
-    
+
     for (const workspace of workspaces) {
       const stats = await fs.stat(`${WORKSPACES_ROOT}/${workspace}`);
-      
+
       if (stats.mtimeMs < oneHourAgo) {
         await execAsync(`rm -rf ${WORKSPACES_ROOT}/${workspace}`);
         this.logger.warn(`Cleaned up orphaned workspace: ${workspace}`);
@@ -3528,6 +3884,7 @@ export class ResourceManagerService {
 ```
 
 **Resource Limits:**
+
 - **Max concurrent workspaces:** 10
 - **Max disk usage:** 50GB
 - **Workspace timeout:** 10 minutes
@@ -3551,12 +3908,14 @@ export class ResourceManagerService {
 ## Multi-Provider Summary
 
 **Primary Provider:** Cursor CLI Headless
+
 - Full repository context
 - Multi-file editing with awareness
 - Best for complex tasks
 - Command: `cursor --headless --dir /path --apply "prompt"`
 
 **Secondary Provider:** Claude Code
+
 - Excellent code quality
 - Lower cost per token
 - Autonomous coding capabilities

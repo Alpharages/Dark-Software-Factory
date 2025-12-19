@@ -63,6 +63,11 @@ export const ModelName = {
   ProjectCoverageConfig: 'ProjectCoverageConfig',
   WebhookEvent: 'WebhookEvent',
   Workspace: 'Workspace',
+  AIDecisionLog: 'AIDecisionLog',
+  FileLock: 'FileLock',
+  AICostLog: 'AICostLog',
+  TicketDependency: 'TicketDependency',
+  WorkspaceArchive: 'WorkspaceArchive',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -119,6 +124,11 @@ export const ExecutionScalarFieldEnum = {
   original_provider: 'original_provider',
   error_context: 'error_context',
   scheduled_retry_at: 'scheduled_retry_at',
+  base_branch: 'base_branch',
+  branch_selection_log: 'branch_selection_log',
+  file_modifications: 'file_modifications',
+  risk_level: 'risk_level',
+  circular_dep_detected: 'circular_dep_detected',
   created_at: 'created_at',
   updated_at: 'updated_at',
 } as const;
@@ -328,6 +338,80 @@ export const WorkspaceScalarFieldEnum = {
 
 export type WorkspaceScalarFieldEnum =
   (typeof WorkspaceScalarFieldEnum)[keyof typeof WorkspaceScalarFieldEnum];
+
+export const AIDecisionLogScalarFieldEnum = {
+  id: 'id',
+  timestamp: 'timestamp',
+  agent_name: 'agent_name',
+  action: 'action',
+  reasoning: 'reasoning',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  input_data: 'input_data',
+  output_data: 'output_data',
+  confidence: 'confidence',
+} as const;
+
+export type AIDecisionLogScalarFieldEnum =
+  (typeof AIDecisionLogScalarFieldEnum)[keyof typeof AIDecisionLogScalarFieldEnum];
+
+export const FileLockScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  file_path: 'file_path',
+  locked_at: 'locked_at',
+  released_at: 'released_at',
+  status: 'status',
+} as const;
+
+export type FileLockScalarFieldEnum =
+  (typeof FileLockScalarFieldEnum)[keyof typeof FileLockScalarFieldEnum];
+
+export const AICostLogScalarFieldEnum = {
+  id: 'id',
+  execution_id: 'execution_id',
+  ticket_id: 'ticket_id',
+  timestamp: 'timestamp',
+  ai_provider: 'ai_provider',
+  model_name: 'model_name',
+  operation_type: 'operation_type',
+  tokens_input: 'tokens_input',
+  tokens_output: 'tokens_output',
+  tokens_total: 'tokens_total',
+  cost_usd: 'cost_usd',
+} as const;
+
+export type AICostLogScalarFieldEnum =
+  (typeof AICostLogScalarFieldEnum)[keyof typeof AICostLogScalarFieldEnum];
+
+export const TicketDependencyScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  depends_on: 'depends_on',
+  status: 'status',
+  circular_detected: 'circular_detected',
+  created_at: 'created_at',
+  resolved_at: 'resolved_at',
+} as const;
+
+export type TicketDependencyScalarFieldEnum =
+  (typeof TicketDependencyScalarFieldEnum)[keyof typeof TicketDependencyScalarFieldEnum];
+
+export const WorkspaceArchiveScalarFieldEnum = {
+  id: 'id',
+  execution_id: 'execution_id',
+  workspace_path: 'workspace_path',
+  archive_path: 'archive_path',
+  size_bytes: 'size_bytes',
+  compressed_size: 'compressed_size',
+  status: 'status',
+  archived_at: 'archived_at',
+  error_message: 'error_message',
+} as const;
+
+export type WorkspaceArchiveScalarFieldEnum =
+  (typeof WorkspaceArchiveScalarFieldEnum)[keyof typeof WorkspaceArchiveScalarFieldEnum];
 
 export const SortOrder = {
   asc: 'asc',

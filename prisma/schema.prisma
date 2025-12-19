@@ -55,6 +55,36 @@ enum TicketStatus {
 }
 
 // ============================================
+// V3 ENUMS (Epic 11)
+// ============================================
+
+enum FileLockStatus {
+  LOCKED
+  RELEASED
+}
+
+enum DependencyStatus {
+  WAITING
+  BLOCKED
+  RESOLVED
+  CANCELLED
+}
+
+enum ArchiveStatus {
+  PENDING
+  ARCHIVING
+  ARCHIVED
+  FAILED
+}
+
+enum PRRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ============================================
 // AI EXECUTION TRACKING
 // ============================================
 
@@ -92,11 +122,24 @@ model Execution {
   error_context        String?          @db.Text  // JSON: previous retry errors
   scheduled_retry_at   DateTime?                  // Next scheduled retry time
   
+  // V3 FIELDS (Epic 11: Phase 1 Foundation)
+  base_branch           String?                    // Selected base branch for PR
+  branch_selection_log  String?          @db.Text  // AI decision log for branch selection
+  file_modifications    Json?                      // Detailed file change metadata
+  risk_level            PRRiskLevel?               // PR risk assessment
+  circular_dep_detected Boolean          @default(false)  // Dependency cycle flag
+  
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   
   // Story 3.6: QA Results relation
   qa_result         QAResult?
+  
+  // V3 RELATIONS (Epic 11)
+  aiDecisionLogs      AIDecisionLog[]   // One-to-many: AI decision audit trail
+  fileLocks           FileLock[]        // One-to-many: File lock tracking
+  aiCostLogs          AICostLog[]       // One-to-many: AI cost tracking
+  archive             WorkspaceArchive? // One-to-one: Workspace archive metadata
   
   @@index([ticket_id, status])
   @@index([ai_provider, status])
@@ -477,5 +520,114 @@ enum WorkspaceStatus {
   FAILED
   CLEANING
   CLEANED
+}
+
+// ============================================
+// V3 MODELS (Epic 11: Phase 1 Foundation \u0026 Safety)
+// ============================================
+
+// AI DECISION LOG - Complete audit trail of AI decisions
+model AIDecisionLog {
+  id           String   @id @default(uuid())
+  timestamp    DateTime @default(now())
+  agent_name   String   // AI agent that made the decision
+  action       String   // Action taken (e.g., "branch_selection", "file_lock_request")
+  reasoning    String   @db.Text  // AI's reasoning for the decision
+  ticket_id    String
+  execution_id String?
+  input_data   Json     // Input context for decision
+  output_data  Json     // Decision output/result
+  confidence   Float    // Confidence score 0-1 (for low-confidence alerts)
+
+  // Relation to Execution (optional - intake decisions have no execution)
+  execution    Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+
+  @@index([ticket_id, timestamp])  // Timeline queries by ticket
+  @@index([execution_id])
+  @@index([agent_name])
+  @@index([timestamp])
+  @@map("ai_decision_logs")
+}
+
+// FILE LOCK - Prevent concurrent modification conflicts
+model FileLock {
+  id           String         @id @default(uuid())
+  ticket_id    String
+  execution_id String
+  file_path    String         // Relative path within repo
+  locked_at    DateTime       @default(now())
+  released_at  DateTime?
+  status       FileLockStatus @default(LOCKED)
+
+  // Relation to Execution
+  execution    Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@unique([ticket_id, file_path])  // One lock per file per ticket
+  @@index([execution_id])
+  @@index([status])
+  @@index([ticket_id])
+  @@map("file_locks")
+}
+
+// AI COST LOG - Track AI invocation costs
+model AICostLog {
+  id              String     @id @default(uuid())
+  execution_id    String?
+  ticket_id       String?
+  timestamp       DateTime   @default(now())
+  
+  ai_provider     AIProvider
+  model_name      String     // e.g., "claude-3-5-sonnet", "gpt-4"
+  operation_type  String     // e.g., "code_generation", "review"
+  
+  tokens_input    Int?
+  tokens_output   Int?
+  tokens_total    Int?
+  cost_usd        Decimal    @db.Decimal(10, 6)  // Precise cost tracking
+  
+  // Relation to Execution (optional - some costs may be pre-execution)
+  execution       Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+
+  @@index([execution_id])
+  @@index([ticket_id, timestamp])
+  @@index([ai_provider, timestamp])
+  @@map("ai_cost_logs")
+}
+
+// TICKET DEPENDENCY - Manage ticket dependencies with circular detection
+model TicketDependency {
+  id                String           @id @default(uuid())
+  ticket_id         String           // Dependent ticket
+  depends_on        String           // Blocking ticket ID
+  status            DependencyStatus @default(WAITING)
+  circular_detected Boolean          @default(false)
+  created_at        DateTime         @default(now())
+  resolved_at       DateTime?
+
+  @@unique([ticket_id, depends_on])  // Prevent duplicate dependency links
+  @@index([ticket_id])
+  @@index([depends_on])
+  @@index([status])
+  @@map("ticket_dependencies")
+}
+
+// WORKSPACE ARCHIVE - Storage management with compression tracking
+model WorkspaceArchive {
+  id                  String        @id @default(uuid())
+  execution_id        String        @unique
+  workspace_path      String
+  archive_path        String?       // S3/local path to archived workspace
+  size_bytes          BigInt
+  compressed_size     BigInt?
+  status              ArchiveStatus @default(PENDING)
+  archived_at         DateTime?
+  error_message       String?       @db.Text
+  
+  // Relation to Execution (one-to-one)
+  execution           Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([archived_at])
+  @@map("workspace_archives")
 }
 

@@ -390,6 +390,11 @@ export const ModelName = {
   ProjectCoverageConfig: 'ProjectCoverageConfig',
   WebhookEvent: 'WebhookEvent',
   Workspace: 'Workspace',
+  AIDecisionLog: 'AIDecisionLog',
+  FileLock: 'FileLock',
+  AICostLog: 'AICostLog',
+  TicketDependency: 'TicketDependency',
+  WorkspaceArchive: 'WorkspaceArchive',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -424,7 +429,12 @@ export type TypeMap<
       | 'coverageBaseline'
       | 'projectCoverageConfig'
       | 'webhookEvent'
-      | 'workspace';
+      | 'workspace'
+      | 'aIDecisionLog'
+      | 'fileLock'
+      | 'aICostLog'
+      | 'ticketDependency'
+      | 'workspaceArchive';
     txIsolationLevel: TransactionIsolationLevel;
   };
   model: {
@@ -1550,6 +1560,382 @@ export type TypeMap<
         };
       };
     };
+    AIDecisionLog: {
+      payload: Prisma.$AIDecisionLogPayload<ExtArgs>;
+      fields: Prisma.AIDecisionLogFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.AIDecisionLogFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.AIDecisionLogFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>;
+        };
+        findFirst: {
+          args: Prisma.AIDecisionLogFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.AIDecisionLogFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>;
+        };
+        findMany: {
+          args: Prisma.AIDecisionLogFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>[];
+        };
+        create: {
+          args: Prisma.AIDecisionLogCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>;
+        };
+        createMany: {
+          args: Prisma.AIDecisionLogCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.AIDecisionLogCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>[];
+        };
+        delete: {
+          args: Prisma.AIDecisionLogDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>;
+        };
+        update: {
+          args: Prisma.AIDecisionLogUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>;
+        };
+        deleteMany: {
+          args: Prisma.AIDecisionLogDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.AIDecisionLogUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.AIDecisionLogUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>[];
+        };
+        upsert: {
+          args: Prisma.AIDecisionLogUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AIDecisionLogPayload>;
+        };
+        aggregate: {
+          args: Prisma.AIDecisionLogAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAIDecisionLog>;
+        };
+        groupBy: {
+          args: Prisma.AIDecisionLogGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AIDecisionLogGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.AIDecisionLogCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.AIDecisionLogCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    FileLock: {
+      payload: Prisma.$FileLockPayload<ExtArgs>;
+      fields: Prisma.FileLockFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.FileLockFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.FileLockFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>;
+        };
+        findFirst: {
+          args: Prisma.FileLockFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.FileLockFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>;
+        };
+        findMany: {
+          args: Prisma.FileLockFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>[];
+        };
+        create: {
+          args: Prisma.FileLockCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>;
+        };
+        createMany: {
+          args: Prisma.FileLockCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.FileLockCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>[];
+        };
+        delete: {
+          args: Prisma.FileLockDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>;
+        };
+        update: {
+          args: Prisma.FileLockUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>;
+        };
+        deleteMany: {
+          args: Prisma.FileLockDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.FileLockUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.FileLockUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>[];
+        };
+        upsert: {
+          args: Prisma.FileLockUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockPayload>;
+        };
+        aggregate: {
+          args: Prisma.FileLockAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFileLock>;
+        };
+        groupBy: {
+          args: Prisma.FileLockGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.FileLockGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.FileLockCountArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.FileLockCountAggregateOutputType> | number;
+        };
+      };
+    };
+    AICostLog: {
+      payload: Prisma.$AICostLogPayload<ExtArgs>;
+      fields: Prisma.AICostLogFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.AICostLogFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.AICostLogFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>;
+        };
+        findFirst: {
+          args: Prisma.AICostLogFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.AICostLogFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>;
+        };
+        findMany: {
+          args: Prisma.AICostLogFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>[];
+        };
+        create: {
+          args: Prisma.AICostLogCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>;
+        };
+        createMany: {
+          args: Prisma.AICostLogCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.AICostLogCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>[];
+        };
+        delete: {
+          args: Prisma.AICostLogDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>;
+        };
+        update: {
+          args: Prisma.AICostLogUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>;
+        };
+        deleteMany: {
+          args: Prisma.AICostLogDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.AICostLogUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.AICostLogUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>[];
+        };
+        upsert: {
+          args: Prisma.AICostLogUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AICostLogPayload>;
+        };
+        aggregate: {
+          args: Prisma.AICostLogAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAICostLog>;
+        };
+        groupBy: {
+          args: Prisma.AICostLogGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AICostLogGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.AICostLogCountArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AICostLogCountAggregateOutputType> | number;
+        };
+      };
+    };
+    TicketDependency: {
+      payload: Prisma.$TicketDependencyPayload<ExtArgs>;
+      fields: Prisma.TicketDependencyFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.TicketDependencyFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.TicketDependencyFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>;
+        };
+        findFirst: {
+          args: Prisma.TicketDependencyFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.TicketDependencyFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>;
+        };
+        findMany: {
+          args: Prisma.TicketDependencyFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>[];
+        };
+        create: {
+          args: Prisma.TicketDependencyCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>;
+        };
+        createMany: {
+          args: Prisma.TicketDependencyCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.TicketDependencyCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>[];
+        };
+        delete: {
+          args: Prisma.TicketDependencyDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>;
+        };
+        update: {
+          args: Prisma.TicketDependencyUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>;
+        };
+        deleteMany: {
+          args: Prisma.TicketDependencyDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.TicketDependencyUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.TicketDependencyUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>[];
+        };
+        upsert: {
+          args: Prisma.TicketDependencyUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TicketDependencyPayload>;
+        };
+        aggregate: {
+          args: Prisma.TicketDependencyAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTicketDependency>;
+        };
+        groupBy: {
+          args: Prisma.TicketDependencyGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.TicketDependencyGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.TicketDependencyCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.TicketDependencyCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    WorkspaceArchive: {
+      payload: Prisma.$WorkspaceArchivePayload<ExtArgs>;
+      fields: Prisma.WorkspaceArchiveFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.WorkspaceArchiveFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.WorkspaceArchiveFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>;
+        };
+        findFirst: {
+          args: Prisma.WorkspaceArchiveFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.WorkspaceArchiveFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>;
+        };
+        findMany: {
+          args: Prisma.WorkspaceArchiveFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>[];
+        };
+        create: {
+          args: Prisma.WorkspaceArchiveCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>;
+        };
+        createMany: {
+          args: Prisma.WorkspaceArchiveCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.WorkspaceArchiveCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>[];
+        };
+        delete: {
+          args: Prisma.WorkspaceArchiveDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>;
+        };
+        update: {
+          args: Prisma.WorkspaceArchiveUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>;
+        };
+        deleteMany: {
+          args: Prisma.WorkspaceArchiveDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.WorkspaceArchiveUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.WorkspaceArchiveUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>[];
+        };
+        upsert: {
+          args: Prisma.WorkspaceArchiveUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WorkspaceArchivePayload>;
+        };
+        aggregate: {
+          args: Prisma.WorkspaceArchiveAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWorkspaceArchive>;
+        };
+        groupBy: {
+          args: Prisma.WorkspaceArchiveGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.WorkspaceArchiveGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.WorkspaceArchiveCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.WorkspaceArchiveCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
   };
 } & {
   other: {
@@ -1627,6 +2013,11 @@ export const ExecutionScalarFieldEnum = {
   original_provider: 'original_provider',
   error_context: 'error_context',
   scheduled_retry_at: 'scheduled_retry_at',
+  base_branch: 'base_branch',
+  branch_selection_log: 'branch_selection_log',
+  file_modifications: 'file_modifications',
+  risk_level: 'risk_level',
+  circular_dep_detected: 'circular_dep_detected',
   created_at: 'created_at',
   updated_at: 'updated_at',
 } as const;
@@ -1837,6 +2228,80 @@ export const WorkspaceScalarFieldEnum = {
 export type WorkspaceScalarFieldEnum =
   (typeof WorkspaceScalarFieldEnum)[keyof typeof WorkspaceScalarFieldEnum];
 
+export const AIDecisionLogScalarFieldEnum = {
+  id: 'id',
+  timestamp: 'timestamp',
+  agent_name: 'agent_name',
+  action: 'action',
+  reasoning: 'reasoning',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  input_data: 'input_data',
+  output_data: 'output_data',
+  confidence: 'confidence',
+} as const;
+
+export type AIDecisionLogScalarFieldEnum =
+  (typeof AIDecisionLogScalarFieldEnum)[keyof typeof AIDecisionLogScalarFieldEnum];
+
+export const FileLockScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  file_path: 'file_path',
+  locked_at: 'locked_at',
+  released_at: 'released_at',
+  status: 'status',
+} as const;
+
+export type FileLockScalarFieldEnum =
+  (typeof FileLockScalarFieldEnum)[keyof typeof FileLockScalarFieldEnum];
+
+export const AICostLogScalarFieldEnum = {
+  id: 'id',
+  execution_id: 'execution_id',
+  ticket_id: 'ticket_id',
+  timestamp: 'timestamp',
+  ai_provider: 'ai_provider',
+  model_name: 'model_name',
+  operation_type: 'operation_type',
+  tokens_input: 'tokens_input',
+  tokens_output: 'tokens_output',
+  tokens_total: 'tokens_total',
+  cost_usd: 'cost_usd',
+} as const;
+
+export type AICostLogScalarFieldEnum =
+  (typeof AICostLogScalarFieldEnum)[keyof typeof AICostLogScalarFieldEnum];
+
+export const TicketDependencyScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  depends_on: 'depends_on',
+  status: 'status',
+  circular_detected: 'circular_detected',
+  created_at: 'created_at',
+  resolved_at: 'resolved_at',
+} as const;
+
+export type TicketDependencyScalarFieldEnum =
+  (typeof TicketDependencyScalarFieldEnum)[keyof typeof TicketDependencyScalarFieldEnum];
+
+export const WorkspaceArchiveScalarFieldEnum = {
+  id: 'id',
+  execution_id: 'execution_id',
+  workspace_path: 'workspace_path',
+  archive_path: 'archive_path',
+  size_bytes: 'size_bytes',
+  compressed_size: 'compressed_size',
+  status: 'status',
+  archived_at: 'archived_at',
+  error_message: 'error_message',
+} as const;
+
+export type WorkspaceArchiveScalarFieldEnum =
+  (typeof WorkspaceArchiveScalarFieldEnum)[keyof typeof WorkspaceArchiveScalarFieldEnum];
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc',
@@ -1988,6 +2453,22 @@ export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>;
 
 /**
+ * Reference to a field of type 'PRRiskLevel'
+ */
+export type EnumPRRiskLevelFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'PRRiskLevel'
+>;
+
+/**
+ * Reference to a field of type 'PRRiskLevel[]'
+ */
+export type ListEnumPRRiskLevelFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'PRRiskLevel[]'
+>;
+
+/**
  * Reference to a field of type 'GitHubStatus'
  */
 export type EnumGitHubStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
@@ -2081,6 +2562,74 @@ export type EnumWorkspaceStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
 export type ListEnumWorkspaceStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
   $PrismaModel,
   'WorkspaceStatus[]'
+>;
+
+/**
+ * Reference to a field of type 'FileLockStatus'
+ */
+export type EnumFileLockStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'FileLockStatus'
+>;
+
+/**
+ * Reference to a field of type 'FileLockStatus[]'
+ */
+export type ListEnumFileLockStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'FileLockStatus[]'
+>;
+
+/**
+ * Reference to a field of type 'Decimal'
+ */
+export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>;
+
+/**
+ * Reference to a field of type 'Decimal[]'
+ */
+export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>;
+
+/**
+ * Reference to a field of type 'DependencyStatus'
+ */
+export type EnumDependencyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'DependencyStatus'
+>;
+
+/**
+ * Reference to a field of type 'DependencyStatus[]'
+ */
+export type ListEnumDependencyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'DependencyStatus[]'
+>;
+
+/**
+ * Reference to a field of type 'BigInt'
+ */
+export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>;
+
+/**
+ * Reference to a field of type 'BigInt[]'
+ */
+export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>;
+
+/**
+ * Reference to a field of type 'ArchiveStatus'
+ */
+export type EnumArchiveStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'ArchiveStatus'
+>;
+
+/**
+ * Reference to a field of type 'ArchiveStatus[]'
+ */
+export type ListEnumArchiveStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'ArchiveStatus[]'
 >;
 
 /**
@@ -2201,6 +2750,11 @@ export type GlobalOmitConfig = {
   projectCoverageConfig?: Prisma.ProjectCoverageConfigOmit;
   webhookEvent?: Prisma.WebhookEventOmit;
   workspace?: Prisma.WorkspaceOmit;
+  aIDecisionLog?: Prisma.AIDecisionLogOmit;
+  fileLock?: Prisma.FileLockOmit;
+  aICostLog?: Prisma.AICostLogOmit;
+  ticketDependency?: Prisma.TicketDependencyOmit;
+  workspaceArchive?: Prisma.WorkspaceArchiveOmit;
 };
 
 /* Types for Logging */

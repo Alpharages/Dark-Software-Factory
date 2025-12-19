@@ -606,7 +606,7 @@ development_status:
   # Added: 2025-12-19
   # ===================================================================
 
-  epic-11: backlog
+  epic-11: in-progress
   epic-11-name: "v3 Foundation & Safety"
   epic-11-phase: "Phase 1 (Week 1-2)"
   epic-11-priority: high
@@ -614,10 +614,10 @@ development_status:
   epic-11-blocks: "Epic 12, 13, 14, 15"
   epic-11-notes: "Database schema, AI audit logging, progress validator. See: docs/sprint-artifacts/epic-11-v3-foundation-safety.md"
   11-1-database-schema-migrations:
-    status: backlog
+    status: review
     effort: "1 day"
     story_points: 3
-    notes: "Create Prisma schema for v3 models (AIDecisionLog, FileLock, AICostLog, TicketDependency, WorkspaceArchive). Run migrations."
+    notes: "V3 schema + migrations created and applied. Prisma client regenerated. Documentation added to architecture.md. Ready for review."
   11-2-ai-decision-audit-logger:
     status: backlog
     effort: "2 days"
