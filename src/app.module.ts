@@ -3,6 +3,7 @@ import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HelloController } from './hello/hello.controller';
 
 // Configuration & Database (Global modules)
 import { ConfigModule } from './config/config.module';
@@ -94,7 +95,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     IntegrationModule,
     ClickUpModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HelloController],
   providers: [
     AppService,
 
