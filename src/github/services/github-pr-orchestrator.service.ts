@@ -4,73 +4,52 @@
  * Story 4.4: Pull Request Creation & Metadata
  * Delegates PR creation to AI agents following thin coordination pattern
  *
- * AC#1: AI-Delegated PR Creation
- * AC#3: Parse AI Agent Output
- * AC#4: Database Record Updates
- * AC#5: Error Handling & Resilience
- * AC#6: Observability & Metrics
+ * Flow: Call AI provider → AI analyzes changes, generates PR title/description, and creates PR
  */
 
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { SentryService } from '../../common/sentry/sentry.service';
-import { MetricsService } from '../../common/metrics/metrics.service';
-import { AuditLogService } from '../../common/audit/audit-log.service';
-import { LoggerService } from '../../common/logger/logger.service';
-import { OrchestratorService } from '../../ai-routing/orchestrator.service';
-import { GitHubService } from '../github.service';
-import { GitHubErrorMonitor } from './github-error-monitor.service';
-import { PRTask, PRTaskContext, QAResultsSummary } from '../interfaces/pr-task.interface';
+import { PrismaService } from '@/database/prisma.service';
+import { SentryService } from '@/common/sentry/sentry.service';
+import { MetricsService } from '@/common/metrics/metrics.service';
+import { AuditLogService } from '@/common/audit/audit-log.service';
+import { LoggerService } from '@/common/logger/logger.service';
+import { AIExecutionService } from '@/ai-routing/ai-execution.service';
+import { WorkspaceService } from '@/ai-routing/providers';
+import { IAIPromptExecutor } from '@/ai-routing/interfaces';
 import { PROrchestrationResult } from '../interfaces/pr-result.interface';
-import { parseAIPRResponse } from '../utils/pr-response-parser';
-import { buildPRDescription, PRDescriptionContext } from '../utils/pr-description-builder';
-import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
 
 @Injectable()
 export class GitHubPROrchestrator {
   constructor(
-    private readonly orchestrator: OrchestratorService,
-    private readonly githubService: GitHubService,
+    private readonly aiExecution: AIExecutionService,
     private readonly prisma: PrismaService,
     private readonly rabbitMQ: RabbitMQService,
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
-    private readonly errorMonitor: GitHubErrorMonitor,
     private readonly logger: LoggerService,
+    private readonly workspaceService: WorkspaceService,
   ) {}
 
   /**
-   * Orchestrates PR creation via AI delegation
-   * AC#1: AI-Delegated PR Creation
+   * Orchestrates PR creation via AI provider
+   * Flow: Call AI provider → AI analyzes changes, generates PR title/description, and creates PR
    */
   async createPullRequest(
     executionId: string,
     correlationId?: string,
   ): Promise<PROrchestrationResult> {
     const startTime = Date.now();
-    let execution: {
-      ticket: { clickup_task_id: string; title: string; description: string };
-      ai_provider: string;
-      complexity_score: number | null;
-      confidence_score: number | null;
-    } | null = null;
 
-    let githubPush: {
-      id: string;
-      repository: string;
-      branch_name: string;
-      commit_sha: string | null;
-    } | null = null;
-
-    this.logger.log('Starting PR orchestration', {
+    this.logger.log('Starting AI-delegated PR creation', {
       executionId,
       correlationId,
     });
 
     try {
-      // Load execution with ticket relation
-      execution = await this.prisma.execution.findUnique({
+      // Load execution with ticket data
+      const execution = await this.prisma.execution.findUnique({
         where: { id: executionId },
         include: { ticket: true },
       });
@@ -79,7 +58,7 @@ export class GitHubPROrchestrator {
         throw new Error(`Execution ${executionId} not found`);
       }
 
-      githubPush = await this.prisma.gitHubPush.findFirst({
+      const githubPush = await this.prisma.gitHubPush.findFirst({
         where: { execution_id: executionId },
       });
 
@@ -87,139 +66,97 @@ export class GitHubPROrchestrator {
         throw new Error(`GitHub push record not found for execution ${executionId}`);
       }
 
-      const { ticketId, ticketTitle, ticketDescription } = {
-        ticketId: execution.ticket.clickup_task_id,
-        ticketTitle: execution.ticket.title,
-        ticketDescription: execution.ticket.description,
-      };
+      // Get existing workspace
+      const workspace = await this.workspaceService.getWorkspace(executionId);
 
-      // Load QA results for PR description
-      const qaResult = await this.prisma.qAResult.findFirst({
-        where: { execution_id: executionId },
-        orderBy: { created_at: 'desc' },
-      });
+      if (!workspace) {
+        throw new Error(`Workspace not found for execution ${executionId}`);
+      }
 
-      const qaResults: QAResultsSummary = qaResult
-        ? {
-            linting_passed: qaResult.linting_passed || false,
-            tests_passed: qaResult.tests_passed || false,
-            test_coverage: qaResult.test_coverage || undefined,
-            code_review_passed: qaResult.code_review_passed || false,
-            qa_summary_details: '', // TODO: Extract from qa_result details
-          }
-        : {
-            linting_passed: false,
-            tests_passed: false,
-            code_review_passed: false,
-            qa_summary_details: 'QA results not found',
-          };
-
-      // AC#2: Build PR description
-      const prDescriptionContext: PRDescriptionContext = {
-        ticketId,
-        ticketUrl: `https://app.clickup.com/t/${ticketId}`,
-        ticketTitle,
-        acceptanceCriteria: [], // TODO: Extract from ticket if available
-        aiProvider: execution.ai_provider,
-        complexityScore: execution.complexity_score || 50,
-        confidenceScore: execution.confidence_score || 70,
-        executionId,
-        fallbackUsed: false, // TODO: Track from OrchestratorService
-        qaResults,
-      };
-
-      const prDescription = buildPRDescription(prDescriptionContext);
-
-      // AC#1: Build AI delegation task
-      const prTask = this.buildPRTask(
-        githubPush.repository,
-        githubPush.branch_name,
-        prDescription,
-        {
-          ticketId,
-          ticketTitle,
-          ticketDescription,
-          acceptanceCriteria: [],
-          qaResults,
-          executionId,
-          aiProvider: execution.ai_provider,
-          complexityScore: execution.complexity_score || 50,
-          confidenceScore: execution.confidence_score || 70,
-        },
-      );
-
-      // Delegate to AI provider
-      this.logger.log('Delegating PR task to AI provider', {
+      this.logger.log('Delegating PR creation to AI provider', {
         executionId,
         provider: execution.ai_provider,
         repository: githubPush.repository,
         branch: githubPush.branch_name,
       });
 
-      const aiResult = await this.callAIProvider(
-        prTask,
-        execution.ai_provider,
-        githubPush.repository,
-      );
-
-      // AC#3: Parse AI response
-      const parsedResult = parseAIPRResponse(aiResult);
-
-      if (!parsedResult.success || !parsedResult.prUrl) {
-        this.logger.warn('PR creation failed or URL missing', {
-          executionId,
-          error: parsedResult.error,
-        });
-
-        // Record failure
-        this.metrics.incrementGitHubOperation('pr_create', 'failed');
-        this.metrics.incrementCounter('github_pr_created_total', {
-          status: 'failed',
-          repository: githubPush.repository,
-        });
-
-        const error = new Error(parsedResult.error || 'PR creation failed - no URL returned');
-
-        await this.errorMonitor.handleGitHubError({
-          operation: 'pr_creation',
-          executionId,
-          ticketId,
-          repository: githubPush.repository,
-          branchName: githubPush.branch_name,
-          error,
-          correlationId,
-          aiProvider: execution.ai_provider,
-          taskInstructions: prTask.instructions,
-          aiOutput: aiResult,
-        });
-
-        return {
-          success: false,
-          error: error.message,
-        };
-      }
-
-      // AC#4: Update database
-      await this.updateDatabase(githubPush.id, parsedResult, executionId, {
+      // Build prompt for AI to handle PR creation
+      // AI CLI is already in the workspace and can discover changes itself
+      const prompt = this.buildPRPrompt({
+        ticketId: execution.ticket.clickup_task_id,
+        ticketTitle: execution.ticket.title,
+        ticketDescription: execution.ticket.description,
         repository: githubPush.repository,
         branchName: githubPush.branch_name,
-        ticketId,
-        aiProvider: execution.ai_provider,
-        correlationId,
+        baseBranch: 'main',
       });
 
-      // AC#6: Record metrics
+      // Get AI provider instance and cast to IAIPromptExecutor
+      const providerInstance = this.aiExecution['providers'].get(execution.ai_provider);
+
+      if (!providerInstance) {
+        throw new Error(`Provider ${execution.ai_provider} not available`);
+      }
+
+      const aiProvider = providerInstance as unknown as IAIPromptExecutor;
+
+      // Call AI provider to execute PR creation
+      const result = await aiProvider.executePrompt({
+        workspacePath: workspace.path,
+        prompt,
+      });
+
+      if (!result.success || !result.response) {
+        throw new Error(`AI provider failed: ${result.error || 'No response'}`);
+      }
+
+      // Parse AI response to extract PR info
+      const prInfo = this.parsePRResponse(result.response);
+
+      // Update database with PR results
+      await this.prisma.gitHubPush.update({
+        where: { id: githubPush.id },
+        data: {
+          pr_number: prInfo.prNumber,
+          pr_url: prInfo.prUrl,
+          push_status: 'PR_CREATED',
+        },
+      });
+
+      // Create audit log for PR creation
+      await this.audit.log({
+        action: 'github_pr_create',
+        entityType: 'execution',
+        entityId: executionId,
+        actorType: 'system',
+        afterState: {
+          repository: githubPush.repository,
+          branchName: githubPush.branch_name,
+          prUrl: prInfo.prUrl,
+          prNumber: prInfo.prNumber,
+          aiProvider: execution.ai_provider,
+          ticketId: execution.ticket.clickup_task_id,
+          correlationId,
+        },
+      });
+
+      // Record comprehensive metrics
       const duration = Date.now() - startTime;
+
+      // Legacy metrics for backward compatibility
       this.metrics.incrementGitHubOperation('pr_create', 'success');
       this.metrics.recordGitHubOperationDuration('pr_create', duration, githubPush.repository);
 
-      // Story 4.8 Metrics
+      // Detailed metrics with labels
       this.metrics.incrementCounter('github_pr_created_total', {
         status: 'success',
         repository: githubPush.repository,
+        provider: execution.ai_provider,
       });
+
       this.metrics.recordHistogram('github_pr_creation_duration_seconds', duration / 1000, {
         repository: githubPush.repository,
+        provider: execution.ai_provider,
       });
 
       // Story 4.5: Publish deployment trigger message
@@ -230,50 +167,69 @@ export class GitHubPROrchestrator {
           repository: githubPush.repository,
           branchName: githubPush.branch_name,
           commitSha: githubPush.commit_sha || '',
-          prUrl: parsedResult.prUrl!,
-          prNumber: parsedResult.prNumber!,
-          ticketId,
-          environment: 'dev', // Default to dev environment
+          prUrl: prInfo.prUrl,
+          prNumber: prInfo.prNumber,
+          ticketId: execution.ticket.clickup_task_id,
+          environment: 'dev',
         },
         correlationId,
       );
 
-      this.logger.log('PR orchestration completed successfully', {
+      this.logger.log('AI-delegated PR creation completed successfully', {
         executionId,
-        prUrl: parsedResult.prUrl,
-        prNumber: parsedResult.prNumber,
+        prUrl: prInfo.prUrl,
+        prNumber: prInfo.prNumber,
         duration,
       });
 
       return {
         success: true,
-        prUrl: parsedResult.prUrl,
-        prNumber: parsedResult.prNumber,
+        prUrl: prInfo.prUrl,
+        prNumber: prInfo.prNumber,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      this.metrics.incrementCounter('github_pr_created_total', {
-        status: 'failed',
-        repository: githubPush?.repository || 'unknown',
-      });
-
-      // AC#5: Error handling
-      await this.handleError(
-        error as Error,
-        executionId,
-        execution?.ticket?.clickup_task_id,
-        githubPush?.repository,
-        githubPush?.branch_name,
-        execution?.ai_provider,
-        correlationId,
-      );
-
-      this.logger.warn('PR orchestration failed', {
-        executionId,
+      this.logger.error('AI-delegated PR creation failed', executionId, {
         error: (error as Error).message,
         duration,
       });
+
+      this.metrics.incrementCounter('github_pr_created_total', {
+        status: 'failed',
+        error_type: 'ai_delegation_error',
+        repository: 'unknown',
+      });
+
+      // Capture critical error in Sentry
+      this.sentry.captureException(error as Error, {
+        extra: {
+          operation: 'pr_creation',
+          executionId,
+          correlationId,
+        },
+      });
+
+      // Update GitHub push status to FAILED if possible
+      try {
+        const githubPush = await this.prisma.gitHubPush.findFirst({
+          where: { execution_id: executionId },
+        });
+
+        if (githubPush) {
+          await this.prisma.gitHubPush.update({
+            where: { id: githubPush.id },
+            data: {
+              push_status: 'FAILED',
+              error_message: (error as Error).message,
+            },
+          });
+        }
+      } catch (dbError) {
+        this.logger.error('Failed to update GitHub push status', executionId, {
+          error: (dbError as Error).message,
+        });
+      }
 
       return {
         success: false,
@@ -283,155 +239,97 @@ export class GitHubPROrchestrator {
   }
 
   /**
-   * Builds AI delegation task structure
-   * AC#1: AI delegation task format
+   * Build comprehensive prompt for AI to handle PR creation
+   * AI CLI is already in the workspace and can discover changes itself
    */
-  private buildPRTask(
-    repository: string,
-    branchName: string,
-    prDescription: string,
-    context: PRTaskContext,
-  ): PRTask {
-    const instructions = `
-Create GitHub Pull Request for this feature:
+  private buildPRPrompt(context: {
+    ticketId: string;
+    ticketTitle: string;
+    ticketDescription?: string;
+    repository: string;
+    branchName: string;
+    baseBranch: string;
+  }): string {
+    const { ticketId, ticketTitle, ticketDescription, branchName, baseBranch } = context;
 
-Repository: ${repository}
-Branch: ${branchName}
-Base: main
+    return `You are a senior software engineer creating a GitHub Pull Request. Execute the following tasks:
 
-PR Title: "${context.ticketTitle}"
+CONTEXT:
+- Ticket ID: ${ticketId}
+- Ticket Title: ${ticketTitle}
+${ticketDescription ? `- Description: ${ticketDescription}` : ''}
 
-PR Description:
-${prDescription}
+TASKS:
+1. Analyze the code changes in the workspace using git commands (git log, git diff, etc.)
+2. Generate a comprehensive PR title following conventional commits format:
+   - Format: <type>(<scope>): <description>
+   - Types: feat, fix, refactor, docs, test, chore, perf
+   - Example: "feat(auth): add OAuth2 authentication flow"
+   
+3. Generate a detailed PR description that includes:
+   - Summary of changes (2-3 sentences)
+   - Key changes made (3-5 bullet points)
+   - Related ticket: ${ticketId}
+   - Testing notes if applicable
+   
+4. Create the PR using GitHub CLI:
+   \`gh pr create --title "<your title>" --body "<your description>" --head ${branchName} --base ${baseBranch}\`
+   
+5. Extract the PR URL and number from the output
 
-Use the GitHub CLI to create the PR:
-\`gh pr create --title "${context.ticketTitle}" --body "..." --head ${branchName} --base main\`
-
-Return format (JSON):
+REQUIRED OUTPUT FORMAT (JSON):
 {
-  "prUrl": "https://github.com/${repository}/pull/XXX",
-  "prNumber": XXX
+  "prUrl": "https://github.com/<owner>/<repo>/pull/<number>",
+  "prNumber": <number>,
+  "prTitle": "<your generated title>"
 }
-    `.trim();
 
-    return {
-      type: 'github-create-pr',
-      instructions,
-      context,
-    };
+Execute these tasks now and return ONLY the JSON response.`;
   }
 
   /**
-   * Calls AI provider to execute PR creation task via OrchestratorService
-   * AC#1: Actual AI delegation (not mock)
+   * Parse AI response to extract PR information
    */
-  private async callAIProvider(
-    task: PRTask,
-    provider: string,
-    repository: string,
-  ): Promise<string> {
-    // Build proper orchestration input
-    const input = {
-      executionId: task.context.executionId,
-      ticketId: task.context.ticketId,
-      correlationId: task.context.executionId,
-      prompt: task.instructions,
-      repositoryUrl: `https://github.com/${repository}.git`,
-      workspacePath: process.cwd(),
-      providerOverride: provider as 'CURSOR_HEADLESS' | 'CLAUDE_CODE',
-      title: task.context.ticketTitle,
-      description: task.context.ticketDescription,
-      acceptanceCriteria: task.context.acceptanceCriteria.join('\n') || '',
-    };
+  private parsePRResponse(response: string): {
+    prUrl: string;
+    prNumber: number;
+    prTitle?: string;
+  } {
+    try {
+      // Try to parse as JSON first
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.prUrl && parsed.prNumber) {
+          return {
+            prUrl: parsed.prUrl,
+            prNumber: parsed.prNumber,
+            prTitle: parsed.prTitle,
+          };
+        }
+      }
 
-    const result = await this.orchestrator.execute(input);
+      // Fallback: Try to extract PR URL from text
+      const urlMatch = response.match(/https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)/);
+      if (urlMatch) {
+        return {
+          prUrl: urlMatch[0],
+          prNumber: parseInt(urlMatch[1], 10),
+        };
+      }
 
-    if (!result.success) {
-      throw new Error(`AI provider execution failed: ${result.error?.message || 'Unknown error'}`);
+      throw new Error('Could not parse PR URL from AI response');
+    } catch (error) {
+      this.logger.error('Failed to parse PR response', 'unknown', {
+        error: (error as Error).message,
+        response: response.substring(0, 500),
+      });
+      throw new Error(`Failed to parse PR response: ${(error as Error).message}`);
     }
-
-    // Return the codeDiff as PR creation output
-    return result.codeDiff || '';
-  }
-
-  /**
-   * AC#4: Updates database with PR results
-   */
-  private async updateDatabase(
-    githubPushId: string,
-    result: { prUrl?: string; prNumber?: number },
-    executionId: string,
-    context: {
-      repository: string;
-      branchName: string;
-      ticketId: string;
-      aiProvider: string;
-      correlationId?: string;
-    },
-  ): Promise<void> {
-    // Update GitHub push record
-    await this.prisma.gitHubPush.update({
-      where: { id: githubPushId },
-      data: {
-        pr_number: result.prNumber,
-        pr_url: result.prUrl,
-        push_status: 'PR_CREATED',
-      },
-    });
-
-    // AC#4: Create audit log
-    await this.audit.log({
-      action: 'github_pr_create',
-      entityType: 'execution',
-      entityId: executionId,
-      actorType: 'system',
-      afterState: {
-        repository: context.repository,
-        branchName: context.branchName,
-        prUrl: result.prUrl,
-        prNumber: result.prNumber,
-        aiProvider: context.aiProvider,
-        ticketId: context.ticketId,
-        correlationId: context.correlationId,
-      },
-    });
-
-    this.logger.log('Database updated with PR results', {
-      executionId,
-      prUrl: result.prUrl,
-      prNumber: result.prNumber,
-      status: 'PR_CREATED',
-    });
-  }
-
-  /**
-   * AC#5: Comprehensive error handling
-   */
-  private async handleError(
-    error: Error,
-    executionId: string,
-    ticketId: string | undefined,
-    repository: string | undefined,
-    branchName: string | undefined,
-    aiProvider: string | undefined,
-    correlationId?: string,
-  ): Promise<void> {
-    // Delegate to error monitor
-    await this.errorMonitor.handleGitHubError({
-      operation: 'pr_creation',
-      executionId,
-      ticketId: ticketId || 'unknown',
-      repository: repository || 'unknown',
-      branchName: branchName || 'unknown',
-      error,
-      correlationId,
-      aiProvider,
-    });
   }
 
   /**
    * Story 4.5 Integration: Publish deployment trigger message
-   * Publishes to github-pr-created-queue for DeploymentTriggerConsumer
    */
   private async publishDeploymentTrigger(
     payload: {
@@ -468,14 +366,6 @@ Return format (JSON):
       this.logger.warn('Failed to publish deployment trigger', {
         executionId: payload.executionId,
         error: (error as Error).message,
-      });
-
-      this.sentry.captureException(error as Error, {
-        extra: {
-          operation: 'publish_deployment_trigger',
-          executionId: payload.executionId,
-          prNumber: payload.prNumber,
-        },
       });
     }
   }

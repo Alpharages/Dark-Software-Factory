@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { LoggerService } from '@/common/logger/logger.service';
 import { PrismaService } from '@/database/prisma.service';
+import { SentryService } from '@/common/sentry/sentry.service';
 import { AuditLogService } from '@/common/audit/audit-log.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { AIExecutionService } from '@/ai-routing/ai-execution.service';
@@ -23,6 +24,7 @@ export class GitHubCommitOrchestrator {
     private readonly prisma: PrismaService,
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
+    private readonly sentry: SentryService,
     private readonly logger: LoggerService,
     private readonly workspaceService: WorkspaceService,
     private readonly gitOps: GitOperationsService,
@@ -203,6 +205,15 @@ export class GitHubCommitOrchestrator {
       this.metrics.incrementCounter('github_commit_total', {
         status: 'failed',
         repository: 'unknown',
+      });
+
+      // Capture critical error in Sentry
+      this.sentry.captureException(error as Error, {
+        extra: {
+          operation: 'commit_and_push',
+          executionId,
+          correlationId,
+        },
       });
 
       // Update GitHub push status to FAILED
