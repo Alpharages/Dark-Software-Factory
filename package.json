@@ -150,6 +150,7 @@
     ],
     "moduleNameMapper": {
       "^@octokit/rest$": "<rootDir>/../test/mocks/octokit.mock.ts",
+      "^@/(.*)$": "<rootDir>/$1",
       "^src/(.*)$": "<rootDir>/$1"
     }
   }

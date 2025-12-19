@@ -53,6 +53,13 @@ export const envValidationSchema = Joi.object({
   AI_RETRY_DELAY_MINUTES: Joi.number().default(5),
   AI_ALERT_THRESHOLD_MINUTES: Joi.number().default(15),
 
+  // Story 11.2: AI Decision Audit Configuration
+  AI_CONFIDENCE_THRESHOLD: Joi.number()
+    .min(0)
+    .max(1)
+    .default(0.5)
+    .description('Alert threshold for low-confidence AI decisions (0-1 range)'),
+
   // GitHub Integration (REQUIRED)
   GITHUB_TOKEN: Joi.string()
     .pattern(/^(ghp_|ghs_|github_pat_)/)
