@@ -377,7 +377,8 @@ development_status:
 
   epic-5: blocked
   epic-5-blocker: "Story 4.9 (Projects Table) - Required for PM Dashboard to display correct repository information"
-  epic-5-notes: "Epic 5 redesigned from 10→7 stories (30% reduction, 58% effort saved). User approved React+TypeScript+Tailwind stack. AI delegation pattern applied per ADR-008. BLOCKED ON: Story 4.9 must complete first to provide projects infrastructure. See epic-5-redesign-approved.md for details."
+  epic-5-dependencies-v3: "Epic 14.5 (Real-Time Observability Dashboard API) - Provides backend APIs for real-time data"
+  epic-5-notes: "Epic 5 redesigned from 10→7 stories (30% reduction, 58% effort saved). User approved React+TypeScript+Tailwind stack. AI delegation pattern applied per ADR-008. BLOCKED ON: Story 4.9 must complete first to provide projects infrastructure. V3 ENHANCEMENT: Will consume real-time APIs from Epic 14 for live ticket status, queue metrics, and system health. See epic-5-redesign-approved.md and v3-epic-impact-analysis.md for details."
   5-1-pm-dashboard-api-orchestration:
     status: ready-for-dev
     notes: "NEW Story 5.1 (merged from original 5.1+5.2). AI delegation pattern applied: DSF builds API+Socket.IO gateway, AI generates React dashboard UI. See story file for comprehensive context."
@@ -398,29 +399,60 @@ development_status:
   5-10-quick-actions-keyboard-shortcuts: backlog
   epic-5-retrospective: optional
 
-  epic-6: backlog
-  6-1-ai-api-usage-tracking: backlog
-  6-2-real-time-cost-calculation-per-ticket-project: backlog
-  6-3-budget-alerts-thresholds: backlog
-  6-4-automatic-cost-cap-enforcement: backlog
-  6-5-cost-monitoring-dashboard: backlog
-  6-6-go-no-go-decision-dashboard: backlog
-  6-7-cost-optimization-recommendations:
+  # ===================================================================
+  # EPIC 6 REVISED - Cost tracking core moved to Epic 13
+  # Original Epic 6 had 8 stories, 5 superseded by Epic 13
+  # See: docs/sprint-artifacts/v3-epic-impact-analysis.md
+  # ===================================================================
+  
+  epic-6: deprecated
+  epic-6-original-stories: 8
+  epic-6-superseded-by: "Epic 13 (v3 AI Enhancements & Cost Tracking)"
+  epic-6-superseded-stories:
+    - "6-1: AI API Usage Tracking → Epic 13-1 (95% overlap)"
+    - "6-2: Real-time Cost Calculation → Epic 13-1 (90% overlap)"
+    - "6-3: Budget Alerts & Thresholds → Epic 13-1 (100% overlap)"
+    - "6-5: Cost Monitoring Dashboard (80%) → Epic 13-5"
+    - "6-7: Cost Optimization Recommendations (70%) → Epic 13-2"
+  
+  epic-6-R: backlog
+  epic-6-R-name: "Advanced Cost Management"
+  epic-6-R-priority: medium
+  epic-6-R-dependencies: "Epic 13 (AI Cost Tracking foundation)"
+  epic-6-R-notes: "Reduced from 8→3 stories. Core AI cost tracking now in Epic 13. This epic adds advanced business features on top of Epic 13 foundation."
+  6-R-1-automatic-cost-cap-enforcement:
     status: backlog
-    delegation_opportunity: "IDENTIFIED 2025-12-07"
-    notes: "DELEGATION OPPORTUNITY: Replace ML/rules engine with AI analysis. AI analyzes cost patterns, identifies savings opportunities, generates prioritized recommendations with ROI estimates. Keep: data aggregation, UI, apply/dismiss actions. Effort reduction: ~50% (1 week → 3-4 days). Priority: Phase 1 (Business value). See: /docs/architecture/epic-5-10-delegation-strategy.md"
-  6-8-financial-metrics-for-business-oversight: backlog
-  epic-6-retrospective: optional
+    effort: "3 days"
+    story_points: 5
+    notes: "Automatic enforcement of cost caps. Stop AI execution when budget exceeded. Alert PM. Requires Epic 13-1 cost tracking."
+    original_story: "6-4"
+  6-R-2-go-no-go-decision-dashboard:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Business decision UI: approve/reject tickets based on cost projections. ROI calculator. Requires Epic 13-1 cost data."
+    original_story: "6-6"
+  6-R-3-financial-metrics-business-oversight:
+    status: backlog
+    effort: "2 days"
+    story_points: 3
+    notes: "CFO/business metrics: cost per feature, ROI tracking, cost trends, budget utilization. Requires Epic 13-5 cost API."
+    original_story: "6-8"
+  epic-6-R-retrospective: optional
 
   epic-7: backlog
+  epic-7-enhancements-v3: "Epic 11.2 (Audit Logger), Epic 14.1 (PR Risk Assessor)"
+  epic-7-notes: "V3 ENHANCEMENTS: Story 7-1 (ADR Generation) effort reduced ~50% by leveraging Epic 11.2 AI decision audit logs. Story 7-3 (Risk Prioritization) can leverage Epic 14.1 PR risk scores. See v3-epic-impact-analysis.md."
   7-1-architecture-decision-records-adr-generation:
     status: backlog
     delegation_opportunity: "IDENTIFIED 2025-12-07 - HIGHEST ROI"
+    v3_enhancement: "Epic 11.2 (Audit Logger) provides AI decision history, reducing ADR extraction effort by ~50%"
     notes: "DELEGATION OPPORTUNITY ⭐ BIGGEST WIN: AI naturally documents architecture decisions during code generation. Include ADR requirement in code gen tasks - AI outputs structured ADRs directly (Michael Nygard template). Eliminates complex parsing/extraction logic. Effort reduction: ~80% (1 week → 1-2 days). KEY INSIGHT: Don't parse AI decisions - ask AI to document properly upfront! Priority: Phase 1 (Highest ROI). See: /docs/architecture/epic-5-10-delegation-strategy.md"
   7-2-tl-architecture-review-queue: backlog
   7-3-risk-based-review-prioritization:
     status: backlog
     delegation_opportunity: "IDENTIFIED 2025-12-07"
+    v3_enhancement: "Epic 14.1 (PR Risk Assessor) provides risk scores for architecture review prioritization"
     notes: "PARTIAL DELEGATION: AI assesses architecture risk level (scope, reversibility, complexity analysis) with reasoning. Orchestrator handles escalation workflow and TL alerting. Pattern recognition = AI strength. Effort reduction: ~50% (5 days → 2-3 days). Priority: Phase 2. See: /docs/architecture/epic-5-10-delegation-strategy.md"
   7-4-architecture-decision-approval-rejection: backlog
   7-5-architecture-patterns-constraints: backlog
@@ -430,6 +462,8 @@ development_status:
   epic-7-retrospective: optional
 
   epic-8: backlog
+  epic-8-dependencies-v3: "Epic 3 (QA Automation), Epic 13 (AI Self-Healing)"
+  epic-8-notes: "Lead QA manual review workflow. CLEAR SEPARATION: Epic 8 = manual review by Lead QA, Epic 13 = automated AI self-healing. Lead QA reviews QA results + AI self-heal attempts before production approval. See v3-epic-impact-analysis.md."
   8-1-qa-review-queue-sampling-configuration: backlog
   8-2-qa-code-review-interface:
     status: backlog
@@ -446,29 +480,299 @@ development_status:
   8-8-quality-review-metrics-qa-workload: backlog
   epic-8-retrospective: optional
 
-  epic-9: backlog
-  9-1-production-error-monitoring-integration: backlog
-  9-2-error-severity-classification-prioritization:
+  # ===================================================================
+  # EPIC 9 UPDATED - Self-healing logic moved to Epic 13
+  # Original Epic 9 had 8 stories, 3 moved to Epic 13/14
+  # See: docs/sprint-artifacts/v3-epic-impact-analysis.md
+  # ===================================================================
+  
+  epic-9: deprecated
+  epic-9-original-stories: 8
+  epic-9-superseded-by: "Epic 13 (AI Self-Healing), Epic 14 (Health Monitoring)"
+  epic-9-superseded-stories:
+    - "9-5: AI Fix Generation & Testing → Epic 13.3, 13.4 (70% overlap)"
+    - "9-6: Fix Verification & Deploy → Epic 14.4 (40% overlap)"
+    - "9-7: Self-Healing Metrics → Epic 13 Prometheus metrics (80% overlap)"
+  
+  epic-9-U: backlog
+  epic-9-U-name: "Production Error Management"
+  epic-9-U-priority: medium
+  epic-9-U-dependencies: "Epic 13 (AI Self-Healing), Epic 14 (Health Monitoring)"
+  epic-9-U-notes: "Reduced from 8→5 stories. AI self-healing logic moved to Epic 13. Post-deployment health monitoring in Epic 14. This epic focuses on production error tracking, severity classification, and ticket creation."
+  9-U-1-production-error-monitoring-integration:
     status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Integrate with Sentry, Datadog, CloudWatch. Unified error ingestion. Uses Epic 14.4 health monitoring. Merged from 9-1."
+    original_story: "9-1"
+  9-U-2-error-severity-classification-prioritization:
+    status: backlog
+    effort: "2 days"
+    story_points: 3
     delegation_opportunity: "IDENTIFIED 2025-12-07"
-    notes: "DELEGATION OPPORTUNITY: AI classifies production error severity (CRITICAL/HIGH/MEDIUM/LOW) with reasoning and priority score. Pattern recognition task - leverage AI instead of building rules engine. Keep: database storage, queue ordering. Effort reduction: ~60% (4 days → 1-2 days). Priority: Phase 3. See: /docs/architecture/epic-5-10-delegation-strategy.md"
-  9-3-automatic-fix-ticket-creation: backlog
-  9-4-error-log-analysis-context-extraction: backlog
-  9-5-ai-fix-generation-testing: backlog
-  9-6-fix-verification-deployment: backlog
-  9-7-self-healing-metrics-success-tracking: backlog
-  9-8-production-error-dashboard-for-ops-team: backlog
-  epic-9-retrospective: optional
+    notes: "AI classifies error severity (CRITICAL/HIGH/MEDIUM/LOW) with reasoning. Pattern recognition task. Keep: DB storage, queue ordering. From original 9-2."
+    original_story: "9-2"
+  9-U-3-automatic-fix-ticket-creation:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Auto-create ClickUp tickets for production errors. Link to error logs. Assign based on component ownership. From original 9-3."
+    original_story: "9-3"
+  9-U-4-error-context-extraction-linking:
+    status: backlog
+    effort: "2 days"
+    story_points: 3
+    notes: "Extract stack traces, user context, deployment info. Link errors to code commits. Enhanced by Epic 11.2 audit logs. From original 9-4."
+    original_story: "9-4"
+    v3_enhancement: "Epic 11.2 (Audit Logger) provides commit history and deployment context"
+  9-U-5-production-error-dashboard:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Ops team dashboard for production errors. Real-time alerts. Uses Epic 14.5 observability APIs. Merged from 9-8."
+    original_story: "9-8"
+    v3_enhancement: "Epic 14.5 provides real-time observability APIs"
+  epic-9-U-retrospective: optional
 
-  epic-10: backlog
-  10-1-socket-io-real-time-infrastructure: backlog
-  10-2-execution-progress-updates: backlog
-  10-3-cost-alert-real-time-notifications: backlog
-  10-4-quality-gate-failure-notifications: backlog
-  10-5-orchestrator-system-health-dashboard: backlog
-  10-6-queue-depth-monitoring-alerts: backlog
-  10-7-execution-logs-error-details: backlog
-  10-8-manual-intervention-circuit-breaker: backlog
-  10-9-system-metrics-export-integration: backlog
-  10-10-notification-preferences-channels: backlog
-  epic-10-retrospective: optional
+  # ===================================================================
+  # EPIC 10 UPDATED - Observability APIs moved to Epic 14
+  # Original Epic 10 had 10 stories, 3 moved to Epic 13/14
+  # See: docs/sprint-artifacts/v3-epic-impact-analysis.md
+  # ===================================================================
+  
+  epic-10: deprecated
+  epic-10-original-stories: 10
+  epic-10-superseded-by: "Epic 13 (Cost Alerts), Epic 14 (Observability APIs)"
+  epic-10-superseded-stories:
+    - "10-3: Cost Alert Notifications → Epic 13.1 budget alerts (70% overlap)"
+    - "10-5: System Health Dashboard → Epic 14.5 health API (80% overlap)"
+    - "10-6: Queue Depth Monitoring → Epic 14.5 queue metrics API (90% overlap)"
+  
+  epic-10-U: backlog
+  epic-10-U-name: "Real-time Notifications & Controls"
+  epic-10-U-priority: medium
+  epic-10-U-dependencies: "Epic 11 (Audit Logs), Epic 13 (Cost Alerts), Epic 14 (Observability APIs)"
+  epic-10-U-notes: "Reduced from 10→7 stories. Backend observability APIs moved to Epic 14. This epic focuses on Socket.IO infrastructure and real-time streaming to frontend clients."
+  10-U-1-socket-io-real-time-infrastructure:
+    status: backlog
+    effort: "3 days"
+    story_points: 8
+    notes: "Socket.IO server setup. Connection management. Room/namespace organization. Authentication. From original 10-1."
+    original_story: "10-1"
+  10-U-2-execution-progress-streaming:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Stream execution progress updates to frontend. Uses Epic 14.5 real-time APIs. WebSocket events. Merged from 10-2."
+    original_story: "10-2"
+    v3_enhancement: "Epic 14.5 provides backend real-time APIs for ticket timeline"
+  10-U-3-quality-gate-failure-notifications:
+    status: backlog
+    effort: "2 days"
+    story_points: 3
+    notes: "Real-time notifications for QA failures. Push to PM/Lead QA. From original 10-4."
+    original_story: "10-4"
+  10-U-4-execution-logs-streaming:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Stream execution logs and errors to frontend. Uses Epic 11.2 audit logs + Epic 14.5 APIs. Merged from 10-7."
+    original_story: "10-7"
+    v3_enhancement: "Epic 11.2 (Audit Logger) + Epic 14.5 (Observability) provide comprehensive log data"
+  10-U-5-manual-intervention-circuit-breaker:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "UI for manual intervention: pause/resume executions, override decisions, emergency stop. From original 10-8."
+    original_story: "10-8"
+  10-U-6-system-metrics-export-integration:
+    status: backlog
+    effort: "2 days"
+    story_points: 3
+    notes: "Export metrics to external systems (Datadog, New Relic). Stream Prometheus metrics. From original 10-9."
+    original_story: "10-9"
+  10-U-7-notification-preferences-channels:
+    status: backlog
+    effort: "2 days"
+    story_points: 3
+    notes: "User preferences: Slack, email, in-app. Notification filtering. Channel management. From original 10-10."
+    original_story: "10-10"
+  epic-10-U-retrospective: optional
+
+  # ===================================================================
+  # V3 SYSTEM FLOW IMPLEMENTATION
+  # Based on: docs/implementation-plan-v3.md
+  # System Flow: docs/system-flow-diagram-v3.md
+  # Added: 2025-12-19
+  # ===================================================================
+
+  epic-11: backlog
+  epic-11-name: "v3 Foundation & Safety"
+  epic-11-phase: "Phase 1 (Week 1-2)"
+  epic-11-priority: high
+  epic-11-dependencies: "Epic 4 (GitHub Integration)"
+  epic-11-blocks: "Epic 12, 13, 14, 15"
+  epic-11-notes: "Database schema, AI audit logging, progress validator. See: docs/sprint-artifacts/epic-11-v3-foundation-safety.md"
+  11-1-database-schema-migrations:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    notes: "Create Prisma schema for v3 models (AIDecisionLog, FileLock, AICostLog, TicketDependency, WorkspaceArchive). Run migrations."
+  11-2-ai-decision-audit-logger:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Implement AIDecisionLoggerService with full audit trail. Log all AI decisions with reasoning and confidence."
+  11-3-ai-progress-validator-service:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Prevent infinite loops in AI self-healing. Escalate if errors not decreasing or time limit exceeded (10 min)."
+  11-4-integrate-audit-logging:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Wire audit logging into TicketIntake, AIExecution, QA, GitHub services. Add correlation IDs."
+  11-5-dashboard-api-audit-logs:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    notes: "REST API for audit logs: timeline, low-confidence decisions, search with filters."
+  epic-11-retrospective: optional
+
+  epic-12: backlog
+  epic-12-name: "v3 Dependency & Conflict Management"
+  epic-12-phase: "Phase 2 (Week 2-3)"
+  epic-12-priority: high
+  epic-12-dependencies: "Epic 11"
+  epic-12-blocks: "Epic 13, 14, 15"
+  epic-12-notes: "Circular dependency detection, file lock manager, ETA calculator, AI branch strategist. See: docs/sprint-artifacts/epic-12-v3-dependency-conflict-management.md"
+  12-1-circular-dependency-detector:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "DFS algorithm to detect circular dependencies in ClickUp task chains. Alert PM, block tickets in cycle."
+  12-2-dependency-manager-eta-calculator:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Manage ticket dependencies. Calculate ETA using historical data + pipeline position. Re-queue dependent tickets."
+  12-3-file-lock-manager:
+    status: backlog
+    effort: "3 days"
+    story_points: 8
+    notes: "Prevent merge conflicts by locking files. AI predicts modifications. FIFO queue per file. Release on PR merge."
+  12-4-ai-branch-strategist:
+    status: backlog
+    effort: "1.5 days"
+    story_points: 3
+    notes: "AI-powered base branch selection. No deps→main, single dep→follow, multi deps→main with merge."
+  12-5-update-ticket-intake-consumer-v3:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Wire circular dep check, file locks, branch selection into intake flow. Add re-queue logic for waiting tickets."
+  epic-12-retrospective: optional
+
+  epic-13: backlog
+  epic-13-name: "v3 AI Enhancements & Cost Tracking"
+  epic-13-phase: "Phase 3 (Week 3-5)"
+  epic-13-priority: high
+  epic-13-dependencies: "Epic 11, 12"
+  epic-13-estimated_effort: "10 days"
+  epic-13-notes: "AI cost tracking, model optimization, self-healing with progress validation. See: docs/sprint-artifacts/epic-13-14-15-v3-remaining.md"
+  13-1-ai-cost-tracking-service:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Track AI costs per invocation. Model-specific pricing. Daily/monthly budgets. Alert on threshold exceeded."
+  13-2-cost-optimizer-service:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    notes: "Select GPT-3.5-turbo for simple tasks, GPT-4-turbo for complex. Response caching. 40% cost reduction."
+  13-3-update-ai-execution-with-cost-tracking:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Integrate cost tracking into code generation. Self-healing uses progress validator. Log with audit."
+  13-4-update-qa-orchestrator-self-healing:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "AI self-heal for QA failures. Progress validator prevents infinite loops. Max 2 fix attempts."
+  13-5-cost-dashboard-api:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    notes: "REST endpoints: summary by period, per ticket, breakdown by agent/model."
+  epic-13-retrospective: optional
+
+  epic-14: backlog
+  epic-14-name: "v3 Observability & Operational Features"
+  epic-14-phase: "Phase 4 (Week 5-6)"
+  epic-14-priority: medium
+  epic-14-dependencies: "Epic 11, 12, 13"
+  epic-14-estimated_effort: "8 days"
+  epic-14-notes: "PR risk assessment, auto-merge, storage manager, health monitoring. See: docs/sprint-artifacts/epic-13-14-15-v3-remaining.md"
+  14-1-pr-risk-assessor:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Risk score: lines, files, critical paths, tests, security. LOW/MEDIUM/HIGH. Auto-merge recommendation."
+  14-2-pr-auto-merge-integration:
+    status: backlog
+    effort: "1.5 days"
+    story_points: 3
+    notes: "LOW risk PRs auto-merge (opt-in). PR review timer with reminders (2h, 4h, 24h). Stale PR auto-rebase."
+  14-3-storage-manager-service:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Compress to ./workspace-archives. Delete: successful 3d, failed 7d. Emergency cleanup at 95%. Local storage only."
+  14-4-post-deployment-health-monitoring:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Monitor 5min post-deploy. Auto-rollback: error rate >50%, P95 >200ms. Alert team on rollback."
+  14-5-real-time-observability-dashboard-api:
+    status: backlog
+    effort: "1.5 days"
+    story_points: 3
+    notes: "APIs: ticket timeline, queue metrics, system health, file locks. Real-time monitoring."
+  epic-14-retrospective: optional
+
+  epic-15: backlog
+  epic-15-name: "v3 Configuration & Production Rollout"
+  epic-15-phase: "Phase 5 (Week 6-8)"
+  epic-15-priority: medium
+  epic-15-dependencies: "Epic 11, 12, 13, 14"
+  epic-15-estimated_effort: "8 days"
+  epic-15-notes: "Feature flags, admin UI, data migration, production deployment. See: docs/sprint-artifacts/epic-13-14-15-v3-remaining.md"
+  15-1-feature-flags-service:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    notes: "Feature flags for all v3 features. Database-backed. Runtime updates. Admin API."
+  15-2-configuration-dashboard-ui:
+    status: backlog
+    effort: "3 days"
+    story_points: 8
+    notes: "React dashboard for v3 settings. 7 config panels: cleanup, self-healing, deps, auto-merge, cost, audit, health."
+  15-3-data-migration-scripts:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "Migrate existing tickets to v3 schema. Backfill audit logs. Zero data loss verification."
+  15-4-production-rollout-plan:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    notes: "Staging deploy. 10% canary. Gradual to 100% over 1 week. Rollback procedures."
+  15-5-e2e-testing-validation:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    notes: "E2E test full v3 flow. Load test 100 concurrent tickets. Validate circular deps, file locks, metrics."
+  epic-15-retrospective: optional
+
