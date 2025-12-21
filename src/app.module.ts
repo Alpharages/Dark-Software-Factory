@@ -29,6 +29,7 @@ import { DeploymentModule } from './deployment/deployment.module';
 // Monitoring & Metrics
 import { ProductionMonitoringModule } from './production-monitoring/production-monitoring.module';
 import { CostTrackingModule } from './cost-tracking/cost-tracking.module';
+import { ProgressValidatorModule } from './ai-monitoring/progress-validator.module';
 
 // User interfaces
 import { DashboardsModule } from './dashboards/dashboards.module';
@@ -85,6 +86,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Monitoring & Metrics
     ProductionMonitoringModule,
     CostTrackingModule,
+    ProgressValidatorModule, // Story 11.3: AI Progress Validator
 
     // User interfaces
     DashboardsModule,
