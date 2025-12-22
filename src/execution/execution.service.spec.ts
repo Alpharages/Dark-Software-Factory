@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionService } from './execution.service';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionStateMachine, InvalidStateTransitionError } from './state-machine';
-import { ExecutionStatus, AIProvider } from '@/prisma/client';
+import { ExecutionStatus, AIProvider, PRRiskLevel } from '@/prisma/client';
 import {
   StartExecutionDto,
   CompleteExecutionDto,
@@ -41,6 +41,12 @@ describe('ExecutionService', () => {
     original_provider: null,
     error_context: null, // Story 2.9
     scheduled_retry_at: null, // Story 2.9
+    // Story 11.1: Database schema additions
+    base_branch: 'main',
+    branch_selection_log: null,
+    file_modifications: null,
+    risk_level: PRRiskLevel.LOW,
+    circular_dep_detected: false,
   };
 
   const mockTransition: IStateTransition = {

@@ -8,6 +8,8 @@ import { AIExecutionService } from '@/ai-routing/ai-execution.service';
 import { WorkspaceService } from '@/ai-routing/providers';
 import { GitOperationsService } from '@/ai-routing/providers/git-operations.service';
 import { IAIPromptExecutor } from '@/ai-routing/interfaces';
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 
 export interface CommitOrchestrationResult {
   success: boolean;
@@ -28,7 +30,9 @@ export class GitHubCommitOrchestrator {
     private readonly logger: LoggerService,
     private readonly workspaceService: WorkspaceService,
     private readonly gitOps: GitOperationsService,
-  ) {}
+    // Story 11.4: AI Decision Audit Logging
+    private readonly aiDecisionLogger: AIDecisionLoggerService,
+  ) { }
 
   /**
    * Orchestrates git commit and push via AI provider
@@ -117,6 +121,26 @@ export class GitHubCommitOrchestrator {
 
       // Parse AI response to extract commit info
       const commitInfo = this.parseCommitResponse(result.response);
+
+      // Story 11.4: Log commit message generation decision
+      await this.aiDecisionLogger.logDecision({
+        agentName: 'GitHubCommitOrchestrator',
+        action: 'commit_message_generation',
+        reasoning: `AI generated commit message for ${commitInfo.filesChanged} changed files. Commit SHA: ${commitInfo.commitSha}. Used conventional commits format with ticket reference.`,
+        ticketId: execution.ticket.id,
+        executionId,
+        inputData: {
+          ticketTitle: execution.ticket.title,
+          filesChanged: commitInfo.filesChanged,
+          repository: githubPush.repository,
+        },
+        outputData: {
+          commitSha: commitInfo.commitSha,
+          commitMessageLength: commitInfo.commitMessage?.length || 0,
+          success: true,
+        },
+        confidence: 0.9,
+      });
 
       // Update database with commit results
       await this.prisma.gitHubPush.update({

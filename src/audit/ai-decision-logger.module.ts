@@ -5,8 +5,8 @@ import { SentryModule } from '../common/sentry/sentry.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 
 @Module({
-    imports: [DatabaseModule, SentryModule, AppMetricsModule],
-    providers: [AIDecisionLoggerService],
-    exports: [AIDecisionLoggerService], // Export for Story 11.4 integration
+  imports: [DatabaseModule, SentryModule, AppMetricsModule],
+  providers: [AIDecisionLoggerService],
+  exports: [AIDecisionLoggerService], // Export for Story 11.4 integration
 })
-export class AIDecisionLoggerModule { }
+export class AIDecisionLoggerModule {}

@@ -21,6 +21,8 @@ import { DatabaseModule } from '../database/database.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { ClickUpModule } from '../clickup/clickup.module';
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { ClickUpModule } from '../clickup/clickup.module';
     AiRoutingModule,
     WebhooksModule,
     ClickUpModule,
+    // Story 11.4: AI Decision Audit Logging
+    AIDecisionLoggerModule,
   ],
   providers: [
     GitHubService,
@@ -60,4 +64,4 @@ import { ClickUpModule } from '../clickup/clickup.module';
     DeploymentSuccessRateCalculator,
   ],
 })
-export class GitHubModule {}
+export class GitHubModule { }

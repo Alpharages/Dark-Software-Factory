@@ -18,6 +18,8 @@ import { ContextCacheService } from './context-cache.service';
 import { ContextDocumentController } from './context-document.controller';
 import { PdfExtractor, MarkdownExtractor, TextExtractor, DocxExtractor } from './extractors';
 import { contextMetricsProviders } from '../common/metrics/context-metrics.provider';
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 
 // Metric names (must match service injection)
 const METRICS = {
@@ -47,6 +49,8 @@ const METRICS = {
     ConfigModule,
     DatabaseModule,
     RabbitMQModule,
+    // Story 11.4: AI Decision Audit Logging
+    AIDecisionLoggerModule,
     // Story 2.12: Cache for context extraction
     CacheModule.registerAsync({
       imports: [ConfigModule],
@@ -117,4 +121,4 @@ const METRICS = {
     ContextCacheService, // Story 2.12
   ],
 })
-export class TicketIntakeModule {}
+export class TicketIntakeModule { }

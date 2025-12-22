@@ -6,6 +6,7 @@ import { ExecutionTrackerService } from './execution-tracker.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { OrchestratorService } from '../ai-routing/orchestrator.service';
 import { IExecutionCompletion, IExecutionFailure } from './interfaces';
+import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -86,6 +87,11 @@ describe('AIExecutionConsumer', () => {
     const mockHistogram = { observe: jest.fn(), labels: jest.fn().mockReturnThis() };
     const mockGauge = { set: jest.fn(), labels: jest.fn().mockReturnThis() };
 
+    // Story 11.4: Mock AIDecisionLoggerService
+    const mockAIDecisionLogger = {
+      logDecision: jest.fn().mockResolvedValue({ id: 'log-id' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIExecutionConsumer,
@@ -93,6 +99,7 @@ describe('AIExecutionConsumer', () => {
         { provide: RabbitMQService, useValue: mockRabbitmq },
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
         { provide: OrchestratorService, useValue: mockOrchestrator },
+        { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_FAILED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_PROCESSING_DURATION_SECONDS', useValue: mockHistogram },

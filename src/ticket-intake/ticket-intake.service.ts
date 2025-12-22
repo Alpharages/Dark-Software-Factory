@@ -10,6 +10,8 @@ import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
 import { IRawTaskEvent, IParsedTicket, ITicketProcessingResult } from './interfaces';
 import { ValidationResultDto, QualityScoreDto } from './dto';
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 
 // Metric names
 const METRICS = {
@@ -43,6 +45,8 @@ export class TicketIntakeService {
     private readonly configService: ConfigService,
     private readonly validator: TicketValidatorService,
     private readonly qualityService: TicketQualityService,
+    // Story 11.4: AI Decision Audit Logging
+    private readonly aiDecisionLogger: AIDecisionLoggerService,
     @InjectMetric(METRICS.INTAKE_TOTAL)
     private readonly intakeCounter: Counter<string>,
     @InjectMetric(METRICS.INTAKE_DURATION)
@@ -99,6 +103,42 @@ export class TicketIntakeService {
       // Calculate quality score
       const qualityScore = this.qualityService.calculateScore(parsed, correlationId);
       this.qualityHistogram.observe({ grade: qualityScore.grade }, qualityScore.totalScore);
+
+      // Story 11.4: Log quality score calculation decision
+      await this.aiDecisionLogger.logDecision({
+        agentName: 'TicketIntakeService',
+        action: 'quality_score_calculation',
+        reasoning: `Quality score calculated: ${qualityScore.totalScore}/100 (${qualityScore.grade}). Factors: title clarity, description completeness, acceptance criteria presence, context documents.`,
+        ticketId: parsed.clickupTaskId,
+        inputData: {
+          ticketTitle: parsed.title,
+          descriptionLength: parsed.description?.length || 0,
+          hasAcceptanceCriteria: (parsed.acceptanceCriteria?.length || 0) > 0,
+          tags: parsed.tags || [],
+        },
+        outputData: {
+          qualityScore: qualityScore.totalScore,
+          grade: qualityScore.grade,
+          threshold: 70,
+          passed: qualityScore.totalScore >= 70,
+        },
+        confidence: qualityScore.totalScore >= 80 ? 0.95 : qualityScore.totalScore >= 70 ? 0.8 : 0.6,
+      });
+
+      // Story 11.4: Log ticket acceptance decision
+      await this.aiDecisionLogger.logDecision({
+        agentName: 'TicketIntakeService',
+        action: 'ticket_acceptance',
+        reasoning: `Ticket accepted with quality score ${qualityScore.totalScore}/100. All validation checks passed. Proceeding to AI execution.`,
+        ticketId: parsed.clickupTaskId,
+        inputData: { qualityScore: qualityScore.totalScore },
+        outputData: {
+          decision: 'accepted',
+          status: TicketStatus.VALIDATED,
+          queuedFor: 'ai_execution',
+        },
+        confidence: 0.95,
+      });
 
       // Create/update ticket in database
       const ticket = await this.createOrUpdateTicket(parsed, qualityScore, correlationId);
@@ -179,6 +219,27 @@ export class TicketIntakeService {
     correlationId: string,
   ): Promise<ITicketProcessingResult> {
     this.logger.warn(`[${correlationId}] Validation failed for ${ticket.clickupTaskId}`);
+
+    // Story 11.4: Log ticket rejection decision
+    await this.aiDecisionLogger.logDecision({
+      agentName: 'TicketIntakeService',
+      action: 'ticket_rejection',
+      reasoning: `Ticket rejected due to validation failures: ${validation.errors.map((e) => e.message).join(', ')}`,
+      ticketId: ticket.clickupTaskId,
+      inputData: {
+        validationErrors: validation.errors.map((e) => ({
+          field: e.field,
+          message: e.message,
+        })),
+      },
+      outputData: {
+        decision: 'rejected',
+        reason: 'validation_failed',
+        status: TicketStatus.VALIDATION_FAILED,
+        errorCount: validation.errors.length,
+      },
+      confidence: 0.9, // High confidence in rejection decision
+    });
 
     // Store ticket with VALIDATION_FAILED status
     await this.prisma.ticket.upsert({

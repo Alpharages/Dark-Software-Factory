@@ -21,6 +21,8 @@ import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
 import { QaAutomationModule } from '../qa-automation/qa-automation.module';
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // LoggerModule not needed - consumer uses NestJS Logger directly
 
 /**
@@ -46,6 +48,8 @@ import { QaAutomationModule } from '../qa-automation/qa-automation.module';
     RabbitMQModule,
     forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer & AIExecutionConsumer
     QaAutomationModule, // Story 3.7: For QaCheckPublisher
+    // Story 11.4: AI Decision Audit Logging
+    AIDecisionLoggerModule,
   ],
   providers: [
     // Core services
@@ -133,4 +137,4 @@ import { QaAutomationModule } from '../qa-automation/qa-automation.module';
     AIExecutionConsumer,
   ],
 })
-export class ExecutionModule {}
+export class ExecutionModule { }

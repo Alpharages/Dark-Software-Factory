@@ -3,7 +3,7 @@ import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
-import { ExecutionStatus, AIProvider } from '@/prisma/client';
+import { ExecutionStatus, AIProvider, PRRiskLevel } from '@/prisma/client';
 
 describe('ExecutionTrackerService', () => {
   let service: ExecutionTrackerService;
@@ -35,6 +35,12 @@ describe('ExecutionTrackerService', () => {
     original_provider: null,
     error_context: null, // Story 2.9
     scheduled_retry_at: null, // Story 2.9
+    // Story 11.1: Database schema additions
+    base_branch: 'main',
+    branch_selection_log: null,
+    file_modifications: null,
+    risk_level: PRRiskLevel.LOW,
+    circular_dep_detected: false,
   };
 
   const mockMetricCounter = {

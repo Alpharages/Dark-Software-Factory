@@ -15,6 +15,8 @@ import {
   IExecutionFailure,
 } from './interfaces';
 import { OrchestratorService } from '../ai-routing/orchestrator.service';
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 
 /**
  * AI Execution Consumer
@@ -63,6 +65,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly rabbitmq: RabbitMQService,
     private readonly executionTracker: ExecutionTrackerService,
     private readonly orchestrator: OrchestratorService,
+    // Story 11.4: AI Decision Audit Logging
+    private readonly aiDecisionLogger: AIDecisionLoggerService,
     @InjectMetric('queue_messages_consumed_total')
     private readonly consumedCounter: Counter<string>,
     @InjectMetric('queue_messages_failed_total')
@@ -73,7 +77,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly queueDepthGauge: Gauge<string>,
     @InjectMetric('queue_consumer_count')
     private readonly consumerCountGauge: Gauge<string>,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     await this.startConsuming();
@@ -123,7 +127,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
 
             this.logger.log(
               `[${correlationId}] Processing execution ${payload.executionId} ` +
-                `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
+              `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
             );
 
             // Process the execution
@@ -136,7 +140,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             if (result.success) {
               this.logger.log(
                 `[${correlationId}] Execution ${payload.executionId} completed ` +
-                  `(${duration}ms)`,
+                `(${duration}ms)`,
               );
 
               // Acknowledge message
@@ -220,6 +224,44 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       // 1. Mark execution as in-progress
       await this.executionTracker.markInProgress(executionId, correlationId);
 
+      // Story 11.4: Log AI provider selection decision
+      await this.aiDecisionLogger.logDecision({
+        agentName: 'AIExecutionConsumer',
+        action: 'ai_provider_selection',
+        reasoning: `Processing AI execution request. Provider: ${payload.aiProvider}. Ticket requires code generation via AI orchestration.`,
+        ticketId: payload.ticketId,
+        executionId,
+        inputData: {
+          ticketId: payload.ticketId,
+          provider: payload.aiProvider,
+          priority: payload.priority,
+          allowFallback: payload.allowFallback ?? true,
+        },
+        outputData: {
+          selectedProvider: payload.aiProvider,
+          executionStarted: true,
+        },
+        confidence: 0.9,
+      });
+
+      // Story 11.4: Log prompt generation
+      await this.aiDecisionLogger.logDecision({
+        agentName: 'AIExecutionConsumer',
+        action: 'prompt_generation',
+        reasoning: `Extracted prompt from ticket for AI code generation. Repository: ${repositoryUrl || 'workspace'}`,
+        ticketId: payload.ticketId,
+        executionId,
+        inputData: {
+          promptLength: prompt.length,
+          hasRepository: !!repositoryUrl,
+        },
+        outputData: {
+          promptGenerated: true,
+          readyForExecution: true,
+        },
+        confidence: 0.95,
+      });
+
       // 2. Execute via OrchestratorService
       const result = await this.orchestrator.execute({
         correlationId,
@@ -231,6 +273,26 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       });
 
       if (result.success) {
+        // Story 11.4: Log successful execution
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'AIExecutionConsumer',
+          action: 'ai_execution_complete',
+          reasoning: `AI execution completed successfully. Generated code changes across ${result.filesChanged?.length || 0} files. Provider: ${result.executedBy}. Fallback used: ${result.usedFallback}.`,
+          ticketId: payload.ticketId,
+          executionId,
+          inputData: {
+            provider: result.executedBy,
+            usedFallback: result.usedFallback,
+            durationMs: result.durationMs,
+          },
+          outputData: {
+            filesChanged: result.filesChanged?.length || 0,
+            confidenceScore: result.confidenceScore || 0.8,
+            success: true,
+          },
+          confidence: result.confidenceScore || 0.8,
+        });
+
         // 3. Mark as completed
         const completion: IExecutionCompletion = {
           executionId,
@@ -247,6 +309,25 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           executedBy: result.executedBy,
         };
       } else {
+        // Story 11.4: Log execution failure
+        const isRetryable = this.isRetryableError(result.error?.code);
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'AIExecutionConsumer',
+          action: 'ai_execution_failed',
+          reasoning: `AI execution failed: ${result.error?.message || 'Unknown error'}. Decision: ${isRetryable ? 'Retryable' : 'Permanent failure'}.`,
+          ticketId: payload.ticketId,
+          executionId,
+          inputData: {
+            errorCode: result.error?.code,
+            errorMessage: result.error?.message,
+          },
+          outputData: {
+            isRetryable,
+            willRetry: isRetryable,
+          },
+          confidence: 0.85,
+        });
+
         // 4. Mark as failed
         const failure: IExecutionFailure = {
           executionId,

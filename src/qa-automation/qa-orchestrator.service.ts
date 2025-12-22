@@ -30,6 +30,8 @@ import {
 } from './interfaces';
 import { TicketStatus } from '@/prisma/client';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 
 /**
  * Aggregated QA result for quality gate evaluation
@@ -72,7 +74,9 @@ export class QaOrchestratorService {
     // private readonly codeReviewService: CodeReviewService,
     private readonly rabbitPublisher: RabbitMQPublisherService,
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
-  ) {}
+    // Story 11.4: AI Decision Audit Logging
+    private readonly aiDecisionLogger: AIDecisionLoggerService,
+  ) { }
 
   /**
    * Story 3.7: Run QA checks for post-execution code files
@@ -160,6 +164,27 @@ export class QaOrchestratorService {
 
       // If QA passed, trigger next stage (GitHub push)
       if (overallPassed) {
+        // Story 11.4: Log quality gate PASS decision
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'QaOrchestrator',
+          action: 'quality_gate_decision',
+          reasoning: `Quality gate PASSED. All QA checks passed. Proceeding to GitHub push stage.`,
+          ticketId,
+          executionId,
+          inputData: {
+            lintingPassed: true,
+            testingPassed: true,
+            coveragePassed: true,
+            securityPassed: true,
+          },
+          outputData: {
+            decision: 'pass',
+            nextStage: 'github_push',
+            totalDuration,
+          },
+          confidence: 0.95,
+        });
+
         // Update ticket status to GITHUB_PUSH (ready for GitHub push)
         await this.prisma.ticket.update({
           where: { id: ticketId },
@@ -183,6 +208,27 @@ export class QaOrchestratorService {
           `[${correlationId}] Ticket ${ticketId} ready for GitHub push - event published`,
         );
       } else {
+        // Story 11.4: Log quality gate FAIL decision  
+        const errorCount = (lintingResult.data as unknown[])?.length || 0;
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'QaOrchestrator',
+          action: 'quality_gate_decision',
+          reasoning: `Quality gate FAILED. One or more QA checks failed. Blocking issues found: ${errorCount} total errors. Status set to QA_FAILED.`,
+          ticketId,
+          executionId,
+          inputData: {
+            lintingErrors: errorCount,
+            testFailures: 0,
+            coverageBelow: false,
+          },
+          outputData: {
+            decision: 'fail',
+            status: TicketStatus.QA_FAILED,
+            willRetry: false,
+          },
+          confidence: errorCount > 10 ? 0.4 : errorCount > 3 ? 0.6 : 0.8,
+        });
+
         // Update ticket status to QA_FAILED
         await this.prisma.ticket.update({
           where: { id: ticketId },
@@ -639,16 +685,16 @@ export class QaOrchestratorService {
       code_review_passed: security?.passed ?? true,
       code_review_issues: security
         ? {
-            summary: {
-              criticalCount: security.summary.criticalCount,
-              highCount: security.summary.highCount,
-              mediumCount: security.summary.mediumCount,
-            },
-            complexityIssues: security.complexityIssues.map((i) => ({
-              function: i.functionName,
-              complexity: i.value,
-            })),
-          }
+          summary: {
+            criticalCount: security.summary.criticalCount,
+            highCount: security.summary.highCount,
+            mediumCount: security.summary.mediumCount,
+          },
+          complexityIssues: security.complexityIssues.map((i) => ({
+            function: i.functionName,
+            complexity: i.value,
+          })),
+        }
         : null,
     };
   }

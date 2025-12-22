@@ -27,6 +27,8 @@ import { AiQaOrchestrator } from './ai-qa-orchestrator.service'; // Story 3.10
 
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10: For OrchestratorService
+// Story 11.4: AI Decision Audit Logging
+import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     LoggerModule,
     AppMetricsModule,
     forwardRef(() => AiRoutingModule), // Story 3.10: AiQaOrchestrator needs OrchestratorService (circular dep fix)
+    // Story 11.4: AI Decision Audit Logging
+    AIDecisionLoggerModule,
   ],
   controllers: [QaResultsController, QualityGateController],
   providers: [
@@ -123,4 +127,4 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
     QaMetricsService, // Story 3.8
   ],
 })
-export class QaAutomationModule {}
+export class QaAutomationModule { }

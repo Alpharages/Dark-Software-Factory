@@ -98,12 +98,18 @@ describe('TicketIntakeService', () => {
     mockValidationCounter = { inc: jest.fn() };
     mockQualityHistogram = { observe: jest.fn() };
 
+    // Story 11.4: Mock AIDecisionLoggerService
+    const mockAIDecisionLogger = {
+      logDecision: jest.fn().mockResolvedValue({ id: 'log-id' }),
+    };
+
     service = new TicketIntakeService(
       mockPrisma as never,
       mockRabbitMQPublisher as never,
       mockConfigService as never,
       mockValidator as unknown as TicketValidatorService,
       mockQualityService as unknown as TicketQualityService,
+      mockAIDecisionLogger as never, // Story 11.4
       mockIntakeCounter as never,
       mockDurationHistogram as never,
       mockValidationCounter as never,
