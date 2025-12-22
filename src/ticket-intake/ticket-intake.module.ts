@@ -121,4 +121,4 @@ const METRICS = {
     ContextCacheService, // Story 2.12
   ],
 })
-export class TicketIntakeModule { }
+export class TicketIntakeModule {}

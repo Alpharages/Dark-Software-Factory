@@ -127,4 +127,4 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     QaMetricsService, // Story 3.8
   ],
 })
-export class QaAutomationModule { }
+export class QaAutomationModule {}

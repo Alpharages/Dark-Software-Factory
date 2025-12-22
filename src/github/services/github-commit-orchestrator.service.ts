@@ -32,7 +32,7 @@ export class GitHubCommitOrchestrator {
     private readonly gitOps: GitOperationsService,
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
-  ) { }
+  ) {}
 
   /**
    * Orchestrates git commit and push via AI provider

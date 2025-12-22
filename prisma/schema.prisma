@@ -546,6 +546,7 @@ model AIDecisionLog {
   @@index([execution_id])
   @@index([agent_name])
   @@index([timestamp])
+  @@index([confidence, timestamp])  // Low-confidence query optimization
   @@map("ai_decision_logs")
 }
 

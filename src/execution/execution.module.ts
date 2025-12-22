@@ -137,4 +137,4 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     AIExecutionConsumer,
   ],
 })
-export class ExecutionModule { }
+export class ExecutionModule {}

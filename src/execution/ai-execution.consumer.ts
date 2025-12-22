@@ -77,7 +77,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly queueDepthGauge: Gauge<string>,
     @InjectMetric('queue_consumer_count')
     private readonly consumerCountGauge: Gauge<string>,
-  ) { }
+  ) {}
 
   async onModuleInit(): Promise<void> {
     await this.startConsuming();
@@ -127,7 +127,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
 
             this.logger.log(
               `[${correlationId}] Processing execution ${payload.executionId} ` +
-              `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
+                `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
             );
 
             // Process the execution
@@ -140,7 +140,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             if (result.success) {
               this.logger.log(
                 `[${correlationId}] Execution ${payload.executionId} completed ` +
-                `(${duration}ms)`,
+                  `(${duration}ms)`,
               );
 
               // Acknowledge message

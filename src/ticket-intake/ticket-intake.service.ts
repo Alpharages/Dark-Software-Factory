@@ -122,7 +122,8 @@ export class TicketIntakeService {
           threshold: 70,
           passed: qualityScore.totalScore >= 70,
         },
-        confidence: qualityScore.totalScore >= 80 ? 0.95 : qualityScore.totalScore >= 70 ? 0.8 : 0.6,
+        confidence:
+          qualityScore.totalScore >= 80 ? 0.95 : qualityScore.totalScore >= 70 ? 0.8 : 0.6,
       });
 
       // Story 11.4: Log ticket acceptance decision

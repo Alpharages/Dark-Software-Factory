@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AIDecisionLoggerService } from './ai-decision-logger.service';
-import { DatabaseModule } from '../database/database.module';
-import { SentryModule } from '../common/sentry/sentry.module';
-import { AppMetricsModule } from '../common/metrics/metrics.module';
+import { AuditController } from './audit.controller';
+import { DatabaseModule } from '@/database/database.module';
+import { AppMetricsModule } from '@/common/metrics/metrics.module';
+import { LoggerModule } from '@/common/logger/logger.module';
+import { SentryModule } from '@/common/sentry/sentry.module';
 
 @Module({
-  imports: [DatabaseModule, SentryModule, AppMetricsModule],
+  imports: [DatabaseModule, AppMetricsModule, LoggerModule, SentryModule],
   providers: [AIDecisionLoggerService],
-  exports: [AIDecisionLoggerService], // Export for Story 11.4 integration
+  controllers: [AuditController],
+  exports: [AIDecisionLoggerService],
 })
 export class AIDecisionLoggerModule {}

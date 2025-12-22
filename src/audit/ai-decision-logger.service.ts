@@ -101,37 +101,228 @@ export class AIDecisionLoggerService {
   }
 
   /**
-   * Get AI decision timeline for a specific ticket in chronological order
+   * AC#1: Get chronological timeline of all decisions for a ticket
    * @param ticketId - Ticket identifier
-   * @returns Array of decisions ordered by timestamp
+   * @param correlationId - Optional correlation ID for distributed tracing
+   * @returns Array of decisions ordered by timestamp (oldest first)
    */
-  async getDecisionTimeline(ticketId: string): Promise<AIDecisionLog[]> {
-    return this.prisma.aIDecisionLog.findMany({
-      where: { ticket_id: ticketId },
-      orderBy: { timestamp: 'asc' },
-      include: {
-        execution: {
-          select: {
-            id: true,
-            status: true,
-            ai_provider: true,
+  async getDecisionTimeline(ticketId: string, correlationId?: string): Promise<AIDecisionLog[]> {
+    try {
+      const decisions = await this.prisma.aIDecisionLog.findMany({
+        where: { ticket_id: ticketId },
+        orderBy: { timestamp: 'asc' }, // Chronological order (oldest first)
+        include: {
+          execution: {
+            select: {
+              id: true,
+              status: true,
+              ai_provider: true,
+            },
           },
         },
-      },
-    });
+      });
+
+      this.logger.debug(`Retrieved ${decisions.length} decisions for ticket ${ticketId}`, {
+        correlationId,
+        ticketId,
+        count: decisions.length,
+      });
+
+      return decisions;
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get timeline for ticket ${ticketId}`, {
+        error: err.message,
+        correlationId,
+        ticketId,
+      });
+      this.sentry.captureException(err, {
+        tags: { operation: 'getDecisionTimeline', ticketId },
+        extra: { correlationId },
+      });
+      return []; // Graceful degradation
+    }
   }
 
   /**
-   * Get low-confidence decisions for human review
-   * @param threshold - Confidence threshold (default: 0.5)
-   * @returns Array of low-confidence decisions
+   * AC#2: Get low-confidence decisions for review queue with pagination
+   * @param options - Pagination and confidence threshold options
+   * @param correlationId - Optional correlation ID for distributed tracing
+   * @returns Paginated low-confidence decisions with metadata
    */
-  async getLowConfidenceDecisions(threshold: number = 0.5): Promise<AIDecisionLog[]> {
-    return this.prisma.aIDecisionLog.findMany({
-      where: { confidence: { lt: threshold } },
-      orderBy: { timestamp: 'desc' },
-      take: 100, // Performance limit
-    });
+  async getLowConfidenceDecisions(
+    options: { page: number; limit: number; minConfidence: number },
+    correlationId?: string,
+  ): Promise<{
+    data: AIDecisionLog[];
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasMore: boolean;
+    };
+  }> {
+    try {
+      const { page, limit, minConfidence } = options;
+      const skip = (page - 1) * limit;
+
+      const [decisions, total] = await Promise.all([
+        this.prisma.aIDecisionLog.findMany({
+          where: { confidence: { lt: minConfidence } },
+          orderBy: { timestamp: 'desc' }, // Newest first
+          skip,
+          take: limit,
+          include: {
+            execution: {
+              select: {
+                id: true,
+                status: true,
+                ai_provider: true,
+                ticket_id: true,
+              },
+            },
+          },
+        }),
+        this.prisma.aIDecisionLog.count({
+          where: { confidence: { lt: minConfidence } },
+        }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      this.logger.debug(
+        `Retrieved ${decisions.length} low-confidence decisions (page ${page}/${totalPages})`,
+        { correlationId, page, totalPages, total },
+      );
+
+      return {
+        data: decisions,
+        meta: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasMore: page < totalPages,
+        },
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error('Failed to get low-confidence decisions', {
+        error: err.message,
+        options,
+        correlationId,
+      });
+      this.sentry.captureException(err, {
+        tags: { operation: 'getLowConfidenceDecisions' },
+        extra: { options, correlationId },
+      });
+      throw error; // Propagate for controller error handling
+    }
+  }
+
+  /**
+   * AC#3: Search decisions with flexible filters and pagination
+   * @param filters - Search filters and pagination options
+   * @param correlationId - Optional correlation ID for distributed tracing
+   * @returns Paginated search results with metadata
+   */
+  async searchDecisions(
+    filters: {
+      agent_name?: string;
+      action?: string;
+      ticketId?: string;
+      executionId?: string;
+      startDate?: Date;
+      endDate?: Date;
+      page: number;
+      limit: number;
+    },
+    correlationId?: string,
+  ): Promise<{
+    data: AIDecisionLog[];
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasMore: boolean;
+    };
+  }> {
+    try {
+      const { page, limit, ...searchFilters } = filters;
+      const skip = (page - 1) * limit;
+
+      // Build dynamic where clause
+      const whereClause: Prisma.AIDecisionLogWhereInput = {};
+
+      if (searchFilters.agent_name) whereClause.agent_name = searchFilters.agent_name;
+      if (searchFilters.action) whereClause.action = searchFilters.action;
+      if (searchFilters.ticketId) whereClause.ticket_id = searchFilters.ticketId;
+      if (searchFilters.executionId) whereClause.execution_id = searchFilters.executionId;
+
+      if (searchFilters.startDate || searchFilters.endDate) {
+        whereClause.timestamp = {};
+        if (searchFilters.startDate) whereClause.timestamp.gte = searchFilters.startDate;
+        if (searchFilters.endDate) whereClause.timestamp.lte = searchFilters.endDate;
+      }
+
+      const [decisions, total] = await Promise.all([
+        this.prisma.aIDecisionLog.findMany({
+          where: whereClause,
+          orderBy: { timestamp: 'desc' }, // Newest first
+          skip,
+          take: limit,
+          include: {
+            execution: {
+              select: {
+                id: true,
+                status: true,
+                ai_provider: true,
+                ticket_id: true,
+              },
+            },
+          },
+        }),
+        this.prisma.aIDecisionLog.count({ where: whereClause }),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      this.logger.debug(
+        `Search returned ${decisions.length} decisions (page ${page}/${totalPages})`,
+        {
+          correlationId,
+          filters: searchFilters,
+          page,
+          totalPages,
+          total,
+        },
+      );
+
+      return {
+        data: decisions,
+        meta: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasMore: page < totalPages,
+        },
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error('Failed to search decisions', {
+        error: err.message,
+        filters,
+        correlationId,
+      });
+      this.sentry.captureException(err, {
+        tags: { operation: 'searchDecisions' },
+        extra: { filters, correlationId },
+      });
+      throw error; // Propagate for controller error handling
+    }
   }
 
   /**

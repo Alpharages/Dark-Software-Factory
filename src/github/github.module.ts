@@ -64,4 +64,4 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     DeploymentSuccessRateCalculator,
   ],
 })
-export class GitHubModule { }
+export class GitHubModule {}

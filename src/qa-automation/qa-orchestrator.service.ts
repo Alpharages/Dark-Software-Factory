@@ -76,7 +76,7 @@ export class QaOrchestratorService {
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
-  ) { }
+  ) {}
 
   /**
    * Story 3.7: Run QA checks for post-execution code files
@@ -208,7 +208,7 @@ export class QaOrchestratorService {
           `[${correlationId}] Ticket ${ticketId} ready for GitHub push - event published`,
         );
       } else {
-        // Story 11.4: Log quality gate FAIL decision  
+        // Story 11.4: Log quality gate FAIL decision
         const errorCount = (lintingResult.data as unknown[])?.length || 0;
         await this.aiDecisionLogger.logDecision({
           agentName: 'QaOrchestrator',
@@ -685,16 +685,16 @@ export class QaOrchestratorService {
       code_review_passed: security?.passed ?? true,
       code_review_issues: security
         ? {
-          summary: {
-            criticalCount: security.summary.criticalCount,
-            highCount: security.summary.highCount,
-            mediumCount: security.summary.mediumCount,
-          },
-          complexityIssues: security.complexityIssues.map((i) => ({
-            function: i.functionName,
-            complexity: i.value,
-          })),
-        }
+            summary: {
+              criticalCount: security.summary.criticalCount,
+              highCount: security.summary.highCount,
+              mediumCount: security.summary.mediumCount,
+            },
+            complexityIssues: security.complexityIssues.map((i) => ({
+              function: i.functionName,
+              complexity: i.value,
+            })),
+          }
         : null,
     };
   }
