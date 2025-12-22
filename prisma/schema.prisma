@@ -630,6 +630,10 @@ model TicketDependency {
   circular_detected Boolean          @default(false)
   created_at        DateTime         @default(now())
   resolved_at       DateTime?
+  
+  // Story 12.2: ETA calculation fields
+  estimated_eta      DateTime?       // Calculated ETA for resolution
+  eta_calculated_at  DateTime?       // Timestamp of last ETA calculation
 
   @@unique([ticket_id, depends_on])  // Prevent duplicate dependency links
   @@index([ticket_id])

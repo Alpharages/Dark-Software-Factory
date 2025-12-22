@@ -59,7 +59,7 @@ export class CircularDependencyDetectorService {
         agentName: 'Circular Dependency Detector',
         action: 'circular_dependency_check',
         ticketId,
-        executionId: null,
+        executionId: undefined,
         inputData: {
           ticketId,
           graphSize: graph.nodes.size,
@@ -92,7 +92,7 @@ export class CircularDependencyDetectorService {
         agentName: 'Circular Dependency Detector',
         action: result.hasCycle ? 'circular_dependency_detected' : 'no_circular_dependency',
         ticketId,
-        executionId: null, // Intake phase - no execution yet
+        executionId: undefined, // Intake phase - no execution yet
         inputData: {
           ticketId,
           graphSize: graph.nodes.size,
