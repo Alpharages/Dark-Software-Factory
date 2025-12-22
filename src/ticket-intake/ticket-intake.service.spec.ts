@@ -103,12 +103,23 @@ describe('TicketIntakeService', () => {
       logDecision: jest.fn().mockResolvedValue({ id: 'log-id' }),
     };
 
+    // Story 4.9: Mock ProjectService
+    const mockProjectService = {
+      findByListId: jest.fn().mockResolvedValue({
+        id: '00000000-0000-0000-0000-000000000000',
+        name: 'Legacy Project',
+        clickup_list_id: 'legacy-list-id',
+        github_repository_url: 'https://github.com/test/repo',
+      }),
+    };
+
     service = new TicketIntakeService(
       mockPrisma as never,
       mockRabbitMQPublisher as never,
       mockConfigService as never,
       mockValidator as unknown as TicketValidatorService,
       mockQualityService as unknown as TicketQualityService,
+      mockProjectService as never, // Story 4.9
       mockAIDecisionLogger as never, // Story 11.4
       mockIntakeCounter as never,
       mockDurationHistogram as never,

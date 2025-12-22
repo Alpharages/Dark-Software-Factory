@@ -12,6 +12,29 @@ datasource db {
 
 
 // ============================================
+// PROJECTS (Story 4.9)
+// Maps ClickUp lists to GitHub repositories
+// ============================================
+
+model Project {
+  id                    String   @id @default(uuid())
+  name                  String
+  clickup_list_id       String   @unique
+  github_repository_url String
+  default_branch        String   @default("main")
+  
+  // Relationships
+  tickets               Ticket[]
+  coverage_baseline     CoverageBaseline?
+  coverage_config       ProjectCoverageConfig?
+
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@map("projects")
+}
+
+// ============================================
 // TICKET INTAKE
 // ============================================
 
@@ -19,6 +42,7 @@ model Ticket {
   id                    String       @id @default(uuid())
   clickup_task_id       String       @unique
   project_id            String
+  project               Project      @relation(fields: [project_id], references: [id])
   title                 String
   description           String       @db.Text
   acceptance_criteria   String       @db.Text
@@ -437,7 +461,8 @@ enum ExtractionStatus {
 
 model CoverageBaseline {
   id            String   @id @default(uuid())
-  project_id    String
+  project_id    String   @unique
+  project       Project  @relation(fields: [project_id], references: [id])
   branch        String   @default("main")
   
   lines         Float    // Line coverage %
@@ -447,7 +472,7 @@ model CoverageBaseline {
   
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-  
+
   @@unique([project_id, branch])
   @@index([project_id])
   @@map("coverage_baselines")
@@ -461,6 +486,7 @@ model CoverageBaseline {
 model ProjectCoverageConfig {
   id              String   @id @default(uuid())
   project_id      String   @unique
+  project         Project  @relation(fields: [project_id], references: [id])
   threshold       Float    @default(80)  // Override global threshold
   enforcement     Boolean  @default(true)
   

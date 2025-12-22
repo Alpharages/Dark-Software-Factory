@@ -8,6 +8,8 @@ import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
+// Story 4.9: Project Mapping
+import { ProjectService } from '../projects/project.service';
 import { IRawTaskEvent, IParsedTicket, ITicketProcessingResult } from './interfaces';
 import { ValidationResultDto, QualityScoreDto } from './dto';
 // Story 11.4: AI Decision Audit Logging
@@ -45,6 +47,8 @@ export class TicketIntakeService {
     private readonly configService: ConfigService,
     private readonly validator: TicketValidatorService,
     private readonly qualityService: TicketQualityService,
+    // Story 4.9: Project Mapping
+    private readonly projectService: ProjectService,
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     @InjectMetric(METRICS.INTAKE_TOTAL)
@@ -89,6 +93,60 @@ export class TicketIntakeService {
 
       // Parse the task event
       const parsed = this.parseTaskEvent(event);
+
+      // Story 4.9: Resolve Project from listId
+      const clickupListId = parsed.projectId;
+      const project = await this.projectService.findByListId(clickupListId);
+
+      if (!project) {
+        this.logger.error(
+          `[${correlationId}] CRITICAL: No project mapping found for ClickUp list ${clickupListId}. ` +
+            `Ticket cannot be processed. Admin must create project mapping via POST /api/v1/projects`,
+        );
+
+        // Log project resolution failure
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'TicketIntakeService',
+          action: 'project_resolution_failed',
+          reasoning: `No project mapping exists for ClickUp list ${clickupListId}. Ticket rejected. Admin must create project via API.`,
+          ticketId: parsed.clickupTaskId,
+          inputData: { listId: clickupListId },
+          outputData: {
+            error: 'NO_PROJECT_MAPPING',
+            listId: clickupListId,
+            resolution: 'Create project mapping via POST /api/v1/projects with this listId',
+          },
+          confidence: 1.0,
+        });
+
+        // Return validation failure with actionable error
+        return {
+          success: false,
+          status: TicketStatus.VALIDATION_FAILED,
+          errors: [
+            `No project mapping found for ClickUp list "${clickupListId}". ` +
+              `Admin must create a project mapping via POST /api/v1/projects API with clickup_list_id="${clickupListId}".`,
+          ],
+        };
+      }
+
+      // Store resolved project ID back into parsed ticket for DB storage
+      parsed.projectId = project.id;
+
+      // Story 4.9: Log successful project resolution
+      await this.aiDecisionLogger.logDecision({
+        agentName: 'TicketIntakeService',
+        action: 'project_resolution',
+        reasoning: `Successfully mapped ClickUp list ${clickupListId} to project "${project.name}" (${project.id}).`,
+        ticketId: parsed.clickupTaskId,
+        inputData: { listId: clickupListId },
+        outputData: {
+          projectId: project.id,
+          projectName: project.name,
+          repositoryUrl: project.github_repository_url,
+        },
+        confidence: 1.0,
+      });
 
       // Validate the ticket
       const validation = await this.validator.validate(parsed, correlationId);

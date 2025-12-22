@@ -368,12 +368,13 @@ development_status:
   epic-4-retrospective: done
 
   4-9-projects-table-clickup-github-mapping:
-    status: backlog
+    status: done
     priority: critical
     urgency: blocks-epic-5
     estimated_effort: "3-4 hours"
     created_at: "2025-12-12"
-    notes: "CRITICAL INFRASTRUCTURE - Blocks Epic 5. Create Projects table to map ClickUp Lists → GitHub repositories. Current `project_id` is hardcoded as 'clickup-polling', breaking AI execution (can't determine which repo to clone). Solution: Proper relational model with projects table as source of truth. Deliverables: (1) Prisma migration for projects table with clickup_list_id→github_repository_url mapping, (2) CRUD API for project management, (3) Update ClickUpTaskUpdateConsumer to lookup project by list ID, (4) Update WorkspaceService to clone correct repo based on project config, (5) Migration script for existing tickets, (6) Metrics + audit logging. UNBLOCKS: Epic 5 (PM Dashboard needs projects list API)."
+    completed_at: "2025-12-22"
+    notes: "✅ CODE REVIEW APPROVED - Created Projects table with full CRUD API, integrated with TicketIntakeService and AI routing services. All tests passing, build successful. Deliverables: (1) Prisma schema with Project model and relations, (2) REST API with RBAC and enhanced GitHub URL validation, (3) TicketIntakeService integration with project resolution (rejects tickets without mapping), (4) OrchestratorConsumer and AIRoutingService integration with null checks, (5) Prometheus metrics and AI decision logging. CODE REVIEW FIXES: Enhanced URL validation, added null checks for missing projects, removed legacy fallback (projects must be created via API), documented Prisma generated files. UNBLOCKS: Epic 5 (PM Dashboard can now use projects API)."
 
   epic-5: blocked
   epic-5-blocker: "Story 4.9 (Projects Table) - Required for PM Dashboard to display correct repository information"

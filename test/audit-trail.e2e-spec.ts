@@ -11,7 +11,7 @@ import { AIDecisionLoggerService } from '../src/audit/ai-decision-logger.service
  */
 describe('Audit Trail E2E (Story 11.4)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
+  let _prisma: PrismaService;
   let aiDecisionLogger: AIDecisionLoggerService;
 
   beforeAll(async () => {
@@ -25,7 +25,7 @@ describe('Audit Trail E2E (Story 11.4)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    prisma = moduleFixture.get<PrismaService>(PrismaService);
+    _prisma = moduleFixture.get<PrismaService>(PrismaService);
     aiDecisionLogger = moduleFixture.get<AIDecisionLoggerService>(AIDecisionLoggerService);
   });
 
@@ -38,7 +38,7 @@ describe('Audit Trail E2E (Story 11.4)', () => {
     // For now, it serves as a structure for the complete E2E test
 
     const mockTicketId = 'DSF-TEST-001';
-    const mockExecutionId = 'exec-test-123';
+    const _mockExecutionId = 'exec-test-123';
 
     // Simulate ticket flow (would be actual service calls in full E2E)
     // 1. Ticket Intake: quality_score_calculation, ticket_acceptance

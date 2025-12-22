@@ -18,6 +18,8 @@ import { ContextCacheService } from './context-cache.service';
 import { ContextDocumentController } from './context-document.controller';
 import { PdfExtractor, MarkdownExtractor, TextExtractor, DocxExtractor } from './extractors';
 import { contextMetricsProviders } from '../common/metrics/context-metrics.provider';
+// Story 4.9: Project Mapping
+import { ProjectModule } from '../projects/project.module';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 
@@ -51,6 +53,8 @@ const METRICS = {
     RabbitMQModule,
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
+    // Story 4.9: Project Mapping
+    ProjectModule,
     // Story 2.12: Cache for context extraction
     CacheModule.registerAsync({
       imports: [ConfigModule],

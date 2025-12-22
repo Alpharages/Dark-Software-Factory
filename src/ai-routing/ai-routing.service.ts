@@ -123,6 +123,20 @@ export class AIRoutingService {
       });
 
       // 8. Publish routing result to execution queue
+      // Story 4.9: Resolve repository URL from Project
+      const project = await this.prisma.project.findUnique({
+        where: { id: request.projectId },
+      });
+
+      if (!project) {
+        this.logger.error(
+          `[${correlationId}] CRITICAL: Project not found for ID ${request.projectId}. Ticket ${ticketId} cannot be routed.`,
+        );
+        throw new Error(
+          `Project not found: ${request.projectId}. Cannot route ticket without valid project.`,
+        );
+      }
+
       const routingResult: IRoutingResult = {
         correlationId,
         ticketId,
@@ -136,7 +150,7 @@ export class AIRoutingService {
         description: request.description,
         acceptanceCriteria: request.acceptanceCriteria,
         projectId: request.projectId,
-        repositoryUrl: this.configService.get<string>('github.defaultRepository', ''),
+        repositoryUrl: project.github_repository_url,
         tags: request.tags,
         routedAt: new Date().toISOString(),
       };

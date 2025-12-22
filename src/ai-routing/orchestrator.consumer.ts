@@ -102,15 +102,25 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
       data: { prompt: promptResult.prompt },
     });
 
-    // 3. Get repository URL from config
-    const repositoryUrl = this.configService.get<string>('github.defaultRepository', '');
+    // 3. Get repository URL from Project (Story 4.9)
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { project: true },
+    });
+
+    const repositoryUrl =
+      ticket?.project?.github_repository_url ||
+      this.configService.get<string>('github.defaultRepository', '');
+    const baseBranch = ticket?.project?.default_branch || 'main';
 
     this.logger.log(
-      `[${correlationId}] Retrieved repository URL: "${repositoryUrl}" (from config github.defaultRepository)`,
+      `[${correlationId}] Resolved repository: "${repositoryUrl}" (branch: ${baseBranch}) for project: ${ticket?.project?.name || 'unknown'}`,
     );
 
     if (!repositoryUrl) {
-      throw new Error('github.defaultRepository not configured in .env');
+      throw new Error(
+        'No repository URL found for project and github.defaultRepository not configured',
+      );
     }
 
     // 4. Convert to orchestration input
@@ -120,6 +130,7 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
       ticketId,
       prompt: promptResult.prompt,
       repositoryUrl,
+      baseBranch,
       allowFallback: true,
     };
 
