@@ -40,6 +40,9 @@ import { IntegrationModule } from './integration/integration.module';
 import { ClickUpModule } from './clickup/clickup.module';
 import { ProjectModule } from './projects/project.module';
 
+// Dependency Management
+import { DependenciesModule } from './dependencies/dependencies.module';
+
 // Common
 import { CorrelationIdMiddleware } from './common/middleware';
 import { HttpExceptionFilter } from './common/filters';
@@ -97,6 +100,9 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     IntegrationModule,
     ClickUpModule,
     ProjectModule,
+
+    // Dependency Management
+    DependenciesModule, // Story 12.1: Circular Dependency Detection
   ],
   controllers: [AppController],
   providers: [
