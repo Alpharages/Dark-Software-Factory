@@ -5,7 +5,11 @@ import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { PrismaService } from '../database/prisma.service';
 import { Logger } from '@nestjs/common';
-import { DependencyGraph, CircularDependencyResult, ClickUpTask } from './interfaces/dependency-graph.interface';
+import {
+  DependencyGraph,
+  CircularDependencyResult,
+  ClickUpTask,
+} from './interfaces/dependency-graph.interface';
 
 describe('CircularDependencyDetectorService', () => {
   let service: CircularDependencyDetectorService;
@@ -98,8 +102,14 @@ describe('CircularDependencyDetectorService', () => {
   describe('detectCircularDependencies', () => {
     it('should detect a simple 2-node cycle (A → B → A)', async () => {
       // Setup: A depends on B, B depends on A
-      const taskA = { ...mockTaskA, dependencies: [{ task_id: 'task-b', type: 'waiting_on' as const }] };
-      const taskB = { ...mockTaskB, dependencies: [{ task_id: 'task-a', type: 'waiting_on' as const }] };
+      const taskA = {
+        ...mockTaskA,
+        dependencies: [{ task_id: 'task-b', type: 'waiting_on' as const }],
+      };
+      const taskB = {
+        ...mockTaskB,
+        dependencies: [{ task_id: 'task-a', type: 'waiting_on' as const }],
+      };
 
       clickUpService.getTask
         .mockResolvedValueOnce(toClickUpApiTask(taskA))
@@ -169,7 +179,9 @@ describe('CircularDependencyDetectorService', () => {
     });
 
     it('should log AI decisions before and after detection', async () => {
-      clickUpService.getTask.mockResolvedValueOnce(toClickUpApiTask({ ...mockTaskA, dependencies: [] }));
+      clickUpService.getTask.mockResolvedValueOnce(
+        toClickUpApiTask({ ...mockTaskA, dependencies: [] }),
+      );
 
       await service.detectCircularDependencies('task-a');
 
@@ -184,7 +196,9 @@ describe('CircularDependencyDetectorService', () => {
     });
 
     it('should record Prometheus metrics', async () => {
-      clickUpService.getTask.mockResolvedValueOnce(toClickUpApiTask({ ...mockTaskA, dependencies: [] }));
+      clickUpService.getTask.mockResolvedValueOnce(
+        toClickUpApiTask({ ...mockTaskA, dependencies: [] }),
+      );
 
       await service.detectCircularDependencies('task-a');
 
@@ -256,7 +270,9 @@ describe('CircularDependencyDetectorService', () => {
 
       expect(clickUpService.addComment).toHaveBeenCalledTimes(3);
       expect(clickUpService.addComment).toHaveBeenCalledWith('task-a', expect.any(String));
-      expect(metricsService.incrementCounter).toHaveBeenCalledWith('circular_dependency_alerts_sent_total');
+      expect(metricsService.incrementCounter).toHaveBeenCalledWith(
+        'circular_dependency_alerts_sent_total',
+      );
     });
   });
 
@@ -323,4 +339,3 @@ describe('CircularDependencyDetectorService', () => {
     });
   });
 });
-

@@ -14,5 +14,3 @@ export class AcquireLocksDto {
   @IsString({ each: true })
   filePaths!: string[];
 }
-
-

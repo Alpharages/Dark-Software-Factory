@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Headers, HttpCode, HttpStatus, Logger, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '@/common/decorators';
 import { CorrelationId } from '@/common/decorators/correlation-id.decorator';
@@ -76,10 +85,10 @@ export class GitHubWebhooksController {
       return { success: true };
     } catch (error) {
       // Best-effort: do not force GitHub retries for internal failures
-      this.logger.error(`[${correlationId}] GitHub webhook processing failed: ${(error as Error).message}`);
+      this.logger.error(
+        `[${correlationId}] GitHub webhook processing failed: ${(error as Error).message}`,
+      );
       return { success: true };
     }
   }
 }
-
-

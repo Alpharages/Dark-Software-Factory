@@ -42,14 +42,36 @@ describe('FileLockManagerService (releaseLocksForExecution)', () => {
 
   it('releases locks and attempts to advance queue', async () => {
     prisma.fileLock.findMany.mockResolvedValueOnce([
-      { file_path: 'src/a.ts', ticket_id: 'ticket-1', execution_id: 'exec-123', locked_at: new Date() },
-      { file_path: 'src/b.ts', ticket_id: 'ticket-1', execution_id: 'exec-123', locked_at: new Date() },
+      {
+        file_path: 'src/a.ts',
+        ticket_id: 'ticket-1',
+        execution_id: 'exec-123',
+        locked_at: new Date(),
+      },
+      {
+        file_path: 'src/b.ts',
+        ticket_id: 'ticket-1',
+        execution_id: 'exec-123',
+        locked_at: new Date(),
+      },
     ]);
 
     // Heads of queue for affected files
     prisma.fileLockQueue.findMany.mockResolvedValue([
-      { id: 'q1', file_path: 'src/a.ts', ticket_id: 'ticket-2', execution_id: 'exec-456', requested_at: new Date() },
-      { id: 'q2', file_path: 'src/b.ts', ticket_id: 'ticket-2', execution_id: 'exec-456', requested_at: new Date() },
+      {
+        id: 'q1',
+        file_path: 'src/a.ts',
+        ticket_id: 'ticket-2',
+        execution_id: 'exec-456',
+        requested_at: new Date(),
+      },
+      {
+        id: 'q2',
+        file_path: 'src/b.ts',
+        ticket_id: 'ticket-2',
+        execution_id: 'exec-456',
+        requested_at: new Date(),
+      },
     ]);
 
     const acquireSpy = jest.spyOn(service, 'acquireLocks').mockResolvedValue({ acquired: true });
@@ -60,5 +82,3 @@ describe('FileLockManagerService (releaseLocksForExecution)', () => {
     expect(acquireSpy).toHaveBeenCalled();
   });
 });
-
-

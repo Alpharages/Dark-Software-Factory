@@ -52,9 +52,27 @@ describe('FileLockManagerService (acquireLocks)', () => {
       const tx = {
         fileLockQueue: {
           findMany: jest.fn().mockResolvedValue([
-            { id: 'q1', file_path: 'src/a.ts', ticket_id: 'other', execution_id: 'exec-other', requested_at: new Date() },
-            { id: 'q2', file_path: 'src/a.ts', ticket_id: 'ticket-123', execution_id: 'exec-123', requested_at: new Date() },
-            { id: 'q3', file_path: 'src/b.ts', ticket_id: 'ticket-123', execution_id: 'exec-123', requested_at: new Date() },
+            {
+              id: 'q1',
+              file_path: 'src/a.ts',
+              ticket_id: 'other',
+              execution_id: 'exec-other',
+              requested_at: new Date(),
+            },
+            {
+              id: 'q2',
+              file_path: 'src/a.ts',
+              ticket_id: 'ticket-123',
+              execution_id: 'exec-123',
+              requested_at: new Date(),
+            },
+            {
+              id: 'q3',
+              file_path: 'src/b.ts',
+              ticket_id: 'ticket-123',
+              execution_id: 'exec-123',
+              requested_at: new Date(),
+            },
           ]),
           updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         },
@@ -80,8 +98,20 @@ describe('FileLockManagerService (acquireLocks)', () => {
       const tx = {
         fileLockQueue: {
           findMany: jest.fn().mockResolvedValue([
-            { id: 'q1', file_path: 'src/a.ts', ticket_id: 'ticket-123', execution_id: 'exec-123', requested_at: new Date() },
-            { id: 'q2', file_path: 'src/b.ts', ticket_id: 'ticket-123', execution_id: 'exec-123', requested_at: new Date() },
+            {
+              id: 'q1',
+              file_path: 'src/a.ts',
+              ticket_id: 'ticket-123',
+              execution_id: 'exec-123',
+              requested_at: new Date(),
+            },
+            {
+              id: 'q2',
+              file_path: 'src/b.ts',
+              ticket_id: 'ticket-123',
+              execution_id: 'exec-123',
+              requested_at: new Date(),
+            },
           ]),
           updateMany: jest.fn().mockResolvedValue({ count: 2 }),
         },
@@ -102,5 +132,3 @@ describe('FileLockManagerService (acquireLocks)', () => {
     expect(res.acquired).toBe(true);
   });
 });
-
-

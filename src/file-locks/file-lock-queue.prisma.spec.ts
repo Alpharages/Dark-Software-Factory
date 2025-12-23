@@ -6,5 +6,3 @@ describe('Prisma schema (File Locks)', () => {
     expect(status).toBe('WAITING');
   });
 });
-
-

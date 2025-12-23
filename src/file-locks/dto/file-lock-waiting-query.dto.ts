@@ -5,5 +5,3 @@ export class FileLockWaitingQueryDto {
   @IsOptional()
   filePath?: string;
 }
-
-

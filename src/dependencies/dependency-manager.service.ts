@@ -25,7 +25,7 @@ export class DependencyManagerService {
     const startTime = Date.now();
     try {
       this.logger.log(`Checking dependencies for ticket: ${ticketId}`);
-      
+
       // Increment dependency check counter
       this.metricsService.incrementCounter('dependency_checks_total', { ticket_id: ticketId });
 
@@ -115,9 +115,13 @@ export class DependencyManagerService {
 
       // Record dependency resolution duration
       const durationMs = Date.now() - startTime;
-      this.metricsService.recordHistogram('dependency_resolution_duration_seconds', durationMs / 1000, {
-        can_proceed: canProceed.toString(),
-      });
+      this.metricsService.recordHistogram(
+        'dependency_resolution_duration_seconds',
+        durationMs / 1000,
+        {
+          can_proceed: canProceed.toString(),
+        },
+      );
 
       // Log AI decision for dependency check
       await this.aiDecisionLogger.logDecision({
@@ -127,7 +131,12 @@ export class DependencyManagerService {
         ticketId,
         executionId: undefined,
         inputData: { ticketId, totalDependencies: totalCount },
-        outputData: { canProceed, unresolvedDependencies, resolvedCount, estimatedETA: estimatedETA?.toISOString() || null },
+        outputData: {
+          canProceed,
+          unresolvedDependencies,
+          resolvedCount,
+          estimatedETA: estimatedETA?.toISOString() || null,
+        },
         confidence: 1.0,
       });
 
@@ -139,7 +148,10 @@ export class DependencyManagerService {
         estimatedETA,
       };
     } catch (error: any) {
-      this.logger.error(`Error checking dependencies for ${ticketId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error checking dependencies for ${ticketId}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -299,7 +311,9 @@ export class DependencyManagerService {
         return;
       }
 
-      this.logger.log(`Found ${dependentTickets.length} dependent tickets for ${completedTicketId}`);
+      this.logger.log(
+        `Found ${dependentTickets.length} dependent tickets for ${completedTicketId}`,
+      );
 
       // Step 2: For each dependent ticket, check if ALL dependencies now resolved
       const notifications = await Promise.allSettled(
@@ -334,7 +348,9 @@ export class DependencyManagerService {
               );
 
               // Record requeue metric
-              this.metricsService.incrementCounter('dependent_tickets_notified_total', { action: 'requeued' });
+              this.metricsService.incrementCounter('dependent_tickets_notified_total', {
+                action: 'requeued',
+              });
 
               return { ticketId: dep.ticket_id, action: 'requeued' };
             } catch (publishError: any) {
@@ -347,7 +363,10 @@ export class DependencyManagerService {
             }
           } else {
             // Still has unresolved dependencies, recalculate ETA
-            const etaResult = await this.calculateETA(dep.ticket_id, checkResult.unresolvedDependencies);
+            const etaResult = await this.calculateETA(
+              dep.ticket_id,
+              checkResult.unresolvedDependencies,
+            );
 
             // Update ClickUp with ETA update
             await this.clickUpService.addComment(
@@ -359,7 +378,9 @@ export class DependencyManagerService {
             );
 
             // Record ETA update metric
-            this.metricsService.incrementCounter('dependent_tickets_notified_total', { action: 'eta_updated' });
+            this.metricsService.incrementCounter('dependent_tickets_notified_total', {
+              action: 'eta_updated',
+            });
 
             return { ticketId: dep.ticket_id, action: 'eta_updated' };
           }
@@ -383,7 +404,10 @@ export class DependencyManagerService {
         confidence: 1.0,
       });
     } catch (error: any) {
-      this.logger.error(`Error notifying dependent tickets for ${completedTicketId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error notifying dependent tickets for ${completedTicketId}: ${error.message}`,
+        error.stack,
+      );
       // Don't re-throw: this is a background notification process
     }
   }
@@ -461,7 +485,9 @@ export class DependencyManagerService {
         `Based on ${sampleSize} historical execution(s), average completion time is ${historicalAverage.toFixed(1)} minutes`,
       );
     } else {
-      parts.push('No historical data available, using default average based on estimated complexity');
+      parts.push(
+        'No historical data available, using default average based on estimated complexity',
+      );
     }
 
     if (queuePosition > 0) {
@@ -469,7 +495,9 @@ export class DependencyManagerService {
     }
 
     if (unresolvedDepCount > 0) {
-      parts.push(`${unresolvedDepCount} unresolved dependenc${unresolvedDepCount > 1 ? 'ies' : 'y'}`);
+      parts.push(
+        `${unresolvedDepCount} unresolved dependenc${unresolvedDepCount > 1 ? 'ies' : 'y'}`,
+      );
     }
 
     return parts.join('. ') + '.';
@@ -484,10 +512,11 @@ export class DependencyManagerService {
       const queueInfo = await this.rabbitMQService.getQueueStats(queueName);
       return queueInfo.messageCount || 0;
     } catch (error: any) {
-      this.logger.error(`Failed to get queue depth for ${queueName}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get queue depth for ${queueName}: ${error.message}`,
+        error.stack,
+      );
       return 0; // Graceful fallback
     }
   }
 }
-
-

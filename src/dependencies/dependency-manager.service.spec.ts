@@ -162,7 +162,10 @@ describe('DependencyManagerService', () => {
       (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce([]);
 
       // Mock RabbitMQ queue depth
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({ messageCount: 5, consumerCount: 1 });
+      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
+        messageCount: 5,
+        consumerCount: 1,
+      });
 
       const result = await service.checkDependencies('ticket-123');
 
@@ -254,7 +257,10 @@ describe('DependencyManagerService', () => {
       ]);
 
       // Mock RabbitMQ queue depth: 5 tickets ahead
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({ messageCount: 5, consumerCount: 1 });
+      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
+        messageCount: 5,
+        consumerCount: 1,
+      });
 
       const result = await service.calculateETA('ticket-123', ['dep-1', 'dep-2']);
 
@@ -280,7 +286,10 @@ describe('DependencyManagerService', () => {
       });
 
       // Mock RabbitMQ queue depth
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({ messageCount: 2, consumerCount: 1 });
+      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
+        messageCount: 2,
+        consumerCount: 1,
+      });
 
       const result = await service.calculateETA('ticket-123', ['dep-1']);
 
@@ -302,7 +311,10 @@ describe('DependencyManagerService', () => {
       ]);
 
       // Mock large queue depth
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({ messageCount: 20, consumerCount: 1 });
+      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
+        messageCount: 20,
+        consumerCount: 1,
+      });
 
       const result = await service.calculateETA('ticket-123', ['dep-1']);
 
@@ -320,7 +332,10 @@ describe('DependencyManagerService', () => {
       }));
 
       (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce(executions);
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({ messageCount: 1, consumerCount: 1 });
+      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
+        messageCount: 1,
+        consumerCount: 1,
+      });
 
       const result = await service.calculateETA('ticket-123', []);
 
@@ -335,7 +350,9 @@ describe('DependencyManagerService', () => {
         description: '',
         status: { status: 'Open' },
       });
-      (rabbitmqService.getQueueStats as jest.Mock).mockRejectedValueOnce(new Error('Queue unavailable'));
+      (rabbitmqService.getQueueStats as jest.Mock).mockRejectedValueOnce(
+        new Error('Queue unavailable'),
+      );
 
       const result = await service.calculateETA('ticket-123', []);
 
@@ -408,15 +425,15 @@ describe('DependencyManagerService', () => {
 
       // Verify ClickUp comments added
       expect(clickUpService.addComment).toHaveBeenCalledTimes(2);
-      
+
       // Verify both tickets received comments (order-agnostic)
       const calls = (clickUpService.addComment as jest.Mock).mock.calls;
-      const ticketIds = calls.map(call => call[0]);
+      const ticketIds = calls.map((call) => call[0]);
       expect(ticketIds).toContain('ticket-a');
       expect(ticketIds).toContain('ticket-b');
-      
+
       // Verify all comments mention dependencies
-      calls.forEach(call => {
+      calls.forEach((call) => {
         expect(call[1].toLowerCase()).toMatch(/dependenc/);
       });
 
@@ -460,12 +477,12 @@ describe('DependencyManagerService', () => {
         dependencies: [{ task_id: 'completed-ticket' }],
       });
 
-      (clickUpService.addComment as jest.Mock).mockRejectedValueOnce(new Error('ClickUp API error'));
+      (clickUpService.addComment as jest.Mock).mockRejectedValueOnce(
+        new Error('ClickUp API error'),
+      );
 
       // Should not throw, but log error
       await expect(service.notifyDependentTickets('completed-ticket')).resolves.not.toThrow();
     });
   });
 });
-
-

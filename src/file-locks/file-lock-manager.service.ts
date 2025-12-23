@@ -2,7 +2,10 @@ import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
-import { PredictFileModificationsInput, PredictFileModificationsResult } from './interfaces/file-prediction.interface';
+import {
+  PredictFileModificationsInput,
+  PredictFileModificationsResult,
+} from './interfaces/file-prediction.interface';
 import { AcquireLocksRequest, AcquireLocksResult } from './interfaces/lock-acquire.interface';
 import { FilePredictionProvider } from './file-prediction.provider';
 
@@ -197,8 +200,11 @@ export class FileLockManagerService {
           },
         });
 
-        const { isHeadForAll, queuePositionByFile, headTicketByFile } =
-          this.evaluateQueuePosition(queueEntries, request.ticketId, request.executionId);
+        const { isHeadForAll, queuePositionByFile, headTicketByFile } = this.evaluateQueuePosition(
+          queueEntries,
+          request.ticketId,
+          request.executionId,
+        );
 
         if (!isHeadForAll) {
           const conflictFilePaths = Object.entries(headTicketByFile)
@@ -214,29 +220,29 @@ export class FileLockManagerService {
 
           const estimatedReleaseTime = this.estimateReleaseTime(activeLocks, lockTimeoutMs);
 
-        await this.aiDecisionLogger.logDecision({
-          agentName: 'FileLockManager',
-          action: 'file_lock_conflict',
-          reasoning: `Not head-of-queue for ${conflictFilePaths.length} file(s); waiting`,
-          ticketId: request.ticketId,
-          executionId: request.executionId,
-          inputData: { filePaths: normalizedFilePaths },
-          outputData: {
-            conflictFilePaths,
-            ownerTicketIds,
-            queuePositionByFile,
-            estimatedReleaseTime: estimatedReleaseTime?.toISOString() ?? null,
-          },
-          confidence: 1.0,
-        });
+          await this.aiDecisionLogger.logDecision({
+            agentName: 'FileLockManager',
+            action: 'file_lock_conflict',
+            reasoning: `Not head-of-queue for ${conflictFilePaths.length} file(s); waiting`,
+            ticketId: request.ticketId,
+            executionId: request.executionId,
+            inputData: { filePaths: normalizedFilePaths },
+            outputData: {
+              conflictFilePaths,
+              ownerTicketIds,
+              queuePositionByFile,
+              estimatedReleaseTime: estimatedReleaseTime?.toISOString() ?? null,
+            },
+            confidence: 1.0,
+          });
 
-        // Metrics: Track conflict occurrence
-        this.safeIncrementCounter('file_lock_conflicts_total', {
-          ticket_id: request.ticketId,
-          conflict_count: conflictFilePaths.length.toString(),
-        });
+          // Metrics: Track conflict occurrence
+          this.safeIncrementCounter('file_lock_conflicts_total', {
+            ticket_id: request.ticketId,
+            conflict_count: conflictFilePaths.length.toString(),
+          });
 
-        return {
+          return {
             acquired: false,
             conflicts: {
               filePaths: conflictFilePaths,
@@ -413,9 +419,7 @@ export class FileLockManagerService {
   /**
    * AC#6: Dashboard support - list waiting queue entries grouped by file path.
    */
-  async getWaitingQueues(
-    filePath?: string,
-  ): Promise<{
+  async getWaitingQueues(filePath?: string): Promise<{
     queues: Array<{
       filePath: string;
       estimatedReleaseTime?: string;
@@ -615,7 +619,13 @@ export class FileLockManagerService {
       this.prisma.fileLockQueue.findMany({
         where: { file_path: { in: filePaths }, status: 'WAITING' },
         orderBy: [{ file_path: 'asc' }, { requested_at: 'asc' }, { id: 'asc' }],
-        select: { id: true, ticket_id: true, execution_id: true, file_path: true, requested_at: true },
+        select: {
+          id: true,
+          ticket_id: true,
+          execution_id: true,
+          file_path: true,
+          requested_at: true,
+        },
       }),
     ]);
 
@@ -625,11 +635,15 @@ export class FileLockManagerService {
       request.executionId,
     );
 
-    const conflictFilePaths = filePaths.filter((fp) => headTicketByFile[fp]?.ticketId !== request.ticketId);
+    const conflictFilePaths = filePaths.filter(
+      (fp) => headTicketByFile[fp]?.ticketId !== request.ticketId,
+    );
     const ownerTicketIds = Array.from(
       new Set([
         ...activeLocks.map((l) => l.ticket_id),
-        ...Object.values(headTicketByFile).map((h) => h.ticketId).filter((t) => t !== request.ticketId),
+        ...Object.values(headTicketByFile)
+          .map((h) => h.ticketId)
+          .filter((t) => t !== request.ticketId),
       ]),
     );
 
@@ -655,22 +669,32 @@ export class FileLockManagerService {
       const queueHeads = await this.prisma.fileLockQueue.findMany({
         where: { file_path: { in: affected }, status: 'WAITING' },
         orderBy: [{ file_path: 'asc' }, { requested_at: 'asc' }, { id: 'asc' }],
-        select: { id: true, file_path: true, ticket_id: true, execution_id: true, requested_at: true },
+        select: {
+          id: true,
+          file_path: true,
+          ticket_id: true,
+          execution_id: true,
+          requested_at: true,
+        },
       });
 
       // Take the first WAITING entry per file
       const headByFile = new Map<string, { ticketId: string; executionId: string }>();
       for (const entry of queueHeads) {
         if (!headByFile.has(entry.file_path)) {
-          headByFile.set(entry.file_path, { ticketId: entry.ticket_id, executionId: entry.execution_id });
+          headByFile.set(entry.file_path, {
+            ticketId: entry.ticket_id,
+            executionId: entry.execution_id,
+          });
         }
       }
 
-      const candidates = Array.from(new Set(Array.from(headByFile.values()).map((c) => `${c.ticketId}::${c.executionId}`)))
-        .map((key) => {
-          const [ticketId, executionId] = key.split('::');
-          return { ticketId, executionId };
-        });
+      const candidates = Array.from(
+        new Set(Array.from(headByFile.values()).map((c) => `${c.ticketId}::${c.executionId}`)),
+      ).map((key) => {
+        const [ticketId, executionId] = key.split('::');
+        return { ticketId, executionId };
+      });
 
       let progressed = false;
 
@@ -770,5 +794,3 @@ export class FileLockManagerService {
       });
   }
 }
-
-

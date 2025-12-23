@@ -9,7 +9,11 @@ describe('FileLockManagerService', () => {
   let service: FileLockManagerService;
   let prismaService: { aIDecisionLog: { findFirst: jest.Mock } };
   let aiDecisionLogger: { logDecision: jest.Mock };
-  let metricsService: { incrementCounter: jest.Mock; recordHistogram: jest.Mock; setGauge: jest.Mock };
+  let metricsService: {
+    incrementCounter: jest.Mock;
+    recordHistogram: jest.Mock;
+    setGauge: jest.Mock;
+  };
   let filePredictionProvider: { predict: jest.Mock };
 
   beforeEach(async () => {
@@ -84,7 +88,9 @@ describe('FileLockManagerService', () => {
         ticketDescription: 'Please update src/auth/auth.service.ts and prisma/schema.prisma',
       });
 
-      expect(result.filePaths).toEqual(expect.arrayContaining(['src/auth/auth.service.ts', 'prisma/schema.prisma']));
+      expect(result.filePaths).toEqual(
+        expect.arrayContaining(['src/auth/auth.service.ts', 'prisma/schema.prisma']),
+      );
       expect(filePredictionProvider.predict).not.toHaveBeenCalled();
     });
 
@@ -110,5 +116,3 @@ describe('FileLockManagerService', () => {
     });
   });
 });
-
-

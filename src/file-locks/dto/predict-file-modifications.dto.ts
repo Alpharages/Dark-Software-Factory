@@ -21,5 +21,3 @@ export class PredictFileModificationsDto {
   @IsOptional()
   ticketDescription?: string;
 }
-
-

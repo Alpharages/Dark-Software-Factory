@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { PredictFileModificationsInput, PredictFileModificationsResult } from './interfaces/file-prediction.interface';
+import {
+  PredictFileModificationsInput,
+  PredictFileModificationsResult,
+} from './interfaces/file-prediction.interface';
 import { MetricsService } from '@/common/metrics/metrics.service';
 
 /**
@@ -29,13 +32,14 @@ export class FilePredictionProvider {
     }
   }
 
-  async predict(
-    input: PredictFileModificationsInput,
-  ): Promise<PredictFileModificationsResult> {
+  async predict(input: PredictFileModificationsInput): Promise<PredictFileModificationsResult> {
     // Fallback path (dev/test environments often won't have ANTHROPIC_API_KEY)
     if (!this.client) {
       this.safeIncrementCounter('file_prediction_ai_failures_total', { reason: 'not_configured' });
-      return this.heuristicFallback(input, 'AI provider not configured (missing ANTHROPIC_API_KEY).');
+      return this.heuristicFallback(
+        input,
+        'AI provider not configured (missing ANTHROPIC_API_KEY).',
+      );
     }
 
     const prompt = this.buildPrompt(input);
@@ -58,11 +62,12 @@ export class FilePredictionProvider {
       return {
         filePaths: Array.isArray(parsed.filePaths) ? parsed.filePaths : [],
         confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.4,
-        reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : 'No reasoning returned',
+        reasoning:
+          typeof parsed.reasoning === 'string' ? parsed.reasoning : 'No reasoning returned',
       };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      
+
       // Classify error type for better alerting
       const errorType = this.classifyError(error);
       this.logger.error(`AI prediction failed (${errorType}), using heuristic fallback: ${msg}`, {
@@ -143,19 +148,21 @@ JSON SCHEMA:
     if (!(error instanceof Error)) return 'unknown';
 
     const msg = error.message.toLowerCase();
-    
+
     // Rate limit errors
     if (msg.includes('rate limit') || msg.includes('429')) return 'rate_limit';
-    
+
     // Authentication errors
-    if (msg.includes('authentication') || msg.includes('401') || msg.includes('api key')) return 'auth_error';
-    
+    if (msg.includes('authentication') || msg.includes('401') || msg.includes('api key'))
+      return 'auth_error';
+
     // Network errors
-    if (msg.includes('network') || msg.includes('timeout') || msg.includes('econnrefused')) return 'network_error';
-    
+    if (msg.includes('network') || msg.includes('timeout') || msg.includes('econnrefused'))
+      return 'network_error';
+
     // JSON parsing errors
     if (msg.includes('json') || msg.includes('parse')) return 'parse_error';
-    
+
     return 'api_error';
   }
 
@@ -167,5 +174,3 @@ JSON SCHEMA:
     }
   }
 }
-
-

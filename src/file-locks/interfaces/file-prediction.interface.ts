@@ -11,5 +11,3 @@ export interface PredictFileModificationsResult {
   confidence: number; // 0..1
   reasoning: string;
 }
-
-

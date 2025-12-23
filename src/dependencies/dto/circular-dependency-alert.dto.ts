@@ -30,4 +30,3 @@ export class CircularDependencyAlertDto {
     this.detectionTime = detectionTime;
   }
 }
-

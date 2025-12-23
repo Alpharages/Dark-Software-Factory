@@ -164,7 +164,9 @@ class FakePrisma {
           (l) => l.file_path === row.file_path && l.status === 'LOCKED',
         );
         if (conflict) {
-          throw new Error('Unique constraint violation on file_locks(file_path) WHERE status=LOCKED');
+          throw new Error(
+            'Unique constraint violation on file_locks(file_path) WHERE status=LOCKED',
+          );
         }
       }
 
@@ -260,7 +262,9 @@ describe('FileLockManagerService (concurrency)', () => {
     const acquiredCount = [a, b].filter((r) => r.acquired).length;
     expect(acquiredCount).toBe(1);
 
-    const activeLocks = prisma.fileLocks.filter((l) => l.status === 'LOCKED' && l.file_path === 'src/a.ts');
+    const activeLocks = prisma.fileLocks.filter(
+      (l) => l.status === 'LOCKED' && l.file_path === 'src/a.ts',
+    );
     expect(activeLocks.length).toBe(1);
   });
 
@@ -279,7 +283,9 @@ describe('FileLockManagerService (concurrency)', () => {
     });
     expect(second.acquired).toBe(false);
 
-    const bLocks = prisma.fileLocks.filter((l) => l.ticket_id === 'ticket-b' && l.status === 'LOCKED');
+    const bLocks = prisma.fileLocks.filter(
+      (l) => l.ticket_id === 'ticket-b' && l.status === 'LOCKED',
+    );
     expect(bLocks).toEqual([]);
   });
 
@@ -299,7 +305,9 @@ describe('FileLockManagerService (concurrency)', () => {
 
     // Sanity: ensure the lock exists before release
     expect(
-      prisma.fileLocks.some((l) => l.execution_id === 'exec-a' && l.file_path === 'src/a.ts' && l.status === 'LOCKED'),
+      prisma.fileLocks.some(
+        (l) => l.execution_id === 'exec-a' && l.file_path === 'src/a.ts' && l.status === 'LOCKED',
+      ),
     ).toBe(true);
     expect(
       prisma.queue.some(
@@ -327,9 +335,9 @@ describe('FileLockManagerService (concurrency)', () => {
       expect.objectContaining({ ticketId: 'ticket-b', executionId: 'exec-b' }),
     );
 
-    const activeLock = prisma.fileLocks.find((l) => l.file_path === 'src/a.ts' && l.status === 'LOCKED');
+    const activeLock = prisma.fileLocks.find(
+      (l) => l.file_path === 'src/a.ts' && l.status === 'LOCKED',
+    );
     expect(activeLock?.ticket_id).toBe('ticket-b');
   });
 });
-
-

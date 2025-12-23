@@ -58,7 +58,10 @@ export class GitHubWebhookSignatureGuard implements CanActivate {
       const [algo, signatureHex] = signatureHeader.split('=');
       if (algo !== 'sha256' || !signatureHex) return false;
 
-      const digestHex = crypto.createHmac('sha256', this.webhookSecret).update(payload).digest('hex');
+      const digestHex = crypto
+        .createHmac('sha256', this.webhookSecret)
+        .update(payload)
+        .digest('hex');
 
       const a = Buffer.from(signatureHex, 'hex');
       const b = Buffer.from(digestHex, 'hex');
@@ -71,5 +74,3 @@ export class GitHubWebhookSignatureGuard implements CanActivate {
     }
   }
 }
-
-

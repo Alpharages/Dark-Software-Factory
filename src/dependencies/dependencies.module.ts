@@ -25,14 +25,13 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
  */
 @Module({
   imports: [
-    ClickUpModule,              // For ClickUp API access
-    AIDecisionLoggerModule,     // For AI decision logging
-    AppMetricsModule,           // For Prometheus metrics
-    DatabaseModule,             // For database access
-    RabbitMQModule,             // For RabbitMQ queue operations (Story 12.2)
+    ClickUpModule, // For ClickUp API access
+    AIDecisionLoggerModule, // For AI decision logging
+    AppMetricsModule, // For Prometheus metrics
+    DatabaseModule, // For database access
+    RabbitMQModule, // For RabbitMQ queue operations (Story 12.2)
   ],
   providers: [CircularDependencyDetectorService, DependencyManagerService],
   exports: [CircularDependencyDetectorService, DependencyManagerService],
 })
 export class DependenciesModule {}
-

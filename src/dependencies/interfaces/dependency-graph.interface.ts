@@ -1,6 +1,6 @@
 /**
  * Dependency Graph Interfaces for Circular Dependency Detection
- * 
+ *
  * These interfaces define the data structures used by the DFS cycle detection algorithm.
  */
 
@@ -42,4 +42,3 @@ export interface CircularDependencyResult {
   /** Confidence score: 0.95 for detected cycles, 1.0 for no cycle */
   confidence: number;
 }
-

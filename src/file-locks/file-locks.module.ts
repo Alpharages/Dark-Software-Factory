@@ -13,5 +13,3 @@ import { FileLocksController } from './file-locks.controller';
   exports: [FileLockManagerService],
 })
 export class FileLocksModule {}
-
-

@@ -78,7 +78,10 @@ export class CircularDependencyDetectorService {
 
       // Record detection duration
       const duration = (Date.now() - startTime) / 1000;
-      this.metricsService.recordHistogram('circular_dependency_detection_duration_seconds', duration);
+      this.metricsService.recordHistogram(
+        'circular_dependency_detection_duration_seconds',
+        duration,
+      );
 
       // Record cycle detected metric
       if (result.hasCycle) {
@@ -144,7 +147,7 @@ export class CircularDependencyDetectorService {
       try {
         // Fetch task from ClickUp API (returns basic task info + description)
         const task = await this.clickUpService.getTask(currentId);
-        
+
         // ClickUp tasks include dependencies in the API response
         // Cast to ClickUpTask to access dependencies field
         const fullTask = task as any;
@@ -154,7 +157,7 @@ export class CircularDependencyDetectorService {
           status: task.status,
           dependencies: fullTask.dependencies || [],
         };
-        
+
         graph.nodes.set(currentId, clickUpTask);
 
         // Extract dependencies from task
@@ -291,9 +294,7 @@ All tickets in this cycle have been marked as "Blocked - Circular Dependency" an
     }
 
     const alertMessage = this.visualizeCycle(cycle, graph);
-    const cyclePath = cycle
-      .map((id) => graph.nodes.get(id)?.name || id)
-      .join(' → ');
+    const cyclePath = cycle.map((id) => graph.nodes.get(id)?.name || id).join(' → ');
 
     try {
       // Post detailed alert to first ticket in cycle
@@ -312,11 +313,7 @@ All tickets in this cycle have been marked as "Blocked - Circular Dependency" an
       this.logger.log(`PM alerts sent for circular dependency involving ${cycle.length} tickets`);
 
       // Return structured DTO
-      return new CircularDependencyAlertDto(
-        alertMessage,
-        cyclePath,
-        [...new Set(cycle)],
-      );
+      return new CircularDependencyAlertDto(alertMessage, cyclePath, [...new Set(cycle)]);
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to send PM alerts`, {
@@ -384,4 +381,3 @@ All tickets in this cycle have been marked as "Blocked - Circular Dependency" an
     return { success: successCount, failed: failedCount };
   }
 }
-

@@ -33,9 +33,7 @@ export class FileLocksController {
   @Throttle({ default: { limit: 100, ttl: 60000 } })
   @ApiOperation({ summary: 'List waiting file lock queue entries (grouped by file)' })
   @ApiResponse({ status: 200, description: 'Waiting queues returned' })
-  async listWaitingQueues(
-    @Query() query: FileLockWaitingQueryDto,
-  ): Promise<{
+  async listWaitingQueues(@Query() query: FileLockWaitingQueryDto): Promise<{
     queues: Array<{
       filePath: string;
       estimatedReleaseTime?: string;
@@ -53,5 +51,3 @@ export class FileLocksController {
     return { queues, totalFiles: queues.length, totalWaiting };
   }
 }
-
-

@@ -18,5 +18,3 @@ export interface ETAResult {
   historicalAverage: number | null; // minutes
   queuePosition: number;
 }
-
-
