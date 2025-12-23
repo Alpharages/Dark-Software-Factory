@@ -149,8 +149,10 @@ export class CircularDependencyDetectorService {
         const task = await this.clickUpService.getTask(currentId);
 
         // ClickUp tasks include dependencies in the API response
-        // Cast to ClickUpTask to access dependencies field
-        const fullTask = task as any;
+        // Cast to unknown then type narrow or assume structure for now to avoid 'any'
+        const fullTask = task as unknown as {
+          dependencies?: { task_id: string; type: 'waiting_on' | 'blocking' }[];
+        };
         const clickUpTask: ClickUpTask = {
           id: task.id,
           name: task.name,
@@ -161,7 +163,8 @@ export class CircularDependencyDetectorService {
         graph.nodes.set(currentId, clickUpTask);
 
         // Extract dependencies from task
-        const dependencies = clickUpTask.dependencies?.map((d: any) => d.task_id) || [];
+        const dependencies =
+          clickUpTask.dependencies?.map((d: { task_id: string }) => d.task_id) || [];
         graph.edges.set(currentId, dependencies);
 
         // Add dependencies to queue for BFS traversal

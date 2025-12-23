@@ -60,14 +60,14 @@ describe('WorkspaceService', () => {
     };
 
     // In-memory prisma.workspace mock to support concurrency/count semantics
-    const workspaces: any[] = [];
+    const workspaces: Array<{ execution_id: string; [key: string]: unknown }> = [];
 
     const mockPrismaService = {
       workspace: {
-        findUnique: jest.fn(async ({ where }: any) => {
+        findUnique: jest.fn(async ({ where }: { where: { execution_id: string } }) => {
           return workspaces.find((w) => w.execution_id === where.execution_id) ?? null;
         }),
-        findUniqueOrThrow: jest.fn(async ({ where }: any) => {
+        findUniqueOrThrow: jest.fn(async ({ where }: { where: { execution_id: string } }) => {
           const found = workspaces.find((w) => w.execution_id === where.execution_id);
           if (!found) throw new Error('Not found');
           return found;
@@ -77,18 +77,28 @@ describe('WorkspaceService', () => {
           return workspaces;
         }),
         count: jest.fn(async () => workspaces.length),
-        create: jest.fn(async ({ data }: any) => {
-          const record = { ...data, created_at: new Date(), updated_at: new Date() };
+        create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
+          const record = { ...data, created_at: new Date(), updated_at: new Date() } as unknown as {
+            execution_id: string;
+          };
           workspaces.push(record);
           return record;
         }),
-        update: jest.fn(async ({ where, data }: any) => {
-          const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
-          if (idx < 0) throw new Error('Not found');
-          workspaces[idx] = { ...workspaces[idx], ...data, updated_at: new Date() };
-          return workspaces[idx];
-        }),
-        delete: jest.fn(async ({ where }: any) => {
+        update: jest.fn(
+          async ({
+            where,
+            data,
+          }: {
+            where: { execution_id: string };
+            data: Record<string, unknown>;
+          }) => {
+            const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
+            if (idx < 0) throw new Error('Not found');
+            workspaces[idx] = { ...workspaces[idx], ...data, updated_at: new Date() };
+            return workspaces[idx];
+          },
+        ),
+        delete: jest.fn(async ({ where }: { where: { execution_id: string } }) => {
           const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
           if (idx < 0) throw new Error('Not found');
           const [deleted] = workspaces.splice(idx, 1);

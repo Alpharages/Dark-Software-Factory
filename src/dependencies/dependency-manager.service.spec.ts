@@ -13,15 +13,22 @@ describe('DependencyManagerService', () => {
   let prismaService: jest.Mocked<PrismaService>;
   let rabbitmqService: jest.Mocked<RabbitMQService>;
   let rabbitmqPublisher: jest.Mocked<RabbitMQPublisherService>;
-  let aiDecisionLogger: jest.Mocked<AIDecisionLoggerService>;
-  let metricsService: jest.Mocked<MetricsService>;
+
+  interface MockClickUpApiTask {
+    id: string;
+    name: string;
+    description: string;
+    status: { status: string };
+    text_content?: string;
+    dependencies?: { task_id: string }[];
+  }
 
   beforeEach(async () => {
     const mockClickUpService = {
       getTask: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue(true),
       addComment: jest.fn().mockResolvedValue(true),
-    };
+    } as unknown as jest.Mocked<ClickUpService>;
 
     const mockAIDecisionLogger = {
       logDecision: jest.fn().mockResolvedValue({ id: 'log-id' }),
@@ -72,8 +79,6 @@ describe('DependencyManagerService', () => {
     prismaService = module.get(PrismaService);
     rabbitmqService = module.get(RabbitMQService);
     rabbitmqPublisher = module.get(RabbitMQPublisherService);
-    aiDecisionLogger = module.get(AIDecisionLoggerService);
-    metricsService = module.get(MetricsService);
   });
 
   it('should be defined', () => {
@@ -89,7 +94,7 @@ describe('DependencyManagerService', () => {
         description: 'Test task',
         status: { status: 'Open' },
         dependencies: undefined,
-      } as any);
+      } as MockClickUpApiTask);
 
       const result = await service.checkDependencies('ticket-123');
 
@@ -109,19 +114,19 @@ describe('DependencyManagerService', () => {
           description: 'Test',
           status: { status: 'Open' },
           dependencies: [{ task_id: 'dep-1' }, { task_id: 'dep-2' }],
-        } as any)
+        } as MockClickUpApiTask)
         .mockResolvedValueOnce({
           id: 'dep-1',
           name: 'Dep 1',
           description: '',
           status: { status: 'completed' },
-        } as any)
+        } as MockClickUpApiTask)
         .mockResolvedValueOnce({
           id: 'dep-2',
           name: 'Dep 2',
           description: '',
           status: { status: 'deployed' },
-        } as any);
+        } as MockClickUpApiTask);
 
       // Mock Prisma: no circular dependencies
       (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([]);
@@ -142,19 +147,19 @@ describe('DependencyManagerService', () => {
           description: '',
           status: { status: 'Open' },
           dependencies: [{ task_id: 'dep-1' }, { task_id: 'dep-2' }],
-        } as any)
+        } as unknown)
         .mockResolvedValueOnce({
           id: 'dep-1',
           name: 'Dep 1',
           description: '',
           status: { status: 'in progress' },
-        } as any)
+        } as MockClickUpApiTask)
         .mockResolvedValueOnce({
           id: 'dep-2',
           name: 'Dep 2',
           description: '',
           status: { status: 'completed' },
-        } as any);
+        } as MockClickUpApiTask);
 
       (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([]);
 
@@ -183,7 +188,7 @@ describe('DependencyManagerService', () => {
         description: '',
         status: { status: 'Open' },
         dependencies: [{ task_id: 'dep-1' }],
-      } as any);
+      } as unknown);
 
       // Mock Prisma: circular dependency flagged by Story 12.1
       (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([
@@ -195,7 +200,7 @@ describe('DependencyManagerService', () => {
           circular_detected: true,
           created_at: new Date(),
           resolved_at: null,
-        } as any,
+        } as unknown,
       ]);
 
       const result = await service.checkDependencies('ticket-123');
@@ -219,7 +224,7 @@ describe('DependencyManagerService', () => {
           description: '',
           status: { status: 'Open' },
           dependencies: [{ task_id: 'dep-missing' }],
-        } as any)
+        } as MockClickUpApiTask)
         .mockRejectedValueOnce(new Error('Task not found'));
 
       (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([]);

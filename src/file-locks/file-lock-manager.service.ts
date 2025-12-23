@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
@@ -207,12 +207,12 @@ export class FileLockManagerService {
         );
 
         if (!isHeadForAll) {
-          const conflictFilePaths = Object.entries(headTicketByFile)
+          const conflictFilePaths = Array.from(headTicketByFile.entries())
             .filter(([, head]) => head.ticketId !== request.ticketId)
             .map(([filePath]) => filePath);
 
           const ownersFromLocks = activeLocks.map((l) => l.ticket_id);
-          const ownersFromQueue = Object.values(headTicketByFile)
+          const ownersFromQueue = Array.from(headTicketByFile.values())
             .map((h) => h.ticketId)
             .filter((t) => t !== request.ticketId);
 
@@ -432,7 +432,7 @@ export class FileLockManagerService {
     }>;
     totalWaiting: number;
   }> {
-    const whereClause: any = { status: 'WAITING' };
+    const whereClause: Record<string, unknown> = { status: 'WAITING' };
     if (filePath) {
       whereClause.file_path = filePath;
     }
@@ -548,7 +548,7 @@ export class FileLockManagerService {
   }
 
   private estimateReleaseTime(
-    activeLocks: Array<{ locked_at: Date; status: 'LOCKED'; file_path: string } | any>,
+    activeLocks: Array<{ locked_at: Date; file_path: string }>,
     lockTimeoutMs: number,
   ): Date | undefined {
     const times = activeLocks
@@ -574,8 +574,8 @@ export class FileLockManagerService {
     executionId: string,
   ): {
     isHeadForAll: boolean;
-    queuePositionByFile: Record<string, number>;
-    headTicketByFile: Record<string, { ticketId: string; executionId: string }>;
+    queuePositionByFile: Map<string, number>;
+    headTicketByFile: Map<string, { ticketId: string; executionId: string }>;
   } {
     const entriesByFile = new Map<string, typeof queueEntries>();
     for (const entry of queueEntries) {
@@ -584,20 +584,20 @@ export class FileLockManagerService {
       entriesByFile.set(entry.file_path, existing);
     }
 
-    const queuePositionByFile: Record<string, number> = {};
-    const headTicketByFile: Record<string, { ticketId: string; executionId: string }> = {};
+    const queuePositionByFile = new Map<string, number>();
+    const headTicketByFile = new Map<string, { ticketId: string; executionId: string }>();
 
     let isHeadForAll = true;
 
     for (const [filePath, entries] of entriesByFile.entries()) {
       const head = entries[0];
-      headTicketByFile[filePath] = { ticketId: head.ticket_id, executionId: head.execution_id };
+      headTicketByFile.set(filePath, { ticketId: head.ticket_id, executionId: head.execution_id });
 
       const myIndex = entries.findIndex(
         (e) => e.ticket_id === ticketId && e.execution_id === executionId,
       );
       if (myIndex >= 0) {
-        queuePositionByFile[filePath] = myIndex + 1; // 1-based
+        queuePositionByFile.set(filePath, myIndex + 1); // 1-based
       }
 
       if (head.ticket_id !== ticketId || head.execution_id !== executionId) {
@@ -636,12 +636,12 @@ export class FileLockManagerService {
     );
 
     const conflictFilePaths = filePaths.filter(
-      (fp) => headTicketByFile[fp]?.ticketId !== request.ticketId,
+      (fp) => headTicketByFile.get(fp)?.ticketId !== request.ticketId,
     );
     const ownerTicketIds = Array.from(
       new Set([
         ...activeLocks.map((l) => l.ticket_id),
-        ...Object.values(headTicketByFile)
+        ...Array.from(headTicketByFile.values())
           .map((h) => h.ticketId)
           .filter((t) => t !== request.ticketId),
       ]),

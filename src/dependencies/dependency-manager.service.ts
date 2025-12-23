@@ -33,9 +33,8 @@ export class DependencyManagerService {
       const task = await this.clickUpService.getTask(ticketId);
 
       // Step 2: Extract dependencies from ClickUp task
-      // ClickUp API returns dependencies, but base interface doesn't include it
       // Cast to access the field (same pattern as Story 12.1)
-      const fullTask = task as any;
+      const fullTask = task as unknown as { dependencies?: { task_id: string }[] };
       const dependencies = fullTask.dependencies || [];
       const totalCount = dependencies.length;
 
@@ -82,9 +81,10 @@ export class DependencyManagerService {
           } else {
             unresolvedDependencies.push(depId);
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const err = error as { message?: string };
           // If dependency task is not found (deleted), treat as resolved
-          if (error.message?.includes('not found') || error.message?.includes('404')) {
+          if (err.message?.includes('not found') || err.message?.includes('404')) {
             this.logger.warn(`Dependency ${depId} not found (deleted), treating as resolved`);
             resolvedCount++;
           } else {
@@ -114,10 +114,9 @@ export class DependencyManagerService {
       );
 
       // Record dependency resolution duration
-      const durationMs = Date.now() - startTime;
       this.metricsService.recordHistogram(
         'dependency_resolution_duration_seconds',
-        durationMs / 1000,
+        (Date.now() - startTime) / 1000,
         {
           can_proceed: canProceed.toString(),
         },
@@ -147,11 +146,9 @@ export class DependencyManagerService {
         totalCount,
         estimatedETA,
       };
-    } catch (error: any) {
-      this.logger.error(
-        `Error checking dependencies for ${ticketId}: ${error.message}`,
-        error.stack,
-      );
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Error checking dependencies for ${ticketId}: ${err.message}`, err.stack);
       throw error;
     }
   }
@@ -168,7 +165,6 @@ export class DependencyManagerService {
   }
 
   async calculateETA(ticketId: string, unresolvedDependencies: string[]): Promise<ETAResult> {
-    const startTime = Date.now();
     this.logger.log(
       `Calculating ETA for ticket: ${ticketId} with ${unresolvedDependencies.length} unresolved dependencies`,
     );
@@ -271,7 +267,6 @@ export class DependencyManagerService {
       });
 
       // Record ETA calculation metrics
-      const durationMs = Date.now() - startTime;
       this.metricsService.recordHistogram('dependency_eta_seconds', estimatedWaitMinutes * 60, {
         confidence_bucket: confidence > 0.7 ? 'high' : confidence > 0.5 ? 'medium' : 'low',
       });
@@ -288,8 +283,9 @@ export class DependencyManagerService {
         historicalAverage: sampleSize > 0 ? historicalAverage : null,
         queuePosition,
       };
-    } catch (error: any) {
-      this.logger.error(`Error calculating ETA for ${ticketId}: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Error calculating ETA for ${ticketId}: ${err.message}`, err.stack);
       throw error;
     }
   }
@@ -353,7 +349,7 @@ export class DependencyManagerService {
               });
 
               return { ticketId: dep.ticket_id, action: 'requeued' };
-            } catch (publishError: any) {
+            } catch (publishError: unknown) {
               // Rollback: Mark dependency as WAITING again if RabbitMQ publish fails
               await this.prisma.ticketDependency.updateMany({
                 where: { ticket_id: dep.ticket_id },
@@ -403,10 +399,11 @@ export class DependencyManagerService {
         outputData: { successful, failed },
         confidence: 1.0,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       this.logger.error(
-        `Error notifying dependent tickets for ${completedTicketId}: ${error.message}`,
-        error.stack,
+        `Error notifying dependent tickets for ${completedTicketId}: ${err.message}`,
+        err.stack,
       );
       // Don't re-throw: this is a background notification process
     }
@@ -416,7 +413,7 @@ export class DependencyManagerService {
    * Estimate ticket complexity based on description length and keywords.
    * Returns a complexity score (1-10).
    */
-  private estimateComplexity(ticket: any): number {
+  private estimateComplexity(ticket: { name?: string; description?: string }): number {
     const description = ticket.description || '';
     const name = ticket.name || '';
     const combinedText = `${name} ${description}`.toLowerCase();
@@ -511,11 +508,9 @@ export class DependencyManagerService {
     try {
       const queueInfo = await this.rabbitMQService.getQueueStats(queueName);
       return queueInfo.messageCount || 0;
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to get queue depth for ${queueName}: ${error.message}`,
-        error.stack,
-      );
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Failed to get queue depth for ${queueName}: ${err.message}`, err.stack);
       return 0; // Graceful fallback
     }
   }

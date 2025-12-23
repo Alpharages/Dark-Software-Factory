@@ -4,12 +4,7 @@ import { ClickUpService } from '../clickup/clickup.service';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { PrismaService } from '../database/prisma.service';
-import { Logger } from '@nestjs/common';
-import {
-  DependencyGraph,
-  CircularDependencyResult,
-  ClickUpTask,
-} from './interfaces/dependency-graph.interface';
+import { DependencyGraph, ClickUpTask } from './interfaces/dependency-graph.interface';
 
 describe('CircularDependencyDetectorService', () => {
   let service: CircularDependencyDetectorService;
@@ -41,23 +36,32 @@ describe('CircularDependencyDetectorService', () => {
   };
 
   // ClickUpService.getTask() returns a basic task shape with `description`, but
-  // CircularDependencyDetectorService casts the response to `any` to read `dependencies`.
-  const toClickUpApiTask = (task: ClickUpTask) =>
-    ({
-      id: task.id,
-      name: task.name,
-      description: '',
-      status: task.status,
-      text_content: '',
-      dependencies: task.dependencies ?? [],
-    }) as any;
+  // CircularDependencyDetectorService casts the response to `unknown` to read `dependencies`.
+  interface MockClickUpApiTask {
+    id: string;
+    name: string;
+    description: string;
+    status: { status: string };
+    text_content: string;
+    dependencies: { task_id: string; type: 'waiting_on' | 'blocking' }[];
+  }
+
+  const toClickUpApiTask = (task: ClickUpTask): MockClickUpApiTask => ({
+    id: task.id,
+    name: task.name,
+    description: '',
+    status: task.status,
+    text_content: '',
+    dependencies:
+      (task.dependencies as { task_id: string; type: 'waiting_on' | 'blocking' }[]) ?? [],
+  });
 
   beforeEach(async () => {
     const mockClickUpService = {
       getTask: jest.fn(),
       updateStatus: jest.fn().mockResolvedValue(true),
       addComment: jest.fn().mockResolvedValue(true),
-    };
+    } as unknown as jest.Mocked<ClickUpService>;
 
     const mockAIDecisionLogger = {
       logDecision: jest.fn().mockResolvedValue({ id: 'log-id' }),
@@ -301,19 +305,7 @@ describe('CircularDependencyDetectorService', () => {
   describe('integration scenarios', () => {
     it('should handle complex multi-cycle graph', async () => {
       // Graph: A → B → C → A, D → E → D (two separate cycles)
-      const taskD: ClickUpTask = {
-        id: 'task-d',
-        name: 'Task D',
-        status: { status: 'In Progress' },
-        dependencies: [{ task_id: 'task-e', type: 'waiting_on' }],
-      };
-
-      const taskE: ClickUpTask = {
-        id: 'task-e',
-        name: 'Task E',
-        status: { status: 'In Progress' },
-        dependencies: [{ task_id: 'task-d', type: 'waiting_on' }],
-      };
+      // Graph: A → B → C → A
 
       clickUpService.getTask
         .mockResolvedValueOnce(toClickUpApiTask(mockTaskA))

@@ -7,7 +7,7 @@ import { FilePredictionProvider } from './file-prediction.provider';
 
 describe('FileLockManagerService (acquireLocks)', () => {
   let service: FileLockManagerService;
-  let prisma: any;
+  let prisma: Record<string, unknown>;
 
   beforeEach(async () => {
     prisma = {
@@ -18,7 +18,7 @@ describe('FileLockManagerService (acquireLocks)', () => {
         findMany: jest.fn(),
         createMany: jest.fn(),
       },
-      $transaction: jest.fn(async (fn: any) => {
+      $transaction: jest.fn(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
         const tx = {
           fileLockQueue: {
             findMany: jest.fn(),
@@ -48,7 +48,7 @@ describe('FileLockManagerService (acquireLocks)', () => {
 
   it('returns acquired=false when not head-of-queue for any required file', async () => {
     // tx.fileLockQueue.findMany returns someone else first in queue for src/a.ts
-    prisma.$transaction = jest.fn(async (fn: any) => {
+    prisma.$transaction = jest.fn(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
       const tx = {
         fileLockQueue: {
           findMany: jest.fn().mockResolvedValue([
@@ -94,7 +94,7 @@ describe('FileLockManagerService (acquireLocks)', () => {
   });
 
   it('returns acquired=true and creates locks when head-of-queue for all required files', async () => {
-    prisma.$transaction = jest.fn(async (fn: any) => {
+    prisma.$transaction = jest.fn(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
       const tx = {
         fileLockQueue: {
           findMany: jest.fn().mockResolvedValue([

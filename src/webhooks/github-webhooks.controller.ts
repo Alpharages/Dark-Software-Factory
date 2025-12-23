@@ -15,6 +15,17 @@ import { PrismaService } from '@/database/prisma.service';
 import { GitHubWebhookSignatureGuard } from './guards';
 import { FileLockManagerService } from '@/file-locks/file-lock-manager.service';
 
+interface GitHubWebhookPayload {
+  action?: string;
+  pull_request?: {
+    merged?: boolean;
+    number?: number;
+  };
+  repository?: {
+    full_name?: string;
+  };
+}
+
 /**
  * GitHub Webhook Controller (minimal)
  *
@@ -36,7 +47,7 @@ export class GitHubWebhooksController {
   @HttpCode(HttpStatus.OK)
   async handleGitHubWebhook(
     @Headers('x-github-event') event: string,
-    @Body() payload: any,
+    @Body() payload: Record<string, unknown>,
     @CorrelationId() correlationId: string,
   ): Promise<{ success: boolean }> {
     try {
@@ -44,15 +55,16 @@ export class GitHubWebhooksController {
         return { success: true };
       }
 
-      const action = payload?.action;
-      const merged = payload?.pull_request?.merged === true;
+      const githubPayload = payload as GitHubWebhookPayload;
+      const action = githubPayload.action;
+      const merged = githubPayload.pull_request?.merged === true;
 
       if (action !== 'closed' || !merged) {
         return { success: true };
       }
 
-      const repoFullName = payload?.repository?.full_name as string | undefined;
-      const prNumber = payload?.pull_request?.number as number | undefined;
+      const repoFullName = githubPayload.repository?.full_name;
+      const prNumber = githubPayload.pull_request?.number;
 
       if (!repoFullName || typeof prNumber !== 'number') {
         this.logger.warn(`[${correlationId}] GitHub webhook missing repo/pr info`);

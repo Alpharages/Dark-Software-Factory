@@ -23,6 +23,13 @@ import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service'
 import { AIProvider } from '@/prisma/client';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
+import { IAIProvider, IAIPromptExecutor } from '../../ai-routing/interfaces';
+
+type MockAIProvider = IAIProvider &
+  IAIPromptExecutor & {
+    executePrompt: jest.Mock;
+    execute: jest.Mock;
+  };
 
 describe('GitHubCommitOrchestrator', () => {
   let service: GitHubCommitOrchestrator;
@@ -186,17 +193,11 @@ describe('GitHubCommitOrchestrator', () => {
   describe('commitAndPush - Happy Path', () => {
     it('should successfully commit and push with valid AI response', async () => {
       // Arrange
-      const mockAIResult = {
-        success: true,
-        codeDiff: 'abc123def456789012345678901234567890abcd',
-        filesChanged: ['src/auth/user.service.ts'],
-        confidenceScore: 0.95,
-        durationMs: 1200,
-        workspacePath: '/tmp/workspace',
-      };
 
-      const mockProvider = (aiExecutionService as any).providers.get('CURSOR_HEADLESS');
-      mockProvider.executePrompt.mockResolvedValue({
+      const mockProvider = (
+        aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }
+      ).providers.get('CURSOR_HEADLESS');
+      mockProvider!.executePrompt.mockResolvedValue({
         success: true,
         response: `Committed and pushed changes.\nCommit SHA: abc123def456789012345678901234567890abcd\nFiles changed: 1`,
       });
@@ -250,8 +251,10 @@ describe('GitHubCommitOrchestrator', () => {
 
     it('should handle AI provider failure', async () => {
       // Arrange
-      const mockProvider = (aiExecutionService as any).providers.get('CURSOR_HEADLESS');
-      mockProvider.executePrompt.mockResolvedValue({
+      const mockProvider = (
+        aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }
+      ).providers.get('CURSOR_HEADLESS');
+      mockProvider!.executePrompt.mockResolvedValue({
         success: false,
         error: 'AI execution timed out',
       });
@@ -271,17 +274,13 @@ describe('GitHubCommitOrchestrator', () => {
   describe('Metrics Recording', () => {
     it('should record success metrics', async () => {
       // Arrange
-      const mockAIResult = {
-        success: true,
-        codeDiff: 'abc123def456789012345678901234567890abcd',
-        filesChanged: ['file1.ts'],
-        confidenceScore: 0.9,
-        durationMs: 1000,
-        workspacePath: '/tmp',
-      };
 
-      const mockProvider = (aiExecutionService as any).providers.get('CURSOR_HEADLESS');
-      mockProvider.executePrompt.mockResolvedValue({
+      const mockProvider = (
+        aiExecutionService as unknown as {
+          providers: Map<string, MockAIProvider>;
+        }
+      ).providers.get('CURSOR_HEADLESS');
+      mockProvider!.executePrompt.mockResolvedValue({
         success: true,
         response: `Committed and pushed changes.\nCommit SHA: abc123def456789012345678901234567890abcd\nFiles changed: 1`,
       });

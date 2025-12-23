@@ -25,6 +25,28 @@ type QueueRow = {
   status: 'WAITING' | 'ACQUIRED' | 'CANCELLED';
 };
 
+interface FakeQueueData {
+  ticket_id: string;
+  execution_id: string;
+  file_path: string;
+  requested_at?: Date;
+  status?: 'WAITING' | 'ACQUIRED' | 'CANCELLED';
+}
+
+interface FakeWhere {
+  status?: string;
+  ticket_id?: string;
+  execution_id?: string;
+  file_path?: { in?: string[] };
+}
+
+interface FakeData {
+  status?: 'LOCKED' | 'RELEASED' | 'WAITING' | 'ACQUIRED' | 'CANCELLED';
+  ticket_id?: string;
+  execution_id?: string;
+  file_path?: string;
+}
+
 class Mutex {
   private current: Promise<void> = Promise.resolve();
 
@@ -50,12 +72,13 @@ class FakePrisma {
   public queue: QueueRow[] = [];
 
   fileLockQueue = {
-    createMany: async (args: any) => {
-      const data: any[] = args.data ?? [];
-      const skipDuplicates: boolean = !!args.skipDuplicates;
+    createMany: async (args: { data?: Record<string, unknown>[]; skipDuplicates?: boolean }) => {
+      const data = args.data ?? [];
+      const skipDuplicates = !!args.skipDuplicates;
 
       let inserted = 0;
-      for (const row of data) {
+      for (const rowObj of data) {
+        const row = rowObj as unknown as FakeQueueData;
         const exists = this.queue.some(
           (q) =>
             q.ticket_id === row.ticket_id &&
@@ -84,54 +107,74 @@ class FakePrisma {
       return { count: inserted };
     },
 
-    findMany: async (args: any) => {
-      const where = args.where ?? {};
+    findMany: async (args: {
+      where?: Record<string, unknown>;
+      orderBy?: Record<string, 'asc' | 'desc'>[];
+    }) => {
+      const where = (args.where ?? {}) as {
+        file_path?: string | { in: string[] };
+        status?: string | { in: string[] };
+        ticket_id?: string;
+        execution_id?: string;
+      };
       const orderBy = args.orderBy ?? [];
       let rows = [...this.queue];
 
       if (where.status) {
-        rows = rows.filter((r) => r.status === where.status);
+        if (typeof where.status === 'string') {
+          rows = rows.filter((r) => r.status === where.status);
+        } else if (where.status.in) {
+          const set = new Set(where.status.in);
+          rows = rows.filter((r) => set.has(r.status));
+        }
       }
-      if (where.file_path?.in) {
-        const set = new Set(where.file_path.in);
-        rows = rows.filter((r) => set.has(r.file_path));
-      }
-      if (typeof where.file_path === 'string') {
-        rows = rows.filter((r) => r.file_path === where.file_path);
+      if (where.file_path) {
+        if (typeof where.file_path === 'string') {
+          rows = rows.filter((r) => r.file_path === where.file_path);
+        } else if (where.file_path.in) {
+          const set = new Set(where.file_path.in);
+          rows = rows.filter((r) => set.has(r.file_path));
+        }
       }
       if (where.ticket_id) rows = rows.filter((r) => r.ticket_id === where.ticket_id);
       if (where.execution_id) rows = rows.filter((r) => r.execution_id === where.execution_id);
 
       // Support the ordering patterns used by FileLockManagerService
-      const normalizeOrder = (o: any) => Object.entries(o)[0] as [string, 'asc' | 'desc'];
+      const normalizeOrder = (o: object) => Object.entries(o)[0] as [string, 'asc' | 'desc'];
       for (const o of orderBy.slice().reverse()) {
         const [field, dir] = normalizeOrder(o);
         rows.sort((a, b) => {
-          const av: any = (a as any)[field];
-          const bv: any = (b as any)[field];
-          const cmp = av > bv ? 1 : av < bv ? -1 : 0;
-          return dir === 'asc' ? cmp : -cmp;
+          const av = (a as Record<string, unknown>)[field];
+          const bv = (b as Record<string, unknown>)[field];
+          if (typeof av === 'string' && typeof bv === 'string') {
+            return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+          }
+          if (typeof av === 'number' && typeof bv === 'number') {
+            return dir === 'asc' ? av - bv : bv - av;
+          }
+          return 0;
         });
       }
 
       return rows;
     },
 
-    updateMany: async (args: any) => {
+    updateMany: async (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
       const where = args.where ?? {};
       const data = args.data ?? {};
       let updated = 0;
 
       for (const row of this.queue) {
-        if (where.status && row.status !== where.status) continue;
-        if (where.ticket_id && row.ticket_id !== where.ticket_id) continue;
-        if (where.execution_id && row.execution_id !== where.execution_id) continue;
-        if (where.file_path?.in) {
-          const set = new Set(where.file_path.in);
+        const w = where as unknown as FakeWhere;
+        if (w.status && row.status !== w.status) continue;
+        if (w.ticket_id && row.ticket_id !== w.ticket_id) continue;
+        if (w.execution_id && row.execution_id !== w.execution_id) continue;
+        if (w.file_path?.in) {
+          const set = new Set(w.file_path.in);
           if (!set.has(row.file_path)) continue;
         }
 
-        Object.assign(row, data);
+        Object.assign(row, data as unknown as Partial<QueueRow>);
         updated++;
       }
 
@@ -140,23 +183,24 @@ class FakePrisma {
   };
 
   fileLock = {
-    findMany: async (args: any) => {
+    findMany: async (args: { where?: Record<string, unknown> }) => {
       const where = args.where ?? {};
       let rows = [...this.fileLocks];
 
-      if (where.status) rows = rows.filter((r) => r.status === where.status);
-      if (where.execution_id) rows = rows.filter((r) => r.execution_id === where.execution_id);
-      if (where.ticket_id) rows = rows.filter((r) => r.ticket_id === where.ticket_id);
-      if (where.file_path?.in) {
-        const set = new Set(where.file_path.in);
+      const w = where as unknown as FakeWhere;
+      if (w.status) rows = rows.filter((r) => r.status === w.status);
+      if (w.execution_id) rows = rows.filter((r) => r.execution_id === w.execution_id);
+      if (w.ticket_id) rows = rows.filter((r) => r.ticket_id === w.ticket_id);
+      if (w.file_path?.in) {
+        const set = new Set(w.file_path.in);
         rows = rows.filter((r) => set.has(r.file_path));
       }
 
       return rows;
     },
 
-    createMany: async (args: any) => {
-      const data: any[] = args.data ?? [];
+    createMany: async (args: { data?: Record<string, unknown>[] }) => {
+      const data = args.data ?? [];
 
       // Enforce partial unique index: only one LOCKED row per file_path
       for (const row of data) {
@@ -170,30 +214,32 @@ class FakePrisma {
         }
       }
 
-      for (const row of data) {
+      for (const rowObj of data) {
+        const row = rowObj as unknown as FakeData;
         this.fileLocks.push({
           id: `l-${++this.lockId}`,
-          ticket_id: row.ticket_id,
-          execution_id: row.execution_id,
-          file_path: row.file_path,
+          ticket_id: row.ticket_id!,
+          execution_id: row.execution_id!,
+          file_path: row.file_path!,
           locked_at: new Date(),
           released_at: null,
-          status: row.status ?? 'LOCKED',
+          status: (row.status as 'LOCKED' | 'RELEASED') ?? 'LOCKED',
         });
       }
 
       return { count: data.length };
     },
 
-    updateMany: async (args: any) => {
+    updateMany: async (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
       const where = args.where ?? {};
       const data = args.data ?? {};
       let updated = 0;
 
+      const w = where as unknown as FakeWhere;
       for (const row of this.fileLocks) {
-        if (where.status && row.status !== where.status) continue;
-        if (where.execution_id && row.execution_id !== where.execution_id) continue;
-        Object.assign(row, data);
+        if (w.status && row.status !== w.status) continue;
+        if (w.execution_id && row.execution_id !== w.execution_id) continue;
+        Object.assign(row, data as unknown as Partial<FileLockRow>);
         updated++;
       }
 
@@ -201,7 +247,12 @@ class FakePrisma {
     },
   };
 
-  async $transaction<T>(fn: (tx: any) => Promise<T>): Promise<T> {
+  async $transaction<T>(
+    fn: (tx: {
+      fileLock: Record<string, unknown>;
+      fileLockQueue: Record<string, unknown>;
+    }) => Promise<T>,
+  ): Promise<T> {
     return this.mutex.runExclusive(async () => {
       const snapshot = {
         fileLocks: this.fileLocks.map((l) => ({ ...l })),
@@ -320,7 +371,7 @@ describe('FileLockManagerService (concurrency)', () => {
     ).toBe(true);
 
     // Sanity: confirm the service's prisma accessor would "see" the lock too
-    const visibleLocks = await (prisma as any).fileLock.findMany({
+    const visibleLocks = await (prisma as unknown as PrismaService).fileLock.findMany({
       where: { execution_id: 'exec-a', status: 'LOCKED' },
     });
     expect(visibleLocks).toHaveLength(1);

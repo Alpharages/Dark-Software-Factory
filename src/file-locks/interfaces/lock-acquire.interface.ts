@@ -10,7 +10,7 @@ export interface AcquireLocksResult {
   conflicts?: {
     filePaths: string[];
     ownerTicketIds: string[];
-    queuePositionByFile?: Record<string, number>;
+    queuePositionByFile?: Map<string, number>;
   };
   estimatedReleaseTime?: Date;
 }

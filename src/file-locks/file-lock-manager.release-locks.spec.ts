@@ -7,18 +7,31 @@ import { FilePredictionProvider } from './file-prediction.provider';
 
 describe('FileLockManagerService (releaseLocksForExecution)', () => {
   let service: FileLockManagerService;
-  let prisma: any;
+  type MockPrisma = {
+    fileLock: {
+      findMany: jest.Mock;
+      updateMany: jest.Mock;
+      deleteMany: jest.Mock;
+    };
+    fileLockQueue: {
+      findMany: jest.Mock;
+      updateMany: jest.Mock;
+    };
+  };
+  let prisma: MockPrisma;
 
   beforeEach(async () => {
     prisma = {
       fileLock: {
         findMany: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       fileLockQueue: {
         findMany: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
-    };
+    } as unknown as MockPrisma;
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [

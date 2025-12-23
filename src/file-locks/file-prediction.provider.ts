@@ -111,7 +111,11 @@ JSON SCHEMA:
 }`;
   }
 
-  private parseStrictJson(text: string): any {
+  private parseStrictJson(text: string): {
+    filePaths?: string[];
+    confidence?: number;
+    reasoning?: string;
+  } {
     // Prefer first JSON object in the response
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) {
