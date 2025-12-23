@@ -16,7 +16,7 @@ name,description,module,path
 "sprint-planning","Generate and manage the sprint status tracking file for Phase 4 implementation, extracting all epics and stories from epic files and tracking their status through the development lifecycle","bmm","_bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml"
 "sprint-status","Summarize sprint-status.yaml, surface risks, and route to the right implementation workflow.","bmm","_bmad/bmm/workflows/4-implementation/sprint-status/workflow.yaml"
 "create-tech-spec","Conversational spec engineering - ask questions, investigate code, produce implementation-ready tech-spec.","bmm","_bmad/bmm/workflows/bmad-quick-flow/create-tech-spec/workflow.yaml"
-"quick-dev","Flexible development - execute tech-specs OR direct instructions with optional planning.","bmm","_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.yaml"
+"quick-dev","Flexible development - execute tech-specs OR direct instructions with optional planning.","bmm","_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.md"
 "document-project","Analyzes and documents brownfield projects by scanning codebase, architecture, and patterns to create comprehensive reference documentation for AI-assisted development","bmm","_bmad/bmm/workflows/document-project/workflow.yaml"
 "create-excalidraw-dataflow","Create data flow diagrams (DFD) in Excalidraw format","bmm","_bmad/bmm/workflows/excalidraw-diagrams/create-dataflow/workflow.yaml"
 "create-excalidraw-diagram","Create system architecture diagrams, ERDs, UML diagrams, or general technical diagrams in Excalidraw format","bmm","_bmad/bmm/workflows/excalidraw-diagrams/create-diagram/workflow.yaml"

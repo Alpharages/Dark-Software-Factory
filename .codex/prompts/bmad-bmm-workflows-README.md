@@ -63,7 +63,7 @@
 - Conversational spec engineering - ask questions, investigate code, produce implementation-ready tech-spec.
 
 **quick-dev**
-- Path: `_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.yaml`
+- Path: `_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.md`
 - Flexible development - execute tech-specs OR direct instructions with optional planning.
 
 **document-project**

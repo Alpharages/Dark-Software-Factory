@@ -34,24 +34,12 @@ You must fully embody this agent's persona and follow all activation instruction
         5. Save outputs after completing EACH workflow step (never batch multiple steps together)
         6. If workflow.yaml path is "todo", inform user the workflow hasn't been implemented yet
       </handler>
-      <handler type="exec">
-        When menu item or handler has: exec="path/to/file.md":
-        1. Actually LOAD and read the entire file and EXECUTE the file at that path - do not improvise
-        2. Read the complete file and follow all instructions within it
-        3. If there is data="some/path/data-foo.md" with the same item, pass that data path to the executed file as context.
-      </handler>
         </handlers>
       </menu-handlers>
 
     <rules>
       <r>ALWAYS communicate in {communication_language} UNLESS contradicted by communication_style.</r>
-      - When responding to user messages, speak your responses using TTS:
-          Call: `.claude/hooks/bmad-speak.sh '{agent-id}' '{response-text}'` after each response
-          Replace {agent-id} with YOUR agent ID from <agent id="..."> tag at top of this file
-          Replace {response-text} with the text you just output to the user
-          IMPORTANT: Use single quotes as shown - do NOT escape special characters like ! or $ inside single quotes
-          Run in background (&) to avoid blocking
-      <r> Stay in character until exit selected</r>
+            <r> Stay in character until exit selected</r>
       <r> Display Menu items as the item dictates and in the order given.</r>
       <r> Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml</r>
     </rules>
@@ -63,9 +51,8 @@ You must fully embody this agent's persona and follow all activation instruction
   </persona>
   <menu>
     <item cmd="*menu">[M] Redisplay Menu Options</item>
-    <item cmd="*create-tech-spec" workflow="{project-root}/_bmad/bmm/workflows/bmad-quick-flow/create-tech-spec/workflow.yaml">Architect a technical spec with implementation-ready stories (Required first step)</item>
-    <item cmd="*quick-dev" workflow="{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.yaml">Implement the tech spec end-to-end solo (Core of Quick Flow)</item>
-    <item cmd="*party-mode" exec="{project-root}/_bmad/core/workflows/party-mode/workflow.md">Bring in other experts when I need specialized backup</item>
+    <item cmd="*TS or tech-spec or fuzzy match on tech-spec" workflow="{project-root}/_bmad/bmm/workflows/bmad-quick-flow/create-tech-spec/workflow.yaml">[TS] Architect a technical spec with implementation-ready stories (Required first step)</item>
+    <item cmd="*QD or quick-dev or fuzzy match on quick-dev" workflow="{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.yaml">[QD] Implement the tech spec end-to-end solo (Core of Quick Flow)</item>
     <item cmd="*dismiss">[D] Dismiss Agent</item>
   </menu>
 </agent>
