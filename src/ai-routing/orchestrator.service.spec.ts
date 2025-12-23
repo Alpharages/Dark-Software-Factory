@@ -212,14 +212,6 @@ describe('OrchestratorService', () => {
         providerOverride: AIProvider.CLAUDE_CODE,
       };
 
-      providerFactory.selectProvider.mockResolvedValue({
-        primary: AIProvider.CLAUDE_CODE,
-        fallback: AIProvider.CURSOR_HEADLESS,
-        reason: ProviderSelectionReason.OVERRIDE,
-        complexityScore: 0,
-        complexityGrade: ComplexityGrade.MEDIUM,
-      });
-
       fallbackStrategy.executeWithFallback.mockResolvedValue({
         result: {
           success: true,
@@ -238,7 +230,13 @@ describe('OrchestratorService', () => {
 
       expect(result.success).toBe(true);
       expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
-      expect(providerFactory.selectProvider).toHaveBeenCalledWith(inputWithOverride);
+      // Provider override bypasses providerFactory selection
+      expect(providerFactory.selectProvider).not.toHaveBeenCalled();
+      expect(fallbackStrategy.executeWithFallback).toHaveBeenCalledWith(
+        AIProvider.CLAUDE_CODE,
+        null,
+        inputWithOverride,
+      );
     });
   });
 

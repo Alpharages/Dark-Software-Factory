@@ -146,7 +146,8 @@ describe('ClaudeCodeProvider', () => {
     it('should cancel execution without error', async () => {
       await expect(provider.cancel('test-execution')).resolves.not.toThrow();
 
-      expect(workspaceService.cleanupWorkspace).toHaveBeenCalledWith('test-execution', true);
+      // Workspace cleanup is handled elsewhere (GitHubCommitOrchestrator) to allow reuse.
+      expect(workspaceService.cleanupWorkspace).not.toHaveBeenCalled();
     });
   });
 

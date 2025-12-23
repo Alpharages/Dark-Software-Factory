@@ -8,18 +8,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { GitHubPROrchestrator } from './github-pr-orchestrator.service';
-import { OrchestratorService } from '../../ai-routing/orchestrator.service';
+import { AIExecutionService } from '../../ai-routing/ai-execution.service';
 import { GitHubService } from '../github.service';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { SentryService } from '../../common/sentry/sentry.service';
+import { LoggerService } from '../../common/logger/logger.service';
+import { WorkspaceService } from '../../ai-routing/providers';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 
 describe('GitHubPROrchestrator', () => {
   let service: GitHubPROrchestrator;
-  let orchestratorService: jest.Mocked<OrchestratorService>;
+  let aiExecutionService: jest.Mocked<AIExecutionService>;
   let prismaService: jest.Mocked<PrismaService>;
   let auditService: jest.Mocked<AuditLogService>;
   let metricsService: jest.Mocked<MetricsService>;
@@ -57,8 +59,9 @@ describe('GitHubPROrchestrator', () => {
   };
 
   beforeEach(async () => {
-    const mockOrchestrator = {
+    const mockAIExecution = {
       execute: jest.fn(),
+      delegateToAI: jest.fn(),
     };
 
     const mockPrisma = {
@@ -92,12 +95,38 @@ describe('GitHubPROrchestrator', () => {
       providers: [
         GitHubPROrchestrator,
         {
-          provide: OrchestratorService,
-          useValue: mockOrchestrator,
+          provide: AIExecutionService,
+          useValue: {
+            ...mockAIExecution,
+            providers: new Map([
+              [
+                'CURSOR_HEADLESS',
+                {
+                  executePrompt: jest.fn(),
+                },
+              ],
+            ]),
+          },
         },
         {
           provide: GitHubService,
           useValue: {},
+        },
+        {
+          provide: LoggerService,
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+          },
+        },
+        {
+          provide: WorkspaceService,
+          useValue: {
+            getWorkspace: jest.fn().mockResolvedValue({ path: '/tmp/workspace' }),
+            createWorkspace: jest.fn(),
+            cleanupWorkspace: jest.fn(),
+          },
         },
         {
           provide: PrismaService,
@@ -151,7 +180,7 @@ describe('GitHubPROrchestrator', () => {
     }).compile();
 
     service = module.get<GitHubPROrchestrator>(GitHubPROrchestrator);
-    orchestratorService = module.get(OrchestratorService);
+    aiExecutionService = module.get(AIExecutionService);
     prismaService = module.get(PrismaService);
     auditService = module.get(AuditLogService);
     metricsService = module.get(MetricsService);
@@ -167,17 +196,18 @@ describe('GitHubPROrchestrator', () => {
   describe('createPullRequest', () => {
     it('should create PR via AI delegation (success path)', async () => {
       // Setup mocks
-      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
-      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      const mockProvider = (aiExecutionService as any).providers.get('CURSOR_HEADLESS');
+      mockProvider.executePrompt.mockResolvedValue({
         success: true,
-        codeDiff: JSON.stringify({
+        response: JSON.stringify({
           prUrl: 'https://github.com/org/repo/pull/42',
           prNumber: 42,
         }),
       });
+
+      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
+      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
       // Execute
       const result = await service.createPullRequest('exec-123');
@@ -193,7 +223,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockResolvedValue({
         success: true,
         codeDiff: '{"prUrl":"https://github.com/org/repo/pull/123","prNumber":123}',
       });
@@ -208,7 +238,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockResolvedValue({
         success: true,
         codeDiff: 'PR created: https://github.com/org/repo/pull/999',
       });
@@ -224,7 +254,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockResolvedValue({
         success: true,
         codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });
@@ -246,7 +276,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockResolvedValue({
         success: true,
         codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });
@@ -271,7 +301,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockResolvedValue({
         success: true,
         codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });
@@ -287,7 +317,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockRejectedValue(
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockRejectedValue(
         new Error('AI execution timeout'),
       );
 
@@ -303,7 +333,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockResolvedValue({
         success: true,
         codeDiff: 'Invalid output with no PR URL',
       });
@@ -319,7 +349,7 @@ describe('GitHubPROrchestrator', () => {
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
+      (((aiExecutionService as any).providers.get('CURSOR_HEADLESS').executePrompt as jest.Mock) as jest.Mock).mockResolvedValue({
         success: true,
         codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });

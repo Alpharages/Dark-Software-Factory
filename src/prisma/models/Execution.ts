@@ -404,6 +404,7 @@ export type ExecutionWhereInput = {
   qa_result?: Prisma.XOR<Prisma.QAResultNullableScalarRelationFilter, Prisma.QAResultWhereInput> | null
   aiDecisionLogs?: Prisma.AIDecisionLogListRelationFilter
   fileLocks?: Prisma.FileLockListRelationFilter
+  fileLockQueueEntries?: Prisma.FileLockQueueListRelationFilter
   aiCostLogs?: Prisma.AICostLogListRelationFilter
   archive?: Prisma.XOR<Prisma.WorkspaceArchiveNullableScalarRelationFilter, Prisma.WorkspaceArchiveWhereInput> | null
 }
@@ -441,6 +442,7 @@ export type ExecutionOrderByWithRelationInput = {
   qa_result?: Prisma.QAResultOrderByWithRelationInput
   aiDecisionLogs?: Prisma.AIDecisionLogOrderByRelationAggregateInput
   fileLocks?: Prisma.FileLockOrderByRelationAggregateInput
+  fileLockQueueEntries?: Prisma.FileLockQueueOrderByRelationAggregateInput
   aiCostLogs?: Prisma.AICostLogOrderByRelationAggregateInput
   archive?: Prisma.WorkspaceArchiveOrderByWithRelationInput
 }
@@ -481,6 +483,7 @@ export type ExecutionWhereUniqueInput = Prisma.AtLeast<{
   qa_result?: Prisma.XOR<Prisma.QAResultNullableScalarRelationFilter, Prisma.QAResultWhereInput> | null
   aiDecisionLogs?: Prisma.AIDecisionLogListRelationFilter
   fileLocks?: Prisma.FileLockListRelationFilter
+  fileLockQueueEntries?: Prisma.FileLockQueueListRelationFilter
   aiCostLogs?: Prisma.AICostLogListRelationFilter
   archive?: Prisma.XOR<Prisma.WorkspaceArchiveNullableScalarRelationFilter, Prisma.WorkspaceArchiveWhereInput> | null
 }, "id">
@@ -587,6 +590,7 @@ export type ExecutionCreateInput = {
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput
 }
@@ -623,6 +627,7 @@ export type ExecutionUncheckedCreateInput = {
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput
 }
@@ -659,6 +664,7 @@ export type ExecutionUpdateInput = {
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput
 }
@@ -695,6 +701,7 @@ export type ExecutionUncheckedUpdateInput = {
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput
 }
@@ -1042,6 +1049,20 @@ export type ExecutionUpdateOneRequiredWithoutFileLocksNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ExecutionUpdateToOneWithWhereWithoutFileLocksInput, Prisma.ExecutionUpdateWithoutFileLocksInput>, Prisma.ExecutionUncheckedUpdateWithoutFileLocksInput>
 }
 
+export type ExecutionCreateNestedOneWithoutFileLockQueueEntriesInput = {
+  create?: Prisma.XOR<Prisma.ExecutionCreateWithoutFileLockQueueEntriesInput, Prisma.ExecutionUncheckedCreateWithoutFileLockQueueEntriesInput>
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutFileLockQueueEntriesInput
+  connect?: Prisma.ExecutionWhereUniqueInput
+}
+
+export type ExecutionUpdateOneRequiredWithoutFileLockQueueEntriesNestedInput = {
+  create?: Prisma.XOR<Prisma.ExecutionCreateWithoutFileLockQueueEntriesInput, Prisma.ExecutionUncheckedCreateWithoutFileLockQueueEntriesInput>
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutFileLockQueueEntriesInput
+  upsert?: Prisma.ExecutionUpsertWithoutFileLockQueueEntriesInput
+  connect?: Prisma.ExecutionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ExecutionUpdateToOneWithWhereWithoutFileLockQueueEntriesInput, Prisma.ExecutionUpdateWithoutFileLockQueueEntriesInput>, Prisma.ExecutionUncheckedUpdateWithoutFileLockQueueEntriesInput>
+}
+
 export type ExecutionCreateNestedOneWithoutAiCostLogsInput = {
   create?: Prisma.XOR<Prisma.ExecutionCreateWithoutAiCostLogsInput, Prisma.ExecutionUncheckedCreateWithoutAiCostLogsInput>
   connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutAiCostLogsInput
@@ -1103,6 +1124,7 @@ export type ExecutionCreateWithoutTicketInput = {
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput
 }
@@ -1138,6 +1160,7 @@ export type ExecutionUncheckedCreateWithoutTicketInput = {
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput
 }
@@ -1233,6 +1256,7 @@ export type ExecutionCreateWithoutQa_resultInput = {
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput
   aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput
 }
@@ -1268,6 +1292,7 @@ export type ExecutionUncheckedCreateWithoutQa_resultInput = {
   updated_at?: Date | string
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput
 }
@@ -1319,6 +1344,7 @@ export type ExecutionUpdateWithoutQa_resultInput = {
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput
 }
@@ -1354,6 +1380,7 @@ export type ExecutionUncheckedUpdateWithoutQa_resultInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput
 }
@@ -1389,6 +1416,7 @@ export type ExecutionCreateWithoutAiDecisionLogsInput = {
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput
   fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput
 }
@@ -1424,6 +1452,7 @@ export type ExecutionUncheckedCreateWithoutAiDecisionLogsInput = {
   updated_at?: Date | string
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput
   fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput
 }
@@ -1475,6 +1504,7 @@ export type ExecutionUpdateWithoutAiDecisionLogsInput = {
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput
 }
@@ -1510,6 +1540,7 @@ export type ExecutionUncheckedUpdateWithoutAiDecisionLogsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput
 }
@@ -1545,6 +1576,7 @@ export type ExecutionCreateWithoutFileLocksInput = {
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput
 }
@@ -1580,6 +1612,7 @@ export type ExecutionUncheckedCreateWithoutFileLocksInput = {
   updated_at?: Date | string
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput
 }
@@ -1631,6 +1664,7 @@ export type ExecutionUpdateWithoutFileLocksInput = {
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput
 }
@@ -1666,6 +1700,167 @@ export type ExecutionUncheckedUpdateWithoutFileLocksInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedUpdateManyWithoutExecutionNestedInput
+  aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput
+  archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput
+}
+
+export type ExecutionCreateWithoutFileLockQueueEntriesInput = {
+  id?: string
+  ai_provider: $Enums.AIProvider
+  prompt: string
+  status?: $Enums.ExecutionStatus
+  confidence_score?: number | null
+  started_at?: Date | string | null
+  completed_at?: Date | string | null
+  failed_at?: Date | string | null
+  error_message?: string | null
+  code_output?: string | null
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  retry_count?: number
+  max_retries?: number
+  complexity_score?: number | null
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  routing_reason?: string | null
+  fallback_used?: boolean
+  original_provider?: $Enums.AIProvider | null
+  error_context?: string | null
+  scheduled_retry_at?: Date | string | null
+  base_branch?: string | null
+  branch_selection_log?: string | null
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  risk_level?: $Enums.PRRiskLevel | null
+  circular_dep_detected?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
+  ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput
+  qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput
+  aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput
+  fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput
+  aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput
+  archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput
+}
+
+export type ExecutionUncheckedCreateWithoutFileLockQueueEntriesInput = {
+  id?: string
+  ticket_id: string
+  ai_provider: $Enums.AIProvider
+  prompt: string
+  status?: $Enums.ExecutionStatus
+  confidence_score?: number | null
+  started_at?: Date | string | null
+  completed_at?: Date | string | null
+  failed_at?: Date | string | null
+  error_message?: string | null
+  code_output?: string | null
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  retry_count?: number
+  max_retries?: number
+  complexity_score?: number | null
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  routing_reason?: string | null
+  fallback_used?: boolean
+  original_provider?: $Enums.AIProvider | null
+  error_context?: string | null
+  scheduled_retry_at?: Date | string | null
+  base_branch?: string | null
+  branch_selection_log?: string | null
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  risk_level?: $Enums.PRRiskLevel | null
+  circular_dep_detected?: boolean
+  created_at?: Date | string
+  updated_at?: Date | string
+  qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput
+  fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput
+  aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput
+  archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput
+}
+
+export type ExecutionCreateOrConnectWithoutFileLockQueueEntriesInput = {
+  where: Prisma.ExecutionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ExecutionCreateWithoutFileLockQueueEntriesInput, Prisma.ExecutionUncheckedCreateWithoutFileLockQueueEntriesInput>
+}
+
+export type ExecutionUpsertWithoutFileLockQueueEntriesInput = {
+  update: Prisma.XOR<Prisma.ExecutionUpdateWithoutFileLockQueueEntriesInput, Prisma.ExecutionUncheckedUpdateWithoutFileLockQueueEntriesInput>
+  create: Prisma.XOR<Prisma.ExecutionCreateWithoutFileLockQueueEntriesInput, Prisma.ExecutionUncheckedCreateWithoutFileLockQueueEntriesInput>
+  where?: Prisma.ExecutionWhereInput
+}
+
+export type ExecutionUpdateToOneWithWhereWithoutFileLockQueueEntriesInput = {
+  where?: Prisma.ExecutionWhereInput
+  data: Prisma.XOR<Prisma.ExecutionUpdateWithoutFileLockQueueEntriesInput, Prisma.ExecutionUncheckedUpdateWithoutFileLockQueueEntriesInput>
+}
+
+export type ExecutionUpdateWithoutFileLockQueueEntriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  original_provider?: Prisma.NullableEnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider | null
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput
+  qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput
+  aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput
+  fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput
+  aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput
+  archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput
+}
+
+export type ExecutionUncheckedUpdateWithoutFileLockQueueEntriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string
+  ai_provider?: Prisma.EnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider
+  prompt?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus
+  confidence_score?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  started_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  code_output?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files_changed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  retry_count?: Prisma.IntFieldUpdateOperationsInput | number
+  max_retries?: Prisma.IntFieldUpdateOperationsInput | number
+  complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  complexity_breakdown?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  routing_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fallback_used?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  original_provider?: Prisma.NullableEnumAIProviderFieldUpdateOperationsInput | $Enums.AIProvider | null
+  error_context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scheduled_retry_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  base_branch?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  branch_selection_log?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null
+  circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput
+  aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput
 }
@@ -1702,6 +1897,7 @@ export type ExecutionCreateWithoutAiCostLogsInput = {
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveCreateNestedOneWithoutExecutionInput
 }
 
@@ -1737,6 +1933,7 @@ export type ExecutionUncheckedCreateWithoutAiCostLogsInput = {
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedCreateNestedManyWithoutExecutionInput
   archive?: Prisma.WorkspaceArchiveUncheckedCreateNestedOneWithoutExecutionInput
 }
 
@@ -1788,6 +1985,7 @@ export type ExecutionUpdateWithoutAiCostLogsInput = {
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput
 }
 
@@ -1823,6 +2021,7 @@ export type ExecutionUncheckedUpdateWithoutAiCostLogsInput = {
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput
 }
 
@@ -1858,6 +2057,7 @@ export type ExecutionCreateWithoutArchiveInput = {
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogCreateNestedManyWithoutExecutionInput
 }
 
@@ -1893,6 +2093,7 @@ export type ExecutionUncheckedCreateWithoutArchiveInput = {
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput
   fileLocks?: Prisma.FileLockUncheckedCreateNestedManyWithoutExecutionInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedCreateNestedManyWithoutExecutionInput
   aiCostLogs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1944,6 +2145,7 @@ export type ExecutionUpdateWithoutArchiveInput = {
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1979,6 +2181,7 @@ export type ExecutionUncheckedUpdateWithoutArchiveInput = {
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -2043,6 +2246,7 @@ export type ExecutionUpdateWithoutTicketInput = {
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUpdateOneWithoutExecutionNestedInput
 }
@@ -2078,6 +2282,7 @@ export type ExecutionUncheckedUpdateWithoutTicketInput = {
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput
   fileLocks?: Prisma.FileLockUncheckedUpdateManyWithoutExecutionNestedInput
+  fileLockQueueEntries?: Prisma.FileLockQueueUncheckedUpdateManyWithoutExecutionNestedInput
   aiCostLogs?: Prisma.AICostLogUncheckedUpdateManyWithoutExecutionNestedInput
   archive?: Prisma.WorkspaceArchiveUncheckedUpdateOneWithoutExecutionNestedInput
 }
@@ -2120,12 +2325,14 @@ export type ExecutionUncheckedUpdateManyWithoutTicketInput = {
 export type ExecutionCountOutputType = {
   aiDecisionLogs: number
   fileLocks: number
+  fileLockQueueEntries: number
   aiCostLogs: number
 }
 
 export type ExecutionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   aiDecisionLogs?: boolean | ExecutionCountOutputTypeCountAiDecisionLogsArgs
   fileLocks?: boolean | ExecutionCountOutputTypeCountFileLocksArgs
+  fileLockQueueEntries?: boolean | ExecutionCountOutputTypeCountFileLockQueueEntriesArgs
   aiCostLogs?: boolean | ExecutionCountOutputTypeCountAiCostLogsArgs
 }
 
@@ -2151,6 +2358,13 @@ export type ExecutionCountOutputTypeCountAiDecisionLogsArgs<ExtArgs extends runt
  */
 export type ExecutionCountOutputTypeCountFileLocksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.FileLockWhereInput
+}
+
+/**
+ * ExecutionCountOutputType without action
+ */
+export type ExecutionCountOutputTypeCountFileLockQueueEntriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FileLockQueueWhereInput
 }
 
 /**
@@ -2194,6 +2408,7 @@ export type ExecutionSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   qa_result?: boolean | Prisma.Execution$qa_resultArgs<ExtArgs>
   aiDecisionLogs?: boolean | Prisma.Execution$aiDecisionLogsArgs<ExtArgs>
   fileLocks?: boolean | Prisma.Execution$fileLocksArgs<ExtArgs>
+  fileLockQueueEntries?: boolean | Prisma.Execution$fileLockQueueEntriesArgs<ExtArgs>
   aiCostLogs?: boolean | Prisma.Execution$aiCostLogsArgs<ExtArgs>
   archive?: boolean | Prisma.Execution$archiveArgs<ExtArgs>
   _count?: boolean | Prisma.ExecutionCountOutputTypeDefaultArgs<ExtArgs>
@@ -2300,6 +2515,7 @@ export type ExecutionInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   qa_result?: boolean | Prisma.Execution$qa_resultArgs<ExtArgs>
   aiDecisionLogs?: boolean | Prisma.Execution$aiDecisionLogsArgs<ExtArgs>
   fileLocks?: boolean | Prisma.Execution$fileLocksArgs<ExtArgs>
+  fileLockQueueEntries?: boolean | Prisma.Execution$fileLockQueueEntriesArgs<ExtArgs>
   aiCostLogs?: boolean | Prisma.Execution$aiCostLogsArgs<ExtArgs>
   archive?: boolean | Prisma.Execution$archiveArgs<ExtArgs>
   _count?: boolean | Prisma.ExecutionCountOutputTypeDefaultArgs<ExtArgs>
@@ -2318,6 +2534,7 @@ export type $ExecutionPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     qa_result: Prisma.$QAResultPayload<ExtArgs> | null
     aiDecisionLogs: Prisma.$AIDecisionLogPayload<ExtArgs>[]
     fileLocks: Prisma.$FileLockPayload<ExtArgs>[]
+    fileLockQueueEntries: Prisma.$FileLockQueuePayload<ExtArgs>[]
     aiCostLogs: Prisma.$AICostLogPayload<ExtArgs>[]
     archive: Prisma.$WorkspaceArchivePayload<ExtArgs> | null
   }
@@ -2748,6 +2965,7 @@ export interface Prisma__ExecutionClient<T, Null = never, ExtArgs extends runtim
   qa_result<T extends Prisma.Execution$qa_resultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$qa_resultArgs<ExtArgs>>): Prisma.Prisma__QAResultClient<runtime.Types.Result.GetResult<Prisma.$QAResultPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   aiDecisionLogs<T extends Prisma.Execution$aiDecisionLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$aiDecisionLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AIDecisionLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   fileLocks<T extends Prisma.Execution$fileLocksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$fileLocksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FileLockPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  fileLockQueueEntries<T extends Prisma.Execution$fileLockQueueEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$fileLockQueueEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FileLockQueuePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiCostLogs<T extends Prisma.Execution$aiCostLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$aiCostLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AICostLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   archive<T extends Prisma.Execution$archiveArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$archiveArgs<ExtArgs>>): Prisma.Prisma__WorkspaceArchiveClient<runtime.Types.Result.GetResult<Prisma.$WorkspaceArchivePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
@@ -3267,6 +3485,30 @@ export type Execution$fileLocksArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.FileLockScalarFieldEnum | Prisma.FileLockScalarFieldEnum[]
+}
+
+/**
+ * Execution.fileLockQueueEntries
+ */
+export type Execution$fileLockQueueEntriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the FileLockQueue
+   */
+  select?: Prisma.FileLockQueueSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the FileLockQueue
+   */
+  omit?: Prisma.FileLockQueueOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FileLockQueueInclude<ExtArgs> | null
+  where?: Prisma.FileLockQueueWhereInput
+  orderBy?: Prisma.FileLockQueueOrderByWithRelationInput | Prisma.FileLockQueueOrderByWithRelationInput[]
+  cursor?: Prisma.FileLockQueueWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FileLockQueueScalarFieldEnum | Prisma.FileLockQueueScalarFieldEnum[]
 }
 
 /**

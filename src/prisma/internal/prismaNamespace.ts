@@ -402,6 +402,7 @@ export const ModelName = {
   Workspace: 'Workspace',
   AIDecisionLog: 'AIDecisionLog',
   FileLock: 'FileLock',
+  FileLockQueue: 'FileLockQueue',
   AICostLog: 'AICostLog',
   TicketDependency: 'TicketDependency',
   WorkspaceArchive: 'WorkspaceArchive'
@@ -420,7 +421,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "aICostLog" | "ticketDependency" | "workspaceArchive"
+    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1756,6 +1757,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    FileLockQueue: {
+      payload: Prisma.$FileLockQueuePayload<ExtArgs>
+      fields: Prisma.FileLockQueueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FileLockQueueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FileLockQueueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>
+        }
+        findFirst: {
+          args: Prisma.FileLockQueueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FileLockQueueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>
+        }
+        findMany: {
+          args: Prisma.FileLockQueueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>[]
+        }
+        create: {
+          args: Prisma.FileLockQueueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>
+        }
+        createMany: {
+          args: Prisma.FileLockQueueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FileLockQueueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>[]
+        }
+        delete: {
+          args: Prisma.FileLockQueueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>
+        }
+        update: {
+          args: Prisma.FileLockQueueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>
+        }
+        deleteMany: {
+          args: Prisma.FileLockQueueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FileLockQueueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FileLockQueueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>[]
+        }
+        upsert: {
+          args: Prisma.FileLockQueueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FileLockQueuePayload>
+        }
+        aggregate: {
+          args: Prisma.FileLockQueueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFileLockQueue>
+        }
+        groupBy: {
+          args: Prisma.FileLockQueueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FileLockQueueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FileLockQueueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FileLockQueueCountAggregateOutputType> | number
+        }
+      }
+    }
     AICostLog: {
       payload: Prisma.$AICostLogPayload<ExtArgs>
       fields: Prisma.AICostLogFieldRefs
@@ -2312,6 +2387,19 @@ export const FileLockScalarFieldEnum = {
 export type FileLockScalarFieldEnum = (typeof FileLockScalarFieldEnum)[keyof typeof FileLockScalarFieldEnum]
 
 
+export const FileLockQueueScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  file_path: 'file_path',
+  requested_at: 'requested_at',
+  acquired_at: 'acquired_at',
+  status: 'status'
+} as const
+
+export type FileLockQueueScalarFieldEnum = (typeof FileLockQueueScalarFieldEnum)[keyof typeof FileLockQueueScalarFieldEnum]
+
+
 export const AICostLogScalarFieldEnum = {
   id: 'id',
   execution_id: 'execution_id',
@@ -2645,6 +2733,20 @@ export type ListEnumFileLockStatusFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'FileLockQueueStatus'
+ */
+export type EnumFileLockQueueStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FileLockQueueStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'FileLockQueueStatus[]'
+ */
+export type ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FileLockQueueStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Decimal'
  */
 export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -2812,6 +2914,7 @@ export type GlobalOmitConfig = {
   workspace?: Prisma.WorkspaceOmit
   aIDecisionLog?: Prisma.AIDecisionLogOmit
   fileLock?: Prisma.FileLockOmit
+  fileLockQueue?: Prisma.FileLockQueueOmit
   aICostLog?: Prisma.AICostLogOmit
   ticketDependency?: Prisma.TicketDependencyOmit
   workspaceArchive?: Prisma.WorkspaceArchiveOmit

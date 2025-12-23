@@ -10,19 +10,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { GitHubCommitOrchestrator } from './github-commit-orchestrator.service';
-import { OrchestratorService } from '../../ai-routing/orchestrator.service';
+import { AIExecutionService } from '../../ai-routing/ai-execution.service';
 import { GitHubService } from '../github.service';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { SentryService } from '../../common/sentry/sentry.service';
+import { LoggerService } from '../../common/logger/logger.service';
+import { WorkspaceService } from '../../ai-routing/providers';
+import { GitOperationsService } from '../../ai-routing/providers/git-operations.service';
+import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service';
 import { AIProvider } from '@/prisma/client';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 
 describe('GitHubCommitOrchestrator', () => {
   let service: GitHubCommitOrchestrator;
-  let orchestratorService: OrchestratorService;
+  let aiExecutionService: AIExecutionService;
   let prismaService: PrismaService;
   let metricsService: MetricsService;
 
@@ -55,14 +59,52 @@ describe('GitHubCommitOrchestrator', () => {
       providers: [
         GitHubCommitOrchestrator,
         {
-          provide: OrchestratorService,
+          provide: AIExecutionService,
           useValue: {
             execute: jest.fn(),
+            providers: new Map([
+              [
+                'CURSOR_HEADLESS',
+                {
+                  executePrompt: jest.fn(),
+                },
+              ],
+            ]),
           },
         },
         {
           provide: GitHubService,
           useValue: {},
+        },
+        {
+          provide: LoggerService,
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+          },
+        },
+        {
+          provide: WorkspaceService,
+          useValue: {
+            getWorkspace: jest.fn().mockResolvedValue({ path: '/tmp/workspace' }),
+            createWorkspace: jest.fn(),
+            cleanupWorkspace: jest.fn(),
+          },
+        },
+        {
+          provide: GitOperationsService,
+          useValue: {
+            commitAndPush: jest.fn(),
+            getBranchInfo: jest.fn(),
+            hasChanges: jest.fn().mockResolvedValue(true),
+          },
+        },
+        {
+          provide: AIDecisionLoggerService,
+          useValue: {
+            logDecision: jest.fn(),
+          },
         },
         {
           provide: PrismaService,
@@ -132,7 +174,7 @@ describe('GitHubCommitOrchestrator', () => {
     }).compile();
 
     service = module.get<GitHubCommitOrchestrator>(GitHubCommitOrchestrator);
-    orchestratorService = module.get<OrchestratorService>(OrchestratorService);
+    aiExecutionService = module.get<AIExecutionService>(AIExecutionService);
     prismaService = module.get<PrismaService>(PrismaService);
     metricsService = module.get<MetricsService>(MetricsService);
   });
@@ -153,9 +195,14 @@ describe('GitHubCommitOrchestrator', () => {
         workspacePath: '/tmp/workspace',
       };
 
+      const mockProvider = (aiExecutionService as any).providers.get('CURSOR_HEADLESS');
+      mockProvider.executePrompt.mockResolvedValue({
+        success: true,
+        response: `Committed and pushed changes.\nCommit SHA: abc123def456789012345678901234567890abcd\nFiles changed: 1`,
+      });
+
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (orchestratorService.execute as jest.Mock).mockResolvedValue(mockAIResult);
       (prismaService.gitHubPush.update as jest.Mock).mockResolvedValue({
         ...mockGitHubPush,
         commit_sha: 'abc123...',
@@ -203,17 +250,14 @@ describe('GitHubCommitOrchestrator', () => {
 
     it('should handle AI provider failure', async () => {
       // Arrange
+      const mockProvider = (aiExecutionService as any).providers.get('CURSOR_HEADLESS');
+      mockProvider.executePrompt.mockResolvedValue({
+        success: false,
+        error: 'AI execution timed out',
+      });
+
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (orchestratorService.execute as jest.Mock).mockResolvedValue({
-        success: false,
-        error: { code: 'TIMEOUT', message: 'AI execution timed out', isRetryable: true },
-        codeDiff: null,
-        filesChanged: [],
-        confidenceScore: 0,
-        durationMs: 5000,
-        workspacePath: '',
-      });
 
       // Act
       const result = await service.commitAndPush('exec-123');
@@ -236,9 +280,14 @@ describe('GitHubCommitOrchestrator', () => {
         workspacePath: '/tmp',
       };
 
+      const mockProvider = (aiExecutionService as any).providers.get('CURSOR_HEADLESS');
+      mockProvider.executePrompt.mockResolvedValue({
+        success: true,
+        response: `Committed and pushed changes.\nCommit SHA: abc123def456789012345678901234567890abcd\nFiles changed: 1`,
+      });
+
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (orchestratorService.execute as jest.Mock).mockResolvedValue(mockAIResult);
       (prismaService.gitHubPush.update as jest.Mock).mockResolvedValue(mockGitHubPush);
 
       // Act

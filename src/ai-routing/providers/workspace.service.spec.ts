@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { WorkspaceService } from './workspace.service';
 import { GitOperationsService } from './git-operations.service';
 import * as fs from 'fs/promises';
+import { PrismaService } from '@/database/prisma.service';
 
 // Mock fs/promises
 jest.mock('fs/promises');
@@ -58,11 +59,55 @@ describe('WorkspaceService', () => {
       }),
     };
 
+    // In-memory prisma.workspace mock to support concurrency/count semantics
+    const workspaces: any[] = [];
+
+    const mockPrismaService = {
+      workspace: {
+        findUnique: jest.fn(async ({ where }: any) => {
+          return workspaces.find((w) => w.execution_id === where.execution_id) ?? null;
+        }),
+        findUniqueOrThrow: jest.fn(async ({ where }: any) => {
+          const found = workspaces.find((w) => w.execution_id === where.execution_id);
+          if (!found) throw new Error('Not found');
+          return found;
+        }),
+        findMany: jest.fn(async () => {
+          // Used by recoverWorkspaces / cleanup scheduler; return all
+          return workspaces;
+        }),
+        count: jest.fn(async () => workspaces.length),
+        create: jest.fn(async ({ data }: any) => {
+          const record = { ...data, created_at: new Date(), updated_at: new Date() };
+          workspaces.push(record);
+          return record;
+        }),
+        update: jest.fn(async ({ where, data }: any) => {
+          const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
+          if (idx < 0) throw new Error('Not found');
+          workspaces[idx] = { ...workspaces[idx], ...data, updated_at: new Date() };
+          return workspaces[idx];
+        }),
+        delete: jest.fn(async ({ where }: any) => {
+          const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
+          if (idx < 0) throw new Error('Not found');
+          const [deleted] = workspaces.splice(idx, 1);
+          return deleted;
+        }),
+        deleteMany: jest.fn(async () => {
+          const count = workspaces.length;
+          workspaces.splice(0, workspaces.length);
+          return { count };
+        }),
+      },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkspaceService,
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GitOperationsService, useValue: mockGitService },
+        { provide: PrismaService, useValue: mockPrismaService },
         { provide: 'PROM_METRIC_CURSOR_WORKSPACES_ACTIVE', useValue: mockActiveGauge },
         {
           provide: 'PROM_METRIC_CURSOR_WORKSPACE_OPERATIONS_TOTAL',
@@ -229,10 +274,15 @@ describe('WorkspaceService', () => {
 
       await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
 
+      // createWorkspace() performs a best-effort rm() before clone; isolate cleanup assertions.
+      mockFs.rm.mockClear();
+
       await service.cleanupWorkspace('exec-123', true);
 
       expect(mockFs.rm).toHaveBeenCalled();
-      expect(service.getWorkspace('exec-123')).toBeUndefined();
+      const workspace = await service.getWorkspace('exec-123');
+      // cleanupWorkspace marks the workspace as CLEANED (mapped to COMPLETED) but does not delete the DB record.
+      expect(workspace?.status).toBe('COMPLETED');
     });
 
     it('should preserve failed workspace if configured', async () => {
@@ -241,7 +291,10 @@ describe('WorkspaceService', () => {
       gitService.checkoutBranch.mockResolvedValue();
 
       await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
-      service.updateWorkspaceStatus('exec-123', 'FAILED');
+      await service.updateWorkspaceStatus('exec-123', 'FAILED');
+
+      // createWorkspace() performs a best-effort rm() before clone; isolate cleanup assertions.
+      mockFs.rm.mockClear();
 
       await service.cleanupWorkspace('exec-123', false);
 
@@ -249,6 +302,7 @@ describe('WorkspaceService', () => {
       expect(mockFs.rm).not.toHaveBeenCalled();
       const workspace = await service.getWorkspace('exec-123');
       expect(workspace).toBeDefined();
+      expect(workspace?.status).toBe('FAILED');
     });
   });
 

@@ -57,6 +57,7 @@ export default () => {
       defaultRepository: process.env.GITHUB_DEFAULT_REPOSITORY,
       appId: process.env.GITHUB_APP_ID ? parseInt(process.env.GITHUB_APP_ID, 10) : undefined,
       privateKeyPath: process.env.GITHUB_APP_PRIVATE_KEY_PATH,
+      webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
     },
 
     // ClickUp Integration

@@ -5,6 +5,7 @@ import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
+import { PromptGeneratorService } from './prompt-generator.service';
 import { AIProvider } from '@/prisma/client';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { IRoutingRequest, RoutingReason } from './interfaces';
@@ -20,7 +21,8 @@ describe('AIRoutingService', () => {
   };
 
   const mockPrisma = {
-    execution: { create: jest.fn() },
+    project: { findUnique: jest.fn() },
+    execution: { create: jest.fn(), update: jest.fn() },
     ticket: { update: jest.fn() },
     auditLog: { create: jest.fn() },
   };
@@ -37,6 +39,10 @@ describe('AIRoutingService', () => {
   const mockProviderHealth = {
     getAvailableProvider: jest.fn(),
     shouldAlert: jest.fn(),
+  };
+
+  const mockPromptGenerator = {
+    generatePrompt: jest.fn(),
   };
 
   const mockCounter = { inc: jest.fn() };
@@ -60,6 +66,13 @@ describe('AIRoutingService', () => {
   };
 
   beforeEach(async () => {
+    // Default project mapping (Story 4.9: Project → repository URL)
+    mockPrisma.project.findUnique.mockResolvedValue({
+      id: 'proj-1',
+      github_repository_url: 'https://github.com/test/repo.git',
+    });
+    mockPromptGenerator.generatePrompt.mockResolvedValue({ prompt: 'generated prompt' });
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIRoutingService,
@@ -68,6 +81,7 @@ describe('AIRoutingService', () => {
         { provide: RabbitMQPublisherService, useValue: mockRabbitMQ },
         { provide: ComplexityScorerService, useValue: mockComplexityScorer },
         { provide: ProviderHealthService, useValue: mockProviderHealth },
+        { provide: PromptGeneratorService, useValue: mockPromptGenerator },
         { provide: 'PROM_METRIC_AI_ROUTING_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_AI_ROUTING_DURATION_SECONDS', useValue: mockHistogram },
         { provide: 'PROM_METRIC_AI_COMPLEXITY_SCORE', useValue: mockHistogram },

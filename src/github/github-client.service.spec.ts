@@ -1,12 +1,11 @@
 /* eslint-disable */
 import { Test, TestingModule } from '@nestjs/testing';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { GitHubClientService } from './github-client.service';
 import { GitHubAuthService } from './github-auth.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
+import { LoggerService } from '../common/logger/logger.service';
 import {
   GitHubRateLimitError,
   GitHubResourceNotFoundError,
@@ -19,7 +18,7 @@ describe('GitHubClientService', () => {
   let metricsService: MetricsService;
   let sentryService: SentryService;
   let publisherService: RabbitMQPublisherService;
-  let logger: Logger;
+  let logger: { warn: jest.Mock; error: jest.Mock; log: jest.Mock; debug: jest.Mock };
 
   const mockOctokit = {
     request: jest.fn(),
@@ -55,10 +54,12 @@ describe('GitHubClientService', () => {
           },
         },
         {
-          provide: WINSTON_MODULE_PROVIDER,
+          provide: LoggerService,
           useValue: {
             warn: jest.fn(),
             error: jest.fn(),
+            log: jest.fn(),
+            debug: jest.fn(),
           },
         },
       ],
@@ -69,7 +70,7 @@ describe('GitHubClientService', () => {
     metricsService = module.get<MetricsService>(MetricsService);
     sentryService = module.get<SentryService>(SentryService);
     publisherService = module.get<RabbitMQPublisherService>(RabbitMQPublisherService);
-    logger = module.get<Logger>(WINSTON_MODULE_PROVIDER);
+    logger = module.get(LoggerService) as any;
   });
 
   it('should be defined', () => {

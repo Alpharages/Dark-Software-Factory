@@ -36,6 +36,18 @@ describe('CircularDependencyDetectorService', () => {
     dependencies: [{ task_id: 'task-a', type: 'waiting_on' }],
   };
 
+  // ClickUpService.getTask() returns a basic task shape with `description`, but
+  // CircularDependencyDetectorService casts the response to `any` to read `dependencies`.
+  const toClickUpApiTask = (task: ClickUpTask) =>
+    ({
+      id: task.id,
+      name: task.name,
+      description: '',
+      status: task.status,
+      text_content: '',
+      dependencies: task.dependencies ?? [],
+    }) as any;
+
   beforeEach(async () => {
     const mockClickUpService = {
       getTask: jest.fn(),
@@ -89,10 +101,9 @@ describe('CircularDependencyDetectorService', () => {
       const taskA = { ...mockTaskA, dependencies: [{ task_id: 'task-b', type: 'waiting_on' as const }] };
       const taskB = { ...mockTaskB, dependencies: [{ task_id: 'task-a', type: 'waiting_on' as const }] };
 
-      // Mock getTask to return objects with description field (required by ClickUp service)
       clickUpService.getTask
-        .mockResolvedValueOnce({ ...taskA, description: '' })
-        .mockResolvedValueOnce({ ...taskB, description: '' });
+        .mockResolvedValueOnce(toClickUpApiTask(taskA))
+        .mockResolvedValueOnce(toClickUpApiTask(taskB));
 
       const result = await service.detectCircularDependencies('task-a');
 
@@ -104,9 +115,9 @@ describe('CircularDependencyDetectorService', () => {
 
     it('should detect a 3-node cycle (A → B → C → A)', async () => {
       clickUpService.getTask
-        .mockResolvedValueOnce(mockTaskA)
-        .mockResolvedValueOnce(mockTaskB)
-        .mockResolvedValueOnce(mockTaskC);
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskA))
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskB))
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskC));
 
       const result = await service.detectCircularDependencies('task-a');
 
@@ -122,7 +133,7 @@ describe('CircularDependencyDetectorService', () => {
         dependencies: [{ task_id: 'task-a', type: 'waiting_on' as const }],
       };
 
-      clickUpService.getTask.mockResolvedValueOnce({ ...selfDepTask, description: '' });
+      clickUpService.getTask.mockResolvedValueOnce(toClickUpApiTask(selfDepTask));
 
       const result = await service.detectCircularDependencies('task-a');
 
@@ -135,9 +146,9 @@ describe('CircularDependencyDetectorService', () => {
       const taskC = { ...mockTaskC, dependencies: [] };
 
       clickUpService.getTask
-        .mockResolvedValueOnce({ ...mockTaskA, description: '' })
-        .mockResolvedValueOnce({ ...mockTaskB, description: '' })
-        .mockResolvedValueOnce({ ...taskC, description: '' });
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskA))
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskB))
+        .mockResolvedValueOnce(toClickUpApiTask(taskC));
 
       const result = await service.detectCircularDependencies('task-a');
 
@@ -149,7 +160,7 @@ describe('CircularDependencyDetectorService', () => {
     it('should return no cycle for task with no dependencies', async () => {
       const taskNoDeps = { ...mockTaskA, dependencies: [] };
 
-      clickUpService.getTask.mockResolvedValueOnce({ ...taskNoDeps, description: '' });
+      clickUpService.getTask.mockResolvedValueOnce(toClickUpApiTask(taskNoDeps));
 
       const result = await service.detectCircularDependencies('task-a');
 
@@ -158,7 +169,7 @@ describe('CircularDependencyDetectorService', () => {
     });
 
     it('should log AI decisions before and after detection', async () => {
-      clickUpService.getTask.mockResolvedValueOnce({ ...mockTaskA, dependencies: [] });
+      clickUpService.getTask.mockResolvedValueOnce(toClickUpApiTask({ ...mockTaskA, dependencies: [] }));
 
       await service.detectCircularDependencies('task-a');
 
@@ -173,7 +184,7 @@ describe('CircularDependencyDetectorService', () => {
     });
 
     it('should record Prometheus metrics', async () => {
-      clickUpService.getTask.mockResolvedValueOnce({ ...mockTaskA, dependencies: [] });
+      clickUpService.getTask.mockResolvedValueOnce(toClickUpApiTask({ ...mockTaskA, dependencies: [] }));
 
       await service.detectCircularDependencies('task-a');
 
@@ -185,9 +196,9 @@ describe('CircularDependencyDetectorService', () => {
   describe('buildDependencyGraph', () => {
     it('should build a graph with multiple nodes', async () => {
       clickUpService.getTask
-        .mockResolvedValueOnce({ ...mockTaskA, description: '' })
-        .mockResolvedValueOnce({ ...mockTaskB, description: '' })
-        .mockResolvedValueOnce({ ...mockTaskC, description: '' });
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskA))
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskB))
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskC));
 
       const graph = await service.buildDependencyGraph('task-a');
 
@@ -198,7 +209,7 @@ describe('CircularDependencyDetectorService', () => {
 
     it('should handle missing tasks gracefully', async () => {
       clickUpService.getTask
-        .mockResolvedValueOnce({ ...mockTaskA, description: '' })
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskA))
         .mockRejectedValueOnce(new Error('Task not found'));
 
       const graph = await service.buildDependencyGraph('task-a');
@@ -289,9 +300,9 @@ describe('CircularDependencyDetectorService', () => {
       };
 
       clickUpService.getTask
-        .mockResolvedValueOnce(mockTaskA)
-        .mockResolvedValueOnce(mockTaskB)
-        .mockResolvedValueOnce(mockTaskC);
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskA))
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskB))
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskC));
 
       const result = await service.detectCircularDependencies('task-a');
 
@@ -303,8 +314,8 @@ describe('CircularDependencyDetectorService', () => {
       const taskB = { ...mockTaskB, dependencies: [] };
 
       clickUpService.getTask
-        .mockResolvedValueOnce({ ...mockTaskA, description: '' })
-        .mockResolvedValueOnce({ ...taskB, description: '' });
+        .mockResolvedValueOnce(toClickUpApiTask(mockTaskA))
+        .mockResolvedValueOnce(toClickUpApiTask(taskB));
 
       const result = await service.detectCircularDependencies('task-a');
 

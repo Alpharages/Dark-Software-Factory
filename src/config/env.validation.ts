@@ -70,6 +70,11 @@ export const envValidationSchema = Joi.object({
         'GITHUB_TOKEN must be a valid GitHub token (starts with ghp_, ghs_, or github_pat_)',
     }),
 
+  // GitHub Webhooks (optional - endpoint will reject signatures if not configured)
+  GITHUB_WEBHOOK_SECRET: Joi.string().min(16).optional().messages({
+    'string.min': 'GITHUB_WEBHOOK_SECRET must be at least 16 characters',
+  }),
+
   // GitHub App (optional, alternative to token)
   GITHUB_APP_ID: Joi.number().optional(),
   GITHUB_APP_PRIVATE_KEY_PATH: Joi.string().optional(),

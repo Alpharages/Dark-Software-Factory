@@ -108,6 +108,11 @@ export type AIDecisionLog = Prisma.AIDecisionLogModel
  */
 export type FileLock = Prisma.FileLockModel
 /**
+ * Model FileLockQueue
+ * 
+ */
+export type FileLockQueue = Prisma.FileLockQueueModel
+/**
  * Model AICostLog
  * 
  */

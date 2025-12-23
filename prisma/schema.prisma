@@ -87,6 +87,12 @@ enum FileLockStatus {
   RELEASED
 }
 
+enum FileLockQueueStatus {
+  WAITING
+  ACQUIRED
+  CANCELLED
+}
+
 enum DependencyStatus {
   WAITING
   BLOCKED
@@ -162,6 +168,7 @@ model Execution {
   // V3 RELATIONS (Epic 11)
   aiDecisionLogs      AIDecisionLog[]   // One-to-many: AI decision audit trail
   fileLocks           FileLock[]        // One-to-many: File lock tracking
+  fileLockQueueEntries FileLockQueue[]   // One-to-many: File lock acquisition queue (Story 12.3)
   aiCostLogs          AICostLog[]       // One-to-many: AI cost tracking
   archive             WorkspaceArchive? // One-to-one: Workspace archive metadata
   
@@ -594,6 +601,26 @@ model FileLock {
   @@index([status])
   @@index([ticket_id])
   @@map("file_locks")
+}
+
+// FILE LOCK QUEUE - FIFO ordering per file for lock acquisition fairness (Story 12.3)
+model FileLockQueue {
+  id           String             @id @default(uuid())
+  ticket_id    String
+  execution_id String
+  file_path    String             // Relative path within repo
+  requested_at DateTime           @default(now())
+  acquired_at  DateTime?
+  status       FileLockQueueStatus @default(WAITING)
+
+  // Relation to Execution
+  execution    Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@unique([ticket_id, execution_id, file_path])
+  @@index([file_path, status, requested_at])
+  @@index([ticket_id])
+  @@index([execution_id])
+  @@map("file_lock_queue")
 }
 
 // AI COST LOG - Track AI invocation costs

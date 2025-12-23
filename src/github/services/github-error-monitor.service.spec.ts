@@ -17,6 +17,7 @@ import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { ClickUpService } from '../../clickup/clickup.service';
+import { LoggerService } from '../../common/logger/logger.service';
 
 describe('GitHubErrorMonitor', () => {
   let service: GitHubErrorMonitor;
@@ -72,6 +73,10 @@ describe('GitHubErrorMonitor', () => {
         { provide: MetricsService, useValue: mockMetrics },
         { provide: AuditLogService, useValue: mockAudit },
         { provide: ClickUpService, useValue: mockClickup },
+        {
+          provide: LoggerService,
+          useValue: { warn: jest.fn(), error: jest.fn(), log: jest.fn(), debug: jest.fn() },
+        },
         { provide: WINSTON_MODULE_PROVIDER, useValue: mockLogger },
       ],
     }).compile();

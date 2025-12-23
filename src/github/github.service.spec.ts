@@ -7,6 +7,7 @@ import { GitHubClientService } from './github-client.service';
 import { AuditLogService } from '../common/audit/audit-log.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { SentryService } from '../common/sentry/sentry.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 describe('GitHubService', () => {
   let service: GitHubService;
@@ -66,6 +67,14 @@ describe('GitHubService', () => {
         {
           provide: SentryService,
           useValue: {},
+        },
+        {
+          provide: LoggerService,
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+          },
         },
         {
           provide: WINSTON_MODULE_PROVIDER,

@@ -4,6 +4,7 @@ import { GitHubService } from '../github.service';
 import { PrismaService } from '../../database/prisma.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
+import { LoggerService } from '../../common/logger/logger.service';
 import { RabbitMQPublisherService } from '../../rabbitmq/rabbitmq-publisher.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { GitHubStatus } from '@/prisma/client';
@@ -99,6 +100,14 @@ describe('GitHubBranchService', () => {
             recordGitHubOperationDuration: jest.fn(),
             incrementCounter: jest.fn(),
             recordHistogram: jest.fn(),
+          },
+        },
+        {
+          provide: LoggerService,
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
           },
         },
         {

@@ -695,10 +695,14 @@ development_status:
       code_review_fixes: "11 issues fixed (4 CRITICAL, 5 MEDIUM, 2 LOW)"
       notes: "✅ APPROVED - Code review completed 2025-12-22. ALL CRITICAL/HIGH/MEDIUM ISSUES FIXED: (C1) Updated task checklist to reflect actual completion status with deferred work documented, (C2) Added migration file to File List, (C3) Documented Jest dependency blocker preventing test verification, (C4) Pre-existing TS errors noted (not Story 12-2 fault), (M1) Fixed story status to 'review' → 'done', (M2) Added RabbitMQModule import to DependenciesModule - CRITICAL DI fix, (M3) Corrected File List counts (6 new, 4+30 modified), (M4) Fixed confidence score documentation to match code (1.0 for deterministic, 0.3-1.0 dynamic for ETA), (M5) Documented deferred integration tests in Tasks section, (L1) Added migration application requirement warning, (L2) Fixed LOC counts in File List. IMPLEMENTATION: DependencyManagerService with checkDependencies(), calculateETA(), notifyDependentTickets(). 15 unit tests written (Jest execution blocked, coverage unverified). Prisma migration created (fields: estimated_eta, eta_calculated_at). AI decision logging + Prometheus metrics integrated. RabbitMQ re-queue logic with rollback on failure. DEFERRED TO STORY 12.5: Integration tests, ETA recalculation event trigger, TicketIntakeConsumer wiring. KNOWN LIMITATIONS: Jest dependency issue blocks test verification, migration not yet applied (requires manual execution)."
   12-3-file-lock-manager:
-    status: backlog
+    status: done
     effort: "3 days"
     story_points: 8
-    notes: "Prevent merge conflicts by locking files. AI predicts modifications. FIFO queue per file. Release on PR merge."
+    developer: "Claude Sonnet 4.5 (Dev Agent)"
+    completed_date: "2025-12-23"
+    code_review_date: "2025-12-23"
+    code_review_fixes: "14 issues fixed (6 CRITICAL, 8 MEDIUM)"
+    notes: "✅ APPROVED - Code review completed 2025-12-23. ALL CRITICAL/HIGH/MEDIUM ISSUES FIXED: (C1) Registered FileLocksModule in app.module.ts - module was not wired, (C2) Implemented stale lock recovery mechanism - 30min timeout cleanup, (C3) Fixed story file list to reflect actual files created, (C4) Documented GitHub webhook integration files, (C5) Added GITHUB_WEBHOOK_SECRET configuration requirement, (C6) Fixed PR merge detection ordering, (M1) Increased queue advance iterations 10→50 for deeper dependency chains, (M2) Added comprehensive metrics (file_locks_active gauge, file_lock_conflicts_total counter, file_lock_stale_releases_total, file_prediction_ai_failures_total with error classification), (M3) Enhanced AI provider error handling with error type classification, (M4) Improved file path extraction to filter URLs and domain patterns, (M5) Fixed PR merge detection to use ordered query. IMPLEMENTATION: FileLockManagerService with predictFileModifications(), acquireLocks() atomic + conflict detection, releaseLocksForExecution(), releaseStaleLocksForFiles(). FileLockQueue table + partial unique index. REST API endpoints with RBAC. GitHub webhook controller with signature verification. Comprehensive unit tests (AC#7). All 7 acceptance criteria fully implemented."
   12-4-ai-branch-strategist:
     status: backlog
     effort: "1.5 days"

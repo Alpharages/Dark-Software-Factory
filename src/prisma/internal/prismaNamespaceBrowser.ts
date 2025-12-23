@@ -69,6 +69,7 @@ export const ModelName = {
   Workspace: 'Workspace',
   AIDecisionLog: 'AIDecisionLog',
   FileLock: 'FileLock',
+  FileLockQueue: 'FileLockQueue',
   AICostLog: 'AICostLog',
   TicketDependency: 'TicketDependency',
   WorkspaceArchive: 'WorkspaceArchive'
@@ -383,6 +384,19 @@ export const FileLockScalarFieldEnum = {
 } as const
 
 export type FileLockScalarFieldEnum = (typeof FileLockScalarFieldEnum)[keyof typeof FileLockScalarFieldEnum]
+
+
+export const FileLockQueueScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  file_path: 'file_path',
+  requested_at: 'requested_at',
+  acquired_at: 'acquired_at',
+  status: 'status'
+} as const
+
+export type FileLockQueueScalarFieldEnum = (typeof FileLockQueueScalarFieldEnum)[keyof typeof FileLockQueueScalarFieldEnum]
 
 
 export const AICostLogScalarFieldEnum = {

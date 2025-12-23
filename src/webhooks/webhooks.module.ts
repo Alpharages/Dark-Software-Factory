@@ -6,11 +6,13 @@ import {
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
 import { WebhooksController } from './webhooks.controller';
+import { GitHubWebhooksController } from './github-webhooks.controller';
 import { WebhooksService } from './webhooks.service';
-import { WebhookSignatureGuard } from './guards';
+import { WebhookSignatureGuard, GitHubWebhookSignatureGuard } from './guards';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { AppMetricsModule, WEBHOOK_METRICS, LABELS } from '@/common/metrics';
+import { FileLocksModule } from '@/file-locks/file-locks.module';
 
 /**
  * Webhooks Module
@@ -33,11 +35,13 @@ import { AppMetricsModule, WEBHOOK_METRICS, LABELS } from '@/common/metrics';
     RabbitMQModule, // For queue publishing
     PrometheusModule, // Required for @InjectMetric decorator
     AppMetricsModule, // For Prometheus metrics
+    FileLocksModule, // Story 12.3: Release locks on PR merge
   ],
-  controllers: [WebhooksController],
+  controllers: [WebhooksController, GitHubWebhooksController],
   providers: [
     WebhooksService,
     WebhookSignatureGuard,
+    GitHubWebhookSignatureGuard,
     // Webhook Metrics (Story 2.1 - NFR-O5)
     // Note: These metrics are also registered in AppMetricsModule, but @willsoto/nestjs-prometheus
     // requires providers to be in the same module where @InjectMetric is used

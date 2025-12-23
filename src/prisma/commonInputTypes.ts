@@ -562,6 +562,23 @@ export type EnumFileLockStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumFileLockStatusFilter<$PrismaModel>
 }
 
+export type EnumFileLockQueueStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.FileLockQueueStatus | Prisma.EnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFileLockQueueStatusFilter<$PrismaModel> | $Enums.FileLockQueueStatus
+}
+
+export type EnumFileLockQueueStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FileLockQueueStatus | Prisma.EnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFileLockQueueStatusWithAggregatesFilter<$PrismaModel> | $Enums.FileLockQueueStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFileLockQueueStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFileLockQueueStatusFilter<$PrismaModel>
+}
+
 export type DecimalFilter<$PrismaModel = never> = {
   equals?: runtime.Decimal | runtime.DecimalJsLike | number | string | Prisma.DecimalFieldRefInput<$PrismaModel>
   in?: runtime.Decimal[] | runtime.DecimalJsLike[] | number[] | string[] | Prisma.ListDecimalFieldRefInput<$PrismaModel>
@@ -1160,6 +1177,23 @@ export type NestedEnumFileLockStatusWithAggregatesFilter<$PrismaModel = never> =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumFileLockStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumFileLockStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumFileLockQueueStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.FileLockQueueStatus | Prisma.EnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFileLockQueueStatusFilter<$PrismaModel> | $Enums.FileLockQueueStatus
+}
+
+export type NestedEnumFileLockQueueStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FileLockQueueStatus | Prisma.EnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FileLockQueueStatus[] | Prisma.ListEnumFileLockQueueStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFileLockQueueStatusWithAggregatesFilter<$PrismaModel> | $Enums.FileLockQueueStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFileLockQueueStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFileLockQueueStatusFilter<$PrismaModel>
 }
 
 export type NestedDecimalFilter<$PrismaModel = never> = {

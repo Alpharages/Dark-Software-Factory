@@ -69,6 +69,8 @@ describe('AIExecutionService', () => {
     };
 
     const mockExecutionService = {
+      getExecution: jest.fn().mockResolvedValue({ status: 'QUEUED' }),
+      isTerminal: jest.fn().mockReturnValue(false),
       markInProgress: jest.fn(),
       completeExecution: jest.fn(),
       failExecution: jest.fn(),

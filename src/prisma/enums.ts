@@ -36,6 +36,15 @@ export const FileLockStatus = {
 export type FileLockStatus = (typeof FileLockStatus)[keyof typeof FileLockStatus]
 
 
+export const FileLockQueueStatus = {
+  WAITING: 'WAITING',
+  ACQUIRED: 'ACQUIRED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type FileLockQueueStatus = (typeof FileLockQueueStatus)[keyof typeof FileLockQueueStatus]
+
+
 export const DependencyStatus = {
   WAITING: 'WAITING',
   BLOCKED: 'BLOCKED',

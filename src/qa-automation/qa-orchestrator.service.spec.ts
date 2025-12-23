@@ -17,6 +17,8 @@ import { ConfigService } from '@nestjs/config';
 // import { CoverageService } from './coverage.service';
 // import { CodeReviewService } from './code-review.service';
 import { QaMetricsService } from './qa-metrics.service';
+import { WorkspaceService } from '../ai-routing/providers';
+import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 
 describe('QaOrchestratorService', () => {
   let service: QaOrchestratorService;
@@ -87,6 +89,17 @@ describe('QaOrchestratorService', () => {
     executeSecurityScan: jest.fn(),
   };
 
+  const mockWorkspaceService = {
+    getWorkspace: jest.fn(),
+    createWorkspace: jest.fn(),
+    cleanupWorkspace: jest.fn(),
+  };
+
+  const mockAIDecisionLogger = {
+    logDecision: jest.fn(),
+    getDecisionTimeline: jest.fn(),
+  };
+
   const mockCounter = {
     inc: jest.fn(),
   };
@@ -104,6 +117,8 @@ describe('QaOrchestratorService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: QualityGatesService, useValue: mockQualityGatesService },
         { provide: AiQaOrchestrator, useValue: mockAiQaOrchestrator },
+        { provide: WorkspaceService, useValue: mockWorkspaceService },
+        { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
         // Story 3.10: Deleted service providers - replaced by AI delegation
         // { provide: LinterService, useValue: mockLinterService },
         // { provide: TestRunnerService, useValue: mockTestRunnerService },
