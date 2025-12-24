@@ -10,10 +10,10 @@ pnpm lint --max-warnings=0
 
 # Run tests with coverage
 echo "🔍 Running tests with coverage... temp commit"
-# pnpm run test
+pnpm test
 
 # Build the project to ensure it compiles
 echo "🔍 Building project..."
-pnpm run build
+pnpm build
 
 echo "✅ Pre-push checks completed successfully!"
