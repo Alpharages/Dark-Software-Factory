@@ -27,6 +27,8 @@ describe('AIRoutingService', () => {
     execution: { create: jest.fn(), update: jest.fn() },
     ticket: { update: jest.fn() },
     auditLog: { create: jest.fn() },
+    ticketDependency: { findMany: jest.fn().mockResolvedValue([]) },
+    fileLock: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
   };
 
   const mockRabbitMQ = {

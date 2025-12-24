@@ -22,7 +22,7 @@ describe('TicketIntakeService', () => {
   let mockValidationCounter: { inc: jest.Mock };
   let mockQualityHistogram: { observe: jest.Mock };
   let mockCircularDetector: { detectCircularDependencies: jest.Mock };
-  let mockDependencyManager: { checkDependencies: jest.Mock };
+  let mockDependencyManager: { checkDependencies: jest.Mock; isStatusResolved: jest.Mock };
   let mockWaitingCounter: { inc: jest.Mock };
   let mockCircularCounter: { inc: jest.Mock };
 
@@ -108,6 +108,7 @@ describe('TicketIntakeService', () => {
     };
     mockDependencyManager = {
       checkDependencies: jest.fn().mockResolvedValue({ canProceed: true }),
+      isStatusResolved: jest.fn().mockReturnValue(false),
     };
     mockWaitingCounter = { inc: jest.fn() };
     mockCircularCounter = { inc: jest.fn() };
