@@ -15,8 +15,17 @@ import {
   IExecutionFailure,
 } from './interfaces';
 import { OrchestratorService } from '../ai-routing/orchestrator.service';
+import { DEFAULT_COMPLEXITY_SCORE, DEFAULT_ESTIMATED_OUTPUT_TOKENS } from './execution.constants';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
+// Story 13.3: AI Cost Tracking & Optimization
+import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
+import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
+import { SentryService } from '../common/sentry/sentry.service';
+import { ErrorSeverity } from '../common/sentry/sentry.constants';
+import { Prisma } from '@/prisma/client';
+type Decimal = Prisma.Decimal;
+const Decimal = Prisma.Decimal;
 
 /**
  * AI Execution Consumer
@@ -67,6 +76,10 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly orchestrator: OrchestratorService,
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
+    // Story 13.3: AI Cost Tracking & Optimization
+    private readonly aiCostTracker: AICostTrackerService,
+    private readonly costOptimizer: CostOptimizerService,
+    private readonly sentry: SentryService,
     @InjectMetric('queue_messages_consumed_total')
     private readonly consumedCounter: Counter<string>,
     @InjectMetric('queue_messages_failed_total')
@@ -262,7 +275,92 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         confidence: 0.95,
       });
 
-      // 2. Execute via OrchestratorService
+      // =================================================================
+      // Story 13.3: Cost Estimation & Model Selection
+      // =================================================================
+      let selectedModel: string = 'gpt-4o'; // Default model (will be overridden by CostOptimizer)
+      let estimatedCost: Decimal | null = null;
+      try {
+        // Get complexity score from execution (populated by Story 2.3 ComplexityScorerService)
+        const execution = await this.executionTracker.getExecution(executionId);
+        const complexityScore = execution?.complexity_score || DEFAULT_COMPLEXITY_SCORE;
+
+        selectedModel = this.costOptimizer.selectOptimalModel(complexityScore);
+
+        // Log model selection decision
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'AIExecutionConsumer',
+          action: 'model_selection',
+          reasoning: `Selected ${selectedModel} based on complexity score ${complexityScore}. Cost optimization enabled.`,
+          ticketId: payload.ticketId,
+          executionId,
+          inputData: {
+            complexityScore,
+          },
+          outputData: {
+            selectedModel,
+          },
+          confidence: 0.9,
+        });
+
+        // Estimate cost BEFORE execution (AC#1)
+        estimatedCost = this.aiCostTracker.estimateCost(
+          prompt,
+          selectedModel,
+          DEFAULT_ESTIMATED_OUTPUT_TOKENS,
+        );
+
+        // Log estimated cost (AC#3)
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'AIExecutionConsumer',
+          action: 'cost_estimation_pre_execution',
+          reasoning: `Estimated cost before execution: $${estimatedCost.toFixed(6)} USD. Model: ${selectedModel}. Prompt: ${prompt.length} chars (~${Math.floor(prompt.length / 4)} tokens). Output: ~${DEFAULT_ESTIMATED_OUTPUT_TOKENS} tokens.`,
+          ticketId: payload.ticketId,
+          executionId,
+          inputData: {
+            model: selectedModel,
+            promptLength: prompt.length,
+            estimatedInputTokens: Math.floor(prompt.length / 4),
+            estimatedOutputTokens: DEFAULT_ESTIMATED_OUTPUT_TOKENS,
+          },
+          outputData: {
+            estimatedCostUsd: estimatedCost.toNumber(),
+          },
+          confidence: 0.7, // Estimates have lower confidence
+        });
+
+        this.logger.log(
+          `[${correlationId}] Estimated cost: $${estimatedCost.toFixed(6)} USD (${selectedModel})`,
+        );
+      } catch (error) {
+        const err = error as Error;
+        this.logger.error(`[${correlationId}] Cost estimation failed: ${err.message}`);
+
+        // H8 Fix: Alert to Sentry for silent failures
+        this.sentry.captureMessage(
+          `Cost estimation failed for execution ${executionId}: ${err.message}`,
+          ErrorSeverity.HIGH,
+        );
+
+        // H8 Fix: Log failure to AIDecisionLogger for audit trail
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'AIExecutionConsumer',
+          action: 'cost_estimation_failed',
+          reasoning: `Cost estimation failed: ${err.message}. Execution will proceed WITHOUT cost tracking.`,
+          ticketId: payload.ticketId,
+          executionId,
+          inputData: {
+            errorMessage: err.message,
+          },
+          outputData: {
+            fallbackModel: selectedModel,
+          },
+          confidence: 0.0, // Failure = no confidence
+        });
+        // Continue execution even if cost estimation fails
+      }
+
+      // 2. Execute via OrchestratorService with selected model
       const result = await this.orchestrator.execute({
         correlationId,
         executionId,
@@ -270,9 +368,112 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         prompt,
         repositoryUrl,
         allowFallback: payload.allowFallback ?? true,
+        selectedModel, // Story 13.3: Pass selected model to orchestrator
       });
 
       if (result.success) {
+        // Story 13.3: Log actual cost AFTER execution (AC#1, #3)
+        try {
+          if (result.tokensInput && result.tokensOutput && selectedModel) {
+            // Calculate actual cost
+            const actualCost = this.aiCostTracker.calculateUSD(
+              selectedModel,
+              result.tokensInput,
+              result.tokensOutput,
+            );
+
+            // Calculate cost variance (AC#3: Alert if actual > 150% or 200% of estimate)
+            let costVariance = 0;
+            if (estimatedCost) {
+              costVariance =
+                (actualCost.toNumber() - estimatedCost.toNumber()) / estimatedCost.toNumber();
+
+              // H4 Fix: Log variance alerts to AIDecisionLogger for audit trail
+              if (costVariance > 2.0) {
+                this.logger.error(
+                  `[${correlationId}] CRITICAL: Cost variance >200%! Estimated: $${estimatedCost.toFixed(6)}, Actual: $${actualCost.toFixed(6)}`,
+                );
+                await this.aiDecisionLogger.logDecision({
+                  agentName: 'AIExecutionConsumer',
+                  action: 'cost_variance_alert_critical',
+                  reasoning: `CRITICAL cost variance detected: Actual cost is ${(costVariance * 100).toFixed(1)}% higher than estimate. This indicates estimation model needs calibration.`,
+                  ticketId: payload.ticketId,
+                  executionId,
+                  inputData: {
+                    estimatedCostUsd: estimatedCost.toNumber(),
+                    actualCostUsd: actualCost.toNumber(),
+                    variancePercent: costVariance * 100,
+                  },
+                  outputData: {
+                    alertLevel: 'CRITICAL',
+                  },
+                  confidence: 0.95,
+                });
+              } else if (costVariance > 1.5) {
+                this.logger.warn(
+                  `[${correlationId}] WARNING: Cost variance >150%. Estimated: $${estimatedCost.toFixed(6)}, Actual: $${actualCost.toFixed(6)}`,
+                );
+                await this.aiDecisionLogger.logDecision({
+                  agentName: 'AIExecutionConsumer',
+                  action: 'cost_variance_alert_warning',
+                  reasoning: `Cost variance warning: Actual cost is ${(costVariance * 100).toFixed(1)}% higher than estimate. Monitor for systematic estimation drift.`,
+                  ticketId: payload.ticketId,
+                  executionId,
+                  inputData: {
+                    estimatedCostUsd: estimatedCost.toNumber(),
+                    actualCostUsd: actualCost.toNumber(),
+                    variancePercent: costVariance * 100,
+                  },
+                  outputData: {
+                    alertLevel: 'WARNING',
+                  },
+                  confidence: 0.9,
+                });
+              }
+            }
+
+            // Log actual cost with variance to AIDecisionLogger (AC#3)
+            await this.aiDecisionLogger.logDecision({
+              agentName: 'AIExecutionConsumer',
+              action: 'cost_actuals_post_execution',
+              reasoning: `Actual cost after execution: $${actualCost.toFixed(6)} USD. Variance from estimate: ${costVariance > 0 ? '+' : ''}${(costVariance * 100).toFixed(1)}%. Model: ${selectedModel}. Input: ${result.tokensInput} tokens, Output: ${result.tokensOutput} tokens.`,
+              ticketId: payload.ticketId,
+              executionId,
+              inputData: {
+                model: selectedModel,
+                tokensInput: result.tokensInput,
+                tokensOutput: result.tokensOutput,
+                estimatedCostUsd: estimatedCost?.toNumber() || 0,
+              },
+              outputData: {
+                actualCostUsd: actualCost.toNumber(),
+                costVariancePercent: costVariance * 100,
+              },
+              confidence: 0.95, // Actuals have high confidence
+            });
+
+            // Log to database & Prometheus (AC#1)
+            await this.aiCostTracker.logCost({
+              executionId,
+              ticketId: payload.ticketId,
+              provider: payload.aiProvider,
+              model: selectedModel,
+              inputTokens: result.tokensInput,
+              outputTokens: result.tokensOutput,
+              agentName: 'AIExecutionConsumer',
+              operationType: 'code_generation',
+            });
+          }
+        } catch (error) {
+          const err = error as Error;
+          this.logger.error(`[${correlationId}] Failed to log actual cost: ${err.message}`);
+          // M3 Fix: Alert on cost logging failure (budget tracking broken)
+          this.sentry.captureMessage(
+            `Cost logging failed for execution ${executionId}: ${err.message}. Budget tracking incomplete!`,
+            ErrorSeverity.HIGH,
+          );
+        }
+
         // Story 11.4: Log successful execution
         await this.aiDecisionLogger.logDecision({
           agentName: 'AIExecutionConsumer',

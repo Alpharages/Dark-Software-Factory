@@ -35,6 +35,9 @@ export interface IAIExecutionInput {
 
   /** Timeout in milliseconds */
   timeoutMs?: number;
+
+  /** Story 13.3: Model override from CostOptimizerService */
+  selectedModel?: string;
 }
 
 /**

@@ -127,6 +127,58 @@ describe('AICostTrackerService', () => {
     });
   });
 
+  describe('estimateCost', () => {
+    it('should estimate cost based on prompt length using 4 chars/token approximation', () => {
+      const prompt = 'a'.repeat(1000); // 1000 characters
+      const model = 'gpt-4o';
+      const estimatedOutputTokens = 500; // Typical response
+
+      const cost = service.estimateCost(prompt, model, estimatedOutputTokens);
+
+      // 1000 chars / 4 = 250 input tokens
+      // gpt-4o: input $5/1M, output $15/1M
+      // (250 / 1_000_000) * 5 + (500 / 1_000_000) * 15 = 0.00125 + 0.0075 = 0.00875
+      expect(cost.toNumber()).toBeCloseTo(0.00875, 6);
+    });
+
+    it('should handle very long prompts correctly', () => {
+      const prompt = 'a'.repeat(100_000); // 100K characters = ~25K tokens
+      const model = 'claude-3-5-sonnet-20240620';
+      const estimatedOutputTokens = 1000;
+
+      const cost = service.estimateCost(prompt, model, estimatedOutputTokens);
+
+      // 100K chars / 4 = 25K tokens
+      // Claude 3.5 Sonnet: input $3/1M, output $15/1M
+      // (25000 / 1_000_000) * 3 + (1000 / 1_000_000) * 15 = 0.075 + 0.015 = 0.09
+      expect(cost.toNumber()).toBeCloseTo(0.09, 6);
+    });
+
+    it('should use default rates for unknown model', () => {
+      const prompt = 'test prompt';
+      const model = 'unknown-model-xyz';
+      const estimatedOutputTokens = 200;
+
+      const cost = service.estimateCost(prompt, model, estimatedOutputTokens);
+
+      // prompt.length = 11, / 4 = 2.75 tokens (floor to 2)
+      // Default: input $10/1M, output $50/1M
+      expect(cost.toNumber()).toBeGreaterThan(0);
+    });
+
+    it('should handle empty prompt edge case', () => {
+      const prompt = '';
+      const model = 'gpt-4o';
+      const estimatedOutputTokens = 100;
+
+      const cost = service.estimateCost(prompt, model, estimatedOutputTokens);
+
+      // 0 input tokens, 100 output tokens
+      // (0 / 1_000_000) * 5 + (100 / 1_000_000) * 15 = 0 + 0.0015 = 0.0015
+      expect(cost.toNumber()).toBeCloseTo(0.0015, 6);
+    });
+  });
+
   describe('checkBudgetThresholds', () => {
     it('should trigger warning alert when threshold reached', async () => {
       // Mock aggregate to return 85% of budget

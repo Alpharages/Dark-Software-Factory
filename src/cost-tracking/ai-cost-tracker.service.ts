@@ -32,6 +32,22 @@ export class AICostTrackerService {
   }
 
   /**
+   * Estimate cost before AI execution based on prompt length
+   * Uses GPT's approximation: ~4 characters per token
+   *
+   * @param prompt - The input prompt string
+   * @param model - The AI model to be used
+   * @param estimatedOutputTokens - Estimated output tokens (default: 500)
+   * @returns Estimated cost in USD as Decimal
+   */
+  estimateCost(prompt: string, model: string, estimatedOutputTokens: number = 500): Decimal {
+    // GPT models: roughly 4 characters per token (from OpenAI docs)
+    const estimatedInputTokens = Math.floor(prompt.length / 4);
+
+    return this.calculateUSD(model, estimatedInputTokens, estimatedOutputTokens);
+  }
+
+  /**
    * Log AI cost to database and Prometheus
    */
   async logCost(params: {

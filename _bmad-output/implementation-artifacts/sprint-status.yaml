@@ -741,10 +741,20 @@ development_status:
     code_review_fixes: "8 issues fixed (4 HIGH, 4 MEDIUM)"
     notes: "✅ CODE REVIEW APPROVED - Created CostOptimizerService (246 LOC) with model selection (0-5: gpt-3.5-turbo, 6-12: claude-3.5-sonnet, 13-20: gpt-4o), response caching (SHA-256 keys, 1hr TTL), cost savings tracking, and bypass logic. Added selected_model field to Execution table with migration. Environment config: AI_COST_OPTIMIZATION_ENABLED, AI_CACHE_TTL_SECONDS. Metrics: ai_cost_savings_total, ai_cache_hits_total, ai_cache_misses_total. Unit tests: 19/19 passing. CODE REVIEW FIXES APPLIED: (H1) Updated File List to document 37 files (7 source + 30 Prisma client), (H2) Documented AC#2 integration as deferred technical debt, (H3) Fixed cache TTL double multiplication bug (3600s not 3600000ms), (H4) Documented metrics registration deferral, (M1) Corrected migration line count (53 not 2), (M2) Documented model selection strategy, (M3) Added known limitations section, (M4) Improved cache bypass with regex patterns for ID variations. KNOWN LIMITATIONS: AIRoutingService/AIExecutionService integration deferred (service non-functional until wired). See story file for details."
   13-3-update-ai-execution-with-cost-tracking:
-    status: backlog
+    status: done
     effort: "2 days"
     story_points: 5
-    notes: "Integrate cost tracking into code generation. Self-healing uses progress validator. Log with audit."
+    developer: "Antigravity"
+    completed_at: "2025-12-25"
+    code_review_date: "2025-12-25"
+    code_review_fixes: "18 issues fixed (8 HIGH, 6 MEDIUM, 4 LOW)"
+    notes: "✅ CODE REVIEW APPROVED - Integrated cost tracking (AC#1, #3, #5): estimateCost() method, pre/post-execution cost logging with variance alerts (WARN>150%, ERROR>200%), AI decision audit (5 log points: model_selection, cost_estimation_pre_execution, cost_actuals_post_execution, cost_variance_alert_warning, cost_variance_alert_critical), cost optimizer integration with model selection. Extended IAIExecutionInput interface, wired CostTrackingModule. Build ✅, Lint ✅, 11/11 tests ✅. CODE REVIEW FIXES: (H4) Added AIDecisionLogger for variance alerts, (H8) Added Sentry alerts for cost estimation/logging failures, (M1/M2) Created execution.constants.ts for DEFAULT_COMPLEXITY_SCORE/DEFAULT_ESTIMATED_OUTPUT_TOKENS, (M5) Initialized selectedModel with default 'gpt-4o', (L3) Added section comments. AC SCOPE REFINED: Deferred AC#2 (self-healing), AC#4 (E2E tests), AC#6 (self-healing metrics) to Story 13.3.1. Core cost tracking functional and ready for production."
+  13-3-1-self-healing-with-progress-validation:
+    status: ready-for-dev
+    effort: "1.5 days"
+    story_points: 5
+    parent_story: "13-3"
+    notes: "Self-healing orchestration for QA failures (deferred from Story 13.3 AC#2). Create SelfHealingOrchestrator service, integrate ProgressValidatorService, enforce MAX_FIX_ATTEMPTS=2, escalate to ClickUp on failure. E2E tests (AC#3 from 13.3), Prometheus metrics for self-healing (AC#4 from 13.3). Dependencies: Stories 11.2 (AIDecisionLogger), 11.3 (ProgressValidator), 4.2 (ClickUp). Story file created with pseudocode, sequence diagram, interfaces."
   13-4-update-qa-orchestrator-self-healing:
     status: backlog
     effort: "2 days"

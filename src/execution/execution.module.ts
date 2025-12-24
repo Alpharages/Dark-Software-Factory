@@ -23,6 +23,8 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module';
 import { QaAutomationModule } from '../qa-automation/qa-automation.module';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
+// Story 13.3: AI Cost Tracking & Optimization
+import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
 // LoggerModule not needed - consumer uses NestJS Logger directly
 
 /**
@@ -50,6 +52,8 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     forwardRef(() => QaAutomationModule), // Story 3.7: For QaCheckPublisher
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
+    // Story 13.3: AI Cost Tracking & Optimization
+    CostTrackingModule,
   ],
   providers: [
     // Core services
