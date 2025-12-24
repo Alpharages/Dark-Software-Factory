@@ -18,6 +18,7 @@ import {
 } from './interfaces';
 import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '../execution/execution.service';
+import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { CompleteExecutionDto, FailExecutionDto } from '../execution/dto';
 import { AIProvider } from '@/prisma/enums';
 
@@ -32,6 +33,7 @@ export class AIExecutionService {
     private readonly cursorProvider: CursorHeadlessProvider,
     private readonly claudeProvider: ClaudeCodeProvider,
     private readonly executionService: ExecutionService,
+    private readonly costTracker: AICostTrackerService,
   ) {
     // Register providers
     this.providers.set(AIProvider.CURSOR_HEADLESS, this.cursorProvider);
@@ -45,7 +47,7 @@ export class AIExecutionService {
     provider: AIProvider,
     input: IAIExecutionInput,
   ): Promise<IAIExecutionResult> {
-    const { correlationId, executionId } = input;
+    const { correlationId, executionId, ticketId } = input;
 
     this.logger.log(`[${correlationId}] Executing with provider: ${provider}`);
 
@@ -73,6 +75,25 @@ export class AIExecutionService {
     try {
       // Execute
       const result = await aiProvider.execute(input);
+
+      // Story 13.1: Centralized Cost Tracking
+      // Captures tokens from result and logs cost asynchronously
+      if (result.success || (result.tokensInput && result.tokensOutput)) {
+        this.costTracker
+          .logCost({
+            executionId,
+            ticketId,
+            provider,
+            model:
+              result.model ||
+              (provider === AIProvider.CLAUDE_CODE ? 'claude-3-5-sonnet-20240620' : 'gpt-4o'),
+            inputTokens: result.tokensInput || 0,
+            outputTokens: result.tokensOutput || 0,
+            agentName: 'AIExecutionService', // Default agent name
+            operationType: 'code_generation',
+          })
+          .catch((err) => this.logger.error(`Failed to log AI cost: ${err.message}`));
+      }
 
       // Only update execution status if we're managing this execution
       if (!isTerminalStatus) {

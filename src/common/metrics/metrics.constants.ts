@@ -38,7 +38,8 @@ export const TICKET_METRICS = {
 export const AI_METRICS = {
   EXECUTIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_executions_total`,
   EXECUTION_DURATION: `${METRICS_CONSTANTS.PREFIX}ai_execution_duration_seconds`,
-  TOKENS_USED: `${METRICS_CONSTANTS.PREFIX}ai_tokens_used_total`,
+  TOKENS_INPUT_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_tokens_input_total`,
+  TOKENS_OUTPUT_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_tokens_output_total`,
   PROVIDER_STATUS: `${METRICS_CONSTANTS.PREFIX}ai_provider_status`,
 } as const;
 
@@ -183,6 +184,18 @@ export const ALERT_THRESHOLDS = {
   COST_BUDGET_CRITICAL: 100,
   ERROR_RATE_WARNING: 0.01, // 1%
   ERROR_RATE_CRITICAL: 0.05, // 5%
+} as const;
+
+/**
+ * AI Provider Pricing (2024 Rates per 1M tokens)
+ */
+export const AI_PROVIDER_RATES = {
+  'claude-3-5-sonnet-20240620': { input: 3.0, output: 15.0 },
+  'claude-3-opus-20240229': { input: 15.0, output: 75.0 },
+  'gpt-4o': { input: 5.0, output: 15.0 },
+  'gpt-4o-mini': { input: 0.15, output: 0.6 },
+  'gpt-3.5-turbo': { input: 0.15, output: 0.6 },
+  default: { input: 10.0, output: 30.0 }, // Safety fallback
 } as const;
 
 // Queue Names (must match RabbitMQ configuration from Story 1.5)

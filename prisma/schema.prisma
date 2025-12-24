@@ -3,13 +3,12 @@
 
 generator client {
   provider = "prisma-client"
-  output        = "../src/prisma"
+  output   = "../src/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
-
 
 // ============================================
 // PROJECTS (Story 4.9)
@@ -22,14 +21,15 @@ model Project {
   clickup_list_id       String   @unique
   github_repository_url String
   default_branch        String   @default("main")
-  
-  // Relationships
-  tickets               Ticket[]
-  coverage_baseline     CoverageBaseline?
-  coverage_config       ProjectCoverageConfig?
+  budget_usd            Decimal? @default(100.00) @db.Decimal(10, 2)
 
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
+  // Relationships
+  tickets           Ticket[]
+  coverage_baseline CoverageBaseline?
+  coverage_config   ProjectCoverageConfig?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@map("projects")
 }
@@ -39,24 +39,25 @@ model Project {
 // ============================================
 
 model Ticket {
-  id                    String       @id @default(uuid())
-  clickup_task_id       String       @unique
-  project_id            String
-  project               Project      @relation(fields: [project_id], references: [id])
-  title                 String
-  description           String       @db.Text
-  acceptance_criteria   String       @db.Text
-  ticket_quality_score  Int
-  status                TicketStatus @default(RECEIVED)
-  
+  id                   String       @id @default(uuid())
+  clickup_task_id      String       @unique
+  project_id           String
+  project              Project      @relation(fields: [project_id], references: [id])
+  title                String
+  description          String       @db.Text
+  acceptance_criteria  String       @db.Text
+  ticket_quality_score Int
+  status               TicketStatus @default(RECEIVED)
+
   // Relationships
-  executions         Execution[]
-  cost_records       CostRecord[]
-  context_documents  ContextDocument[]   // Story 2.12: Attached context documents
-  
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-  
+  executions        Execution[]
+  cost_records      CostRecord[]
+  context_documents ContextDocument[] // Story 2.12: Attached context documents
+  ai_cost_logs      AICostLog[] // Story 13.1: AI cost tracking
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   @@index([project_id, status])
   @@index([created_at])
   @@map("tickets")
@@ -122,68 +123,68 @@ enum PRRiskLevel {
 // ============================================
 
 model Execution {
-  id                String           @id @default(uuid())
-  ticket_id         String
-  ticket            Ticket           @relation(fields: [ticket_id], references: [id])
-  
-  ai_provider       AIProvider
-  prompt            String           @db.Text
-  status            ExecutionStatus  @default(QUEUED)
-  confidence_score  Float?
-  
-  started_at        DateTime?
-  completed_at      DateTime?
-  failed_at         DateTime?
-  error_message     String?          @db.Text
-  
+  id        String @id @default(uuid())
+  ticket_id String
+  ticket    Ticket @relation(fields: [ticket_id], references: [id])
+
+  ai_provider      AIProvider
+  prompt           String          @db.Text
+  status           ExecutionStatus @default(QUEUED)
+  confidence_score Float?
+
+  started_at    DateTime?
+  completed_at  DateTime?
+  failed_at     DateTime?
+  error_message String?   @db.Text
+
   // Generated code
-  code_output       String?          @db.Text
-  files_changed     Json?            // Array of file paths
-  
+  code_output   String? @db.Text
+  files_changed Json? // Array of file paths
+
   // Retry tracking
-  retry_count       Int              @default(0)
-  max_retries       Int              @default(3)
-  
+  retry_count Int @default(0)
+  max_retries Int @default(3)
+
   // Routing decision metadata (Story 2.3)
   complexity_score     Int?
   complexity_breakdown Json?
   routing_reason       String?
-  fallback_used        Boolean          @default(false)
+  fallback_used        Boolean     @default(false)
   original_provider    AIProvider?
 
   // Story 2.9: Retry Context
-  error_context        String?          @db.Text  // JSON: previous retry errors
-  scheduled_retry_at   DateTime?                  // Next scheduled retry time
-  
+  error_context      String?   @db.Text // JSON: previous retry errors
+  scheduled_retry_at DateTime? // Next scheduled retry time
+
   // V3 FIELDS (Epic 11: Phase 1 Foundation)
-  base_branch           String?                    // Selected base branch for PR
-  branch_selection_log  String?          @db.Text  // AI decision log for branch selection
-  file_modifications    Json?                      // Detailed file change metadata
-  risk_level            PRRiskLevel?               // PR risk assessment
-  circular_dep_detected Boolean          @default(false)  // Dependency cycle flag
-  
-  created_at        DateTime         @default(now())
-  updated_at        DateTime         @updatedAt
-  
+  base_branch           String? // Selected base branch for PR
+  branch_selection_log  String?      @db.Text // AI decision log for branch selection
+  file_modifications    Json? // Detailed file change metadata
+  risk_level            PRRiskLevel? // PR risk assessment
+  circular_dep_detected Boolean      @default(false) // Dependency cycle flag
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   // Story 3.6: QA Results relation
-  qa_result         QAResult?
-  
+  qa_result QAResult?
+
   // V3 RELATIONS (Epic 11)
-  aiDecisionLogs      AIDecisionLog[]   // One-to-many: AI decision audit trail
-  fileLocks           FileLock[]        // One-to-many: File lock tracking
-  fileLockQueueEntries FileLockQueue[]   // One-to-many: File lock acquisition queue (Story 12.3)
-  aiCostLogs          AICostLog[]       // One-to-many: AI cost tracking
-  archive             WorkspaceArchive? // One-to-one: Workspace archive metadata
-  
+  aiDecisionLogs       AIDecisionLog[] // One-to-many: AI decision audit trail
+  fileLocks            FileLock[] // One-to-many: File lock tracking
+  fileLockQueueEntries FileLockQueue[] // One-to-many: File lock acquisition queue (Story 12.3)
+  aiCostLogs           AICostLog[] // One-to-many: AI cost tracking
+  archive              WorkspaceArchive? // One-to-one: Workspace archive metadata
+
   @@index([ticket_id, status])
   @@index([ai_provider, status])
-  @@index([scheduled_retry_at])  // Story 2.9: Index for retry queries
+  @@index([scheduled_retry_at]) // Story 2.9: Index for retry queries
   @@map("executions")
 }
 
 enum AIProvider {
-  CURSOR_HEADLESS    // Primary: Full repo context, complex tasks
-  CLAUDE_CODE        // Secondary: Faster, cheaper, simple tasks
+  CURSOR_HEADLESS // Primary: Full repo context, complex tasks
+  CLAUDE_CODE // Secondary: Faster, cheaper, simple tasks
 }
 
 enum ExecutionStatus {
@@ -201,28 +202,28 @@ enum ExecutionStatus {
 // ============================================
 
 model QAResult {
-  id                  String   @id @default(uuid())
-  execution_id        String   @unique  // CRITICAL: Must be unique for upsert pattern
-  
-  linting_passed      Boolean  @default(false)
-  linting_errors      Json?
-  
-  tests_passed        Boolean  @default(false)
-  test_results        Json?
-  test_coverage       Float?
-  
-  code_review_passed  Boolean  @default(false)
-  code_review_issues  Json?
-  
-  overall_passed      Boolean  @default(false)
-  
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
-  
+  id           String @id @default(uuid())
+  execution_id String @unique // CRITICAL: Must be unique for upsert pattern
+
+  linting_passed Boolean @default(false)
+  linting_errors Json?
+
+  tests_passed  Boolean @default(false)
+  test_results  Json?
+  test_coverage Float?
+
+  code_review_passed Boolean @default(false)
+  code_review_issues Json?
+
+  overall_passed Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   // Relation to Execution model
-  execution           Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
-  
-  @@index([overall_passed, created_at])  // For status + date filtering
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@index([overall_passed, created_at]) // For status + date filtering
   @@map("qa_results")
 }
 
@@ -231,42 +232,41 @@ model QAResult {
 // ============================================
 
 model GitHubInstallation {
-  id              String   @id @default(uuid())
-  installation_id String   @unique @map("installation_id") // ID from GitHub
-  account_login   String   @map("account_login")           // Org or User name
-  account_id      String   @map("account_id")              // GitHub Account ID
-  account_type    String   @map("account_type")            // User or Organization
-  
-  access_token    String?  @db.Text                        // Cached token
-  expires_at      DateTime?
-  
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id              String @id @default(uuid())
+  installation_id String @unique @map("installation_id") // ID from GitHub
+  account_login   String @map("account_login") // Org or User name
+  account_id      String @map("account_id") // GitHub Account ID
+  account_type    String @map("account_type") // User or Organization
+
+  access_token String?   @db.Text // Cached token
+  expires_at   DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@index([account_login])
   @@map("github_installations")
 }
 
-
 model GitHubPush {
-  id              String       @id @default(uuid())
-  execution_id    String
-  
-  repository      String
-  branch_name     String
-  commit_sha      String?
-  pr_number       Int?
-  pr_url          String?
-  
-  push_status     GitHubStatus @default(PENDING)
-  error_message   String?      @db.Text
-  
+  id           String @id @default(uuid())
+  execution_id String
+
+  repository  String
+  branch_name String
+  commit_sha  String?
+  pr_number   Int?
+  pr_url      String?
+
+  push_status   GitHubStatus @default(PENDING)
+  error_message String?      @db.Text
+
   // Relationships
-  deployments     Deployment[]
-  
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
-  
+  deployments Deployment[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   @@map("github_pushes")
 }
 
@@ -284,22 +284,22 @@ enum GitHubStatus {
 // ============================================
 
 model Deployment {
-  id              String           @id @default(uuid())
-  github_push_id  String
-  github_push     GitHubPush       @relation(fields: [github_push_id], references: [id])
-  
-  environment     String           // dev, staging, production
-  cicd_provider   String           // github-actions, jenkins, etc.
-  build_id        String?          // Provider-specific build/run ID
-  workflow_id     String?          // GitHub Actions workflow ID (from API response)
-  
-  status          DeploymentStatus @default(TRIGGERED)
-  deployed_at     DateTime?
-  error_message   String?          @db.Text
-  
-  created_at      DateTime         @default(now())
-  updated_at      DateTime         @updatedAt
-  
+  id             String     @id @default(uuid())
+  github_push_id String
+  github_push    GitHubPush @relation(fields: [github_push_id], references: [id])
+
+  environment   String // dev, staging, production
+  cicd_provider String // github-actions, jenkins, etc.
+  build_id      String? // Provider-specific build/run ID
+  workflow_id   String? // GitHub Actions workflow ID (from API response)
+
+  status        DeploymentStatus @default(TRIGGERED)
+  deployed_at   DateTime?
+  error_message String?          @db.Text
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   @@index([github_push_id])
   @@index([status, environment])
   @@map("deployments")
@@ -318,19 +318,19 @@ enum DeploymentStatus {
 // ============================================
 
 model CostRecord {
-  id              String     @id @default(uuid())
-  ticket_id       String
-  ticket          Ticket     @relation(fields: [ticket_id], references: [id])
-  
-  ai_provider     AIProvider
-  operation_type  String     // code_generation, review, etc.
-  
-  tokens_used     Int?
-  api_calls       Int        @default(1)
-  cost_in_cents   Int        // Store as cents to avoid floating point
-  
-  created_at      DateTime   @default(now())
-  
+  id        String @id @default(uuid())
+  ticket_id String
+  ticket    Ticket @relation(fields: [ticket_id], references: [id])
+
+  ai_provider    AIProvider
+  operation_type String // code_generation, review, etc.
+
+  tokens_used   Int?
+  api_calls     Int  @default(1)
+  cost_in_cents Int // Store as cents to avoid floating point
+
+  created_at DateTime @default(now())
+
   @@index([ticket_id])
   @@index([ai_provider, created_at])
   @@map("cost_records")
@@ -341,21 +341,21 @@ model CostRecord {
 // ============================================
 
 model ProductionError {
-  id                String        @id @default(uuid())
-  
-  application       String
-  error_type        String
-  error_message     String        @db.Text
-  stack_trace       String?       @db.Text
-  
-  severity          ErrorSeverity
-  
-  fix_ticket_id     String?       // ClickUp task ID if auto-created
-  resolved          Boolean       @default(false)
-  
-  occurred_at       DateTime
-  created_at        DateTime      @default(now())
-  
+  id String @id @default(uuid())
+
+  application   String
+  error_type    String
+  error_message String  @db.Text
+  stack_trace   String? @db.Text
+
+  severity ErrorSeverity
+
+  fix_ticket_id String? // ClickUp task ID if auto-created
+  resolved      Boolean @default(false)
+
+  occurred_at DateTime
+  created_at  DateTime @default(now())
+
   @@index([application, severity, resolved])
   @@map("production_errors")
 }
@@ -372,15 +372,15 @@ enum ErrorSeverity {
 // ============================================
 
 model Metric {
-  id          String   @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   metric_name String
-  metric_type String   // counter, gauge, histogram
+  metric_type String // counter, gauge, histogram
   value       Float
-  labels      Json?    // Key-value pairs for filtering
-  
+  labels      Json? // Key-value pairs for filtering
+
   recorded_at DateTime @default(now())
-  
+
   @@index([metric_name, recorded_at])
   @@map("metrics")
 }
@@ -390,20 +390,20 @@ model Metric {
 // ============================================
 
 model AuditLog {
-  id              String   @id @default(uuid())
-  
-  entity_type     String   // ticket, execution, deployment
-  entity_id       String
-  action          String   // created, updated, status_changed
-  
-  actor_type      String   // user, system
-  actor_id        String?  // user ID if human, null if system
-  
-  before_state    Json?
-  after_state     Json?
-  
-  created_at      DateTime @default(now())
-  
+  id String @id @default(uuid())
+
+  entity_type String // ticket, execution, deployment
+  entity_id   String
+  action      String // created, updated, status_changed
+
+  actor_type String // user, system
+  actor_id   String? // user ID if human, null if system
+
+  before_state Json?
+  after_state  Json?
+
+  created_at DateTime @default(now())
+
   @@index([entity_type, entity_id])
   @@index([created_at])
   @@map("audit_logs")
@@ -416,35 +416,35 @@ model AuditLog {
 // ============================================
 
 model ContextDocument {
-  id                String              @id @default(uuid())
-  ticket_id         String
-  ticket            Ticket              @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
-  
+  id        String @id @default(uuid())
+  ticket_id String
+  ticket    Ticket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+
   // Original file metadata
   original_filename String
   file_format       ContextFileFormat
   file_size_bytes   Int
-  file_hash         String              @unique  // SHA-256 for deduplication
-  storage_path      String              // Path to stored file
-  
+  file_hash         String            @unique // SHA-256 for deduplication
+  storage_path      String // Path to stored file
+
   // Extracted content
-  extracted_text    String              @db.Text
-  extraction_status ExtractionStatus    @default(PENDING)
+  extracted_text    String           @db.Text
+  extraction_status ExtractionStatus @default(PENDING)
   extraction_error  String?
-  
+
   // Metadata for AI context
-  document_title    String?             // Extracted or provided title
-  document_type     String?             // e.g., "spec", "requirements", "domain"
-  content_summary   String?             // AI-generated summary (future)
-  
+  document_title  String? // Extracted or provided title
+  document_type   String? // e.g., "spec", "requirements", "domain"
+  content_summary String? // AI-generated summary (future)
+
   // Cache control
-  content_hash      String?             // Hash of extracted content
-  cached_at         DateTime?
-  cache_expires_at  DateTime?
-  
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @updatedAt
-  
+  content_hash     String? // Hash of extracted content
+  cached_at        DateTime?
+  cache_expires_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   @@index([ticket_id])
   @@index([file_hash])
   @@index([extraction_status])
@@ -470,18 +470,18 @@ enum ExtractionStatus {
 // ============================================
 
 model CoverageBaseline {
-  id            String   @id @default(uuid())
-  project_id    String   @unique
-  project       Project  @relation(fields: [project_id], references: [id])
-  branch        String   @default("main")
-  
-  lines         Float    // Line coverage %
-  branches      Float    // Branch coverage %
-  functions     Float    // Function coverage %
-  statements    Float    // Statement coverage %
-  
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  id         String  @id @default(uuid())
+  project_id String  @unique
+  project    Project @relation(fields: [project_id], references: [id])
+  branch     String  @default("main")
+
+  lines      Float // Line coverage %
+  branches   Float // Branch coverage %
+  functions  Float // Function coverage %
+  statements Float // Statement coverage %
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@unique([project_id, branch])
   @@index([project_id])
@@ -494,15 +494,15 @@ model CoverageBaseline {
 // ============================================
 
 model ProjectCoverageConfig {
-  id              String   @id @default(uuid())
-  project_id      String   @unique
-  project         Project  @relation(fields: [project_id], references: [id])
-  threshold       Float    @default(80)  // Override global threshold
-  enforcement     Boolean  @default(true)
-  
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-  
+  id          String  @id @default(uuid())
+  project_id  String  @unique
+  project     Project @relation(fields: [project_id], references: [id])
+  threshold   Float   @default(80) // Override global threshold
+  enforcement Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   @@map("project_coverage_configs")
 }
 
@@ -512,12 +512,12 @@ model ProjectCoverageConfig {
 // ============================================
 
 model WebhookEvent {
-  id            String   @id // webhook_id from ClickUp/GitHub
-  source        String   // "clickup", "github"
-  event_type    String   // Event type from provider
-  payload       Json     // Full webhook payload for debugging
-  processed_at  DateTime @default(now())
-  
+  id           String   @id // webhook_id from ClickUp/GitHub
+  source       String // "clickup", "github"
+  event_type   String // Event type from provider
+  payload      Json // Full webhook payload for debugging
+  processed_at DateTime @default(now())
+
   @@index([source, event_type, processed_at])
   @@map("webhook_events")
 }
@@ -528,21 +528,21 @@ model WebhookEvent {
 // ============================================
 
 model Workspace {
-  id              String          @id @default(uuid())
-  workspace_id    String          @unique  // ticket-{ticketId}-{uuid}
-  execution_id    String          @unique
-  ticket_id       String
-  
-  workspace_path  String          // Full path to workspace directory
-  repository_url  String?
-  branch_name     String
-  
-  status          WorkspaceStatus @default(CREATING)
-  
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @updatedAt
-  cleaned_at      DateTime?       // When workspace was cleaned up
-  
+  id           String @id @default(uuid())
+  workspace_id String @unique // ticket-{ticketId}-{uuid}
+  execution_id String @unique
+  ticket_id    String
+
+  workspace_path String // Full path to workspace directory
+  repository_url String?
+  branch_name    String
+
+  status WorkspaceStatus @default(CREATING)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  cleaned_at DateTime? // When workspace was cleaned up
+
   @@index([execution_id])
   @@index([ticket_id])
   @@index([status, created_at])
@@ -566,23 +566,23 @@ enum WorkspaceStatus {
 model AIDecisionLog {
   id           String   @id @default(uuid())
   timestamp    DateTime @default(now())
-  agent_name   String   // AI agent that made the decision
-  action       String   // Action taken (e.g., "branch_selection", "file_lock_request")
-  reasoning    String   @db.Text  // AI's reasoning for the decision
+  agent_name   String // AI agent that made the decision
+  action       String // Action taken (e.g., "branch_selection", "file_lock_request")
+  reasoning    String   @db.Text // AI's reasoning for the decision
   ticket_id    String
   execution_id String?
-  input_data   Json     // Input context for decision
-  output_data  Json     // Decision output/result
-  confidence   Float    // Confidence score 0-1 (for low-confidence alerts)
+  input_data   Json // Input context for decision
+  output_data  Json // Decision output/result
+  confidence   Float // Confidence score 0-1 (for low-confidence alerts)
 
   // Relation to Execution (optional - intake decisions have no execution)
-  execution    Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+  execution Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
 
-  @@index([ticket_id, timestamp])  // Timeline queries by ticket
+  @@index([ticket_id, timestamp]) // Timeline queries by ticket
   @@index([execution_id])
   @@index([agent_name])
   @@index([timestamp])
-  @@index([confidence, timestamp])  // Low-confidence query optimization
+  @@index([confidence, timestamp]) // Low-confidence query optimization
   @@map("ai_decision_logs")
 }
 
@@ -591,15 +591,15 @@ model FileLock {
   id           String         @id @default(uuid())
   ticket_id    String
   execution_id String
-  file_path    String         // Relative path within repo
+  file_path    String // Relative path within repo
   locked_at    DateTime       @default(now())
   released_at  DateTime?
   status       FileLockStatus @default(LOCKED)
 
   // Relation to Execution
-  execution    Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
 
-  @@unique([ticket_id, file_path])  // One lock per file per ticket
+  @@unique([ticket_id, file_path]) // One lock per file per ticket
   @@index([execution_id])
   @@index([status])
   @@index([ticket_id])
@@ -608,16 +608,16 @@ model FileLock {
 
 // FILE LOCK QUEUE - FIFO ordering per file for lock acquisition fairness (Story 12.3)
 model FileLockQueue {
-  id           String             @id @default(uuid())
+  id           String              @id @default(uuid())
   ticket_id    String
   execution_id String
-  file_path    String             // Relative path within repo
-  requested_at DateTime           @default(now())
+  file_path    String // Relative path within repo
+  requested_at DateTime            @default(now())
   acquired_at  DateTime?
   status       FileLockQueueStatus @default(WAITING)
 
   // Relation to Execution
-  execution    Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
 
   @@unique([ticket_id, execution_id, file_path])
   @@index([file_path, status, requested_at])
@@ -628,22 +628,23 @@ model FileLockQueue {
 
 // AI COST LOG - Track AI invocation costs
 model AICostLog {
-  id              String     @id @default(uuid())
-  execution_id    String?
-  ticket_id       String?
-  timestamp       DateTime   @default(now())
-  
-  ai_provider     AIProvider
-  model_name      String     // e.g., "claude-3-5-sonnet", "gpt-4"
-  operation_type  String     // e.g., "code_generation", "review"
-  
-  tokens_input    Int?
-  tokens_output   Int?
-  tokens_total    Int?
-  cost_usd        Decimal    @db.Decimal(10, 6)  // Precise cost tracking
-  
+  id           String   @id @default(uuid())
+  execution_id String?
+  ticket_id    String?
+  timestamp    DateTime @default(now())
+
+  ai_provider    AIProvider
+  model_name     String // e.g., "claude-3-5-sonnet", "gpt-4"
+  operation_type String // e.g., "code_generation", "review"
+
+  tokens_input  Int?
+  tokens_output Int?
+  tokens_total  Int?
+  cost_usd      Decimal @db.Decimal(10, 6) // Precise cost tracking
+
   // Relation to Execution (optional - some costs may be pre-execution)
-  execution       Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+  execution Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+  ticket    Ticket?    @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
 
   @@index([execution_id])
   @@index([ticket_id, timestamp])
@@ -654,18 +655,18 @@ model AICostLog {
 // TICKET DEPENDENCY - Manage ticket dependencies with circular detection
 model TicketDependency {
   id                String           @id @default(uuid())
-  ticket_id         String           // Dependent ticket
-  depends_on        String           // Blocking ticket ID
+  ticket_id         String // Dependent ticket
+  depends_on        String // Blocking ticket ID
   status            DependencyStatus @default(WAITING)
   circular_detected Boolean          @default(false)
   created_at        DateTime         @default(now())
   resolved_at       DateTime?
-  
-  // Story 12.2: ETA calculation fields
-  estimated_eta      DateTime?       // Calculated ETA for resolution
-  eta_calculated_at  DateTime?       // Timestamp of last ETA calculation
 
-  @@unique([ticket_id, depends_on])  // Prevent duplicate dependency links
+  // Story 12.2: ETA calculation fields
+  estimated_eta     DateTime? // Calculated ETA for resolution
+  eta_calculated_at DateTime? // Timestamp of last ETA calculation
+
+  @@unique([ticket_id, depends_on]) // Prevent duplicate dependency links
   @@index([ticket_id])
   @@index([depends_on])
   @@index([status])
@@ -674,21 +675,20 @@ model TicketDependency {
 
 // WORKSPACE ARCHIVE - Storage management with compression tracking
 model WorkspaceArchive {
-  id                  String        @id @default(uuid())
-  execution_id        String        @unique
-  workspace_path      String
-  archive_path        String?       // S3/local path to archived workspace
-  size_bytes          BigInt
-  compressed_size     BigInt?
-  status              ArchiveStatus @default(PENDING)
-  archived_at         DateTime?
-  error_message       String?       @db.Text
-  
+  id              String        @id @default(uuid())
+  execution_id    String        @unique
+  workspace_path  String
+  archive_path    String? // S3/local path to archived workspace
+  size_bytes      BigInt
+  compressed_size BigInt?
+  status          ArchiveStatus @default(PENDING)
+  archived_at     DateTime?
+  error_message   String?       @db.Text
+
   // Relation to Execution (one-to-one)
-  execution           Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([archived_at])
   @@map("workspace_archives")
 }
-

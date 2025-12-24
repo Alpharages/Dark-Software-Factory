@@ -56,6 +56,15 @@ export interface IAIExecutionResult {
   /** Execution duration in milliseconds */
   durationMs: number;
 
+  /** Tokens used in input */
+  tokensInput?: number;
+
+  /** Model used for generation */
+  model?: string;
+
+  /** Tokens used in output */
+  tokensOutput?: number;
+
   /** Workspace path (for debugging) */
   workspacePath: string;
 

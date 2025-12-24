@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectService } from './project.service';
 import { ProjectRepository } from './project.repository';
 import { NotFoundException } from '@nestjs/common';
+import { Prisma } from '@/prisma/client';
 
 describe('ProjectService', () => {
   let service: ProjectService;
@@ -13,6 +14,7 @@ describe('ProjectService', () => {
     clickup_list_id: 'list-123',
     github_repository_url: 'https://github.com/test/repo',
     default_branch: 'main',
+    budget_usd: new Prisma.Decimal(100.0),
     created_at: new Date(),
     updated_at: new Date(),
   };

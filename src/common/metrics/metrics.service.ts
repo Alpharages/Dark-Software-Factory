@@ -92,6 +92,19 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     this.businessCollector.recordCost(data);
   }
 
+  recordAICost(data: {
+    provider: string;
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number;
+    agentName: string;
+    operationType: string;
+    projectId?: string;
+  }): void {
+    this.businessCollector.recordAICost(data);
+  }
+
   setBudgetUtilization(projectId: string, utilizationPercent: number): void {
     this.businessCollector.setBudgetUtilization(projectId, utilizationPercent);
   }

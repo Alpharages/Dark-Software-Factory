@@ -42,8 +42,11 @@ export class BusinessCollector {
     @InjectMetric(AI_METRICS.EXECUTION_DURATION)
     private readonly aiExecutionDuration: Histogram,
 
-    @InjectMetric(AI_METRICS.TOKENS_USED)
-    private readonly aiTokensUsed: Counter,
+    @InjectMetric(AI_METRICS.TOKENS_INPUT_TOTAL)
+    private readonly aiTokensInputTotal: Counter,
+
+    @InjectMetric(AI_METRICS.TOKENS_OUTPUT_TOTAL)
+    private readonly aiTokensOutputTotal: Counter,
 
     @InjectMetric(AI_METRICS.PROVIDER_STATUS)
     private readonly aiProviderStatus: Gauge,
@@ -220,8 +223,33 @@ export class BusinessCollector {
     this.aiExecutionDuration.observe(labels, data.duration);
 
     if (data.tokensUsed) {
-      this.aiTokensUsed.inc({ [LABELS.PROVIDER]: data.provider }, data.tokensUsed);
+      // Legacy support if needed, but we prefer split counters
+      this.aiTokensInputTotal.inc({ [LABELS.PROVIDER]: data.provider }, data.tokensUsed);
     }
+  }
+
+  recordAICost(data: {
+    provider: string;
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number;
+    agentName: string;
+    operationType: string;
+    projectId?: string;
+  }): void {
+    const labels: Record<string, string> = {
+      [LABELS.PROVIDER]: data.provider,
+      ['model']: data.model,
+      ['agent_name']: data.agentName,
+      ['operation_type']: data.operationType,
+    };
+    if (data.projectId) labels[LABELS.PROJECT] = data.projectId;
+
+    this.aiTokensInputTotal.inc(labels, data.inputTokens);
+    this.aiTokensOutputTotal.inc(labels, data.outputTokens);
+    this.costTotal.inc(labels, data.costUsd);
+    this.costPerProject.observe(labels, data.costUsd);
   }
 
   setAIProviderStatus(provider: string, isHealthy: boolean): void {

@@ -204,6 +204,9 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
         filesChanged,
         confidenceScore,
         durationMs,
+        tokensInput: Math.ceil(prompt.length / 4) + 1000, // Conservative estimate for context
+        tokensOutput: Math.ceil(diff.length / 4), // Rough token estimate
+        model: 'gpt-4o', // Default model for Cursor
         workspacePath,
       };
     } catch (error: unknown) {

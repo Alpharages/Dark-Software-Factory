@@ -4,6 +4,7 @@ import { ProjectService } from './project.service';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { Prisma } from '@/prisma/client';
 
 describe('ProjectController', () => {
   let controller: ProjectController;
@@ -15,6 +16,7 @@ describe('ProjectController', () => {
     clickup_list_id: 'list-123',
     github_repository_url: 'https://github.com/test/repo',
     default_branch: 'main',
+    budget_usd: new Prisma.Decimal(100.0),
     created_at: new Date(),
     updated_at: new Date(),
   };

@@ -223,8 +223,7 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
       this.executionsCounter.inc({ status: 'success' });
       this.workspace.updateWorkspaceStatus(executionId, 'COMPLETED');
 
-      // Track costs
-      this.trackCost(result.inputTokens, result.outputTokens);
+      // Track costs is now handled centrally in AIExecutionService
 
       const durationMs = Date.now() - startTime;
       this.durationHistogram.observe({ status: 'success' }, durationMs / 1000);
@@ -240,6 +239,9 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
         filesChanged,
         confidenceScore,
         durationMs,
+        tokensInput: result.inputTokens,
+        tokensOutput: result.outputTokens,
+        model: this.model,
         workspacePath,
       };
     } catch (error: unknown) {

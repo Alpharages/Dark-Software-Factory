@@ -718,7 +718,7 @@ development_status:
     notes: "Integrated circular dependency detection, unresolved blocker handling (with ETA), file lock management (with re-queuing), and intelligent base branch selection. Added Prometheus metrics and verified with E2E tests. Implemented dependent ticket re-triggering logic."
   epic-12-retrospective: done
 
-  epic-13: backlog
+  epic-13: in-progress
   epic-13-name: "v3 AI Enhancements & Cost Tracking"
   epic-13-phase: "Phase 3 (Week 3-5)"
   epic-13-priority: high
@@ -726,10 +726,11 @@ development_status:
   epic-13-estimated_effort: "10 days"
   epic-13-notes: "AI cost tracking, model optimization, self-healing with progress validation. See: _bmad-output/implementation-artifacts/epic-13-14-15-v3-remaining.md"
   13-1-ai-cost-tracking-service:
-    status: backlog
+    status: done
+    developer: "Antigravity"
     effort: "2 days"
     story_points: 5
-    notes: "Track AI costs per invocation. Model-specific pricing. Daily/monthly budgets. Alert on threshold exceeded."
+    notes: "APPROVED & FIXED. Code review found 6 issues including fake budget alerting (CRITICAL) and hardcoded model rates (HIGH). ALL ISSUES FIXED: Added budget_usd to Project model with relations, implemented actual budget lookup, centralized cost logging with dynamic model name, removed redundant Claude code, and standardized imports. Verified with unit tests."
   13-2-cost-optimizer-service:
     status: backlog
     effort: "1 day"
