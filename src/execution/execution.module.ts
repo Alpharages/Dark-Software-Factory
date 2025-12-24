@@ -47,7 +47,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     DatabaseModule,
     RabbitMQModule,
     forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer & AIExecutionConsumer
-    QaAutomationModule, // Story 3.7: For QaCheckPublisher
+    forwardRef(() => QaAutomationModule), // Story 3.7: For QaCheckPublisher
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
   ],

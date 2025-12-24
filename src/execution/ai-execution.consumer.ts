@@ -479,10 +479,17 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
    */
   private async stopConsuming(): Promise<void> {
     if (this.consumerState.consumerTag && this.consumerState.isActive) {
-      const channel = this.rabbitmq.getChannel();
-      await channel.cancel(this.consumerState.consumerTag);
-      this.consumerState.isActive = false;
-      this.logger.log('AI execution consumer stopped');
+      try {
+        const channel = this.rabbitmq.getChannel();
+        await channel.cancel(this.consumerState.consumerTag);
+      } catch (error: unknown) {
+        // Silently ignore if channel is already closed or invalid during shutdown
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.debug(`Could not cancel consumer tag during shutdown: ${errorMessage}`);
+      } finally {
+        this.consumerState.isActive = false;
+        this.logger.log('AI execution consumer stopped');
+      }
     }
   }
 

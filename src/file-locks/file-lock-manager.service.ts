@@ -321,7 +321,6 @@ export class FileLockManagerService {
 
       return result;
     } catch (error) {
-      // Most likely a uniqueness conflict on the partial unique index (another ticket locked one of the files)
       this.logger.warn(`Lock acquisition failed, returning conflict: ${(error as Error).message}`);
 
       const conflicts = await this.checkConflicts({

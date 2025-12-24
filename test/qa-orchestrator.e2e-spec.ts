@@ -1,11 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { ConfigModule } from '@nestjs/config';
-import { QaAutomationModule } from '../src/qa-automation/qa-automation.module';
+import { JwtService } from '@nestjs/jwt';
+import { AppModule } from '../src/app.module';
 import { QaOrchestratorService } from '../src/qa-automation/qa-orchestrator.service';
-import { PrismaService } from '../src/database/prisma.service';
+import { AiQaOrchestrator } from '../src/qa-automation/ai-qa-orchestrator.service';
+import { QualityGatesService } from '../src/qa-automation/quality-gates.service';
+import { QaMetricsService } from '../src/qa-automation/qa-metrics.service';
+import { PrismaService } from '@/database/prisma.service';
 import { TicketStatus } from '@/prisma/client';
+import { Role } from '../src/auth/constants/roles.enum';
 import { RabbitMQPublisherService } from '../src/rabbitmq/rabbitmq-publisher.service';
 import { RabbitMQService } from '../src/rabbitmq/rabbitmq.service';
 
@@ -13,49 +19,107 @@ describe('QaOrchestrator (E2E)', () => {
   let app: INestApplication;
   let orchestratorService: QaOrchestratorService;
   let prisma: PrismaService;
+  let jwtService: JwtService;
 
   const mockRabbitPublisher = {
     publishToExchange: jest.fn().mockResolvedValue(true),
     publishToQueue: jest.fn().mockResolvedValue(true),
   };
 
+  const mockChannel = {
+    assertQueue: jest.fn().mockResolvedValue({}),
+    assertExchange: jest.fn().mockResolvedValue({}),
+    bindQueue: jest.fn().mockResolvedValue({}),
+    consume: jest.fn().mockResolvedValue({ consumerTag: 'test-tag' }),
+    prefetch: jest.fn().mockResolvedValue({}),
+    ack: jest.fn(),
+    nack: jest.fn(),
+    sendToQueue: jest.fn().mockResolvedValue(true),
+    publish: jest.fn().mockResolvedValue(true),
+    cancel: jest.fn().mockResolvedValue({}),
+    close: jest.fn().mockResolvedValue(undefined),
+  };
+
   const mockRabbitMQService = {
     connect: jest.fn().mockResolvedValue(undefined),
     onModuleInit: jest.fn().mockResolvedValue(undefined),
+    getChannel: jest.fn().mockReturnValue(mockChannel),
+    getQueueStats: jest.fn().mockResolvedValue({ messageCount: 0, consumerCount: 0 }),
+    onModuleDestroy: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
   };
 
-  const mockPrismaService = {
-    ticket: {
-      create: jest.fn().mockImplementation((args) =>
-        Promise.resolve({
-          id: 'ticket-e2e-1',
-          ...args.data,
-          updated_at: new Date(),
-          created_at: new Date(),
-        }),
-      ),
-      update: jest.fn().mockResolvedValue({}),
-      findUnique: jest.fn().mockResolvedValue({ status: TicketStatus.GITHUB_PUSH }),
+  const mockAiQaOrchestrator = new Proxy(
+    {},
+    {
+      get: (target, prop) => {
+        if (typeof prop === 'string' && prop.startsWith('execute')) {
+          return jest.fn().mockResolvedValue({
+            status: 'success',
+            score: 100,
+            passed: true,
+            analysis: `Mock ${prop} success`,
+            issues: [],
+          });
+        }
+        return undefined;
+      },
     },
-    qAResult: {
-      create: jest.fn().mockResolvedValue({}),
-      updateMany: jest.fn().mockResolvedValue({}),
-      findFirst: jest.fn().mockResolvedValue({ overall_passed: true }),
-    },
-    auditLog: {
-      create: jest.fn().mockResolvedValue({}),
-      findFirst: jest.fn().mockResolvedValue({ action: 'quality_gate_override' }),
-    },
-    $connect: jest.fn(),
-    $disconnect: jest.fn(),
+  );
+
+  const mockQualityGatesService = {
+    evaluate: jest.fn().mockResolvedValue({ passed: true, results: [] }),
   };
+
+  const mockQaMetrics = {
+    recordGateDecision: jest.fn(),
+    recordCheck: jest.fn(),
+    recordQuery: jest.fn(),
+  };
+
+  // Improved mock Prisma with Proxy to handle all model methods automatically
+  const createMockPrisma = () => {
+    const mockPrisma: any = {
+      $connect: jest.fn().mockResolvedValue(undefined),
+      $disconnect: jest.fn().mockResolvedValue(undefined),
+      $transaction: jest.fn((cb) => cb(mockPrisma)),
+      $on: jest.fn(),
+      $use: jest.fn(),
+    };
+
+    return new Proxy(mockPrisma, {
+      get: (target, prop: string) => {
+        if (prop in target) return target[prop];
+
+        if (
+          typeof prop === 'string' &&
+          prop[0] === prop[0].toLowerCase() &&
+          !prop.startsWith('$')
+        ) {
+          const model: any = {
+            findUnique: jest.fn().mockResolvedValue(null),
+            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]),
+            create: jest.fn().mockResolvedValue({}),
+            update: jest.fn().mockResolvedValue({}),
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+            delete: jest.fn().mockResolvedValue({}),
+            count: jest.fn().mockResolvedValue(0),
+            groupBy: jest.fn().mockResolvedValue([]),
+          };
+          target[prop] = model;
+          return model;
+        }
+        return undefined;
+      },
+    });
+  };
+
+  const mockPrismaService = createMockPrisma();
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({ isGlobal: true }), // Add this to resolve ConfigService for Logger
-        QaAutomationModule,
-      ],
+      imports: [ConfigModule.forRoot({ isGlobal: true }), AppModule],
     })
       .overrideProvider(RabbitMQPublisherService)
       .useValue(mockRabbitPublisher)
@@ -63,6 +127,12 @@ describe('QaOrchestrator (E2E)', () => {
       .useValue(mockRabbitMQService)
       .overrideProvider(PrismaService)
       .useValue(mockPrismaService)
+      .overrideProvider(AiQaOrchestrator)
+      .useValue(mockAiQaOrchestrator)
+      .overrideProvider(QualityGatesService)
+      .useValue(mockQualityGatesService)
+      .overrideProvider(QaMetricsService)
+      .useValue(mockQaMetrics)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -70,32 +140,40 @@ describe('QaOrchestrator (E2E)', () => {
 
     orchestratorService = moduleFixture.get<QaOrchestratorService>(QaOrchestratorService);
     prisma = moduleFixture.get<PrismaService>(PrismaService);
+    jwtService = moduleFixture.get<JwtService>(JwtService);
   });
 
   afterAll(async () => {
-    // await prisma.$disconnect(); // Mocked
     await app.close();
   });
 
+  const createToken = (role: Role): string => {
+    return jwtService.sign({
+      sub: 'user-123',
+      email: 'test@test.com',
+      role,
+    });
+  };
+
   it('should process a full QA check via orchestrator', async () => {
-    // 1. Create a test ticket
-    const ticketData = {
+    // 1. Configure mock expectations
+    (mockPrismaService.ticket.create as jest.Mock).mockResolvedValue({
+      id: 'ticket-e2e-1',
       title: 'E2E Test Ticket',
-      description: 'Testing QA Orchestration',
-      status: TicketStatus.AI_PROCESSING,
-      clickup_task_id: `task-${Date.now()}`,
-      ticket_quality_score: 100,
-      acceptance_criteria: 'Given X when Y then Z',
       project_id: 'proj-e2e-1',
-    };
-    const ticket = await prisma.ticket.create({ data: ticketData });
+    });
+    (mockPrismaService.ticket.findUnique as jest.Mock).mockResolvedValue({
+      id: 'ticket-e2e-1',
+      status: TicketStatus.GITHUB_PUSH,
+    });
+    (mockPrismaService.qAResult.create as jest.Mock).mockResolvedValue({ id: 'qa-1' });
 
     // 2. Define message
     const message = {
-      executionId: `exec-${Date.now()}`,
-      ticketId: ticket.id,
-      projectId: ticket.project_id,
-      correlationId: `corr-${Date.now()}`,
+      executionId: 'exec-1',
+      ticketId: 'ticket-e2e-1',
+      projectId: 'proj-e2e-1',
+      correlationId: 'corr-1',
       workspacePath: '/tmp/test-workspace',
     };
 
@@ -114,33 +192,28 @@ describe('QaOrchestrator (E2E)', () => {
     expect(mockRabbitPublisher.publishToExchange).toHaveBeenCalled();
 
     // 7. Verify Access via API
-    // For this to work with MOCK Prisma, the controller must use the SAME mock prisma instance.
-    // Since we overrode it in the module, it should be the same singleton.
-    // However, QaResultsController uses QaResultsService which uses PrismaService.
-    // We need to ensure mockPrisma returns what QaResultsController expects.
-
-    // Mock findFirst mapping: expects snake_case from DB
+    const token = createToken(Role.QA);
     (mockPrismaService.qAResult.findFirst as jest.Mock).mockResolvedValueOnce({
       execution_id: message.executionId,
       overall_passed: true,
-      // status field does not exist in Prisma model
     });
 
     const response = await request(app.getHttpServer())
       .get(`/api/v1/qa-results/${message.executionId}`)
+      .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    // Expect snake_case as returned by default serializer from Prisma object
     expect(response.body.execution_id).toBe(message.executionId);
-    // Expect boolean for overall_passed
     expect(response.body.overall_passed).toBe(true);
   });
 
   it('should allow manual override of failed gate', async () => {
     const executionId = 'exec-fail-1';
+    const token = createToken(Role.QA);
 
     const response = await request(app.getHttpServer())
       .post(`/api/v1/quality-gate/${executionId}/override`)
+      .set('Authorization', `Bearer ${token}`)
       .send({ reason: 'Emergency fix', approvedBy: 'User1' })
       .expect(201);
 
@@ -148,7 +221,6 @@ describe('QaOrchestrator (E2E)', () => {
     expect(response.body.message).toBe('Quality gate overridden');
 
     // 3. Verify DB update
-    // With mocks, we check calls
     expect(prisma.qAResult.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { execution_id: executionId },

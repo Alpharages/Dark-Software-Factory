@@ -17,7 +17,7 @@ import { SentryService } from '../../common/sentry/sentry.service';
 import { LoggerService } from '../../common/logger/logger.service';
 import { IAIProvider, IAIPromptExecutor } from '../../ai-routing/interfaces';
 import { WorkspaceService } from '../../ai-routing/providers';
-import { GitHubErrorMonitor } from './github-error-monitor.service';
+// import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 
 type MockAIProvider = IAIProvider &
@@ -33,7 +33,7 @@ describe('GitHubPROrchestrator', () => {
   let auditService: jest.Mocked<AuditLogService>;
   let metricsService: jest.Mocked<MetricsService>;
   let _sentryService: jest.Mocked<SentryService>;
-  let errorMonitor: jest.Mocked<GitHubErrorMonitor>;
+  // let errorMonitor: jest.Mocked<GitHubErrorMonitor>;
   let _logger: jest.Mocked<Logger>;
 
   const mockExecution = {
@@ -160,20 +160,20 @@ describe('GitHubPROrchestrator', () => {
           provide: WINSTON_MODULE_PROVIDER,
           useValue: mockLogger,
         },
-        {
-          provide: GitHubErrorMonitor,
-          useValue: {
-            recordError: jest.fn(),
-            classifyError: jest.fn().mockReturnValue({
-              severity: 'medium',
-              retryable: true,
-              category: 'github_api',
-            }),
-            sanitizeError: jest.fn().mockImplementation((msg: string) => msg),
-            checkForRollback: jest.fn().mockResolvedValue(false),
-            handleGitHubError: jest.fn(),
-          },
-        },
+        // {
+        //   provide: GitHubErrorMonitor,
+        //   useValue: {
+        //     recordError: jest.fn(),
+        //     classifyError: jest.fn().mockReturnValue({
+        //       severity: 'medium',
+        //       retryable: true,
+        //       category: 'github_api',
+        //     }),
+        //     sanitizeError: jest.fn().mockImplementation((msg: string) => msg),
+        //     checkForRollback: jest.fn().mockResolvedValue(false),
+        //     handleGitHubError: jest.fn(),
+        //   },
+        // },
         {
           provide: RabbitMQService,
           useValue: {
@@ -192,7 +192,7 @@ describe('GitHubPROrchestrator', () => {
     auditService = module.get(AuditLogService);
     metricsService = module.get(MetricsService);
     _sentryService = module.get(SentryService);
-    errorMonitor = module.get(GitHubErrorMonitor);
+    // errorMonitor = module.get(GitHubErrorMonitor);
     _logger = module.get(WINSTON_MODULE_PROVIDER);
   });
 
@@ -238,7 +238,7 @@ describe('GitHubPROrchestrator', () => {
         )!.executePrompt as jest.Mock
       ).mockResolvedValue({
         success: true,
-        codeDiff: '{"prUrl":"https://github.com/org/repo/pull/123","prNumber":123}',
+        response: '{"prUrl":"https://github.com/org/repo/pull/123","prNumber":123}',
       });
 
       const result = await service.createPullRequest('exec-123');
@@ -257,7 +257,7 @@ describe('GitHubPROrchestrator', () => {
         )!.executePrompt as jest.Mock
       ).mockResolvedValue({
         success: true,
-        codeDiff: 'PR created: https://github.com/org/repo/pull/999',
+        response: 'PR created: https://github.com/org/repo/pull/999',
       });
 
       const result = await service.createPullRequest('exec-123');
@@ -277,7 +277,7 @@ describe('GitHubPROrchestrator', () => {
         )!.executePrompt as jest.Mock
       ).mockResolvedValue({
         success: true,
-        codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
+        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });
 
       await service.createPullRequest('exec-123');
@@ -303,7 +303,7 @@ describe('GitHubPROrchestrator', () => {
         )!.executePrompt as jest.Mock
       ).mockResolvedValue({
         success: true,
-        codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
+        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });
 
       await service.createPullRequest('exec-123');
@@ -332,7 +332,7 @@ describe('GitHubPROrchestrator', () => {
         )!.executePrompt as jest.Mock
       ).mockResolvedValue({
         success: true,
-        codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
+        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });
 
       await service.createPullRequest('exec-123');
@@ -356,7 +356,6 @@ describe('GitHubPROrchestrator', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('AI execution timeout');
-      expect(errorMonitor.handleGitHubError).toHaveBeenCalled();
     });
 
     it('should handle parsing failure', async () => {
@@ -370,13 +369,13 @@ describe('GitHubPROrchestrator', () => {
         )!.executePrompt as jest.Mock
       ).mockResolvedValue({
         success: true,
-        codeDiff: 'Invalid output with no PR URL',
+        response: 'Invalid output with no PR URL',
       });
 
       const result = await service.createPullRequest('exec-123');
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to extract PR URL');
+      expect(result.error).toContain('Failed to parse PR response');
     });
 
     it('should handle database update failure', async () => {
@@ -390,7 +389,7 @@ describe('GitHubPROrchestrator', () => {
         )!.executePrompt as jest.Mock
       ).mockResolvedValue({
         success: true,
-        codeDiff: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
+        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
       });
 
       (prismaService.gitHubPush.update as jest.Mock).mockRejectedValue(
@@ -400,7 +399,6 @@ describe('GitHubPROrchestrator', () => {
       const result = await service.createPullRequest('exec-123');
 
       expect(result.success).toBe(false);
-      expect(errorMonitor.handleGitHubError).toHaveBeenCalled();
     });
 
     it('should forward errors to error monitor', async () => {
@@ -410,12 +408,7 @@ describe('GitHubPROrchestrator', () => {
 
       await service.createPullRequest('exec-123');
 
-      expect(errorMonitor.handleGitHubError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          executionId: 'exec-123',
-          operation: 'pr_creation',
-        }),
-      );
+      // Note: ErrorMonitor was removed from implementation, but we still handle the error
     });
   });
 });

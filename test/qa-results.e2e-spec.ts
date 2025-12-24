@@ -10,7 +10,7 @@ import request from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { AppModule } from '../src/app.module';
 import { Role } from '../src/auth/constants/roles.enum';
-import { PrismaService } from '../src/database/prisma.service';
+import { PrismaService } from '@/database/prisma.service';
 
 describe('QA Results API (e2e)', () => {
   let app: INestApplication;
@@ -57,12 +57,19 @@ describe('QA Results API (e2e)', () => {
       }),
       update: jest.fn().mockResolvedValue(mockQaResult),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      groupBy: jest.fn().mockResolvedValue([]),
     },
     execution: {
+      findUnique: jest.fn().mockResolvedValue({ id: 'exec-e2e-1' }),
       findMany: jest.fn().mockResolvedValue([{ id: 'exec-e2e-1' }]),
+      groupBy: jest.fn().mockResolvedValue([]),
     },
     auditLog: {
       create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+    },
+    ticket: {
+      findUnique: jest.fn().mockResolvedValue({ id: 'ticket-e2e-1' }),
+      groupBy: jest.fn().mockResolvedValue([]),
     },
   };
 

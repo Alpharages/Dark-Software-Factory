@@ -151,7 +151,11 @@ export class AIDecisionLoggerService {
    * @returns Paginated low-confidence decisions with metadata
    */
   async getLowConfidenceDecisions(
-    options: { page: number; limit: number; minConfidence: number },
+    options: { page: number; limit: number; minConfidence: number } = {
+      page: 1,
+      limit: 100,
+      minConfidence: 0.5,
+    },
     correlationId?: string,
   ): Promise<{
     data: AIDecisionLog[];

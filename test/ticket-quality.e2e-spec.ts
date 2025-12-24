@@ -4,7 +4,7 @@ import request from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { AppModule } from '../src/app.module';
 import { Role } from '../src/auth/constants/roles.enum';
-import { PrismaService } from '../src/database/prisma.service';
+import { PrismaService } from '@/database/prisma.service';
 
 /**
  * Story 2.11: Ticket Quality Scoring API E2E Tests
@@ -51,6 +51,12 @@ describe('Ticket Quality API (e2e)', () => {
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }]),
+        execution: {
+          groupBy: jest.fn().mockResolvedValue([]),
+        },
+        ticket: {
+          groupBy: jest.fn().mockResolvedValue([]),
+        },
       })
       .compile();
 

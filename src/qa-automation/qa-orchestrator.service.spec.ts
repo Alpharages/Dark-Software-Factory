@@ -245,7 +245,9 @@ describe('QaOrchestratorService', () => {
       mockPrismaService.ticket.update.mockRejectedValueOnce(error);
 
       // Execute & Verify rejection
-      await expect(service.processQaCheck(mockMessage)).rejects.toThrow(error);
+      await expect(service.processQaCheck(mockMessage)).rejects.toThrow(
+        'Database connection failed while starting QA',
+      );
 
       // Verify Sentry reporting
       expect(mockSentryService.captureException).toHaveBeenCalled();

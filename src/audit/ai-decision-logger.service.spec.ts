@@ -38,7 +38,8 @@ describe('AIDecisionLoggerService', () => {
           useValue: {
             aIDecisionLog: {
               create: mockCreate,
-              findMany: mockFindMany,
+              findMany: mockFindMany.mockResolvedValue([]),
+              count: jest.fn().mockResolvedValue(0),
             },
           },
         },
@@ -328,20 +329,25 @@ describe('AIDecisionLoggerService', () => {
       ];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       prisma.aIDecisionLog.findMany.mockResolvedValue(mockLowConfidence as any);
-
-      const result = await service.getLowConfidenceDecisions(0.5);
-
-      expect(prisma.aIDecisionLog.findMany).toHaveBeenCalledWith({
-        where: { confidence: { lt: 0.5 } },
-        orderBy: { timestamp: 'desc' },
-        take: 100,
+      prisma.aIDecisionLog.count.mockResolvedValue(2);
+      const result = await service.getLowConfidenceDecisions({
+        page: 1,
+        limit: 100,
+        minConfidence: 0.5,
       });
-      expect(result).toEqual(mockLowConfidence);
+
+      expect(prisma.aIDecisionLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { confidence: { lt: 0.5 } },
+          orderBy: { timestamp: 'desc' },
+          take: 100,
+        }),
+      );
+      expect(result.data).toEqual(mockLowConfidence);
     });
 
     it('should use default threshold of 0.5 when not specified', async () => {
-      prisma.aIDecisionLog.findMany.mockResolvedValue([]);
-
+      prisma.aIDecisionLog.count.mockResolvedValue(0);
       await service.getLowConfidenceDecisions();
 
       expect(prisma.aIDecisionLog.findMany).toHaveBeenCalledWith(
@@ -352,9 +358,8 @@ describe('AIDecisionLoggerService', () => {
     });
 
     it('should limit results to 100 for performance', async () => {
-      prisma.aIDecisionLog.findMany.mockResolvedValue([]);
-
-      await service.getLowConfidenceDecisions(0.6);
+      prisma.aIDecisionLog.count.mockResolvedValue(0);
+      await service.getLowConfidenceDecisions({ page: 1, limit: 100, minConfidence: 0.6 });
 
       expect(prisma.aIDecisionLog.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -364,9 +369,8 @@ describe('AIDecisionLoggerService', () => {
     });
 
     it('should order results by most recent first', async () => {
-      prisma.aIDecisionLog.findMany.mockResolvedValue([]);
-
-      await service.getLowConfidenceDecisions(0.5);
+      prisma.aIDecisionLog.count.mockResolvedValue(0);
+      await service.getLowConfidenceDecisions({ page: 1, limit: 100, minConfidence: 0.5 });
 
       expect(prisma.aIDecisionLog.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -376,9 +380,8 @@ describe('AIDecisionLoggerService', () => {
     });
 
     it('should support custom threshold values', async () => {
-      prisma.aIDecisionLog.findMany.mockResolvedValue([]);
-
-      await service.getLowConfidenceDecisions(0.7);
+      prisma.aIDecisionLog.count.mockResolvedValue(0);
+      await service.getLowConfidenceDecisions({ page: 1, limit: 100, minConfidence: 0.7 });
 
       expect(prisma.aIDecisionLog.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -388,11 +391,14 @@ describe('AIDecisionLoggerService', () => {
     });
 
     it('should return empty array when no low-confidence decisions exist', async () => {
-      prisma.aIDecisionLog.findMany.mockResolvedValue([]);
+      prisma.aIDecisionLog.count.mockResolvedValue(0);
+      const result = await service.getLowConfidenceDecisions({
+        page: 1,
+        limit: 100,
+        minConfidence: 0.5,
+      });
 
-      const result = await service.getLowConfidenceDecisions(0.5);
-
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
     });
   });
 });

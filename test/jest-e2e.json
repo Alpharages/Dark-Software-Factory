@@ -1,16 +1,16 @@
 {
-  "moduleFileExtensions": [
-    "js",
-    "json",
-    "ts"
-  ],
+  "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "setupFilesAfterEnv": [
-    "<rootDir>/jest-setup.ts"
-  ]
+  "setupFilesAfterEnv": ["<rootDir>/jest-setup.ts"],
+  "moduleNameMapper": {
+    "^@octokit/rest$": "<rootDir>/mocks/octokit.mock.ts",
+    ".*prisma\\.service$": "<rootDir>/mocks/prisma.service.mock.ts",
+    "^@/(.*)$": "<rootDir>/../src/$1",
+    "^src/(.*)$": "<rootDir>/../src/$1"
+  }
 }

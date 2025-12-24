@@ -305,10 +305,19 @@ export class QaOrchestratorService {
 
     try {
       // Update ticket status to QA_REVIEW
-      await this.prisma.ticket.update({
-        where: { id: ticketId },
-        data: { status: TicketStatus.QA_REVIEW },
-      });
+      try {
+        await this.prisma.ticket.update({
+          where: { id: ticketId },
+          data: { status: TicketStatus.QA_REVIEW },
+        });
+      } catch (dbError) {
+        this.logger.error(
+          `[${correlationId}] Failed to update ticket status to QA_REVIEW: ${(dbError as Error).message}`,
+        );
+        throw new Error(
+          `Database connection failed while starting QA: ${(dbError as Error).message}`,
+        );
+      }
 
       // Run all QA checks in parallel with per-category timeouts
       const [lintingResult, testResult, coverageResult, securityResult] = await Promise.allSettled([
@@ -528,11 +537,21 @@ export class QaOrchestratorService {
         executionId,
         workspacePath,
       );
-      if (result.status === 'ERROR') {
-        throw new Error(`Lint check failed: ${JSON.stringify(result.data)}`);
+
+      if (!result) {
+        throw new Error('AI-delegated lint check returned no result');
       }
+
+      if (result.status === 'ERROR') {
+        const errorMsg =
+          result.data && (result.data as Record<string, unknown>).error
+            ? (result.data as Record<string, unknown>).error
+            : JSON.stringify(result.data);
+        throw new Error(`Lint check failed: ${errorMsg}`);
+      }
+
       // Convert AiQaOrchestrator result to ILintingResult format
-      const data = result.data as Record<string, unknown>;
+      const data = (result.data as Record<string, unknown>) || {};
       return {
         passed: result.status === 'PASSED',
         errorCount: (data.errorCount as number) || 0,
@@ -541,7 +560,7 @@ export class QaOrchestratorService {
         issues: (data.issues as ILintingIssue[]) || [],
         language: SupportedLanguage.TYPESCRIPT,
         filesLinted: [],
-        durationMs: result.duration,
+        durationMs: result.duration || 0,
       };
     } catch (error) {
       this.logger.error(

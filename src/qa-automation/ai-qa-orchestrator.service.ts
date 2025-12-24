@@ -170,6 +170,18 @@ export class AiQaOrchestrator {
         allowFallback,
       );
 
+      if (!parsedResult) {
+        throw new Error(`AI returned empty result for ${checkType}`);
+      }
+
+      if (parsedResult.status === 'ERROR') {
+        const errorMsg =
+          parsedResult.data && (parsedResult.data as Record<string, unknown>).error
+            ? (parsedResult.data as Record<string, unknown>).error
+            : JSON.stringify(parsedResult.data);
+        throw new Error(`${checkType} check failed: ${errorMsg}`);
+      }
+
       const duration = Date.now() - startTime;
 
       // 3. Save to database with detailed results (H5 fix)
@@ -177,7 +189,8 @@ export class AiQaOrchestrator {
 
       // 4. Record metrics
       // NOT_CONFIGURED is treated as successful (tool not found, but not an error)
-      const isPassed = parsedResult.status === 'PASSED' || parsedResult.status === 'NOT_CONFIGURED';
+      const status = (parsedResult.status as string) || 'UNKNOWN';
+      const isPassed = status === 'PASSED' || status === 'NOT_CONFIGURED';
       this.qaMetrics.recordCheckComplete(checkType, isPassed, duration, {
         projectId: ticketId,
         aiProvider,
@@ -189,20 +202,19 @@ export class AiQaOrchestrator {
       }
 
       // Log NOT_CONFIGURED as info, not a failure
-      if (parsedResult.status === 'NOT_CONFIGURED') {
+      if (status === 'NOT_CONFIGURED') {
         this.logger.log(
           `[${ticketId}] ${checkType} check skipped: tooling not configured. ${parsedResult.summary || ''}`,
         );
       } else {
-        this.logger.log(
-          `[${ticketId}] ${checkType} check complete: ${parsedResult.status} in ${duration}ms`,
-        );
+        this.logger.log(`[${ticketId}] ${checkType} check complete: ${status} in ${duration}ms`);
       }
 
       return {
         executionId,
         checkType,
-        status: parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED',
+        status:
+          (parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED') || 'ERROR',
         data: parsedResult,
         duration,
         aiProvider,
@@ -307,6 +319,7 @@ export class AiQaOrchestrator {
   ): Promise<void> {
     try {
       // Map checkType to appropriate database fields
+      const status = (data.status as string) || 'UNKNOWN';
       const dbData: Partial<{
         execution_id: string;
         overall_passed: boolean;
@@ -319,12 +332,12 @@ export class AiQaOrchestrator {
         test_coverage?: number;
       }> = {
         execution_id: executionId,
-        overall_passed: data.status === 'PASSED',
+        overall_passed: status === 'PASSED',
       };
 
       // Store detailed results per check type (Story 3.6 schema)
       if (checkType === 'linting') {
-        dbData.linting_passed = data.status === 'PASSED';
+        dbData.linting_passed = status === 'PASSED';
         dbData.linting_errors = {
           errorCount: data.errorCount || 0,
           warningCount: data.warningCount || 0,
@@ -333,7 +346,7 @@ export class AiQaOrchestrator {
           toolUsed: data.toolUsed || '',
         };
       } else if (checkType === 'testing') {
-        dbData.tests_passed = data.status === 'PASSED';
+        dbData.tests_passed = status === 'PASSED';
         dbData.test_results = {
           total: data.totalTests || 0,
           passed: data.passedCount || 0,
@@ -343,7 +356,7 @@ export class AiQaOrchestrator {
           coverage: data.coverage || null,
         };
       } else if (checkType === 'security') {
-        dbData.code_review_passed = data.status === 'PASSED';
+        dbData.code_review_passed = status === 'PASSED';
         dbData.code_review_issues = {
           summary: data.summary || { critical: 0, high: 0, medium: 0 },
           vulnerabilities: data.vulnerabilities || [],

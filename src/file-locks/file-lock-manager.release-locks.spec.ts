@@ -12,6 +12,7 @@ describe('FileLockManagerService (releaseLocksForExecution)', () => {
       findMany: jest.Mock;
       updateMany: jest.Mock;
       deleteMany: jest.Mock;
+      count: jest.Mock;
     };
     fileLockQueue: {
       findMany: jest.Mock;
@@ -26,6 +27,7 @@ describe('FileLockManagerService (releaseLocksForExecution)', () => {
         findMany: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        count: jest.fn().mockResolvedValue(0),
       },
       fileLockQueue: {
         findMany: jest.fn(),

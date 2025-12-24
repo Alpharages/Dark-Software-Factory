@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { PrismaService } from '../src/database/prisma.service';
+import { PrismaService } from '@/database/prisma.service';
 
 /**
  * Mock PrismaService for E2E tests to bypass database requirements

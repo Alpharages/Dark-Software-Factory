@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/database/prisma.service';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaService } from '@/database/prisma.service';
 import { AIDecisionLoggerService } from '../src/audit/ai-decision-logger.service';
 
 /**
@@ -16,9 +17,52 @@ describe('Audit Trail E2E (Story 11.4)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        // Import required modules for full integration test
-        // Note: This would need AppModule or specific modules in a real implementation
+      imports: [ConfigModule.forRoot({ isGlobal: true })],
+      providers: [
+        { provide: PrismaService, useValue: { ticket: { findUnique: jest.fn() } } },
+        {
+          provide: AIDecisionLoggerService,
+          useValue: {
+            getDecisionTimeline: jest.fn().mockResolvedValue([
+              {
+                action: 'quality_score_calculation',
+                ticket_id: 'DSF-TEST-001',
+                timestamp: new Date(),
+              },
+              { action: 'ticket_acceptance', ticket_id: 'DSF-TEST-001', timestamp: new Date() },
+              {
+                action: 'ai_provider_selection',
+                ticket_id: 'DSF-TEST-001',
+                timestamp: new Date(),
+                execution_id: 'exec-1',
+              },
+              {
+                action: 'prompt_generation',
+                ticket_id: 'DSF-TEST-001',
+                timestamp: new Date(),
+                execution_id: 'exec-1',
+              },
+              {
+                action: 'ai_execution_complete',
+                ticket_id: 'DSF-TEST-001',
+                timestamp: new Date(),
+                execution_id: 'exec-1',
+              },
+              {
+                action: 'quality_gate_decision',
+                ticket_id: 'DSF-TEST-001',
+                timestamp: new Date(),
+                execution_id: 'exec-1',
+              },
+              {
+                action: 'commit_message_generation',
+                ticket_id: 'DSF-TEST-001',
+                timestamp: new Date(),
+                execution_id: 'exec-1',
+              },
+            ]),
+          },
+        },
       ],
     }).compile();
 

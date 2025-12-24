@@ -39,7 +39,9 @@ describe('Webhooks (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter(), {
+      rawBody: true,
+    });
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 

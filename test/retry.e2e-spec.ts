@@ -7,7 +7,7 @@ import { AppModule } from '../src/app.module';
 import { RetryHandlerService } from '../src/execution/retry-handler.service';
 import { RetryClassifierService } from '../src/execution/retry-classifier.service';
 import { RetrySchedulerService } from '../src/execution/retry-scheduler.service';
-import { PrismaService } from '../src/database/prisma.service';
+import { PrismaService } from '@/database/prisma.service';
 import { ErrorSeverity } from '../src/execution/interfaces';
 
 /**

@@ -13,20 +13,25 @@ describe('FileLockManagerService (acquireLocks)', () => {
     prisma = {
       fileLockQueue: {
         createMany: jest.fn().mockResolvedValue({ count: 0 }),
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
       },
       fileLock: {
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         createMany: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
       },
       $transaction: jest.fn(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
         const tx = {
           fileLockQueue: {
             findMany: jest.fn(),
             updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+            count: jest.fn().mockResolvedValue(0),
           },
           fileLock: {
-            findMany: jest.fn(),
+            findMany: jest.fn().mockResolvedValue([]),
             createMany: jest.fn(),
+            count: jest.fn().mockResolvedValue(0),
           },
         };
         return fn(tx);

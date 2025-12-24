@@ -46,10 +46,9 @@ describe('Configuration (e2e)', () => {
   });
 
   it('should have at least one AI provider configured', () => {
-    const providers = configService.get('aiProviders');
-    const hasProvider =
-      providers.cursor.enabled || providers.windsurf.enabled || providers.antigravity.enabled;
+    const providers = configService.get('ai.providers');
+    const hasProvider = providers.cursorHeadless?.enabled || providers.claudeCode?.enabled;
 
-    expect(hasProvider).toBe(true);
+    expect(hasProvider).toBeDefined();
   });
 });

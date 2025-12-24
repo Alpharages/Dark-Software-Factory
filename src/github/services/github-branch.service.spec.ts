@@ -21,7 +21,6 @@ describe('GitHubBranchService', () => {
   let _sentryService: jest.Mocked<SentryService>;
   let metricsService: jest.Mocked<MetricsService>;
   let _publisherService: jest.Mocked<RabbitMQPublisherService>;
-  let logger: { info: jest.Mock; error: jest.Mock; warn: jest.Mock; debug: jest.Mock };
 
   const mockExecution: {
     id: string;
@@ -131,7 +130,6 @@ describe('GitHubBranchService', () => {
     _publisherService = module.get(
       RabbitMQPublisherService,
     ) as jest.Mocked<RabbitMQPublisherService>;
-    logger = module.get(WINSTON_MODULE_PROVIDER);
   });
 
   afterEach(() => {
@@ -185,7 +183,7 @@ describe('GitHubBranchService', () => {
 
       expect(result).toBeDefined();
       expect(result.branchName).toContain('ai/dsf-123');
-      expect(logger.info).toHaveBeenCalledWith(
+      expect(service['logger'].log).toHaveBeenCalledWith(
         expect.stringContaining('Reusing'),
         expect.any(Object),
       );
@@ -207,7 +205,7 @@ describe('GitHubBranchService', () => {
       expect(result).toBeDefined();
       expect(result.branchName).toContain('-'); // Has hyphens including timestamp
       expect(githubService.createBranch).toHaveBeenCalledTimes(2);
-      expect(logger.info).toHaveBeenCalledWith(
+      expect(service['logger'].log).toHaveBeenCalledWith(
         expect.stringContaining('generating unique name'),
         expect.any(Object),
       );

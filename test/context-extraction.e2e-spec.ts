@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { JwtService } from '@nestjs/jwt';
 import { AppModule } from '../src/app.module';
-import { PrismaService } from '../src/database/prisma.service';
+import { PrismaService } from '@/database/prisma.service';
 
 /**
  * Story 2.12: Context Extraction E2E Tests

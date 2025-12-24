@@ -9,7 +9,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AIProvider } from '@/prisma/client';
+import { AIProvider } from '@/prisma/enums';
+import { PrismaService } from '@/database/prisma.service';
 import {
   makeGaugeProvider,
   makeCounterProvider,
@@ -18,7 +19,7 @@ import {
 import { AIExecutionService } from '../src/ai-routing/ai-execution.service';
 import { WorkspaceService } from '../src/ai-routing/providers/workspace.service';
 import { GitOperationsService } from '../src/ai-routing/providers/git-operations.service';
-import { CursorHeadlessProvider } from '../src/ai-routing/providers/cursor-headless.provider';
+import { CursorHeadlessProvider, ClaudeCodeProvider } from '../src/ai-routing/providers';
 import { ExecutionService } from '../src/execution/execution.service';
 
 describe('AI Execution (e2e)', () => {
@@ -42,6 +43,33 @@ describe('AI Execution (e2e)', () => {
     getChangedFiles: jest.fn().mockResolvedValue([]),
   };
 
+  const mockClaudeProvider = {
+    execute: jest.fn(),
+    checkHealth: jest.fn().mockResolvedValue({ isHealthy: true }),
+    cancel: jest.fn(),
+  };
+
+  const mockPrismaService = {
+    workspace: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({}),
+      update: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    $transaction: jest.fn((cb) =>
+      cb({
+        workspace: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+          count: jest.fn(),
+          findMany: jest.fn(),
+        },
+      }),
+    ),
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -49,6 +77,16 @@ describe('AI Execution (e2e)', () => {
           isGlobal: true,
           load: [
             () => ({
+              ai: {
+                providers: {
+                  cursorHeadless: {
+                    enabled: true,
+                    workspacesRoot: '/tmp/test-cursor-workspaces',
+                    maxConcurrent: 5,
+                    timeout: 300000,
+                  },
+                },
+              },
               cursor: {
                 cliPath: '/bin/echo',
                 headlessTimeoutMs: 30000,
@@ -65,7 +103,9 @@ describe('AI Execution (e2e)', () => {
         AIExecutionService,
         WorkspaceService,
         CursorHeadlessProvider,
+        { provide: ClaudeCodeProvider, useValue: mockClaudeProvider },
         { provide: GitOperationsService, useValue: mockGitService },
+        { provide: PrismaService, useValue: mockPrismaService },
         { provide: ExecutionService, useValue: mockExecutionService },
         // Metrics providers
         makeGaugeProvider({
