@@ -4,6 +4,8 @@ import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
 import { IRawTaskEvent } from './interfaces';
 import { ValidationResultDto } from './dto';
+import { CircularDependencyDetectorService } from '../dependencies/circular-dependency-detector.service';
+import { DependencyManagerService } from '../dependencies/dependency-manager.service';
 
 describe('TicketIntakeService', () => {
   let service: TicketIntakeService;
@@ -19,6 +21,10 @@ describe('TicketIntakeService', () => {
   let mockDurationHistogram: { startTimer: jest.Mock };
   let mockValidationCounter: { inc: jest.Mock };
   let mockQualityHistogram: { observe: jest.Mock };
+  let mockCircularDetector: { detectCircularDependencies: jest.Mock };
+  let mockDependencyManager: { checkDependencies: jest.Mock };
+  let mockWaitingCounter: { inc: jest.Mock };
+  let mockCircularCounter: { inc: jest.Mock };
 
   const mockRawEvent: IRawTaskEvent = {
     correlationId: 'test-corr-123',
@@ -97,6 +103,14 @@ describe('TicketIntakeService', () => {
     mockDurationHistogram = { startTimer: jest.fn().mockReturnValue(jest.fn()) };
     mockValidationCounter = { inc: jest.fn() };
     mockQualityHistogram = { observe: jest.fn() };
+    mockCircularDetector = {
+      detectCircularDependencies: jest.fn().mockResolvedValue({ hasCycle: false }),
+    };
+    mockDependencyManager = {
+      checkDependencies: jest.fn().mockResolvedValue({ canProceed: true }),
+    };
+    mockWaitingCounter = { inc: jest.fn() };
+    mockCircularCounter = { inc: jest.fn() };
 
     // Story 11.4: Mock AIDecisionLoggerService
     const mockAIDecisionLogger = {
@@ -125,6 +139,10 @@ describe('TicketIntakeService', () => {
       mockDurationHistogram as never,
       mockValidationCounter as never,
       mockQualityHistogram as never,
+      mockCircularDetector as unknown as CircularDependencyDetectorService,
+      mockDependencyManager as unknown as DependencyManagerService,
+      mockWaitingCounter as never,
+      mockCircularCounter as never,
     );
   });
 

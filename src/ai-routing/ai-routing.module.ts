@@ -28,6 +28,8 @@ import { FallbackStrategyService } from './fallback-strategy.service';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { ExecutionModule } from '@/execution/execution.module';
+import { FileLocksModule } from '../file-locks/file-locks.module';
+import { GitHubModule } from '../github/github.module';
 
 /**
  * AI Routing Module
@@ -41,7 +43,14 @@ import { ExecutionModule } from '@/execution/execution.module';
  * - AIRoutingConsumer: Process routing queue
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule, RabbitMQModule, forwardRef(() => ExecutionModule)],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    RabbitMQModule,
+    forwardRef(() => ExecutionModule),
+    FileLocksModule,
+    GitHubModule,
+  ],
   providers: [
     // Story 2.3: Routing services
     AIRoutingService,
@@ -75,6 +84,10 @@ import { ExecutionModule } from '@/execution/execution.module';
       name: 'ai_routing_total',
       help: 'Total AI routing decisions',
       labelNames: ['provider', 'reason', 'fallback'],
+    }),
+    makeCounterProvider({
+      name: 'dsf_ticket_waiting_locks_total',
+      help: 'Total tickets waiting for file locks',
     }),
     makeHistogramProvider({
       name: 'ai_routing_duration_seconds',

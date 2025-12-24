@@ -65,7 +65,8 @@ describe('BranchStrategistService', () => {
     it('should select main branch when there are no dependencies (AC#1)', async () => {
       const result = await service.selectBaseBranch(ticketId, []);
 
-      expect(result).toBe('main');
+      expect(result.selectedBranch).toBe('main');
+      expect(result.strategy).toBe(BranchSelectionStrategy.MAIN);
       expect(mockMetrics.incrementCounter).toHaveBeenCalledWith('branch_selection_total', {
         strategy: 'main',
       });
@@ -87,7 +88,8 @@ describe('BranchStrategistService', () => {
 
       const result = await service.selectBaseBranch(ticketId, [depId]);
 
-      expect(result).toBe(branchName);
+      expect(result.selectedBranch).toBe(branchName);
+      expect(result.strategy).toBe(BranchSelectionStrategy.FOLLOW);
       expect(mockPrisma.execution.findMany).toHaveBeenCalledWith({
         where: { ticket_id: depId },
         select: { id: true },
@@ -118,7 +120,8 @@ describe('BranchStrategistService', () => {
 
       const result = await service.selectBaseBranch(ticketId, [depId]);
 
-      expect(result).toBe(defaultBranch);
+      expect(result.selectedBranch).toBe(defaultBranch);
+      expect(result.strategy).toBe(BranchSelectionStrategy.MAIN);
       expect(mockMetrics.incrementCounter).toHaveBeenCalledWith('branch_selection_total', {
         strategy: BranchSelectionStrategy.MAIN,
       });
@@ -133,7 +136,7 @@ describe('BranchStrategistService', () => {
 
       const result = await service.selectBaseBranch(ticketId, []);
 
-      expect(result).toBe(customBranch);
+      expect(result.selectedBranch).toBe(customBranch);
       expect(mockLogger.logDecision).toHaveBeenCalledWith(
         expect.objectContaining({
           reasoning: expect.stringContaining(customBranch),
@@ -146,7 +149,8 @@ describe('BranchStrategistService', () => {
 
       const result = await service.selectBaseBranch(ticketId, depIds);
 
-      expect(result).toBe('main');
+      expect(result.selectedBranch).toBe('main');
+      expect(result.strategy).toBe(BranchSelectionStrategy.MERGE_MAIN);
       expect(mockMetrics.incrementCounter).toHaveBeenCalledWith('branch_selection_total', {
         strategy: 'merge-main',
       });
@@ -159,18 +163,13 @@ describe('BranchStrategistService', () => {
       );
     });
 
-    it('should update execution record if found', async () => {
+    it('should NOT update execution record directly (prevents race condition)', async () => {
       const execId = 'exec-123';
       mockPrisma.execution.findFirst.mockResolvedValue({ id: execId });
 
       await service.selectBaseBranch(ticketId, []);
 
-      expect(mockPrisma.execution.update).toHaveBeenCalledWith({
-        where: { id: execId },
-        data: expect.objectContaining({
-          base_branch: 'main',
-        }),
-      });
+      expect(mockPrisma.execution.update).not.toHaveBeenCalled();
     });
   });
 });

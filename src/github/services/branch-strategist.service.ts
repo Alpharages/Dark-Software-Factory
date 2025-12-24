@@ -34,9 +34,16 @@ export class BranchStrategistService {
    *
    * @param ticketId - The database UUID of the ticket
    * @param dependencyIds - Array of ticket IDs this ticket depends on
-   * @returns The selected base branch name
+   * @returns The selected base branch name and metadata
    */
-  async selectBaseBranch(ticketId: string, dependencyIds: string[]): Promise<string> {
+  async selectBaseBranch(
+    ticketId: string,
+    dependencyIds: string[],
+  ): Promise<{
+    selectedBranch: string;
+    strategy: BranchSelectionStrategy;
+    reasoning: string;
+  }> {
     const startTime = Date.now();
     let selectedBranch = 'main';
     let strategy: BranchSelectionStrategy = BranchSelectionStrategy.MAIN;
@@ -93,9 +100,9 @@ export class BranchStrategistService {
         confidence: 1.0,
       });
 
-      // Update the execution record if it exists for this ticket
-      // Note: In Story 12.5, we will ensure an execution exists before calling this
-      await this.updateExecutionBranchLog(ticketId, selectedBranch, reasoning);
+      // REMOVED: updateExecutionBranchLog(ticketId, selectedBranch, reasoning);
+      // This caused a race condition as the execution record might not exist yet.
+      // Story 12.5 handles this by passing these values into the execution creation.
 
       // AC#5: Track selection types via metrics
       this.metrics.incrementCounter('branch_selection_total', { strategy });
@@ -105,7 +112,7 @@ export class BranchStrategistService {
         `Branch selected for ticket ${ticketId}: ${selectedBranch} (Strategy: ${strategy}, ${duration}ms)`,
       );
 
-      return selectedBranch;
+      return { selectedBranch, strategy, reasoning };
     } catch (error) {
       this.logger.error(
         `Error selecting base branch for ticket ${ticketId}: ${(error as Error).message}`,

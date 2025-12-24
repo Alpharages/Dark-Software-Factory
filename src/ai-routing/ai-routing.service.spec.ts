@@ -9,6 +9,8 @@ import { PromptGeneratorService } from './prompt-generator.service';
 import { AIProvider } from '@/prisma/client';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { IRoutingRequest, RoutingReason } from './interfaces';
+import { FileLockManagerService } from '../file-locks/file-lock-manager.service';
+import { BranchStrategistService } from '../github/services/branch-strategist.service';
 
 describe('AIRoutingService', () => {
   let service: AIRoutingService;
@@ -85,6 +87,24 @@ describe('AIRoutingService', () => {
         { provide: 'PROM_METRIC_AI_ROUTING_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_AI_ROUTING_DURATION_SECONDS', useValue: mockHistogram },
         { provide: 'PROM_METRIC_AI_COMPLEXITY_SCORE', useValue: mockHistogram },
+        {
+          provide: FileLockManagerService,
+          useValue: {
+            predictFileModifications: jest.fn().mockResolvedValue({ filePaths: [] }),
+            acquireLocks: jest.fn().mockResolvedValue({ acquired: true }),
+          },
+        },
+        {
+          provide: BranchStrategistService,
+          useValue: {
+            selectBaseBranch: jest.fn().mockResolvedValue({
+              selectedBranch: 'main',
+              strategy: 'main',
+              reasoning: 'default',
+            }),
+          },
+        },
+        { provide: 'PROM_METRIC_DSF_TICKET_WAITING_LOCKS_TOTAL', useValue: mockCounter },
       ],
     }).compile();
 

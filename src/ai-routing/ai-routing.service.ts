@@ -1,13 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AIProvider, TicketStatus, ExecutionStatus } from '@/prisma/client';
-import { PrismaService } from '../database/prisma.service';
-import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
-import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '../rabbitmq/rabbitmq.config';
+import { PrismaService } from '@/database/prisma.service';
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
+import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '@/rabbitmq/rabbitmq.config';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
 import { PromptGeneratorService } from './prompt-generator.service';
 import { IRoutingRequest, IRoutingDecision, IRoutingResult, RoutingReason } from './interfaces';
+// Story 12.5: V3 Services
+import { FileLockManagerService } from '@/file-locks/file-lock-manager.service';
+import { BranchStrategistService } from '@/github/services/branch-strategist.service';
 import { Counter, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 
@@ -34,6 +37,11 @@ export class AIRoutingService {
     private readonly routingDuration: Histogram<string>,
     @InjectMetric('ai_complexity_score')
     private readonly complexityHisto: Histogram<string>,
+    // Story 12.5: V3 Services
+    private readonly fileLockManager: FileLockManagerService,
+    private readonly branchStrategist: BranchStrategistService,
+    @InjectMetric('dsf_ticket_waiting_locks_total')
+    private readonly waitingLocksCounter: Counter<string>,
   ) {}
 
   /**
@@ -66,6 +74,50 @@ export class AIRoutingService {
           ? AIProvider.CURSOR_HEADLESS
           : AIProvider.CLAUDE_CODE;
 
+      // RECORD PROJECT FOR USE IN PREDICTION
+      const project = await this.prisma.project.findUnique({
+        where: { id: request.projectId },
+      });
+
+      if (!project) {
+        this.logger.error(
+          `[${correlationId}] CRITICAL: Project not found for ID ${request.projectId}. Ticket ${ticketId} cannot be routed.`,
+        );
+        throw new Error(
+          `Project not found: ${request.projectId}. Cannot route ticket without valid project.`,
+        );
+      }
+
+      // AC#6: File Lock Prediction & Acquisition
+      const predictionResult = await this.fileLockManager.predictFileModifications({
+        ticketId,
+        executionId: 'TEMP_EXECUTION_ID',
+        repoFullName: project.github_repository_url.replace(/^.*github\.com\//, ''), // Extract org/repo
+        ticketTitle: request.title,
+        ticketDescription: request.description,
+      });
+      const filePathsToLock = predictionResult.filePaths;
+      const locksResult = await this.fileLockManager.acquireLocks({
+        ticketId,
+        executionId: 'TEMP_EXECUTION_ID',
+        filePaths: filePathsToLock,
+      });
+
+      if (!locksResult.acquired) {
+        await this.handleLockConflict(request, complexityScore, filePathsToLock);
+        return {
+          correlationId,
+          ticketId,
+          selectedProvider: preferredProvider,
+          status: 'WAITING_FOR_LOCKS',
+          complexityScore,
+          complexityBreakdown,
+          routingReason: RoutingReason.PRIMARY_UNAVAILABLE, // Re-using as placeholder
+          fallbackUsed: false,
+          decisionTimestamp: new Date(),
+        };
+      }
+
       // 3. Check provider availability
       const availableProvider = await this.providerHealth.getAvailableProvider(preferredProvider);
 
@@ -84,6 +136,14 @@ export class AIRoutingService {
         fallbackUsed,
       );
 
+      // AC#8: Intelligent Branch Selection
+      const dependencies = await this.prisma.ticketDependency.findMany({
+        where: { ticket_id: ticketId },
+        select: { depends_on: true },
+      });
+      const dependencyIds = dependencies.map((d) => d.depends_on);
+      const branchDecision = await this.branchStrategist.selectBaseBranch(ticketId, dependencyIds);
+
       // 5. Create execution record
       const execution = await this.prisma.execution.create({
         data: {
@@ -97,7 +157,18 @@ export class AIRoutingService {
           routing_reason: routingReason,
           fallback_used: fallbackUsed,
           original_provider: fallbackUsed ? preferredProvider : null,
+          // Story 12.5: Execution context
+          base_branch: branchDecision.selectedBranch,
+          branch_selection_log: branchDecision.reasoning,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          file_modifications: filePathsToLock as any,
         },
+      });
+
+      // Update lock with real execution ID
+      await this.prisma.fileLock.updateMany({
+        where: { ticket_id: ticketId, execution_id: 'TEMP_EXECUTION_ID' },
+        data: { execution_id: execution.id },
       });
 
       // 6. Update ticket status
@@ -123,20 +194,7 @@ export class AIRoutingService {
       });
 
       // 8. Publish routing result to execution queue
-      // Story 4.9: Resolve repository URL from Project
-      const project = await this.prisma.project.findUnique({
-        where: { id: request.projectId },
-      });
-
-      if (!project) {
-        this.logger.error(
-          `[${correlationId}] CRITICAL: Project not found for ID ${request.projectId}. Ticket ${ticketId} cannot be routed.`,
-        );
-        throw new Error(
-          `Project not found: ${request.projectId}. Cannot route ticket without valid project.`,
-        );
-      }
-
+      // Story 4.9: Project already fetched above
       const routingResult: IRoutingResult = {
         correlationId,
         ticketId,
@@ -214,6 +272,7 @@ export class AIRoutingService {
         correlationId,
         ticketId,
         selectedProvider: provider,
+        status: 'QUEUED',
         complexityScore,
         complexityBreakdown,
         routingReason,
@@ -300,6 +359,45 @@ export class AIRoutingService {
     }
 
     return RoutingReason.COST_OPTIMIZATION;
+  }
+
+  /**
+   * Handle file lock conflict
+   */
+  private async handleLockConflict(
+    request: IRoutingRequest,
+    complexityScore: number,
+    filePredictions: string[],
+  ): Promise<void> {
+    const { correlationId, ticketId } = request;
+
+    this.logger.warn(`[${correlationId}] File lock conflict for ticket ${ticketId}`);
+    this.waitingLocksCounter.inc();
+
+    // Update ticket status
+    await this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status: TicketStatus.WAITING_FOR_LOCKS },
+    });
+
+    // Create audit log
+    await this.prisma.auditLog.create({
+      data: {
+        entity_type: 'ticket',
+        entity_id: ticketId,
+        action: 'lock_conflict_waiting',
+        actor_type: 'system',
+        after_state: {
+          filePredictions,
+          status: TicketStatus.WAITING_FOR_LOCKS,
+        },
+      },
+    });
+
+    // Publish to wait queue for delayed retry
+    await this.rabbitMQ.publishToQueue(QUEUE_NAMES.AI_ROUTING_WAIT, request, correlationId);
+
+    this.logger.warn(`[${correlationId}] Ticket ${ticketId} queued for retry due to lock conflict`);
   }
 
   /**

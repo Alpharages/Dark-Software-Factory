@@ -66,6 +66,7 @@ export interface ITicketProcessingResult {
   ticketId?: string;
   status: string;
   qualityScore?: number;
+  estimatedETA?: Date | null;
   errors?: string[];
 }
 

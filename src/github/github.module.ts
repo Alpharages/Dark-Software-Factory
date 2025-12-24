@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { GitHubService } from './github.service';
 import { GitHubAuthService } from './github-auth.service';
@@ -34,7 +34,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     SentryModule,
     LoggerModule, // Required for winston logger injection
     RabbitMQModule,
-    AiRoutingModule,
+    forwardRef(() => AiRoutingModule),
     WebhooksModule,
     ClickUpModule,
     // Story 11.4: AI Decision Audit Logging

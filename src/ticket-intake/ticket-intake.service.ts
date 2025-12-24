@@ -14,6 +14,9 @@ import { IRawTaskEvent, IParsedTicket, ITicketProcessingResult } from './interfa
 import { ValidationResultDto, QualityScoreDto } from './dto';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
+// Story 12.5: V3 Dependency Management
+import { CircularDependencyDetectorService } from '../dependencies/circular-dependency-detector.service';
+import { DependencyManagerService } from '../dependencies/dependency-manager.service';
 
 // Metric names
 const METRICS = {
@@ -21,6 +24,8 @@ const METRICS = {
   INTAKE_DURATION: 'dsf_ticket_intake_duration_seconds',
   VALIDATION_TOTAL: 'dsf_ticket_validation_total',
   QUALITY_SCORE: 'dsf_ticket_quality_score',
+  WAITING_DEPENDENCIES: 'dsf_ticket_waiting_dependencies_total',
+  CIRCULAR_DEPENDENCIES: 'dsf_circular_dependencies_detected_total',
 };
 
 /**
@@ -59,6 +64,13 @@ export class TicketIntakeService {
     private readonly validationCounter: Counter<string>,
     @InjectMetric(METRICS.QUALITY_SCORE)
     private readonly qualityHistogram: Histogram<string>,
+    // Story 12.5: V3 Services
+    private readonly circularDetector: CircularDependencyDetectorService,
+    private readonly dependencyManager: DependencyManagerService,
+    @InjectMetric(METRICS.WAITING_DEPENDENCIES)
+    private readonly waitingCounter: Counter<string>,
+    @InjectMetric(METRICS.CIRCULAR_DEPENDENCIES)
+    private readonly circularCounter: Counter<string>,
   ) {
     this.clickupApiUrl =
       this.configService.get<string>('clickup.apiUrl') || 'https://api.clickup.com/api/v2';
@@ -76,8 +88,16 @@ export class TicketIntakeService {
     this.intakeCounter.inc({ event_type: event.eventType });
 
     try {
-      // For taskUpdated: only re-validate if previously failed
+      // For taskUpdated: handle dependency re-triggering and re-validation
       if (event.eventType === 'taskUpdated') {
+        // AC#8: Re-trigger dependent tickets if this one is resolved
+        if (this.dependencyManager.isStatusResolved(event.taskStatus)) {
+          this.logger.log(
+            `[${correlationId}] Ticket ${event.taskId} resolved (${event.taskStatus}), notifying dependents`,
+          );
+          await this.dependencyManager.notifyDependentTickets(event.taskId);
+        }
+
         const existing = await this.prisma.ticket.findUnique({
           where: { clickup_task_id: event.taskId },
           select: { status: true },
@@ -85,7 +105,7 @@ export class TicketIntakeService {
 
         if (existing && existing.status !== TicketStatus.VALIDATION_FAILED) {
           this.logger.debug(
-            `[${correlationId}] Skipping update - ticket not in VALIDATION_FAILED state`,
+            `[${correlationId}] Skipping re-validation - ticket already validated or in final state`,
           );
           return { success: true, status: existing.status };
         }
@@ -156,6 +176,87 @@ export class TicketIntakeService {
 
       if (!validation.isValid) {
         return await this.handleValidationFailure(parsed, validation, correlationId);
+      }
+
+      // AC#1: Circular Dependency Check
+      const cycleResult = await this.circularDetector.detectCircularDependencies(
+        parsed.clickupTaskId,
+      );
+      if (cycleResult.hasCycle) {
+        this.circularCounter.inc();
+        await this.circularDetector.markTicketsAsCircular(cycleResult.affectedTickets);
+        await this.circularDetector.alertPM(
+          cycleResult.cycle,
+          await this.circularDetector.buildDependencyGraph(parsed.clickupTaskId),
+        );
+
+        // Store as BLOCKED_CIRCULAR
+        await this.prisma.ticket.upsert({
+          where: { clickup_task_id: parsed.clickupTaskId },
+          create: {
+            clickup_task_id: parsed.clickupTaskId,
+            project_id: parsed.projectId,
+            title: parsed.title,
+            description: parsed.description,
+            acceptance_criteria: parsed.acceptanceCriteria,
+            ticket_quality_score: 0,
+            status: TicketStatus.BLOCKED_CIRCULAR,
+          },
+          update: {
+            status: TicketStatus.BLOCKED_CIRCULAR,
+            updated_at: new Date(),
+          },
+        });
+
+        return {
+          success: false,
+          status: TicketStatus.BLOCKED_CIRCULAR,
+          errors: [`Circular dependency detected: ${cycleResult.cycle.join(' → ')}`],
+        };
+      }
+
+      // AC#4: Dependency Blocker Check
+      const depCheck = await this.dependencyManager.checkDependencies(parsed.clickupTaskId);
+      if (!depCheck.canProceed) {
+        this.waitingCounter.inc();
+
+        // Store as WAITING
+        await this.prisma.ticket.upsert({
+          where: { clickup_task_id: parsed.clickupTaskId },
+          create: {
+            clickup_task_id: parsed.clickupTaskId,
+            project_id: parsed.projectId,
+            title: parsed.title,
+            description: parsed.description,
+            acceptance_criteria: parsed.acceptanceCriteria,
+            ticket_quality_score: 0,
+            status: TicketStatus.WAITING,
+          },
+          update: {
+            status: TicketStatus.WAITING,
+            updated_at: new Date(),
+          },
+        });
+
+        // Comment on ClickUp with ETA
+        const etaMsg = depCheck.estimatedETA
+          ? `Waiting for ${depCheck.unresolvedDependencies.length} dependencies. Estimated start: ${depCheck.estimatedETA.toLocaleString()}`
+          : `Waiting for ${depCheck.unresolvedDependencies.length} dependencies.`;
+
+        await this.commentOnClickUpTask(
+          parsed.clickupTaskId,
+          `⏳ **Ticket Waiting:** ${etaMsg}`,
+          correlationId,
+        );
+
+        return {
+          success: false,
+          status: TicketStatus.WAITING,
+          estimatedETA: depCheck.estimatedETA,
+          errors: [
+            `Blocked by unresolved dependencies: ${depCheck.unresolvedDependencies.join(', ')}`,
+          ],
+        };
       }
 
       // Calculate quality score

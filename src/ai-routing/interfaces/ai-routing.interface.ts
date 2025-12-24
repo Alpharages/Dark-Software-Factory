@@ -59,6 +59,7 @@ export interface IRoutingDecision {
   correlationId: string;
   ticketId: string;
   selectedProvider: AIProvider;
+  status: 'QUEUED' | 'WAITING_FOR_LOCKS' | 'NO_PROVIDER';
   complexityScore: number;
   complexityBreakdown: IComplexityBreakdown;
   routingReason: RoutingReason;

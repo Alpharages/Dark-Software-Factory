@@ -157,7 +157,7 @@ export class DependencyManagerService {
    * Helper method to determine if a ClickUp status indicates resolution.
    * Based on Story 12.1's status mapping: completed, deployed, closed, done, archived.
    */
-  private isStatusResolved(status: string | undefined): boolean {
+  public isStatusResolved(status: string | undefined): boolean {
     if (!status) return false;
 
     const resolvedStatuses = ['completed', 'deployed', 'closed', 'done', 'archived'];

@@ -22,6 +22,8 @@ import { contextMetricsProviders } from '../common/metrics/context-metrics.provi
 import { ProjectModule } from '../projects/project.module';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
+// Story 12.5: Dependency Management
+import { DependenciesModule } from '../dependencies/dependencies.module';
 
 // Metric names (must match service injection)
 const METRICS = {
@@ -29,6 +31,8 @@ const METRICS = {
   INTAKE_DURATION: 'dsf_ticket_intake_duration_seconds',
   VALIDATION_TOTAL: 'dsf_ticket_validation_total',
   QUALITY_SCORE: 'dsf_ticket_quality_score',
+  WAITING_DEPENDENCIES: 'dsf_ticket_waiting_dependencies_total',
+  CIRCULAR_DEPENDENCIES: 'dsf_circular_dependencies_detected_total',
 };
 
 /**
@@ -55,6 +59,8 @@ const METRICS = {
     AIDecisionLoggerModule,
     // Story 4.9: Project Mapping
     ProjectModule,
+    // Story 12.5: Dependency Management
+    DependenciesModule,
     // Story 2.12: Cache for context extraction
     CacheModule.registerAsync({
       imports: [ConfigModule],
@@ -113,6 +119,14 @@ const METRICS = {
       help: 'Ticket quality score distribution',
       labelNames: ['grade'],
       buckets: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+    }),
+    makeCounterProvider({
+      name: METRICS.WAITING_DEPENDENCIES,
+      help: 'Total tickets waiting for dependencies',
+    }),
+    makeCounterProvider({
+      name: METRICS.CIRCULAR_DEPENDENCIES,
+      help: 'Total circular dependencies detected',
     }),
     // Story 2.12: Context metrics
     ...contextMetricsProviders,

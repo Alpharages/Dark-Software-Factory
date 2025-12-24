@@ -709,10 +709,13 @@ development_status:
     story_points: 3
     notes: "AI-powered base branch selection with AC#1-6 implemented. Code Review fixes applied: introduced BranchSelectionStrategy enum, fixed test suite linting, and populated file list. Verified with unit tests (6/6 passing)."
   12-5-update-ticket-intake-consumer-v3:
-    status: backlog
+    status: done
+    developer: "Antigravity"
+    completed_at: "2025-12-24"
     effort: "2 days"
     story_points: 5
-    notes: "Wire circular dep check, file locks, branch selection into intake flow. Add re-queue logic for waiting tickets."
+    story_file: "_bmad-output/implementation-artifacts/12-5-update-ticket-intake-consumer-v3.md"
+    notes: "Integrated circular dependency detection, unresolved blocker handling (with ETA), file lock management (with re-queuing), and intelligent base branch selection. Added Prometheus metrics and verified with E2E tests. Implemented dependent ticket re-triggering logic."
   epic-12-retrospective: optional
 
   epic-13: backlog
