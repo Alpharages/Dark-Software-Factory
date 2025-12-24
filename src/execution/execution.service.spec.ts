@@ -47,6 +47,8 @@ describe('ExecutionService', () => {
     file_modifications: null,
     risk_level: PRRiskLevel.LOW,
     circular_dep_detected: false,
+    // Story 13.2: Cost Optimization
+    selected_model: null,
   };
 
   const mockTransition: IStateTransition = {

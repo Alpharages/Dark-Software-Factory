@@ -120,6 +120,10 @@ export const COST_METRICS = {
   PER_PROVIDER: `${METRICS_CONSTANTS.PREFIX}cost_per_provider`,
   TOTAL: `${METRICS_CONSTANTS.PREFIX}cost_total`,
   BUDGET_UTILIZATION: `${METRICS_CONSTANTS.PREFIX}budget_utilization_percent`,
+  // Story 13.2: Cost Optimization
+  SAVINGS_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_cost_savings_total`,
+  CACHE_HITS_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_cache_hits_total`,
+  CACHE_MISSES_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_cache_misses_total`,
 } as const;
 
 // Business Metrics - PM

@@ -60,6 +60,17 @@ export const envValidationSchema = Joi.object({
     .default(0.5)
     .description('Alert threshold for low-confidence AI decisions (0-1 range)'),
 
+  // Story 13.2: AI Cost Optimization Configuration
+  AI_COST_OPTIMIZATION_ENABLED: Joi.boolean()
+    .default(true)
+    .description('Enable AI cost optimization (select cheaper models for simple tasks)'),
+  AI_CACHE_TTL_SECONDS: Joi.number()
+    .integer()
+    .min(60)
+    .max(86400)
+    .default(3600)
+    .description('AI response cache TTL in seconds (default: 1 hour)'),
+
   // GitHub Integration (REQUIRED)
   GITHUB_TOKEN: Joi.string()
     .pattern(/^(ghp_|ghs_|github_pat_)/)

@@ -63,6 +63,7 @@ export type ExecutionMinAggregateOutputType = {
   branch_selection_log: string | null;
   risk_level: $Enums.PRRiskLevel | null;
   circular_dep_detected: boolean | null;
+  selected_model: string | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -91,6 +92,7 @@ export type ExecutionMaxAggregateOutputType = {
   branch_selection_log: string | null;
   risk_level: $Enums.PRRiskLevel | null;
   circular_dep_detected: boolean | null;
+  selected_model: string | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -122,6 +124,7 @@ export type ExecutionCountAggregateOutputType = {
   file_modifications: number;
   risk_level: number;
   circular_dep_detected: number;
+  selected_model: number;
   created_at: number;
   updated_at: number;
   _all: number;
@@ -165,6 +168,7 @@ export type ExecutionMinAggregateInputType = {
   branch_selection_log?: true;
   risk_level?: true;
   circular_dep_detected?: true;
+  selected_model?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -193,6 +197,7 @@ export type ExecutionMaxAggregateInputType = {
   branch_selection_log?: true;
   risk_level?: true;
   circular_dep_detected?: true;
+  selected_model?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -224,6 +229,7 @@ export type ExecutionCountAggregateInputType = {
   file_modifications?: true;
   risk_level?: true;
   circular_dep_detected?: true;
+  selected_model?: true;
   created_at?: true;
   updated_at?: true;
   _all?: true;
@@ -345,6 +351,7 @@ export type ExecutionGroupByOutputType = {
   file_modifications: runtime.JsonValue | null;
   risk_level: $Enums.PRRiskLevel | null;
   circular_dep_detected: boolean;
+  selected_model: string | null;
   created_at: Date;
   updated_at: Date;
   _count: ExecutionCountAggregateOutputType | null;
@@ -396,6 +403,7 @@ export type ExecutionWhereInput = {
   file_modifications?: Prisma.JsonNullableFilter<'Execution'>;
   risk_level?: Prisma.EnumPRRiskLevelNullableFilter<'Execution'> | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
+  selected_model?: Prisma.StringNullableFilter<'Execution'> | string | null;
   created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
@@ -440,6 +448,7 @@ export type ExecutionOrderByWithRelationInput = {
   file_modifications?: Prisma.SortOrderInput | Prisma.SortOrder;
   risk_level?: Prisma.SortOrderInput | Prisma.SortOrder;
   circular_dep_detected?: Prisma.SortOrder;
+  selected_model?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   ticket?: Prisma.TicketOrderByWithRelationInput;
@@ -482,6 +491,7 @@ export type ExecutionWhereUniqueInput = Prisma.AtLeast<
     file_modifications?: Prisma.JsonNullableFilter<'Execution'>;
     risk_level?: Prisma.EnumPRRiskLevelNullableFilter<'Execution'> | $Enums.PRRiskLevel | null;
     circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
+    selected_model?: Prisma.StringNullableFilter<'Execution'> | string | null;
     created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
     ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
@@ -528,6 +538,7 @@ export type ExecutionOrderByWithAggregationInput = {
   file_modifications?: Prisma.SortOrderInput | Prisma.SortOrder;
   risk_level?: Prisma.SortOrderInput | Prisma.SortOrder;
   circular_dep_detected?: Prisma.SortOrder;
+  selected_model?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   _count?: Prisma.ExecutionCountOrderByAggregateInput;
@@ -581,6 +592,7 @@ export type ExecutionScalarWhereWithAggregatesInput = {
     | $Enums.PRRiskLevel
     | null;
   circular_dep_detected?: Prisma.BoolWithAggregatesFilter<'Execution'> | boolean;
+  selected_model?: Prisma.StringNullableWithAggregatesFilter<'Execution'> | string | null;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'Execution'> | Date | string;
 };
@@ -611,6 +623,7 @@ export type ExecutionCreateInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -649,6 +662,7 @@ export type ExecutionUncheckedCreateInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -688,6 +702,7 @@ export type ExecutionUpdateInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -729,6 +744,7 @@ export type ExecutionUncheckedUpdateInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -766,6 +782,7 @@ export type ExecutionCreateManyInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
 };
@@ -799,6 +816,7 @@ export type ExecutionUpdateManyMutationInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -833,6 +851,7 @@ export type ExecutionUncheckedUpdateManyInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -874,6 +893,7 @@ export type ExecutionCountOrderByAggregateInput = {
   file_modifications?: Prisma.SortOrder;
   risk_level?: Prisma.SortOrder;
   circular_dep_detected?: Prisma.SortOrder;
+  selected_model?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -909,6 +929,7 @@ export type ExecutionMaxOrderByAggregateInput = {
   branch_selection_log?: Prisma.SortOrder;
   risk_level?: Prisma.SortOrder;
   circular_dep_detected?: Prisma.SortOrder;
+  selected_model?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -937,6 +958,7 @@ export type ExecutionMinOrderByAggregateInput = {
   branch_selection_log?: Prisma.SortOrder;
   risk_level?: Prisma.SortOrder;
   circular_dep_detected?: Prisma.SortOrder;
+  selected_model?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -1274,6 +1296,7 @@ export type ExecutionCreateWithoutTicketInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
@@ -1310,6 +1333,7 @@ export type ExecutionUncheckedCreateWithoutTicketInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -1391,6 +1415,7 @@ export type ExecutionScalarWhereInput = {
   file_modifications?: Prisma.JsonNullableFilter<'Execution'>;
   risk_level?: Prisma.EnumPRRiskLevelNullableFilter<'Execution'> | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
+  selected_model?: Prisma.StringNullableFilter<'Execution'> | string | null;
   created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
 };
@@ -1421,6 +1446,7 @@ export type ExecutionCreateWithoutQa_resultInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -1458,6 +1484,7 @@ export type ExecutionUncheckedCreateWithoutQa_resultInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedCreateNestedManyWithoutExecutionInput;
@@ -1524,6 +1551,7 @@ export type ExecutionUpdateWithoutQa_resultInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -1564,6 +1592,7 @@ export type ExecutionUncheckedUpdateWithoutQa_resultInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   aiDecisionLogs?: Prisma.AIDecisionLogUncheckedUpdateManyWithoutExecutionNestedInput;
@@ -1599,6 +1628,7 @@ export type ExecutionCreateWithoutAiDecisionLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -1636,6 +1666,7 @@ export type ExecutionUncheckedCreateWithoutAiDecisionLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -1702,6 +1733,7 @@ export type ExecutionUpdateWithoutAiDecisionLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -1742,6 +1774,7 @@ export type ExecutionUncheckedUpdateWithoutAiDecisionLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -1777,6 +1810,7 @@ export type ExecutionCreateWithoutFileLocksInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -1814,6 +1848,7 @@ export type ExecutionUncheckedCreateWithoutFileLocksInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -1880,6 +1915,7 @@ export type ExecutionUpdateWithoutFileLocksInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -1920,6 +1956,7 @@ export type ExecutionUncheckedUpdateWithoutFileLocksInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -1955,6 +1992,7 @@ export type ExecutionCreateWithoutFileLockQueueEntriesInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -1992,6 +2030,7 @@ export type ExecutionUncheckedCreateWithoutFileLockQueueEntriesInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2058,6 +2097,7 @@ export type ExecutionUpdateWithoutFileLockQueueEntriesInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2098,6 +2138,7 @@ export type ExecutionUncheckedUpdateWithoutFileLockQueueEntriesInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2133,6 +2174,7 @@ export type ExecutionCreateWithoutAiCostLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -2170,6 +2212,7 @@ export type ExecutionUncheckedCreateWithoutAiCostLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2236,6 +2279,7 @@ export type ExecutionUpdateWithoutAiCostLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2276,6 +2320,7 @@ export type ExecutionUncheckedUpdateWithoutAiCostLogsInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2311,6 +2356,7 @@ export type ExecutionCreateWithoutArchiveInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -2348,6 +2394,7 @@ export type ExecutionUncheckedCreateWithoutArchiveInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2414,6 +2461,7 @@ export type ExecutionUpdateWithoutArchiveInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2454,6 +2502,7 @@ export type ExecutionUncheckedUpdateWithoutArchiveInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2489,6 +2538,7 @@ export type ExecutionCreateManyTicketInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: $Enums.PRRiskLevel | null;
   circular_dep_detected?: boolean;
+  selected_model?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
 };
@@ -2522,6 +2572,7 @@ export type ExecutionUpdateWithoutTicketInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
@@ -2561,6 +2612,7 @@ export type ExecutionUncheckedUpdateWithoutTicketInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2600,6 +2652,7 @@ export type ExecutionUncheckedUpdateManyWithoutTicketInput = {
   file_modifications?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   risk_level?: Prisma.NullableEnumPRRiskLevelFieldUpdateOperationsInput | $Enums.PRRiskLevel | null;
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -2702,6 +2755,7 @@ export type ExecutionSelect<
     file_modifications?: boolean;
     risk_level?: boolean;
     circular_dep_detected?: boolean;
+    selected_model?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -2746,6 +2800,7 @@ export type ExecutionSelectCreateManyAndReturn<
     file_modifications?: boolean;
     risk_level?: boolean;
     circular_dep_detected?: boolean;
+    selected_model?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -2783,6 +2838,7 @@ export type ExecutionSelectUpdateManyAndReturn<
     file_modifications?: boolean;
     risk_level?: boolean;
     circular_dep_detected?: boolean;
+    selected_model?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -2817,6 +2873,7 @@ export type ExecutionSelectScalar = {
   file_modifications?: boolean;
   risk_level?: boolean;
   circular_dep_detected?: boolean;
+  selected_model?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
 };
@@ -2850,6 +2907,7 @@ export type ExecutionOmit<
   | 'file_modifications'
   | 'risk_level'
   | 'circular_dep_detected'
+  | 'selected_model'
   | 'created_at'
   | 'updated_at',
   ExtArgs['result']['execution']
@@ -2918,6 +2976,7 @@ export type $ExecutionPayload<
       file_modifications: runtime.JsonValue | null;
       risk_level: $Enums.PRRiskLevel | null;
       circular_dep_detected: boolean;
+      selected_model: string | null;
       created_at: Date;
       updated_at: Date;
     },
@@ -3599,6 +3658,7 @@ export interface ExecutionFieldRefs {
   readonly file_modifications: Prisma.FieldRef<'Execution', 'Json'>;
   readonly risk_level: Prisma.FieldRef<'Execution', 'PRRiskLevel'>;
   readonly circular_dep_detected: Prisma.FieldRef<'Execution', 'Boolean'>;
+  readonly selected_model: Prisma.FieldRef<'Execution', 'String'>;
   readonly created_at: Prisma.FieldRef<'Execution', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'Execution', 'DateTime'>;
 }

@@ -145,6 +145,7 @@ export const ExecutionScalarFieldEnum = {
   file_modifications: 'file_modifications',
   risk_level: 'risk_level',
   circular_dep_detected: 'circular_dep_detected',
+  selected_model: 'selected_model',
   created_at: 'created_at',
   updated_at: 'updated_at',
 } as const;
