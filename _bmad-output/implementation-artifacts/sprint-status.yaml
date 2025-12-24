@@ -704,10 +704,10 @@ development_status:
     code_review_fixes: "14 issues fixed (6 CRITICAL, 8 MEDIUM)"
     notes: "✅ APPROVED - Code review completed 2025-12-23. ALL CRITICAL/HIGH/MEDIUM ISSUES FIXED: (C1) Registered FileLocksModule in app.module.ts - module was not wired, (C2) Implemented stale lock recovery mechanism - 30min timeout cleanup, (C3) Fixed story file list to reflect actual files created, (C4) Documented GitHub webhook integration files, (C5) Added GITHUB_WEBHOOK_SECRET configuration requirement, (C6) Fixed PR merge detection ordering, (M1) Increased queue advance iterations 10→50 for deeper dependency chains, (M2) Added comprehensive metrics (file_locks_active gauge, file_lock_conflicts_total counter, file_lock_stale_releases_total, file_prediction_ai_failures_total with error classification), (M3) Enhanced AI provider error handling with error type classification, (M4) Improved file path extraction to filter URLs and domain patterns, (M5) Fixed PR merge detection to use ordered query. IMPLEMENTATION: FileLockManagerService with predictFileModifications(), acquireLocks() atomic + conflict detection, releaseLocksForExecution(), releaseStaleLocksForFiles(). FileLockQueue table + partial unique index. REST API endpoints with RBAC. GitHub webhook controller with signature verification. Comprehensive unit tests (AC#7). All 7 acceptance criteria fully implemented."
   12-4-ai-branch-strategist:
-    status: backlog
+    status: done
     effort: "1.5 days"
     story_points: 3
-    notes: "AI-powered base branch selection. No deps→main, single dep→follow, multi deps→main with merge."
+    notes: "AI-powered base branch selection with AC#1-6 implemented. Code Review fixes applied: introduced BranchSelectionStrategy enum, fixed test suite linting, and populated file list. Verified with unit tests (6/6 passing)."
   12-5-update-ticket-intake-consumer-v3:
     status: backlog
     effort: "2 days"
