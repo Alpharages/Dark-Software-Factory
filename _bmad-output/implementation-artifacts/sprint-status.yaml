@@ -716,7 +716,7 @@ development_status:
     story_points: 5
     story_file: "_bmad-output/implementation-artifacts/12-5-update-ticket-intake-consumer-v3.md"
     notes: "Integrated circular dependency detection, unresolved blocker handling (with ETA), file lock management (with re-queuing), and intelligent base branch selection. Added Prometheus metrics and verified with E2E tests. Implemented dependent ticket re-triggering logic."
-  epic-12-retrospective: optional
+  epic-12-retrospective: done
 
   epic-13: backlog
   epic-13-name: "v3 AI Enhancements & Cost Tracking"
@@ -724,7 +724,7 @@ development_status:
   epic-13-priority: high
   epic-13-dependencies: "Epic 11, 12"
   epic-13-estimated_effort: "10 days"
-  epic-13-notes: "AI cost tracking, model optimization, self-healing with progress validation. See: docs/sprint-artifacts/epic-13-14-15-v3-remaining.md"
+  epic-13-notes: "AI cost tracking, model optimization, self-healing with progress validation. See: _bmad-output/implementation-artifacts/epic-13-14-15-v3-remaining.md"
   13-1-ai-cost-tracking-service:
     status: backlog
     effort: "2 days"
@@ -758,7 +758,7 @@ development_status:
   epic-14-priority: medium
   epic-14-dependencies: "Epic 11, 12, 13"
   epic-14-estimated_effort: "8 days"
-  epic-14-notes: "PR risk assessment, auto-merge, storage manager, health monitoring. See: docs/sprint-artifacts/epic-13-14-15-v3-remaining.md"
+  epic-14-notes: "PR risk assessment, auto-merge, storage manager, health monitoring. See: _bmad-output/implementation-artifacts/epic-13-14-15-v3-remaining.md"
   14-1-pr-risk-assessor:
     status: backlog
     effort: "2 days"
@@ -792,7 +792,7 @@ development_status:
   epic-15-priority: medium
   epic-15-dependencies: "Epic 11, 12, 13, 14"
   epic-15-estimated_effort: "8 days"
-  epic-15-notes: "Feature flags, admin UI, data migration, production deployment. See: docs/sprint-artifacts/epic-13-14-15-v3-remaining.md"
+  epic-15-notes: "Feature flags, admin UI, data migration, production deployment. See: _bmad-output/implementation-artifacts/epic-13-14-15-v3-remaining.md"
   15-1-feature-flags-service:
     status: backlog
     effort: "1 day"
