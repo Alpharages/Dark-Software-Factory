@@ -771,7 +771,7 @@ development_status:
     story_points: 3
     developer: "Antigravity"
     notes: "Implemented summary, ticket, and breakdown endpoints with full unit tests (43/43 passing in module)."
-  epic-13-retrospective: optional
+  epic-13-retrospective: completed
 
   epic-14: backlog
   epic-14-name: "v3 Observability & Operational Features"
