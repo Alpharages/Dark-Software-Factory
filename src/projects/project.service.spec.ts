@@ -14,6 +14,9 @@ describe('ProjectService', () => {
     clickup_list_id: 'list-123',
     github_repository_url: 'https://github.com/test/repo',
     default_branch: 'main',
+    pm_id: 'pm-123',
+    status: 'active',
+    client_name: 'Test Client',
     budget_usd: new Prisma.Decimal(100.0),
     created_at: new Date(),
     updated_at: new Date(),
@@ -64,6 +67,8 @@ describe('ProjectService', () => {
         name: 'Test Project',
         clickup_list_id: 'list-123',
         github_repository_url: 'https://github.com/test/repo',
+        pm_id: 'pm-123',
+        client_name: 'Test Client',
       };
 
       const result = await service.create(dto);
@@ -72,6 +77,7 @@ describe('ProjectService', () => {
       expect(repository.create).toHaveBeenCalledWith({
         ...dto,
         default_branch: 'main',
+        status: 'active',
       });
       expect(mockCounter.inc).toHaveBeenCalledWith({ operation: 'create', status: 'success' });
     });

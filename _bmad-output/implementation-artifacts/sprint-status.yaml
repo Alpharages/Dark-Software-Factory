@@ -376,28 +376,37 @@ development_status:
     completed_at: "2025-12-22"
     notes: "✅ CODE REVIEW APPROVED - Created Projects table with full CRUD API, integrated with TicketIntakeService and AI routing services. All tests passing, build successful. Deliverables: (1) Prisma schema with Project model and relations, (2) REST API with RBAC and enhanced GitHub URL validation, (3) TicketIntakeService integration with project resolution (rejects tickets without mapping), (4) OrchestratorConsumer and AIRoutingService integration with null checks, (5) Prometheus metrics and AI decision logging. CODE REVIEW FIXES: Enhanced URL validation, added null checks for missing projects, removed legacy fallback (projects must be created via API), documented Prisma generated files. UNBLOCKS: Epic 5 (PM Dashboard can now use projects API)."
 
-  epic-5: blocked
-  epic-5-blocker: "Story 4.9 (Projects Table) - Required for PM Dashboard to display correct repository information"
+  epic-5: in-progress
+  epic-5-blocker: null
   epic-5-dependencies-v3: "Epic 14.5 (Real-Time Observability Dashboard API) - Provides backend APIs for real-time data"
-  epic-5-notes: "Epic 5 redesigned from 10→7 stories (30% reduction, 58% effort saved). User approved React+TypeScript+Tailwind stack. AI delegation pattern applied per ADR-008. BLOCKED ON: Story 4.9 must complete first to provide projects infrastructure. V3 ENHANCEMENT: Will consume real-time APIs from Epic 14 for live ticket status, queue metrics, and system health. See epic-5-redesign-approved.md and v3-epic-impact-analysis.md for details."
+  epic-5-notes: "Epic 5 redesigned from 10→7 stories. UNBLOCKED: Story 4.9 (Projects Table) is complete. V3 ENHANCEMENT: Will consume real-time APIs from Epic 14 for live ticket status, queue metrics, and system health. Story 5.1 in review."
   5-1-pm-dashboard-api-orchestration:
+    status: done
+    developer: "Antigravity"
+    notes: "REMEDIATED & COMPLETED. All 10 adversarial review issues fixed: (1) Added client_name to Prisma schema & migration applied, (2) Implemented real metrics (no placeholders), (3) Added 5-min in-memory caching for summary, (4) Optimized queries with groupBy/aggregate, (5) Added Socket.IO event contracts, (6) Integrated Prometheus metrics & audit logs, (7) Resolved all linting errors. All 20+ unit tests passing."
+  5-2-project-list-status-overview:
+    status: deprecated
+    notes: "DEPRECATED - Merged into Story 5.1 as part of Epic 5 Redesign."
+  5-2-real-time-ticket-execution-status:
     status: ready-for-dev
-    notes: "NEW Story 5.1 (merged from original 5.1+5.2). AI delegation pattern applied: DSF builds API+Socket.IO gateway, AI generates React dashboard UI. See story file for comprehensive context."
-  5-2-project-list-status-overview: backlog
-  5-3-real-time-ticket-execution-status: backlog
-  5-4-code-approval-workflow-interface: backlog
-  5-5-ai-confidence-scores-uncertainty-flags: backlog
-  5-6-workload-capacity-dashboard: backlog
-  5-7-manager-view-team-capacity-overview: backlog
-  5-8-client-communication-log:
+    notes: "NEW Story 5.2 (formerly 5.3). Real-time updates via Socket.IO. Blocked on Epic 10 or needs polling fallback. Story file created."
+  5-3-code-approval-workflow-interface:
+    status: backlog
+    notes: "NEW Story 5.3 (merged from original 5.4+5.5). Code approval, quality gates, and confidence scores."
+  5-4-workload-capacity-dashboard:
+    status: backlog
+    notes: "NEW Story 5.4 (merged from original 5.6+5.7). Workload management and capacity planning for PMs and Managers."
+  5-5-client-communication-log:
     status: backlog
     delegation_opportunity: "IDENTIFIED 2025-12-07"
-    notes: "DELEGATION OPPORTUNITY: AI agents excel at transcription, summarization, and NLP tasks. Delegate meeting transcription → summary generation → action item extraction → sentiment analysis to AI. Thin wrapper stores results and links to projects. Effort reduction: ~60% (5 days → 2 days). Priority: Phase 1 (High PM value). See: /docs/architecture/epic-5-10-delegation-strategy.md"
-  5-9-sprint-review-progress-reporting:
+    notes: "NEW Story 5.5 (formerly 5.8). AI-heavy client communication intelligence (transcription, summaries, action items)."
+  5-6-sprint-review-progress-reporting:
     status: backlog
     delegation_opportunity: "IDENTIFIED 2025-12-07"
-    notes: "DELEGATION OPPORTUNITY: AI generates markdown report with sprint data, metrics, charts. Convert markdown to PDF/PowerPoint using libraries. Eliminates template engine complexity. Effort reduction: ~40% (5 days → 3 days). Priority: Phase 3. See: /docs/architecture/epic-5-10-delegation-strategy.md"
-  5-10-quick-actions-keyboard-shortcuts: backlog
+    notes: "NEW Story 5.6 (formerly 5.9). AI-heavy reporting and analytics generation (PDF/PPTX)."
+  5-7-dashboard-ux-enhancements:
+    status: backlog
+    notes: "NEW Story 5.7 (formerly 5.10). Quick actions and keyboard shortcuts."
   epic-5-retrospective: optional
 
   # ===================================================================

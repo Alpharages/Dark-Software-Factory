@@ -25,6 +25,9 @@ export class ProjectService {
         clickup_list_id: createProjectDto.clickup_list_id,
         github_repository_url: createProjectDto.github_repository_url,
         default_branch: createProjectDto.default_branch || 'main',
+        pm_id: createProjectDto.pm_id,
+        status: createProjectDto.status || 'active',
+        client_name: createProjectDto.client_name,
       });
       this.operationsCounter.inc({ operation: 'create', status: 'success' });
       return project;

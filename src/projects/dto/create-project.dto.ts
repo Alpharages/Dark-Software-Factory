@@ -25,4 +25,19 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   default_branch?: string;
+
+  @ApiProperty({ description: 'PM ID (Auth sub claim)' })
+  @IsString()
+  @IsNotEmpty()
+  pm_id!: string;
+
+  @ApiProperty({ description: 'Project status', default: 'active' })
+  @IsString()
+  @IsOptional()
+  status?: string = 'active';
+
+  @ApiProperty({ description: 'Client name' })
+  @IsString()
+  @IsNotEmpty()
+  client_name!: string;
 }

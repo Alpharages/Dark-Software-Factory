@@ -91,8 +91,11 @@ export type TransactionIsolationLevel =
 export const ProjectScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  client_name: 'client_name',
   clickup_list_id: 'clickup_list_id',
   github_repository_url: 'github_repository_url',
+  pm_id: 'pm_id',
+  status: 'status',
   default_branch: 'default_branch',
   budget_usd: 'budget_usd',
   created_at: 'created_at',

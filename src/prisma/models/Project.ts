@@ -36,8 +36,11 @@ export type ProjectSumAggregateOutputType = {
 export type ProjectMinAggregateOutputType = {
   id: string | null;
   name: string | null;
+  client_name: string | null;
   clickup_list_id: string | null;
   github_repository_url: string | null;
+  pm_id: string | null;
+  status: string | null;
   default_branch: string | null;
   budget_usd: runtime.Decimal | null;
   created_at: Date | null;
@@ -47,8 +50,11 @@ export type ProjectMinAggregateOutputType = {
 export type ProjectMaxAggregateOutputType = {
   id: string | null;
   name: string | null;
+  client_name: string | null;
   clickup_list_id: string | null;
   github_repository_url: string | null;
+  pm_id: string | null;
+  status: string | null;
   default_branch: string | null;
   budget_usd: runtime.Decimal | null;
   created_at: Date | null;
@@ -58,8 +64,11 @@ export type ProjectMaxAggregateOutputType = {
 export type ProjectCountAggregateOutputType = {
   id: number;
   name: number;
+  client_name: number;
   clickup_list_id: number;
   github_repository_url: number;
+  pm_id: number;
+  status: number;
   default_branch: number;
   budget_usd: number;
   created_at: number;
@@ -78,8 +87,11 @@ export type ProjectSumAggregateInputType = {
 export type ProjectMinAggregateInputType = {
   id?: true;
   name?: true;
+  client_name?: true;
   clickup_list_id?: true;
   github_repository_url?: true;
+  pm_id?: true;
+  status?: true;
   default_branch?: true;
   budget_usd?: true;
   created_at?: true;
@@ -89,8 +101,11 @@ export type ProjectMinAggregateInputType = {
 export type ProjectMaxAggregateInputType = {
   id?: true;
   name?: true;
+  client_name?: true;
   clickup_list_id?: true;
   github_repository_url?: true;
+  pm_id?: true;
+  status?: true;
   default_branch?: true;
   budget_usd?: true;
   created_at?: true;
@@ -100,8 +115,11 @@ export type ProjectMaxAggregateInputType = {
 export type ProjectCountAggregateInputType = {
   id?: true;
   name?: true;
+  client_name?: true;
   clickup_list_id?: true;
   github_repository_url?: true;
+  pm_id?: true;
+  status?: true;
   default_branch?: true;
   budget_usd?: true;
   created_at?: true;
@@ -199,8 +217,11 @@ export type ProjectGroupByArgs<
 export type ProjectGroupByOutputType = {
   id: string;
   name: string;
+  client_name: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status: string;
   default_branch: string;
   budget_usd: runtime.Decimal | null;
   created_at: Date;
@@ -230,8 +251,11 @@ export type ProjectWhereInput = {
   NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[];
   id?: Prisma.StringFilter<'Project'> | string;
   name?: Prisma.StringFilter<'Project'> | string;
+  client_name?: Prisma.StringFilter<'Project'> | string;
   clickup_list_id?: Prisma.StringFilter<'Project'> | string;
   github_repository_url?: Prisma.StringFilter<'Project'> | string;
+  pm_id?: Prisma.StringFilter<'Project'> | string;
+  status?: Prisma.StringFilter<'Project'> | string;
   default_branch?: Prisma.StringFilter<'Project'> | string;
   budget_usd?:
     | Prisma.DecimalNullableFilter<'Project'>
@@ -256,8 +280,11 @@ export type ProjectWhereInput = {
 export type ProjectOrderByWithRelationInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -275,7 +302,10 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
     OR?: Prisma.ProjectWhereInput[];
     NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[];
     name?: Prisma.StringFilter<'Project'> | string;
+    client_name?: Prisma.StringFilter<'Project'> | string;
     github_repository_url?: Prisma.StringFilter<'Project'> | string;
+    pm_id?: Prisma.StringFilter<'Project'> | string;
+    status?: Prisma.StringFilter<'Project'> | string;
     default_branch?: Prisma.StringFilter<'Project'> | string;
     budget_usd?:
       | Prisma.DecimalNullableFilter<'Project'>
@@ -302,8 +332,11 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
 export type ProjectOrderByWithAggregationInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -325,8 +358,11 @@ export type ProjectScalarWhereWithAggregatesInput = {
     | Prisma.ProjectScalarWhereWithAggregatesInput[];
   id?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   name?: Prisma.StringWithAggregatesFilter<'Project'> | string;
+  client_name?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   clickup_list_id?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   github_repository_url?: Prisma.StringWithAggregatesFilter<'Project'> | string;
+  pm_id?: Prisma.StringWithAggregatesFilter<'Project'> | string;
+  status?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   default_branch?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   budget_usd?:
     | Prisma.DecimalNullableWithAggregatesFilter<'Project'>
@@ -342,8 +378,11 @@ export type ProjectScalarWhereWithAggregatesInput = {
 export type ProjectCreateInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -356,8 +395,11 @@ export type ProjectCreateInput = {
 export type ProjectUncheckedCreateInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -370,8 +412,11 @@ export type ProjectUncheckedCreateInput = {
 export type ProjectUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -390,8 +435,11 @@ export type ProjectUpdateInput = {
 export type ProjectUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -410,8 +458,11 @@ export type ProjectUncheckedUpdateInput = {
 export type ProjectCreateManyInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -421,8 +472,11 @@ export type ProjectCreateManyInput = {
 export type ProjectUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -438,8 +492,11 @@ export type ProjectUpdateManyMutationInput = {
 export type ProjectUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -455,8 +512,11 @@ export type ProjectUncheckedUpdateManyInput = {
 export type ProjectCountOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -470,8 +530,11 @@ export type ProjectAvgOrderByAggregateInput = {
 export type ProjectMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -481,8 +544,11 @@ export type ProjectMaxOrderByAggregateInput = {
 export type ProjectMinOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -595,8 +661,11 @@ export type ProjectUpdateOneRequiredWithoutCoverage_configNestedInput = {
 export type ProjectCreateWithoutTicketsInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -608,8 +677,11 @@ export type ProjectCreateWithoutTicketsInput = {
 export type ProjectUncheckedCreateWithoutTicketsInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -649,8 +721,11 @@ export type ProjectUpdateToOneWithWhereWithoutTicketsInput = {
 export type ProjectUpdateWithoutTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -668,8 +743,11 @@ export type ProjectUpdateWithoutTicketsInput = {
 export type ProjectUncheckedUpdateWithoutTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -687,8 +765,11 @@ export type ProjectUncheckedUpdateWithoutTicketsInput = {
 export type ProjectCreateWithoutCoverage_baselineInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -700,8 +781,11 @@ export type ProjectCreateWithoutCoverage_baselineInput = {
 export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -741,8 +825,11 @@ export type ProjectUpdateToOneWithWhereWithoutCoverage_baselineInput = {
 export type ProjectUpdateWithoutCoverage_baselineInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -760,8 +847,11 @@ export type ProjectUpdateWithoutCoverage_baselineInput = {
 export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -779,8 +869,11 @@ export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
 export type ProjectCreateWithoutCoverage_configInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -792,8 +885,11 @@ export type ProjectCreateWithoutCoverage_configInput = {
 export type ProjectUncheckedCreateWithoutCoverage_configInput = {
   id?: string;
   name: string;
+  client_name?: string;
   clickup_list_id: string;
   github_repository_url: string;
+  pm_id: string;
+  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
   created_at?: Date | string;
@@ -833,8 +929,11 @@ export type ProjectUpdateToOneWithWhereWithoutCoverage_configInput = {
 export type ProjectUpdateWithoutCoverage_configInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -852,8 +951,11 @@ export type ProjectUpdateWithoutCoverage_configInput = {
 export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -909,8 +1011,11 @@ export type ProjectSelect<
   {
     id?: boolean;
     name?: boolean;
+    client_name?: boolean;
     clickup_list_id?: boolean;
     github_repository_url?: boolean;
+    pm_id?: boolean;
+    status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
     created_at?: boolean;
@@ -929,8 +1034,11 @@ export type ProjectSelectCreateManyAndReturn<
   {
     id?: boolean;
     name?: boolean;
+    client_name?: boolean;
     clickup_list_id?: boolean;
     github_repository_url?: boolean;
+    pm_id?: boolean;
+    status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
     created_at?: boolean;
@@ -945,8 +1053,11 @@ export type ProjectSelectUpdateManyAndReturn<
   {
     id?: boolean;
     name?: boolean;
+    client_name?: boolean;
     clickup_list_id?: boolean;
     github_repository_url?: boolean;
+    pm_id?: boolean;
+    status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
     created_at?: boolean;
@@ -958,8 +1069,11 @@ export type ProjectSelectUpdateManyAndReturn<
 export type ProjectSelectScalar = {
   id?: boolean;
   name?: boolean;
+  client_name?: boolean;
   clickup_list_id?: boolean;
   github_repository_url?: boolean;
+  pm_id?: boolean;
+  status?: boolean;
   default_branch?: boolean;
   budget_usd?: boolean;
   created_at?: boolean;
@@ -971,8 +1085,11 @@ export type ProjectOmit<
 > = runtime.Types.Extensions.GetOmit<
   | 'id'
   | 'name'
+  | 'client_name'
   | 'clickup_list_id'
   | 'github_repository_url'
+  | 'pm_id'
+  | 'status'
   | 'default_branch'
   | 'budget_usd'
   | 'created_at'
@@ -1007,8 +1124,11 @@ export type $ProjectPayload<
     {
       id: string;
       name: string;
+      client_name: string;
       clickup_list_id: string;
       github_repository_url: string;
+      pm_id: string;
+      status: string;
       default_branch: string;
       budget_usd: runtime.Decimal | null;
       created_at: Date;
@@ -1598,8 +1718,11 @@ export interface Prisma__ProjectClient<
 export interface ProjectFieldRefs {
   readonly id: Prisma.FieldRef<'Project', 'String'>;
   readonly name: Prisma.FieldRef<'Project', 'String'>;
+  readonly client_name: Prisma.FieldRef<'Project', 'String'>;
   readonly clickup_list_id: Prisma.FieldRef<'Project', 'String'>;
   readonly github_repository_url: Prisma.FieldRef<'Project', 'String'>;
+  readonly pm_id: Prisma.FieldRef<'Project', 'String'>;
+  readonly status: Prisma.FieldRef<'Project', 'String'>;
   readonly default_branch: Prisma.FieldRef<'Project', 'String'>;
   readonly budget_usd: Prisma.FieldRef<'Project', 'Decimal'>;
   readonly created_at: Prisma.FieldRef<'Project', 'DateTime'>;

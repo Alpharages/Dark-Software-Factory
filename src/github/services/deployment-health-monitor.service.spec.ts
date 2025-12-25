@@ -20,7 +20,6 @@ describe('DeploymentHealthMonitorService', () => {
   let logger: jest.Mocked<LoggerService>;
   // config removed due to being unused
 
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [

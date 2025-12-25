@@ -21,7 +21,7 @@ export class ObservabilityDashboardService {
     private readonly prisma: PrismaService,
     private readonly rabbitmqService: RabbitMQService,
     private readonly metricsService: MetricsService,
-  ) { }
+  ) {}
 
   /**
    * AC#1: Get chronological timeline of events for a ticket

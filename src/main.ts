@@ -30,6 +30,7 @@ if (process.env.SENTRY_DSN) {
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { LoggerService } from './common/logger';
 
@@ -45,6 +46,11 @@ async function bootstrap() {
 
   const logger = app.get(LoggerService);
   app.useLogger(logger);
+
+  // Enable URI-based versioning (Story 5.1)
+  app.enableVersioning({
+    type: VersioningType.URI,
+  });
 
   // Enable graceful shutdown to properly close all connections
   app.enableShutdownHooks();

@@ -8,10 +8,7 @@ import { MetricsService } from '../../common/metrics/metrics.service';
 import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service';
 import { DeploymentStatusSync } from './deployment-status-sync.service';
 import { LoggerService } from '../../common/logger/logger.service';
-import {
-  BaselineMetrics,
-  RollbackReason,
-} from '../interfaces/health-monitoring.interface';
+import { BaselineMetrics, RollbackReason } from '../interfaces/health-monitoring.interface';
 
 @Injectable()
 export class DeploymentHealthMonitorService implements OnModuleDestroy {
@@ -247,8 +244,8 @@ export class DeploymentHealthMonitorService implements OnModuleDestroy {
 
       const execution = githubPush?.execution_id
         ? await this.prisma.execution.findUnique({
-          where: { id: githubPush.execution_id },
-        })
+            where: { id: githubPush.execution_id },
+          })
         : null;
 
       // Update deployment status to ROLLED_BACK (AC#4)

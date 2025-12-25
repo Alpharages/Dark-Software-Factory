@@ -11,7 +11,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private channel: any = null;
 
-  constructor(private configService: ConfigService) { }
+  constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
     await this.connect();
@@ -202,7 +202,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     }
 
     const queues = ['ai-execution-queue', 'qa-check-queue', 'deployment-queue'];
-    const metricsMap = new Map<string, any>();
+    const metricsMap = new Map<string, unknown>();
 
     for (const queueName of queues) {
       try {
