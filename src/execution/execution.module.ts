@@ -16,6 +16,7 @@ import { RetryConsumer } from './retry.consumer';
 // Story 2.10: Queue Processing
 import { AIExecutionPublisher } from './ai-execution.publisher';
 import { AIExecutionConsumer } from './ai-execution.consumer';
+import { SelfHealingOrchestratorService } from './self-healing-orchestrator.service';
 import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
@@ -25,6 +26,10 @@ import { QaAutomationModule } from '../qa-automation/qa-automation.module';
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.3: AI Cost Tracking & Optimization
 import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
+// Story 13.3.1: Self-Healing with Progress Validation
+import { ProgressValidatorModule } from '../ai-monitoring/progress-validator.module';
+import { ClickUpModule } from '../clickup/clickup.module';
+import { AppMetricsModule } from '../common/metrics/metrics.module';
 // LoggerModule not needed - consumer uses NestJS Logger directly
 
 /**
@@ -54,6 +59,10 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
     AIDecisionLoggerModule,
     // Story 13.3: AI Cost Tracking & Optimization
     CostTrackingModule,
+    // Story 13.3.1: Self-Healing with Progress Validation
+    ProgressValidatorModule,
+    ClickUpModule,
+    AppMetricsModule,
   ],
   providers: [
     // Core services
@@ -71,6 +80,9 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
     // Queue Processing Services (Story 2.10)
     AIExecutionPublisher,
     AIExecutionConsumer,
+
+    // Self-Healing (Story 13.3.1)
+    SelfHealingOrchestratorService,
 
     // Queue Metrics Providers (Story 2.10)
     ...queueMetricsProviders,
@@ -127,6 +139,18 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
       name: 'retry_active_count',
       help: 'Currently active retries awaiting execution',
     }),
+
+    // Self-Healing Metrics (Story 13.3.1)
+    makeCounterProvider({
+      name: 'ai_self_healing_attempts_total',
+      help: 'Total self-healing attempts by outcome',
+      labelNames: ['ticket_id', 'outcome'], // outcome: success, escalated, max_attempts
+    }),
+    makeGaugeProvider({
+      name: 'ai_self_healing_progress',
+      help: 'Self-healing progress percentage (error reduction)',
+      labelNames: ['ticket_id'],
+    }),
   ],
   exports: [
     ExecutionService,
@@ -139,6 +163,8 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
     // Story 2.10: Export queue services
     AIExecutionPublisher,
     AIExecutionConsumer,
+    // Story 13.3.1: Export self-healing service
+    SelfHealingOrchestratorService,
   ],
 })
 export class ExecutionModule {}

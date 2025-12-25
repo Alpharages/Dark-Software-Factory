@@ -41,6 +41,9 @@ export const AI_METRICS = {
   TOKENS_INPUT_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_tokens_input_total`,
   TOKENS_OUTPUT_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_tokens_output_total`,
   PROVIDER_STATUS: `${METRICS_CONSTANTS.PREFIX}ai_provider_status`,
+  // Story 13.3.1: Self-Healing
+  SELF_HEALING_ATTEMPTS_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_self_healing_attempts_total`,
+  SELF_HEALING_PROGRESS: `${METRICS_CONSTANTS.PREFIX}ai_self_healing_progress`,
 } as const;
 
 // Business Metrics - QA
