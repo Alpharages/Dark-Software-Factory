@@ -52,6 +52,8 @@ export const QUEUE_NAMES = {
   DEAD_LETTER: 'dead-letter-queue',
   AI_EXECUTION_RETRY: 'ai-execution-retry-queue', // Story 2.9
   GITHUB_WEBHOOK: 'github-webhook-queue', // Story 14.1
+  GITHUB_PR_REMINDER: 'github-pr-reminder-queue', // Story 14.2
+  GITHUB_PR_REMINDER_WAIT: 'github-pr-reminder-wait-queue', // Story 14.2 Delay Queue
 } as const;
 
 /**

@@ -1,6 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { GitHubClientService } from './github-client.service';
 import { AuditLogService } from '../common/audit/audit-log.service';
+
+export interface GitHubPR {
+  number: number;
+  state: string;
+  mergeable: boolean | null;
+  merged: boolean;
+  html_url: string;
+  head: {
+    ref: string;
+    sha: string;
+  };
+  base: {
+    ref: string;
+    sha: string;
+  };
+}
+
+export interface GitHubMergeResult {
+  sha: string;
+  merged: boolean;
+  message: string;
+}
+
 import { SentryService } from '../common/sentry/sentry.service';
 import { LoggerService } from '../common/logger/logger.service';
 import { GitHubRepoDetails } from './interfaces/github.interfaces';
@@ -149,6 +172,57 @@ export class GitHubService {
       },
       installationId,
       'addPRComment',
+    );
+  }
+
+  async getPullRequest(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    installationId?: string,
+  ): Promise<GitHubPR> {
+    return this.clientService.execute(
+      async (client: Octokit) => {
+        const { data } = await client.pulls.get({
+          owner,
+          repo,
+          pull_number: prNumber,
+        });
+        return data as unknown as GitHubPR;
+      },
+      installationId,
+      'getPullRequest',
+    );
+  }
+
+  async mergePullRequest(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    mergeMethod: 'merge' | 'squash' | 'rebase' = 'squash',
+    installationId?: string,
+  ): Promise<GitHubMergeResult> {
+    return this.clientService.execute(
+      async (client: Octokit) => {
+        const { data } = await client.pulls.merge({
+          owner,
+          repo,
+          pull_number: prNumber,
+          merge_method: mergeMethod,
+        });
+
+        await this.auditLog.log({
+          action: 'merge_pr',
+          entityType: 'github_pr',
+          entityId: `${owner}/${repo}/${prNumber}`,
+          actorType: 'system',
+          afterState: { mergeMethod, sha: data.sha, message: data.message },
+        });
+
+        return data as unknown as GitHubMergeResult;
+      },
+      installationId,
+      'mergePullRequest',
     );
   }
 

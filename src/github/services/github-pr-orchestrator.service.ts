@@ -19,6 +19,8 @@ import { IAIPromptExecutor } from '@/ai-routing/interfaces';
 import { PROrchestrationResult } from '../interfaces/pr-result.interface';
 import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
 import { PRRiskAssessorService } from './pr-risk-assessor.service';
+import { PRAutoMergeService } from './pr-auto-merge.service';
+import { PRReminderService } from './pr-reminder.service';
 
 @Injectable()
 export class GitHubPROrchestrator {
@@ -32,6 +34,8 @@ export class GitHubPROrchestrator {
     private readonly logger: LoggerService,
     private readonly workspaceService: WorkspaceService,
     private readonly riskAssessor: PRRiskAssessorService,
+    private readonly autoMergeService: PRAutoMergeService,
+    private readonly reminderService: PRReminderService,
   ) {}
 
   /**
@@ -192,9 +196,23 @@ export class GitHubPROrchestrator {
           prInfo.prNumber,
           correlationId,
         );
+
+        // Story 14.2: Trigger PR auto-merge and reminders
+        await this.autoMergeService.attemptAutoMerge(
+          executionId,
+          githubPush.repository,
+          prInfo.prNumber,
+          correlationId,
+        );
+
+        await this.reminderService.scheduleInitialReminder(
+          executionId,
+          githubPush.repository,
+          prInfo.prNumber,
+        );
       } catch (riskError) {
-        // Log but don't fail PR creation if risk assessment fails
-        this.logger.warn('Initial PR risk assessment failed', {
+        // Log but don't fail PR creation if risk assessment/auto-merge fails
+        this.logger.warn('PR assessment, auto-merge or reminder scheduling failed', {
           executionId,
           error: (riskError as Error).message,
         });

@@ -85,6 +85,8 @@ export const envValidationSchema = Joi.object({
   GITHUB_WEBHOOK_SECRET: Joi.string().min(16).optional().messages({
     'string.min': 'GITHUB_WEBHOOK_SECRET must be at least 16 characters',
   }),
+  GITHUB_AUTO_MERGE_LOW_RISK: Joi.boolean().default(false),
+  GITHUB_REMINDERS_ENABLED: Joi.boolean().default(true),
 
   // GitHub App (optional, alternative to token)
   GITHUB_APP_ID: Joi.number().optional(),

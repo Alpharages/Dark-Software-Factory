@@ -23,6 +23,7 @@ export class RabbitMQPublisherService {
     payload: unknown,
     correlationId?: string,
     delay?: number,
+    expiration?: number,
   ): Promise<boolean> {
     try {
       const channel = this.rabbitMQService.getChannel();
@@ -45,6 +46,10 @@ export class RabbitMQPublisherService {
 
       if (delay && delay > 0) {
         options.headers = { 'x-delay': delay };
+      }
+
+      if (expiration && expiration > 0) {
+        options.expiration = expiration.toString();
       }
 
       const sent = channel.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), options);

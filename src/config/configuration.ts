@@ -58,6 +58,8 @@ export default () => {
       appId: process.env.GITHUB_APP_ID ? parseInt(process.env.GITHUB_APP_ID, 10) : undefined,
       privateKeyPath: process.env.GITHUB_APP_PRIVATE_KEY_PATH,
       webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
+      autoMergeLowRisk: process.env.GITHUB_AUTO_MERGE_LOW_RISK === 'true',
+      remindersEnabled: process.env.GITHUB_REMINDERS_ENABLED !== 'false',
     },
 
     // ClickUp Integration

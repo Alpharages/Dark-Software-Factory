@@ -98,6 +98,16 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       },
       messageTtl: 300000, // 5 minutes
     });
+
+    // Create WAIT queue for PR reminders (Story 14.2)
+    // Messages wait here for variable TTL based on attempt, then dead-letter back to GITHUB_PR_REMINDER
+    await this.channel.assertQueue(QUEUE_NAMES.GITHUB_PR_REMINDER_WAIT, {
+      durable: true,
+      arguments: {
+        'x-dead-letter-exchange': '', // Default exchange
+        'x-dead-letter-routing-key': QUEUE_NAMES.GITHUB_PR_REMINDER, // Route back to main queue
+      },
+    });
     this.logger.log(`Queue created: ${QUEUE_NAMES.AI_ROUTING_WAIT} (TTL: 5m)`);
 
     for (const queueName of queues) {

@@ -14,6 +14,9 @@ import { GitHubErrorMonitor } from './services/github-error-monitor.service';
 import { DeploymentSuccessRateCalculator } from './services/deployment-success-rate-calculator.service';
 import { BranchStrategistService } from './services/branch-strategist.service';
 import { PRRiskAssessorService } from './services/pr-risk-assessor.service';
+import { PRAutoMergeService } from './services/pr-auto-merge.service';
+import { PRReminderService } from './services/pr-reminder.service';
+import { PRReminderConsumer } from './services/pr-reminder.consumer';
 import { GitHubWebhookConsumer } from './services/github-webhook.consumer';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
@@ -57,6 +60,9 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     DeploymentSuccessRateCalculator,
     BranchStrategistService,
     PRRiskAssessorService,
+    PRAutoMergeService,
+    PRReminderService,
+    PRReminderConsumer,
     GitHubWebhookConsumer,
   ],
   exports: [
@@ -70,6 +76,8 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     DeploymentSuccessRateCalculator,
     BranchStrategistService,
     PRRiskAssessorService,
+    PRAutoMergeService,
+    PRReminderService,
   ],
 })
 export class GitHubModule {}
