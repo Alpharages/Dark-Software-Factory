@@ -10,6 +10,7 @@
 ## Overview
 
 ### Original Approach (Don't Do This)
+
 ❌ Build ML model or rule-based recommendation engine  
 ❌ Implement pattern detection algorithms  
 ❌ Create provider performance comparison logic  
@@ -17,6 +18,7 @@
 ❌ ~300 lines of complex analysis code
 
 ### Delegation Approach (Do This Instead)
+
 ✅ AI analyzes cost patterns and generates recommendations  
 ✅ Orchestrator aggregates cost data for AI  
 ✅ UI displays recommendations with apply/dismiss actions  
@@ -27,6 +29,17 @@
 ---
 
 ## Implementation Steps
+
+### Step 0: Prerequisites (COMPLETED)
+
+**Component:** Cost Dashboard API (Story 13.5)
+The foundational data extraction APIs are now implemented, providing the following critical data points for analysis:
+
+- Aggregated costs by provider/model (Cost Summary API)
+- Detailed per-ticket execution context (Ticket Cost API)
+- Grouped breakdown with pagination/filtering (Breakdown API)
+
+These endpoints serve as the "Data Layer" for the optimization engine.
 
 ### Step 1: Create Optimization Interfaces
 
@@ -45,33 +58,33 @@ export interface CostOptimizationTask {
 }
 
 export interface CostDataSummary {
-  totalSpend: number;              // Total cost in cents
+  totalSpend: number; // Total cost in cents
   spendByProvider: Record<string, number>; // Provider → cost
   spendByTaskType: Record<string, number>; // Task type → cost
-  spendByPM: Record<string, number>;       // PM → cost
+  spendByPM: Record<string, number>; // PM → cost
   ticketCount: number;
   avgCostPerTicket: number;
-  failedExecutionCost: number;     // Wasted on failures
+  failedExecutionCost: number; // Wasted on failures
 }
 
 export interface ProviderPricingInfo {
   cursor: {
     type: 'fixed_monthly';
-    monthlyCost: number;           // e.g., $2500
+    monthlyCost: number; // e.g., $2500
     estimatedTicketsPerMonth: number;
   };
   claude: {
     type: 'pay_per_use';
-    inputTokenCost: number;        // e.g., $3 per 1M tokens
-    outputTokenCost: number;       // e.g., $15 per 1M tokens
+    inputTokenCost: number; // e.g., $3 per 1M tokens
+    outputTokenCost: number; // e.g., $15 per 1M tokens
     avgTokensPerTicket: number;
   };
 }
 
 export interface ExecutionMetricsSummary {
   providerSuccessRates: Record<string, number>; // Provider → %
-  avgExecutionTime: Record<string, number>;     // Provider → seconds
-  fallbackUsageRate: number;                    // % using fallback
+  avgExecutionTime: Record<string, number>; // Provider → seconds
+  fallbackUsageRate: number; // % using fallback
   ticketComplexityDistribution: {
     simple: number;
     moderate: number;
@@ -85,16 +98,16 @@ export interface CostOptimizationRecommendation {
   category: 'ROUTING' | 'TICKET_QUALITY' | 'PROCESS' | 'INFRASTRUCTURE';
   priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   estimatedSavings: {
-    monthly: number;              // Dollars per month
+    monthly: number; // Dollars per month
     annual: number;
-    percentage: number;           // % of current spend
+    percentage: number; // % of current spend
   };
   description: string;
-  reasoning: string;              // Why this saves money
+  reasoning: string; // Why this saves money
   implementation: {
     difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-    estimatedEffort: string;      // e.g., "2 days"
-    steps: string[];              // How to implement
+    estimatedEffort: string; // e.g., "2 days"
+    steps: string[]; // How to implement
   };
   risks: {
     level: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -106,7 +119,7 @@ export interface CostOptimizationRecommendation {
     successCriteria: string;
   };
   status: 'PENDING' | 'APPROVED' | 'IMPLEMENTED' | ' DISMISSED';
-  aiConfidence: number;           // 0-100
+  aiConfidence: number; // 0-100
 }
 ```
 
@@ -126,37 +139,33 @@ import { CostOptimizationRecommendation } from '../interfaces/optimization.inter
 export class CostOptimizationService {
   constructor(
     private readonly aiProvider: AIProviderService,
-    private readonly costRepo: CostRepository
+    private readonly costRepo: CostRepository,
   ) {}
 
   async generateOptimizationRecommendations(
-    periodDays: number = 30
+    periodDays: number = 30,
   ): Promise<CostOptimizationRecommendation[]> {
     // 1. Aggregate cost data for AI analysis
     const costData = await this.aggregateCostData(periodDays);
-    
+
     // 2. Get provider pricing info
     const pricing = this.getProviderPricing();
-    
+
     // 3. Get execution metrics
     const metrics = await this.getExecutionMetrics(periodDays);
-    
+
     // 4. Delegate analysis to AI
     const analysisTask = {
       type: 'cost-optimization-analysis',
       instructions: this.buildOptimizationPrompt(costData, pricing, metrics),
-      context: { costData, pricing, metrics }
+      context: { costData, pricing, metrics },
     };
 
     const result = await this.aiProvider.execute(analysisTask);
     return this.parseRecommendations(result.output);
   }
 
-  private buildOptimizationPrompt(
-    costData: any,
-    pricing: any,
-    metrics: any
-  ): string {
+  private buildOptimizationPrompt(costData: any, pricing: any, metrics: any): string {
     return `
 Analyze our AI compute costs and generate optimization recommendations.
 
@@ -168,21 +177,25 @@ Analyze our AI compute costs and generate optimization recommendations.
 
 **Spending by AI Provider:**
 ${Object.entries(costData.spendByProvider)
-  .map(([provider, cost]: [string, any]) => 
-    `- ${provider}: $${(cost / 100).toFixed(2)} (${((cost / costData.totalSpend) * 100).toFixed(1)}%)`
-  ).join('\n')}
+  .map(
+    ([provider, cost]: [string, any]) =>
+      `- ${provider}: $${(cost / 100).toFixed(2)} (${((cost / costData.totalSpend) * 100).toFixed(1)}%)`,
+  )
+  .join('\n')}
 
 **Provider Performance:**
 ${Object.entries(metrics.providerSuccessRates)
-  .map(([provider, rate]: [string, any]) => 
-    `- ${provider}: ${rate.toFixed(1)}% success rate, ${metrics.avgExecutionTime[provider]}s avg time`
-  ).join('\n')}
+  .map(
+    ([provider, rate]: [string, any]) =>
+      `- ${provider}: ${rate.toFixed(1)}% success rate, ${metrics.avgExecutionTime[provider]}s avg time`,
+  )
+  .join('\n')}
 
 **Provider Pricing Models:**
 - Cursor CLI: Fixed $${(pricing.cursor.monthlyCost / 100).toFixed(0)}/month
-  (Est. ${pricing.cursor.estimatedTicketsPerMonth} tickets → $${((pricing.cursor.monthlyCost / pricing.cursor.estimatedTicketsPerMonth) / 100).toFixed(2)}/ticket)
+  (Est. ${pricing.cursor.estimatedTicketsPerMonth} tickets → $${(pricing.cursor.monthlyCost / pricing.cursor.estimatedTicketsPerMonth / 100).toFixed(2)}/ticket)
 - Claude Code: $${pricing.claude.inputTokenCost}/1M input tokens, $${pricing.claude.outputTokenCost}/1M output tokens
-  (Avg ${pricing.claude.avgTokensPerTicket} tokens/ticket → $${((pricing.claude.avgTokensPerTicket * pricing.claude.outputTokenCost / 1000000) / 100).toFixed(2)}/ticket)
+  (Avg ${pricing.claude.avgTokensPerTicket} tokens/ticket → $${((pricing.claude.avgTokensPerTicket * pricing.claude.outputTokenCost) / 1000000 / 100).toFixed(2)}/ticket)
 
 **Ticket Complexity:**
 - Simple: ${metrics.ticketComplexityDistribution.simple} tickets
@@ -229,7 +242,7 @@ Return JSON array of recommendations, ordered by priority.
     try {
       const parsed = JSON.parse(aiOutput);
       const recommendations = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
-      
+
       return recommendations.map((rec, idx) => ({
         id: `opt-${Date.now()}-${idx}`,
         title: rec.title || 'Untitled Recommendation',
@@ -238,28 +251,26 @@ Return JSON array of recommendations, ordered by priority.
         estimatedSavings: {
           monthly: rec.estimatedSavings?.monthly || 0,
           annual: rec.estimatedSavings?.annual || (rec.estimatedSavings?.monthly || 0) * 12,
-          percentage: rec.estimatedSavings?.percentage || 0
+          percentage: rec.estimatedSavings?.percentage || 0,
         },
         description: rec.description || '',
         reasoning: rec.reasoning || '',
         implementation: {
           difficulty: rec.implementation?.difficulty || 'MEDIUM',
           estimatedEffort: rec.implementation?.estimatedEffort || 'Unknown',
-          steps: Array.isArray(rec.implementation?.steps) 
-            ? rec.implementation.steps 
-            : []
+          steps: Array.isArray(rec.implementation?.steps) ? rec.implementation.steps : [],
         },
         risks: {
           level: rec.risks?.level || 'MEDIUM',
-          description: rec.risks?.description || 'Unknown risks'
+          description: rec.risks?.description || 'Unknown risks',
         },
         metrics: rec.metrics || {
           currentState: 'Unknown',
           targetState: 'Unknown',
-          successCriteria: 'To be defined'
+          successCriteria: 'To be defined',
         },
         status: 'PENDING',
-        aiConfidence: rec.aiConfidence || 70
+        aiConfidence: rec.aiConfidence || 70,
       }));
     } catch (error) {
       throw new Error(`Failed to parse optimization recommendations: ${error.message}`);
@@ -286,14 +297,14 @@ Return JSON array of recommendations, ordered by priority.
       cursor: {
         type: 'fixed_monthly',
         monthlyCost: 250000, // $2500 in cents
-        estimatedTicketsPerMonth: 100
+        estimatedTicketsPerMonth: 100,
       },
       claude: {
         type: 'pay_per_use',
         inputTokenCost: 3,
         outputTokenCost: 15,
-        avgTokensPerTicket: 50000
-      }
+        avgTokensPerTicket: 50000,
+      },
     };
   }
 }
@@ -308,35 +319,35 @@ Return JSON array of recommendations, ordered by priority.
 ```prisma
 model CostOptimizationRecommendation {
   id        String   @id @default(cuid())
-  
+
   // Recommendation Content
   title       String
   category    RecommendationCategory
   priority    RecommendationPriority
   description String   @db.Text
   reasoning   String   @db.Text
-  
+
   // Savings Estimates (in cents)
   monthlySavings     Int
   annualSavings      Int
   savingsPercentage  Float
-  
+
   // Implementation Details
   difficulty         ImplementationDifficulty
   estimatedEffort    String
   implementationSteps String[] // JSON array
-  
+
   // Risks
   riskLevel          RiskLevel
   riskDescription    String   @db.Text
-  
+
   // Metrics (stored as JSON)
   metrics            Json
-  
+
   // Status Tracking
   status             RecommendationStatus @default(PENDING)
   aiConfidence       Int                  // 0-100
-  
+
   // Manager Actions
   approvedBy         String?
   approvedAt         DateTime?
@@ -345,11 +356,11 @@ model CostOptimizationRecommendation {
   dismissReason      String?  @db.Text
   implementedAt      DateTime?
   implementationNotes String? @db.Text
-  
+
   // Timestamps
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-  
+
   @@index([status])
   @@index([priority])
   @@index([createdAt])
@@ -404,24 +415,25 @@ import { RecommendationRepository } from '../repositories/recommendation.reposit
 export class OptimizationController {
   constructor(
     private readonly optimizationService: CostOptimizationService,
-    private readonly recommendationRepo: RecommendationRepository
+    private readonly recommendationRepo: RecommendationRepository,
   ) {}
 
   @Post('analyze')
   async generateRecommendations(@Body() dto: { periodDays?: number }) {
-    const recommendations = await this.optimizationService
-      .generateOptimizationRecommendations(dto.periodDays || 30);
-    
+    const recommendations = await this.optimizationService.generateOptimizationRecommendations(
+      dto.periodDays || 30,
+    );
+
     // Store in database
     await this.recommendationRepo.createMany(recommendations);
-    
+
     return {
       count: recommendations.length,
       totalPotentialSavings: recommendations.reduce(
         (sum, rec) => sum + rec.estimatedSavings.monthly,
-        0
+        0,
       ),
-      recommendations
+      recommendations,
     };
   }
 
@@ -431,26 +443,20 @@ export class OptimizationController {
   }
 
   @Patch('recommendations/:id/approve')
-  async approveRecommendation(
-    @Param('id') id: string,
-    @Body() dto: { approvedBy: string }
-  ) {
+  async approveRecommendation(@Param('id') id: string, @Body() dto: { approvedBy: string }) {
     return this.recommendationRepo.approve(id, dto.approvedBy);
   }
 
   @Patch('recommendations/:id/dismiss')
   async dismissRecommendation(
     @Param('id') id: string,
-    @Body() dto: { dismissedBy: string; reason: string }
+    @Body() dto: { dismissedBy: string; reason: string },
   ) {
     return this.recommendationRepo.dismiss(id, dto.dismissedBy, dto.reason);
   }
 
   @Patch('recommendations/:id/implement')
-  async markImplemented(
-    @Param('id') id: string,
-    @Body() dto: { notes: string }
-  ) {
+  async markImplemented(@Param('id') id: string, @Body() dto: { notes: string }) {
     return this.recommendationRepo.markImplemented(id, dto.notes);
   }
 }
@@ -525,7 +531,7 @@ function RecommendationCard({ recommendation, onApprove, onDismiss }) {
 
       <CardContent>
         <p>{recommendation.description}</p>
-        
+
         <Section title="Why This Saves Money">
           {recommendation.reasoning}
         </Section>
@@ -579,6 +585,7 @@ function RecommendationCard({ recommendation, onApprove, onDismiss }) {
 ## What We Didn't Build (Effort Saved)
 
 ### ❌ ML Model (~2-3 days)
+
 ```python
 # DON'T NEED THIS
 class CostOptimizationML:
@@ -587,7 +594,7 @@ class CostOptimizationML:
         # Model training (regression, clustering)
         # Hyperparameter tuning
         pass
-    
+
     def predict_savings(self, scenario):
         # Model inference
         # Confidence intervals
@@ -595,17 +602,18 @@ class CostOptimizationML:
 ```
 
 ### ❌ Rule-Based Engine (~2 days)
+
 ```typescript
 // DON'T NEED THIS
 class RuleBasedOptimizer {
   rules: OptimizationRule[] = [
     {
       condition: (data) => data.claudeUsage < 20,
-      recommendation: 'Increase Claude usage for simple tasks'
+      recommendation: 'Increase Claude usage for simple tasks',
     },
     // ... 50+ rules
   ];
-  
+
   evaluate(costData: CostData): Recommendation[] {
     // Complex rule evaluation logic
     // Priority scoring

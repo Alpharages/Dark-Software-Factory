@@ -114,6 +114,7 @@ The **Dark Software Factory** is an AI-driven transformation that enables except
 ### 💼 **For Managers**
 
 - ✅ Real-time cost tracking and budget alerts
+- ✅ **Cost Dashboard API**: 3 REST endpoints for summary, ticket, and breakdown analysis
 - ✅ GO/NO-GO decision dashboard with transformation metrics
 - ✅ Team capacity monitoring (PM/TL/QA workload)
 - ✅ Financial metrics (revenue, costs, margins, ROI)
