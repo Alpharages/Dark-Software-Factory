@@ -276,4 +276,30 @@ export class GitHubService {
       'updateCommitStatus',
     );
   }
+
+  /**
+   * Get the diff of a pull request
+   */
+  async getPullRequestDiff(
+    repository: string,
+    prNumber: number,
+    installationId?: string,
+  ): Promise<string> {
+    const [owner, repo] = repository.split('/');
+    return this.clientService.execute(
+      async (client: Octokit) => {
+        const { data } = await client.pulls.get({
+          owner,
+          repo,
+          pull_number: prNumber,
+          headers: {
+            accept: 'application/vnd.github.v3.diff',
+          },
+        });
+        return data as unknown as string;
+      },
+      installationId,
+      'getPullRequestDiff',
+    );
+  }
 }

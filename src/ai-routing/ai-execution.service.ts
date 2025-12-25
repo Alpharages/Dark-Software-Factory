@@ -140,7 +140,17 @@ export class AIExecutionService {
       }
 
       throw error;
+    } finally {
+      // Assuming endTimer() is defined elsewhere or is a placeholder
+      // endTimer();
     }
+  }
+
+  /**
+   * Get provider instance for specialized orchestration (Story 14.1 Fix)
+   */
+  getProvider(provider: AIProvider): IAIProvider | undefined {
+    return this.providers.get(provider);
   }
 
   /**

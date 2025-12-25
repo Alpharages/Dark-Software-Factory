@@ -223,4 +223,40 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
     this.logger.debug(`Published message to ${queue}`);
   }
+
+  /**
+   * Publish message to an exchange
+   *
+   * @param exchange - Exchange name
+   * @param routingKey - Routing key
+   * @param message - Message payload
+   * @param options - Publish options
+   */
+  async publishToExchange(
+    exchange: string,
+    routingKey: string,
+    message: unknown,
+    options?: {
+      correlationId?: string;
+      persistent?: boolean;
+      headers?: Record<string, string>;
+    },
+  ): Promise<void> {
+    if (!this.channel) {
+      throw new Error('RabbitMQ channel not initialized');
+    }
+
+    // Publish message
+    const messageBuffer = Buffer.from(JSON.stringify(message));
+
+    this.channel.publish(exchange, routingKey, messageBuffer, {
+      persistent: options?.persistent ?? true,
+      correlationId: options?.correlationId,
+      headers: options?.headers,
+      contentType: 'application/json',
+      timestamp: Date.now(),
+    });
+
+    this.logger.debug(`Published message to ${exchange} with key ${routingKey}`);
+  }
 }

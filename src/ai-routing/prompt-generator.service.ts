@@ -141,6 +141,53 @@ export class PromptGeneratorService implements OnModuleInit {
   }
 
   /**
+   * Generate specialized prompt for PR risk assessment (Story 14.1 AC#7)
+   */
+  generateRiskAssessmentPrompt(context: {
+    ticketId: string;
+    ticketTitle: string;
+    ticketDescription?: string;
+    diff: string;
+  }): string {
+    return `You are a senior security and infrastructure engineer. Analyze the following Pull Request diff for risk.
+
+CORE PROJECT CONTEXT:
+- Tech Stack: TypeScript, NestJS, Prisma, PostgreSQL, RabbitMQ
+- Critical Paths: src/auth/*, src/database/*, prisma/schema.prisma, src/config/*
+
+TICKET CONTEXT:
+- Ticket: [${context.ticketId}] ${context.ticketTitle}
+- Description: ${context.ticketDescription || 'N/A'}
+
+PR DIFF:
+\`\`\`diff
+${context.diff}
+\`\`\`
+
+RISK FACTORS TO CONSIDER:
+1. Files changed in core directories (e.g., config, auth, database, security).
+2. Large diff size or many unrelated changes.
+3. Breaking changes to public APIs or database schema.
+4. Security-sensitive changes (secrets handling, permissions, encryption).
+5. Complexity of logic changes.
+
+RISK LEVELS:
+- LOW: Routine changes, low impact potential.
+- MEDIUM: Moderate changes, standard review required.
+- HIGH: Significant changes to critical components.
+- CRITICAL: Dangerous changes, high risk of regression or security issue.
+
+REQUIRED OUTPUT FORMAT (JSON):
+{
+  "riskLevel": "LOW | MEDIUM | HIGH | CRITICAL",
+  "reasoning": "Detailed technical explanation of risk factors identified",
+  "mergeRecommendation": "PROCEED | CAUTION | BLOCKED"
+}
+
+Analyze the diff and return ONLY the JSON response.`;
+  }
+
+  /**
    * Get builder for provider
    */
   private getBuilder(provider: AIProvider): IPromptBuilder {
@@ -188,6 +235,9 @@ export class PromptGeneratorService implements OnModuleInit {
     }
     if (prompt.includes('## Output')) {
       sectionsIncluded.push(PromptSection.OUTPUT_FORMAT);
+    }
+    if (prompt.includes('PR RISK ASSESSMENT')) {
+      sectionsIncluded.push(PromptSection.PR_RISK_ASSESSMENT);
     }
 
     return {

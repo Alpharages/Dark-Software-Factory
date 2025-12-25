@@ -14,6 +14,8 @@ import { CorrelationId } from '@/common/decorators/correlation-id.decorator';
 import { PrismaService } from '@/database/prisma.service';
 import { GitHubWebhookSignatureGuard } from './guards';
 import { FileLockManagerService } from '@/file-locks/file-lock-manager.service';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { EXCHANGE_NAMES, ROUTING_KEYS } from '@/rabbitmq/rabbitmq.config';
 
 interface GitHubWebhookPayload {
   action?: string;
@@ -39,6 +41,7 @@ export class GitHubWebhooksController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fileLocks: FileLockManagerService,
+    private readonly rabbitMQ: RabbitMQService,
   ) {}
 
   @Public()
@@ -60,6 +63,22 @@ export class GitHubWebhooksController {
       const merged = githubPayload.pull_request?.merged === true;
 
       if (action !== 'closed' || !merged) {
+        // Story 14.1: Publish to RabbitMQ for risk assessment updates
+        if (action === 'synchronize' || action === 'reopened') {
+          await this.rabbitMQ.publishToExchange(
+            EXCHANGE_NAMES.ORCHESTRATOR_EVENTS,
+            ROUTING_KEYS.GITHUB_WEBHOOK_RECEIVED,
+            {
+              event: 'pull_request',
+              payload: githubPayload,
+              correlationId,
+            },
+            { correlationId },
+          );
+
+          this.logger.log(`[${correlationId}] Published PR ${action} event to RabbitMQ`);
+        }
+
         return { success: true };
       }
 

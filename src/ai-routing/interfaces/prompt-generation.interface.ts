@@ -104,6 +104,7 @@ export enum PromptSection {
   RELEVANT_FILES = 'relevant_files',
   CODE_STANDARDS = 'code_standards',
   OUTPUT_FORMAT = 'output_format',
+  PR_RISK_ASSESSMENT = 'pr_risk_assessment',
 }
 
 /**

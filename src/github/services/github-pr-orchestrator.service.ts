@@ -18,6 +18,7 @@ import { WorkspaceService } from '@/ai-routing/providers';
 import { IAIPromptExecutor } from '@/ai-routing/interfaces';
 import { PROrchestrationResult } from '../interfaces/pr-result.interface';
 import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { PRRiskAssessorService } from './pr-risk-assessor.service';
 
 @Injectable()
 export class GitHubPROrchestrator {
@@ -30,6 +31,7 @@ export class GitHubPROrchestrator {
     private readonly sentry: SentryService,
     private readonly logger: LoggerService,
     private readonly workspaceService: WorkspaceService,
+    private readonly riskAssessor: PRRiskAssessorService,
   ) {}
 
   /**
@@ -175,12 +177,28 @@ export class GitHubPROrchestrator {
         correlationId,
       );
 
-      this.logger.log('AI-delegated PR creation completed successfully', {
+      this.logger.log('PR created successfully via AI delegation', {
         executionId,
         prUrl: prInfo.prUrl,
         prNumber: prInfo.prNumber,
         duration,
       });
+
+      // Story 14.1: Trigger PR risk assessment
+      try {
+        await this.riskAssessor.assess(
+          executionId,
+          githubPush.repository,
+          prInfo.prNumber,
+          correlationId,
+        );
+      } catch (riskError) {
+        // Log but don't fail PR creation if risk assessment fails
+        this.logger.warn('Initial PR risk assessment failed', {
+          executionId,
+          error: (riskError as Error).message,
+        });
+      }
 
       return {
         success: true,

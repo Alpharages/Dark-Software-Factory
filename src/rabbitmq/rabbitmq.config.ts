@@ -51,6 +51,7 @@ export const QUEUE_NAMES = {
   MONITORING: 'monitoring-queue',
   DEAD_LETTER: 'dead-letter-queue',
   AI_EXECUTION_RETRY: 'ai-execution-retry-queue', // Story 2.9
+  GITHUB_WEBHOOK: 'github-webhook-queue', // Story 14.1
 } as const;
 
 /**
@@ -91,4 +92,7 @@ export const ROUTING_KEYS = {
   // Monitoring
   PRODUCTION_ERROR_DETECTED: 'monitoring.error.detected',
   PRODUCTION_ERROR_RESOLVED: 'monitoring.error.resolved',
+
+  // GitHub Webhook (Story 14.1)
+  GITHUB_WEBHOOK_RECEIVED: 'github.webhook.received',
 } as const;

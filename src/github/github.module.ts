@@ -13,6 +13,8 @@ import { DeploymentStatusSync } from './services/deployment-status-sync.service'
 import { GitHubErrorMonitor } from './services/github-error-monitor.service';
 import { DeploymentSuccessRateCalculator } from './services/deployment-success-rate-calculator.service';
 import { BranchStrategistService } from './services/branch-strategist.service';
+import { PRRiskAssessorService } from './services/pr-risk-assessor.service';
+import { GitHubWebhookConsumer } from './services/github-webhook.consumer';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
@@ -54,6 +56,8 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     GitHubErrorMonitor,
     DeploymentSuccessRateCalculator,
     BranchStrategistService,
+    PRRiskAssessorService,
+    GitHubWebhookConsumer,
   ],
   exports: [
     GitHubService,
@@ -65,6 +69,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     GitHubErrorMonitor,
     DeploymentSuccessRateCalculator,
     BranchStrategistService,
+    PRRiskAssessorService,
   ],
 })
 export class GitHubModule {}
