@@ -100,4 +100,4 @@ import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-pro
     PRReminderService,
   ],
 })
-export class GitHubModule { }
+export class GitHubModule {}
