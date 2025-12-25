@@ -18,7 +18,8 @@ describe('DeploymentHealthMonitorService', () => {
   let auditLog: jest.Mocked<AIDecisionLoggerService>;
   let deploymentStatusSync: jest.Mocked<DeploymentStatusSync>;
   let logger: jest.Mocked<LoggerService>;
-  let config: jest.Mocked<ConfigService>;
+  // config removed due to being unused
+
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -107,7 +108,7 @@ describe('DeploymentHealthMonitorService', () => {
     auditLog = module.get(AIDecisionLoggerService) as jest.Mocked<AIDecisionLoggerService>;
     deploymentStatusSync = module.get(DeploymentStatusSync) as jest.Mocked<DeploymentStatusSync>;
     logger = module.get(LoggerService) as jest.Mocked<LoggerService>;
-    config = module.get(ConfigService) as jest.Mocked<ConfigService>;
+    // config assignment removed
   });
 
   afterEach(() => {

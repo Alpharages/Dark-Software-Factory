@@ -264,5 +264,13 @@ export default () => {
       latencyThresholdMs: parseInt(process.env.HEALTH_LATENCY_THRESHOLD_MS || '200', 10),
       baselineWindowMs: parseInt(process.env.HEALTH_BASELINE_WINDOW_MS || '300000', 10), // 5 min
     },
+
+    // Story 14.5: Observability Dashboard Configuration
+    observability: {
+      rabbitmqManagementUrl: process.env.RABBITMQ_MANAGEMENT_URL || 'http://localhost:15672',
+      rabbitmqManagementUser: process.env.RABBITMQ_MANAGEMENT_USER || 'guest',
+      rabbitmqManagementPassword: process.env.RABBITMQ_MANAGEMENT_PASSWORD || 'guest',
+      prometheusUrl: process.env.PROMETHEUS_URL || 'http://localhost:9090',
+    },
   };
 };

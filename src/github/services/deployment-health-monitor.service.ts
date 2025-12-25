@@ -10,7 +10,6 @@ import { DeploymentStatusSync } from './deployment-status-sync.service';
 import { LoggerService } from '../../common/logger/logger.service';
 import {
   BaselineMetrics,
-  HealthCheckResult,
   RollbackReason,
 } from '../interfaces/health-monitoring.interface';
 
@@ -248,8 +247,8 @@ export class DeploymentHealthMonitorService implements OnModuleDestroy {
 
       const execution = githubPush?.execution_id
         ? await this.prisma.execution.findUnique({
-            where: { id: githubPush.execution_id },
-          })
+          where: { id: githubPush.execution_id },
+        })
         : null;
 
       // Update deployment status to ROLLED_BACK (AC#4)

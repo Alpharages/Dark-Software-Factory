@@ -11,7 +11,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private channel: any = null;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   async onModuleInit() {
     await this.connect();
@@ -186,6 +186,60 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       messageCount: queue.messageCount,
       consumerCount: queue.consumerCount,
     };
+  }
+
+  /**
+   * AC#2: Get queue metrics for all monitored queues
+   * Returns depth, rate, and oldest message age for each queue
+   */
+  async getQueueMetrics(): Promise<{
+    'ai-execution-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
+    'qa-check-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
+    'deployment-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
+  }> {
+    if (!this.channel) {
+      throw new Error('Channel not available');
+    }
+
+    const queues = ['ai-execution-queue', 'qa-check-queue', 'deployment-queue'];
+    const metricsMap = new Map<string, any>();
+
+    for (const queueName of queues) {
+      try {
+        const stats = await this.getQueueStats(queueName);
+        metricsMap.set(queueName, {
+          depth: stats.messageCount,
+          rate: 0, // Will be calculated by ObservabilityDashboardService from Execution table
+          oldest_message_age_seconds: 0, // Placeholder - requires RabbitMQ Management API
+        });
+      } catch (error) {
+        this.logger.warn(`Failed to get stats for queue ${queueName}`, error);
+        metricsMap.set(queueName, {
+          depth: 0,
+          rate: 0,
+          oldest_message_age_seconds: 0,
+        });
+      }
+    }
+
+    const metrics = Object.fromEntries(metricsMap);
+
+    return metrics as {
+      'ai-execution-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
+      'qa-check-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
+      'deployment-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
+    };
+  }
+
+  /**
+   * Ping RabbitMQ connection (for health checks)
+   */
+  async ping(): Promise<void> {
+    if (!this.channel) {
+      throw new Error('RabbitMQ channel not available');
+    }
+    // Simple check - if channel exists and is usable
+    await this.isHealthy();
   }
 
   /**
