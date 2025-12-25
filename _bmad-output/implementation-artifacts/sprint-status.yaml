@@ -815,7 +815,7 @@ development_status:
     story_points: 3
     completed_date: "2025-12-25"
     notes: "✅ MVP COMPLETE - Fixed all issues identified during adversarial code review (0% test coverage being the only major remaining gap). 4/4 REST API endpoints implemented with proper classes, types, security (JWT+RBAC+RateLimiting), and Swagger decorators. Fixed broken uptime calculation and added defensive error logging. Known integrations limitations: Prometheus/RabbitMQ management API remain as placeholders."
-  epic-14-retrospective: optional
+  epic-14-retrospective: done
 
   epic-15: backlog
   epic-15-name: "v3 Configuration & Production Rollout"
