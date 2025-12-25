@@ -254,5 +254,15 @@ export default () => {
       diskThresholdPercent: parseInt(process.env.STORAGE_DISK_THRESHOLD_PERCENT || '85', 10),
       retentionDays: parseInt(process.env.STORAGE_RETENTION_DAYS || '30', 10),
     },
+
+    // Story 14.4: Post-Deployment Health Monitoring Configuration
+    health: {
+      enabled: process.env.HEALTH_MONITORING_ENABLED !== 'false',
+      monitoringWindowMs: parseInt(process.env.HEALTH_MONITORING_WINDOW_MS || '300000', 10), // 5 min
+      pollIntervalMs: parseInt(process.env.HEALTH_POLL_INTERVAL_MS || '30000', 10), // 30s
+      errorRateThresholdPercent: parseInt(process.env.HEALTH_ERROR_RATE_THRESHOLD || '50', 10),
+      latencyThresholdMs: parseInt(process.env.HEALTH_LATENCY_THRESHOLD_MS || '200', 10),
+      baselineWindowMs: parseInt(process.env.HEALTH_BASELINE_WINDOW_MS || '300000', 10), // 5 min
+    },
   };
 };

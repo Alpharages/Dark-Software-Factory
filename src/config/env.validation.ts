@@ -215,4 +215,39 @@ export const envValidationSchema = Joi.object({
   SELF_HEALING_ENABLED: Joi.boolean()
     .default(true)
     .description('Enable AI self-healing for QA failures'),
+
+  // Story 14.4: Post-Deployment Health Monitoring Configuration
+  HEALTH_MONITORING_ENABLED: Joi.boolean()
+    .default(true)
+    .description('Enable post-deployment health monitoring with auto-rollback'),
+  HEALTH_MONITORING_WINDOW_MS: Joi.number()
+    .integer()
+    .min(60000)
+    .max(600000)
+    .default(300000)
+    .description('Health monitoring window duration (1-10 min)'),
+  HEALTH_POLL_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(10000)
+    .max(120000)
+    .default(30000)
+    .description('Health polling interval (10s-2min)'),
+  HEALTH_ERROR_RATE_THRESHOLD: Joi.number()
+    .integer()
+    .min(0)
+    .max(200)
+    .default(50)
+    .description('Error rate increase threshold in percentage'),
+  HEALTH_LATENCY_THRESHOLD_MS: Joi.number()
+    .integer()
+    .min(0)
+    .max(10000)
+    .default(200)
+    .description('Latency increase threshold in milliseconds'),
+  HEALTH_BASELINE_WINDOW_MS: Joi.number()
+    .integer()
+    .min(60000)
+    .max(600000)
+    .default(300000)
+    .description('Baseline capture window duration (1-10 min)'),
 });

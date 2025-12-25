@@ -29,6 +29,8 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
 import { ClickUpModule } from '../clickup/clickup.module';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
+import { DeploymentHealthMonitorService } from './services/deployment-health-monitor.service';
+import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -56,6 +58,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     DeploymentOrchestrator,
     DeploymentTriggerConsumer,
     DeploymentStatusSync,
+    DeploymentHealthMonitorService,
     GitHubErrorMonitor,
     DeploymentSuccessRateCalculator,
     BranchStrategistService,
@@ -64,6 +67,22 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     PRReminderService,
     PRReminderConsumer,
     GitHubWebhookConsumer,
+    // Story 14.4: Health Monitoring Prometheus Metrics (AC#6)
+    makeCounterProvider({
+      name: 'deployment_health_checks_total',
+      help: 'Health checks performed',
+      labelNames: ['environment', 'status'],
+    }),
+    makeCounterProvider({
+      name: 'deployment_rollback_total',
+      help: 'Deployments rolled back',
+      labelNames: ['environment', 'reason'],
+    }),
+    makeHistogramProvider({
+      name: 'deployment_health_window_duration_seconds',
+      help: 'Health monitoring window duration',
+      buckets: [30, 60, 90, 120, 180, 240, 300],
+    }),
   ],
   exports: [
     GitHubService,
@@ -72,6 +91,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     GitHubPROrchestrator,
     DeploymentOrchestrator,
     DeploymentStatusSync,
+    DeploymentHealthMonitorService,
     GitHubErrorMonitor,
     DeploymentSuccessRateCalculator,
     BranchStrategistService,
@@ -80,4 +100,4 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
     PRReminderService,
   ],
 })
-export class GitHubModule {}
+export class GitHubModule { }
