@@ -13,9 +13,9 @@ import { JwtService } from '@nestjs/jwt';
 import { MetricsService } from '@/common/metrics/metrics.service';
 
 export interface ServerToClientEvents {
-  projectUpdated: (data: Record<string, unknown>) => void;
-  summaryUpdated: (data: Record<string, unknown>) => void;
-  ticketUpdated: (data: Record<string, unknown>) => void;
+  'project-updated': (data: Record<string, unknown>) => void;
+  'summary-updated': (data: Record<string, unknown>) => void;
+  'ticket-updated': (data: Record<string, unknown>) => void;
 }
 
 export interface ClientToServerEvents {
@@ -37,7 +37,7 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
   constructor(
     private readonly jwtService: JwtService,
     private readonly metricsService: MetricsService,
-  ) {}
+  ) { }
 
   async handleConnection(client: Socket<ClientToServerEvents, ServerToClientEvents>) {
     try {
@@ -61,7 +61,7 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   handleDisconnect(client: Socket) {
-    this.metricsService.incrementGauge('pm_dashboard_socket_connections', -1);
+    this.metricsService.incrementGauge('pm_dashboard_socket_connections', -1, { status: 'disconnected' });
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 

@@ -21,7 +21,7 @@ export class PmDashboardService {
     private readonly prisma: PrismaService,
     private readonly metricsService: MetricsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) {}
+  ) { }
 
   async getProjects(pmId: string, role: UserRole, query: ProjectQueryDto) {
     const startTime = Date.now();
@@ -80,9 +80,11 @@ export class PmDashboardService {
         take: limit,
         orderBy,
         include: {
+          _count: {
+            select: { tickets: true },
+          },
           tickets: {
             select: {
-              id: true,
               status: true,
               updated_at: true,
             },
@@ -94,14 +96,14 @@ export class PmDashboardService {
 
     const data: ProjectResponseDto[] = projects.map((p) => {
       const tickets = p.tickets;
-      const total_tickets = tickets.length;
-      const in_progress_tickets = tickets.filter((t) =>
+      const total = tickets.length;
+      const in_progress = tickets.filter((t) =>
         ['AI_PROCESSING', 'QA_REVIEW'].includes(t.status),
       ).length;
-      const completed_tickets = tickets.filter((t) =>
+      const completed = tickets.filter((t) =>
         ['DEPLOYED', 'COMPLETED'].includes(t.status),
       ).length;
-      const blocked_tickets = tickets.filter((t) =>
+      const blocked = tickets.filter((t) =>
         ['QA_FAILED', 'FAILED', 'BLOCKED_CIRCULAR'].includes(t.status),
       ).length;
 
@@ -120,10 +122,10 @@ export class PmDashboardService {
         status: p.status as ProjectStatus,
         last_activity,
         tickets: {
-          total_tickets,
-          in_progress_tickets,
-          completed_tickets,
-          blocked_tickets,
+          total,
+          in_progress,
+          completed,
+          blocked,
         },
       };
     });
@@ -140,7 +142,7 @@ export class PmDashboardService {
         page,
         limit,
         total,
-        total_pages: Math.ceil(total / limit),
+        total_pages: Math.ceil(total / (limit || 20)),
       },
     };
   }

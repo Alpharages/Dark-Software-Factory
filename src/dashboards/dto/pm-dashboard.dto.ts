@@ -58,16 +58,16 @@ export class ProjectQueryDto {
 
 export class TicketCountsDto {
   @ApiProperty()
-  total_tickets!: number;
+  total!: number;
 
   @ApiProperty()
-  in_progress_tickets!: number;
+  in_progress!: number;
 
   @ApiProperty()
-  completed_tickets!: number;
+  completed!: number;
 
   @ApiProperty()
-  blocked_tickets!: number;
+  blocked!: number;
 }
 
 export class ProjectResponseDto {

@@ -77,9 +77,9 @@ describe('PmDashboardService', () => {
       const result = await service.getProjects('pm-1', 'PM', { page: 1, limit: 10 });
 
       expect(result.data).toHaveLength(1);
-      expect(result.data[0].tickets.total_tickets).toBe(2);
-      expect(result.data[0].tickets.in_progress_tickets).toBe(1);
-      expect(result.data[0].tickets.completed_tickets).toBe(1);
+      expect(result.data[0].tickets.total).toBe(2);
+      expect(result.data[0].tickets.in_progress).toBe(1);
+      expect(result.data[0].tickets.completed).toBe(1);
       expect(result.pagination.total).toBe(1);
     });
 

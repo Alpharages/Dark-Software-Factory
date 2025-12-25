@@ -383,30 +383,25 @@ development_status:
   5-1-pm-dashboard-api-orchestration:
     status: done
     developer: "Antigravity"
-    notes: "REMEDIATED & COMPLETED. All 10 adversarial review issues fixed: (1) Added client_name to Prisma schema & migration applied, (2) Implemented real metrics (no placeholders), (3) Added 5-min in-memory caching for summary, (4) Optimized queries with groupBy/aggregate, (5) Added Socket.IO event contracts, (6) Integrated Prometheus metrics & audit logs, (7) Resolved all linting errors. All 20+ unit tests passing."
-  5-2-project-list-status-overview:
-    status: deprecated
-    notes: "DEPRECATED - Merged into Story 5.1 as part of Epic 5 Redesign."
+    notes: "REMEDIATED & COMPLETED. All backend issues fixed and React UI components implemented in dsf-dashboard repository."
   5-2-real-time-ticket-execution-status:
     status: ready-for-dev
     notes: "NEW Story 5.2 (formerly 5.3). Real-time updates via Socket.IO. Blocked on Epic 10 or needs polling fallback. Story file created."
-  5-3-code-approval-workflow-interface:
-    status: backlog
-    notes: "NEW Story 5.3 (merged from original 5.4+5.5). Code approval, quality gates, and confidence scores."
-  5-4-workload-capacity-dashboard:
-    status: backlog
-    notes: "NEW Story 5.4 (merged from original 5.6+5.7). Workload management and capacity planning for PMs and Managers."
-  5-5-client-communication-log:
-    status: backlog
-    delegation_opportunity: "IDENTIFIED 2025-12-07"
-    notes: "NEW Story 5.5 (formerly 5.8). AI-heavy client communication intelligence (transcription, summaries, action items)."
-  5-6-sprint-review-progress-reporting:
-    status: backlog
-    delegation_opportunity: "IDENTIFIED 2025-12-07"
-    notes: "NEW Story 5.6 (formerly 5.9). AI-heavy reporting and analytics generation (PDF/PPTX)."
+  5-3-code-approval-quality-gate-workflows:
+    status: ready-for-dev
+    notes: "NEW Story 5.3 (merged from original 5.4+5.5). Code approval, quality gates, and confidence scores. Story file created."
+  5-4-workload-management-capacity-planning:
+    status: ready-for-dev
+    notes: "NEW Story 5.4 (merged from original 5.6+5.7). Workload management and capacity planning. Story file created."
+  5-5-client-communication-intelligence:
+    status: ready-for-dev
+    notes: "NEW Story 5.5 (formerly 5.8). AI-heavy client communication intelligence. Story file created."
+  5-6-reporting-analytics-generation:
+    status: ready-for-dev
+    notes: "NEW Story 5.6 (formerly 5.9). AI-heavy reporting and analytics generation. Story file created."
   5-7-dashboard-ux-enhancements:
-    status: backlog
-    notes: "NEW Story 5.7 (formerly 5.10). Quick actions and keyboard shortcuts."
+    status: ready-for-dev
+    notes: "NEW Story 5.7 (formerly 5.10). Quick actions and keyboard shortcuts. Story file created."
   epic-5-retrospective: optional
 
   # ===================================================================
