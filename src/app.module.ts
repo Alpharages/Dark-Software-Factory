@@ -43,6 +43,7 @@ import { ProjectModule } from './projects/project.module';
 // Dependency Management
 import { DependenciesModule } from './dependencies/dependencies.module';
 import { FileLocksModule } from './file-locks/file-locks.module';
+import { StorageModule } from './storage/storage.module';
 
 // Common
 import { CorrelationIdMiddleware } from './common/middleware';
@@ -105,6 +106,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Dependency Management
     DependenciesModule, // Story 12.1: Circular Dependency Detection
     FileLocksModule, // Story 12.3: File Lock Manager
+    StorageModule, // Story 14.3: Storage Manager Service
   ],
   controllers: [AppController],
   providers: [

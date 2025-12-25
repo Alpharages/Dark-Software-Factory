@@ -248,5 +248,11 @@ export default () => {
         enabled: process.env.SELF_HEALING_ENABLED !== 'false', // Defaults to true
       },
     },
+
+    // Story 14.3: Storage Manager Configuration
+    storage: {
+      diskThresholdPercent: parseInt(process.env.STORAGE_DISK_THRESHOLD_PERCENT || '85', 10),
+      retentionDays: parseInt(process.env.STORAGE_RETENTION_DAYS || '30', 10),
+    },
   };
 };

@@ -30,6 +30,7 @@ import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { ExecutionModule } from '@/execution/execution.module';
 import { FileLocksModule } from '../file-locks/file-locks.module';
 import { GitHubModule } from '../github/github.module';
+import { StorageModule } from '../storage/storage.module';
 
 /**
  * AI Routing Module
@@ -50,6 +51,7 @@ import { GitHubModule } from '../github/github.module';
     forwardRef(() => ExecutionModule),
     FileLocksModule,
     GitHubModule,
+    forwardRef(() => StorageModule),
   ],
   providers: [
     // Story 2.3: Routing services

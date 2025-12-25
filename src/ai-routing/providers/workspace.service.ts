@@ -8,7 +8,14 @@
  * Architecture Reference: Workspace Isolation Strategy
  */
 
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Gauge, Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -21,6 +28,7 @@ import { GitOperationsService } from './git-operations.service';
 import { safeMkdir, safeReaddir, safeStat } from '../../common/utils/safe-fs.util';
 import { PrismaService } from '../../database/prisma.service';
 import { WorkspaceStatus } from '@/prisma/client';
+import { StorageManagerService } from '../../storage/storage-manager.service';
 
 @Injectable()
 export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
@@ -41,6 +49,8 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly git: GitOperationsService,
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => StorageManagerService))
+    private readonly storageManager: StorageManagerService,
     @InjectMetric('cursor_workspaces_active')
     private readonly activeGauge: Gauge<string>,
     @InjectMetric('cursor_workspace_operations_total')
@@ -289,6 +299,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Cleanup workspace after execution
+   * Delegates to StorageManagerService for archival and cleanup (Story 14.3: AC#7)
    */
   async cleanupWorkspace(executionId: string, force: boolean = false): Promise<void> {
     const workspace = await this.getWorkspace(executionId);
@@ -296,12 +307,21 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    // Preserve failed workspaces if configured
+    // Delegate to StorageManagerService for archival if failed workspace is preserved
     if (workspace.status === 'FAILED' && this.preserveFailed && !force) {
-      this.logger.log(
-        `[${executionId}] Preserving failed workspace for debugging: ${workspace.path}`,
-      );
-      return;
+      try {
+        this.logger.log(
+          `[${executionId}] Archiving failed workspace for debugging: ${workspace.path}`,
+        );
+        await this.storageManager.archiveWorkspace(executionId);
+        return;
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error(
+          `[${executionId}] Failed to archive workspace, proceeding with cleanup: ${errorMessage}`,
+        );
+        // Fall through to normal cleanup if archival fails
+      }
     }
 
     // Update status to CLEANING
@@ -365,19 +385,21 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Check disk space availability
+   * Delegates to StorageManagerService (Story 14.3: AC#7)
    */
   async checkDiskSpace(): Promise<{ available: boolean; usedMB: number }> {
     try {
-      const stats = await fs.statfs(this.workspacesRoot);
-      const availableMB = (stats.bavail * stats.bsize) / (1024 * 1024);
+      const diskUsage = await this.storageManager.getDiskUsage();
+      const availableMB = Number(diskUsage.availableBytes) / (1024 * 1024);
+      const usedMB = Number(diskUsage.usedBytes) / (1024 * 1024);
       const minRequiredMB = 500; // Require at least 500MB free
 
       return {
         available: availableMB > minRequiredMB,
-        usedMB: ((stats.blocks - stats.bfree) * stats.bsize) / (1024 * 1024),
+        usedMB,
       };
     } catch {
-      // If statfs fails, assume space is available
+      // If getDiskUsage fails, assume space is available
       return { available: true, usedMB: 0 };
     }
   }
