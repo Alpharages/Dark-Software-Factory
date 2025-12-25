@@ -19,6 +19,7 @@ import { ConfigService } from '@nestjs/config';
 import { QaMetricsService } from './qa-metrics.service';
 import { WorkspaceService } from '../ai-routing/providers';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
+import { SelfHealingOrchestratorService } from '../execution/self-healing-orchestrator.service';
 
 describe('QaOrchestratorService', () => {
   let service: QaOrchestratorService;
@@ -28,6 +29,9 @@ describe('QaOrchestratorService', () => {
 
   const mockPrismaService = {
     ticket: {
+      update: jest.fn(),
+    },
+    execution: {
       update: jest.fn(),
     },
     qAResult: {
@@ -56,7 +60,7 @@ describe('QaOrchestratorService', () => {
   // Story 3.10: Deleted service mocks - replaced by AI delegation
   // const mockLinterService = {
   //   lintFiles: jest.fn(),
-  // };
+  // }
 
   // const mockTestRunnerService = {
   //   runTests: jest.fn(),
@@ -75,6 +79,9 @@ describe('QaOrchestratorService', () => {
     recordCheckError: jest.fn(),
     recordCheckComplete: jest.fn(),
     setCoverage: jest.fn(),
+    // Story 13.4: Self-healing metrics
+    recordSelfHealingTrigger: jest.fn(),
+    recordSelfHealingDuration: jest.fn(),
   };
 
   const mockRabbitPublisher = {
@@ -100,6 +107,10 @@ describe('QaOrchestratorService', () => {
     getDecisionTimeline: jest.fn(),
   };
 
+  const mockSelfHealingOrchestrator = {
+    attemptFix: jest.fn(),
+  };
+
   const mockCounter = {
     inc: jest.fn(),
   };
@@ -119,6 +130,7 @@ describe('QaOrchestratorService', () => {
         { provide: AiQaOrchestrator, useValue: mockAiQaOrchestrator },
         { provide: WorkspaceService, useValue: mockWorkspaceService },
         { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
+        { provide: SelfHealingOrchestratorService, useValue: mockSelfHealingOrchestrator },
         // Story 3.10: Deleted service providers - replaced by AI delegation
         // { provide: LinterService, useValue: mockLinterService },
         // { provide: TestRunnerService, useValue: mockTestRunnerService },
@@ -259,6 +271,238 @@ describe('QaOrchestratorService', () => {
         expect.any(Number),
         expect.objectContaining({ projectId: mockMessage.projectId }),
       );
+    });
+  });
+
+  // Story 13.4: Self-Healing Integration Tests
+  describe('Self-Healing Integration', () => {
+    beforeEach(() => {
+      // Setup QA metrics mock with self-healing methods (already defined at module level)
+      mockQaMetricsService.recordSelfHealingTrigger = jest.fn();
+      mockQaMetricsService.recordSelfHealingDuration = jest.fn();
+    });
+
+    const mockMessage = {
+      executionId: 'exec-1',
+      ticketId: 'ticket-1',
+      projectId: 'proj-1',
+      correlationId: 'corr-1',
+      workspacePath: '/tmp/workspace',
+    };
+
+    const mockFailedGateResult = {
+      passed: false,
+      status: 'Failed',
+      overallScore: 50,
+      blockingIssues: [{ category: 'testing', message: 'Tests failed' }],
+      warningIssues: [],
+      executionId: 'exec-1',
+      correlationId: 'corr-1',
+      categoryScores: [],
+      appliedConfig: {},
+      evaluatedAt: new Date(),
+      durationMs: 100,
+      nextAction: 'notify_pm_failure',
+      ticketStatusUpdate: TicketStatus.QA_FAILED,
+    };
+
+    it('should skip self-healing when config flag is disabled', async () => {
+      // Setup: Config disabled
+      mockConfigService.get.mockReturnValue(false);
+      mockQualityGatesService.evaluate.mockResolvedValue(mockFailedGateResult);
+      mockPrismaService.qAResult.findFirst.mockResolvedValue(null);
+
+      // Execute
+      await service.processQaCheck(mockMessage);
+
+      // Verify: Self-healing NOT triggered
+      expect(mockSelfHealingOrchestrator.attemptFix).not.toHaveBeenCalled();
+      expect(mockQaMetricsService.recordSelfHealingTrigger).not.toHaveBeenCalled();
+
+      // Verify: Standard failure handling
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: mockMessage.ticketId },
+        data: { status: TicketStatus.QA_FAILED },
+      });
+    });
+
+    it('should trigger self-healing on QA failure when enabled', async () => {
+      // Setup: Config enabled, self-healing succeeds
+      mockConfigService.get.mockReturnValue(true);
+      mockQualityGatesService.evaluate.mockResolvedValue(mockFailedGateResult);
+      mockPrismaService.qAResult.findFirst.mockResolvedValue(null);
+      mockPrismaService.execution.update.mockResolvedValue({});
+
+      const mockSelfHealingSuccess = {
+        success: true,
+        outcome: 'SUCCESS',
+        attemptsMade: 1,
+        finalErrorCount: 0,
+      };
+      mockSelfHealingOrchestrator.attemptFix.mockResolvedValue(mockSelfHealingSuccess);
+
+      // Execute
+      const result = await service.processQaCheck(mockMessage);
+
+      // Verify: Self-healing triggered
+      expect(mockAIDecisionLogger.logDecision).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'self_healing_trigger',
+          ticketId: mockMessage.ticketId,
+        }),
+      );
+      expect(mockQaMetricsService.recordSelfHealingTrigger).toHaveBeenCalledWith(
+        mockMessage.ticketId,
+        mockMessage.executionId,
+      );
+      expect(mockSelfHealingOrchestrator.attemptFix).toHaveBeenCalled();
+
+      // Verify: Outcome logged
+      expect(mockAIDecisionLogger.logDecision).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'self_healing_outcome',
+          outputData: expect.objectContaining({ outcome: 'SUCCESS' }),
+        }),
+      );
+
+      // Verify: Duration metric recorded
+      expect(mockQaMetricsService.recordSelfHealingDuration).toHaveBeenCalledWith(
+        'SUCCESS',
+        expect.any(Number),
+      );
+
+      // Verify: Result status is passed
+      expect(result.status).toBe('passed');
+    });
+
+    it('should handle SUCCESS outcome - deploy and mark COMPLETED', async () => {
+      // Setup
+      mockConfigService.get.mockReturnValue(true);
+      mockQualityGatesService.evaluate.mockResolvedValue(mockFailedGateResult);
+      mockPrismaService.qAResult.findFirst.mockResolvedValue(null);
+      mockPrismaService.execution.update.mockResolvedValue({});
+
+      const mockSelfHealingSuccess = {
+        success: true,
+        outcome: 'SUCCESS',
+        attemptsMade: 2,
+        finalErrorCount: 0,
+      };
+      mockSelfHealingOrchestrator.attemptFix.mockResolvedValue(mockSelfHealingSuccess);
+
+      // Execute
+      await service.processQaCheck(mockMessage);
+
+      // Verify: Execution marked COMPLETED
+      expect(mockPrismaService.execution.update).toHaveBeenCalledWith({
+        where: { id: mockMessage.executionId },
+        data: { status: 'COMPLETED' },
+      });
+
+      // Verify: Success gate metric
+      expect(mockQaMetricsService.recordGateDecision).toHaveBeenCalledWith(
+        true,
+        expect.objectContaining({ projectId: mockMessage.projectId }),
+      );
+
+      // Verify: Deployment triggered
+      expect(mockRabbitPublisher.publishToQueue).toHaveBeenCalledWith(
+        expect.stringContaining('deployment'),
+        expect.objectContaining({
+          executionId: mockMessage.executionId,
+          action: 'deploy',
+        }),
+      );
+    });
+
+    it('should handle ESCALATED outcome - mark FAILED and notify PM', async () => {
+      // Setup
+      mockConfigService.get.mockReturnValue(true);
+      mockQualityGatesService.evaluate.mockResolvedValue(mockFailedGateResult);
+      mockPrismaService.qAResult.findFirst.mockResolvedValue(null);
+      mockPrismaService.execution.update.mockResolvedValue({});
+
+      const mockSelfHealingEscalated = {
+        success: false,
+        outcome: 'ESCALATED',
+        attemptsMade: 1,
+        finalErrorCount: 5,
+        escalationReason: 'No progress made after 1 attempt',
+      };
+      mockSelfHealingOrchestrator.attemptFix.mockResolvedValue(mockSelfHealingEscalated);
+
+      // Execute
+      await service.processQaCheck(mockMessage);
+
+      // Verify: Execution marked FAILED
+      expect(mockPrismaService.execution.update).toHaveBeenCalledWith({
+        where: { id: mockMessage.executionId },
+        data: {
+          status: 'FAILED',
+          error_message: expect.stringContaining('Self-healing escalated'),
+        },
+      });
+
+      // Verify: Ticket marked QA_FAILED
+      expect(mockPrismaService.ticket.update).toHaveBeenCalledWith({
+        where: { id: mockMessage.ticketId },
+        data: { status: TicketStatus.QA_FAILED },
+      });
+
+      // Verify: Failure event published
+      expect(mockRabbitPublisher.publishToExchange).toHaveBeenCalledWith(
+        EXCHANGE_NAMES.ORCHESTRATOR_EVENTS,
+        ROUTING_KEYS.QA_CHECK_FAILED,
+        expect.objectContaining({
+          passed: false,
+          selfHealingAttempts: 1,
+          escalationReason: expect.any(String),
+        }),
+      );
+
+      // Verify: Duration metric with ESCALATED outcome
+      expect(mockQaMetricsService.recordSelfHealingDuration).toHaveBeenCalledWith(
+        'ESCALATED',
+        expect.any(Number),
+      );
+    });
+
+    it('should handle MAX_ATTEMPTS outcome - mark FAILED and notify PM', async () => {
+      // Setup
+      mockConfigService.get.mockReturnValue(true);
+      mockQualityGatesService.evaluate.mockResolvedValue(mockFailedGateResult);
+      mockPrismaService.qAResult.findFirst.mockResolvedValue(null);
+      mockPrismaService.execution.update.mockResolvedValue({});
+
+      const mockSelfHealingMaxAttempts = {
+        success: false,
+        outcome: 'MAX_ATTEMPTS',
+        attemptsMade: 2,
+        finalErrorCount: 3,
+        escalationReason: 'Maximum retry attempts (2) reached',
+      };
+      mockSelfHealingOrchestrator.attemptFix.mockResolvedValue(mockSelfHealingMaxAttempts);
+
+      // Execute
+      const result = await service.processQaCheck(mockMessage);
+
+      // Verify: Execution marked FAILED
+      expect(mockPrismaService.execution.update).toHaveBeenCalledWith({
+        where: { id: mockMessage.executionId },
+        data: {
+          status: 'FAILED',
+          error_message: expect.stringContaining('Self-healing escalated'),
+        },
+      });
+
+      // Verify: Duration metric with MAX_ATTEMPTS outcome
+      expect(mockQaMetricsService.recordSelfHealingDuration).toHaveBeenCalledWith(
+        'MAX_ATTEMPTS',
+        expect.any(Number),
+      );
+
+      // Verify: Result status is failed
+      expect(result.status).toBe('failed');
     });
   });
 });

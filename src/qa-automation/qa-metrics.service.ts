@@ -161,4 +161,46 @@ export class QaMetricsService {
       );
     }
   }
+
+  /**
+   * Record self-healing trigger
+   * Story 13.4: QA Self-Healing Integration
+   */
+  recordSelfHealingTrigger(ticketId: string, executionId: string): void {
+    try {
+      this.metricsService.incrementCounter('qa_self_healing_triggered_total', {
+        ticket_id: ticketId,
+        execution_id: executionId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to record self-healing trigger metric: ${(error as Error).message}`,
+        (error as Error).stack,
+        'QaMetricsService',
+      );
+    }
+  }
+
+  /**
+   * Record self-healing duration
+   * Story 13.4: QA Self-Healing Integration
+   */
+  recordSelfHealingDuration(
+    outcome: 'SUCCESS' | 'ESCALATED' | 'MAX_ATTEMPTS',
+    durationMs: number,
+  ): void {
+    try {
+      this.metricsService.recordHistogram(
+        'qa_orchestrator_self_healing_duration_seconds',
+        durationMs / 1000, // Convert ms to seconds
+        { outcome },
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to record self-healing duration metric: ${(error as Error).message}`,
+        (error as Error).stack,
+        'QaMetricsService',
+      );
+    }
+  }
 }

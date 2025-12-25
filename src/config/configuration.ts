@@ -241,6 +241,10 @@ export default () => {
         defaultPageSize: parseInt(process.env.QA_RESULTS_DEFAULT_PAGE_SIZE || '20', 10),
         maxPageSize: parseInt(process.env.QA_RESULTS_MAX_PAGE_SIZE || '100', 10),
       },
+      // Story 13.4: Self-Healing Configuration
+      selfHealing: {
+        enabled: process.env.SELF_HEALING_ENABLED !== 'false', // Defaults to true
+      },
     },
   };
 };

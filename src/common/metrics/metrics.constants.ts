@@ -80,6 +80,9 @@ export const QA_METRICS = {
   // Story 3.6: QA Results Storage & Retrieval metrics
   QA_RESULTS_QUERIES_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_results_queries_total`,
   QA_RESULTS_QUERY_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_results_query_duration_seconds`,
+  // Story 13.4: QA Self-Healing Integration metrics
+  SELF_HEALING_TRIGGERED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_self_healing_triggered_total`,
+  ORCHESTRATOR_SELF_HEALING_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}qa_orchestrator_self_healing_duration_seconds`,
 } as const;
 
 // GitHub Metrics

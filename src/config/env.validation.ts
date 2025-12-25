@@ -208,4 +208,9 @@ export const envValidationSchema = Joi.object({
   CLICKUP_RETRY_ATTEMPTS: Joi.number().integer().min(1).max(10).default(3),
   CLICKUP_RETRY_BACKOFF_MS: Joi.number().integer().min(100).max(5000).default(1000),
   CLICKUP_API_BASE_URL: Joi.string().uri().default('https://api.clickup.com/api/v2'),
+
+  // Story 13.4: Self-Healing Configuration
+  SELF_HEALING_ENABLED: Joi.boolean()
+    .default(true)
+    .description('Enable AI self-healing for QA failures'),
 });

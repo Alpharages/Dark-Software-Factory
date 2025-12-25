@@ -16,6 +16,7 @@ import { WorkspaceService } from '../ai-routing/providers/workspace.service'; //
 import {
   IQaCheckMessage,
   IQaOrchestrationResult,
+  IQualityGateResult,
   QualityCategory,
   ILintingResult,
   ILintingIssue,
@@ -32,6 +33,12 @@ import { TicketStatus } from '@/prisma/client';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
+// Story 13.4: Self-Healing Integration
+import { SelfHealingOrchestratorService } from '../execution/self-healing-orchestrator.service';
+import {
+  ISelfHealingInput,
+  ISelfHealingResult,
+} from '../execution/interfaces/self-healing.interface';
 
 /**
  * Aggregated QA result for quality gate evaluation
@@ -76,6 +83,8 @@ export class QaOrchestratorService {
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
+    // Story 13.4: Self-Healing Integration
+    private readonly selfHealingOrchestrator: SelfHealingOrchestratorService,
   ) {}
 
   /**
@@ -392,6 +401,73 @@ export class QaOrchestratorService {
           environment: 'staging',
         });
       } else {
+        // ========================================================================
+        // Story 13.4: Self-Healing Integration
+        // ========================================================================
+        if (this.isSelfHealingEnabled()) {
+          this.logger.log(
+            `[${correlationId}] QA gate failed for execution ${executionId}. Triggering self-healing...`,
+          );
+
+          // Log self-healing trigger decision
+          await this.aiDecisionLogger.logDecision({
+            agentName: 'QaOrchestrator',
+            action: 'self_healing_trigger',
+            ticketId,
+            executionId,
+            inputData: {
+              totalErrors:
+                (qaResult.linting_errors?.errorCount || 0) + (qaResult.test_results?.failed || 0),
+            },
+            outputData: { triggered: true },
+            reasoning: 'QA gate failed. Attempting automated self-healing before escalation.',
+            confidence: 0.85,
+          });
+
+          // Record self-healing trigger metric (Story 13.4: AC#6)
+          this.qaMetrics.recordSelfHealingTrigger(ticketId, executionId);
+
+          // Start timer for self-healing duration
+          const selfHealingStartTime = Date.now();
+
+          // Extract error context
+          const errorContext = this.extractErrorContext(qaResult);
+
+          // Trigger self-healing with proper QAResult type
+          const qaResultDbFormat = {
+            id: '', // Will be filled by service
+            execution_id: executionId,
+            linting_passed: qaResult.linting_passed,
+            linting_errors: qaResult.linting_errors,
+            tests_passed: qaResult.tests_passed,
+            test_results: qaResult.test_results,
+            overall_passed: false,
+            created_at: new Date(),
+            updated_at: new Date(),
+          };
+
+          const selfHealingInput: ISelfHealingInput = {
+            executionId,
+            ticketId,
+            qaResult: qaResultDbFormat,
+            previousErrorCount: errorContext.totalErrors,
+          };
+
+          const selfHealingResult = await this.selfHealingOrchestrator.attemptFix(selfHealingInput);
+
+          // Handle self-healing outcome
+          return this.handleSelfHealingResult(
+            message,
+            executionId,
+            selfHealingResult,
+            gateResult,
+            qaResult,
+            selfHealingStartTime,
+          );
+        }
+        // ========================================================================
+
+        // Self-healing disabled - proceed with standard failure handling
         // Record failed gate decision (Story 3.8)
         this.qaMetrics.recordGateDecision(false, { projectId });
         this.logger.warn(`[${correlationId}] QA check FAILED for execution ${executionId}`);
@@ -1101,6 +1177,168 @@ export class QaOrchestratorService {
 
       // Re-throw to fail QA check if event publishing fails
       throw error;
+    }
+  }
+
+  // ============ Story 13.4: Self-Healing Helper Methods ============
+
+  /**
+   * Check if self-healing is enabled via configuration
+   */
+  private isSelfHealingEnabled(): boolean {
+    const enabled = this.configService.get<boolean>('qualityGate.selfHealing.enabled', true);
+
+    if (!enabled) {
+      this.logger.log('Self-healing disabled by configuration. Skipping self-healing workflow.');
+    }
+
+    return enabled;
+  }
+
+  /**
+   * Extract error context from QA result
+   */
+  private extractErrorContext(qaResult: IAggregatedQaResult): {
+    lintErrors: number;
+    testFailures: number;
+    totalErrors: number;
+  } {
+    const lintErrors = qaResult.linting_errors?.errorCount || 0;
+    const testFailures = qaResult.tests_passed ? 0 : qaResult.test_results?.failed || 0;
+
+    return {
+      lintErrors,
+      testFailures,
+      totalErrors: lintErrors + testFailures,
+    };
+  }
+
+  /**
+   * Handle self-healing result and update execution status accordingly
+   */
+  private async handleSelfHealingResult(
+    message: IQaCheckMessage,
+    executionId: string,
+    selfHealingResult: ISelfHealingResult,
+    originalGateResult: IQualityGateResult,
+    _qaResult: IAggregatedQaResult, // Unused but kept for future error context extraction
+    selfHealingStartTime: number, // Story 13.4: For duration metric
+  ): Promise<IQaOrchestrationResult> {
+    const { outcome, attemptsMade, finalErrorCount, escalationReason } = selfHealingResult;
+    const { correlationId, ticketId, projectId } = message;
+
+    // Calculate self-healing duration (Story 13.4: AC#6)
+    const selfHealingDuration = Date.now() - selfHealingStartTime;
+
+    // Log self-healing outcome
+    await this.aiDecisionLogger.logDecision({
+      agentName: 'QaOrchestrator',
+      action: 'self_healing_outcome',
+      ticketId,
+      executionId,
+      inputData: { attemptsMade },
+      outputData: { outcome, finalErrorCount },
+      reasoning:
+        outcome === 'SUCCESS'
+          ? `Self-healing succeeded after ${attemptsMade} attempt(s)`
+          : `Self-healing escalated: ${escalationReason}`,
+      confidence: outcome === 'SUCCESS' ? 0.9 : 0.7,
+    });
+
+    switch (outcome) {
+      case 'SUCCESS':
+        // Update execution status to COMPLETED
+        await this.prisma.execution.update({
+          where: { id: executionId },
+          data: { status: 'COMPLETED' as never },
+        });
+
+        // Log success
+        this.logger.log(
+          `[${correlationId}] Self-healing SUCCESS for execution ${executionId}. Proceeding to deployment.`,
+        );
+
+        // Record success gate decision
+        this.qaMetrics.recordGateDecision(true, { projectId });
+
+        // Record self-healing duration metric (Story 13.4: AC#6)
+        this.qaMetrics.recordSelfHealingDuration('SUCCESS', selfHealingDuration);
+
+        // Publish deployment trigger
+        await this.rabbitPublisher.publishToQueue(QUEUE_NAMES.DEPLOYMENT, {
+          executionId,
+          ticketId,
+          correlationId,
+          action: 'deploy',
+          environment: 'staging',
+        });
+
+        // Return success result - override gate result to passed
+        return {
+          executionId,
+          correlationId,
+          status: 'passed',
+          lintingResult: null as never,
+          testResult: null as never,
+          coverageResult: null as never,
+          securityResult: null as never,
+          qualityGateResult: { ...originalGateResult, passed: true },
+        };
+
+      case 'ESCALATED':
+      case 'MAX_ATTEMPTS':
+        // Update execution status to FAILED
+        await this.prisma.execution.update({
+          where: { id: executionId },
+          data: {
+            status: 'FAILED' as never,
+            error_message: `Self-healing escalated: ${escalationReason}`,
+          },
+        });
+
+        // Update ticket status to QA_FAILED
+        await this.prisma.ticket.update({
+          where: { id: ticketId },
+          data: { status: TicketStatus.QA_FAILED },
+        });
+
+        // Log escalation
+        this.logger.warn(
+          `[${correlationId}] Self-healing ${outcome} for execution ${executionId}. Human intervention required.`,
+        );
+
+        // Record failed gate decision
+        this.qaMetrics.recordGateDecision(false, { projectId });
+
+        // Record self-healing duration metric (Story 13.4: AC#6)
+        this.qaMetrics.recordSelfHealingDuration(outcome, selfHealingDuration);
+
+        // Publish QA_CHECK_FAILED event
+        await this.rabbitPublisher.publishToExchange(
+          EXCHANGE_NAMES.ORCHESTRATOR_EVENTS,
+          ROUTING_KEYS.QA_CHECK_FAILED,
+          {
+            executionId,
+            ticketId,
+            correlationId,
+            passed: false,
+            blockers: originalGateResult.blockingIssues,
+            selfHealingAttempts: attemptsMade,
+            escalationReason,
+          },
+        );
+
+        // Return failure result
+        return {
+          executionId,
+          correlationId,
+          status: 'failed',
+          lintingResult: null as never,
+          testResult: null as never,
+          coverageResult: null as never,
+          securityResult: null as never,
+          qualityGateResult: originalGateResult,
+        };
     }
   }
 }
