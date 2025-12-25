@@ -20,11 +20,13 @@ This document provides the complete epic and story breakdown for Dark Software F
 **Total FRs:** 136 across 9 capability areas
 
 **Phase Distribution:**
+
 - MVP Phase 1: 63 FRs
-- Growth Phase 2: 38 FRs  
+- Growth Phase 2: 38 FRs
 - Vision Phase 3: 35 FRs
 
 **By Role:**
+
 - PM Capabilities: FR1-FR23 (23 FRs)
 - TL Capabilities: FR24-FR33 (10 FRs)
 - Lead QA Capabilities: FR34-FR43 (10 FRs)
@@ -108,6 +110,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 **Epic 1 (Foundation):** Infrastructure foundation for all FRs - enables subsequent epics
 
 **Epic 2 (Ticket Intake & Routing):**
+
 - FR56: Receive ClickUp webhook events
 - FR57: Parse ticket details
 - FR58: Validate ticket quality
@@ -119,6 +122,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR65: Execute AI code generation
 
 **Epic 3 (Automated QA):**
+
 - FR66: Run linting checks
 - FR67: Execute automated tests
 - FR68: Perform code review checks
@@ -126,6 +130,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR70: Block deployment on failures
 
 **Epic 4 (GitHub & CI/CD):**
+
 - FR72: Create feature branches
 - FR73: Push code to GitHub
 - FR74: Generate commit messages
@@ -135,6 +140,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR78: Update ClickUp status
 
 **Epic 5 (PM Dashboard):**
+
 - FR8: View all AI projects
 - FR9: Monitor real-time AI status
 - FR10: Receive completion notifications
@@ -145,6 +151,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR96-FR99: PM Dashboard interface
 
 **Epic 6 (Cost Tracking):**
+
 - FR85: Track AI API usage
 - FR86: Calculate cost per ticket/project
 - FR87: Alert on budget exceeded
@@ -152,6 +159,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR105-FR108: Cost monitoring dashboard
 
 **Epic 7 (TL Architecture Review):**
+
 - FR24: Review AI architecture decisions
 - FR25: Approve/reject/modify proposals
 - FR26: View ADRs
@@ -160,6 +168,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR29: Receive AI escalations
 
 **Epic 8 (QA Review & Approval):**
+
 - FR34: View sample queue
 - FR35: Configure sampling
 - FR36: Approve for production
@@ -170,6 +179,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR109-FR111: Quality dashboard
 
 **Epic 9 (Self-Healing):**
+
 - FR79: Monitor production errors
 - FR80: Detect critical failures
 - FR81: Auto-create fix tickets
@@ -177,6 +187,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR83: Prioritize by severity
 
 **Epic 10 (Real-Time & Monitoring):**
+
 - FR9: Real-time status updates (Socket.IO)
 - FR10: Completion notifications (Socket.IO)
 - FR100: Orchestrator status dashboard
@@ -186,6 +197,7 @@ This document provides the complete epic and story breakdown for Dark Software F
 - FR104: Manual intervention
 
 **Additional MVP FRs (Distributed across epics):**
+
 - FR1-FR7: PM ticket creation (integrated with AetherFlow - Epic 2)
 - FR15-FR19: PM workload management (Epic 5 dashboard)
 - FR20-FR23: Client communication (Epic 5)
@@ -227,6 +239,7 @@ So that I can start building the orchestrator with a solid foundation.
 **Given** I have Node.js 20.x LTS installed
 **When** I run the project initialization command from architecture.md
 **Then** the NestJS project is created with the following structure:
+
 - `/src` directory with main.ts entry point
 - `/test` directory for e2e tests
 - `tsconfig.json` configured for strict TypeScript
@@ -242,6 +255,7 @@ So that I can start building the orchestrator with a solid foundation.
 **Prerequisites:** None (first story)
 
 **Technical Notes:**
+
 - Use exact command from architecture.md: `npx @nestjs/cli new ai-dev-orchestrator --package-manager npm`
 - Set up strict TypeScript (`strict: true`, `noImplicitAny: true`)
 - Configure path aliases per architecture: `@/` maps to `src/`
@@ -264,6 +278,7 @@ So that the codebase is maintainable and scalable as we add features.
 **Given** the NestJS project is initialized
 **When** I create the complete folder structure per architecture.md
 **Then** the following directories exist with placeholder modules:
+
 - `/src/modules/ticket-intake/` (module, service, dto folders)
 - `/src/modules/ai-routing/` (module, service, dto folders)
 - `/src/modules/qa-automation/` (module, service, dto folders)
@@ -281,6 +296,7 @@ So that the codebase is maintainable and scalable as we add features.
 **Prerequisites:** Story 1.1 (Project initialization)
 
 **Technical Notes:**
+
 - Follow architecture naming conventions: kebab-case for files/folders
 - Each module should be self-contained with its own DTOs and services
 - Use NestJS CLI to generate modules: `nest g module ticket-intake`
@@ -302,12 +318,14 @@ So that I can persist tickets, executions, and metrics reliably.
 **Given** PostgreSQL 16 is available (local or Docker)
 **When** I set up Prisma with the schema from architecture.md
 **Then** the following is configured:
+
 - `prisma/schema.prisma` matches architecture data model exactly
 - DATABASE_URL environment variable is configured
 - `npx prisma generate` creates TypeScript client successfully
 - `npx prisma migrate dev` creates all tables without errors
 
 **And** the database contains these tables (per architecture):
+
 - `tickets` (with enums for TicketStatus)
 - `executions` (with enums for AIProvider, ExecutionStatus)
 - `qa_results`
@@ -325,6 +343,7 @@ So that I can persist tickets, executions, and metrics reliably.
 **Prerequisites:** Story 1.1 (Project initialization)
 
 **Technical Notes:**
+
 - Install dependencies: `npm install @prisma/client` and `npm install -D prisma`
 - Initialize Prisma: `npx prisma init`
 - Copy complete schema from architecture.md Section "Prisma Schema Design"
@@ -348,6 +367,7 @@ So that the application can run in different environments (dev, staging, prod) s
 **Given** the project structure is set up
 **When** I implement configuration management
 **Then** the following configuration is available:
+
 - `.env.example` template with all required variables
 - `.env` file for local development (git-ignored)
 - `@nestjs/config` module configured globally
@@ -355,6 +375,7 @@ So that the application can run in different environments (dev, staging, prod) s
 - Environment validation on application startup
 
 **And** these environment variables are defined:
+
 - `NODE_ENV` (development, staging, production)
 - `PORT` (default 3000)
 - `DATABASE_URL` (PostgreSQL connection string)
@@ -370,6 +391,7 @@ So that the application can run in different environments (dev, staging, prod) s
 **Prerequisites:** Story 1.1 (Project initialization)
 
 **Technical Notes:**
+
 - Install: `npm install @nestjs/config`
 - Use Joi schema validation for environment variables
 - Create `src/config/configuration.ts` for typed config
@@ -392,11 +414,13 @@ So that I can process AI executions, QA checks, and deployments asynchronously.
 **Given** RabbitMQ 3.13 is available (local or Docker)
 **When** I integrate RabbitMQ with NestJS
 **Then** the following is configured:
+
 - `@nestjs/microservices` with RabbitMQ transport installed
 - RabbitMQ connection established via RABBITMQ_URL
 - Connection health check succeeds
 
 **And** these queues are created (per architecture):
+
 - `ai-execution-queue` (for AI task processing)
 - `qa-check-queue` (for quality gate checks)
 - `deployment-queue` (for CI/CD triggers)
@@ -409,6 +433,7 @@ So that I can process AI executions, QA checks, and deployments asynchronously.
 **Prerequisites:** Story 1.1 (Project initialization)
 
 **Technical Notes:**
+
 - Install: `npm install @nestjs/microservices amqplib`
 - Create RabbitMQModule in `src/common/rabbitmq/`
 - Configure exchanges and routing keys per architecture (dot notation)
@@ -431,12 +456,14 @@ So that all endpoints are secured with role-based access control.
 **Given** the separate auth service is available (or mocked for dev)
 **When** I implement JWT authentication
 **Then** the following is configured:
+
 - `@nestjs/jwt` and `@nestjs/passport` installed
 - JWT strategy validates tokens using shared secret
 - AuthGuard protects all routes by default
 - JWT tokens contain claims: userId, role, permissions, exp
 
 **And** these roles are defined (per architecture):
+
 - ADMIN (full access)
 - MANAGER (business oversight)
 - PM (ticket creation, approval)
@@ -452,6 +479,7 @@ So that all endpoints are secured with role-based access control.
 **Prerequisites:** Story 1.4 (Environment config with JWT_SECRET)
 
 **Technical Notes:**
+
 - Install: `npm install @nestjs/jwt @nestjs/passport passport passport-jwt`
 - Create JwtStrategy in `src/auth/strategies/jwt.strategy.ts`
 - Create AuthGuard and RolesGuard in `src/common/guards/`
@@ -474,12 +502,14 @@ So that all logs are searchable, traceable, and comply with observability requir
 **Given** the application is running
 **When** I implement Winston logging
 **Then** the following is configured:
+
 - Winston logger with JSON format
 - Log levels: error, warn, info, debug
 - Correlation IDs auto-generated for each request
 - Request IDs propagated across async operations
 
 **And** all logs contain these fields:
+
 - `level` (error/warn/info/debug)
 - `timestamp` (ISO 8601)
 - `requestId` (UUID)
@@ -496,6 +526,7 @@ So that all logs are searchable, traceable, and comply with observability requir
 **Prerequisites:** Story 1.1 (Project initialization)
 
 **Technical Notes:**
+
 - Install: `npm install winston nest-winston`
 - Create LoggerModule in `src/common/logger/`
 - Use global interceptor to add requestId to all requests
@@ -518,12 +549,14 @@ So that we can monitor system health and make GO/NO-GO decisions (NFR-O5).
 **Given** the application is running
 **When** I expose Prometheus metrics
 **Then** the following is available:
+
 - `/metrics` endpoint returns Prometheus-formatted metrics
 - HTTP metrics: request count, duration, status codes
 - Business metrics: tickets processed, executions count, cost totals
 - System metrics: memory usage, CPU, active connections
 
 **And** custom metrics are registered:
+
 - `tickets_received_total` (counter)
 - `ai_executions_total` (counter by provider)
 - `qa_checks_total` (counter by result)
@@ -538,6 +571,7 @@ So that we can monitor system health and make GO/NO-GO decisions (NFR-O5).
 **Prerequisites:** Story 1.1 (Project initialization)
 
 **Technical Notes:**
+
 - Install: `npm install @willsoto/nestjs-prometheus prom-client`
 - Create MetricsModule in `src/common/metrics/`
 - Register custom metrics per architecture spec
@@ -559,12 +593,14 @@ So that critical failures trigger immediate alerts (NFR-O6) and we can debug pro
 **Given** Sentry account is configured
 **When** I integrate Sentry error tracking
 **Then** the following is configured:
+
 - `@sentry/node` captures all unhandled exceptions
 - Errors include full context (user, request, environment)
 - Stack traces are source-mapped for TypeScript
 - Sentry DSN is configured via environment variable
 
 **And** these errors are automatically captured:
+
 - Unhandled promise rejections
 - Uncaught exceptions
 - HTTP 5xx errors
@@ -572,6 +608,7 @@ So that critical failures trigger immediate alerts (NFR-O6) and we can debug pro
 - AI provider API failures
 
 **And** errors include contextual data:
+
 - User ID and role (from JWT)
 - Request ID and correlation ID
 - Ticket ID (if applicable)
@@ -584,6 +621,7 @@ So that critical failures trigger immediate alerts (NFR-O6) and we can debug pro
 **Prerequisites:** Story 1.7 (Logging for error context)
 
 **Technical Notes:**
+
 - Install: `npm install @sentry/node`
 - Initialize Sentry in main.ts before app bootstrap
 - Create Sentry interceptor for request context
@@ -606,6 +644,7 @@ So that I can run PostgreSQL, RabbitMQ, and the orchestrator together easily.
 **Given** Docker and Docker Compose are installed
 **When** I run `docker-compose up`
 **Then** the following services start:
+
 - PostgreSQL 16 on port 5432 with persistent volume
 - RabbitMQ 3.13-management on port 5672 (AMQP) and 15672 (UI)
 - Orchestrator application on port 3000 (dev mode with hot reload)
@@ -618,6 +657,7 @@ So that I can run PostgreSQL, RabbitMQ, and the orchestrator together easily.
 **Prerequisites:** Stories 1.3 (PostgreSQL), 1.5 (RabbitMQ)
 
 **Technical Notes:**
+
 - Create `docker-compose.yml` with services per architecture
 - Use volumes for data persistence: `./data/postgres`, `./data/rabbitmq`
 - Set up depends_on for service startup order
@@ -640,6 +680,7 @@ So that every commit is validated and deployments are automated (NFR-M5-M7).
 **Given** code is pushed to GitHub
 **When** the CI/CD pipeline runs
 **Then** the following jobs execute:
+
 - **Lint Job:** ESLint checks pass, Prettier formatting verified
 - **Test Job:** Unit tests run with >80% coverage (NFR-M1)
 - **Build Job:** TypeScript compilation succeeds, Docker image built
@@ -651,6 +692,7 @@ So that every commit is validated and deployments are automated (NFR-M5-M7).
 **And** failed deployments rollback automatically within 5 minutes (NFR-M6)
 
 **And** the pipeline includes:
+
 - Dependency caching for faster builds
 - Test result reporting (coverage, failures)
 - Docker image tagged with commit SHA
@@ -659,6 +701,7 @@ So that every commit is validated and deployments are automated (NFR-M5-M7).
 **Prerequisites:** Story 1.1 (Project with tests)
 
 **Technical Notes:**
+
 - Create `.github/workflows/ci.yml` for continuous integration
 - Create `.github/workflows/deploy.yml` for deployments
 - Use GitHub Actions cache for node_modules
@@ -682,6 +725,7 @@ So that frontend developers and integrators can understand endpoints easily.
 **Given** API endpoints are implemented
 **When** I access `/api/docs`
 **Then** Swagger UI displays complete API documentation:
+
 - All endpoints grouped by module
 - Request/response schemas with examples
 - Authentication requirements (JWT bearer token)
@@ -696,6 +740,7 @@ So that frontend developers and integrators can understand endpoints easily.
 **Prerequisites:** Story 1.1 (Project initialization)
 
 **Technical Notes:**
+
 - Install: `npm install @nestjs/swagger`
 - Set up Swagger in main.ts with `DocumentBuilder`
 - Use decorators: @ApiTags, @ApiOperation, @ApiResponse, @ApiProperty
@@ -718,12 +763,14 @@ So that new developers can onboard quickly (NFR-UX9: productive within 1 week).
 **Given** a new developer joins the team
 **When** they read the README and run setup commands
 **Then** the following documentation exists:
+
 - README.md with: project overview, architecture overview, tech stack
 - SETUP.md with: prerequisites, installation steps, environment config
 - CONTRIBUTING.md with: code standards, PR process, testing guidelines
 - ARCHITECTURE.md reference linked (already exists)
 
 **And** these npm scripts are available:
+
 - `npm run start:dev` - Start with hot reload
 - `npm run start:debug` - Start with debugger attached
 - `npm run build` - Production build
@@ -743,6 +790,7 @@ So that new developers can onboard quickly (NFR-UX9: productive within 1 week).
 **Prerequisites:** All previous Epic 1 stories
 
 **Technical Notes:**
+
 - Document exact versions of Node.js, npm, PostgreSQL, RabbitMQ
 - Include troubleshooting section for common issues
 - Add quick start for Docker Compose path
@@ -759,6 +807,7 @@ So that new developers can onboard quickly (NFR-UX9: productive within 1 week).
 **Estimated Complexity:** Foundation epic (largest in Phase 1)
 
 **Deliverables:**
+
 - ✅ Complete NestJS project with TypeScript
 - ✅ PostgreSQL database with Prisma ORM and full schema
 - ✅ RabbitMQ message queue with 4 queues configured
@@ -774,6 +823,7 @@ So that new developers can onboard quickly (NFR-UX9: productive within 1 week).
 **Enables:** All subsequent epics (Epic 2-10) can build on this foundation
 
 **Architecture Coverage:** Implements decisions from:
+
 - ADR-001: NestJS microservice
 - ADR-002: Separate PostgreSQL
 - ADR-003: RabbitMQ message queue
@@ -820,6 +870,7 @@ So that I don't need to manually start AI execution for each ticket.
 **Prerequisites:** Story 1.6 (Auth for endpoint security), 1.7 (Logging)
 
 **Technical Notes:**
+
 - Create webhook controller in `src/modules/ticket-intake/`
 - Implement HMAC SHA-256 signature validation
 - Use ClickUp webhook event types: `taskCreated`, `taskUpdated`
@@ -839,6 +890,7 @@ So that I can validate and process tickets consistently.
 **Given** a ClickUp webhook event is received  
 **When** the system parses the task payload  
 **Then** the following data is extracted:
+
 - `clickup_task_id` (unique identifier)
 - `project_id` (from ClickUp custom field or list)
 - `title` (task name)
@@ -846,18 +898,21 @@ So that I can validate and process tickets consistently.
 - `acceptance_criteria` (from description section or custom field)
 
 **And** validation checks are performed:
+
 - Title is not empty (min 10 characters)
 - Description exists and is not empty
 - Acceptance criteria are present and well-formed
 - Project ID is valid and matches active project
 
 **And** if validation fails:
+
 - Ticket status set to `VALIDATION_FAILED`
 - ClickUp task is commented with failure reasons
 - PM is notified via ClickUp notification
 - Ticket is NOT queued for AI processing
 
 **And** if validation succeeds:
+
 - Ticket record created in database with status `RECEIVED`
 - Ticket quality score calculated (0-100 based on completeness)
 - Correlation ID propagated from webhook
@@ -865,6 +920,7 @@ So that I can validate and process tickets consistently.
 **Prerequisites:** Story 2.1 (Webhook handling), 1.3 (Database)
 
 **Technical Notes:**
+
 - Create ParseTicketDto and ValidateTicketDto
 - Use class-validator decorators for validation rules
 - Implement ticket quality scoring algorithm
@@ -884,6 +940,7 @@ So that each task complexity level is handled by the optimal AI provider.
 **Given** a validated ticket exists  
 **When** the routing engine analyzes the ticket  
 **Then** the system selects an AI provider based on:
+
 - **Task complexity assessment:**
   - Files to modify count (1 file vs 3+ files)
   - Architecture changes required (yes/no)
@@ -895,17 +952,20 @@ So that each task complexity level is handled by the optimal AI provider.
 - **Fallback readiness** (if primary fails, use secondary)
 
 **And** routing rules are:
+
 - **High complexity (score ≥10)** → Cursor CLI Headless (full repo context)
 - **Low/Medium complexity (score <10)** → Claude Code (faster, cheaper)
 - **If primary unavailable** → Automatic fallback to secondary provider
 
 **And** routing decision is logged with:
+
 - Justification (complexity score breakdown)
 - Selected provider (CURSOR_HEADLESS | CLAUDE_CODE)
 - Routing reason (complexity, availability, cost)
 - Timestamp of routing decision
 
 **And** if no provider is available:
+
 - Ticket remains in `VALIDATED` status
 - Retry scheduled after 5 minutes
 - Alert sent to operators if downtime > 15 minutes
@@ -913,6 +973,7 @@ So that each task complexity level is handled by the optimal AI provider.
 **Prerequisites:** Story 2.2 (Parsed tickets)
 
 **Technical Notes:**
+
 - Create AIRoutingService in `src/modules/ai-routing/`
 - Implement complexity scoring algorithm (see architecture doc)
 - FR60: System routes to appropriate AI tool based on task complexity
@@ -933,6 +994,7 @@ So that AI tools receive clear, complete instructions for code generation.
 **Given** a ticket is routed to an AI provider  
 **When** the system generates the AI prompt  
 **Then** the prompt includes:
+
 - Clear task description from ticket title
 - Complete requirements from ticket description
 - Acceptance criteria in executable format (test scenarios)
@@ -941,6 +1003,7 @@ So that AI tools receive clear, complete instructions for code generation.
 - Technical requirements (types, error handling, best practices)
 
 **And** prompt follows structured format with sections for:
+
 - Task Title
 - Description
 - Acceptance Criteria
@@ -948,10 +1011,12 @@ So that AI tools receive clear, complete instructions for code generation.
 - Context (tech stack, related files, dependencies)
 
 **And** prompt is optimized per AI provider:
+
 - **Cursor CLI Headless:** Include file paths, emphasize repository context (Cursor auto-indexes)
 - **Claude Code:** Include file contents inline, emphasize autonomous coding, tool use for file operations
 
 **And** prompt generation handles provider-specific limits:
+
 - Cursor: Standard context window
 - Claude Code: Extended context (200K+ tokens)
 
@@ -960,6 +1025,7 @@ So that AI tools receive clear, complete instructions for code generation.
 **Prerequisites:** Story 2.3 (Routing decision), FR3 (Context documents)
 
 **Technical Notes:**
+
 - Create PromptGeneratorService with provider-specific builders
 - FR61: System converts tickets to AI-executable prompts
 - Load context documents from ticket attachments
@@ -986,6 +1052,7 @@ So that PMs can monitor progress and we can handle failures gracefully.
 **And** execution state transitions are tracked: QUEUED → IN_PROGRESS → COMPLETED/FAILED/TIMEOUT
 
 **And** each state change:
+
 - Updates `executions` table
 - Logs to audit_logs
 - Emits event to RabbitMQ
@@ -996,6 +1063,7 @@ So that PMs can monitor progress and we can handle failures gracefully.
 **Prerequisites:** Story 2.4 (Prompt generation), 1.5 (RabbitMQ)
 
 **Technical Notes:**
+
 - Use Prisma `executions` table
 - Implement state machine pattern for transitions
 - FR62: System monitors AI execution progress
@@ -1014,6 +1082,7 @@ So that complex, multi-file tickets can generate code with full repository conte
 **Given** a ticket is routed to Cursor CLI Headless  
 **When** the system executes Cursor headless  
 **Then** the integration:
+
 - Prepares isolated workspace (git clone to `/tmp/cursor-workspaces/ticket-{id}`)
 - Creates feature branch (`feature/ticket-{id}`)
 - Executes: `cursor --headless --dir /workspace --apply "prompt" --wait`
@@ -1023,6 +1092,7 @@ So that complex, multi-file tickets can generate code with full repository conte
 - Parses files modified and change summary
 
 **And** successful generation:
+
 - Captures generated code via git diff
 - Parses files changed from git
 - Updates execution status to COMPLETED
@@ -1030,6 +1100,7 @@ So that complex, multi-file tickets can generate code with full repository conte
 - Stores workspace path for debugging
 
 **And** failed generation:
+
 - Captures error output (stdout/stderr)
 - Updates status to FAILED
 - Determines if retryable (timeout, crash, vs invalid prompt)
@@ -1037,6 +1108,7 @@ So that complex, multi-file tickets can generate code with full repository conte
 - Preserves workspace for debugging
 
 **And** workspace management:
+
 - One workspace per ticket execution
 - Automatic cleanup after PR creation (or archive for 7 days)
 - Supports concurrent executions (10+ workspaces)
@@ -1044,6 +1116,7 @@ So that complex, multi-file tickets can generate code with full repository conte
 **Prerequisites:** Story 2.5 (Execution tracking), 1.4 (Env config)
 
 **Technical Notes:**
+
 - Create CursorHeadlessProvider implementing AIProviderInterface
 - Use Node.js `child_process.exec` for CLI execution
 - FR65: Execute AI code generation
@@ -1065,6 +1138,7 @@ So that simple-to-medium complexity tickets can be handled cost-effectively with
 **Given** a ticket is routed to Claude Code  
 **When** the system calls the Anthropic API  
 **Then** the integration:
+
 - Authenticates using ANTHROPIC_API_KEY from environment
 - Prepares isolated workspace (git clone to `/tmp/claude-workspaces/ticket-{id}`)
 - Creates feature branch (`feature/ticket-{id}`)
@@ -1079,6 +1153,7 @@ So that simple-to-medium complexity tickets can be handled cost-effectively with
 - Collects changes via `git diff HEAD`
 
 **And** successful generation:
+
 - Parses tool use calls for file operations
 - Writes generated code to workspace files
 - Captures git diff
@@ -1086,18 +1161,21 @@ So that simple-to-medium complexity tickets can be handled cost-effectively with
 - Tracks API cost (input/output tokens)
 
 **And** failed generation:
+
 - Captures API error (rate limit, invalid request, etc.)
 - Updates status to FAILED
 - Determines if retryable
 - Schedules retry if appropriate
 
 **And** autonomous coding features:
+
 - Multi-turn conversation support for complex tasks
 - Tool use for file operations
 - Extended context for large codebases
 - Autonomous planning and execution
 
 **And** cost tracking:
+
 - Track input tokens (~$3/1M tokens)
 - Track output tokens (~$15/1M tokens)
 - Estimated cost per ticket (~$0.10-$0.50)
@@ -1105,6 +1183,7 @@ So that simple-to-medium complexity tickets can be handled cost-effectively with
 **Prerequisites:** Story 2.5 (Execution tracking), 1.4 (Env config)
 
 **Technical Notes:**
+
 - Create ClaudeCodeProvider implementing AIProviderInterface
 - Install `@anthropic-ai/sdk` package
 - FR65: Execute AI code generation
@@ -1126,38 +1205,43 @@ So that ticket processing continues even if one AI provider fails.
 **Given** a ticket needs AI code generation  
 **When** the system selects a provider via AIProviderFactory  
 **Then** provider selection follows these rules:
+
 - Assess ticket complexity (0-100 score)
 - **High complexity (≥10):** Try Cursor first → fallback to Claude Code
 - **Low/Medium complexity (<10):** Try Claude Code first → fallback to Cursor
 - Check provider availability before selection
 
 **And** fallback logic handles failures:
+
 - If primary provider fails with retryable error → fallback to secondary
 - If secondary also fails → mark as FAILED, escalate to human
 - Log fallback events with reason
 - Track fallback frequency for monitoring
 
 **And** provider availability checks:
+
 - Health check before routing
 - Circuit breaker pattern (open after 5 failures in 1 minute)
 - Automatic circuit closer after 30 seconds
 - Status monitoring for dashboard
 
 **And** complexity assessment algorithm:
+
 ```typescript
-score = 
+score =
   (filesCount > 3 ? 5 : filesCount * 2) +
   (descriptionLength > 500 ? 3 : 0) +
   (hasTag('architecture') ? 5 : 0) +
   (hasTag('refactor') ? 4 : 0) +
-  (acceptanceCriteria > 5 ? 2 : 0)
+  (acceptanceCriteria > 5 ? 2 : 0);
 
-if (score >= 10) return 'high'
-if (score >= 5) return 'medium'
-return 'low'
+if (score >= 10) return 'high';
+if (score >= 5) return 'medium';
+return 'low';
 ```
 
 **And** fallback metrics tracked:
+
 - Fallback trigger count per provider
 - Success rate after fallback
 - Cost comparison (primary vs fallback)
@@ -1166,6 +1250,7 @@ return 'low'
 **Prerequisites:** Story 2.6 (Cursor), Story 2.7 (Claude Code), Story 2.3 (Routing)
 
 **Technical Notes:**
+
 - Create AIProviderFactory in `src/modules/ai-routing/providers/`
 - Implement BaseAIProvider interface for both providers
 - Create FallbackStrategy service
@@ -1195,6 +1280,7 @@ So that transient failures don't require manual intervention.
 **Prerequisites:** Stories 2.6-2.8 (AI providers), 1.9 (Sentry)
 
 **Technical Notes:**
+
 - FR63: System retries failed executions with error context
 - Exponential backoff: 1s, 2s, 4s
 - NFR-R3: Failed AI executions must be recoverable
@@ -1220,6 +1306,7 @@ So that webhook responses are fast and execution can scale independently.
 **Prerequisites:** Story 1.5 (RabbitMQ), Story 2.5 (Execution tracking)
 
 **Technical Notes:**
+
 - Create AIExecutionConsumer in `src/modules/ai-routing/consumers/`
 - Use @MessagePattern decorator
 - Architecture reference: RabbitMQ message format
@@ -1247,6 +1334,7 @@ So that I can improve ticket clarity and completeness.
 **Prerequisites:** Story 2.2 (Ticket parsing)
 
 **Technical Notes:**
+
 - FR4: PMs can view ticket quality score before submitting
 - Implement scoring algorithm in TicketQualityService
 
@@ -1271,6 +1359,7 @@ So that AI has the necessary background to generate appropriate code.
 **Prerequisites:** Story 2.2, Story 2.4
 
 **Technical Notes:**
+
 - FR3: PMs can attach context documents
 - FR59: System extracts project context
 - Use libraries for file parsing
@@ -1278,9 +1367,10 @@ So that AI has the necessary background to generate appropriate code.
 **Epic 2 Summary:**
 
 **Total Stories:** 12  
-**Deliverables:** 
+**Deliverables:**
+
 - ClickUp webhook integration
-- Ticket parsing & validation  
+- Ticket parsing & validation
 - Multi-provider AI routing algorithm (complexity-based)
 - Provider-specific prompt generation
 - Execution tracking
@@ -1294,6 +1384,7 @@ So that AI has the necessary background to generate appropriate code.
 - Context extraction & attachment
 
 **Architecture Impact:**
+
 - Multi-provider strategy reduces single-point-of-failure risk
 - Complexity-based routing optimizes cost and quality
 - Automatic fallback ensures reliability
@@ -1325,11 +1416,13 @@ So that code style and syntax errors are caught automatically.
 **Given** AI generates code for a ticket  
 **When** QA automation runs  
 **Then** appropriate linters execute based on file types:
+
 - JavaScript/TypeScript: ESLint with project config
 - Python: Pylint or Flake8
 - Other languages: Corresponding linters (Go: golint, Ruby: RuboCop, etc.)
 
 **And** linting results include:
+
 - Error count and warning count
 - Line numbers for each issue
 - Error descriptions and suggested fixes
@@ -1342,6 +1435,7 @@ So that code style and syntax errors are caught automatically.
 **Prerequisites:** Story 2.6-2.8 (AI code generation complete), 1.3 (Database)
 
 **Technical Notes:**
+
 - FR66: System runs linting checks on AI-generated code
 - Create QAAutomationService in `src/modules/qa-automation/`
 - Use eslint Node.js API for programmatic execution
@@ -1361,12 +1455,14 @@ So that regressions and broken functionality are detected automatically.
 **Given** AI code is pushed to a feature branch  
 **When** test automation runs  
 **Then** the system:
+
 - Identifies test framework (Jest, Mocha, PyTest, etc.)
 - Runs unit tests affected by code changes
 - Runs integration tests if configured
 - Captures test results (pass/fail, duration, coverage)
 
 **And** test results include:
+
 - Total tests run, passed, failed, skipped
 - Failed test names and error messages
 - Stack traces for failures
@@ -1378,6 +1474,7 @@ So that regressions and broken functionality are detected automatically.
 **Prerequisites:** Story 3.1 (Linting), Epic 2 (Code generated)
 
 **Technical Notes:**
+
 - FR67: System executes automated tests and reports results
 - Use framework-specific CLI commands (jest, pytest, go test, etc.)
 - Parse test output (TAP, JUnit XML, JSON reporters)
@@ -1397,12 +1494,14 @@ So that AI-generated code doesn't reduce overall project quality.
 **Given** tests have executed  
 **When** coverage is calculated  
 **Then** the system:
+
 - Measures line coverage, branch coverage, function coverage
 - Compares to previous coverage baseline
 - Calculates coverage delta (increase/decrease %)
 - Enforces minimum coverage threshold (configurable per project, default 80% per NFR-M1)
 
 **And** coverage results include:
+
 - Overall coverage % (lines, branches, functions)
 - Coverage delta compared to main branch
 - Uncovered lines in new code
@@ -1413,6 +1512,7 @@ So that AI-generated code doesn't reduce overall project quality.
 **Prerequisites:** Story 3.2 (Test execution)
 
 **Technical Notes:**
+
 - FR69: System calculates test coverage and enforces minimum thresholds
 - Use coverage tools: nyc/istanbul (JS), coverage.py (Python), etc.
 - Store baseline coverage for comparison
@@ -1432,12 +1532,14 @@ So that vulnerabilities and code smells are detected early.
 **Given** AI code is generated  
 **When** security checks run  
 **Then** the system performs:
+
 - **Dependency vulnerability scanning** (npm audit, pip-audit, Snyk)
 - **Secrets detection** (GitGuardian, TruffleHog) - prevents accidental credential commits
 - **Code complexity analysis** (cyclomatic complexity, function length)
 - **Security pattern checking** (SQL injection patterns, XSS vulnerabilities, OWASP Top 10)
 
 **And** security results include:
+
 - Vulnerability severity (critical, high, medium, low)
 - Affected dependencies and versions
 - Recommended fixes or patches
@@ -1448,6 +1550,7 @@ So that vulnerabilities and code smells are detected early.
 **Prerequisites:** Story 3.1 (Linting)
 
 **Technical Notes:**
+
 - FR68: System performs basic code review checks (complexity, security patterns)
 - NFR-S9: AI-generated code must pass security scanning (OWASP)
 - NFR-S10: Secrets detection must prevent accidental commit
@@ -1467,12 +1570,14 @@ So that only validated code proceeds to human review.
 **Given** all QA checks have completed  
 **When** the quality gate evaluates results  
 **Then** the system:
+
 - Aggregates results from linting, testing, coverage, security checks
 - Applies configurable rules per project or globally
 - Determines overall pass/fail status
 - Calculates quality score (0-100)
 
 **And** quality gate rules include:
+
 - **Blocking issues:** Critical security vulnerabilities, test failures, linting errors (not warnings)
 - **Warning issues:** Code complexity > threshold, coverage below target, dependency vulnerabilities (low severity)
 - **Threshold configuration:** Per project settings override defaults
@@ -1484,6 +1589,7 @@ So that only validated code proceeds to human review.
 **Prerequisites:** Stories 3.1-3.4 (All QA checks)
 
 **Technical Notes:**
+
 - FR70: System blocks deployment if quality gates fail
 - Create QualityGateService with rule engine
 - Store gate configuration in database (configurable per project)
@@ -1503,6 +1609,7 @@ So that I can review quality trends and make informed decisions.
 **Given** QA checks complete  
 **When** results are stored  
 **Then** the `qa_results` table contains:
+
 - execution_id (link to execution)
 - linting_passed (boolean), linting_errors (JSON array)
 - tests_passed (boolean), test_results (JSON with pass/fail details)
@@ -1512,6 +1619,7 @@ So that I can review quality trends and make informed decisions.
 - created_at (timestamp)
 
 **And** results are queryable by:
+
 - Execution ID
 - Ticket ID
 - Project
@@ -1519,6 +1627,7 @@ So that I can review quality trends and make informed decisions.
 - Pass/fail status
 
 **And** API endpoints exist:
+
 - GET `/api/v1/qa-results/:executionId` - Get results for execution
 - GET `/api/v1/qa-results?ticketId={id}` - Get results by ticket
 - GET `/api/v1/qa-results?projectId={id}&status=failed` - Query with filters
@@ -1526,6 +1635,7 @@ So that I can review quality trends and make informed decisions.
 **Prerequisites:** Stories 3.1-3.5 (QA checks generating results), 1.3 (Database with qa_results table)
 
 **Technical Notes:**
+
 - Prisma schema includes `qa_results` model
 - Create QAResultsController and QAResultsService
 - Use JSON columns for detailed error storage
@@ -1547,6 +1657,7 @@ So that the pipeline remains responsive and scalable.
 **Then** a message is published to `qa-check-queue` with execution_id, ticket_id, code_files, correlation_id
 
 **And** QA worker consumes messages:
+
 - Retrieves code from execution record
 - Runs all QA checks (linting, testing, coverage, security)
 - Stores results in qa_results table
@@ -1554,6 +1665,7 @@ So that the pipeline remains responsive and scalable.
 - Publishes result to next queue (GitHub integration if pass)
 
 **And** QA processing is tracked:
+
 - Queue depth monitored
 - Processing time per execution measured
 - Failed QA messages retry with exponential backoff
@@ -1562,6 +1674,7 @@ So that the pipeline remains responsive and scalable.
 **Prerequisites:** Story 1.5 (RabbitMQ), Stories 3.1-3.6 (QA checks)
 
 **Technical Notes:**
+
 - Create QACheckConsumer in `src/modules/qa-automation/consumers/`
 - Implement parallel QA check execution (lint + test + security run concurrently)
 - Use Bull queues or native RabbitMQ delayed messages for retries
@@ -1580,6 +1693,7 @@ So that I can monitor quality trends and system health.
 **Given** QA checks are running  
 **When** metrics are collected  
 **Then** Prometheus metrics include:
+
 - `qa_checks_total{status="passed|failed", check_type="linting|testing|security"}`
 - `qa_check_duration_seconds{check_type}`
 - `qa_test_coverage_percent{project_id}`
@@ -1590,6 +1704,7 @@ So that I can monitor quality trends and system health.
 **And** metrics are tagged with labels: project_id, ai_provider, check_type, status
 
 **And** Grafana dashboards can visualize:
+
 - QA pass rate over time
 - Average QA processing time
 - Security vulnerabilities detected
@@ -1598,6 +1713,7 @@ So that I can monitor quality trends and system health.
 **Prerequisites:** Story 1.8 (Prometheus metrics), Stories 3.1-3.7 (QA checks)
 
 **Technical Notes:**
+
 - Use @InjectMetric() to access Prometheus counters/histograms
 - Increment metrics in QAAutomationService
 - FR109-111: Quality metrics dashboard requirements
@@ -1634,12 +1750,14 @@ So that I can perform git operations programmatically.
 **Given** GITHUB_TOKEN is configured in environment  
 **When** the system initializes GitHub client  
 **Then** authentication is configured:
+
 - Fine-grained personal access token or GitHub App (NFR-S11)
 - Minimal required permissions (read/write code, create PRs)
 - Token rotation supported (load from env on each request)
 - Rate limit handling (detect 429 responses, back off)
 
 **And** client operations include:
+
 - Get repository details
 - Create branches
 - Push commits
@@ -1652,6 +1770,7 @@ So that I can perform git operations programmatically.
 **Prerequisites:** Story 1.4 (Env config with GITHUB_TOKEN), 1.9 (Sentry)
 
 **Technical Notes:**
+
 - FR72-78: GitHub operations foundation
 - Use Octokit (official GitHub API client)
 - Create GitHubService in `src/modules/github-integration/`
@@ -1671,6 +1790,7 @@ So that AI code changes are isolated and reviewable.
 **Given** QA checks pass for an execution  
 **When** GitHub integration begins  
 **Then** the system:
+
 - Creates unique branch name following convention: `ai/{ticket_id}-{slugified-title}`
 - Creates branch from main/master (or configured default branch)
 - Verifies branch doesn't already exist
@@ -1683,6 +1803,7 @@ So that AI code changes are isolated and reviewable.
 **Prerequisites:** Story 4.1 (GitHub client), Story 3.5 (QA passed)
 
 **Technical Notes:**
+
 - FR72: System creates feature branches per ticket
 - Use GitHub API: POST `/repos/{owner}/{repo}/git/refs`
 - Get base branch SHA before creating ref
@@ -1702,6 +1823,7 @@ So that code changes are versioned and traceable.
 **Given** a feature branch is created  
 **When** the system commits code  
 **Then** the commit:
+
 - Includes all AI-generated files from execution.code_output
 - Has meaningful commit message generated from ticket context
 - Follows conventional commit format: `feat(scope): description` or `fix(scope): description`
@@ -1709,6 +1831,7 @@ So that code changes are versioned and traceable.
 - Is signed (GPG) if configured
 
 **And** commit message format:
+
 ```
 {type}({scope}): {short description}
 
@@ -1720,6 +1843,7 @@ Execution-ID: {execution_id}
 ```
 
 **And** push operation:
+
 - Pushes commit to feature branch
 - Records commit SHA in github_pushes table
 - Handles push failures (conflicts, auth issues)
@@ -1727,6 +1851,7 @@ Execution-ID: {execution_id}
 **Prerequisites:** Story 4.2 (Branch created)
 
 **Technical Notes:**
+
 - FR73: System pushes AI-generated code to GitHub
 - FR74: System generates meaningful commit messages
 - Use GitHub API: Create tree → Create commit → Update ref
@@ -1746,6 +1871,7 @@ So that reviewers understand what was changed and why.
 **Given** code is pushed to feature branch  
 **When** PR is created  
 **Then** the PR includes:
+
 - **Title:** Auto-generated from ticket title
 - **Description:** Includes ticket description, acceptance criteria, AI provider used, execution ID
 - **Labels:** Auto-tagged with `ai-generated`, `needs-review`, project name
@@ -1753,18 +1879,23 @@ So that reviewers understand what was changed and why.
 - **Reviewers:** Auto-assigned based on project configuration (TL for architecture, QA for quality)
 
 **And** PR description template:
+
 ```markdown
 ## Ticket Reference
+
 ClickUp: [TICKET-{id}](url)
 
 ## Changes
+
 {AI-generated description of changes}
 
 ## Acceptance Criteria
+
 - [ ] {criterion 1}
 - [ ] {criterion 2}
 
 ## AI Context
+
 - Provider: {CURSOR_HEADLESS | CLAUDE_CODE}
 - Complexity Score: {score}/100
 - Confidence: {score}%
@@ -1772,6 +1903,7 @@ ClickUp: [TICKET-{id}](url)
 - Fallback Used: {yes/no}
 
 ## QA Results
+
 - Linting: ✅ Passed
 - Tests: ✅ 45/45 passed
 - Coverage: ✅ 87% (+2%)
@@ -1783,6 +1915,7 @@ ClickUp: [TICKET-{id}](url)
 **Prerequisites:** Story 4.3 (Code pushed)
 
 **Technical Notes:**
+
 - FR75: System creates PRs with traceability links
 - Use GitHub API: POST `/repos/{owner}/{repo}/pulls`
 - Load PR template from project .github/pull_request_template.md
@@ -1802,17 +1935,20 @@ So that deployments happen without manual intervention.
 **Given** a PR is created  
 **When** CI/CD should trigger  
 **Then** the system:
+
 - Detects CI/CD provider (GitHub Actions, Jenkins, CircleCI, etc.)
 - Triggers pipeline via webhook or API
 - Monitors pipeline status (pending, running, success, failure)
 - Records deployment in `deployments` table
 
 **And** for GitHub Actions specifically:
+
 - Pipeline triggers on push to feature branch (configured in workflow)
 - Status checks appear on PR automatically
 - Deployment environments are selected (dev, staging)
 
 **And** pipeline monitoring:
+
 - Polls for status updates every 30 seconds
 - Updates deployment.status: TRIGGERED → IN_PROGRESS → COMPLETED/FAILED
 - Records build_id, deployed_at timestamp
@@ -1820,6 +1956,7 @@ So that deployments happen without manual intervention.
 **Prerequisites:** Story 4.3 (Code pushed), 1.11 (CI/CD pipeline exists)
 
 **Technical Notes:**
+
 - FR76: System triggers CI/CD pipelines
 - FR77: System monitors deployment status
 - NFR-I9: CI/CD triggers must be provider-agnostic
@@ -1839,11 +1976,13 @@ So that I know when my ticket is live in production.
 **Given** a deployment completes  
 **When** the system receives deployment status  
 **Then** the ticket status is updated:
+
 - **Deployment success** → ClickUp status: `Deployed` or `Done`
 - **Deployment failure** → ClickUp status: `Deployment Failed`, comment added with logs
 - **Rollback** → ClickUp status: `Rolled Back`, comment with reason
 
 **And** ClickUp comment is added:
+
 ```
 🚀 Deployment Status: {Success/Failed}
 Environment: {dev/staging/prod}
@@ -1858,6 +1997,7 @@ Build: {build_id}
 **Prerequisites:** Story 4.5 (Deployment monitoring)
 
 **Technical Notes:**
+
 - FR78: System updates ClickUp ticket status based on deployment results
 - Use ClickUp API to update task status
 - Use ClickUp API to add comments
@@ -1877,18 +2017,21 @@ So that failed pushes don't block the pipeline permanently.
 **Given** a GitHub push operation fails  
 **When** the error handler processes the failure  
 **Then** the system:
+
 - Categorizes error type (auth, conflicts, rate limit, network)
 - Determines if retryable
 - Logs detailed error to Sentry with full context
 - Notifies PM immediately via ClickUp comment (NFR-R5)
 
 **And** for specific error types:
+
 - **Merge conflicts:** Mark as non-retryable, escalate to TL for manual resolution
 - **Auth failures:** Check token validity, alert operators
 - **Rate limits:** Back off and retry after limit resets
 - **Network errors:** Retry with exponential backoff (3 attempts)
 
 **And** deployment failures trigger:
+
 - Automatic rollback if configured
 - Status update to deployments table (status: ROLLED_BACK)
 - Incident logged for post-mortem
@@ -1896,6 +2039,7 @@ So that failed pushes don't block the pipeline permanently.
 **Prerequisites:** Stories 4.3-4.6 (GitHub operations)
 
 **Technical Notes:**
+
 - NFR-R5: GitHub push failures must alert PM immediately
 - NFR-R6: Deployment failures must trigger rollback and notification
 - Implement rollback via GitHub Deployments API
@@ -1914,6 +2058,7 @@ So that I can monitor git operations and deployment success rates.
 **Given** GitHub operations are running  
 **When** metrics are collected  
 **Then** Prometheus metrics include:
+
 - `github_push_total{status="success|failed", error_type}`
 - `github_push_duration_seconds`
 - `github_pr_created_total`
@@ -1922,6 +2067,7 @@ So that I can monitor git operations and deployment success rates.
 - `deployment_success_rate{environment}`
 
 **And** metrics enable alerting:
+
 - GitHub push failure rate > 10% (alert operations)
 - Deployment failure rate > 5% (alert team)
 - GitHub rate limit approaching (alert to throttle)
@@ -1929,6 +2075,7 @@ So that I can monitor git operations and deployment success rates.
 **Prerequisites:** Story 1.8 (Prometheus), Stories 4.1-4.7 (GitHub operations)
 
 **Technical Notes:**
+
 - Increment metrics in GitHubService
 - FR96-99: PM dashboard shows deployment timelines
 - Architecture reference: Observability (NFR-O5, NFR-O6)
@@ -1964,12 +2111,14 @@ So that I can monitor projects from anywhere.
 **Given** I'm authenticated as a PM  
 **When** I access `/dashboard/pm`  
 **Then** the dashboard:
+
 - Loads within 2 seconds (NFR-P2)
 - Is responsive (desktop primary, mobile monitoring per NFR-UX1)
 - Shows personalized data (my projects only, unless I'm a Manager)
 - Uses real-time updates via Socket.IO (FR9)
 
 **And** dashboard layout includes:
+
 - Header with user name, role, notifications icon
 - Sidebar navigation (Projects, Workload, Clients, Settings)
 - Main content area (project cards/list view)
@@ -1980,11 +2129,12 @@ So that I can monitor projects from anywhere.
 **Prerequisites:** Story 1.6 (Auth), Epic 2 (Data to display)
 
 **Technical Notes:**
+
 - Use React/Vue/Angular (choose based on team preference)
 - FR96: PMs can view dashboard with project portfolio
 - NFR-UX1: Dashboards must be responsive
 - NFR-UX6: PM dashboard shows all projects at-a-glance
-- Create frontend in separate repo or monorepo `/apps/dashboard`
+- **Frontend Repository:** Separate repository at `/Volumes/Data/project/products/alpharages/dsf-dashboard` (React + TypeScript)
 
 ### Story 5.2: Project List & Status Overview
 
@@ -1999,6 +2149,7 @@ So that I can quickly identify what needs attention.
 **Given** I'm on the PM dashboard  
 **When** I view my projects list  
 **Then** each project shows:
+
 - Project name and client
 - Ticket counts (Total, In Progress, Completed, Blocked)
 - Overall status indicator (green=healthy, yellow=attention needed, red=blocked)
@@ -2006,6 +2157,7 @@ So that I can quickly identify what needs attention.
 - Quick action buttons (View Details, Add Ticket)
 
 **And** projects can be:
+
 - Filtered (by status, client, date range)
 - Sorted (by activity, ticket count, alphabetically)
 - Searched (by name, client)
@@ -2015,6 +2167,7 @@ So that I can quickly identify what needs attention.
 **Prerequisites:** Story 5.1 (Dashboard foundation), Epic 2 (Ticket data)
 
 **Technical Notes:**
+
 - FR8: PMs can view all AI projects assigned to them
 - Call API: GET `/api/v1/pm-dashboard/projects?pmId={id}`
 - Use pagination for large project lists
@@ -2033,6 +2186,7 @@ So that I know what's happening without constantly refreshing.
 **Given** an AI is processing my ticket  
 **When** I'm viewing the project or ticket detail  
 **Then** status updates appear in real-time:
+
 - **QUEUED** → "Waiting for AI" (gray)
 - **IN_PROGRESS** → "AI generating code..." with spinner (blue)
 - **QA_REVIEW** → "Running quality checks..." (yellow)
@@ -2041,6 +2195,7 @@ So that I know what's happening without constantly refreshing.
 - **FAILED** → "Failed - Review needed" with error icon (red)
 
 **And** progress indicators show:
+
 - Current step in pipeline
 - Estimated time remaining (if available)
 - AI provider being used (Cursor CLI Headless or Claude Code icon)
@@ -2051,6 +2206,7 @@ So that I know what's happening without constantly refreshing.
 **Prerequisites:** Story 5.2 (Project list), Epic 10 (Real-time Socket.IO)
 
 **Technical Notes:**
+
 - FR9: PMs monitor real-time status of AI execution
 - Subscribe to Socket.IO event: `execution-progress-update`
 - Update UI reactively using state management (Redux, Zustand, etc.)
@@ -2069,18 +2225,21 @@ So that I maintain control over what goes to production.
 **Given** AI code generation completes and passes QA  
 **When** I receive approval request notification  
 **Then** I can:
+
 - View code diff (files changed, additions/deletions highlighted)
 - See QA results summary (linting passed, 45/45 tests passed, 87% coverage)
 - Read AI confidence score and any uncertainty flags
 - Review original ticket and acceptance criteria side-by-side
 
 **And** approval actions available:
+
 - **Approve** → Proceeds to GitHub push and deployment
 - **Reject** → Sends back to AI with rejection reason
 - **Request Rework** → Add specific feedback/clarifications for AI retry
 - **Escalate to TL** → Flags for technical lead review
 
 **And** approval decision is:
+
 - Logged to audit trail
 - Notified to team via Socket.IO
 - Recorded in execution record
@@ -2088,6 +2247,7 @@ So that I maintain control over what goes to production.
 **Prerequisites:** Story 5.3 (Status updates), Epic 3 (QA results), Epic 4 (Code ready)
 
 **Technical Notes:**
+
 - FR11: PMs can approve AI-generated code before deployment
 - FR12: PMs can request AI rework with additional context
 - FR14: PMs can escalate blocked tickets
@@ -2107,6 +2267,7 @@ So that I can prioritize review of uncertain outputs.
 **Given** AI completes code generation  
 **When** I view the execution details  
 **Then** I see:
+
 - **Confidence score** (0-100%) displayed prominently
 - **Confidence interpretation:**
   - 90-100%: High confidence (green) - AI is very certain
@@ -2114,12 +2275,14 @@ So that I can prioritize review of uncertain outputs.
   - Below 70%: Low confidence (red) - Thorough review required
 
 **And** uncertainty flags highlight:
+
 - Ambiguous requirements AI couldn't fully understand
 - Multiple valid implementation approaches AI considered
 - Edge cases AI is unsure how to handle
 - Missing context or dependencies AI detected
 
 **And** low confidence scores:
+
 - Automatically escalate to TL for review
 - Require PM approval before deployment (can't auto-deploy)
 - Prompt PM to add clarifying context for retry
@@ -2127,6 +2290,7 @@ So that I can prioritize review of uncertain outputs.
 **Prerequisites:** Story 5.3 (Status display), Epic 2 (Confidence scores from AI)
 
 **Technical Notes:**
+
 - FR13: PMs can view AI confidence scores and uncertainty flags
 - Store confidence_score in executions table (already in schema)
 - AI providers may or may not provide confidence - if not, use heuristics (test pass rate, QA results)
@@ -2145,6 +2309,7 @@ So that I can prevent burnout and request help before overload.
 **Given** I'm viewing my workload dashboard  
 **When** the system calculates my utilization  
 **Then** I see:
+
 - **Current project count** (e.g., 12 projects)
 - **Active tickets in progress** (e.g., 23 tickets)
 - **Utilization percentage** (e.g., 75% of capacity)
@@ -2154,23 +2319,26 @@ So that I can prevent burnout and request help before overload.
   - Red (81-100%): Burnout risk - reduce load
 
 **And** workload metrics include:
+
 - Tickets created this week
 - Tickets approved/rejected this week
 - Average ticket revision rate (lower = better ticket quality)
 - Hours worked estimate (based on activity)
 
 **And** alerts trigger:
-- >80% utilization → Alert PM and Manager
+
+- > 80% utilization → Alert PM and Manager
 - Ticket revision rate >30% → "Your tickets need improvement" feedback
 - No activity for 2+ days → "Check pending approvals" reminder
 
 **Prerequisites:** Story 5.1 (Dashboard), Epic 2 (Ticket data)
 
 **Technical Notes:**
+
 - FR15: PMs can view current project load and utilization %
 - FR16: PMs see burnout risk indicators
 - FR17: PMs receive alerts when approaching capacity limits
-- Calculate utilization: (active_tickets / max_tickets_per_pm) * 100
+- Calculate utilization: (active_tickets / max_tickets_per_pm) \* 100
 - NFR-UX8: Workload indicators use visual cues (red/yellow/green)
 - NFR-O8: PM burnout indicators alert manager
 
@@ -2187,18 +2355,21 @@ So that I can balance capacity and prevent team burnout.
 **Given** I'm a Manager  
 **When** I access the team capacity dashboard  
 **Then** I see all PMs with:
+
 - Name and current utilization % (bar chart)
 - Project count per PM
 - Ticket backlog per PM
 - Burnout risk flags (red/yellow/green)
 
 **And** I can:
+
 - Reassign projects between PMs (drag-and-drop)
 - View PM availability calendars
 - See capacity trends over time (weekly chart)
 - Filter by team, location, skill set
 
 **And** alerts show:
+
 - Any PM over 80% utilization
 - Unbalanced workload (one PM at 90%, another at 40%)
 - Vacation/PTO affecting capacity
@@ -2206,6 +2377,7 @@ So that I can balance capacity and prevent team burnout.
 **Prerequisites:** Story 5.6 (Workload data), Story 1.6 (RBAC for Manager role)
 
 **Technical Notes:**
+
 - FR18: Managers can view PM workload distribution
 - FR19: Managers can reassign projects to balance capacity
 - Use role guard: @Roles('MANAGER', 'ADMIN')
@@ -2224,18 +2396,21 @@ So that I have searchable history of all client interactions.
 **Given** I have a client meeting  
 **When** I log the conversation  
 **Then** I can:
+
 - Record meeting details (date, duration, attendees)
 - Upload meeting transcripts (from Zoom, Google Meet, etc.)
 - Link conversation to specific projects/tickets
 - Tag conversation topics (requirements, feedback, escalation)
 
 **And** AI assistance provides:
+
 - Auto-generated summary of key points
 - Action items extracted from transcript
 - Sentiment analysis (client satisfied/concerned)
 - Automatic ticket creation from action items
 
 **And** conversation history is:
+
 - Searchable by keyword, client, date, project
 - Accessible to other team members (with permissions)
 - Used as context for future AI code generation
@@ -2243,6 +2418,7 @@ So that I have searchable history of all client interactions.
 **Prerequisites:** Story 5.1 (Dashboard), Epic 2 (Context extraction)
 
 **Technical Notes:**
+
 - FR20: PMs can log client conversations with AI transcription
 - FR23: PMs can document client feedback and link to tickets
 - Integrate with transcription APIs (Whisper, Rev, Otter.ai)
@@ -2262,6 +2438,7 @@ So that I can share transparent updates efficiently.
 **Given** I need to present sprint review to client  
 **When** I generate progress report  
 **Then** the report includes:
+
 - **Sprint summary:** Dates, goals, completed tickets
 - **Ticket breakdown:** Completed, in-progress, blocked with visual indicators
 - **Velocity metrics:** Tickets completed vs. planned, trend chart
@@ -2269,6 +2446,7 @@ So that I can share transparent updates efficiently.
 - **Upcoming sprint:** Planned tickets, estimated completion
 
 **And** report formats available:
+
 - PDF download for email
 - Web view shareable via link
 - PowerPoint export for presentations
@@ -2278,6 +2456,7 @@ So that I can share transparent updates efficiently.
 **Prerequisites:** Story 5.2 (Project data), Epic 3 (QA metrics)
 
 **Technical Notes:**
+
 - FR21: PMs can share project progress reports with clients
 - FR22: PMs can schedule sprint reviews and availability windows
 - Use reporting library (puppeteer for PDF, chart.js for graphs)
@@ -2296,6 +2475,7 @@ So that I can work efficiently without excessive clicking.
 **Given** I'm using the PM dashboard  
 **When** I use keyboard shortcuts  
 **Then** common actions are accessible:
+
 - `A` - Approve current execution
 - `R` - Request rework
 - `E` - Escalate to TL
@@ -2304,6 +2484,7 @@ So that I can work efficiently without excessive clicking.
 - `Esc` - Close modal/dialog
 
 **And** quick actions menu (`Cmd+K` or `Ctrl+K`):
+
 - Searchable command palette
 - Recent projects
 - Jump to ticket by ID
@@ -2314,6 +2495,7 @@ So that I can work efficiently without excessive clicking.
 **Prerequisites:** Story 5.1 (Dashboard foundation)
 
 **Technical Notes:**
+
 - NFR-UX2: Critical actions must be <3 clicks from dashboard
 - Use keyboard shortcut library (Mousetrap, React HotKeys)
 - Command palette component (cmdk, kbar)
@@ -2350,6 +2532,7 @@ So that we have accurate cost data per project and provider.
 **Given** an AI execution completes (Cursor CLI Headless or Claude Code)  
 **When** the execution finishes  
 **Then** a cost record is created with:
+
 - ticket_id and execution_id (traceability)
 - ai_provider (CURSOR | WINDSURF | ANTIGRAVITY)
 - operation_type (code_generation, review, etc.)
@@ -2359,6 +2542,7 @@ So that we have accurate cost data per project and provider.
 - created_at (timestamp)
 
 **And** cost calculation uses:
+
 - Provider-specific pricing models (per token, per call, per minute)
 - Real-time pricing from provider APIs (if available)
 - Cached pricing table (updated daily)
@@ -2368,6 +2552,7 @@ So that we have accurate cost data per project and provider.
 **Prerequisites:** Stories 2.6-2.8 (AI provider integrations), 1.3 (Database with cost_records table)
 
 **Technical Notes:**
+
 - FR85: System tracks AI API usage (calls, tokens, costs) per project
 - Create CostTrackingService in `src/modules/cost-tracking/`
 - **Pricing models:**
@@ -2392,12 +2577,14 @@ So that I can stop execution if costs exceed expectations.
 **Given** AI is executing a ticket  
 **When** API calls are made  
 **Then** costs are:
+
 - Calculated immediately after each API call
 - Aggregated at ticket level (sum of all executions for that ticket)
 - Aggregated at project level (sum of all tickets in project)
 - Updated in real-time via Socket.IO events
 
 **And** cost metrics available:
+
 - Cost per ticket (individual ticket view)
 - Cost per project (project dashboard)
 - Cost per AI provider (compare Cursor CLI Headless vs Claude Code)
@@ -2406,6 +2593,7 @@ So that I can stop execution if costs exceed expectations.
 - Fallback cost impact (cost when using fallback provider)
 
 **And** API endpoint provides:
+
 - GET `/api/v1/costs/ticket/{ticketId}` - Ticket cost details
 - GET `/api/v1/costs/project/{projectId}` - Project cost summary
 - GET `/api/v1/costs/summary?startDate={}&endDate={}` - Time-based summary
@@ -2413,6 +2601,7 @@ So that I can stop execution if costs exceed expectations.
 **Prerequisites:** Story 6.1 (Cost tracking), Story 5.3 (Real-time updates)
 
 **Technical Notes:**
+
 - FR86: System calculates cost per ticket and per project in real-time
 - NFR-P8: Cost calculation must occur in real-time (not batch)
 - Use Prisma aggregations for sums
@@ -2432,18 +2621,21 @@ So that I can take action before costs spiral out of control.
 **Given** cost budgets are configured per project  
 **When** project costs cross thresholds  
 **Then** alerts are sent:
+
 - **50% budget** → Info notification to PM
 - **75% budget** → Warning to PM and Manager
 - **90% budget** → Urgent alert to PM, Manager, and leadership
 - **100% budget** → Critical alert + execution paused automatically
 
 **And** alert channels include:
+
 - In-app notification (dashboard)
 - Email to responsible parties
 - Slack webhook (if configured)
 - Socket.IO real-time push
 
 **And** alert contains:
+
 - Current cost vs. budget (e.g., "$487 of $500 used - 97%")
 - Trend (spending $X/day → will exceed in Y days)
 - Top cost drivers (which tickets/AI providers costing most)
@@ -2452,6 +2644,7 @@ So that I can take action before costs spiral out of control.
 **Prerequisites:** Story 6.2 (Cost calculation), Story 5.3 (Real-time notifications)
 
 **Technical Notes:**
+
 - FR87: System alerts when project exceeds cost budget
 - NFR-O7: Cost threshold breaches alert immediately
 - Create budget configuration in projects table (add budget_cents column)
@@ -2471,17 +2664,20 @@ So that we never accidentally spend beyond approved limits.
 **Given** a project has a hard cost cap configured  
 **When** costs reach 100% of cap  
 **Then** the system:
+
 - Pauses all AI executions for that project
 - Sets project status to COST_CAP_EXCEEDED
 - Cancels queued tickets (moves to PAUSED state)
 - Sends critical alert to Manager and leadership
 
 **And** execution resume requires:
+
 - Manager approval (explicit action)
 - Budget increase (update cost cap)
 - Both logged to audit trail
 
 **And** while paused:
+
 - New tickets for project are rejected with cost cap message
 - Existing tickets remain in database (not deleted)
 - PMs receive clear explanation when creating tickets
@@ -2489,6 +2685,7 @@ So that we never accidentally spend beyond approved limits.
 **Prerequisites:** Story 6.3 (Alerts)
 
 **Technical Notes:**
+
 - FR88: System pauses AI execution if hard cost cap reached
 - NFR-R7: Cost cap exceeded must pause execution (not continue)
 - Add cost cap check before queuing AI execution
@@ -2508,6 +2705,7 @@ So that I can understand spending patterns and optimize costs.
 **Given** I'm viewing the cost dashboard  
 **When** I select a time period (daily, weekly, monthly)  
 **Then** I see:
+
 - **Total spend** (big number with trend arrow)
 - **Spend by AI provider** (pie chart showing Cursor CLI Headless vs Claude Code distribution)
   - Example: Cursor 55%, Claude Code 45%
@@ -2518,12 +2716,14 @@ So that I can understand spending patterns and optimize costs.
 - **Fallback frequency** (% of tickets that required fallback)
 
 **And** interactive features:
+
 - Drill down into specific project/provider/PM
 - Date range picker (last 7 days, last 30 days, custom)
 - Export to CSV/Excel
 - Compare periods (this month vs. last month)
 
 **And** cost insights displayed:
+
 - Average cost per ticket (target: ~$29.50/ticket)
 - Most expensive tickets (outliers)
 - Cost optimization suggestions:
@@ -2534,6 +2734,7 @@ So that I can understand spending patterns and optimize costs.
 **Prerequisites:** Story 6.2 (Cost data), Story 5.1 (Dashboard foundation)
 
 **Technical Notes:**
+
 - FR105-108: Cost monitoring dashboard requirements
 - Use charting library (Chart.js, Recharts, D3)
 - API: GET `/api/v1/costs/summary` with filters
@@ -2554,18 +2755,21 @@ So that we can make data-driven GO/NO-GO decisions.
 **Then** I see all criteria from PRD:
 
 **Phase 1 → Phase 2 Gate:**
+
 - ✅/❌ PM capacity proven: 1 PM handles 10+ projects (current: 12 ✅)
 - ✅/❌ Costs predictable: AI compute <30% revenue (current: 22% ✅)
 - ✅/❌ Quality acceptable: Bug escape rate <5% (current: 3.2% ✅)
 - ✅/❌ Client acceptance: NPS >7/10 (current: 8.1 ✅)
 
 **And** each metric shows:
+
 - Current value
 - Target value
 - Trend (improving/declining)
 - Status (green=pass, yellow=borderline, red=fail)
 
 **And** dashboard provides:
+
 - Overall GO/NO-GO recommendation (all criteria green → GO)
 - Historical data (track metrics over time)
 - Export report for stakeholder presentation
@@ -2573,6 +2777,7 @@ So that we can make data-driven GO/NO-GO decisions.
 **Prerequisites:** Story 6.5 (Cost data), Epic 3 (Quality data), Epic 5 (PM workload data)
 
 **Technical Notes:**
+
 - FR112-115: GO/NO-GO decision dashboard
 - Pull metrics from multiple sources:
   - Cost data from cost_records
@@ -2594,6 +2799,7 @@ So that I can reduce spending without sacrificing quality.
 **Given** cost data is analyzed  
 **When** optimization engine runs  
 **Then** recommendations are generated:
+
 - "Route more simple tasks to Claude Code (95% cheaper than Cursor for single-file changes)"
 - "Improve ticket quality (reduces failed executions and rework by 30%)"
 - "Project X has high complexity tickets → ensure Cursor is used for best results"
@@ -2601,6 +2807,7 @@ So that I can reduce spending without sacrificing quality.
 - "Batch similar tickets together (reduces workspace setup overhead by 15%)"
 
 **And** recommendations include:
+
 - Estimated savings (e.g., "Save ~$500/month by routing 20% more to Claude Code")
 - Provider performance metrics (success rate, average time)
 - Ticket quality improvements needed
@@ -2608,6 +2815,7 @@ So that I can reduce spending without sacrificing quality.
 - Risk assessment (Low, Medium, High)
 
 **And** Manager can:
+
 - Apply recommendation (one-click implementation)
 - Dismiss recommendation (with reason)
 - Schedule recommendation (implement next sprint)
@@ -2615,6 +2823,7 @@ So that I can reduce spending without sacrificing quality.
 **Prerequisites:** Story 6.5 (Cost data and patterns)
 
 **Technical Notes:**
+
 - FR89-90: Cost optimization (Phase 2) - caching, batching
 - Analyze patterns: which provider cheapest for which task types
 - Track execution success rate per provider
@@ -2634,6 +2843,7 @@ So that I can evaluate overall business impact of the transformation.
 **Given** I'm viewing business metrics dashboard  
 **When** financial data is displayed  
 **Then** I see:
+
 - **Revenue:** Total revenue from projects (manual input or from billing system)
 - **Costs:** Total AI compute costs + infrastructure costs
 - **Gross Margin:** (Revenue - Costs) / Revenue × 100%
@@ -2641,17 +2851,20 @@ So that I can evaluate overall business impact of the transformation.
 - **Profitability by Project Type:** Which project types most profitable
 
 **And** trend analysis shows:
+
 - Margin trends over time (improving/declining)
 - Cost trends vs. project volume (scaling efficiency)
 - Breakeven analysis (when transformation pays for itself)
 
 **And** comparisons available:
+
 - Current (AI-augmented) vs. previous (human developers) cost structure
 - Projected vs. actual costs (are we on target?)
 
 **Prerequisites:** Story 6.5 (Cost dashboard), Story 5.7 (Project volume data)
 
 **Technical Notes:**
+
 - FR44-48: Manager business oversight capabilities
 - Integrate with billing/accounting system for revenue data
 - Calculate metrics per PRD success criteria
@@ -2689,9 +2902,11 @@ So that TLs can review the reasoning behind technical choices.
 **Given** AI makes an architecture decision during code generation  
 **When** the decision is significant (new dependencies, design patterns, infrastructure changes)  
 **Then** an ADR is created with:
+
 - **Title:** Short desc
 
 riptive name (e.g., "Use Redis for Session Storage")
+
 - **Status:** Proposed (awaiting TL review)
 - **Context:** Why this decision is needed
 - **Decision:** What was chosen
@@ -2706,6 +2921,7 @@ riptive name (e.g., "Use Redis for Session Storage")
 **Prerequisites:** Epic 2 (AI code generation with architecture awareness)
 
 **Technical Notes:**
+
 - FR26: TLs can view ADRs documenting AI's choices
 - Create ADRService in `src/modules/architecture-review/`
 - Parse AI output for architecture decisions (may require AI provider support)
@@ -2725,18 +2941,21 @@ So that I can efficiently approve/reject AI's technical choices.
 **Given** ADRs are generated by AI  
 **When** I access my TL review queue  
 **Then** I see:
+
 - List of pending ADRs (status: Proposed)
 - Priority indicators (high-risk vs. low-risk decisions)
 - Ticket context (what feature is this for)
 - AI confidence level for each decision
 
 **And** I can filter/sort by:
+
 - Risk level (high-risk decisions first)
 - Project
 - Date created
 - AI confidence (review low-confidence first)
 
 **And** each ADR shows:
+
 - Quick preview of decision
 - "Review" button (<3 clicks per NFR-UX2)
 - Time estimated for review (based on complexity)
@@ -2744,6 +2963,7 @@ So that I can efficiently approve/reject AI's technical choices.
 **Prerequisites:** Story 7.1 (ADRs exist), Story 1.6 (TL role auth)
 
 **Technical Notes:**
+
 - FR24: TLs can review AI-generated architecture decisions in dedicated queue
 - API: GET `/api/v1/architecture-review/queue?status=proposed`
 - Use role guard: @Roles('TL', 'ADMIN')
@@ -2762,17 +2982,20 @@ So that I can focus my time on decisions that matter most.
 **Given** ADRs are created  
 **When** risk level is calculated  
 **Then** decisions are classified:
+
 - **High-risk:** New dependencies, database schema changes, security patterns, infrastructure changes (require TL review)
 - **Medium-risk:** Design pattern changes, significant refactoring (recommend TL review)
 - **Low-risk:** Minor refactoring, code organization, style improvements (spot-check acceptable)
 
 **And** risk indicators are based on:
+
 - Scope of impact (how many files/modules affected)
 - Reversibility (easy to undo or requires migration)
 - AI confidence (low confidence = higher risk)
 - Domain complexity (security, data, API contracts = high risk)
 
 **And** high-risk decisions:
+
 - Block deployment until TL approves
 - Send immediate notification to TL
 - Escalate to architect if TL unavailable >4 hours
@@ -2780,6 +3003,7 @@ So that I can focus my time on decisions that matter most.
 **Prerequisites:** Story 7.1 (ADRs), Story 7.2 (Review queue)
 
 **Technical Notes:**
+
 - FR27: TLs can flag high-risk decisions for deep review vs. spot-check low-risk
 - Create risk scoring algorithm in RiskAssessmentService
 - Consider factors: files_changed count, types of changes, AI confidence
@@ -2798,18 +3022,21 @@ So that I maintain technical quality standards.
 **Given** I'm reviewing an ADR  
 **When** I make a decision  
 **Then** I can:
+
 - **Approve:** Accept the decision, allow execution to proceed
 - **Reject:** Block the decision, send back to AI with explanation
 - **Request Modification:** Suggest alternative approach for AI to implement
 - **Defer:** Needs more investigation or discussion with team
 
 **And** for each action:
+
 - I provide comments/reasoning (required for reject/modify)
 - Decision is logged to audit trail
 - Ticket status is updated accordingly
 - PM is notified of outcome
 
 **And** rejection triggers:
+
 - AI retry with TL's feedback incorporated
 - New ADR generated with modifications
 - Returns to TL queue for re-review
@@ -2817,6 +3044,7 @@ So that I maintain technical quality standards.
 **Prerequisites:** Story 7.2 (Review queue), Story 7.3 (Risk assessment)
 
 **Technical Notes:**
+
 - FR25: TLs can approve, reject, or request modifications to AI proposals
 - POST `/api/v1/architecture-review/{adrId}/decision` with {action, comments}
 - Update ADR status: Proposed → Approved/Rejected/Modified/Deferred
@@ -2835,6 +3063,7 @@ So that AI makes consistent decisions aligned with our standards.
 **Given** I'm defining project architecture rules  
 **When** I create patterns and constraints  
 **Then** I can specify:
+
 - **Allowed technologies:** Approved dependencies, frameworks, libraries
 - **Forbidden technologies:** Banned dependencies (security issues, licensing, etc.)
 - **Design patterns:** Required patterns (repository, factory, strategy, etc.)
@@ -2842,11 +3071,13 @@ So that AI makes consistent decisions aligned with our standards.
 - **Performance requirements:** Response time limits, resource constraints
 
 **And** constraints are enforced:
+
 - AI checks constraints before generating code
 - Violations flagged automatically in ADR
 - AI provides justification if constraint must be violated
 
 **And** patterns are reusable:
+
 - Defined at organization level (apply to all projects)
 - Overridable at project level (project-specific rules)
 - Versioned (track changes over time)
@@ -2854,6 +3085,7 @@ So that AI makes consistent decisions aligned with our standards.
 **Prerequisites:** Story 7.1 (ADRs), Epic 2 (AI prompt generation)
 
 **Technical Notes:**
+
 - FR28: TLs can set architecture patterns and constraints that AI must follow
 - Create `architecture_constraints` table in Prisma schema
 - Include constraints in AI prompts (FR61)
@@ -2873,17 +3105,20 @@ So that I don't make poor choices that create technical debt.
 **Given** AI is making an architecture decision  
 **When** AI confidence is below threshold (e.g., <70%)  
 **Then** AI:
+
 - Creates ADR with "Needs TL Review" flag
 - Provides multiple alternatives considered
 - Explains why uncertain (missing context, conflicting requirements, etc.)
 - Blocks execution until TL provides guidance
 
 **And** TL escalation includes:
+
 - Specific questions AI needs answered
 - Trade-offs AI is weighing
 - Recommendation with caveats
 
 **And** TL can:
+
 - Provide guidance (update constraints/patterns for future)
 - Make decision for this specific case
 - Delegate to architect for complex cases
@@ -2891,6 +3126,7 @@ So that I don't make poor choices that create technical debt.
 **Prerequisites:** Story 7.4 (TL decisions), Epic 2 (AI execution)
 
 **Technical Notes:**
+
 - FR29: TLs can receive AI escalations when uncertain about technical decisions
 - AI provider APIs may support confidence scores
 - If not available: use heuristics (multiple valid approaches = low confidence)
@@ -2909,18 +3145,21 @@ So that I can manually intervene or provide guidance.
 **Given** AI attempts a task and fails repeatedly  
 **When** I review the failures  
 **Then** I can:
+
 - See failure pattern (same type of task always fails)
 - Identify AI limitations (e.g., "AI struggles with GraphQL schema generation")
 - Document workarounds (e.g., "TL must handle database migrations manually")
 - Update constraints to prevent AI from attempting known-failing tasks
 
 **And** AI capability tracking includes:
+
 - Success rate by task type
 - Common failure modes
 - Tasks that require human intervention
 - Improvements over time (AI learning)
 
 **And** capability limits are:
+
 - Documented in knowledge base
 - Shared with PMs (so they know what to avoid putting in tickets)
 - Updated as AI improves
@@ -2928,6 +3167,7 @@ So that I can manually intervene or provide guidance.
 **Prerequisites:** Story 7.6 (Escalations), Epic 2 (Execution tracking)
 
 **Technical Notes:**
+
 - FR30-33: TL AI capability management
 - Track execution failures by task characteristics
 - Pattern detection: If task type X fails >50%, mark as AI limitation
@@ -2947,6 +3187,7 @@ So that I can optimize the review process and identify AI improvement areas.
 **Given** architecture reviews are happening  
 **When** I view TL metrics dashboard  
 **Then** I see:
+
 - **Review volume:** ADRs per week, review time per ADR
 - **Approval rate:** % approved vs. rejected vs. modified
 - **Risk distribution:** High-risk vs. low-risk decisions
@@ -2954,11 +3195,13 @@ So that I can optimize the review process and identify AI improvement areas.
 - **TL workload:** Current queue depth, estimated review time
 
 **And** insights show:
+
 - "AI makes fewer database decisions after TL feedback on schema design" (learning)
 - "High-risk decisions take 15 minutes average to review" (capacity planning)
 - "90% of low-risk decisions approved without changes" (spot-check validation)
 
 **And** alerts trigger:
+
 - TL queue depth >20 (need more TLs or review process improvement)
 - Approval rate <50% (AI needs better training/constraints)
 - High-risk decisions waiting >4 hours (escalation needed)
@@ -2966,6 +3209,7 @@ So that I can optimize the review process and identify AI improvement areas.
 **Prerequisites:** Stories 7.1-7.7 (Architecture review workflow), Story 1.8 (Prometheus)
 
 **Technical Notes:**
+
 - Track ADR lifecycle: Created → In Review → Approved/Rejected
 - Calculate metrics from architecture_decisions table
 - Expose Prometheus metrics: `adr_reviews_total{status, risk_level}`
@@ -3002,6 +3246,7 @@ So that I can balance thoroughness with scalability.
 **Given** I'm configuring QA sampling strategy  
 **When** I set sampling parameters  
 **Then** I can choose:
+
 - **Sampling percentage:** 5%, 10%, 20%, 50%, 100%
 - **Sampling strategy:**
   - Random sampling (statistically representative)
@@ -3010,11 +3255,13 @@ So that I can balance thoroughness with scalability.
   - Failed-test sampling (100% review if automated tests failed)
 
 **And** sampling is applied:
+
 - Automatically when execution completes QA checks
 - Selected executions added to Lead QA review queue
 - Non-sampled executions proceed to deployment (with auto-QA pass)
 
 **And** sampling configuration is:
+
 - Per project (different projects have different risk)
 - Per AI provider (new providers reviewed more thoroughly)
 - Adjustable based on quality trends
@@ -3022,6 +3269,7 @@ So that I can balance thoroughness with scalability.
 **Prerequisites:** Epic 3 (Automated QA complete), Story 1.3 (Database)
 
 **Technical Notes:**
+
 - FR34: Lead QA can view sample queue of AI-generated code
 - FR35: Lead QA can configure sampling strategy
 - Create QASamplingService with configurable rules
@@ -3041,6 +3289,7 @@ So that I can efficiently assess quality.
 **Given** an execution is selected for QA review  
 **When** I open the review interface  
 **Then** I see:
+
 - **Code diff:** Side-by-side original vs. AI-generated
 - **Automated QA results:**
   - Linting: ✅ Passed (0 errors, 2 warnings)
@@ -3052,12 +3301,14 @@ So that I can efficiently assess quality.
 - **Architecture review:** TL approved
 
 **And** I can:
+
 - View full code changes
 - See test results in detail
 - Review security scan findings
 - Check coverage report
 
 **And** review interface is optimized:
+
 - Loads in <2 seconds (NFR-P2)
 - Keyboard shortcuts for quick navigation
 - Split view for comparing files
@@ -3065,6 +3316,7 @@ So that I can efficiently assess quality.
 **Prerequisites:** Story 8.1 (Sampling), Epic 3 (QA results), Epic 4 (Code available)
 
 **Technical Notes:**
+
 - FR38: Lead QA can view automated QA results for each ticket
 - Use code diff viewer component
 - API: GET `/api/v1/qa-review/{executionId}`
@@ -3084,22 +3336,26 @@ So that I serve as the final quality gate.
 **Given** I've reviewed AI-generated code  
 **When** I make my decision  
 **Then** I can:
+
 - **Approve:** Code proceeds to GitHub push and deployment
 - **Reject with Findings:** Code blocked, findings documented, PM notified
 - **Conditional Approve:** Approve with notes (e.g., "Monitor for X in production")
 
 **And** rejection requires:
+
 - Documented findings (what issues found)
 - Severity classification (blocker, critical, major, minor)
 - Remediation guidance (how to fix)
 
 **And** approval is logged:
+
 - Who approved (Lead QA user)
 - When approved (timestamp)
 - Any conditions or notes
 - Stored in audit trail
 
 **And** rejected code:
+
 - Blocks GitHub push
 - Sends findings to PM and AI for remediation
 - Creates new execution attempt with findings as context
@@ -3107,6 +3363,7 @@ So that I serve as the final quality gate.
 **Prerequisites:** Story 8.2 (Review interface), Epic 3 (QA system)
 
 **Technical Notes:**
+
 - FR36: Lead QA can approve code for production deployment
 - FR37: Lead QA can reject code with findings and send back to AI
 - POST `/api/v1/qa-review/{executionId}/decision` with {action, findings}
@@ -3126,6 +3383,7 @@ So that I only review code that meets basic standards.
 **Given** I'm configuring quality gates  
 **When** I set gate thresholds  
 **Then** I can define:
+
 - **Linting:** Must pass with 0 errors (warnings allowed up to threshold)
 - **Testing:** Minimum test pass rate (e.g., 95%)
 - **Coverage:** Minimum coverage % (e.g., 80%)
@@ -3133,11 +3391,13 @@ So that I only review code that meets basic standards.
 - **Performance:** Response time limits (if performance tests exist)
 
 **And** gates can be:
+
 - Global defaults (apply to all projects)
 - Project-specific overrides
 - Temporarily relaxed (with approval and audit trail)
 
 **And** gate failures:
+
 - Block code from reaching QA review queue
 - Automatically reject execution
 - Provide clear failure reasons to PM
@@ -3146,6 +3406,7 @@ So that I only review code that meets basic standards.
 **Prerequisites:** Story 8.1 (QA system), Epic 3 (Automated QA)
 
 **Technical Notes:**
+
 - FR39: Lead QA can define quality gates that must pass before human review
 - Create QualityGateConfigService
 - Store config in `quality_gate_config` table
@@ -3165,6 +3426,7 @@ So that I can identify patterns and improve quality processes.
 **Given** bugs are reported in production  
 **When** I link them to original executions  
 **Then** bug escape tracking captures:
+
 - Which execution/ticket introduced the bug
 - Which AI provider generated the code
 - Whether code was sampled for QA review
@@ -3172,12 +3434,14 @@ So that I can identify patterns and improve quality processes.
 - Bug severity and impact
 
 **And** bug escape metrics show:
-- Bug escape rate: (production bugs / deployed tickets) * 100
+
+- Bug escape rate: (production bugs / deployed tickets) \* 100
 - Escape rate by AI provider (which provider has more bugs?)
 - Escape rate by QA sampling strategy (is 20% enough?)
 - Common bug types (what do we miss most?)
 
 **And** insights guide improvements:
+
 - "Increase sampling to 30% for Provider X" (if escape rate high)
 - "Add security gate for SQL injection" (if multiple SQL bugs escaped)
 - "Provider Y has 0.5% escape rate" (better quality)
@@ -3185,6 +3449,7 @@ So that I can identify patterns and improve quality processes.
 **Prerequisites:** Story 8.3 (Approvals tracked), Epic 9 (Production monitoring)
 
 **Technical Notes:**
+
 - FR40: Lead QA can track bug escape rates and quality trends
 - Link production_errors to original execution_id
 - Calculate escape rate: Count production bugs / Count deployed tickets
@@ -3204,6 +3469,7 @@ So that I can monitor quality trends and make data-driven decisions.
 **Given** I'm viewing the quality dashboard  
 **When** quality data is displayed  
 **Then** I see:
+
 - **Overall quality score:** Aggregate of all quality factors (0-100)
 - **Test pass rate:** % of tickets where tests pass (target: >95%)
 - **Code coverage:** Average coverage across all projects (target: >80%)
@@ -3212,11 +3478,13 @@ So that I can monitor quality trends and make data-driven decisions.
 - **QA approval rate:** % of reviewed code that passes (target: >90%)
 
 **And** trend charts show:
+
 - Quality improving or declining over time
 - Impact of process changes (e.g., "Sampling increase improved escape rate")
 - Provider comparison (which AI has best quality)
 
 **And** drill-down available:
+
 - By project (which projects have quality issues)
 - By AI provider
 - By time period
@@ -3224,6 +3492,7 @@ So that I can monitor quality trends and make data-driven decisions.
 **Prerequisites:** Stories 8.1-8.5 (Quality data), Story 5.1 (Dashboard foundation)
 
 **Technical Notes:**
+
 - FR109-111: Quality metrics dashboard
 - Aggregate data from qa_results, executions, production_errors tables
 - API: GET `/api/v1/quality/metrics?startDate={}&endDate={}`
@@ -3243,17 +3512,20 @@ So that I can investigate issues before they escalate.
 **Given** quality metrics are tracked over time  
 **When** anomalies are detected  
 **Then** alerts are sent for:
+
 - **Sudden drop in test pass rate** (e.g., 95% → 75% in one day)
 - **Coverage decline** (e.g., 85% → 70% over a week)
 - **Bug escape spike** (e.g., 2% → 8% in current sprint)
 - **Security vulnerability increase** (e.g., 3 critical vulns found vs. 0 average)
 
 **And** anomaly detection uses:
+
 - Statistical thresholds (2 standard deviations from mean)
 - Trend analysis (declining over 3+ consecutive periods)
 - Baseline comparison (current vs. historical average)
 
 **And** alerts include:
+
 - What anomaly detected
 - Current vs. expected values
 - Possible causes (e.g., "New AI provider introduced")
@@ -3262,6 +3534,7 @@ So that I can investigate issues before they escalate.
 **Prerequisites:** Story 8.6 (Quality metrics), Story 1.8 (Monitoring)
 
 **Technical Notes:**
+
 - Implement anomaly detection algorithm
 - Run daily analysis of quality metrics
 - Use time-series analysis for trend detection
@@ -3281,17 +3554,20 @@ So that I can optimize the review process.
 **Given** I'm reviewing code samples  
 **When** I view my QA workload metrics  
 **Then** I see:
+
 - **Review queue depth:** Current items waiting for review
 - **Average review time:** Time spent per review
 - **Review throughput:** Reviews completed per day/week
 - **Utilization:** % of capacity used (prevent Lead QA burnout too!)
 
 **And** efficiency metrics show:
+
 - Which types of reviews take longest (helps set sampling strategy)
 - Rejection rate (high rejection = automated QA needs improvement)
 - Time saved by automated QA (estimate of time if 100% manual review)
 
 **And** capacity planning shows:
+
 - Current sampling rate sustainable? (can I handle queue depth?)
 - What happens if we scale to 50 projects? (will I be overwhelmed?)
 - When do we need additional Lead QA? (proactive hiring)
@@ -3299,6 +3575,7 @@ So that I can optimize the review process.
 **Prerequisites:** Stories 8.1-8.7 (QA workflow), Story 1.8 (Metrics)
 
 **Technical Notes:**
+
 - Track QA review timestamps (start, end)
 - Calculate queue depth from qa_results WHERE needs_manual_review = true
 - Expose Prometheus metrics: `qa_review_duration_seconds`, `qa_review_queue_depth`
@@ -3336,18 +3613,21 @@ So that I can detect errors and anomalies in deployed applications.
 **Given** applications are deployed to production  
 **When** errors occur  
 **Then** the system:
+
 - Receives error events from monitoring tools (Sentry, Datadog, CloudWatch, etc.)
 - Captures error details: type, message, stack trace, timestamp
 - Links error to originating ticket/execution (via tags or metadata)
 - Stores in `production_errors` table
 
 **And** error ingestion supports multiple sources:
+
 - Sentry webhook (error reported → POST to `/api/v1/monitoring/sentry-webhook`)
 - Datadog webhook
 - Custom application logging (POST `/api/v1/monitoring/errors`)
 - Log aggregation platforms (Elasticsearch, Splunk)
 
 **And** error data includes:
+
 - Application/service name
 - Environment (staging, production)
 - Error type and message
@@ -3358,6 +3638,7 @@ So that I can detect errors and anomalies in deployed applications.
 **Prerequisites:** Story 1.9 (Sentry integration), Story 1.4 (Webhook endpoints)
 
 **Technical Notes:**
+
 - FR79: System monitors production applications for errors and anomalies
 - Create ProductionMonitoringService
 - Prisma schema includes `production_errors` table
@@ -3377,18 +3658,21 @@ So that critical issues are fixed first.
 **Given** a production error is detected  
 **When** severity is classified  
 **Then** errors are categorized:
+
 - **CRITICAL:** Application down, data loss, security breach (fix immediately)
 - **HIGH:** Major feature broken, many users affected (fix within hours)
 - **MEDIUM:** Minor feature broken, some users affected (fix within days)
 - **LOW:** Cosmetic issue, rare occurrence (fix when convenient)
 
 **And** severity is determined by:
+
 - Error type (500 server errors → HIGH, 404 not found → LOW)
 - Occurrence frequency (happening every minute → CRITICAL)
 - User impact (% of users affected)
 - Business impact (payment processing → CRITICAL, analytics → LOW)
 
 **And** prioritization queue orders by:
+
 1. Severity (CRITICAL first)
 2. Occurrence count (frequent errors first)
 3. Age (older errors first within same severity)
@@ -3396,6 +3680,7 @@ So that critical issues are fixed first.
 **Prerequisites:** Story 9.1 (Error ingestion)
 
 **Technical Notes:**
+
 - FR80: System detects critical failures requiring immediate attention
 - FR83: System prioritizes fix tickets by severity and impact
 - Create SeverityClassificationService
@@ -3415,6 +3700,7 @@ So that bugs get queued for AI resolution without manual intervention.
 **Given** a production error reaches severity threshold  
 **When** automatic fix ticket creation triggers  
 **Then** a ClickUp task is created with:
+
 - **Title:** "Fix: {error_type} in {service}"
 - **Description:** Error message, stack trace, reproduction steps (if available)
 - **Priority:** Based on severity (CRITICAL → Urgent in ClickUp)
@@ -3422,12 +3708,14 @@ So that bugs get queued for AI resolution without manual intervention.
 - **Linked to:** Original ticket that introduced the bug (if traceable)
 
 **And** ticket includes debugging context:
+
 - Error logs (last 100 lines before error)
 - Request parameters (if web request)
 - User actions leading to error (if tracked)
 - Environment details (OS, browser, app version)
 
 **And** ticket creation is:
+
 - Throttled (don't create 100 tickets for same error → deduplicate)
 - Configurable (can disable auto-creation per project)
 - Logged to audit trail
@@ -3435,6 +3723,7 @@ So that bugs get queued for AI resolution without manual intervention.
 **Prerequisites:** Story 9.2 (Severity classification), Story 2.1 (ClickUp integration)
 
 **Technical Notes:**
+
 - FR81: System automatically creates fix tickets in ClickUp when bugs detected
 - Use ClickUp API to create task
 - Link via production_errors.fix_ticket_id
@@ -3454,6 +3743,7 @@ So that AI has enough information to generate a proper fix.
 **Given** an error occurred in production  
 **When** logs are analyzed  
 **Then** the system extracts:
+
 - **Root cause hypothesis:** What likely caused the error (based on stack trace)
 - **Affected code location:** File, function, line number
 - **Recent changes:** Was this file changed recently? (link to execution/commit)
@@ -3461,12 +3751,14 @@ So that AI has enough information to generate a proper fix.
 - **User journey:** What was user doing before error?
 
 **And** analysis uses:
+
 - Stack trace parsing (identify exception origin)
 - Log correlation (events before error)
 - Code blame (who/what changed this code recently - AI execution?)
 - Pattern matching (similar errors in history)
 
 **And** extracted context is:
+
 - Included in fix ticket description
 - Used in AI prompt for fixing
 - Stored in production_errors.context (JSON field)
@@ -3474,6 +3766,7 @@ So that AI has enough information to generate a proper fix.
 **Prerequisites:** Story 9.1 (Error ingestion), Story 9.3 (Fix tickets)
 
 **Technical Notes:**
+
 - FR82: System analyzes error logs to provide context for fix tickets
 - Parse stack traces with stack-trace-parser library
 - Query executions table for recent changes to affected files
@@ -3493,6 +3786,7 @@ So that bugs are resolved automatically without human coding.
 **Given** a fix ticket is created  
 **When** AI attempts to fix the bug  
 **Then** the fix workflow:
+
 1. AI reads fix ticket with error context
 2. AI analyzes code that caused the error
 3. AI generates fix (code changes)
@@ -3502,11 +3796,13 @@ So that bugs are resolved automatically without human coding.
 7. If test fails → AI retries with new approach
 
 **And** fix attempts are:
+
 - Limited (max 3 attempts per fix ticket)
 - Tracked (store all attempts in execution history)
 - Reviewable (PM/TL can review fix before deployment)
 
 **And** fix quality ensured by:
+
 - Test proves bug is fixed
 - No new tests broken by fix
 - Code coverage maintained or improved
@@ -3515,6 +3811,7 @@ So that bugs are resolved automatically without human coding.
 **Prerequisites:** Story 9.4 (Error analysis), Epic 2 (AI execution), Epic 3 (QA)
 
 **Technical Notes:**
+
 - Use same AI routing as feature development
 - Include error context in AI prompt: "Here's the bug: {error}. Fix it."
 - Require AI to write regression test that fails before fix, passes after
@@ -3534,6 +3831,7 @@ So that we don't deploy ineffective or breaking fixes.
 **Given** AI generates a fix  
 **When** fix is ready for deployment  
 **Then** verification includes:
+
 - **Regression test passes:** Test that reproduced bug now passes
 - **Existing tests pass:** Fix doesn't break other functionality
 - **Canary deployment:** Deploy to small % of traffic first (5%)
@@ -3541,12 +3839,14 @@ So that we don't deploy ineffective or breaking fixes.
 - **Gradual rollout:** If canary succeeds, roll out to 100%
 
 **And** if fix fails verification:
+
 - Canary deployment rolled back immediately
 - Error marked as "fix_failed"
 - Escalate to human (PM/TL) for manual investigation
 - AI attempts another fix approach (if attempts remaining)
 
 **And** successful fix:
+
 - Error marked as resolved in production_errors table
 - ClickUp fix ticket status updated to "Done"
 - Metrics tracked (time to fix, attempts needed)
@@ -3554,6 +3854,7 @@ So that we don't deploy ineffective or breaking fixes.
 **Prerequisites:** Story 9.5 (AI fix generation), Epic 4 (Deployment)
 
 **Technical Notes:**
+
 - Implement canary deployment strategy
 - Monitor error occurrence rate in canary vs. main deployment
 - Use deployment platform features (Kubernetes, AWS, etc.) for gradual rollout
@@ -3573,6 +3874,7 @@ So that I can evaluate if autonomous fixing is working.
 **Given** self-healing is operational  
 **When** metrics are collected  
 **Then** Prometheus metrics include:
+
 - `production_errors_detected_total{severity}`
 - `fix_tickets_created_total{auto_created}`
 - `fixes_attempted_total{result="success|failed|escalated"}`
@@ -3581,12 +3883,14 @@ So that I can evaluate if autonomous fixing is working.
 - `errors_resolved_autonomously_total` (no human intervention needed)
 
 **And** dashboard shows:
+
 - Self-healing success rate (target: >60% for Phase 1)
 - Average time from error detection to fix deployed
 - Errors requiring human escalation (identifies AI limitations)
 - Cost of self-healing (AI compute for fixes)
 
 **And** insights guide improvement:
+
 - "Cursor CLI Headless has 75% fix success rate for complex bugs"
 - "Claude Code has 82% success rate for simple bug fixes"
 - "Multi-provider fallback improved fix success from 75% to 88%"
@@ -3596,6 +3900,7 @@ So that I can evaluate if autonomous fixing is working.
 **Prerequisites:** Stories 9.1-9.6 (Self-healing workflow), Story 1.8 (Prometheus)
 
 **Technical Notes:**
+
 - Track entire self-healing lifecycle
 - Calculate time_to_fix: error.occurred_at → fix deployed timestamp
 - Expose metrics for Grafana dashboards
@@ -3614,12 +3919,14 @@ So that I can monitor application health and self-healing status.
 **Given** I'm monitoring production health  
 **When** I view the error dashboard  
 **Then** I see:
+
 - **Active errors:** Current unresolved production errors (count by severity)
 - **Error rate trend:** Errors per hour over time (line chart)
 - **Self-healing queue:** Fix tickets being processed by AI
 - **Resolution status:** Fixed vs. escalated vs. in-progress
 
 **And** real-time updates via Socket.IO show:
+
 - New error detected (alert notification)
 - Fix ticket created automatically
 - AI fix attempt in progress
@@ -3627,6 +3934,7 @@ So that I can monitor application health and self-healing status.
 - Error resolved (disappears from active errors)
 
 **And** filtering and drill-down:
+
 - By severity (show only CRITICAL)
 - By application/service
 - By resolution status (unresolved, fixing, resolved)
@@ -3635,6 +3943,7 @@ So that I can monitor application health and self-healing status.
 **Prerequisites:** Stories 9.1-9.7 (Error monitoring + self-healing), Story 5.1 (Dashboard)
 
 **Technical Notes:**
+
 - Real-time dashboard using Socket.IO
 - API: GET `/api/v1/monitoring/errors?status=active`
 - Subscribe to Socket.IO events: `error-detected`, `fix-in-progress`, `error-resolved`
@@ -3671,12 +3980,14 @@ So that clients receive live updates without polling.
 **Given** the orchestrator is running  
 **When** Socket.IO is initialized  
 **Then** the server:
+
 - Listens for Socket.IO connections on configured port
 - Authenticates clients using JWT tokens
 - Maintains connection pool (track connected clients)
 - Handles disconnections and reconnections gracefully
 
 **And** namespaces are configured:
+
 - `/pm` - PM dashboard events
 - `/manager` - Manager dashboard events
 - `/tl` - TL architecture review events
@@ -3684,6 +3995,7 @@ So that clients receive live updates without polling.
 - `/ops` - Operations monitoring events
 
 **And** rooms are used for:
+
 - Project-specific events (join room `project:{id}`)
 - User-specific events (join room `user:{id}`)
 - Role-specific broadcasts (all PMs, all TLs, etc.)
@@ -3691,6 +4003,7 @@ So that clients receive live updates without polling.
 **Prerequisites:** Story 1.1 (NestJS project), Story 1.6 (JWT auth)
 
 **Technical Notes:**
+
 - Architecture decision: Socket.IO for real-time (ADR-005)
 - Install: `npm install @nestjs/websockets @nestjs/platform-socket.io socket.io`
 - Create WebSocketGateway in `src/gateways/`
@@ -3711,18 +4024,21 @@ So that I see what's happening without refreshing the page.
 **Given** I'm viewing a ticket or project dashboard  
 **When** AI execution progresses  
 **Then** I receive Socket.IO events:
+
 - `execution-started`: {executionId, ticketId, aiProvider, timestamp}
 - `execution-progress-update`: {executionId, status, progress%, currentStep}
 - `execution-completed`: {executionId, status: "COMPLETED", confidenceScore}
 - `execution-failed`: {executionId, status: "FAILED", errorMessage}
 
 **And** events trigger UI updates:
+
 - Status badge changes color/icon
 - Progress bar animates
 - Notifications appear (toast messages)
 - Dashboard counters update
 
 **And** events are:
+
 - Sent only to relevant users (PM assigned to project)
 - Persisted if user offline (replay on reconnect)
 - Deduplicated (don't send duplicate events)
@@ -3730,6 +4046,7 @@ So that I see what's happening without refreshing the page.
 **Prerequisites:** Story 10.1 (Socket.IO infrastructure), Epic 2 (AI execution)
 
 **Technical Notes:**
+
 - FR9: PMs monitor real-time status of AI execution
 - Emit events from AIExecutionService at state transitions
 - Use rooms for targeting: `socket.to(`project:${projectId}`).emit(...)`
@@ -3748,16 +4065,19 @@ So that I can take action before budget is exhausted.
 **Given** I'm monitoring cost dashboards  
 **When** costs cross thresholds  
 **Then** I receive Socket.IO events:
+
 - `cost-warning`: {projectId, currentCost, budgetCost, percentUsed: 75%}
 - `cost-critical`: {projectId, currentCost, budgetCost, percentUsed: 90%}
 - `cost-cap-reached`: {projectId, executionsPaused: true}
 
 **And** notifications include:
+
 - Visual alert (red banner on dashboard)
 - Audio alert (optional, configurable)
 - Action buttons (View Project, Increase Budget, Acknowledge)
 
 **And** alerts are:
+
 - Sent to all Managers
 - Logged to notification history
 - Acknowledged to dismiss (but remain in history)
@@ -3765,6 +4085,7 @@ So that I can take action before budget is exhausted.
 **Prerequisites:** Story 10.1 (Socket.IO), Epic 6 (Cost tracking)
 
 **Technical Notes:**
+
 - Emit from CostTrackingService when thresholds crossed
 - Use role-based rooms: `socket.to('role:MANAGER').emit(...)`
 - Store acknowledgment in database (notification_acknowledgments table)
@@ -3783,16 +4104,19 @@ So that I can review and take corrective action quickly.
 **Given** automated QA runs on AI-generated code  
 **When** quality gates fail  
 **Then** relevant users receive events:
+
 - `qa-failed`: {executionId, ticketId, failureType, details}
 - `architecture-review-needed`: {adrId, riskLevel: "HIGH", executionId}
 - `qa-review-required`: {executionId, samplingReason: "failed-tests"}
 
 **And** notifications are targeted:
+
 - QA failures → PM (ticket owner)
 - Architecture issues → TL (architecture reviewer)
 - Security vulnerabilities → QA + Security team
 
 **And** notification includes:
+
 - Quick summary of failure
 - Link to detailed view
 - Suggested actions
@@ -3800,6 +4124,7 @@ So that I can review and take corrective action quickly.
 **Prerequisites:** Story 10.1 (Socket.IO), Epic 3 (QA), Epic 7 (Architecture review)
 
 **Technical Notes:**
+
 - Emit from QAAutomationService on gate failures
 - Target specific users based on ticket ownership and roles
 - Include actionable data in event payload
@@ -3818,6 +4143,7 @@ So that I can monitor orchestrator operational status.
 **Given** I'm viewing the ops monitoring dashboard  
 **When** system status is displayed  
 **Then** I see:
+
 - **Overall health:** Healthy / Degraded / Failed (green/yellow/red)
 - **Component status:**
   - Database: Connected (latency: 12ms)
@@ -3830,6 +4156,7 @@ So that I can monitor orchestrator operational status.
   - ClickUp API: ✅
 
 **And** real-time metrics:
+
 - Requests per second
 - Active AI executions
 - Queue depths (ai-execution-queue: 5, qa-check-queue: 2, deployment-queue: 0)
@@ -3841,6 +4168,7 @@ So that I can monitor orchestrator operational status.
 **Prerequisites:** Story 10.1 (Socket.IO), Story 1.8 (Prometheus metrics)
 
 **Technical Notes:**
+
 - FR100: Operators can view real-time orchestrator status
 - FR102: Operators can view AI provider status
 - Create HealthMonitoringService that checks all components
@@ -3861,18 +4189,21 @@ So that I can detect bottlenecks before they cause delays.
 **Given** RabbitMQ queues are processing messages  
 **When** queue depths are monitored  
 **Then** I see:
+
 - **ai-execution-queue:** Depth, processing rate (msgs/min), avg processing time
 - **qa-check-queue:** Depth, processing rate, avg processing time
 - **deployment-queue:** Depth, processing rate, avg processing time
 - **monitoring-queue:** Depth, processing rate, avg processing time
 
 **And** alerts trigger:
+
 - Queue depth >50 → Warning (check worker capacity)
 - Queue depth >100 → Critical (workers overwhelmed)
 - Processing rate dropping → Warning (workers slow or failing)
 - Queue depth growing >10 min → Critical (backlog building)
 
 **And** dashboard shows:
+
 - Queue depth trend (chart over time)
 - Worker count (how many consumers active)
 - Oldest message age (are messages getting stale?)
@@ -3880,6 +4211,7 @@ So that I can detect bottlenecks before they cause delays.
 **Prerequisites:** Story 10.5 (System health dashboard), Story 1.5 (RabbitMQ)
 
 **Technical Notes:**
+
 - FR101: Operators can see current queue depth and processing rate
 - Query RabbitMQ Management API for queue stats
 - Emit `queue-stats-update` via Socket.IO
@@ -3899,18 +4231,21 @@ So that I can debug issues as they happen.
 **Given** I'm monitoring a specific execution  
 **When** logs are generated  
 **Then** I see:
+
 - Structured log stream (real-time)
 - Log level filtering (show only errors/warnings)
 - Search within logs (keyword search)
 - Correlation ID linking (trace requests across services)
 
 **And** for errors:
+
 - Full stack trace
 - Request context (user, project, ticket)
 - Related logs (before/after error)
 - Link to Sentry for deep investigation
 
 **And** log viewer features:
+
 - Auto-scroll (follows latest logs)
 - Pause/resume streaming
 - Download logs (export to file)
@@ -3919,6 +4254,7 @@ So that I can debug issues as they happen.
 **Prerequisites:** Story 10.5 (Ops dashboard), Story 1.7 (Winston logging)
 
 **Technical Notes:**
+
 - FR103: Operators can access execution logs and error details
 - Stream logs via Socket.IO (avoid overwhelming with high volume)
 - Use log aggregation if available (Elasticsearch, Loki)
@@ -3938,6 +4274,7 @@ So that I can control system behavior during incidents.
 **Given** I'm on the ops dashboard  
 **When** I need to intervene  
 **Then** I can:
+
 - **Pause all executions:** Stop new AI executions from starting
 - **Resume executions:** Allow executions to continue
 - **Cancel specific execution:** Abort a running AI execution
@@ -3946,12 +4283,14 @@ So that I can control system behavior during incidents.
 - **Close circuit breaker:** Re-enable AI provider
 
 **And** interventions are:
+
 - Logged to audit trail (who, when, why)
 - Require confirmation (prevent accidental actions)
 - Reversible (can undo pause/circuit breaker)
 - Notified to team (Socket.IO broadcast)
 
 **And** circuit breaker status visible:
+
 - Which providers are open (blocked)
 - When circuit opened (timestamp)
 - Why circuit opened (reason)
@@ -3960,6 +4299,7 @@ So that I can control system behavior during incidents.
 **Prerequisites:** Story 10.5 (Ops dashboard), Epic 2 (AI execution)
 
 **Technical Notes:**
+
 - FR104: Operators can manually intervene or pause execution
 - Create OperatorActionsService for intervention logic
 - Store circuit breaker state in Redis (fast access)
@@ -3979,6 +4319,7 @@ So that I can integrate with existing infrastructure.
 **Given** external monitoring tools are configured  
 **When** metrics are exported  
 **Then** integrations support:
+
 - **Prometheus:** `/metrics` endpoint scraping (already in Epic 1)
 - **Grafana:** Pre-built dashboard templates (JSON export)
 - **Datadog:** StatsD or API integration
@@ -3986,6 +4327,7 @@ So that I can integrate with existing infrastructure.
 - **Webhook:** Push metrics to custom endpoints
 
 **And** metrics include all domains:
+
 - Ticket intake (received, validated, failed)
 - AI execution (queued, in-progress, completed, failed)
 - QA checks (passed, failed, coverage)
@@ -3994,6 +4336,7 @@ So that I can integrate with existing infrastructure.
 - System health (CPU, memory, queue depths)
 
 **And** metric formats:
+
 - Prometheus format (default)
 - JSON over HTTP (for webhooks)
 - StatsD protocol (for Datadog)
@@ -4001,6 +4344,7 @@ So that I can integrate with existing infrastructure.
 **Prerequisites:** Story 1.8 (Prometheus metrics), Story 10.5 (System health)
 
 **Technical Notes:**
+
 - NFR-O10: Metrics must be exportable for external reporting
 - Provide Grafana dashboard JSON templates
 - Document integration guides for each monitoring tool
@@ -4020,6 +4364,7 @@ So that I only receive relevant alerts via my preferred channels.
 **Given** I'm configuring notification settings  
 **When** I set preferences  
 **Then** I can:
+
 - Choose channels: In-app, Email, Slack, SMS (if configured)
 - Set notification types: All, Critical only, None
 - Configure per event type:
@@ -4029,11 +4374,13 @@ So that I only receive relevant alerts via my preferred channels.
   - Production errors: All channels (critical)
 
 **And** notification frequency:
+
 - Immediate (real-time)
 - Digest (batched hourly/daily)
 - Quiet hours (don't disturb 10pm-8am)
 
 **And** preferences are:
+
 - Stored per user in database (user_notification_preferences table)
 - Applied to all notification services
 - Overridable for critical alerts (always send CRITICAL regardless of preferences)
@@ -4041,6 +4388,7 @@ So that I only receive relevant alerts via my preferred channels.
 **Prerequisites:** Story 10.1-10.8 (Notification system), Story 1.6 (User auth)
 
 **Technical Notes:**
+
 - Create user notification preferences UI
 - Store preferences in database
 - Check preferences before sending notifications
@@ -4067,7 +4415,7 @@ So that I only receive relevant alerts via my preferred channels.
 **Epic 7: TL Architecture Review (8 stories)** - Technical oversight  
 **Epic 8: QA Review & Approval (8 stories)** - Quality approval  
 **Epic 9: Self-Healing (8 stories)** - Autonomous fixing  
-**Epic 10: Real-Time & Monitoring (10 stories)** - Live visibility  
+**Epic 10: Real-Time & Monitoring (10 stories)** - Live visibility
 
 **Total FR Coverage:** All 136 FRs mapped to stories  
 **Total NFR Coverage:** All 69 NFRs addressed across epics  
@@ -4081,37 +4429,37 @@ So that I only receive relevant alerts via my preferred channels.
 
 **Validation:** Every FR from PRD is mapped to at least one epic/story.
 
-| FR Range | Description | Epic(s) | Stories |
-|----------|-------------|---------|---------|
-| FR1-FR7 | PM Ticket Creation & Management | Epic 2 | 2.2, 2.11, 2.12 |
-| FR8-FR14 | PM AI Project Orchestration | Epic 5 | 5.2, 5.3, 5.4, 5.5 |
-| FR15-FR19 | PM Workload & Capacity | Epic 5 | 5.6, 5.7 |
-| FR20-FR23 | PM Client Communication | Epic 5 | 5.8, 5.9 |
-| FR24-FR29 | TL Architecture Validation | Epic 7 | 7.1-7.6 |
-| FR30-FR33 | TL AI Capability Management | Epic 7 | 7.7 |
-| FR34-FR40 | Lead QA Review & Gates | Epic 8 | 8.1-8.5 |
-| FR41-FR43 | QA Metrics & Analysis | Epic 8 | 8.6-8.8 |
-| FR44-FR48 | Manager Business Oversight | Epic 6 | 6.5, 6.6, 6.8 |
-| FR49-FR52 | Manager Workforce Management | Epic 5 | 5.7 |
-| FR53-FR55 | Manager Client Relationship | Epic 5 | 5.8, 5.9 |
-| FR56-FR59 | System Webhook & Task Intake | Epic 2 | 2.1, 2.2 |
-| FR60-FR65 | System AI Routing & Execution | Epic 2 | 2.3-2.10 |
-| FR66-FR71 | System Automated QA | Epic 3 | 3.1-3.7 |
-| FR72-FR78 | System GitHub & Deployment | Epic 4 | 4.1-4.7 |
-| FR79-FR84 | System Self-Healing | Epic 9 | 9.1-9.6 |
-| FR85-FR90 | System Cost Tracking | Epic 6 | 6.1-6.4, 6.7 |
-| FR91-FR95 | System Execution Metrics | Epic 6, 10 | 6.2, 10.5-10.7 |
-| FR96-FR99 | PM Dashboard Interface | Epic 5 | 5.1-5.5, 5.10 |
-| FR100-FR104 | Orchestrator Monitoring | Epic 10 | 10.5-10.8 |
-| FR105-FR108 | Cost Monitoring Dashboard | Epic 6 | 6.5 |
-| FR109-FR111 | Quality Dashboard | Epic 8 | 8.6 |
-| FR112-FR115 | GO/NO-GO Dashboard | Epic 6 | 6.6 |
-| FR116-FR120 | Knowledge Base (Phase 2) | Future | Not in MVP |
-| FR121-FR127 | Client Portal (Phase 3) | Future | Not in MVP |
-| FR128-FR136 | Advanced Capabilities (Phase 3) | Future | Not in MVP |
+| FR Range    | Description                     | Epic(s)    | Stories            |
+| ----------- | ------------------------------- | ---------- | ------------------ |
+| FR1-FR7     | PM Ticket Creation & Management | Epic 2     | 2.2, 2.11, 2.12    |
+| FR8-FR14    | PM AI Project Orchestration     | Epic 5     | 5.2, 5.3, 5.4, 5.5 |
+| FR15-FR19   | PM Workload & Capacity          | Epic 5     | 5.6, 5.7           |
+| FR20-FR23   | PM Client Communication         | Epic 5     | 5.8, 5.9           |
+| FR24-FR29   | TL Architecture Validation      | Epic 7     | 7.1-7.6            |
+| FR30-FR33   | TL AI Capability Management     | Epic 7     | 7.7                |
+| FR34-FR40   | Lead QA Review & Gates          | Epic 8     | 8.1-8.5            |
+| FR41-FR43   | QA Metrics & Analysis           | Epic 8     | 8.6-8.8            |
+| FR44-FR48   | Manager Business Oversight      | Epic 6     | 6.5, 6.6, 6.8      |
+| FR49-FR52   | Manager Workforce Management    | Epic 5     | 5.7                |
+| FR53-FR55   | Manager Client Relationship     | Epic 5     | 5.8, 5.9           |
+| FR56-FR59   | System Webhook & Task Intake    | Epic 2     | 2.1, 2.2           |
+| FR60-FR65   | System AI Routing & Execution   | Epic 2     | 2.3-2.10           |
+| FR66-FR71   | System Automated QA             | Epic 3     | 3.1-3.7            |
+| FR72-FR78   | System GitHub & Deployment      | Epic 4     | 4.1-4.7            |
+| FR79-FR84   | System Self-Healing             | Epic 9     | 9.1-9.6            |
+| FR85-FR90   | System Cost Tracking            | Epic 6     | 6.1-6.4, 6.7       |
+| FR91-FR95   | System Execution Metrics        | Epic 6, 10 | 6.2, 10.5-10.7     |
+| FR96-FR99   | PM Dashboard Interface          | Epic 5     | 5.1-5.5, 5.10      |
+| FR100-FR104 | Orchestrator Monitoring         | Epic 10    | 10.5-10.8          |
+| FR105-FR108 | Cost Monitoring Dashboard       | Epic 6     | 6.5                |
+| FR109-FR111 | Quality Dashboard               | Epic 8     | 8.6                |
+| FR112-FR115 | GO/NO-GO Dashboard              | Epic 6     | 6.6                |
+| FR116-FR120 | Knowledge Base (Phase 2)        | Future     | Not in MVP         |
+| FR121-FR127 | Client Portal (Phase 3)         | Future     | Not in MVP         |
+| FR128-FR136 | Advanced Capabilities (Phase 3) | Future     | Not in MVP         |
 
 **Phase 1 MVP Coverage:** 115 FRs (out of 136 total) ✅  
-**Phase 2/3 Coverage:** 21 FRs deferred to future phases  
+**Phase 2/3 Coverage:** 21 FRs deferred to future phases
 
 ---
 
@@ -4121,47 +4469,56 @@ So that I only receive relevant alerts via my preferred channels.
 
 **Assumption:** 2-week sprints, 1 dev team (4-5 developers)
 
-**Sprint 1-2: Foundation (Epic 1)**  
+**Sprint 1-2: Foundation (Epic 1)**
+
 - Goal: Complete development environment and infrastructure
 - Deliverable: Running NestJS project with database, auth, CI/CD
 - Complexity: High (foundational work, many moving parts)
 
-**Sprint 3-4: Core Orchestration (Epic 2)**  
+**Sprint 3-4: Core Orchestration (Epic 2)**
+
 - Goal: Tickets flow from ClickUp to AI providers
 - Deliverable: First AI-generated code from ticket
 - Complexity: High (core business logic, 3 AI integrations)
 
-**Sprint 5: Quality Gates (Epic 3)**  
+**Sprint 5: Quality Gates (Epic 3)**
+
 - Goal: Automated QA validates AI code
 - Deliverable: Code must pass linting, tests, security before proceeding
 - Complexity: Medium (integrating existing tools)
 
-**Sprint 6: GitHub & Deployment (Epic 4)**  
+**Sprint 6: GitHub & Deployment (Epic 4)**
+
 - Goal: Code automatically pushed and deployed
 - Deliverable: Complete ticket→code→production pipeline
 - Complexity: Medium (GitHub API, CI/CD integration)
 
-**Sprint 7-8: PM Dashboard (Epic 5)**  
+**Sprint 7-8: PM Dashboard (Epic 5)**
+
 - Goal: PMs can monitor and manage AI projects
 - Deliverable: Full PM interface with real-time updates
 - Complexity: High (UI/UX, multiple views, real-time)
 
-**Sprint 9: Cost Control (Epic 6)**  
+**Sprint 9: Cost Control (Epic 6)**
+
 - Goal: Track costs and prevent overruns
 - Deliverable: Cost dashboard with alerts and GO/NO-GO metrics
 - Complexity: Medium (calculations, alerts, dashboards)
 
-**Sprint 10: TL & QA Reviews (Epics 7-8)**  
+**Sprint 10: TL & QA Reviews (Epics 7-8)**
+
 - Goal: TL and QA can review and approve
 - Deliverable: Review queues, approval workflows
 - Complexity: Medium (workflow UI, approval logic)
 
-**Sprint 11: Self-Healing (Epic 9)**  
+**Sprint 11: Self-Healing (Epic 9)**
+
 - Goal: Auto-detect and fix production errors
 - Deliverable: Production monitoring → auto-fix tickets
 - Complexity: High (complex logic, AI fix generation)
 
-**Sprint 12: Real-Time & Polish (Epic 10)**  
+**Sprint 12: Real-Time & Polish (Epic 10)**
+
 - Goal: Real-time visibility and system monitoring
 - Deliverable: Socket.IO updates, ops dashboard, notification system
 - Complexity: Medium (WebSocket infrastructure, monitoring)
@@ -4169,6 +4526,7 @@ So that I only receive relevant alerts via my preferred channels.
 **Total MVP Timeline:** ~24 weeks (6 months) with 1 team
 
 **Parallel Team Strategy:** If 2 teams available, reduce to 16 weeks (4 months):
+
 - Team A: Epics 1, 2, 3, 4, 9 (backend heavy)
 - Team B: Epics 5, 6, 7, 8, 10 (frontend/dashboard heavy)
 
@@ -4185,19 +4543,21 @@ So that I only receive relevant alerts via my preferred channels.
 ✅ **Risk mitigation:** All 8 Priority 1 risks from brainstorming addressed  
 ✅ **Vertical slicing:** Each epic delivers user value, not just technical layers  
 ✅ **Story sizing:** All stories scoped for single dev session completion  
-✅ **Sequential dependencies:** Prerequisites only reference earlier stories  
+✅ **Sequential dependencies:** Prerequisites only reference earlier stories
 
 ---
 
 ## Next Steps
 
 **Immediate (This Week):**
+
 1. **Review & Approve Epics:** BMad reviews this breakdown
 2. **Estimate Stories:** Dev team estimates each story (story points/hours)
 3. **Sprint 1 Planning:** Select Epic 1 stories for first sprint
 4. **Team Assignment:** Assign developers to first sprint stories
 
 **Sprint 0 Preparation (Before Sprint 1):**
+
 1. Set up repositories (monorepo or separate repos)
 2. Configure ClickUp space for project
 3. Set up GitHub organization/repositories
@@ -4211,6 +4571,7 @@ So that I only receive relevant alerts via my preferred channels.
 7. Set up development environments for team
 
 **Ongoing:**
+
 1. **Backlog Refinement:** Break down any unclear stories further
 2. **Spike Stories:** Add technical investigation stories if needed
 3. **UX Design Parallel Track:** Design dashboards while backend builds
@@ -4230,4 +4591,3 @@ So that I only receive relevant alerts via my preferred channels.
 ---
 
 _This epic breakdown provides complete implementation guidance for the Dark Software Factory MVP. Every story is actionable, architecturally aligned, and sized for agile development. Ready to transform your software house!_ 🚀
-

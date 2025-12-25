@@ -288,22 +288,26 @@ interface ClientToServerEvents {
 **Repository Structure:**
 
 - Backend: `/Volumes/Data/project/products/alpharages/Dark Software Factory/src/` (NestJS)
-- Frontend: `/Volumes/Data/project/products/alpharages/Dark Software Factory/frontend/` (React - CREATE IF NOT EXISTS)
+- Frontend: `/Volumes/Data/project/products/alpharages/dsf-dashboard/` (React - Separate Repository)
+
+> [!NOTE]
+> The frontend/dashboard is maintained in a separate repository at `../dsf-dashboard` for independent development and deployment.
 
 **AI Delegation Output:**
 
 ```
-frontend/src/pages/pm-dashboard/
+/Volumes/Data/project/products/alpharages/dsf-dashboard/src/pages/pm-dashboard/
 ├── DashboardPage.tsx
 ├── components/ (DashboardLayout, ProjectCard, FilterBar, SummaryCards)
 └── hooks/ (useSocket, useProjectUpdates)
 ```
 
-**Setup (if frontend/ doesn't exist):**
+**Setup (if dsf-dashboard repository doesn't exist):**
 
 ```bash
-npx create-react-app frontend --template typescript
-cd frontend && npm install socket.io-client axios tailwindcss
+cd /Volumes/Data/project/products/alpharages
+npx create-react-app dsf-dashboard --template typescript
+cd dsf-dashboard && npm install socket.io-client axios tailwindcss
 ```
 
 ## Tasks / Subtasks

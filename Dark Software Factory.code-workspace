@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../pr-agent"
+		},
+		{
+			"path": "../dsf-dasbhoard"
 		}
 	],
 	"settings": {}

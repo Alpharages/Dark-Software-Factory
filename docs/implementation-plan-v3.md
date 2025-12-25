@@ -1109,9 +1109,11 @@ export class DashboardController {
 }
 ```
 
-##### [NEW] Frontend Dashboard (React/Next.js)
+##### [NEW] Frontend Dashboard (Separate Repository)
 
-Create comprehensive dashboard UI with:
+**Repository:** `/Volumes/Data/project/products/alpharages/dsf-dashboard` (React + TypeScript)
+
+Create comprehensive dashboard UI in the separate `dsf-dashboard` repository with:
 
 - Ticket timeline view
 - Live queue monitoring
@@ -1120,6 +1122,8 @@ Create comprehensive dashboard UI with:
 - System health metrics
 - Cost tracking charts
 - Configuration UI for all v3 settings
+
+**Note:** The dashboard is maintained as a separate repository for independent development and deployment cycles.
 
 ---
 

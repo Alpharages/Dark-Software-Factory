@@ -388,9 +388,10 @@ ai-dev-orchestrator/
 
 **Implementation Notes:**
 
-- All dashboard controllers expose REST APIs consumed by AetherFlow frontend
+- All dashboard controllers expose REST APIs consumed by frontend (separate `dsf-dashboard` repository)
 - Socket.IO gateway (`realtime/realtime.gateway.ts`) pushes updates to connected clients
 - Dashboard data refreshes: Real-time (Socket.IO) + Polling fallback (every 30s)
+- Frontend repository: `/Volumes/Data/project/products/alpharages/dsf-dashboard` (React + TypeScript)
 
 ---
 
@@ -2662,7 +2663,7 @@ createTicket() { }
 
 **CORS:**
 
-- Allow: AetherFlow frontend origin
+- Allow: Dashboard frontend origin (dsf-dashboard repository - separate deployment)
 - Methods: GET, POST, PUT, DELETE
 - Credentials: true (for cookies)
 
