@@ -23,6 +23,7 @@ import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { ErrorSeverity } from '../common/sentry/sentry.constants';
+import { ClickUpService } from '../clickup/clickup.service';
 import { Prisma } from '@/prisma/client';
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -80,6 +81,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly aiCostTracker: AICostTrackerService,
     private readonly costOptimizer: CostOptimizerService,
     private readonly sentry: SentryService,
+    private readonly clickup: ClickUpService,
     @InjectMetric('queue_messages_consumed_total')
     private readonly consumedCounter: Counter<string>,
     @InjectMetric('queue_messages_failed_total')
@@ -90,7 +92,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly queueDepthGauge: Gauge<string>,
     @InjectMetric('queue_consumer_count')
     private readonly consumerCountGauge: Gauge<string>,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     await this.startConsuming();
@@ -140,7 +142,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
 
             this.logger.log(
               `[${correlationId}] Processing execution ${payload.executionId} ` +
-                `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
+              `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
             );
 
             // Process the execution
@@ -153,7 +155,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             if (result.success) {
               this.logger.log(
                 `[${correlationId}] Execution ${payload.executionId} completed ` +
-                  `(${duration}ms)`,
+                `(${duration}ms)`,
               );
 
               // Acknowledge message
@@ -332,6 +334,65 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         this.logger.log(
           `[${correlationId}] Estimated cost: $${estimatedCost.toFixed(6)} USD (${selectedModel})`,
         );
+
+        // Story 6-R-1: Automatic Cost Cap Enforcement
+        const budgetCheck = await this.aiCostTracker.checkBudgetAvailability(
+          payload.ticketId,
+          estimatedCost,
+        );
+
+        if (!budgetCheck.allowed) {
+          const reason = budgetCheck.reason || 'Project budget exceeded';
+          this.logger.warn(`[${correlationId}] Execution blocked: ${reason}`);
+
+          // 1. Alert PM via ClickUp
+          await this.clickup.addComment(
+            payload.ticketId,
+            `🚨 **AI Execution Blocked: Budget Exceeded**\n\n` +
+            `The requested AI operation was blocked. Reason: ${reason}\n\n` +
+            `**Analysis:**\n` +
+            `- Budget: $${budgetCheck.budget?.toFixed(2)}\n` +
+            `- Current Spend: $${budgetCheck.spend?.toFixed(2)}\n` +
+            `- Estimated Cost: $${estimatedCost.toFixed(4)}\n\n` +
+            `Please increase the project budget or optimize usage to proceed.`,
+          );
+
+          // 2. Log Decision
+          await this.aiDecisionLogger.logDecision({
+            agentName: 'AIExecutionConsumer',
+            action: 'execution_blocked_budget',
+            reasoning: `Blocking execution due to budget overrun. ${reason}`,
+            ticketId: payload.ticketId,
+            executionId,
+            inputData: {
+              estimatedCost: estimatedCost.toNumber(),
+              budget: budgetCheck.budget,
+              spend: budgetCheck.spend,
+            },
+            outputData: {
+              blocked: true,
+              reason,
+            },
+            confidence: 1.0,
+          });
+
+          // 3. Mark as Failed
+          const failure: IExecutionFailure = {
+            executionId,
+            errorMessage: reason,
+            isRetryable: false, // Budget issues aren't transient
+            errorCode: 'BUDGET_EXCEEDED',
+          };
+          await this.executionTracker.failExecution(failure, correlationId);
+
+          return {
+            success: false,
+            executionId,
+            durationMs: Date.now() - startTime,
+            errorMessage: reason,
+            errorCode: 'BUDGET_EXCEEDED',
+          };
+        }
       } catch (error) {
         const err = error as Error;
         this.logger.error(`[${correlationId}] Cost estimation failed: ${err.message}`);

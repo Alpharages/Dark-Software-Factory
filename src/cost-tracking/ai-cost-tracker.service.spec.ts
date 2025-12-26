@@ -228,5 +228,55 @@ describe('AICostTrackerService', () => {
         ErrorSeverity.FATAL,
       );
     });
+    /* ... existing tests ... */
+  });
+
+  describe('checkBudgetAvailability', () => {
+    it('should allow execution when within budget', async () => {
+      // Mock aggregate to return $50 spend (Budget $100)
+      jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
+        _sum: { cost_usd: new Decimal(50) },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+
+      const result = await service.checkBudgetAvailability('ticket-1', new Decimal(10));
+
+      expect(result.allowed).toBe(true);
+    });
+
+    it('should block execution when budget exceeded', async () => {
+      // Mock aggregate to return $95 spend (Budget $100) + $10 estimate = $105
+      jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
+        _sum: { cost_usd: new Decimal(95) },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+
+      const result = await service.checkBudgetAvailability('ticket-1', new Decimal(10));
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Project budget exceeded');
+    });
+
+    it('should block execution when budget already exceeded', async () => {
+      // Mock aggregate to return $105 spend (Budget $100)
+      jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
+        _sum: { cost_usd: new Decimal(105) },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+
+      const result = await service.checkBudgetAvailability('ticket-1', new Decimal(1));
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Project budget exceeded');
+    });
+
+    it('should block execution when project context is missing (Fail Closed)', async () => {
+      jest.spyOn(prisma.ticket, 'findUnique').mockResolvedValue(null);
+
+      const result = await service.checkBudgetAvailability('invalid-ticket', new Decimal(10));
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Project context not found');
+    });
   });
 });

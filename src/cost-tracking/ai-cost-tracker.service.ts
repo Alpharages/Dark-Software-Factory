@@ -16,7 +16,85 @@ export class AICostTrackerService {
     private readonly prisma: PrismaService,
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
-  ) {}
+  ) { }
+
+  /**
+   * Check if project budget allows for this execution
+   */
+  async checkBudgetAvailability(
+    ticketId: string,
+    estimatedCost: Decimal,
+  ): Promise<{ allowed: boolean; reason?: string; budget?: number; spend?: number }> {
+    try {
+      // 1. Get Project Budget
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: {
+          project_id: true,
+          project: {
+            select: { budget_usd: true },
+          },
+        },
+      });
+
+      if (!ticket || !ticket.project) {
+        // Warning: Ticket or Project not found.
+        // FAIL CLOSED: Block execution to prevent unauthorized spend.
+        this.logger.error(`Ticket ${ticketId} or associated Project not found for budget check.`);
+        return { allowed: false, reason: 'Project context not found (Fail Closed)' };
+      }
+
+      const projectId = ticket.project_id;
+      const budget = ticket.project.budget_usd
+        ? ticket.project.budget_usd.toNumber()
+        : 100.0; // Default $100
+
+      // 2. Get Current Spend
+      const totalCostAggregation = await this.prisma.aICostLog.aggregate({
+        where: {
+          ticket: {
+            project_id: projectId,
+          },
+        },
+        _sum: {
+          cost_usd: true,
+        },
+      });
+
+      const currentSpend = totalCostAggregation?._sum?.cost_usd?.toNumber() || 0;
+      const estimatedTotal = currentSpend + estimatedCost.toNumber();
+
+      // 3. Check Limit
+      if (estimatedTotal > budget) {
+        return {
+          allowed: false,
+          reason: `Project budget exceeded (${estimatedTotal.toFixed(2)} > ${budget.toFixed(2)})`,
+          budget,
+          spend: currentSpend,
+        };
+      }
+
+      return {
+        allowed: true,
+        budget,
+        spend: currentSpend,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to check budget availability: ${(error as Error).message}`);
+      // Fail open or closed? "Prevent unexpected cost overruns" suggests Fail Closed.
+      // But if DB is down, blocking everything might be bad.
+      // Let's return allowed: true but with reason, same as missing project context?
+      // Actually, if we can't verify budget, we risk overrun.
+      // Let's fail safe (Block) if it's a budget check error?
+      // Re-reading AC: "The system MUST check... If budget is exceeded, the execution MUST be blocked".
+      // If we error, we don't know if budget is exceeded.
+      // Let's log error and return allowed: false to be safe against overruns.
+      return {
+        allowed: false,
+        reason: `Error checking budget: ${(error as Error).message}`,
+      };
+    }
+  }
 
   /**
    * Calculate USD cost based on model and token counts

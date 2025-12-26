@@ -11,6 +11,7 @@ import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
 import { SentryService } from '../common/sentry/sentry.service';
+import { ClickUpService } from '../clickup/clickup.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -21,6 +22,7 @@ describe('AIExecutionConsumer', () => {
   let _executionTracker: jest.Mocked<ExecutionTrackerService>;
   let _rabbitmqService: jest.Mocked<RabbitMQService>;
   let _orchestrator: jest.Mocked<OrchestratorService>;
+  let _clickupService: jest.Mocked<ClickUpService>;
 
   const _mockMessage = {
     messageId: 'msg-123',
@@ -56,6 +58,10 @@ describe('AIExecutionConsumer', () => {
     };
 
     const mockExecutionTracker = {
+      getExecution: jest.fn().mockResolvedValue({
+        status: ExecutionStatus.QUEUED,
+        complexity_score: 5,
+      }),
       markInProgress: jest.fn().mockResolvedValue({
         executionId: 'exec-789',
         previousStatus: ExecutionStatus.QUEUED,
@@ -109,6 +115,9 @@ describe('AIExecutionConsumer', () => {
       captureMessage: jest.fn(),
       captureException: jest.fn(),
     };
+    const mockClickUpService = {
+      addComment: jest.fn().mockResolvedValue(true),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -121,6 +130,7 @@ describe('AIExecutionConsumer', () => {
         { provide: AICostTrackerService, useValue: mockAICostTracker },
         { provide: CostOptimizerService, useValue: mockCostOptimizer },
         { provide: SentryService, useValue: mockSentry },
+        { provide: ClickUpService, useValue: mockClickUpService },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_FAILED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_PROCESSING_DURATION_SECONDS', useValue: mockHistogram },
@@ -133,6 +143,7 @@ describe('AIExecutionConsumer', () => {
     _executionTracker = module.get(ExecutionTrackerService);
     _rabbitmqService = module.get(RabbitMQService);
     _orchestrator = module.get(OrchestratorService);
+    _clickupService = module.get(ClickUpService);
   });
 
   describe('getConsumerState', () => {
@@ -231,6 +242,35 @@ describe('AIExecutionConsumer', () => {
       // Consumer should be inactive after destroy
       const state = consumer.getConsumerState();
       expect(state.isActive).toBe(false);
+    });
+  });
+
+  describe('processExecution (Checking Budget)', () => {
+    it('should block execution and alert PM when budget exceeded', async () => {
+      // Mock checkBudgetAvailability to return allowed: false
+      // Access via casting since it is private property in consumer but public in service
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const costTracker = (consumer as any).aiCostTracker;
+      costTracker.checkBudgetAvailability = jest.fn().mockResolvedValue({
+        allowed: false,
+        reason: 'Budget exceeded',
+        budget: 100,
+        spend: 105,
+      });
+
+      // Call processExecution via private access or by simulating consume
+      // Let's use private access for direct testing of logic
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (consumer as any).processExecution(_mockMessage);
+
+      expect(result.success).toBe(false);
+      expect(result.errorMessage).toContain('Budget exceeded');
+
+      // Verify ClickUp alert
+      expect(_clickupService.addComment).toHaveBeenCalledWith(
+        'ticket-456',
+        expect.stringContaining('Budget exceeded')
+      );
     });
   });
 });
