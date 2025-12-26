@@ -406,7 +406,9 @@ export const ModelName = {
   AICostLog: 'AICostLog',
   TicketDependency: 'TicketDependency',
   WorkspaceArchive: 'WorkspaceArchive',
-  ApprovalRecord: 'ApprovalRecord'
+  ApprovalRecord: 'ApprovalRecord',
+  User: 'User',
+  UtilizationHistory: 'UtilizationHistory'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -422,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord"
+    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord" | "user" | "utilizationHistory"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2128,6 +2130,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    User: {
+      payload: Prisma.$UserPayload<ExtArgs>
+      fields: Prisma.UserFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        findFirst: {
+          args: Prisma.UserFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        findMany: {
+          args: Prisma.UserFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>[]
+        }
+        create: {
+          args: Prisma.UserCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        createMany: {
+          args: Prisma.UserCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>[]
+        }
+        delete: {
+          args: Prisma.UserDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        update: {
+          args: Prisma.UserUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        aggregate: {
+          args: Prisma.UserAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUser>
+        }
+        groupBy: {
+          args: Prisma.UserGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    UtilizationHistory: {
+      payload: Prisma.$UtilizationHistoryPayload<ExtArgs>
+      fields: Prisma.UtilizationHistoryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UtilizationHistoryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UtilizationHistoryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>
+        }
+        findFirst: {
+          args: Prisma.UtilizationHistoryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UtilizationHistoryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>
+        }
+        findMany: {
+          args: Prisma.UtilizationHistoryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>[]
+        }
+        create: {
+          args: Prisma.UtilizationHistoryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>
+        }
+        createMany: {
+          args: Prisma.UtilizationHistoryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UtilizationHistoryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>[]
+        }
+        delete: {
+          args: Prisma.UtilizationHistoryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>
+        }
+        update: {
+          args: Prisma.UtilizationHistoryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>
+        }
+        deleteMany: {
+          args: Prisma.UtilizationHistoryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UtilizationHistoryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UtilizationHistoryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>[]
+        }
+        upsert: {
+          args: Prisma.UtilizationHistoryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UtilizationHistoryPayload>
+        }
+        aggregate: {
+          args: Prisma.UtilizationHistoryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUtilizationHistory>
+        }
+        groupBy: {
+          args: Prisma.UtilizationHistoryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UtilizationHistoryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UtilizationHistoryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UtilizationHistoryCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2537,6 +2687,33 @@ export const ApprovalRecordScalarFieldEnum = {
 } as const
 
 export type ApprovalRecordScalarFieldEnum = (typeof ApprovalRecordScalarFieldEnum)[keyof typeof ApprovalRecordScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  name: 'name',
+  role: 'role',
+  managed_by_id: 'managed_by_id',
+  max_tickets: 'max_tickets',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const UtilizationHistoryScalarFieldEnum = {
+  id: 'id',
+  pm_id: 'pm_id',
+  snapshot_date: 'snapshot_date',
+  active_tickets: 'active_tickets',
+  max_tickets: 'max_tickets',
+  utilization_pct: 'utilization_pct',
+  created_at: 'created_at'
+} as const
+
+export type UtilizationHistoryScalarFieldEnum = (typeof UtilizationHistoryScalarFieldEnum)[keyof typeof UtilizationHistoryScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3025,6 +3202,8 @@ export type GlobalOmitConfig = {
   ticketDependency?: Prisma.TicketDependencyOmit
   workspaceArchive?: Prisma.WorkspaceArchiveOmit
   approvalRecord?: Prisma.ApprovalRecordOmit
+  user?: Prisma.UserOmit
+  utilizationHistory?: Prisma.UtilizationHistoryOmit
 }
 
 /* Types for Logging */

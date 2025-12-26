@@ -731,3 +731,48 @@ enum ApprovalDecision {
   REWORK
   ESCALATE
 }
+
+// ============================================
+// STORY 5.4: WORKLOAD MANAGEMENT & CAPACITY PLANNING
+// ============================================
+
+// User model for PM/Manager profiles
+model User {
+  id            String  @id // External Auth 'sub' claim (UUID)
+  email         String  @unique
+  name          String
+  role          String  @default("PM") // PM, MANAGER, TL, QA, ADMIN
+  managed_by_id String? // Manager link (null for top-level managers)
+  max_tickets   Int     @default(20) // PM capacity threshold
+
+  // Relationships
+  manager            User?                @relation("ManagerTeam", fields: [managed_by_id], references: [id])
+  team_members       User[]               @relation("ManagerTeam")
+  utilization_history UtilizationHistory[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([managed_by_id])
+  @@index([role])
+  @@map("users")
+}
+
+// UtilizationHistory for tracking PM workload trends
+model UtilizationHistory {
+  id          String   @id @default(uuid())
+  pm_id       String
+  pm          User     @relation(fields: [pm_id], references: [id], onDelete: Cascade)
+  snapshot_date DateTime @default(now()) @db.Date
+  
+  active_tickets  Int // Total active tickets at snapshot time
+  max_tickets     Int // PM's capacity threshold at snapshot time
+  utilization_pct Float // Calculated: (active_tickets / max_tickets * 100)
+  
+  created_at DateTime @default(now())
+
+  @@unique([pm_id, snapshot_date]) // One snapshot per PM per day
+  @@index([pm_id, snapshot_date]) // Query optimization for trends
+  @@index([snapshot_date]) // Query all PMs for a specific date
+  @@map("utilization_history")
+}

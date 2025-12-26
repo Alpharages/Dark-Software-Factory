@@ -73,7 +73,9 @@ export const ModelName = {
   AICostLog: 'AICostLog',
   TicketDependency: 'TicketDependency',
   WorkspaceArchive: 'WorkspaceArchive',
-  ApprovalRecord: 'ApprovalRecord'
+  ApprovalRecord: 'ApprovalRecord',
+  User: 'User',
+  UtilizationHistory: 'UtilizationHistory'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -462,6 +464,33 @@ export const ApprovalRecordScalarFieldEnum = {
 } as const
 
 export type ApprovalRecordScalarFieldEnum = (typeof ApprovalRecordScalarFieldEnum)[keyof typeof ApprovalRecordScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  name: 'name',
+  role: 'role',
+  managed_by_id: 'managed_by_id',
+  max_tickets: 'max_tickets',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const UtilizationHistoryScalarFieldEnum = {
+  id: 'id',
+  pm_id: 'pm_id',
+  snapshot_date: 'snapshot_date',
+  active_tickets: 'active_tickets',
+  max_tickets: 'max_tickets',
+  utilization_pct: 'utilization_pct',
+  created_at: 'created_at'
+} as const
+
+export type UtilizationHistoryScalarFieldEnum = (typeof UtilizationHistoryScalarFieldEnum)[keyof typeof UtilizationHistoryScalarFieldEnum]
 
 
 export const SortOrder = {

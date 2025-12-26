@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Logger } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ReassignProjectDto } from './dto/reassign-project.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -14,7 +15,9 @@ import { Role } from '@/auth/constants/roles.enum';
 @Controller('api/v1/projects')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  private readonly logger = new Logger(ProjectController.name);
+
+  constructor(private readonly projectService: ProjectService) { }
 
   @Post()
   @Roles(Role.ADMIN, Role.MANAGER)
@@ -50,6 +53,35 @@ export class ProjectController {
     return this.projectService.update(id, updateProjectDto);
   }
 
+  @Post(':id/reassign')
+  @Roles(Role.MANAGER, Role.ADMIN)
+  @ApiOperation({
+    summary: 'Reassign project to a different PM',
+    description: 'Managers can reassign projects to balance team capacity. AC#5 for Story 5.4.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Project ID to reassign',
+    example: 'proj-123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Project reassigned successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Project or PM not found',
+  })
+  async reassign(
+    @Param('id') id: string,
+    @Body() reassignDto: ReassignProjectDto,
+  ) {
+    this.logger.log(
+      `Reassigning project ${id} to PM ${reassignDto.new_pm_id}. Reason: ${reassignDto.reason || 'Not specified'}`,
+    );
+    return this.projectService.reassign(id, reassignDto);
+  }
+
   @Delete(':id')
   @Roles(Role.ADMIN, Role.MANAGER)
   @ApiOperation({ summary: 'Delete a project' })
@@ -59,3 +91,4 @@ export class ProjectController {
     return this.projectService.remove(id);
   }
 }
+
