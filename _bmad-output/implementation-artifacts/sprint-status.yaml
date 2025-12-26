@@ -861,13 +861,14 @@ development_status:
     notes: "✅ MVP COMPLETE - Fixed all issues identified during adversarial code review (0% test coverage being the only major remaining gap). 4/4 REST API endpoints implemented with proper classes, types, security (JWT+RBAC+RateLimiting), and Swagger decorators. Fixed broken uptime calculation and added defensive error logging. Known integrations limitations: Prometheus/RabbitMQ management API remain as placeholders."
   epic-14-retrospective: done
 
-  epic-15: in-progress
+  epic-15: blocked
+  epic-15-blocker: "Pending backlog epics (Epics 6, 7, 8, 9, 10)"
   epic-15-name: "v3 Configuration & Production Rollout"
   epic-15-phase: "Phase 5 (Week 6-8)"
   epic-15-priority: medium
-  epic-15-dependencies: "Epic 11, 12, 13, 14"
+  epic-15-dependencies: "Epic 11, 12, 13, 14, Backlog Epics"
   epic-15-estimated_effort: "8 days"
-  epic-15-notes: "Feature flags, admin UI, data migration, production deployment. See: _bmad-output/implementation-artifacts/epic-13-14-15-v3-remaining.md"
+  epic-15-notes: "BLOCKED: Pending backlog epics need to be completed first. Feature flags, admin UI, data migration, production deployment. See: _bmad-output/implementation-artifacts/epic-13-14-15-v3-remaining.md"
   15-1-feature-flags-service:
     status: skipped
     notes: "User decided to skip: project in dev, launch with full features, no flags needed."
