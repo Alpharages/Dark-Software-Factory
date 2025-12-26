@@ -250,4 +250,28 @@ export const envValidationSchema = Joi.object({
     .max(600000)
     .default(300000)
     .description('Baseline capture window duration (1-10 min)'),
+
+  // Story 5.5: Client Communication Intelligence
+  // OpenAI API for Whisper transcription and GPT-4 analysis
+  OPENAI_API_KEY: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'OPENAI_API_KEY is required for AI conversation processing (Story 5.5)',
+    })
+    .description('OpenAI API key for Whisper transcription and GPT-4 analysis'),
+  CONVERSATIONS_STORAGE_PATH: Joi.string()
+    .default('./storage/conversations')
+    .description('Storage path for conversation audio files'),
+  MAX_AUDIO_FILE_SIZE_MB: Joi.number()
+    .integer()
+    .min(1)
+    .max(50)
+    .default(25)
+    .description('Maximum audio file size in MB (Whisper API limit)'),
+  AUDIO_RETENTION_DAYS: Joi.number()
+    .integer()
+    .min(1)
+    .max(365)
+    .default(90)
+    .description('Audio file retention period in days'),
 });

@@ -267,6 +267,7 @@ export type ProjectWhereInput = {
   tickets?: Prisma.TicketListRelationFilter
   coverage_baseline?: Prisma.XOR<Prisma.CoverageBaselineNullableScalarRelationFilter, Prisma.CoverageBaselineWhereInput> | null
   coverage_config?: Prisma.XOR<Prisma.ProjectCoverageConfigNullableScalarRelationFilter, Prisma.ProjectCoverageConfigWhereInput> | null
+  conversations?: Prisma.ClientConversationListRelationFilter
 }
 
 export type ProjectOrderByWithRelationInput = {
@@ -284,6 +285,7 @@ export type ProjectOrderByWithRelationInput = {
   tickets?: Prisma.TicketOrderByRelationAggregateInput
   coverage_baseline?: Prisma.CoverageBaselineOrderByWithRelationInput
   coverage_config?: Prisma.ProjectCoverageConfigOrderByWithRelationInput
+  conversations?: Prisma.ClientConversationOrderByRelationAggregateInput
 }
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<{
@@ -304,6 +306,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   tickets?: Prisma.TicketListRelationFilter
   coverage_baseline?: Prisma.XOR<Prisma.CoverageBaselineNullableScalarRelationFilter, Prisma.CoverageBaselineWhereInput> | null
   coverage_config?: Prisma.XOR<Prisma.ProjectCoverageConfigNullableScalarRelationFilter, Prisma.ProjectCoverageConfigWhereInput> | null
+  conversations?: Prisma.ClientConversationListRelationFilter
 }, "id" | "clickup_list_id">
 
 export type ProjectOrderByWithAggregationInput = {
@@ -357,6 +360,7 @@ export type ProjectCreateInput = {
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateInput = {
@@ -374,6 +378,7 @@ export type ProjectUncheckedCreateInput = {
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUpdateInput = {
@@ -391,6 +396,7 @@ export type ProjectUpdateInput = {
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateInput = {
@@ -408,6 +414,7 @@ export type ProjectUncheckedUpdateInput = {
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateManyInput = {
@@ -565,6 +572,20 @@ export type ProjectUpdateOneRequiredWithoutCoverage_configNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutCoverage_configInput, Prisma.ProjectUpdateWithoutCoverage_configInput>, Prisma.ProjectUncheckedUpdateWithoutCoverage_configInput>
 }
 
+export type ProjectCreateNestedOneWithoutConversationsInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutConversationsInput, Prisma.ProjectUncheckedCreateWithoutConversationsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutConversationsInput
+  connect?: Prisma.ProjectWhereUniqueInput
+}
+
+export type ProjectUpdateOneRequiredWithoutConversationsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutConversationsInput, Prisma.ProjectUncheckedCreateWithoutConversationsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutConversationsInput
+  upsert?: Prisma.ProjectUpsertWithoutConversationsInput
+  connect?: Prisma.ProjectWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutConversationsInput, Prisma.ProjectUpdateWithoutConversationsInput>, Prisma.ProjectUncheckedUpdateWithoutConversationsInput>
+}
+
 export type ProjectCreateWithoutTicketsInput = {
   id?: string
   name: string
@@ -579,6 +600,7 @@ export type ProjectCreateWithoutTicketsInput = {
   updated_at?: Date | string
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutTicketsInput = {
@@ -595,6 +617,7 @@ export type ProjectUncheckedCreateWithoutTicketsInput = {
   updated_at?: Date | string
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutTicketsInput = {
@@ -627,6 +650,7 @@ export type ProjectUpdateWithoutTicketsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutTicketsInput = {
@@ -643,6 +667,7 @@ export type ProjectUncheckedUpdateWithoutTicketsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateWithoutCoverage_baselineInput = {
@@ -659,6 +684,7 @@ export type ProjectCreateWithoutCoverage_baselineInput = {
   updated_at?: Date | string
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
@@ -675,6 +701,7 @@ export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
   updated_at?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutCoverage_baselineInput = {
@@ -707,6 +734,7 @@ export type ProjectUpdateWithoutCoverage_baselineInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
@@ -723,6 +751,7 @@ export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateWithoutCoverage_configInput = {
@@ -739,6 +768,7 @@ export type ProjectCreateWithoutCoverage_configInput = {
   updated_at?: Date | string
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateWithoutCoverage_configInput = {
@@ -755,6 +785,7 @@ export type ProjectUncheckedCreateWithoutCoverage_configInput = {
   updated_at?: Date | string
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectCreateOrConnectWithoutCoverage_configInput = {
@@ -787,6 +818,7 @@ export type ProjectUpdateWithoutCoverage_configInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
@@ -803,6 +835,91 @@ export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectCreateWithoutConversationsInput = {
+  id?: string
+  name: string
+  client_name?: string
+  clickup_list_id: string
+  github_repository_url: string
+  pm_id: string
+  status?: string
+  default_branch?: string
+  budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput
+  coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput
+  coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput
+}
+
+export type ProjectUncheckedCreateWithoutConversationsInput = {
+  id?: string
+  name: string
+  client_name?: string
+  clickup_list_id: string
+  github_repository_url: string
+  pm_id: string
+  status?: string
+  default_branch?: string
+  budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput
+  coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput
+  coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput
+}
+
+export type ProjectCreateOrConnectWithoutConversationsInput = {
+  where: Prisma.ProjectWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutConversationsInput, Prisma.ProjectUncheckedCreateWithoutConversationsInput>
+}
+
+export type ProjectUpsertWithoutConversationsInput = {
+  update: Prisma.XOR<Prisma.ProjectUpdateWithoutConversationsInput, Prisma.ProjectUncheckedUpdateWithoutConversationsInput>
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutConversationsInput, Prisma.ProjectUncheckedCreateWithoutConversationsInput>
+  where?: Prisma.ProjectWhereInput
+}
+
+export type ProjectUpdateToOneWithWhereWithoutConversationsInput = {
+  where?: Prisma.ProjectWhereInput
+  data: Prisma.XOR<Prisma.ProjectUpdateWithoutConversationsInput, Prisma.ProjectUncheckedUpdateWithoutConversationsInput>
+}
+
+export type ProjectUpdateWithoutConversationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string
+  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string
+  github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  default_branch?: Prisma.StringFieldUpdateOperationsInput | string
+  budget_usd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput
+  coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput
+  coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput
+}
+
+export type ProjectUncheckedUpdateWithoutConversationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string
+  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string
+  github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  default_branch?: Prisma.StringFieldUpdateOperationsInput | string
+  budget_usd?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput
+  coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput
+  coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput
 }
 
 
@@ -812,10 +929,12 @@ export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
 
 export type ProjectCountOutputType = {
   tickets: number
+  conversations: number
 }
 
 export type ProjectCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tickets?: boolean | ProjectCountOutputTypeCountTicketsArgs
+  conversations?: boolean | ProjectCountOutputTypeCountConversationsArgs
 }
 
 /**
@@ -835,6 +954,13 @@ export type ProjectCountOutputTypeCountTicketsArgs<ExtArgs extends runtime.Types
   where?: Prisma.TicketWhereInput
 }
 
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountConversationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ClientConversationWhereInput
+}
+
 
 export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -851,6 +977,7 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   tickets?: boolean | Prisma.Project$ticketsArgs<ExtArgs>
   coverage_baseline?: boolean | Prisma.Project$coverage_baselineArgs<ExtArgs>
   coverage_config?: boolean | Prisma.Project$coverage_configArgs<ExtArgs>
+  conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["project"]>
 
@@ -901,6 +1028,7 @@ export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   tickets?: boolean | Prisma.Project$ticketsArgs<ExtArgs>
   coverage_baseline?: boolean | Prisma.Project$coverage_baselineArgs<ExtArgs>
   coverage_config?: boolean | Prisma.Project$coverage_configArgs<ExtArgs>
+  conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProjectIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -912,6 +1040,7 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     tickets: Prisma.$TicketPayload<ExtArgs>[]
     coverage_baseline: Prisma.$CoverageBaselinePayload<ExtArgs> | null
     coverage_config: Prisma.$ProjectCoverageConfigPayload<ExtArgs> | null
+    conversations: Prisma.$ClientConversationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1322,6 +1451,7 @@ export interface Prisma__ProjectClient<T, Null = never, ExtArgs extends runtime.
   tickets<T extends Prisma.Project$ticketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$ticketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   coverage_baseline<T extends Prisma.Project$coverage_baselineArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$coverage_baselineArgs<ExtArgs>>): Prisma.Prisma__CoverageBaselineClient<runtime.Types.Result.GetResult<Prisma.$CoverageBaselinePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   coverage_config<T extends Prisma.Project$coverage_configArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$coverage_configArgs<ExtArgs>>): Prisma.Prisma__ProjectCoverageConfigClient<runtime.Types.Result.GetResult<Prisma.$ProjectCoverageConfigPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  conversations<T extends Prisma.Project$conversationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$conversationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClientConversationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1809,6 +1939,30 @@ export type Project$coverage_configArgs<ExtArgs extends runtime.Types.Extensions
    */
   include?: Prisma.ProjectCoverageConfigInclude<ExtArgs> | null
   where?: Prisma.ProjectCoverageConfigWhereInput
+}
+
+/**
+ * Project.conversations
+ */
+export type Project$conversationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ClientConversation
+   */
+  select?: Prisma.ClientConversationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ClientConversation
+   */
+  omit?: Prisma.ClientConversationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClientConversationInclude<ExtArgs> | null
+  where?: Prisma.ClientConversationWhereInput
+  orderBy?: Prisma.ClientConversationOrderByWithRelationInput | Prisma.ClientConversationOrderByWithRelationInput[]
+  cursor?: Prisma.ClientConversationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ClientConversationScalarFieldEnum | Prisma.ClientConversationScalarFieldEnum[]
 }
 
 /**

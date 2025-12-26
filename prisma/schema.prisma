@@ -21,7 +21,7 @@ model Project {
   client_name           String   @default("Internal")
   clickup_list_id       String   @unique
   github_repository_url String
-  pm_id                 String   // NEW: UUID of PM (matches external Auth 'sub' claim)
+  pm_id                 String // NEW: UUID of PM (matches external Auth 'sub' claim)
   status                String   @default("active") // NEW: active|paused|completed
   default_branch        String   @default("main")
   budget_usd            Decimal? @default(100.00) @db.Decimal(10, 2)
@@ -30,6 +30,7 @@ model Project {
   tickets           Ticket[]
   coverage_baseline CoverageBaseline?
   coverage_config   ProjectCoverageConfig?
+  conversations     ClientConversation[] // Story 5.5
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -57,6 +58,8 @@ model Ticket {
   cost_records      CostRecord[]
   context_documents ContextDocument[] // Story 2.12: Attached context documents
   ai_cost_logs      AICostLog[] // Story 13.1: AI cost tracking
+  conversation      ClientConversation? @relation("ConversationTickets", fields: [conversation_id], references: [id]) // Story 5.5
+  conversation_id   String? // Story 5.5: Optional link to conversation
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -169,9 +172,9 @@ model Execution {
   file_modifications    Json? // Detailed file change metadata
   risk_level            PRRiskLevel? // PR risk assessment
   circular_dep_detected Boolean      @default(false) // Dependency cycle flag
-  
+
   // Story 13.2: Cost Optimization
-  selected_model        String? // AI model selected by cost optimizer (e.g., "gpt-3.5-turbo", "claude-3.5-sonnet")
+  selected_model String? // AI model selected by cost optimizer (e.g., "gpt-3.5-turbo", "claude-3.5-sonnet")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -714,7 +717,7 @@ model WorkspaceArchive {
 model ApprovalRecord {
   id           String           @id @default(uuid())
   execution_id String
-  pm_id        String           // PM who made the decision
+  pm_id        String // PM who made the decision
   decision     ApprovalDecision
   reasoning    String?          @db.Text
   created_at   DateTime         @default(now())
@@ -746,9 +749,10 @@ model User {
   max_tickets   Int     @default(20) // PM capacity threshold
 
   // Relationships
-  manager            User?                @relation("ManagerTeam", fields: [managed_by_id], references: [id])
-  team_members       User[]               @relation("ManagerTeam")
+  manager             User?                @relation("ManagerTeam", fields: [managed_by_id], references: [id])
+  team_members        User[]               @relation("ManagerTeam")
   utilization_history UtilizationHistory[]
+  conversations       ClientConversation[] @relation("PMConversations") // Story 5.5
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -760,19 +764,49 @@ model User {
 
 // UtilizationHistory for tracking PM workload trends
 model UtilizationHistory {
-  id          String   @id @default(uuid())
-  pm_id       String
-  pm          User     @relation(fields: [pm_id], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  pm_id         String
+  pm            User     @relation(fields: [pm_id], references: [id], onDelete: Cascade)
   snapshot_date DateTime @default(now()) @db.Date
-  
+
   active_tickets  Int // Total active tickets at snapshot time
   max_tickets     Int // PM's capacity threshold at snapshot time
   utilization_pct Float // Calculated: (active_tickets / max_tickets * 100)
-  
+
   created_at DateTime @default(now())
 
   @@unique([pm_id, snapshot_date]) // One snapshot per PM per day
   @@index([pm_id, snapshot_date]) // Query optimization for trends
   @@index([snapshot_date]) // Query all PMs for a specific date
   @@map("utilization_history")
+}
+
+// ============================================
+// STORY 5.5: CLIENT COMMUNICATION INTELLIGENCE
+// ============================================
+
+model ClientConversation {
+  id                String   @id @default(uuid())
+  project_id        String
+  pm_id             String
+  conversation_date DateTime
+  title             String
+  transcript        String   @db.Text
+  summary           String?  @db.Text
+  action_items      Json[] // Array of action items
+  sentiment         String? // positive|neutral|negative
+  audio_file_url    String?
+  status            String   @default("uploaded") // uploaded|transcribing|analyzing|completed|failed
+  processing_cost   Float? // USD cost for AI processing
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  project        Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  pm             User     @relation("PMConversations", fields: [pm_id], references: [id])
+  linked_tickets Ticket[] @relation("ConversationTickets")
+
+  @@index([project_id, conversation_date])
+  @@index([sentiment])
+  @@index([status])
+  @@map("client_conversations")
 }

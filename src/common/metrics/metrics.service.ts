@@ -21,7 +21,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly businessCollector: BusinessCollector,
     private readonly systemCollector: SystemCollector,
     private readonly queueCollector: QueueCollector,
-  ) {}
+  ) { }
 
   onModuleInit() {
     this.logger.log('Prometheus metrics service initialized', 'MetricsService');
@@ -228,6 +228,32 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   decrementGauge(name: string, value: number = 1, labels?: Record<string, string>): void {
     if (this.systemCollector.decrementGenericGauge(name, value, labels)) return;
     this.businessCollector.decrementGenericGauge(name, value, labels);
+  }
+
+  // ============= Story 5.5: Conversation Metrics =============
+
+  incrementConversationCreated(): void {
+    this.incrementCounter('conversation_created_total');
+  }
+
+  incrementConversationTranscription(): void {
+    this.incrementCounter('conversation_transcriptions_total');
+  }
+
+  recordConversationProcessingDuration(duration: number): void {
+    this.recordHistogram('conversation_transcription_duration_seconds', duration);
+  }
+
+  incrementActionItemsExtracted(count: number): void {
+    this.incrementCounter('action_items_extracted_total', { count: count.toString() });
+  }
+
+  incrementTicketsCreatedFromConversations(count: number): void {
+    this.incrementCounter('tickets_created_from_conversations_total', { count: count.toString() });
+  }
+
+  incrementConversationSearchQuery(): void {
+    this.incrementCounter('conversation_search_queries_total');
   }
 
   // ============= AC#3: System Health Check =============

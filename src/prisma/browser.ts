@@ -142,3 +142,8 @@ export type User = Prisma.UserModel
  * 
  */
 export type UtilizationHistory = Prisma.UtilizationHistoryModel
+/**
+ * Model ClientConversation
+ * 
+ */
+export type ClientConversation = Prisma.ClientConversationModel

@@ -75,7 +75,8 @@ export const ModelName = {
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
   User: 'User',
-  UtilizationHistory: 'UtilizationHistory'
+  UtilizationHistory: 'UtilizationHistory',
+  ClientConversation: 'ClientConversation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -120,6 +121,7 @@ export const TicketScalarFieldEnum = {
   acceptance_criteria: 'acceptance_criteria',
   ticket_quality_score: 'ticket_quality_score',
   status: 'status',
+  conversation_id: 'conversation_id',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -491,6 +493,26 @@ export const UtilizationHistoryScalarFieldEnum = {
 } as const
 
 export type UtilizationHistoryScalarFieldEnum = (typeof UtilizationHistoryScalarFieldEnum)[keyof typeof UtilizationHistoryScalarFieldEnum]
+
+
+export const ClientConversationScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  pm_id: 'pm_id',
+  conversation_date: 'conversation_date',
+  title: 'title',
+  transcript: 'transcript',
+  summary: 'summary',
+  action_items: 'action_items',
+  sentiment: 'sentiment',
+  audio_file_url: 'audio_file_url',
+  status: 'status',
+  processing_cost: 'processing_cost',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ClientConversationScalarFieldEnum = (typeof ClientConversationScalarFieldEnum)[keyof typeof ClientConversationScalarFieldEnum]
 
 
 export const SortOrder = {

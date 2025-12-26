@@ -408,7 +408,8 @@ export const ModelName = {
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
   User: 'User',
-  UtilizationHistory: 'UtilizationHistory'
+  UtilizationHistory: 'UtilizationHistory',
+  ClientConversation: 'ClientConversation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -424,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord" | "user" | "utilizationHistory"
+    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord" | "user" | "utilizationHistory" | "clientConversation"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2278,6 +2279,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ClientConversation: {
+      payload: Prisma.$ClientConversationPayload<ExtArgs>
+      fields: Prisma.ClientConversationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ClientConversationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ClientConversationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>
+        }
+        findFirst: {
+          args: Prisma.ClientConversationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ClientConversationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>
+        }
+        findMany: {
+          args: Prisma.ClientConversationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>[]
+        }
+        create: {
+          args: Prisma.ClientConversationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>
+        }
+        createMany: {
+          args: Prisma.ClientConversationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ClientConversationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>[]
+        }
+        delete: {
+          args: Prisma.ClientConversationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>
+        }
+        update: {
+          args: Prisma.ClientConversationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>
+        }
+        deleteMany: {
+          args: Prisma.ClientConversationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ClientConversationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ClientConversationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>[]
+        }
+        upsert: {
+          args: Prisma.ClientConversationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClientConversationPayload>
+        }
+        aggregate: {
+          args: Prisma.ClientConversationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateClientConversation>
+        }
+        groupBy: {
+          args: Prisma.ClientConversationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClientConversationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ClientConversationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClientConversationCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2343,6 +2418,7 @@ export const TicketScalarFieldEnum = {
   acceptance_criteria: 'acceptance_criteria',
   ticket_quality_score: 'ticket_quality_score',
   status: 'status',
+  conversation_id: 'conversation_id',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -2716,6 +2792,26 @@ export const UtilizationHistoryScalarFieldEnum = {
 export type UtilizationHistoryScalarFieldEnum = (typeof UtilizationHistoryScalarFieldEnum)[keyof typeof UtilizationHistoryScalarFieldEnum]
 
 
+export const ClientConversationScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  pm_id: 'pm_id',
+  conversation_date: 'conversation_date',
+  title: 'title',
+  transcript: 'transcript',
+  summary: 'summary',
+  action_items: 'action_items',
+  sentiment: 'sentiment',
+  audio_file_url: 'audio_file_url',
+  status: 'status',
+  processing_cost: 'processing_cost',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ClientConversationScalarFieldEnum = (typeof ClientConversationScalarFieldEnum)[keyof typeof ClientConversationScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -3084,6 +3180,13 @@ export type EnumApprovalDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<
 export type ListEnumApprovalDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ApprovalDecision[]'>
     
 
+
+/**
+ * Reference to a field of type 'Json[]'
+ */
+export type ListJsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -3204,6 +3307,7 @@ export type GlobalOmitConfig = {
   approvalRecord?: Prisma.ApprovalRecordOmit
   user?: Prisma.UserOmit
   utilizationHistory?: Prisma.UtilizationHistoryOmit
+  clientConversation?: Prisma.ClientConversationOmit
 }
 
 /* Types for Logging */

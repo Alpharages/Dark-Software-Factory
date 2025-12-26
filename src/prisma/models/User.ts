@@ -243,6 +243,7 @@ export type UserWhereInput = {
   manager?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   team_members?: Prisma.UserListRelationFilter
   utilization_history?: Prisma.UtilizationHistoryListRelationFilter
+  conversations?: Prisma.ClientConversationListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -257,6 +258,7 @@ export type UserOrderByWithRelationInput = {
   manager?: Prisma.UserOrderByWithRelationInput
   team_members?: Prisma.UserOrderByRelationAggregateInput
   utilization_history?: Prisma.UtilizationHistoryOrderByRelationAggregateInput
+  conversations?: Prisma.ClientConversationOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -274,6 +276,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   manager?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   team_members?: Prisma.UserListRelationFilter
   utilization_history?: Prisma.UtilizationHistoryListRelationFilter
+  conversations?: Prisma.ClientConversationListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -317,6 +320,7 @@ export type UserCreateInput = {
   manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -330,6 +334,7 @@ export type UserUncheckedCreateInput = {
   updated_at?: Date | string
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput
 }
 
 export type UserUpdateInput = {
@@ -343,6 +348,7 @@ export type UserUpdateInput = {
   manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -356,6 +362,7 @@ export type UserUncheckedUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -523,6 +530,20 @@ export type UserUpdateOneRequiredWithoutUtilization_historyNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUtilization_historyInput, Prisma.UserUpdateWithoutUtilization_historyInput>, Prisma.UserUncheckedUpdateWithoutUtilization_historyInput>
 }
 
+export type UserCreateNestedOneWithoutConversationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutConversationsInput, Prisma.UserUncheckedCreateWithoutConversationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutConversationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutConversationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutConversationsInput, Prisma.UserUncheckedCreateWithoutConversationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutConversationsInput
+  upsert?: Prisma.UserUpsertWithoutConversationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutConversationsInput, Prisma.UserUpdateWithoutConversationsInput>, Prisma.UserUncheckedUpdateWithoutConversationsInput>
+}
+
 export type UserCreateWithoutTeam_membersInput = {
   id: string
   email: string
@@ -533,6 +554,7 @@ export type UserCreateWithoutTeam_membersInput = {
   updated_at?: Date | string
   manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput
 }
 
 export type UserUncheckedCreateWithoutTeam_membersInput = {
@@ -545,6 +567,7 @@ export type UserUncheckedCreateWithoutTeam_membersInput = {
   created_at?: Date | string
   updated_at?: Date | string
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput
 }
 
 export type UserCreateOrConnectWithoutTeam_membersInput = {
@@ -562,6 +585,7 @@ export type UserCreateWithoutManagerInput = {
   updated_at?: Date | string
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput
 }
 
 export type UserUncheckedCreateWithoutManagerInput = {
@@ -574,6 +598,7 @@ export type UserUncheckedCreateWithoutManagerInput = {
   updated_at?: Date | string
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput
 }
 
 export type UserCreateOrConnectWithoutManagerInput = {
@@ -607,6 +632,7 @@ export type UserUpdateWithoutTeam_membersInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTeam_membersInput = {
@@ -619,6 +645,7 @@ export type UserUncheckedUpdateWithoutTeam_membersInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput
 }
 
 export type UserUpsertWithWhereUniqueWithoutManagerInput = {
@@ -661,6 +688,7 @@ export type UserCreateWithoutUtilization_historyInput = {
   updated_at?: Date | string
   manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput
 }
 
 export type UserUncheckedCreateWithoutUtilization_historyInput = {
@@ -673,6 +701,7 @@ export type UserUncheckedCreateWithoutUtilization_historyInput = {
   created_at?: Date | string
   updated_at?: Date | string
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput
 }
 
 export type UserCreateOrConnectWithoutUtilization_historyInput = {
@@ -701,6 +730,7 @@ export type UserUpdateWithoutUtilization_historyInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput
 }
 
 export type UserUncheckedUpdateWithoutUtilization_historyInput = {
@@ -713,6 +743,75 @@ export type UserUncheckedUpdateWithoutUtilization_historyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput
+}
+
+export type UserCreateWithoutConversationsInput = {
+  id: string
+  email: string
+  name: string
+  role?: string
+  max_tickets?: number
+  created_at?: Date | string
+  updated_at?: Date | string
+  manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput
+  team_members?: Prisma.UserCreateNestedManyWithoutManagerInput
+  utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput
+}
+
+export type UserUncheckedCreateWithoutConversationsInput = {
+  id: string
+  email: string
+  name: string
+  role?: string
+  managed_by_id?: string | null
+  max_tickets?: number
+  created_at?: Date | string
+  updated_at?: Date | string
+  team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput
+  utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput
+}
+
+export type UserCreateOrConnectWithoutConversationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutConversationsInput, Prisma.UserUncheckedCreateWithoutConversationsInput>
+}
+
+export type UserUpsertWithoutConversationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutConversationsInput, Prisma.UserUncheckedUpdateWithoutConversationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutConversationsInput, Prisma.UserUncheckedCreateWithoutConversationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutConversationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutConversationsInput, Prisma.UserUncheckedUpdateWithoutConversationsInput>
+}
+
+export type UserUpdateWithoutConversationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput
+  team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput
+  utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput
+}
+
+export type UserUncheckedUpdateWithoutConversationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput
+  utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput
 }
 
 export type UserCreateManyManagerInput = {
@@ -735,6 +834,7 @@ export type UserUpdateWithoutManagerInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput
 }
 
 export type UserUncheckedUpdateWithoutManagerInput = {
@@ -747,6 +847,7 @@ export type UserUncheckedUpdateWithoutManagerInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput
 }
 
 export type UserUncheckedUpdateManyWithoutManagerInput = {
@@ -767,11 +868,13 @@ export type UserUncheckedUpdateManyWithoutManagerInput = {
 export type UserCountOutputType = {
   team_members: number
   utilization_history: number
+  conversations: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   team_members?: boolean | UserCountOutputTypeCountTeam_membersArgs
   utilization_history?: boolean | UserCountOutputTypeCountUtilization_historyArgs
+  conversations?: boolean | UserCountOutputTypeCountConversationsArgs
 }
 
 /**
@@ -798,6 +901,13 @@ export type UserCountOutputTypeCountUtilization_historyArgs<ExtArgs extends runt
   where?: Prisma.UtilizationHistoryWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountConversationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ClientConversationWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -811,6 +921,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   manager?: boolean | Prisma.User$managerArgs<ExtArgs>
   team_members?: boolean | Prisma.User$team_membersArgs<ExtArgs>
   utilization_history?: boolean | Prisma.User$utilization_historyArgs<ExtArgs>
+  conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -854,6 +965,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   manager?: boolean | Prisma.User$managerArgs<ExtArgs>
   team_members?: boolean | Prisma.User$team_membersArgs<ExtArgs>
   utilization_history?: boolean | Prisma.User$utilization_historyArgs<ExtArgs>
+  conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -869,6 +981,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     manager: Prisma.$UserPayload<ExtArgs> | null
     team_members: Prisma.$UserPayload<ExtArgs>[]
     utilization_history: Prisma.$UtilizationHistoryPayload<ExtArgs>[]
+    conversations: Prisma.$ClientConversationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1276,6 +1389,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   manager<T extends Prisma.User$managerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$managerArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   team_members<T extends Prisma.User$team_membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$team_membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   utilization_history<T extends Prisma.User$utilization_historyArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$utilization_historyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UtilizationHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  conversations<T extends Prisma.User$conversationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$conversationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClientConversationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1773,6 +1887,30 @@ export type User$utilization_historyArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.UtilizationHistoryScalarFieldEnum | Prisma.UtilizationHistoryScalarFieldEnum[]
+}
+
+/**
+ * User.conversations
+ */
+export type User$conversationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ClientConversation
+   */
+  select?: Prisma.ClientConversationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ClientConversation
+   */
+  omit?: Prisma.ClientConversationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClientConversationInclude<ExtArgs> | null
+  where?: Prisma.ClientConversationWhereInput
+  orderBy?: Prisma.ClientConversationOrderByWithRelationInput | Prisma.ClientConversationOrderByWithRelationInput[]
+  cursor?: Prisma.ClientConversationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ClientConversationScalarFieldEnum | Prisma.ClientConversationScalarFieldEnum[]
 }
 
 /**

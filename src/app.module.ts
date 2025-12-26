@@ -35,6 +35,7 @@ import { ProgressValidatorModule } from './ai-monitoring/progress-validator.modu
 // User interfaces
 import { DashboardsModule } from './dashboards/dashboards.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { ConversationsModule } from './conversations/conversations.module'; // Story 5.5
 
 // External integrations
 import { IntegrationModule } from './integration/integration.module';
@@ -104,6 +105,9 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     IntegrationModule,
     ClickUpModule,
     ProjectModule,
+
+    // Story 5.5: Client Communication Intelligence
+    ConversationsModule,
 
     // Dependency Management
     DependenciesModule, // Story 12.1: Circular Dependency Detection

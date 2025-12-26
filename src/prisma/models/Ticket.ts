@@ -43,6 +43,7 @@ export type TicketMinAggregateOutputType = {
   acceptance_criteria: string | null
   ticket_quality_score: number | null
   status: $Enums.TicketStatus | null
+  conversation_id: string | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -56,6 +57,7 @@ export type TicketMaxAggregateOutputType = {
   acceptance_criteria: string | null
   ticket_quality_score: number | null
   status: $Enums.TicketStatus | null
+  conversation_id: string | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -69,6 +71,7 @@ export type TicketCountAggregateOutputType = {
   acceptance_criteria: number
   ticket_quality_score: number
   status: number
+  conversation_id: number
   created_at: number
   updated_at: number
   _all: number
@@ -92,6 +95,7 @@ export type TicketMinAggregateInputType = {
   acceptance_criteria?: true
   ticket_quality_score?: true
   status?: true
+  conversation_id?: true
   created_at?: true
   updated_at?: true
 }
@@ -105,6 +109,7 @@ export type TicketMaxAggregateInputType = {
   acceptance_criteria?: true
   ticket_quality_score?: true
   status?: true
+  conversation_id?: true
   created_at?: true
   updated_at?: true
 }
@@ -118,6 +123,7 @@ export type TicketCountAggregateInputType = {
   acceptance_criteria?: true
   ticket_quality_score?: true
   status?: true
+  conversation_id?: true
   created_at?: true
   updated_at?: true
   _all?: true
@@ -218,6 +224,7 @@ export type TicketGroupByOutputType = {
   acceptance_criteria: string
   ticket_quality_score: number
   status: $Enums.TicketStatus
+  conversation_id: string | null
   created_at: Date
   updated_at: Date
   _count: TicketCountAggregateOutputType | null
@@ -254,6 +261,7 @@ export type TicketWhereInput = {
   acceptance_criteria?: Prisma.StringFilter<"Ticket"> | string
   ticket_quality_score?: Prisma.IntFilter<"Ticket"> | number
   status?: Prisma.EnumTicketStatusFilter<"Ticket"> | $Enums.TicketStatus
+  conversation_id?: Prisma.StringNullableFilter<"Ticket"> | string | null
   created_at?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>
@@ -261,6 +269,7 @@ export type TicketWhereInput = {
   cost_records?: Prisma.CostRecordListRelationFilter
   context_documents?: Prisma.ContextDocumentListRelationFilter
   ai_cost_logs?: Prisma.AICostLogListRelationFilter
+  conversation?: Prisma.XOR<Prisma.ClientConversationNullableScalarRelationFilter, Prisma.ClientConversationWhereInput> | null
 }
 
 export type TicketOrderByWithRelationInput = {
@@ -272,6 +281,7 @@ export type TicketOrderByWithRelationInput = {
   acceptance_criteria?: Prisma.SortOrder
   ticket_quality_score?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  conversation_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   project?: Prisma.ProjectOrderByWithRelationInput
@@ -279,6 +289,7 @@ export type TicketOrderByWithRelationInput = {
   cost_records?: Prisma.CostRecordOrderByRelationAggregateInput
   context_documents?: Prisma.ContextDocumentOrderByRelationAggregateInput
   ai_cost_logs?: Prisma.AICostLogOrderByRelationAggregateInput
+  conversation?: Prisma.ClientConversationOrderByWithRelationInput
 }
 
 export type TicketWhereUniqueInput = Prisma.AtLeast<{
@@ -293,6 +304,7 @@ export type TicketWhereUniqueInput = Prisma.AtLeast<{
   acceptance_criteria?: Prisma.StringFilter<"Ticket"> | string
   ticket_quality_score?: Prisma.IntFilter<"Ticket"> | number
   status?: Prisma.EnumTicketStatusFilter<"Ticket"> | $Enums.TicketStatus
+  conversation_id?: Prisma.StringNullableFilter<"Ticket"> | string | null
   created_at?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>
@@ -300,6 +312,7 @@ export type TicketWhereUniqueInput = Prisma.AtLeast<{
   cost_records?: Prisma.CostRecordListRelationFilter
   context_documents?: Prisma.ContextDocumentListRelationFilter
   ai_cost_logs?: Prisma.AICostLogListRelationFilter
+  conversation?: Prisma.XOR<Prisma.ClientConversationNullableScalarRelationFilter, Prisma.ClientConversationWhereInput> | null
 }, "id" | "clickup_task_id">
 
 export type TicketOrderByWithAggregationInput = {
@@ -311,6 +324,7 @@ export type TicketOrderByWithAggregationInput = {
   acceptance_criteria?: Prisma.SortOrder
   ticket_quality_score?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  conversation_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.TicketCountOrderByAggregateInput
@@ -332,6 +346,7 @@ export type TicketScalarWhereWithAggregatesInput = {
   acceptance_criteria?: Prisma.StringWithAggregatesFilter<"Ticket"> | string
   ticket_quality_score?: Prisma.IntWithAggregatesFilter<"Ticket"> | number
   status?: Prisma.EnumTicketStatusWithAggregatesFilter<"Ticket"> | $Enums.TicketStatus
+  conversation_id?: Prisma.StringNullableWithAggregatesFilter<"Ticket"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Ticket"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"Ticket"> | Date | string
 }
@@ -351,6 +366,7 @@ export type TicketCreateInput = {
   cost_records?: Prisma.CostRecordCreateNestedManyWithoutTicketInput
   context_documents?: Prisma.ContextDocumentCreateNestedManyWithoutTicketInput
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput
+  conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput
 }
 
 export type TicketUncheckedCreateInput = {
@@ -362,6 +378,7 @@ export type TicketUncheckedCreateInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutTicketInput
@@ -385,6 +402,7 @@ export type TicketUpdateInput = {
   cost_records?: Prisma.CostRecordUpdateManyWithoutTicketNestedInput
   context_documents?: Prisma.ContextDocumentUpdateManyWithoutTicketNestedInput
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput
+  conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput
 }
 
 export type TicketUncheckedUpdateInput = {
@@ -396,6 +414,7 @@ export type TicketUncheckedUpdateInput = {
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
   ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutTicketNestedInput
@@ -413,6 +432,7 @@ export type TicketCreateManyInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -438,6 +458,7 @@ export type TicketUncheckedUpdateManyInput = {
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
   ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -461,6 +482,7 @@ export type TicketCountOrderByAggregateInput = {
   acceptance_criteria?: Prisma.SortOrder
   ticket_quality_score?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  conversation_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -478,6 +500,7 @@ export type TicketMaxOrderByAggregateInput = {
   acceptance_criteria?: Prisma.SortOrder
   ticket_quality_score?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  conversation_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -491,6 +514,7 @@ export type TicketMinOrderByAggregateInput = {
   acceptance_criteria?: Prisma.SortOrder
   ticket_quality_score?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  conversation_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -563,6 +587,10 @@ export type EnumTicketStatusFieldUpdateOperationsInput = {
   set?: $Enums.TicketStatus
 }
 
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
 export type TicketCreateNestedOneWithoutExecutionsInput = {
   create?: Prisma.XOR<Prisma.TicketCreateWithoutExecutionsInput, Prisma.TicketUncheckedCreateWithoutExecutionsInput>
   connectOrCreate?: Prisma.TicketCreateOrConnectWithoutExecutionsInput
@@ -621,6 +649,48 @@ export type TicketUpdateOneWithoutAi_cost_logsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TicketUpdateToOneWithWhereWithoutAi_cost_logsInput, Prisma.TicketUpdateWithoutAi_cost_logsInput>, Prisma.TicketUncheckedUpdateWithoutAi_cost_logsInput>
 }
 
+export type TicketCreateNestedManyWithoutConversationInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutConversationInput, Prisma.TicketUncheckedCreateWithoutConversationInput> | Prisma.TicketCreateWithoutConversationInput[] | Prisma.TicketUncheckedCreateWithoutConversationInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutConversationInput | Prisma.TicketCreateOrConnectWithoutConversationInput[]
+  createMany?: Prisma.TicketCreateManyConversationInputEnvelope
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+}
+
+export type TicketUncheckedCreateNestedManyWithoutConversationInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutConversationInput, Prisma.TicketUncheckedCreateWithoutConversationInput> | Prisma.TicketCreateWithoutConversationInput[] | Prisma.TicketUncheckedCreateWithoutConversationInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutConversationInput | Prisma.TicketCreateOrConnectWithoutConversationInput[]
+  createMany?: Prisma.TicketCreateManyConversationInputEnvelope
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+}
+
+export type TicketUpdateManyWithoutConversationNestedInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutConversationInput, Prisma.TicketUncheckedCreateWithoutConversationInput> | Prisma.TicketCreateWithoutConversationInput[] | Prisma.TicketUncheckedCreateWithoutConversationInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutConversationInput | Prisma.TicketCreateOrConnectWithoutConversationInput[]
+  upsert?: Prisma.TicketUpsertWithWhereUniqueWithoutConversationInput | Prisma.TicketUpsertWithWhereUniqueWithoutConversationInput[]
+  createMany?: Prisma.TicketCreateManyConversationInputEnvelope
+  set?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  disconnect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  delete?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  update?: Prisma.TicketUpdateWithWhereUniqueWithoutConversationInput | Prisma.TicketUpdateWithWhereUniqueWithoutConversationInput[]
+  updateMany?: Prisma.TicketUpdateManyWithWhereWithoutConversationInput | Prisma.TicketUpdateManyWithWhereWithoutConversationInput[]
+  deleteMany?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
+}
+
+export type TicketUncheckedUpdateManyWithoutConversationNestedInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutConversationInput, Prisma.TicketUncheckedCreateWithoutConversationInput> | Prisma.TicketCreateWithoutConversationInput[] | Prisma.TicketUncheckedCreateWithoutConversationInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutConversationInput | Prisma.TicketCreateOrConnectWithoutConversationInput[]
+  upsert?: Prisma.TicketUpsertWithWhereUniqueWithoutConversationInput | Prisma.TicketUpsertWithWhereUniqueWithoutConversationInput[]
+  createMany?: Prisma.TicketCreateManyConversationInputEnvelope
+  set?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  disconnect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  delete?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  update?: Prisma.TicketUpdateWithWhereUniqueWithoutConversationInput | Prisma.TicketUpdateWithWhereUniqueWithoutConversationInput[]
+  updateMany?: Prisma.TicketUpdateManyWithWhereWithoutConversationInput | Prisma.TicketUpdateManyWithWhereWithoutConversationInput[]
+  deleteMany?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
+}
+
 export type TicketCreateWithoutProjectInput = {
   id?: string
   clickup_task_id: string
@@ -635,6 +705,7 @@ export type TicketCreateWithoutProjectInput = {
   cost_records?: Prisma.CostRecordCreateNestedManyWithoutTicketInput
   context_documents?: Prisma.ContextDocumentCreateNestedManyWithoutTicketInput
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput
+  conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput
 }
 
 export type TicketUncheckedCreateWithoutProjectInput = {
@@ -645,6 +716,7 @@ export type TicketUncheckedCreateWithoutProjectInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutTicketInput
@@ -691,6 +763,7 @@ export type TicketScalarWhereInput = {
   acceptance_criteria?: Prisma.StringFilter<"Ticket"> | string
   ticket_quality_score?: Prisma.IntFilter<"Ticket"> | number
   status?: Prisma.EnumTicketStatusFilter<"Ticket"> | $Enums.TicketStatus
+  conversation_id?: Prisma.StringNullableFilter<"Ticket"> | string | null
   created_at?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Ticket"> | Date | string
 }
@@ -709,6 +782,7 @@ export type TicketCreateWithoutExecutionsInput = {
   cost_records?: Prisma.CostRecordCreateNestedManyWithoutTicketInput
   context_documents?: Prisma.ContextDocumentCreateNestedManyWithoutTicketInput
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput
+  conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput
 }
 
 export type TicketUncheckedCreateWithoutExecutionsInput = {
@@ -720,6 +794,7 @@ export type TicketUncheckedCreateWithoutExecutionsInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   cost_records?: Prisma.CostRecordUncheckedCreateNestedManyWithoutTicketInput
@@ -757,6 +832,7 @@ export type TicketUpdateWithoutExecutionsInput = {
   cost_records?: Prisma.CostRecordUpdateManyWithoutTicketNestedInput
   context_documents?: Prisma.ContextDocumentUpdateManyWithoutTicketNestedInput
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput
+  conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput
 }
 
 export type TicketUncheckedUpdateWithoutExecutionsInput = {
@@ -768,6 +844,7 @@ export type TicketUncheckedUpdateWithoutExecutionsInput = {
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
   ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   cost_records?: Prisma.CostRecordUncheckedUpdateManyWithoutTicketNestedInput
@@ -789,6 +866,7 @@ export type TicketCreateWithoutCost_recordsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutTicketInput
   context_documents?: Prisma.ContextDocumentCreateNestedManyWithoutTicketInput
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput
+  conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput
 }
 
 export type TicketUncheckedCreateWithoutCost_recordsInput = {
@@ -800,6 +878,7 @@ export type TicketUncheckedCreateWithoutCost_recordsInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutTicketInput
@@ -837,6 +916,7 @@ export type TicketUpdateWithoutCost_recordsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutTicketNestedInput
   context_documents?: Prisma.ContextDocumentUpdateManyWithoutTicketNestedInput
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput
+  conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput
 }
 
 export type TicketUncheckedUpdateWithoutCost_recordsInput = {
@@ -848,6 +928,7 @@ export type TicketUncheckedUpdateWithoutCost_recordsInput = {
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
   ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutTicketNestedInput
@@ -869,6 +950,7 @@ export type TicketCreateWithoutContext_documentsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutTicketInput
   cost_records?: Prisma.CostRecordCreateNestedManyWithoutTicketInput
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput
+  conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput
 }
 
 export type TicketUncheckedCreateWithoutContext_documentsInput = {
@@ -880,6 +962,7 @@ export type TicketUncheckedCreateWithoutContext_documentsInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutTicketInput
@@ -917,6 +1000,7 @@ export type TicketUpdateWithoutContext_documentsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutTicketNestedInput
   cost_records?: Prisma.CostRecordUpdateManyWithoutTicketNestedInput
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput
+  conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput
 }
 
 export type TicketUncheckedUpdateWithoutContext_documentsInput = {
@@ -928,6 +1012,7 @@ export type TicketUncheckedUpdateWithoutContext_documentsInput = {
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
   ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutTicketNestedInput
@@ -949,6 +1034,7 @@ export type TicketCreateWithoutAi_cost_logsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutTicketInput
   cost_records?: Prisma.CostRecordCreateNestedManyWithoutTicketInput
   context_documents?: Prisma.ContextDocumentCreateNestedManyWithoutTicketInput
+  conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput
 }
 
 export type TicketUncheckedCreateWithoutAi_cost_logsInput = {
@@ -960,6 +1046,7 @@ export type TicketUncheckedCreateWithoutAi_cost_logsInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutTicketInput
@@ -997,6 +1084,7 @@ export type TicketUpdateWithoutAi_cost_logsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutTicketNestedInput
   cost_records?: Prisma.CostRecordUpdateManyWithoutTicketNestedInput
   context_documents?: Prisma.ContextDocumentUpdateManyWithoutTicketNestedInput
+  conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput
 }
 
 export type TicketUncheckedUpdateWithoutAi_cost_logsInput = {
@@ -1008,11 +1096,72 @@ export type TicketUncheckedUpdateWithoutAi_cost_logsInput = {
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
   ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutTicketNestedInput
   cost_records?: Prisma.CostRecordUncheckedUpdateManyWithoutTicketNestedInput
   context_documents?: Prisma.ContextDocumentUncheckedUpdateManyWithoutTicketNestedInput
+}
+
+export type TicketCreateWithoutConversationInput = {
+  id?: string
+  clickup_task_id: string
+  title: string
+  description: string
+  acceptance_criteria: string
+  ticket_quality_score: number
+  status?: $Enums.TicketStatus
+  created_at?: Date | string
+  updated_at?: Date | string
+  project: Prisma.ProjectCreateNestedOneWithoutTicketsInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutTicketInput
+  cost_records?: Prisma.CostRecordCreateNestedManyWithoutTicketInput
+  context_documents?: Prisma.ContextDocumentCreateNestedManyWithoutTicketInput
+  ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput
+}
+
+export type TicketUncheckedCreateWithoutConversationInput = {
+  id?: string
+  clickup_task_id: string
+  project_id: string
+  title: string
+  description: string
+  acceptance_criteria: string
+  ticket_quality_score: number
+  status?: $Enums.TicketStatus
+  created_at?: Date | string
+  updated_at?: Date | string
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutTicketInput
+  cost_records?: Prisma.CostRecordUncheckedCreateNestedManyWithoutTicketInput
+  context_documents?: Prisma.ContextDocumentUncheckedCreateNestedManyWithoutTicketInput
+  ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput
+}
+
+export type TicketCreateOrConnectWithoutConversationInput = {
+  where: Prisma.TicketWhereUniqueInput
+  create: Prisma.XOR<Prisma.TicketCreateWithoutConversationInput, Prisma.TicketUncheckedCreateWithoutConversationInput>
+}
+
+export type TicketCreateManyConversationInputEnvelope = {
+  data: Prisma.TicketCreateManyConversationInput | Prisma.TicketCreateManyConversationInput[]
+  skipDuplicates?: boolean
+}
+
+export type TicketUpsertWithWhereUniqueWithoutConversationInput = {
+  where: Prisma.TicketWhereUniqueInput
+  update: Prisma.XOR<Prisma.TicketUpdateWithoutConversationInput, Prisma.TicketUncheckedUpdateWithoutConversationInput>
+  create: Prisma.XOR<Prisma.TicketCreateWithoutConversationInput, Prisma.TicketUncheckedCreateWithoutConversationInput>
+}
+
+export type TicketUpdateWithWhereUniqueWithoutConversationInput = {
+  where: Prisma.TicketWhereUniqueInput
+  data: Prisma.XOR<Prisma.TicketUpdateWithoutConversationInput, Prisma.TicketUncheckedUpdateWithoutConversationInput>
+}
+
+export type TicketUpdateManyWithWhereWithoutConversationInput = {
+  where: Prisma.TicketScalarWhereInput
+  data: Prisma.XOR<Prisma.TicketUpdateManyMutationInput, Prisma.TicketUncheckedUpdateManyWithoutConversationInput>
 }
 
 export type TicketCreateManyProjectInput = {
@@ -1023,6 +1172,7 @@ export type TicketCreateManyProjectInput = {
   acceptance_criteria: string
   ticket_quality_score: number
   status?: $Enums.TicketStatus
+  conversation_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -1041,11 +1191,73 @@ export type TicketUpdateWithoutProjectInput = {
   cost_records?: Prisma.CostRecordUpdateManyWithoutTicketNestedInput
   context_documents?: Prisma.ContextDocumentUpdateManyWithoutTicketNestedInput
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput
+  conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput
 }
 
 export type TicketUncheckedUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clickup_task_id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
+  ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutTicketNestedInput
+  cost_records?: Prisma.CostRecordUncheckedUpdateManyWithoutTicketNestedInput
+  context_documents?: Prisma.ContextDocumentUncheckedUpdateManyWithoutTicketNestedInput
+  ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput
+}
+
+export type TicketUncheckedUpdateManyWithoutProjectInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clickup_task_id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
+  ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type TicketCreateManyConversationInput = {
+  id?: string
+  clickup_task_id: string
+  project_id: string
+  title: string
+  description: string
+  acceptance_criteria: string
+  ticket_quality_score: number
+  status?: $Enums.TicketStatus
+  created_at?: Date | string
+  updated_at?: Date | string
+}
+
+export type TicketUpdateWithoutConversationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clickup_task_id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
+  ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.ProjectUpdateOneRequiredWithoutTicketsNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutTicketNestedInput
+  cost_records?: Prisma.CostRecordUpdateManyWithoutTicketNestedInput
+  context_documents?: Prisma.ContextDocumentUpdateManyWithoutTicketNestedInput
+  ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput
+}
+
+export type TicketUncheckedUpdateWithoutConversationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clickup_task_id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1059,9 +1271,10 @@ export type TicketUncheckedUpdateWithoutProjectInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput
 }
 
-export type TicketUncheckedUpdateManyWithoutProjectInput = {
+export type TicketUncheckedUpdateManyWithoutConversationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clickup_task_id?: Prisma.StringFieldUpdateOperationsInput | string
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1138,6 +1351,7 @@ export type TicketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   acceptance_criteria?: boolean
   ticket_quality_score?: boolean
   status?: boolean
+  conversation_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
@@ -1145,6 +1359,7 @@ export type TicketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   cost_records?: boolean | Prisma.Ticket$cost_recordsArgs<ExtArgs>
   context_documents?: boolean | Prisma.Ticket$context_documentsArgs<ExtArgs>
   ai_cost_logs?: boolean | Prisma.Ticket$ai_cost_logsArgs<ExtArgs>
+  conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>
   _count?: boolean | Prisma.TicketCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["ticket"]>
 
@@ -1157,9 +1372,11 @@ export type TicketSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   acceptance_criteria?: boolean
   ticket_quality_score?: boolean
   status?: boolean
+  conversation_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
+  conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>
 }, ExtArgs["result"]["ticket"]>
 
 export type TicketSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1171,9 +1388,11 @@ export type TicketSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   acceptance_criteria?: boolean
   ticket_quality_score?: boolean
   status?: boolean
+  conversation_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
+  conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>
 }, ExtArgs["result"]["ticket"]>
 
 export type TicketSelectScalar = {
@@ -1185,24 +1404,28 @@ export type TicketSelectScalar = {
   acceptance_criteria?: boolean
   ticket_quality_score?: boolean
   status?: boolean
+  conversation_id?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type TicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clickup_task_id" | "project_id" | "title" | "description" | "acceptance_criteria" | "ticket_quality_score" | "status" | "created_at" | "updated_at", ExtArgs["result"]["ticket"]>
+export type TicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clickup_task_id" | "project_id" | "title" | "description" | "acceptance_criteria" | "ticket_quality_score" | "status" | "conversation_id" | "created_at" | "updated_at", ExtArgs["result"]["ticket"]>
 export type TicketInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   executions?: boolean | Prisma.Ticket$executionsArgs<ExtArgs>
   cost_records?: boolean | Prisma.Ticket$cost_recordsArgs<ExtArgs>
   context_documents?: boolean | Prisma.Ticket$context_documentsArgs<ExtArgs>
   ai_cost_logs?: boolean | Prisma.Ticket$ai_cost_logsArgs<ExtArgs>
+  conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>
   _count?: boolean | Prisma.TicketCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TicketIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
+  conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>
 }
 export type TicketIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
+  conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>
 }
 
 export type $TicketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1213,6 +1436,7 @@ export type $TicketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     cost_records: Prisma.$CostRecordPayload<ExtArgs>[]
     context_documents: Prisma.$ContextDocumentPayload<ExtArgs>[]
     ai_cost_logs: Prisma.$AICostLogPayload<ExtArgs>[]
+    conversation: Prisma.$ClientConversationPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1223,6 +1447,7 @@ export type $TicketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     acceptance_criteria: string
     ticket_quality_score: number
     status: $Enums.TicketStatus
+    conversation_id: string | null
     created_at: Date
     updated_at: Date
   }, ExtArgs["result"]["ticket"]>
@@ -1624,6 +1849,7 @@ export interface Prisma__TicketClient<T, Null = never, ExtArgs extends runtime.T
   cost_records<T extends Prisma.Ticket$cost_recordsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Ticket$cost_recordsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CostRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   context_documents<T extends Prisma.Ticket$context_documentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Ticket$context_documentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ContextDocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   ai_cost_logs<T extends Prisma.Ticket$ai_cost_logsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Ticket$ai_cost_logsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AICostLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  conversation<T extends Prisma.Ticket$conversationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Ticket$conversationArgs<ExtArgs>>): Prisma.Prisma__ClientConversationClient<runtime.Types.Result.GetResult<Prisma.$ClientConversationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1661,6 +1887,7 @@ export interface TicketFieldRefs {
   readonly acceptance_criteria: Prisma.FieldRef<"Ticket", 'String'>
   readonly ticket_quality_score: Prisma.FieldRef<"Ticket", 'Int'>
   readonly status: Prisma.FieldRef<"Ticket", 'TicketStatus'>
+  readonly conversation_id: Prisma.FieldRef<"Ticket", 'String'>
   readonly created_at: Prisma.FieldRef<"Ticket", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"Ticket", 'DateTime'>
 }
@@ -2152,6 +2379,25 @@ export type Ticket$ai_cost_logsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.AICostLogScalarFieldEnum | Prisma.AICostLogScalarFieldEnum[]
+}
+
+/**
+ * Ticket.conversation
+ */
+export type Ticket$conversationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ClientConversation
+   */
+  select?: Prisma.ClientConversationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ClientConversation
+   */
+  omit?: Prisma.ClientConversationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClientConversationInclude<ExtArgs> | null
+  where?: Prisma.ClientConversationWhereInput
 }
 
 /**
