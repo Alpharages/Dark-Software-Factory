@@ -106,6 +106,7 @@ export class PmDashboardService {
       const blocked = tickets.filter((t) =>
         ['QA_FAILED', 'FAILED', 'BLOCKED_CIRCULAR'].includes(t.status),
       ).length;
+      const awaiting_approval = tickets.filter((t) => t.status === 'AWAITING_APPROVAL').length;
 
       const last_activity =
         tickets.length > 0
@@ -126,6 +127,7 @@ export class PmDashboardService {
           in_progress,
           completed,
           blocked,
+          awaiting_approval,
         },
       };
     });
@@ -198,6 +200,7 @@ export class PmDashboardService {
       (ticketCountsByStatus['QA_FAILED'] || 0) +
       (ticketCountsByStatus['FAILED'] || 0) +
       (ticketCountsByStatus['BLOCKED_CIRCULAR'] || 0);
+    const awaiting_approval_tickets = ticketCountsByStatus['AWAITING_APPROVAL'] || 0;
 
     const avg_completion_rate = total_tickets > 0 ? completed_tickets / total_tickets : 0;
 
@@ -214,6 +217,7 @@ export class PmDashboardService {
       in_progress_tickets,
       completed_tickets,
       blocked_tickets,
+      awaiting_approval_tickets,
       avg_completion_rate,
       utilization_percent,
     };

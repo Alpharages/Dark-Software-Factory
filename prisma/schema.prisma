@@ -81,6 +81,10 @@ enum TicketStatus {
   DEPLOYING
   DEPLOYED
   MONITORING
+  AWAITING_APPROVAL
+  APPROVED
+  REJECTED
+  AWAITING_REWORK
   FAILED
   COMPLETED
 }
@@ -175,6 +179,9 @@ model Execution {
   // Story 3.6: QA Results relation
   qa_result QAResult?
 
+  // Story 5.3: Approval relation
+  approvalRecords ApprovalRecord[]
+
   // V3 RELATIONS (Epic 11)
   aiDecisionLogs       AIDecisionLog[] // One-to-many: AI decision audit trail
   fileLocks            FileLock[] // One-to-many: File lock tracking
@@ -200,6 +207,7 @@ enum ExecutionStatus {
   FAILED
   TIMEOUT
   CANCELLED
+  AWAITING_APPROVAL
 }
 
 // ============================================
@@ -697,4 +705,29 @@ model WorkspaceArchive {
   @@index([status])
   @@index([archived_at])
   @@map("workspace_archives")
+}
+
+// ============================================
+// STORY 5.3: CODE APPROVAL
+// ============================================
+
+model ApprovalRecord {
+  id           String           @id @default(uuid())
+  execution_id String
+  pm_id        String           // PM who made the decision
+  decision     ApprovalDecision
+  reasoning    String?          @db.Text
+  created_at   DateTime         @default(now())
+
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@index([execution_id])
+  @@map("approval_records")
+}
+
+enum ApprovalDecision {
+  APPROVE
+  REJECT
+  REWORK
+  ESCALATE
 }

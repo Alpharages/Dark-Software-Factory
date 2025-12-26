@@ -23,7 +23,7 @@ export class RetryConsumer implements OnModuleInit {
     private readonly orchestrator: OrchestratorService,
     private readonly retryHandler: RetryHandlerService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     await this.startConsuming();
@@ -62,7 +62,7 @@ export class RetryConsumer implements OnModuleInit {
 
             this.logger.log(
               `[${correlationId}] Processing retry for execution ${executionId} ` +
-                `(attempt ${context.retryCount})`,
+              `(attempt ${context.retryCount})`,
             );
 
             // Get execution details from database
@@ -82,12 +82,18 @@ export class RetryConsumer implements OnModuleInit {
             // If project_id is just an ID, this will need proper Project model lookup
             const repositoryUrl = execution.ticket.project_id;
 
+            // AC#7: Inject feedback into context/prompt loop if available
+            let prompt = execution.prompt;
+            if (data.context.feedback) {
+              prompt = `REWORK FEEDBACK:\n${data.context.feedback}\n\nORIGINAL PROMPT:\n${prompt}`;
+            }
+
             // Re-execute via orchestrator
             const result = await this.orchestrator.execute({
               correlationId,
               executionId,
               ticketId: execution.ticket_id,
-              prompt: execution.prompt,
+              prompt,
               repositoryUrl,
               allowFallback: true,
             });
@@ -98,7 +104,7 @@ export class RetryConsumer implements OnModuleInit {
 
               this.logger.log(
                 `[${correlationId}] Retry successful for ${executionId} ` +
-                  `(duration: ${Date.now() - startTime}ms)`,
+                `(duration: ${Date.now() - startTime}ms)`,
               );
             } else {
               // Retry failed - will be handled by orchestrator's error flow
@@ -152,6 +158,7 @@ interface RetryMessage {
     previousErrors: unknown[];
     cumulativeDurationMs: number;
     retryCount: number;
+    feedback?: string; // AC#7: Added feedback for rework decisions
   };
   scheduledAt: string;
   delayMs: number;

@@ -21,6 +21,8 @@ import { AIExecutionPublisher } from './ai-execution.publisher';
 import { AIExecutionConsumer } from './ai-execution.consumer';
 import { SelfHealingOrchestratorService } from './self-healing-orchestrator.service';
 import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider';
+import { ApprovalService } from './services/approval.service';
+import { ApprovalController } from './controllers/approval.controller';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
@@ -71,7 +73,7 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [ExecutionController],
+  controllers: [ExecutionController, ApprovalController],
   providers: [
     // Core services
     ExecutionService,
@@ -79,6 +81,7 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
     ExecutionRepository,
     ExecutionGateway,
     ExecutionStateMachine,
+    ApprovalService,
 
     // Retry Services (Story 2.9)
     RetryHandlerService,
@@ -175,6 +178,7 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
     // Story 13.3.1: Export self-healing service
     SelfHealingOrchestratorService,
     ExecutionGateway,
+    ApprovalService,
   ],
 })
 export class ExecutionModule { }

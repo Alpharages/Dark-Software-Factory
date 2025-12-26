@@ -1,12 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider, ExecutionStatus } from '@/prisma/client';
+import { AIProvider, ExecutionStatus, Prisma } from '@/prisma/client';
+import Decimal = Prisma.Decimal;
 import { AIExecutionConsumer } from './ai-execution.consumer';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { OrchestratorService } from '../ai-routing/orchestrator.service';
 import { IExecutionCompletion, IExecutionFailure } from './interfaces';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
+import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
+import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
+import { SentryService } from '../common/sentry/sentry.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -92,6 +96,20 @@ describe('AIExecutionConsumer', () => {
       logDecision: jest.fn().mockResolvedValue({ id: 'log-id' }),
     };
 
+    // Story 13.3: Mock Cost & Sentry
+    const mockAICostTracker = {
+      estimateCost: jest.fn().mockReturnValue(new Decimal(0.01)),
+      calculateUSD: jest.fn().mockReturnValue(new Decimal(0.02)),
+      logCost: jest.fn().mockResolvedValue({ id: 'cost-id' }),
+    };
+    const mockCostOptimizer = {
+      selectOptimalModel: jest.fn().mockReturnValue('gpt-4o'),
+    };
+    const mockSentry = {
+      captureMessage: jest.fn(),
+      captureException: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIExecutionConsumer,
@@ -100,6 +118,9 @@ describe('AIExecutionConsumer', () => {
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
         { provide: OrchestratorService, useValue: mockOrchestrator },
         { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
+        { provide: AICostTrackerService, useValue: mockAICostTracker },
+        { provide: CostOptimizerService, useValue: mockCostOptimizer },
+        { provide: SentryService, useValue: mockSentry },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_FAILED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_PROCESSING_DURATION_SECONDS', useValue: mockHistogram },

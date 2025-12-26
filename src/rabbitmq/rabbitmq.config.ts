@@ -77,6 +77,7 @@ export const ROUTING_KEYS = {
   AI_EXECUTION_STARTED: 'ai.execution.started',
   AI_EXECUTION_COMPLETED: 'ai.execution.completed',
   AI_EXECUTION_FAILED: 'ai.execution.failed',
+  AI_EXECUTION_RETRY: 'ai.execution.retry',
 
   // QA Check
   QA_CHECK_STARTED: 'qa.check.started',

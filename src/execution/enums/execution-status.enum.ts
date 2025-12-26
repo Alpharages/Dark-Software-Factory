@@ -36,8 +36,15 @@ export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
     ExecutionStatus.FAILED,
     ExecutionStatus.TIMEOUT,
     ExecutionStatus.CANCELLED,
+    ExecutionStatus.AWAITING_APPROVAL,
   ],
-  [ExecutionStatus.COMPLETED]: [], // Terminal state
+  [ExecutionStatus.COMPLETED]: [ExecutionStatus.AWAITING_APPROVAL],
+  [ExecutionStatus.AWAITING_APPROVAL]: [
+    ExecutionStatus.COMPLETED,
+    ExecutionStatus.FAILED,
+    ExecutionStatus.QUEUED, // For rework
+    ExecutionStatus.CANCELLED,
+  ],
   [ExecutionStatus.FAILED]: [
     ExecutionStatus.QUEUED, // Allow retry → back to queue
     ExecutionStatus.CANCELLED,
@@ -75,6 +82,7 @@ export const STATUS_LABELS: Record<ExecutionStatus, string> = {
   [ExecutionStatus.FAILED]: 'Failed',
   [ExecutionStatus.TIMEOUT]: 'Timed Out',
   [ExecutionStatus.CANCELLED]: 'Cancelled',
+  [ExecutionStatus.AWAITING_APPROVAL]: 'Awaiting Approval',
 };
 
 // Type-safe Map for transitions lookup

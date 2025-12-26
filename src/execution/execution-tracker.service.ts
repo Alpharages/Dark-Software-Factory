@@ -45,7 +45,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly statusGauge: Gauge<string>,
     @InjectMetric('execution_retry_total')
     private readonly retryCounter: Counter<string>,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     this.logger.log('Execution Tracker Service initialized');
@@ -133,6 +133,28 @@ export class ExecutionTrackerService implements OnModuleInit {
   }
 
   /**
+   * Transition execution to AWAITING_APPROVAL
+   * Story 5.3: Manual approval gate
+   */
+  async markAwaitingApproval(
+    executionId: string,
+    correlationId: string,
+    reason: string = 'QA passed, awaiting manual approval',
+  ): Promise<IStateTransition> {
+    const execution = await this.getExecutionOrThrow(executionId);
+
+    const transition = this.stateMachine.transition(
+      executionId,
+      execution.status,
+      ExecutionStatus.AWAITING_APPROVAL,
+      reason,
+    );
+
+    await this.applyTransition(execution, transition, correlationId);
+    return transition;
+  }
+
+  /**
    * Complete execution successfully
    */
   async completeExecution(
@@ -206,7 +228,7 @@ export class ExecutionTrackerService implements OnModuleInit {
 
     this.logger.log(
       `[${correlationId}] Execution ${executionId} completed in ${durationSec.toFixed(2)}s ` +
-        `(confidence: ${confidenceScore}, files: ${filesChanged.length})`,
+      `(confidence: ${confidenceScore}, files: ${filesChanged.length})`,
     );
 
     return transition;

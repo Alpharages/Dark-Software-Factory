@@ -1,4 +1,5 @@
 import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
@@ -59,6 +60,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
   imports: [
     // Configuration
     ConfigModule,
+    ScheduleModule.forRoot(),
     // Rate Limiting - 100 requests/minute per NFR-I7
     ThrottlerModule.forRoot([
       {

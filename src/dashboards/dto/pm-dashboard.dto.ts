@@ -68,6 +68,9 @@ export class TicketCountsDto {
 
   @ApiProperty()
   blocked!: number;
+
+  @ApiProperty()
+  awaiting_approval!: number;
 }
 
 export class ProjectResponseDto {
@@ -117,6 +120,9 @@ export class DashboardSummaryDto {
 
   @ApiProperty()
   blocked_tickets!: number;
+
+  @ApiProperty()
+  awaiting_approval_tickets!: number;
 
   @ApiProperty()
   avg_completion_rate!: number;

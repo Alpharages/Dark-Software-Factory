@@ -39,6 +39,7 @@ import {
   ISelfHealingInput,
   ISelfHealingResult,
 } from '../execution/interfaces/self-healing.interface';
+import { ExecutionTrackerService } from '../execution/execution-tracker.service';
 
 /**
  * Aggregated QA result for quality gate evaluation
@@ -85,7 +86,9 @@ export class QaOrchestratorService {
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     // Story 13.4: Self-Healing Integration
     private readonly selfHealingOrchestrator: SelfHealingOrchestratorService,
-  ) {}
+    // Story 5.3: Execution Status Tracking
+    private readonly executionTracker: ExecutionTrackerService,
+  ) { }
 
   /**
    * Story 3.7: Run QA checks for post-execution code files
@@ -173,11 +176,12 @@ export class QaOrchestratorService {
 
       // If QA passed, trigger next stage (GitHub push)
       if (overallPassed) {
-        // Story 11.4: Log quality gate PASS decision
+        // Story 5.3: Manual Approval Gate
+        // Instead of proceeding to GITHUB_PUSH, we wait for PM approval
         await this.aiDecisionLogger.logDecision({
           agentName: 'QaOrchestrator',
           action: 'quality_gate_decision',
-          reasoning: `Quality gate PASSED. All QA checks passed. Proceeding to GitHub push stage.`,
+          reasoning: `Quality gate PASSED. All QA checks passed. Moving to AWAITING_APPROVAL for manual PM review.`,
           ticketId,
           executionId,
           inputData: {
@@ -188,33 +192,23 @@ export class QaOrchestratorService {
           },
           outputData: {
             decision: 'pass',
-            nextStage: 'github_push',
+            nextStage: 'awaiting_approval',
             totalDuration,
           },
           confidence: 0.95,
         });
 
-        // Update ticket status to GITHUB_PUSH (ready for GitHub push)
+        // Update ticket status to AWAITING_APPROVAL
         await this.prisma.ticket.update({
           where: { id: ticketId },
-          data: { status: TicketStatus.GITHUB_PUSH },
+          data: { status: TicketStatus.AWAITING_APPROVAL },
         });
 
-        // Publish event to trigger GitHub push workflow (message-driven architecture)
-        await this.rabbitPublisher.publishToExchange(
-          EXCHANGE_NAMES.ORCHESTRATOR_EVENTS,
-          ROUTING_KEYS.GITHUB_PUSH_TRIGGER,
-          {
-            executionId,
-            ticketId,
-            correlationId,
-            timestamp: Date.now(),
-          },
-          correlationId,
-        );
+        // Story 5.3: Update execution status via tracker
+        await this.executionTracker.markAwaitingApproval(executionId, correlationId);
 
         this.logger.log(
-          `[${correlationId}] Ticket ${ticketId} ready for GitHub push - event published`,
+          `[${correlationId}] Ticket ${ticketId} moved to AWAITING_APPROVAL - waiting for PM review`,
         );
       } else {
         // Story 11.4: Log quality gate FAIL decision
@@ -383,23 +377,17 @@ export class QaOrchestratorService {
           },
         );
 
-        // Update Ticket status to GITHUB_PUSH (Passed QA)
+        // Story 5.3: Manual Approval Gate
+        // Update Ticket status to AWAITING_APPROVAL instead of GITHUB_PUSH
         await this.prisma.ticket.update({
           where: { id: ticketId },
-          data: { status: TicketStatus.GITHUB_PUSH },
+          data: { status: TicketStatus.AWAITING_APPROVAL },
         });
 
-        // Add to Deployment Queue (if auto-deploy is configured)
-        // For now, just mark Ticket as READY for next stage or similar
-        // Or simply emitting the event is enough for the Deployment Service to pick it up.
-        // In clean architecture, we might want to specifically send command to deployment queue.
-        await this.rabbitPublisher.publishToQueue(QUEUE_NAMES.DEPLOYMENT, {
-          executionId,
-          ticketId,
-          correlationId,
-          action: 'deploy',
-          environment: 'staging',
-        });
+        // Story 5.3: Update execution status via tracker
+        await this.executionTracker.markAwaitingApproval(executionId, correlationId);
+
+        this.logger.log(`[${correlationId}] QA check PASSED for execution ${executionId}. Ticket moved to AWAITING_APPROVAL.`);
       } else {
         // ========================================================================
         // Story 13.4: Self-Healing Integration
@@ -780,16 +768,16 @@ export class QaOrchestratorService {
       code_review_passed: security?.passed ?? true,
       code_review_issues: security
         ? {
-            summary: {
-              criticalCount: security.summary.criticalCount,
-              highCount: security.summary.highCount,
-              mediumCount: security.summary.mediumCount,
-            },
-            complexityIssues: security.complexityIssues.map((i) => ({
-              function: i.functionName,
-              complexity: i.value,
-            })),
-          }
+          summary: {
+            criticalCount: security.summary.criticalCount,
+            highCount: security.summary.highCount,
+            mediumCount: security.summary.mediumCount,
+          },
+          complexityIssues: security.complexityIssues.map((i) => ({
+            function: i.functionName,
+            complexity: i.value,
+          })),
+        }
         : null,
     };
   }
