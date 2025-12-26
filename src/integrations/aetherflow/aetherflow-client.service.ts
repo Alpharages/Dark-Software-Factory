@@ -5,6 +5,7 @@ import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
 import { AxiosError } from 'axios';
 import { CreateTasksRequestDto, CreateTaskDto } from './dto/create-tasks-request.dto';
 import { CreateTasksResponseDto } from './dto/create-tasks-response.dto';
+import { MetricsService } from '@/common/metrics/metrics.service';
 
 /**
  * AetherFlow Client Service
@@ -24,6 +25,7 @@ export class AetherFlowClientService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly metrics: MetricsService,
   ) {
     this.baseUrl = this.configService.get<string>('AETHERFLOW_API_URL')!;
     this.apiKey = this.configService.get<string>('AETHERFLOW_API_KEY')!;
@@ -95,6 +97,8 @@ export class AetherFlowClientService {
     attemptNumber: number = 0,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    const startTime = Date.now();
+    this.metrics.incrementAetherFlowApiCall(endpoint, 'pending');
 
     try {
       const response$ = this.httpService.post<T>(url, body, {
@@ -106,13 +110,20 @@ export class AetherFlowClientService {
       });
 
       const response = await firstValueFrom(response$);
+      const duration = (Date.now() - startTime) / 1000;
+      this.metrics.recordAetherFlowApiDuration(endpoint, duration);
+      this.metrics.incrementAetherFlowApiCall(endpoint, 'success');
       return response.data;
     } catch (error) {
+      const duration = (Date.now() - startTime) / 1000;
+      this.metrics.recordAetherFlowApiDuration(endpoint, duration);
+
       // Check if we should retry
       if (attemptNumber < this.retryAttempts - 1) {
         const shouldRetry = this.isRetryableError(error);
 
         if (shouldRetry) {
+          this.metrics.incrementAetherFlowApiCall(endpoint, 'retry');
           const delay = this.retryDelays[attemptNumber];
           this.logger.warn(
             `AetherFlow API call failed, retrying in ${delay}ms (attempt ${attemptNumber + 1}/${this.retryAttempts})`,
@@ -127,6 +138,7 @@ export class AetherFlowClientService {
       }
 
       // No more retries or non-retryable error
+      this.metrics.incrementAetherFlowApiCall(endpoint, 'error');
       throw error;
     }
   }

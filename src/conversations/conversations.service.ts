@@ -360,12 +360,15 @@ export class ConversationsService {
       if (result.success) {
         // Store ClickUp task IDs in conversation
         await this.linkClickUpTasksToConversation(conversationId, result.tasks || []);
-        this.metrics.incrementTicketsCreatedFromConversations(result.tasks?.length || 0);
+        this.metrics.incrementConversationTicketCreationSuccess(result.tasks?.length || 0);
 
         this.logger.log(
           `Successfully created ${result.count} ClickUp tickets from conversation ${conversationId}`,
         );
       } else {
+        this.metrics.incrementConversationTicketCreationFailure(
+          this.classifyFailureReason(result.error),
+        );
         this.logger.error(`Failed to create tickets: ${result.error}`);
         this.sentry.captureException(
           new Error(`AetherFlow ticket creation failed: ${result.error}`),
@@ -385,12 +388,26 @@ export class ConversationsService {
         `Error creating tickets via AetherFlow: ${(error as Error).message}`,
         (error as Error).stack,
       );
-      this.sentry.captureException(error as Error, {
-        tags: { module: 'conversations', operation: 'createTickets' },
-        extra: { conversationId, actionItemIds },
-      });
       throw error;
     }
+  }
+
+  /**
+   * Classify AetherFlow failure reasons for metrics
+   */
+  private classifyFailureReason(error: string | undefined): string {
+    if (!error) return 'unknown';
+    const lowerError = error.toLowerCase();
+    if (lowerError.includes('unavailable') || lowerError.includes('econn')) {
+      return 'aetherflow_unavailable';
+    }
+    if (lowerError.includes('auth') || lowerError.includes('key')) {
+      return 'clickup_authentication_failed';
+    }
+    if (lowerError.includes('list')) {
+      return 'invalid_list_name';
+    }
+    return 'unknown';
   }
 
   /**

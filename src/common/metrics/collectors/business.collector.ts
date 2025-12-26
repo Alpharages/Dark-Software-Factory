@@ -10,6 +10,7 @@ import {
   PM_METRICS,
   GITHUB_METRICS,
   UX_METRICS,
+  AETHERFLOW_METRICS,
   LABELS,
 } from '../metrics.constants';
 import {
@@ -129,6 +130,19 @@ export class BusinessCollector {
 
     @InjectMetric(UX_METRICS.KEYBOARD_SHORTCUT_USAGE)
     private readonly keyboardShortcutUsageTotal: Counter,
+
+    // AetherFlow Integration Metrics (Story 5.5.1.1)
+    @InjectMetric(AETHERFLOW_METRICS.API_CALLS_TOTAL)
+    private readonly aetherflowApiCallsTotal: Counter,
+
+    @InjectMetric(AETHERFLOW_METRICS.API_DURATION)
+    private readonly aetherflowApiDuration: Histogram,
+
+    @InjectMetric(AETHERFLOW_METRICS.TICKETS_CREATED_TOTAL)
+    private readonly aetherflowTicketsCreatedTotal: Counter,
+
+    @InjectMetric(AETHERFLOW_METRICS.TICKET_CREATION_FAILURES_TOTAL)
+    private readonly aetherflowTicketCreationFailuresTotal: Counter,
   ) {
     this.registerMetrics();
   }
@@ -149,6 +163,13 @@ export class BusinessCollector {
     this.metrics.set(DEPLOYMENT_METRICS.SUCCESS_RATE, this.deploymentSuccessRate);
     this.metrics.set(DEPLOYMENT_METRICS.ROLLBACKS_TOTAL, this.deploymentRollbacksTotal);
     this.metrics.set(UX_METRICS.KEYBOARD_SHORTCUT_USAGE, this.keyboardShortcutUsageTotal);
+    this.metrics.set(AETHERFLOW_METRICS.API_CALLS_TOTAL, this.aetherflowApiCallsTotal);
+    this.metrics.set(AETHERFLOW_METRICS.API_DURATION, this.aetherflowApiDuration);
+    this.metrics.set(AETHERFLOW_METRICS.TICKETS_CREATED_TOTAL, this.aetherflowTicketsCreatedTotal);
+    this.metrics.set(
+      AETHERFLOW_METRICS.TICKET_CREATION_FAILURES_TOTAL,
+      this.aetherflowTicketCreationFailuresTotal,
+    );
   }
 
   // ============= Generic Methods (Story 4.8) =============
@@ -328,5 +349,23 @@ export class BusinessCollector {
     this.pmUtilizationPercent.set(labels, data.utilizationPercent);
     this.pmTicketsManaged.set(labels, data.ticketsManaged);
     this.pmProjectsActive.set(labels, data.projectsActive);
+  }
+
+  // ============= AetherFlow Integration Metrics =============
+
+  incrementAetherFlowApiCall(endpoint: string, status: string): void {
+    this.aetherflowApiCallsTotal.inc({ [LABELS.PATH]: endpoint, [LABELS.STATUS]: status });
+  }
+
+  recordAetherFlowApiDuration(endpoint: string, duration: number): void {
+    this.aetherflowApiDuration.observe({ [LABELS.PATH]: endpoint }, duration);
+  }
+
+  incrementConversationTicketCreationSuccess(count: number): void {
+    this.aetherflowTicketsCreatedTotal.inc(count);
+  }
+
+  incrementConversationTicketCreationFailure(reason: string): void {
+    this.aetherflowTicketCreationFailuresTotal.inc({ [LABELS.ERROR_TYPE]: reason });
   }
 }

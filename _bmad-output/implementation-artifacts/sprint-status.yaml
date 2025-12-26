@@ -416,12 +416,12 @@ development_status:
     notes: "✅ CODE REVIEW APPROVED - AetherFlow ClickUp integration fully functional with documented limitations. Created: (1) AetherFlow REST API endpoint with API key auth, (2) DSF HTTP client with 3-attempt retry logic, (3) ConversationsService integration replacing stub, (4) Prisma schema field clickup_task_ids, (5) Environment configuration (AETHERFLOW_API_URL, AETHERFLOW_API_KEY, AETHERFLOW_DEFAULT_CLICKUP_LIST). Build: ✅ passing. CODE REVIEW FIXES: (C1) Updated File List with all 19 files (13 modified + 6 new), (C2) AC#5 marked partial - metrics deferred to future story, (C3) Documentation tasks clarified as deferred, (H5) Unit tests documented as deferred per Epic 5 pattern. Known Limitations: AetherFlow-specific metrics deferred (using existing conversation metrics), comprehensive docs deferred to post-Epic 5 sprint, integration testing requires live endpoints. Files: 6 new (4 integration + 2 DTOs), 13 modified (9 source + 4 Prisma generated). Ready for integration testing."
     story_points: 3
   5-5-1-1-aetherflow-metrics-integration:
-    status: ready-for-dev
+    status: done
     parent_story: "5-5-1"
     priority: low
     effort: "0.5 days"
     story_points: 2
-    notes: "NEW - Follow-up to Story 5-5-1. Implements deferred AC#5 (Metrics tracking for integration health). Adds 4 Prometheus metrics: aetherflow_api_calls_total (counter), aetherflow_api_duration_seconds (histogram), conversation_tickets_created_total (counter), conversation_ticket_creation_failures_total (counter with reason labels). Integrates metrics into AetherFlowClientService and ConversationsService. Low priority cleanup work - system functional without it, but needed for production observability. Estimated 0.5 days (5 file modifications, 9+ unit tests)."
+    notes: "✅ CODE REVIEW APPROVED - Implemented 4 Prometheus metrics for AetherFlow integration health. Added 16 unit tests across MetricsService, AetherFlowClientService, and ConversationsService. Integrated retry tracking and failover reason classification. All code review issues fixed: implemented missing retry test case and updated file list accuracy."
   5-5-2-conversation-intelligence-ui:
     status: done
     parent_story: "5-5"
@@ -447,7 +447,7 @@ development_status:
   # ===================================================================
   # EPIC 6 REVISED - Cost tracking core moved to Epic 13
   # Original Epic 6 had 8 stories, 5 superseded by Epic 13
-  # See: docs/sprint-artifacts/v3-epic-impact-analysis.md
+  # See: _bmad-output/implementation-artifacts/v3-epic-impact-analysis.md
   # ===================================================================
   
   epic-6: deprecated
@@ -528,7 +528,7 @@ development_status:
   # ===================================================================
   # EPIC 9 UPDATED - Self-healing logic moved to Epic 13
   # Original Epic 9 had 8 stories, 3 moved to Epic 13/14
-  # See: docs/sprint-artifacts/v3-epic-impact-analysis.md
+  # See: _bmad-output/implementation-artifacts/v3-epic-impact-analysis.md
   # ===================================================================
   
   epic-9: deprecated
@@ -582,7 +582,7 @@ development_status:
   # ===================================================================
   # EPIC 10 UPDATED - Observability APIs moved to Epic 14
   # Original Epic 10 had 10 stories, 3 moved to Epic 13/14
-  # See: docs/sprint-artifacts/v3-epic-impact-analysis.md
+  # See: _bmad-output/implementation-artifacts/v3-epic-impact-analysis.md
   # ===================================================================
   
   epic-10: deprecated

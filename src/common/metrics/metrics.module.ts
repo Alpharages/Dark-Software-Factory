@@ -26,6 +26,7 @@ import {
   CICD_METRICS,
   GITHUB_METRICS,
   UX_METRICS,
+  AETHERFLOW_METRICS,
   METRICS_CONSTANTS,
   LABELS,
 } from './metrics.constants';
@@ -439,6 +440,28 @@ import {
       name: GITHUB_METRICS.ERRORS_TOTAL,
       help: 'Total GitHub operation errors',
       labelNames: ['operation', 'error_type'],
+    }),
+
+    // AetherFlow Integration Metrics (Story 5.5.1.1)
+    makeCounterProvider({
+      name: AETHERFLOW_METRICS.API_CALLS_TOTAL,
+      help: 'Total AetherFlow API calls',
+      labelNames: [LABELS.PATH, LABELS.STATUS],
+    }),
+    makeHistogramProvider({
+      name: AETHERFLOW_METRICS.API_DURATION,
+      help: 'AetherFlow API call duration in seconds',
+      labelNames: [LABELS.PATH],
+      buckets: [0.1, 0.5, 1, 2, 5, 10, 30],
+    }),
+    makeCounterProvider({
+      name: AETHERFLOW_METRICS.TICKETS_CREATED_TOTAL,
+      help: 'Total tickets created from conversations via AetherFlow',
+    }),
+    makeCounterProvider({
+      name: AETHERFLOW_METRICS.TICKET_CREATION_FAILURES_TOTAL,
+      help: 'Total failures creating tickets from conversations',
+      labelNames: [LABELS.ERROR_TYPE],
     }),
   ],
   exports: [MetricsService],

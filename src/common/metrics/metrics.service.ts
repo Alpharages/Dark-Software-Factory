@@ -282,4 +282,22 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       [LABELS.SHORTCUT]: shortcut,
     });
   }
+
+  // ============= AetherFlow Metrics =============
+
+  incrementAetherFlowApiCall(endpoint: string, status: string): void {
+    this.businessCollector.incrementAetherFlowApiCall(endpoint, status);
+  }
+
+  recordAetherFlowApiDuration(endpoint: string, duration: number): void {
+    this.businessCollector.recordAetherFlowApiDuration(endpoint, duration);
+  }
+
+  incrementConversationTicketCreationSuccess(count: number): void {
+    this.businessCollector.incrementConversationTicketCreationSuccess(count);
+  }
+
+  incrementConversationTicketCreationFailure(reason: string): void {
+    this.businessCollector.incrementConversationTicketCreationFailure(reason);
+  }
 }
