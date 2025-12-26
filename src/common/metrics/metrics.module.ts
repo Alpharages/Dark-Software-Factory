@@ -25,6 +25,7 @@ import {
   ERROR_METRICS,
   CICD_METRICS,
   GITHUB_METRICS,
+  UX_METRICS,
   METRICS_CONSTANTS,
   LABELS,
 } from './metrics.constants';
@@ -228,6 +229,11 @@ import {
       name: PM_METRICS.PROJECTS_ACTIVE,
       help: 'Number of active projects per PM',
       labelNames: [LABELS.PM_ID],
+    }),
+    makeCounterProvider({
+      name: UX_METRICS.KEYBOARD_SHORTCUT_USAGE,
+      help: 'Total keyboard shortcut usage',
+      labelNames: [LABELS.SHORTCUT],
     }),
 
     // System Metrics

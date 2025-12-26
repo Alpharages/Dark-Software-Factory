@@ -139,6 +139,11 @@ export const PM_METRICS = {
   PROJECTS_ACTIVE: `${METRICS_CONSTANTS.PREFIX}pm_projects_active`,
 } as const;
 
+// UX Metrics
+export const UX_METRICS = {
+  KEYBOARD_SHORTCUT_USAGE: `${METRICS_CONSTANTS.PREFIX}keyboard_shortcut_usage_total`,
+} as const;
+
 // System Metrics
 export const SYSTEM_METRICS = {
   MEMORY_USAGE: `${METRICS_CONSTANTS.PREFIX}memory_usage_bytes`,
@@ -233,6 +238,7 @@ export const LABELS = {
   ERROR_TYPE: 'error_type', // For error classification
   CONNECTION_STATE: 'state', // For database/websocket connections
   DIRECTION: 'direction', // For websocket messages (in/out)
+  SHORTCUT: 'shortcut', // For keyboard shortcut usage
 } as const;
 
 // Provider names

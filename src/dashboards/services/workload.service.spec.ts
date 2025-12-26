@@ -32,6 +32,9 @@ describe('WorkloadService', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn(),
+      groupBy: jest.fn(),
     },
     ticket: {
       count: jest.fn(),

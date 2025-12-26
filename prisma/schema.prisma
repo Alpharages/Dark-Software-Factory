@@ -67,6 +67,8 @@ model Ticket {
 
   @@index([project_id, status])
   @@index([created_at])
+  @@index([clickup_task_id])
+  @@index([title])
   @@map("tickets")
 }
 

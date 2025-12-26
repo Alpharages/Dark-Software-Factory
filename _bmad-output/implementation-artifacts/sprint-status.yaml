@@ -439,8 +439,9 @@ development_status:
     code_review_fixes: "10 issues fixed (2 CRITICAL, 5 HIGH, 3 MEDIUM)"
     notes: "✅ CODE REVIEW APPROVED - Backend implementation COMPLETE with all critical fixes applied. Delivered: (1) ReportsService with project-level RBAC isolation, (2) ReportsAggregatorService with velocity calculation (Pts/Week), (3) ReportsController with validated JWT/Role-based access, (4) Robust AI parsing with substring indexing and fallback narrative, (5) Refined caching with multi-field keys (type + project + date), (6) AIDecisionLogger integration for ADR-008 auditing. Build: ✅ passing. Prisma: Client regenerated for full type safety. Metrics: Prometheuse counters/histograms properly registered. Ready for production deployment."
   5-7-dashboard-ux-enhancements:
-    status: ready-for-dev
-    notes: "NEW Story 5.7 (formerly 5.10). Quick actions and keyboard shortcuts. Story file created."
+    status: done
+    completion_note: "Implemented keyboard shortcuts, command palette, ticket search API, and shortcut telemetry. Verified with builds and unit tests."
+    notes: "VALIDATED & OPTIMIZED. Refined ACs for keyboard shortcuts and command palette. Added tasks for ticket search API, library installation (cmdk, react-hotkeys-hook), and Prometheus telemetry. Documented backend action endpoints."
   epic-5-retrospective: optional
 
   # ===================================================================

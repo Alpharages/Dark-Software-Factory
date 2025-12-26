@@ -9,6 +9,8 @@ import {
   ProjectResponseDto,
   DashboardSummaryDto,
   ProjectStatus,
+  TicketSearchQueryDto,
+  TicketSearchResponseDto,
 } from '../dto/pm-dashboard.dto';
 
 export type UserRole = 'PM' | 'MANAGER' | 'ADMIN';
@@ -22,6 +24,62 @@ export class PmDashboardService {
     private readonly metricsService: MetricsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async searchTickets(pmId: string, role: UserRole, queryDto: TicketSearchQueryDto) {
+    const { query, page = 1, limit = 10 } = queryDto;
+    const skip = (page - 1) * limit;
+
+    // RBAC: PM only sees tickets from their own projects, MANAGER/ADMIN see all
+    const where: Prisma.TicketWhereInput = {
+      OR: [
+        { clickup_task_id: { contains: query, mode: 'insensitive' } },
+        { title: { contains: query, mode: 'insensitive' } },
+      ],
+    };
+
+    if (role === 'PM') {
+      where.project = {
+        pm_id: pmId,
+      };
+    }
+
+    const [tickets, total] = await Promise.all([
+      this.prisma.ticket.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { updated_at: 'desc' },
+        include: {
+          project: {
+            select: {
+              name: true,
+              id: true,
+            },
+          },
+        },
+      }),
+      this.prisma.ticket.count({ where }),
+    ]);
+
+    const data: TicketSearchResponseDto[] = tickets.map((t) => ({
+      id: t.id,
+      name: t.title, // Map title to name for DTO consistency or change DTO
+      project_name: t.project.name,
+      project_id: t.project.id,
+      status: t.status,
+      updated_at: t.updated_at,
+    }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
+  }
 
   async getProjects(pmId: string, role: UserRole, query: ProjectQueryDto) {
     const startTime = Date.now();

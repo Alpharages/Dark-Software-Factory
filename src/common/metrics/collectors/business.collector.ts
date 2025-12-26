@@ -9,6 +9,7 @@ import {
   COST_METRICS,
   PM_METRICS,
   GITHUB_METRICS,
+  UX_METRICS,
   LABELS,
 } from '../metrics.constants';
 import {
@@ -125,6 +126,9 @@ export class BusinessCollector {
 
     @InjectMetric(GITHUB_METRICS.PR_CREATION_DURATION)
     private readonly githubPrCreationDuration: Histogram,
+
+    @InjectMetric(UX_METRICS.KEYBOARD_SHORTCUT_USAGE)
+    private readonly keyboardShortcutUsageTotal: Counter,
   ) {
     this.registerMetrics();
   }
@@ -144,6 +148,7 @@ export class BusinessCollector {
     this.metrics.set(DEPLOYMENT_METRICS.DURATION, this.deploymentDuration);
     this.metrics.set(DEPLOYMENT_METRICS.SUCCESS_RATE, this.deploymentSuccessRate);
     this.metrics.set(DEPLOYMENT_METRICS.ROLLBACKS_TOTAL, this.deploymentRollbacksTotal);
+    this.metrics.set(UX_METRICS.KEYBOARD_SHORTCUT_USAGE, this.keyboardShortcutUsageTotal);
   }
 
   // ============= Generic Methods (Story 4.8) =============

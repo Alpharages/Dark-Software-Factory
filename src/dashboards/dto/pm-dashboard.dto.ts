@@ -130,3 +130,42 @@ export class DashboardSummaryDto {
   @ApiProperty()
   utilization_percent!: number;
 }
+
+export class TicketSearchQueryDto {
+  @ApiProperty()
+  @IsString()
+  query!: string;
+
+  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  page?: number = 1;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 10 })
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  limit?: number = 10;
+}
+
+export class TicketSearchResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  project_name!: string;
+
+  @ApiProperty()
+  project_id!: string;
+
+  @ApiProperty()
+  status!: string;
+
+  @ApiProperty()
+  updated_at!: Date;
+}

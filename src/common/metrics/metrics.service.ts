@@ -10,6 +10,7 @@ import {
   DatabaseMetricData,
   WebSocketMetricData,
 } from './metrics.interface';
+import { LABELS, UX_METRICS } from './metrics.constants';
 import { LoggerService } from '../logger';
 import { HttpCollector, BusinessCollector, SystemCollector, QueueCollector } from './collectors';
 
@@ -272,5 +273,13 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       http_request_duration_p95: 0.1, // 100ms P95
       error_rate: 0.01, // 1% error rate
     };
+  }
+
+  // ============= Story 5.7: UX Metrics =============
+
+  incrementKeyboardShortcutUsage(shortcut: string): void {
+    this.incrementCounter(UX_METRICS.KEYBOARD_SHORTCUT_USAGE, {
+      [LABELS.SHORTCUT]: shortcut,
+    });
   }
 }
