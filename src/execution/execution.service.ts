@@ -15,6 +15,7 @@ import {
   FailExecutionDto,
   ExecutionResponseDto,
 } from './dto';
+import { ExecutionGateway } from './gateways/execution.gateway';
 import { QaCheckPublisher } from '../qa-automation/qa-check.publisher';
 import { ICodeFile } from '../qa-automation/interfaces';
 
@@ -34,7 +35,8 @@ export class ExecutionService {
     private readonly tracker: ExecutionTrackerService,
     private readonly stateMachine: ExecutionStateMachine,
     private readonly qaCheckPublisher: QaCheckPublisher,
-  ) {}
+    private readonly executionGateway: ExecutionGateway,
+  ) { }
 
   /**
    * Start a new AI execution
@@ -61,6 +63,19 @@ export class ExecutionService {
     };
 
     const execution = await this.tracker.startExecution(input);
+
+    try {
+      this.executionGateway.emitProgress({
+        executionId: execution.id,
+        ticketId: execution.ticket_id,
+        status: execution.status,
+        timestamp: execution.created_at.toISOString(),
+        aiProvider: execution.ai_provider,
+      });
+    } catch (e: any) {
+      this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+    }
+
     return this.toResponseDto(execution);
   }
 
@@ -69,7 +84,25 @@ export class ExecutionService {
    */
   async markInProgress(executionId: string, correlationId: string): Promise<IStateTransition> {
     this.logger.log(`[${correlationId}] Marking execution ${executionId} as in progress`);
-    return this.tracker.markInProgress(executionId, correlationId);
+    const transition = await this.tracker.markInProgress(executionId, correlationId);
+
+    // Get execution to include provider in event
+    const execution = await this.tracker.getExecution(executionId);
+    if (execution) {
+      try {
+        this.executionGateway.emitProgress({
+          executionId: execution.id,
+          ticketId: execution.ticket_id,
+          status: execution.status,
+          timestamp: transition.transitionedAt.toISOString(),
+          aiProvider: execution.ai_provider,
+        });
+      } catch (e: any) {
+        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      }
+    }
+
+    return transition;
   }
 
   /**
@@ -90,6 +123,23 @@ export class ExecutionService {
     };
 
     const result = await this.tracker.completeExecution(completion, correlationId);
+
+    // Emit event
+    const execution = await this.tracker.getExecution(dto.executionId);
+    if (execution) {
+      try {
+        this.executionGateway.emitProgress({
+          executionId: execution.id,
+          ticketId: execution.ticket_id,
+          status: execution.status,
+          timestamp: result.transitionedAt.toISOString(),
+          aiProvider: execution.ai_provider,
+        });
+        this.executionGateway.emitCompletion(execution.id, execution.ticket_id);
+      } catch (e: any) {
+        this.logger.error(`Failed to emit graduation events for execution ${execution.id}: ${e.message}`);
+      }
+    }
 
     // Story 3.7 AC#1: Publish QA check request after successful execution
     try {
@@ -171,7 +221,24 @@ export class ExecutionService {
       isRetryable,
     };
 
-    return this.tracker.failExecution(failure, correlationId);
+    const result = await this.tracker.failExecution(failure, correlationId);
+
+    const execution = await this.tracker.getExecution(dto.executionId);
+    if (execution) {
+      try {
+        this.executionGateway.emitProgress({
+          executionId: execution.id,
+          ticketId: execution.ticket_id,
+          status: execution.status,
+          timestamp: result.transitionedAt.toISOString(),
+          aiProvider: execution.ai_provider,
+        });
+      } catch (e: any) {
+        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -191,19 +258,50 @@ export class ExecutionService {
       lastKnownProgress,
     };
 
-    return this.tracker.timeoutExecution(timeout, correlationId);
+    const result = await this.tracker.timeoutExecution(timeout, correlationId);
+
+    const execution = await this.tracker.getExecution(executionId);
+    if (execution) {
+      try {
+        this.executionGateway.emitProgress({
+          executionId: execution.id,
+          ticketId: execution.ticket_id,
+          status: execution.status,
+          timestamp: result.transitionedAt.toISOString(),
+          aiProvider: execution.ai_provider,
+        });
+      } catch (e: any) {
+        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      }
+    }
+
+    return result;
   }
 
-  /**
-   * Cancel execution
-   */
   async cancelExecution(
     executionId: string,
     reason: string,
     correlationId: string,
   ): Promise<IStateTransition> {
     this.logger.log(`[${correlationId}] Cancelling execution ${executionId}`);
-    return this.tracker.cancelExecution(executionId, reason, correlationId);
+    const result = await this.tracker.cancelExecution(executionId, reason, correlationId);
+
+    const execution = await this.tracker.getExecution(executionId);
+    if (execution) {
+      try {
+        this.executionGateway.emitProgress({
+          executionId: execution.id,
+          ticketId: execution.ticket_id,
+          status: execution.status,
+          timestamp: result.transitionedAt.toISOString(),
+          aiProvider: execution.ai_provider,
+        });
+      } catch (e: any) {
+        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      }
+    }
+
+    return result;
   }
 
   /**

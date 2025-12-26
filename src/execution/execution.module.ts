@@ -8,11 +8,14 @@ import {
 import { ExecutionService } from './execution.service';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
+import { ExecutionGateway } from './gateways/execution.gateway';
+import { JwtModule } from '@nestjs/jwt';
 import { ExecutionStateMachine } from './state-machine';
 import { RetryHandlerService } from './retry-handler.service';
 import { RetryClassifierService } from './retry-classifier.service';
 import { RetrySchedulerService } from './retry-scheduler.service';
 import { RetryConsumer } from './retry.consumer';
+import { ExecutionController } from './execution.controller';
 // Story 2.10: Queue Processing
 import { AIExecutionPublisher } from './ai-execution.publisher';
 import { AIExecutionConsumer } from './ai-execution.consumer';
@@ -63,12 +66,18 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
     ProgressValidatorModule,
     ClickUpModule,
     AppMetricsModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1h' },
+    }),
   ],
+  controllers: [ExecutionController],
   providers: [
     // Core services
     ExecutionService,
     ExecutionTrackerService,
     ExecutionRepository,
+    ExecutionGateway,
     ExecutionStateMachine,
 
     // Retry Services (Story 2.9)
@@ -165,6 +174,7 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
     AIExecutionConsumer,
     // Story 13.3.1: Export self-healing service
     SelfHealingOrchestratorService,
+    ExecutionGateway,
   ],
 })
-export class ExecutionModule {}
+export class ExecutionModule { }

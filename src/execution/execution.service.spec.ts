@@ -10,12 +10,14 @@ import {
   PromptMetadataSnapshotDto,
 } from './dto';
 import { IStateTransition } from './interfaces';
-import { QaCheckPublisher } from '../qa-automation/qa-check.publisher'; // Story 3.7 integration
+import { QaCheckPublisher } from '../qa-automation/qa-check.publisher';
+import { ExecutionGateway } from './gateways/execution.gateway'; // Story 3.7 integration
 
 describe('ExecutionService', () => {
   let service: ExecutionService;
   let trackerService: ExecutionTrackerService;
   let stateMachine: ExecutionStateMachine;
+  let executionGateway: ExecutionGateway;
 
   const mockExecution = {
     id: 'exec-123',
@@ -86,10 +88,16 @@ describe('ExecutionService', () => {
           },
         },
         {
-          // Story 3.7: QaCheckPublisher added to ExecutionService constructor
           provide: QaCheckPublisher,
           useValue: {
             publishQaCheck: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: ExecutionGateway,
+          useValue: {
+            emitProgress: jest.fn(),
+            emitCompletion: jest.fn(),
           },
         },
       ],
@@ -98,6 +106,7 @@ describe('ExecutionService', () => {
     service = module.get<ExecutionService>(ExecutionService);
     trackerService = module.get<ExecutionTrackerService>(ExecutionTrackerService);
     stateMachine = module.get<ExecutionStateMachine>(ExecutionStateMachine);
+    executionGateway = module.get<ExecutionGateway>(ExecutionGateway);
   });
 
   afterEach(() => {
@@ -133,18 +142,30 @@ describe('ExecutionService', () => {
       expect(result.id).toBe('exec-123');
       expect(result.status).toBe(ExecutionStatus.QUEUED);
       expect(trackerService.startExecution).toHaveBeenCalled();
+      expect(executionGateway.emitProgress).toHaveBeenCalledWith(expect.objectContaining({
+        executionId: 'exec-123',
+        status: ExecutionStatus.QUEUED,
+      }));
     });
   });
 
   describe('markInProgress', () => {
     it('should mark execution as in progress', async () => {
       jest.spyOn(trackerService, 'markInProgress').mockResolvedValue(mockTransition);
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+      } as any);
 
       const result = await service.markInProgress('exec-123', 'corr-123');
 
       expect(result).toBeDefined();
       expect(result.newStatus).toBe(ExecutionStatus.IN_PROGRESS);
       expect(trackerService.markInProgress).toHaveBeenCalledWith('exec-123', 'corr-123');
+      expect(executionGateway.emitProgress).toHaveBeenCalledWith(expect.objectContaining({
+        executionId: 'exec-123',
+        status: ExecutionStatus.IN_PROGRESS,
+      }));
     });
   });
 
@@ -161,12 +182,21 @@ describe('ExecutionService', () => {
         ...mockTransition,
         newStatus: ExecutionStatus.COMPLETED,
       });
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.COMPLETED,
+      } as any);
 
       const result = await service.completeExecution(dto, 'corr-123');
 
       expect(result).toBeDefined();
       expect(result.newStatus).toBe(ExecutionStatus.COMPLETED);
       expect(trackerService.completeExecution).toHaveBeenCalled();
+      expect(executionGateway.emitProgress).toHaveBeenCalledWith(expect.objectContaining({
+        executionId: 'exec-123',
+        status: ExecutionStatus.COMPLETED,
+      }));
+      expect(executionGateway.emitCompletion).toHaveBeenCalledWith('exec-123', 'ticket-123');
     });
   });
 
@@ -182,6 +212,10 @@ describe('ExecutionService', () => {
         ...mockTransition,
         newStatus: ExecutionStatus.FAILED,
       });
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.FAILED,
+      } as any);
 
       const result = await service.failExecution(dto, 'corr-123', true);
 
@@ -197,6 +231,10 @@ describe('ExecutionService', () => {
         ...mockTransition,
         newStatus: ExecutionStatus.TIMEOUT,
       });
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.TIMEOUT,
+      } as any);
 
       const result = await service.timeoutExecution('exec-123', 300, 'corr-123');
 
@@ -212,6 +250,10 @@ describe('ExecutionService', () => {
         ...mockTransition,
         newStatus: ExecutionStatus.CANCELLED,
       });
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.CANCELLED,
+      } as any);
 
       const result = await service.cancelExecution('exec-123', 'User cancelled', 'corr-123');
 

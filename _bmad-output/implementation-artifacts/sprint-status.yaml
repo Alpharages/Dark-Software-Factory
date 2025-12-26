@@ -385,8 +385,8 @@ development_status:
     developer: "Antigravity"
     notes: "REMEDIATED & COMPLETED. All backend issues fixed and React UI components implemented in dsf-dashboard repository."
   5-2-real-time-ticket-execution-status:
-    status: ready-for-dev
-    notes: "NEW Story 5.2 (formerly 5.3). Real-time updates via Socket.IO. Blocked on Epic 10 or needs polling fallback. Story file created."
+    status: done
+    notes: "REMEDIATED & APPROVED. Socket.IO gateway, polling fallback, and frontend React components implemented. Fixed: (1) Added try-catch to WebSocket emissions, (2) Replaced hardcoded localhost URLs with environment variable fallback. Verified with unit tests."
   5-3-code-approval-quality-gate-workflows:
     status: ready-for-dev
     notes: "NEW Story 5.3 (merged from original 5.4+5.5). Code approval, quality gates, and confidence scores. Story file created."
