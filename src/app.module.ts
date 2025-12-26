@@ -48,6 +48,9 @@ import { DependenciesModule } from './dependencies/dependencies.module';
 import { FileLocksModule } from './file-locks/file-locks.module';
 import { StorageModule } from './storage/storage.module';
 
+// Story 15.2
+import { SystemConfigModule } from './system-settings/system-config.module';
+
 // Common
 import { CorrelationIdMiddleware } from './common/middleware';
 import { HttpExceptionFilter } from './common/filters';
@@ -117,6 +120,9 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     DependenciesModule, // Story 12.1: Circular Dependency Detection
     FileLocksModule, // Story 12.3: File Lock Manager
     StorageModule, // Story 14.3: Storage Manager Service
+
+    // Story 15.2: System Settings
+    SystemConfigModule,
   ],
   controllers: [AppController],
   providers: [

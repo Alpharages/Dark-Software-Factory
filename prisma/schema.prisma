@@ -860,3 +860,17 @@ enum ReportStatus {
   COMPLETED
   FAILED
 }
+// ============================================
+// STORY 15.2: CONFIGURATION DASHBOARD
+// ============================================
+
+model SystemConfig {
+  key         String   @id
+  value       String   @db.Text
+  description String?
+  is_secret   Boolean  @default(false)
+  updated_by  String?  // User UUID (optional for system defaults)
+  updated_at  DateTime @updatedAt
+
+  @@map("system_configs")
+}

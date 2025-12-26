@@ -861,7 +861,7 @@ development_status:
     notes: "✅ MVP COMPLETE - Fixed all issues identified during adversarial code review (0% test coverage being the only major remaining gap). 4/4 REST API endpoints implemented with proper classes, types, security (JWT+RBAC+RateLimiting), and Swagger decorators. Fixed broken uptime calculation and added defensive error logging. Known integrations limitations: Prometheus/RabbitMQ management API remain as placeholders."
   epic-14-retrospective: done
 
-  epic-15: backlog
+  epic-15: in-progress
   epic-15-name: "v3 Configuration & Production Rollout"
   epic-15-phase: "Phase 5 (Week 6-8)"
   epic-15-priority: medium
@@ -869,20 +869,16 @@ development_status:
   epic-15-estimated_effort: "8 days"
   epic-15-notes: "Feature flags, admin UI, data migration, production deployment. See: _bmad-output/implementation-artifacts/epic-13-14-15-v3-remaining.md"
   15-1-feature-flags-service:
-    status: backlog
-    effort: "1 day"
-    story_points: 3
-    notes: "Feature flags for all v3 features. Database-backed. Runtime updates. Admin API."
+    status: skipped
+    notes: "User decided to skip: project in dev, launch with full features, no flags needed."
   15-2-configuration-dashboard-ui:
-    status: backlog
+    status: done
     effort: "3 days"
     story_points: 8
     notes: "React dashboard for v3 settings. 7 config panels: cleanup, self-healing, deps, auto-merge, cost, audit, health."
   15-3-data-migration-scripts:
-    status: backlog
-    effort: "2 days"
-    story_points: 5
-    notes: "Migrate existing tickets to v3 schema. Backfill audit logs. Zero data loss verification."
+    status: skipped
+    notes: "User decided to skip: no old data to migrate."
   15-4-production-rollout-plan:
     status: backlog
     effort: "1 day"
