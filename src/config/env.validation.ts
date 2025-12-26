@@ -274,4 +274,23 @@ export const envValidationSchema = Joi.object({
     .max(365)
     .default(90)
     .description('Audio file retention period in days'),
+
+  // Story 5.5.1: AetherFlow ClickUp Integration
+  AETHERFLOW_API_URL: Joi.string()
+    .uri()
+    .required()
+    .messages({
+      'any.required': 'AETHERFLOW_API_URL is required for ClickUp integration via AetherFlow (Story 5.5.1)',
+    })
+    .description('AetherFlow API base URL'),
+  AETHERFLOW_API_KEY: Joi.string()
+    .min(32)
+    .required()
+    .messages({
+      'any.required': 'AETHERFLOW_API_KEY is required for AetherFlow authentication',
+      'string.min': 'AETHERFLOW_API_KEY must be at least 32 characters for security',
+    })
+    .description('Shared API key for DSF->AetherFlow authentication'),
+  AETHERFLOW_DEFAULT_CLICKUP_LIST: Joi.string()
+    .optional().description('Default ClickUp list name for conversation-derived tickets'),
 });

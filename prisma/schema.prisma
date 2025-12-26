@@ -798,6 +798,7 @@ model ClientConversation {
   audio_file_url    String?
   status            String   @default("uploaded") // uploaded|transcribing|analyzing|completed|failed
   processing_cost   Float? // USD cost for AI processing
+  clickup_task_ids  Json? // Story 5.5.1: Array of linked Click Up tasks [{id, name, url}]
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 

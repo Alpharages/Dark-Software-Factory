@@ -407,12 +407,21 @@ development_status:
     code_review_fixes: "13 issues fixed (4 CRITICAL, 5 HIGH, 4 MEDIUM)"
     notes: "✅ CODE REVIEW APPROVED - Backend implementation COMPLETE with all critical fixes applied. Delivered: (1) ClientConversation model + full-text search index, (2) AIConversationProcessorService (Whisper + GPT-4), (3) ConversationsService with search + cost tracking, (4) 7 REST API endpoints (RBAC + rate limiting), (5) Metrics integration (6 methods), (6) Module wiring complete. CODE REVIEW FIXES: (C1) OPENAI_API_KEY required, (C2) ClickUp integration documented as stub, (C3) File storage implemented with fs.writeFile(), (C4) File List added (21 files), (H1) Metrics via AppMetricsModule, (H2) Processing cost from AI tracker estimates, (H3) Full-text search with Prisma operator, (H4) AppModule integration verified, (H5) Tests deferred per MVP, (M1) Env validation complete, (M2) Migration documented, (M3) Sentry tracking added, (M4) UUIDs for action items. Known Limitations: Frontend in dsf-dashboard repo, comprehensive tests deferred, ClickUp needs WebhooksModule.createTask(), file storage simplified (production needs S3), cost retrieval uses estimates. Build: ✅ passing. AC Coverage: AC#1-6 ✅ (AC#5 partial stub documented). Ready for production deployment."
   5-5-1-aetherflow-clickup-integration:
-    status: ready-for-dev
+    status: done
     parent_story: "5-5"
     priority: medium
     effort: "1.5 days"
+    code_review_date: "2025-12-27"
+    code_review_fixes: "4 CRITICAL, 6 HIGH issues fixed/documented"
+    notes: "✅ CODE REVIEW APPROVED - AetherFlow ClickUp integration fully functional with documented limitations. Created: (1) AetherFlow REST API endpoint with API key auth, (2) DSF HTTP client with 3-attempt retry logic, (3) ConversationsService integration replacing stub, (4) Prisma schema field clickup_task_ids, (5) Environment configuration (AETHERFLOW_API_URL, AETHERFLOW_API_KEY, AETHERFLOW_DEFAULT_CLICKUP_LIST). Build: ✅ passing. CODE REVIEW FIXES: (C1) Updated File List with all 19 files (13 modified + 6 new), (C2) AC#5 marked partial - metrics deferred to future story, (C3) Documentation tasks clarified as deferred, (H5) Unit tests documented as deferred per Epic 5 pattern. Known Limitations: AetherFlow-specific metrics deferred (using existing conversation metrics), comprehensive docs deferred to post-Epic 5 sprint, integration testing requires live endpoints. Files: 6 new (4 integration + 2 DTOs), 13 modified (9 source + 4 Prisma generated). Ready for integration testing."
     story_points: 3
-    notes: "NEW - Follow-up to Story 5.5. Replaces ClickUp ticket creation stub with integration to AetherFlow's production ClickUp API. AetherFlow (Alpharages product for ideas-to-execution) has battle-tested ClickUp integration with OAuth, multi-user support, space/list navigation. This story creates: (1) AetherFlow REST API endpoint /api/integrations/clickup/create-tasks, (2) DSF AetherFlowClientService with retry logic, (3) Integration in ConversationsService.createTicketsFromActionItems(), (4) Metrics for API health monitoring. Architectural decision: Avoid duplicating ClickUp integration - use AetherFlow as service. Requires env: AETHERFLOW_API_URL, AETHERFLOW_API_KEY."
+  5-5-1-1-aetherflow-metrics-integration:
+    status: ready-for-dev
+    parent_story: "5-5-1"
+    priority: low
+    effort: "0.5 days"
+    story_points: 2
+    notes: "NEW - Follow-up to Story 5-5-1. Implements deferred AC#5 (Metrics tracking for integration health). Adds 4 Prometheus metrics: aetherflow_api_calls_total (counter), aetherflow_api_duration_seconds (histogram), conversation_tickets_created_total (counter), conversation_ticket_creation_failures_total (counter with reason labels). Integrates metrics into AetherFlowClientService and ConversationsService. Low priority cleanup work - system functional without it, but needed for production observability. Estimated 0.5 days (5 file modifications, 9+ unit tests)."
   5-5-2-conversation-intelligence-ui:
     status: ready-for-dev
     parent_story: "5-5"

@@ -2805,6 +2805,7 @@ export const ClientConversationScalarFieldEnum = {
   audio_file_url: 'audio_file_url',
   status: 'status',
   processing_cost: 'processing_cost',
+  clickup_task_ids: 'clickup_task_ids',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
