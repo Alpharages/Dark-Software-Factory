@@ -21,7 +21,7 @@ export class PmDashboardService {
     private readonly prisma: PrismaService,
     private readonly metricsService: MetricsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) { }
+  ) {}
 
   async getProjects(pmId: string, role: UserRole, query: ProjectQueryDto) {
     const startTime = Date.now();
@@ -100,9 +100,7 @@ export class PmDashboardService {
       const in_progress = tickets.filter((t) =>
         ['AI_PROCESSING', 'QA_REVIEW'].includes(t.status),
       ).length;
-      const completed = tickets.filter((t) =>
-        ['DEPLOYED', 'COMPLETED'].includes(t.status),
-      ).length;
+      const completed = tickets.filter((t) => ['DEPLOYED', 'COMPLETED'].includes(t.status)).length;
       const blocked = tickets.filter((t) =>
         ['QA_FAILED', 'FAILED', 'BLOCKED_CIRCULAR'].includes(t.status),
       ).length;

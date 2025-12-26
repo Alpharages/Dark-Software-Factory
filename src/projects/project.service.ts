@@ -19,7 +19,7 @@ export class ProjectService {
     private readonly operationsCounter: Counter<string>,
     @InjectMetric('project_lookups_total')
     private readonly lookupCounter: Counter<string>,
-  ) { }
+  ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
     try {
@@ -106,15 +106,11 @@ export class ProjectService {
         });
 
         if (!newPm) {
-          throw new NotFoundException(
-            `PM with ID "${reassignDto.new_pm_id}" not found`,
-          );
+          throw new NotFoundException(`PM with ID "${reassignDto.new_pm_id}" not found`);
         }
 
         if (newPm.role !== 'PM') {
-          throw new NotFoundException(
-            `User "${reassignDto.new_pm_id}" is not a PM`,
-          );
+          throw new NotFoundException(`User "${reassignDto.new_pm_id}" is not a PM`);
         }
 
         // Update project with new PM
@@ -164,4 +160,3 @@ export class ProjectService {
     }
   }
 }
-

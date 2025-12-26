@@ -181,4 +181,4 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
     ApprovalService,
   ],
 })
-export class ExecutionModule { }
+export class ExecutionModule {}

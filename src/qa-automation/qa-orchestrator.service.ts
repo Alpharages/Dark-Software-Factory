@@ -88,7 +88,7 @@ export class QaOrchestratorService {
     private readonly selfHealingOrchestrator: SelfHealingOrchestratorService,
     // Story 5.3: Execution Status Tracking
     private readonly executionTracker: ExecutionTrackerService,
-  ) { }
+  ) {}
 
   /**
    * Story 3.7: Run QA checks for post-execution code files
@@ -387,7 +387,9 @@ export class QaOrchestratorService {
         // Story 5.3: Update execution status via tracker
         await this.executionTracker.markAwaitingApproval(executionId, correlationId);
 
-        this.logger.log(`[${correlationId}] QA check PASSED for execution ${executionId}. Ticket moved to AWAITING_APPROVAL.`);
+        this.logger.log(
+          `[${correlationId}] QA check PASSED for execution ${executionId}. Ticket moved to AWAITING_APPROVAL.`,
+        );
       } else {
         // ========================================================================
         // Story 13.4: Self-Healing Integration
@@ -768,16 +770,16 @@ export class QaOrchestratorService {
       code_review_passed: security?.passed ?? true,
       code_review_issues: security
         ? {
-          summary: {
-            criticalCount: security.summary.criticalCount,
-            highCount: security.summary.highCount,
-            mediumCount: security.summary.mediumCount,
-          },
-          complexityIssues: security.complexityIssues.map((i) => ({
-            function: i.functionName,
-            complexity: i.value,
-          })),
-        }
+            summary: {
+              criticalCount: security.summary.criticalCount,
+              highCount: security.summary.highCount,
+              mediumCount: security.summary.mediumCount,
+            },
+            complexityIssues: security.complexityIssues.map((i) => ({
+              function: i.functionName,
+              complexity: i.value,
+            })),
+          }
         : null,
     };
   }

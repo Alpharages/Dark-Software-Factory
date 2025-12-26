@@ -280,7 +280,8 @@ export const envValidationSchema = Joi.object({
     .uri()
     .required()
     .messages({
-      'any.required': 'AETHERFLOW_API_URL is required for ClickUp integration via AetherFlow (Story 5.5.1)',
+      'any.required':
+        'AETHERFLOW_API_URL is required for ClickUp integration via AetherFlow (Story 5.5.1)',
     })
     .description('AetherFlow API base URL'),
   AETHERFLOW_API_KEY: Joi.string()
@@ -292,5 +293,6 @@ export const envValidationSchema = Joi.object({
     })
     .description('Shared API key for DSF->AetherFlow authentication'),
   AETHERFLOW_DEFAULT_CLICKUP_LIST: Joi.string()
-    .optional().description('Default ClickUp list name for conversation-derived tickets'),
+    .optional()
+    .description('Default ClickUp list name for conversation-derived tickets'),
 });

@@ -36,7 +36,7 @@ export class ExecutionService {
     private readonly stateMachine: ExecutionStateMachine,
     private readonly qaCheckPublisher: QaCheckPublisher,
     private readonly executionGateway: ExecutionGateway,
-  ) { }
+  ) {}
 
   /**
    * Start a new AI execution
@@ -137,7 +137,9 @@ export class ExecutionService {
         });
         this.executionGateway.emitCompletion(execution.id, execution.ticket_id);
       } catch (e: any) {
-        this.logger.error(`Failed to emit graduation events for execution ${execution.id}: ${e.message}`);
+        this.logger.error(
+          `Failed to emit graduation events for execution ${execution.id}: ${e.message}`,
+        );
       }
     }
 

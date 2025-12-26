@@ -32,11 +32,7 @@ import { AppMetricsModule } from '@/common/metrics';
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [
-    ObservabilityDashboardController,
-    PmDashboardController,
-    WorkloadController,
-  ],
+  controllers: [ObservabilityDashboardController, PmDashboardController, WorkloadController],
   providers: [
     // Workload Metrics (Story 5.4)
     makeGaugeProvider({
@@ -92,13 +88,6 @@ import { AppMetricsModule } from '@/common/metrics';
     WorkloadSchedulerService,
     DashboardGateway,
   ],
-  exports: [
-    ObservabilityDashboardService,
-    PmDashboardService,
-    WorkloadService,
-    DashboardGateway,
-  ],
+  exports: [ObservabilityDashboardService, PmDashboardService, WorkloadService, DashboardGateway],
 })
-export class DashboardsModule { }
-
-
+export class DashboardsModule {}

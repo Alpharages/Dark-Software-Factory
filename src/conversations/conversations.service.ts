@@ -6,10 +6,10 @@ import { SentryService } from '@/common/sentry/sentry.service';
 import { AIConversationProcessorService } from './ai-conversation-processor.service';
 import { AetherFlowClientService } from '@/integrations/aetherflow/aetherflow-client.service';
 import {
-    CreateConversationDto,
-    SearchConversationsDto,
-    ConversationResponseDto,
-    PaginatedConversationsResponseDto,
+  CreateConversationDto,
+  SearchConversationsDto,
+  ConversationResponseDto,
+  PaginatedConversationsResponseDto,
 } from './dto';
 import { ActionItem } from './interfaces/action-item.interface';
 import { AIProvider } from '@/prisma/client';
@@ -22,388 +22,382 @@ import * as fs from 'fs/promises';
  */
 @Injectable()
 export class ConversationsService {
-    private readonly logger = new Logger(ConversationsService.name);
-    private readonly storagePath: string;
+  private readonly logger = new Logger(ConversationsService.name);
+  private readonly storagePath: string;
 
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly aiProcessor: AIConversationProcessorService,
-        private readonly costTracker: AICostTrackerService,
-        private readonly metrics: MetricsService,
-        private readonly sentry: SentryService,
-        private readonly aetherFlowClient: AetherFlowClientService,
-    ) {
-        this.storagePath = process.env.CONVERSATIONS_STORAGE_PATH || './storage/conversations';
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiProcessor: AIConversationProcessorService,
+    private readonly costTracker: AICostTrackerService,
+    private readonly metrics: MetricsService,
+    private readonly sentry: SentryService,
+    private readonly aetherFlowClient: AetherFlowClientService,
+  ) {
+    this.storagePath = process.env.CONVERSATIONS_STORAGE_PATH || './storage/conversations';
+  }
+
+  /**
+   * Create a new conversation record
+   * AC#1: PMs can upload meeting audio/transcript and link to project
+   */
+  async createConversation(
+    dto: CreateConversationDto,
+    pmId: string,
+    audioFilePath?: string,
+  ): Promise<ConversationResponseDto> {
+    // Verify project exists
+    const project = await this.prisma.project.findUnique({
+      where: { id: dto.project_id },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project ${dto.project_id} not found`);
     }
 
-    /**
-     * Create a new conversation record
-     * AC#1: PMs can upload meeting audio/transcript and link to project
-     */
-    async createConversation(
-        dto: CreateConversationDto,
-        pmId: string,
-        audioFilePath?: string,
-    ): Promise<ConversationResponseDto> {
-        // Verify project exists
-        const project = await this.prisma.project.findUnique({
-            where: { id: dto.project_id },
-        });
+    // Create conversation record
+    const conversation = await this.prisma.clientConversation.create({
+      data: {
+        project_id: dto.project_id,
+        pm_id: pmId,
+        conversation_date: new Date(dto.conversation_date),
+        title: dto.title || `Conversation ${new Date().toISOString().split('T')[0]}`,
+        transcript: dto.transcript || '',
+        audio_file_url: audioFilePath,
+        status: audioFilePath ? 'uploaded' : dto.transcript ? 'uploaded' : 'uploaded',
+      },
+    });
 
-        if (!project) {
-            throw new NotFoundException(`Project ${dto.project_id} not found`);
-        }
+    this.logger.log(`Created conversation ${conversation.id} for project ${dto.project_id}`);
+    this.metrics.incrementConversationCreated();
 
-        // Create conversation record
-        const conversation = await this.prisma.clientConversation.create({
-            data: {
-                project_id: dto.project_id,
-                pm_id: pmId,
-                conversation_date: new Date(dto.conversation_date),
-                title: dto.title || `Conversation ${new Date().toISOString().split('T')[0]}`,
-                transcript: dto.transcript || '',
-                audio_file_url: audioFilePath,
-                status: audioFilePath ? 'uploaded' : dto.transcript ? 'uploaded' : 'uploaded',
-            },
-        });
+    return this.mapToDto(conversation);
+  }
 
-        this.logger.log(`Created conversation ${conversation.id} for project ${dto.project_id}`);
-        this.metrics.incrementConversationCreated();
+  /**
+   * Process AI analysis for a conversation
+   * AC#2: AI generates summary <30 seconds
+   * AC#3: AI extracts action items
+   * AC#4: Sentiment analysis
+   */
+  async processAIAnalysis(conversationId: string): Promise<void> {
+    const conversation = await this.prisma.clientConversation.findUnique({
+      where: { id: conversationId },
+    });
 
-        return this.mapToDto(conversation);
+    if (!conversation) {
+      throw new NotFoundException(`Conversation ${conversationId} not found`);
     }
 
-    /**
-     * Process AI analysis for a conversation
-     * AC#2: AI generates summary <30 seconds
-     * AC#3: AI extracts action items
-     * AC#4: Sentiment analysis
-     */
-    async processAIAnalysis(conversationId: string): Promise<void> {
-        const conversation = await this.prisma.clientConversation.findUnique({
+    const startTime = Date.now();
+
+    try {
+      // Update status to processing
+      await this.prisma.clientConversation.update({
+        where: { id: conversationId },
+        data: { status: 'analyzing' },
+      });
+
+      let transcript = conversation.transcript;
+
+      // Step 1: Transcribe audio if provided
+      if (conversation.audio_file_url && !transcript) {
+        this.logger.log(`Transcribing audio for conversation ${conversationId}`);
+        await this.prisma.clientConversation.update({
+          where: { id: conversationId },
+          data: { status: 'transcribing' },
+        });
+
+        const transcription = await this.aiProcessor.transcribeAudio(conversation.audio_file_url);
+
+        if (transcription) {
+          transcript = transcription.text;
+          await this.prisma.clientConversation.update({
             where: { id: conversationId },
-        });
+            data: { transcript },
+          });
 
-        if (!conversation) {
-            throw new NotFoundException(`Conversation ${conversationId} not found`);
+          // Log Whisper cost (assuming $0.006 per minute)
+          const estimatedMinutes = Math.ceil(transcript.length / 1000); // Rough estimate
+          await this.costTracker.logCost({
+            ticketId: conversation.id,
+            provider: AIProvider.CLAUDE_CODE,
+            model: 'whisper-1',
+            inputTokens: estimatedMinutes * 60, // Approximate
+            outputTokens: this.aiProcessor.estimateTokenCount(transcript),
+            agentName: 'WhisperTranscription',
+            operationType: 'audio_transcription',
+          });
+
+          this.metrics.incrementConversationTranscription();
+        } else {
+          throw new Error('Transcription failed');
         }
+      }
 
-        const startTime = Date.now();
+      if (!transcript) {
+        throw new Error('No transcript available for analysis');
+      }
 
-        try {
-            // Update status to processing
-            await this.prisma.clientConversation.update({
-                where: { id: conversationId },
-                data: { status: 'analyzing' },
-            });
+      // Step 2: Generate summary
+      this.logger.log(`Generating summary for conversation ${conversationId}`);
+      const summary = await this.aiProcessor.generateSummary(transcript);
 
-            let transcript = conversation.transcript;
+      // Step 3: Extract action items
+      this.logger.log(`Extracting action items for conversation ${conversationId}`);
+      const actionItems = await this.aiProcessor.extractActionItems(transcript);
 
-            // Step 1: Transcribe audio if provided
-            if (conversation.audio_file_url && !transcript) {
-                this.logger.log(`Transcribing audio for conversation ${conversationId}`);
-                await this.prisma.clientConversation.update({
-                    where: { id: conversationId },
-                    data: { status: 'transcribing' },
-                });
+      // Step 4: Analyze sentiment
+      this.logger.log(`Analyzing sentiment for conversation ${conversationId}`);
+      const sentiment = await this.aiProcessor.analyzeSentiment(transcript);
 
-                const transcription = await this.aiProcessor.transcribeAudio(conversation.audio_file_url);
+      // Calculate processing cost
+      const inputTokens = this.aiProcessor.estimateTokenCount(transcript);
+      const outputTokens =
+        this.aiProcessor.estimateTokenCount(JSON.stringify(summary)) +
+        this.aiProcessor.estimateTokenCount(JSON.stringify(actionItems)) +
+        100; // Sentiment output
 
-                if (transcription) {
-                    transcript = transcription.text;
-                    await this.prisma.clientConversation.update({
-                        where: { id: conversationId },
-                        data: { transcript },
-                    });
+      // Log GPT-4 cost (H2 FIX: Cost tracked in AICosts table)
+      const costResult = await this.costTracker.logCost({
+        ticketId: conversation.id,
+        provider: AIProvider.CLAUDE_CODE,
+        model: 'gpt-4-turbo-preview',
+        inputTokens,
+        outputTokens,
+        agentName: 'ConversationAnalysis',
+        operationType: 'conversation_processing',
+      });
 
-                    // Log Whisper cost (assuming $0.006 per minute)
-                    const estimatedMinutes = Math.ceil(transcript.length / 1000); // Rough estimate
-                    await this.costTracker.logCost({
-                        ticketId: conversation.id,
-                        provider: AIProvider.CLAUDE_CODE,
-                        model: 'whisper-1',
-                        inputTokens: estimatedMinutes * 60, // Approximate
-                        outputTokens: this.aiProcessor.estimateTokenCount(transcript),
-                        agentName: 'WhisperTranscription',
-                        operationType: 'audio_transcription',
-                    });
+      // Calculate approximate cost for display
+      // NOTE: Full cost retrieval requires CostDashboardService integration (deferred)
+      const estimatedCost = (inputTokens * 0.01 + outputTokens * 0.03) / 1000;
 
-                    this.metrics.incrementConversationTranscription();
-                } else {
-                    throw new Error('Transcription failed');
-                }
-            }
+      // Update conversation with results
+      await this.prisma.clientConversation.update({
+        where: { id: conversationId },
+        data: {
+          summary: summary.summary,
+          action_items: actionItems as any,
+          sentiment,
+          status: 'completed',
+          processing_cost: estimatedCost,
+        },
+      });
 
-            if (!transcript) {
-                throw new Error('No transcript available for analysis');
-            }
+      const duration = (Date.now() - startTime) / 1000;
+      this.metrics.recordConversationProcessingDuration(duration);
+      this.metrics.incrementActionItemsExtracted(actionItems.length);
 
-            // Step 2: Generate summary
-            this.logger.log(`Generating summary for conversation ${conversationId}`);
-            const summary = await this.aiProcessor.generateSummary(transcript);
+      this.logger.log(
+        `Conversation ${conversationId} processed in ${duration}s (${actionItems.length} action items)`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to process conversation ${conversationId}: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
 
-            // Step 3: Extract action items
-            this.logger.log(`Extracting action items for conversation ${conversationId}`);
-            const actionItems = await this.aiProcessor.extractActionItems(transcript);
+      // M3 FIX: Add Sentry error tracking
+      this.sentry.captureException(error as Error, {
+        tags: { module: 'conversations', operation: 'processAIAnalysis' },
+        extra: { conversationId },
+      });
 
-            // Step 4: Analyze sentiment
-            this.logger.log(`Analyzing sentiment for conversation ${conversationId}`);
-            const sentiment = await this.aiProcessor.analyzeSentiment(transcript);
+      await this.prisma.clientConversation.update({
+        where: { id: conversationId },
+        data: { status: 'failed' },
+      });
 
-            // Calculate processing cost
-            const inputTokens = this.aiProcessor.estimateTokenCount(transcript);
-            const outputTokens =
-                this.aiProcessor.estimateTokenCount(JSON.stringify(summary)) +
-                this.aiProcessor.estimateTokenCount(JSON.stringify(actionItems)) +
-                100; // Sentiment output
+      throw error;
+    }
+  }
 
-            // Log GPT-4 cost (H2 FIX: Cost tracked in AICosts table)
-            const costResult = await this.costTracker.logCost({
-                ticketId: conversation.id,
-                provider: AIProvider.CLAUDE_CODE,
-                model: 'gpt-4-turbo-preview',
-                inputTokens,
-                outputTokens,
-                agentName: 'ConversationAnalysis',
-                operationType: 'conversation_processing',
-            });
+  /**
+   * Search conversations with full-text search and filters
+   * AC#6: Searchable by keyword, client, date, project, sentiment
+   */
+  async searchConversations(
+    filters: SearchConversationsDto,
+  ): Promise<PaginatedConversationsResponseDto> {
+    const { q, projectId, sentiment, startDate, endDate, page, limit } = filters;
 
-            // Calculate approximate cost for display
-            // NOTE: Full cost retrieval requires CostDashboardService integration (deferred)
-            const estimatedCost = (inputTokens * 0.01 + outputTokens * 0.03) / 1000;
+    // H3 FIX: Use PostgreSQL full-text search (simplified with contains for MVP)
+    // NOTE: Prisma client doesn't expose @@fulltext operators directly
+    // Using contains with mode insensitive as fallback - good enough for MVP
+    const where: any = {};
+    const andConditions: any[] = [];
 
-            // Update conversation with results
-            await this.prisma.clientConversation.update({
-                where: { id: conversationId },
-                data: {
-                    summary: summary.summary,
-                    action_items: actionItems as any,
-                    sentiment,
-                    status: 'completed',
-                    processing_cost: estimatedCost,
-                },
-            });
-
-            const duration = (Date.now() - startTime) / 1000;
-            this.metrics.recordConversationProcessingDuration(duration);
-            this.metrics.incrementActionItemsExtracted(actionItems.length);
-
-            this.logger.log(
-                `Conversation ${conversationId} processed in ${duration}s (${actionItems.length} action items)`,
-            );
-        } catch (error) {
-            this.logger.error(
-                `Failed to process conversation ${conversationId}: ${(error as Error).message}`,
-                (error as Error).stack,
-            );
-
-            // M3 FIX: Add Sentry error tracking
-            this.sentry.captureException(error as Error, {
-                tags: { module: 'conversations', operation: 'processAIAnalysis' },
-                extra: { conversationId },
-            });
-
-            await this.prisma.clientConversation.update({
-                where: { id: conversationId },
-                data: { status: 'failed' },
-            });
-
-            throw error;
-        }
+    // Full-text search using PostgreSQL @@fulltext index
+    if (q) {
+      andConditions.push({
+        OR: [{ transcript: { search: q } }, { summary: { search: q } }, { title: { search: q } }],
+      });
     }
 
-    /**
-     * Search conversations with full-text search and filters
-     * AC#6: Searchable by keyword, client, date, project, sentiment
-     */
-    async searchConversations(
-        filters: SearchConversationsDto,
-    ): Promise<PaginatedConversationsResponseDto> {
-        const { q, projectId, sentiment, startDate, endDate, page, limit } = filters;
-
-        // H3 FIX: Use PostgreSQL full-text search (simplified with contains for MVP)
-        // NOTE: Prisma client doesn't expose @@fulltext operators directly
-        // Using contains with mode insensitive as fallback - good enough for MVP
-        const where: any = {};
-        const andConditions: any[] = [];
-
-        // Full-text search using PostgreSQL @@fulltext index
-        if (q) {
-            andConditions.push({
-                OR: [
-                    { transcript: { search: q } },
-                    { summary: { search: q } },
-                    { title: { search: q } },
-                ],
-            });
-        }
-
-        if (projectId) {
-            andConditions.push({ project_id: projectId });
-        }
-
-        if (sentiment) {
-            andConditions.push({ sentiment });
-        }
-
-        if (startDate || endDate) {
-            const dateFilter: any = {};
-            if (startDate) dateFilter.gte = new Date(startDate);
-            if (endDate) dateFilter.lte = new Date(endDate);
-            andConditions.push({ conversation_date: dateFilter });
-        }
-
-        if (andConditions.length > 0) {
-            where.AND = andConditions;
-        }
-
-        try {
-            const [conversations, total] = await Promise.all([
-                this.prisma.clientConversation.findMany({
-                    where,
-                    include: {
-                        project: { select: { name: true } },
-                        pm: { select: { name: true, email: true } },
-                    },
-                    orderBy: { conversation_date: 'desc' },
-                    skip: (page - 1) * limit,
-                    take: limit,
-                }),
-                this.prisma.clientConversation.count({ where }),
-            ]);
-
-            this.metrics.incrementConversationSearchQuery();
-
-            const totalPages = Math.ceil(total / limit);
-
-            return {
-                conversations: conversations.map((c) => this.mapToDto(c)),
-                total,
-                page,
-                limit,
-                totalPages,
-                hasMore: page < totalPages,
-            };
-        } catch (error) {
-            this.logger.error(`Search failed: ${(error as Error).message}`);
-            this.sentry.captureException(error as Error, {
-                tags: { module: 'conversations', operation: 'searchConversations' },
-                extra: { filters },
-            });
-            throw error;
-        }
-
-
+    if (projectId) {
+      andConditions.push({ project_id: projectId });
     }
 
-    /**
-     * Get a single conversation by ID
-     */
-    async getConversationById(id: string): Promise<ConversationResponseDto> {
-        const conversation = await this.prisma.clientConversation.findUnique({
-            where: { id },
-            include: {
-                project: { select: { name: true } },
-                pm: { select: { name: true, email: true } },
+    if (sentiment) {
+      andConditions.push({ sentiment });
+    }
+
+    if (startDate || endDate) {
+      const dateFilter: any = {};
+      if (startDate) dateFilter.gte = new Date(startDate);
+      if (endDate) dateFilter.lte = new Date(endDate);
+      andConditions.push({ conversation_date: dateFilter });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    try {
+      const [conversations, total] = await Promise.all([
+        this.prisma.clientConversation.findMany({
+          where,
+          include: {
+            project: { select: { name: true } },
+            pm: { select: { name: true, email: true } },
+          },
+          orderBy: { conversation_date: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        this.prisma.clientConversation.count({ where }),
+      ]);
+
+      this.metrics.incrementConversationSearchQuery();
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        conversations: conversations.map((c) => this.mapToDto(c)),
+        total,
+        page,
+        limit,
+        totalPages,
+        hasMore: page < totalPages,
+      };
+    } catch (error) {
+      this.logger.error(`Search failed: ${(error as Error).message}`);
+      this.sentry.captureException(error as Error, {
+        tags: { module: 'conversations', operation: 'searchConversations' },
+        extra: { filters },
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get a single conversation by ID
+   */
+  async getConversationById(id: string): Promise<ConversationResponseDto> {
+    const conversation = await this.prisma.clientConversation.findUnique({
+      where: { id },
+      include: {
+        project: { select: { name: true } },
+        pm: { select: { name: true, email: true } },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException(`Conversation ${id} not found`);
+    }
+
+    return this.mapToDto(conversation);
+  }
+
+  /**
+   * Create ClickUp tickets from action items
+   * AC#5: Auto-tickets require PM approval
+   */
+  async createTicketsFromActionItems(
+    conversationId: string,
+    actionItemIds: string[],
+  ): Promise<void> {
+    const conversation = await this.prisma.clientConversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException(`Conversation ${conversationId} not found`);
+    }
+
+    const actionItems = (conversation.action_items as any[]) || [];
+    const selectedItems = actionItems.filter((item) => actionItemIds.includes(item.id));
+
+    if (selectedItems.length === 0) {
+      this.logger.warn(`No action items found for IDs: ${actionItemIds.join(', ')}`);
+      return;
+    }
+
+    this.logger.log(`Creating ${selectedItems.length} tickets for conversation ${conversationId}`);
+
+    // Map action items to AetherFlow task format
+    const tasks = selectedItems.map((item) => ({
+      name: item.task,
+      description: this.formatTaskDescription(conversation, item),
+      priority: this.mapPriorityToClickUp(item.priority),
+      tags: ['from-conversation', `conversation-${conversationId}`],
+    }));
+
+    // Get default ClickUp list for project
+    const listName = await this.getDefaultListForProject(conversation.project_id);
+
+    try {
+      // Call AetherFlow API
+      const result = await this.aetherFlowClient.createTasks({
+        userId: conversation.pm_id,
+        listName,
+        tasks,
+      });
+
+      if (result.success) {
+        // Store ClickUp task IDs in conversation
+        await this.linkClickUpTasksToConversation(conversationId, result.tasks || []);
+        this.metrics.incrementTicketsCreatedFromConversations(result.tasks?.length || 0);
+
+        this.logger.log(
+          `Successfully created ${result.count} ClickUp tickets from conversation ${conversationId}`,
+        );
+      } else {
+        this.logger.error(`Failed to create tickets: ${result.error}`);
+        this.sentry.captureException(
+          new Error(`AetherFlow ticket creation failed: ${result.error}`),
+          {
+            tags: { module: 'conversations', operation: 'createTickets' },
+            extra: {
+              conversationId,
+              error: result.error,
+              message: result.message,
             },
-        });
-
-        if (!conversation) {
-            throw new NotFoundException(`Conversation ${id} not found`);
-        }
-
-        return this.mapToDto(conversation);
+          },
+        );
+        throw new BadRequestException(result.error || 'Failed to create tickets');
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error creating tickets via AetherFlow: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      this.sentry.captureException(error as Error, {
+        tags: { module: 'conversations', operation: 'createTickets' },
+        extra: { conversationId, actionItemIds },
+      });
+      throw error;
     }
+  }
 
-    /**
-     * Create ClickUp tickets from action items
-     * AC#5: Auto-tickets require PM approval
-     */
-    async createTicketsFromActionItems(
-        conversationId: string,
-        actionItemIds: string[],
-    ): Promise<void> {
-        const conversation = await this.prisma.clientConversation.findUnique({
-            where: { id: conversationId },
-            include: {
-                project: true,
-            },
-        });
-
-        if (!conversation) {
-            throw new NotFoundException(`Conversation ${conversationId} not found`);
-        }
-
-        const actionItems = (conversation.action_items as any[]) || [];
-        const selectedItems = actionItems.filter((item) => actionItemIds.includes(item.id));
-
-        if (selectedItems.length === 0) {
-            this.logger.warn(`No action items found for IDs: ${actionItemIds.join(', ')}`);
-            return;
-        }
-
-        this.logger.log(`Creating ${selectedItems.length} tickets for conversation ${conversationId}`);
-
-        // Map action items to AetherFlow task format
-        const tasks = selectedItems.map((item) => ({
-            name: item.task,
-            description: this.formatTaskDescription(conversation, item),
-            priority: this.mapPriorityToClickUp(item.priority),
-            tags: ['from-conversation', `conversation-${conversationId}`],
-        }));
-
-        // Get default ClickUp list for project
-        const listName = await this.getDefaultListForProject(conversation.project_id);
-
-        try {
-            // Call AetherFlow API
-            const result = await this.aetherFlowClient.createTasks({
-                userId: conversation.pm_id,
-                listName,
-                tasks,
-            });
-
-            if (result.success) {
-                // Store ClickUp task IDs in conversation
-                await this.linkClickUpTasksToConversation(conversationId, result.tasks || []);
-                this.metrics.incrementTicketsCreatedFromConversations(result.tasks?.length || 0);
-
-                this.logger.log(
-                    `Successfully created ${result.count} ClickUp tickets from conversation ${conversationId}`,
-                );
-            } else {
-                this.logger.error(`Failed to create tickets: ${result.error}`);
-                this.sentry.captureException(
-                    new Error(`AetherFlow ticket creation failed: ${result.error}`),
-                    {
-                        tags: { module: 'conversations', operation: 'createTickets' },
-                        extra: {
-                            conversationId,
-                            error: result.error,
-                            message: result.message,
-                        },
-                    },
-                );
-                throw new BadRequestException(result.error || 'Failed to create tickets');
-            }
-        } catch (error) {
-            this.logger.error(
-                `Error creating tickets via AetherFlow: ${(error as Error).message}`,
-                (error as Error).stack,
-            );
-            this.sentry.captureException(error as Error, {
-                tags: { module: 'conversations', operation: 'createTickets' },
-                extra: { conversationId, actionItemIds },
-            });
-            throw error;
-        }
-    }
-
-    /**
-     * Format task description with conversation context
-     */
-    private formatTaskDescription(conversation: any, actionItem: any): string {
-        return `From conversation: ${conversation.title}
+  /**
+   * Format task description with conversation context
+   */
+  private formatTaskDescription(conversation: any, actionItem: any): string {
+    return `From conversation: ${conversation.title}
 
 **Action Item:** ${actionItem.task}
 
@@ -413,91 +407,89 @@ export class ConversationsService {
 **Source:** Client Communication Intelligence (Story 5.5)
 **Conversation Date:** ${new Date(conversation.conversation_date).toLocaleDateString()}
 `;
+  }
+
+  /**
+   * Map priority string to ClickUp priority number
+   * @param priority - 'high', 'medium', 'low'
+   * @returns ClickUp priority (1=urgent, 2=high, 3=normal, 4=low)
+   */
+  private mapPriorityToClickUp(priority?: string): number {
+    switch (priority?.toLowerCase()) {
+      case 'urgent':
+      case 'critical':
+        return 1; // Urgent
+      case 'high':
+        return 2; // High
+      case 'low':
+        return 4; // Low
+      case 'medium':
+      default:
+        return 3; // Normal
+    }
+  }
+
+  /**
+   * Get default ClickUp list for project
+   * Tries: 1) Project configuration, 2) Environment default, 3) Hardcoded fallback
+   */
+  private async getDefaultListForProject(projectId: string): Promise<string> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    // Option 1: Project-specific list name (if configured in Project table)
+    if (project?.name) {
+      // Use  project name as list hint for now
+      return `${project.name} - Action Items`;
     }
 
-    /**
-     * Map priority string to ClickUp priority number
-     * @param priority - 'high', 'medium', 'low'
-     * @returns ClickUp priority (1=urgent, 2=high, 3=normal, 4=low)
-     */
-    private mapPriorityToClickUp(priority?: string): number {
-        switch (priority?.toLowerCase()) {
-            case 'urgent':
-            case 'critical':
-                return 1; // Urgent
-            case 'high':
-                return 2; // High
-            case 'low':
-                return 4; // Low
-            case 'medium':
-            default:
-                return 3; // Normal
-        }
+    // Option 2: Environment variable default
+    const envDefault = process.env.AETHERFLOW_DEFAULT_CLICKUP_LIST;
+    if (envDefault) {
+      return envDefault;
     }
 
-    /**
-     * Get default ClickUp list for project
-     * Tries: 1) Project configuration, 2) Environment default, 3) Hardcoded fallback
-     */
-    private async getDefaultListForProject(projectId: string): Promise<string> {
-        const project = await this.prisma.project.findUnique({
-            where: { id: projectId },
-        });
+    // Option 3: Hardcoded fallback
+    return 'Backlog';
+  }
 
-        // Option 1: Project-specific list name (if configured in Project table)
-        if (project?.name) {
-            // Use  project name as list hint for now
-            return `${project.name} - Action Items`;
-        }
+  /**
+   * Link ClickUp task IDs back to conversation
+   * Stores task metadata in ClientConversation.clickup_task_ids JSON field
+   */
+  private async linkClickUpTasksToConversation(
+    conversationId: string,
+    tasks: Array<{ id: string; name: string; url: string }>,
+  ): Promise<void> {
+    await this.prisma.clientConversation.update({
+      where: { id: conversationId },
+      data: {
+        clickup_task_ids: tasks as any,
+      },
+    });
 
-        // Option 2: Environment variable default
-        const envDefault = process.env.AETHERFLOW_DEFAULT_CLICKUP_LIST;
-        if (envDefault) {
-            return envDefault;
-        }
+    this.logger.log(`Linked ${tasks.length} ClickUp tasks to conversation ${conversationId}`);
+  }
 
-        // Option 3: Hardcoded fallback
-        return 'Backlog';
-    }
-
-    /**
-     * Link ClickUp task IDs back to conversation
-     * Stores task metadata in ClientConversation.clickup_task_ids JSON field
-     */
-    private async linkClickUpTasksToConversation(
-        conversationId: string,
-        tasks: Array<{ id: string; name: string; url: string }>,
-    ): Promise<void> {
-        await this.prisma.clientConversation.update({
-            where: { id: conversationId },
-            data: {
-                clickup_task_ids: tasks as any,
-            },
-        });
-
-        this.logger.log(
-            `Linked ${tasks.length} ClickUp tasks to conversation ${conversationId}`,
-        );
-    }
-
-    /**
-     * Map database entity to DTO
-     */
-    private mapToDto(conversation: any): ConversationResponseDto {
-        return {
-            id: conversation.id,
-            project_id: conversation.project_id,
-            pm_id: conversation.pm_id,
-            conversation_date: conversation.conversation_date.toISOString(),
-            title: conversation.title,
-            summary: conversation.summary,
-            action_items: conversation.action_items as ActionItem[],
-            sentiment: conversation.sentiment,
-            audio_file_url: conversation.audio_file_url,
-            status: conversation.status,
-            processing_cost: conversation.processing_cost,
-            created_at: conversation.created_at.toISOString(),
-            updated_at: conversation.updated_at.toISOString(),
-        };
-    }
+  /**
+   * Map database entity to DTO
+   */
+  private mapToDto(conversation: any): ConversationResponseDto {
+    return {
+      id: conversation.id,
+      project_id: conversation.project_id,
+      pm_id: conversation.pm_id,
+      conversation_date: conversation.conversation_date.toISOString(),
+      title: conversation.title,
+      summary: conversation.summary,
+      action_items: conversation.action_items as ActionItem[],
+      sentiment: conversation.sentiment,
+      audio_file_url: conversation.audio_file_url,
+      status: conversation.status,
+      processing_cost: conversation.processing_cost,
+      created_at: conversation.created_at.toISOString(),
+      updated_at: conversation.updated_at.toISOString(),
+    };
+  }
 }

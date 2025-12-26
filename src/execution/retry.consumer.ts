@@ -23,7 +23,7 @@ export class RetryConsumer implements OnModuleInit {
     private readonly orchestrator: OrchestratorService,
     private readonly retryHandler: RetryHandlerService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async onModuleInit(): Promise<void> {
     await this.startConsuming();
@@ -62,7 +62,7 @@ export class RetryConsumer implements OnModuleInit {
 
             this.logger.log(
               `[${correlationId}] Processing retry for execution ${executionId} ` +
-              `(attempt ${context.retryCount})`,
+                `(attempt ${context.retryCount})`,
             );
 
             // Get execution details from database
@@ -104,7 +104,7 @@ export class RetryConsumer implements OnModuleInit {
 
               this.logger.log(
                 `[${correlationId}] Retry successful for ${executionId} ` +
-                `(duration: ${Date.now() - startTime}ms)`,
+                  `(duration: ${Date.now() - startTime}ms)`,
               );
             } else {
               // Retry failed - will be handled by orchestrator's error flow

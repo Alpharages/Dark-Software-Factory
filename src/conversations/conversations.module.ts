@@ -13,18 +13,9 @@ import { AIConversationProcessorService } from './ai-conversation-processor.serv
  * Client communication intelligence with AI transcription and analysis
  */
 @Module({
-    imports: [
-        ConfigModule,
-        DatabaseModule,
-        CostTrackingModule,
-        AppMetricsModule,
-        AetherFlowModule,
-    ],
-    controllers: [ConversationsController],
-    providers: [
-        ConversationsService,
-        AIConversationProcessorService,
-    ],
-    exports: [ConversationsService],
+  imports: [ConfigModule, DatabaseModule, CostTrackingModule, AppMetricsModule, AetherFlowModule],
+  controllers: [ConversationsController],
+  providers: [ConversationsService, AIConversationProcessorService],
+  exports: [ConversationsService],
 })
-export class ConversationsModule { }
+export class ConversationsModule {}

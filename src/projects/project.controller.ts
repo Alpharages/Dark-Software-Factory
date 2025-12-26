@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -17,7 +27,7 @@ import { Role } from '@/auth/constants/roles.enum';
 export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);
 
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.MANAGER)
@@ -72,10 +82,7 @@ export class ProjectController {
     status: 404,
     description: 'Project or PM not found',
   })
-  async reassign(
-    @Param('id') id: string,
-    @Body() reassignDto: ReassignProjectDto,
-  ) {
+  async reassign(@Param('id') id: string, @Body() reassignDto: ReassignProjectDto) {
     this.logger.log(
       `Reassigning project ${id} to PM ${reassignDto.new_pm_id}. Reason: ${reassignDto.reason || 'Not specified'}`,
     );
@@ -91,4 +98,3 @@ export class ProjectController {
     return this.projectService.remove(id);
   }
 }
-

@@ -142,10 +142,12 @@ describe('ExecutionService', () => {
       expect(result.id).toBe('exec-123');
       expect(result.status).toBe(ExecutionStatus.QUEUED);
       expect(trackerService.startExecution).toHaveBeenCalled();
-      expect(executionGateway.emitProgress).toHaveBeenCalledWith(expect.objectContaining({
-        executionId: 'exec-123',
-        status: ExecutionStatus.QUEUED,
-      }));
+      expect(executionGateway.emitProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionId: 'exec-123',
+          status: ExecutionStatus.QUEUED,
+        }),
+      );
     });
   });
 
@@ -162,10 +164,12 @@ describe('ExecutionService', () => {
       expect(result).toBeDefined();
       expect(result.newStatus).toBe(ExecutionStatus.IN_PROGRESS);
       expect(trackerService.markInProgress).toHaveBeenCalledWith('exec-123', 'corr-123');
-      expect(executionGateway.emitProgress).toHaveBeenCalledWith(expect.objectContaining({
-        executionId: 'exec-123',
-        status: ExecutionStatus.IN_PROGRESS,
-      }));
+      expect(executionGateway.emitProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionId: 'exec-123',
+          status: ExecutionStatus.IN_PROGRESS,
+        }),
+      );
     });
   });
 
@@ -192,10 +196,12 @@ describe('ExecutionService', () => {
       expect(result).toBeDefined();
       expect(result.newStatus).toBe(ExecutionStatus.COMPLETED);
       expect(trackerService.completeExecution).toHaveBeenCalled();
-      expect(executionGateway.emitProgress).toHaveBeenCalledWith(expect.objectContaining({
-        executionId: 'exec-123',
-        status: ExecutionStatus.COMPLETED,
-      }));
+      expect(executionGateway.emitProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionId: 'exec-123',
+          status: ExecutionStatus.COMPLETED,
+        }),
+      );
       expect(executionGateway.emitCompletion).toHaveBeenCalledWith('exec-123', 'ticket-123');
     });
   });

@@ -37,7 +37,7 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
   constructor(
     private readonly jwtService: JwtService,
     private readonly metricsService: MetricsService,
-  ) { }
+  ) {}
 
   async handleConnection(client: Socket<ClientToServerEvents, ServerToClientEvents>) {
     try {
@@ -61,7 +61,9 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   handleDisconnect(client: Socket) {
-    this.metricsService.incrementGauge('pm_dashboard_socket_connections', -1, { status: 'disconnected' });
+    this.metricsService.incrementGauge('pm_dashboard_socket_connections', -1, {
+      status: 'disconnected',
+    });
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
