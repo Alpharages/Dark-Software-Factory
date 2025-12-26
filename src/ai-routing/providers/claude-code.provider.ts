@@ -37,6 +37,9 @@ import {
   IProviderHealthStatus,
   AIErrorCode,
   IAIExecutionError,
+  IAIPromptExecutor,
+  IAIPromptExecutionInput,
+  IAIPromptExecutionResult,
 } from '../interfaces';
 import { WorkspaceService } from './workspace.service';
 import { CircuitBreaker, CircuitState } from './circuit-breaker';
@@ -51,7 +54,9 @@ import {
 } from './anthropic-tools';
 
 @Injectable()
-export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDestroy {
+export class ClaudeCodeProvider
+  implements IAIProvider, IAIPromptExecutor, OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(ClaudeCodeProvider.name);
 
   readonly provider = AIProvider.CLAUDE_CODE;
@@ -293,6 +298,63 @@ export class ClaudeCodeProvider implements IAIProvider, OnModuleInit, OnModuleDe
     // Workspace cleanup is now handled by GitHubCommitOrchestrator after push
     // This allows QA and commit operations to use the workspace
     // await this.workspace.cleanupWorkspace(executionId, true);
+  }
+
+  /**
+   * Execute AI prompt on existing workspace (Standalone method)
+   * NEW: Implements IAIPromptExecutor interface
+   *
+   * Use cases:
+   * - Story 5.6: Narrative and Insight generation
+   * - Commit message generation
+   * - PR description generation
+   */
+  async executePrompt(input: IAIPromptExecutionInput): Promise<IAIPromptExecutionResult> {
+    const { workspacePath, prompt, timeoutMs, contextFiles } = input;
+    const timeout = timeoutMs || this.timeoutMs;
+    const startTime = Date.now();
+
+    this.logger.log(`Executing standalone Claude prompt on workspace: ${workspacePath}`);
+
+    try {
+      // 1. Load context files
+      const contextContent = await this.loadContextFiles(workspacePath, contextFiles);
+
+      // 2. Build the prompt
+      const fullPrompt = this.buildPrompt(prompt, contextContent);
+
+      const abortController = new AbortController();
+
+      // 3. Execute with tools loop
+      const result = await this.executeWithTools(
+        workspacePath,
+        fullPrompt,
+        timeout,
+        abortController.signal,
+      );
+
+      const durationMs = Date.now() - startTime;
+      this.logger.log(`Claude prompt execution completed in ${durationMs}ms`);
+
+      return {
+        success: true,
+        response: result.finalResponse,
+        durationMs,
+        confidenceScore: 0.9,
+      };
+    } catch (error: unknown) {
+      const durationMs = Date.now() - startTime;
+      const parsedError = this.parseError(error);
+
+      this.logger.error(`Claude prompt execution failed: ${parsedError.message}`);
+
+      return {
+        success: false,
+        response: '',
+        durationMs,
+        error: parsedError,
+      };
+    }
   }
 
   /**

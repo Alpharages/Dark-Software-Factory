@@ -31,6 +31,7 @@ import { ExecutionModule } from '@/execution/execution.module';
 import { FileLocksModule } from '../file-locks/file-locks.module';
 import { GitHubModule } from '../github/github.module';
 import { StorageModule } from '../storage/storage.module';
+import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // Story 11.4
 
 /**
  * AI Routing Module
@@ -52,6 +53,7 @@ import { StorageModule } from '../storage/storage.module';
     FileLocksModule,
     GitHubModule,
     forwardRef(() => StorageModule),
+    AIDecisionLoggerModule,
   ],
   providers: [
     // Story 2.3: Routing services

@@ -17,9 +17,14 @@ import {
   IOrchestrationResult,
   IOrchestrationMetrics,
   AIErrorCode,
+  ITaskInput,
+  ITaskResult,
+  IAIPromptExecutor,
 } from './interfaces';
 import { ProviderFactoryService } from './provider-factory.service';
 import { FallbackStrategyService } from './fallback-strategy.service';
+import { AIExecutionService } from './ai-execution.service'; // Story 5.6
+import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service'; // Story 11.4
 
 @Injectable()
 export class OrchestratorService {
@@ -42,6 +47,8 @@ export class OrchestratorService {
   constructor(
     private readonly providerFactory: ProviderFactoryService,
     private readonly fallbackStrategy: FallbackStrategyService,
+    private readonly aiExecution: AIExecutionService, // Story 5.6
+    private readonly aiDecisionLogger: AIDecisionLoggerService, // Story 11.4
     @InjectMetric('orchestrator_executions_total')
     private readonly executionsCounter: Counter<string>,
     @InjectMetric('orchestrator_execution_duration_seconds')
@@ -257,5 +264,97 @@ export class OrchestratorService {
    */
   async getProviderAvailability() {
     return this.providerFactory.getAllProvidersAvailability();
+  }
+
+  /**
+   * Execute a specialized AI task (Story 5.6: ADR-008 compliance)
+   * This is a high-level delegation method that simplifies AI calls for other modules.
+   */
+  async executeTask(input: ITaskInput): Promise<ITaskResult> {
+    const {
+      correlationId,
+      ticketId,
+      prompt,
+      agentName,
+      action,
+      workspacePath,
+      contextFiles,
+      providerOverride,
+    } = input;
+
+    const startTime = Date.now();
+    this.logger.log(`[${correlationId}] Executing AI task: ${agentName} - ${action}`);
+
+    try {
+      // 1. Select provider
+      const selection = await this.providerFactory.selectProvider({
+        correlationId,
+        executionId: correlationId, // Use correlationId as dummy executionId
+        ticketId,
+        prompt,
+        repositoryUrl: 'nlp://task', // Dummy repo for NLP tasks
+        providerOverride,
+      });
+
+      // 2. Get provider instance and cast to IAIPromptExecutor
+      const providerInstance = this.aiExecution.getProvider(selection.primary);
+      if (!providerInstance) {
+        throw new Error(`Provider ${selection.primary} not available`);
+      }
+
+      const aiProvider = providerInstance as unknown as IAIPromptExecutor;
+
+      // 3. Prepare workspace (if none provided, use a dummy or shared one)
+      // For NLP tasks like report generation, we might not need a workspace,
+      // but current providers expect one for tool use logic.
+      const targetWorkspace = workspacePath || '/tmp/ai-task-workspace';
+
+      // 4. Execute prompt
+      const result = await aiProvider.executePrompt({
+        workspacePath: targetWorkspace,
+        prompt,
+        contextFiles,
+      });
+
+      const durationMs = Date.now() - startTime;
+
+      // 5. Log decision (ADR-008 Requirement)
+      await this.aiDecisionLogger.logDecision({
+        agentName,
+        action,
+        reasoning: `AI task delegated to ${selection.primary}. Task: ${action}. Complexity: ${selection.complexityScore}. Result status: ${result.success}.`,
+        ticketId,
+        executionId: correlationId,
+        inputData: { prompt: prompt.substring(0, 500), contextFiles },
+        outputData: {
+          responseLength: result.response?.length || 0,
+          success: result.success,
+          durationMs,
+        },
+        confidence: result.confidenceScore || 0.8,
+      });
+
+      if (!result.success) {
+        throw new Error(`AI Provider failed: ${result.error?.message || 'Unknown error'}`);
+      }
+
+      return {
+        success: true,
+        output: result.response,
+        durationMs,
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const durationMs = Date.now() - startTime;
+
+      this.logger.error(`[${correlationId}] AI task failed: ${errorMessage}`);
+
+      return {
+        success: false,
+        output: '',
+        durationMs,
+        error: errorMessage,
+      };
+    }
   }
 }

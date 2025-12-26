@@ -31,6 +31,7 @@ model Project {
   coverage_baseline CoverageBaseline?
   coverage_config   ProjectCoverageConfig?
   conversations     ClientConversation[] // Story 5.5
+  reports           Report[] // Story 5.6
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -810,4 +811,50 @@ model ClientConversation {
   @@index([sentiment])
   @@index([status])
   @@map("client_conversations")
+}
+
+// ============================================
+// STORY 5.6: REPORTING & ANALYTICS GENERATION
+// ============================================
+
+model Report {
+  id         String   @id @default(uuid())
+  project_id String
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  type       ReportType   @default(SPRINT)
+  status     ReportStatus @default(PENDING)
+
+  title      String
+  date_start DateTime
+  date_end   DateTime
+
+  // Aggregated data for the report
+  raw_data Json?
+
+  // AI Generated content
+  summary   String? @db.Text
+  narrative String? @db.Text
+  insights  String? @db.Text
+
+  // Exported files
+  file_urls Json? // { pdf: "url", pptx: "url" }
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([project_id, date_start, date_end])
+  @@map("reports")
+}
+
+enum ReportType {
+  SPRINT
+  CUSTOM
+}
+
+enum ReportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

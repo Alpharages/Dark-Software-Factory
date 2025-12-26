@@ -168,3 +168,28 @@ export interface IOrchestrationMetrics {
   /** Average execution time by provider */
   avgExecutionTimeMs: Record<AIProvider, number>;
 }
+
+/**
+ * Story 5.6: ADR-008 AI Delegation Task Input
+ */
+export interface ITaskInput {
+  correlationId: string;
+  ticketId: string;
+  prompt: string;
+  agentName: string;
+  action: string;
+  workspacePath?: string;
+  contextFiles?: string[];
+  providerOverride?: AIProvider;
+}
+
+/**
+ * Story 5.6: ADR-008 AI Delegation Task Result
+ */
+export interface ITaskResult {
+  success: boolean;
+  output: string;
+  durationMs: number;
+  tokensUsed?: number;
+  error?: string;
+}
