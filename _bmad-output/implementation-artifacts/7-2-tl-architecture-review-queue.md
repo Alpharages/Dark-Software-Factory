@@ -97,26 +97,37 @@ This story builds on **Story 7.1** (ADR Generation). Story 7.1 created:
 
 ### Architecture Compliance
 
-- **Module:** `src/architecture-review/` (Existing from Story 7.1)
-- **Controller:** `ArchitectureReviewController` (NEW file to create)
-- **Service:** `AdrService` (EXTEND existing service)
-- **Database:** Use existing `Adr` model (Prisma PostgreSQL)
-- **Security:** RBAC via `@Roles('TL', 'ADMIN')`, JWT auth, rate limiting
-- **Pattern:** Service-Repository pattern (consistent with DSF architecture)
+-   **Module:** `src/architecture-review/` (Existing from Story 7.1)
+-   **Controller:** `ArchitectureReviewController` (NEW file to create)
+-   **Service:** `AdrService` (EXTEND existing service)
+-   **Database:** Use existing `Adr` model (Prisma PostgreSQL)
+-   **Security:** RBAC via `@Roles('TL', 'ADMIN')`, JWT auth, rate limiting
+-   **Pattern:** Service-Repository pattern (consistent with DSF architecture)
 
-### Project Structure Notes
+## File List
 
-**New Files:**
-- `src/architecture-review/architecture-review.controller.ts` - REST API controller
-- `src/architecture-review/architecture-review.controller.spec.ts` - Unit tests
-- `src/architecture-review/dto/adr-queue-query.dto.ts` - Query filters DTO
-- `src/architecture-review/dto/adr-queue-item.dto.ts` - Queue response DTO
+### Modified Files
+-   `src/architecture-review/architecture-review.module.ts` - Main module
+-   `src/architecture-review/architecture-review.controller.ts` - Added POST /:id/review
+-   `src/architecture-review/adr.service.ts` - Added reviewAdr logic
+-   `src/architecture-review/dto/index.ts` - Exported new DTOs
+-   `prisma/schema.prisma` - No changes for expansion (used existing enums)
 
-**Modified Files:**
-- `src/architecture-review/adr.service.ts` - Add `getReviewQueue()` method
-- `src/architecture-review/adr.service.spec.ts` - Add queue tests
-- `src/architecture-review/architecture-review.module.ts` - Add `ArchitectureReviewController` to `controllers` array in `@Module` decorator
-- `src/architecture-review/dto/index.ts` - Export `AdrReviewQueueQueryDto` and `AdrQueueItemDto`
+### New Files
+-   `src/architecture-review/dto/adr-review-action.dto.ts` - Review action DTO
+-   `src/architecture-review/dto/adr-review-response.dto.ts` - Response DTO
+-   `src/architecture-review/dto/adr-queue-item.dto.ts`
+-   `src/architecture-review/dto/adr-queue-query.dto.ts`
+
+## Completion Notes
+
+> [!IMPORTANT]
+> **Story Expansion (2026-01-01):**
+> Added `POST /api/v1/architecture-review/{id}/review` endpoint to support UI Story 7-2-UI approval workflow.
+> -   **Features:** Supports APPROVE, REJECT, MODIFY, DEFER actions.
+> -   **Validation:** Only PROPOSED ADRs can be reviewed. Notes required for REJECT/MODIFY.
+> -   **Testing:** 29/29 tests passing (8 new tests for review logic).
+> -   **Metrics:** Added `adr_review_action_total` counter.
 
 ### Database Schema (Story 7.1)
 

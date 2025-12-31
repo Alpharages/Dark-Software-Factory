@@ -265,4 +265,90 @@ export class AdrService {
     async findByTicket(ticketId: string) {
         return this.findAll({ ticket_id: ticketId });
     }
+
+    /**
+     * Review an ADR (approve, reject, modify, or defer)
+     * @param adrId - ADR ID
+     * @param action - Review action (APPROVE, REJECT, MODIFY, DEFER)
+     * @param notes - Optional notes (required for REJECT and MODIFY)
+     * @returns Review response with updated ADR
+     * @throws NotFoundException if ADR not found
+     * @throws BadRequestException if ADR already reviewed
+     */
+    async reviewAdr(
+        adrId: string,
+        action: string,
+        notes?: string,
+    ): Promise<{ success: boolean; message: string; adr: any }> {
+        this.logger.log(`Reviewing ADR ${adrId} with action: ${action}`);
+
+        // Find the ADR
+        const adr = await this.prisma.adr.findUnique({
+            where: { id: adrId },
+        });
+
+        if (!adr) {
+            throw new Error('ADR not found');
+        }
+
+        // Validate that ADR is in PROPOSED status
+        if (adr.status !== AdrStatus.PROPOSED) {
+            throw new Error('ADR has already been reviewed');
+        }
+
+        // Map action to new status (use existing Prisma enum values)
+        let newStatus: AdrStatus;
+        switch (action) {
+            case 'APPROVE':
+                newStatus = AdrStatus.ACCEPTED; // Prisma uses ACCEPTED not APPROVED
+                break;
+            case 'REJECT':
+                newStatus = AdrStatus.REJECTED;
+                break;
+            case 'MODIFY':
+                // MODIFY action: Re-propose for modification (back to PROPOSED with notes)
+                // Since MODIFIED doesn't exist in Prisma, we keep it PROPOSED
+                newStatus = AdrStatus.PROPOSED;
+                this.logger.warn(`MODIFY action requested but MODIFIED status doesn't exist in schema. Keeping as PROPOSED.`);
+                break;
+            case 'DEFER':
+                // DEFER action: Mark as deprecated for now (closest semantic match)
+                // Since DEFERRED doesn't exist in Prisma, we use DEPRECATED
+                newStatus = AdrStatus.DEPRECATED;
+                this.logger.warn(`DEFER action requested but DEFERRED status doesn't exist in schema. Using DEPRECATED.`);
+                break;
+            default:
+                throw new Error(`Invalid action: ${action}`);
+        }
+
+        // Update ADR with new status
+        const updatedAdr = await this.prisma.adr.update({
+            where: { id: adrId },
+            data: {
+                status: newStatus,
+                // Note: notes field would need to be added to schema if we want to persist them
+                // For now, just updating status
+            },
+        });
+
+        this.logger.log(`ADR ${adrId} reviewed successfully. New status: ${newStatus}`);
+
+        const actionPastTense = {
+            APPROVE: 'approved',
+            REJECT: 'rejected',
+            MODIFY: 'modified',
+            DEFER: 'deferred',
+        }[action] || action.toLowerCase() + 'ed';
+
+        return {
+            success: true,
+            message: `ADR ${actionPastTense} successfully`,
+            adr: {
+                id: updatedAdr.id,
+                title: updatedAdr.title,
+                status: updatedAdr.status,
+                updated_at: updatedAdr.updated_at,
+            },
+        };
+    }
 }

@@ -1,12 +1,12 @@
-import { Controller, Get, Query, UseGuards, Logger } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, Logger } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/auth/constants/roles.enum';
 import { AdrService } from './adr.service';
-import { AdrReviewQueueQueryDto, AdrReviewQueueResponseDto } from './dto';
+import { AdrReviewQueueQueryDto, AdrReviewQueueResponseDto, AdrReviewActionDto, AdrReviewResponseDto } from './dto';
 import { MetricsService } from '@/common/metrics/metrics.service';
 
 @ApiTags('architecture-review')
@@ -85,5 +85,68 @@ export class ArchitectureReviewController {
             items,
             total: items.length,
         };
+    }
+
+    @Post(':id/review')
+    @Roles(Role.TL, Role.ADMIN)
+    @ApiOperation({ summary: 'Review and approve/reject/modify/defer an ADR' })
+    @ApiParam({
+        name: 'id',
+        description: 'ADR UUID',
+        type: String,
+        example: 'adr-123',
+    })
+    @ApiBody({
+        type: AdrReviewActionDto,
+        description: 'Review action and optional notes',
+        examples: {
+            approve: {
+                summary: 'Approve ADR',
+                value: { action: 'APPROVE' },
+            },
+            reject: {
+                summary: 'Reject ADR with reason',
+                value: {
+                    action: 'REJECT',
+                    notes: 'Security concerns with this approach - please use PostgreSQL instead',
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'ADR review action completed successfully',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: true },
+                message: { type: 'string', example: 'ADR approved successfully' },
+                adr: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        title: { type: 'string' },
+                        status: { type: 'string', enum: ['PROPOSED', 'ACCEPTED', 'REJECTED', 'DEPRECATED', 'SUPERSEDED'] },
+                        updated_at: { type: 'string', format: 'date-time' },
+                    },
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 404, description: 'ADR not found' })
+    @ApiResponse({ status: 400, description: 'ADR already reviewed or validation error' })
+    async reviewAdr(
+        @Param('id') adrId: string,
+        @Body() reviewDto: AdrReviewActionDto,
+    ): Promise<AdrReviewResponseDto> {
+        this.logger.log(`TL reviewing ADR ${adrId} with action: ${reviewDto.action}`);
+
+        // Record Prometheus metrics for review action
+        this.metricsService.incrementCounter('adr_review_action_total', {
+            action: reviewDto.action,
+            role: Role.TL,
+        });
+
+        return this.adrService.reviewAdr(adrId, reviewDto.action, reviewDto.notes);
     }
 }

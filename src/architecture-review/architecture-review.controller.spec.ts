@@ -36,6 +36,7 @@ describe('ArchitectureReviewController', () => {
     beforeEach(async () => {
         const mockAdrService = {
             getReviewQueue: jest.fn(),
+            reviewAdr: jest.fn(),
         };
 
         const mockMetricsService = {
@@ -166,6 +167,80 @@ describe('ArchitectureReviewController', () => {
             const result = await controller.getQueue(queryDto);
 
             expect(result).toEqual({ items: [], total: 0 });
+        });
+    });
+
+    describe('reviewAdr', () => {
+        it('should approve an ADR and record metrics', async () => {
+            const adrId = 'adr-123';
+            const reviewDto = { action: 'APPROVE' };
+            const mockResponse = {
+                success: true,
+                message: 'ADR approved successfully',
+                adr: {
+                    id: adrId,
+                    title: 'Use Redis for Session Storage',
+                    status: 'ACCEPTED',
+                    updated_at: new Date(),
+                },
+            };
+
+            (adrService.reviewAdr as jest.Mock).mockResolvedValue(mockResponse);
+
+            const result = await controller.reviewAdr(adrId, reviewDto as any);
+
+            expect(result).toEqual(mockResponse);
+            expect(adrService.reviewAdr).toHaveBeenCalledWith(adrId, 'APPROVE', undefined);
+        });
+
+        it('should reject an ADR with notes and record metrics', async () => {
+            const adrId = 'adr-456';
+            const reviewDto = {
+                action: 'REJECT',
+                notes: 'Security concerns - use PostgreSQL instead',
+            };
+            const mockResponse = {
+                success: true,
+                message: 'ADR rejected successfully',
+                adr: {
+                    id: adrId,
+                    title: 'Use Redis',
+                    status: 'REJECTED',
+                    updated_at: new Date(),
+                },
+            };
+
+            (adrService.reviewAdr as jest.Mock).mockResolvedValue(mockResponse);
+
+            const result = await controller.reviewAdr(adrId, reviewDto as any);
+
+            expect(result).toEqual(mockResponse);
+            expect(adrService.reviewAdr).toHaveBeenCalledWith(adrId, 'REJECT', reviewDto.notes);
+        });
+
+        it('should handle MODIFY action', async () => {
+            const adrId = 'adr-789';
+            const reviewDto = {
+                action: 'MODIFY',
+                notes: 'Please adjust architecture approach',
+            };
+            const mockResponse = {
+                success: true,
+                message: 'ADR modified successfully',
+                adr: {
+                    id: adrId,
+                    title: 'Test ADR',
+                    status: 'PROPOSED',
+                    updated_at: new Date(),
+                },
+            };
+
+            (adrService.reviewAdr as jest.Mock).mockResolvedValue(mockResponse);
+
+            const result = await controller.reviewAdr(adrId, reviewDto as any);
+
+            expect(result).toEqual(mockResponse);
+            expect(adrService.reviewAdr).toHaveBeenCalledWith(adrId, 'MODIFY', reviewDto.notes);
         });
     });
 });

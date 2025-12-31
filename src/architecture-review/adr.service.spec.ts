@@ -300,4 +300,96 @@ describe('AdrService', () => {
             });
         });
     });
+
+    describe('reviewAdr', () => {
+        it('should approve an ADR (APPROVE → ACCEPTED)', async () => {
+            const adrId = 'adr-123';
+            const mockProposedAdr = {
+                id: adrId,
+                title: 'Use Redis for Session Storage',
+                status: 'PROPOSED',
+                created_at: new Date(),
+                updated_at: new Date(),
+            };
+            const mockUpdatedAdr = {
+                ...mockProposedAdr,
+                status: 'ACCEPTED',
+                updated_at: new Date(),
+            };
+
+            mockPrismaService.adr.findUnique.mockResolvedValue(mockProposedAdr);
+            mockPrismaService.adr.update.mockResolvedValue(mockUpdatedAdr);
+
+            const result = await service.reviewAdr(adrId, 'APPROVE');
+
+            expect(result.success).toBe(true);
+            expect(result.message).toBe('ADR approved successfully');
+            expect(result.adr.status).toBe('ACCEPTED');
+            expect(mockPrismaService.adr.update).toHaveBeenCalledWith({
+                where: { id: adrId },
+                data: { status: 'ACCEPTED' },
+            });
+        });
+
+        it('should reject an ADR with notes (REJECT → REJECTED)', async () => {
+            const adrId = 'adr-456';
+            const notes = 'Security concerns with this approach - use PostgreSQL instead';
+            const mockProposedAdr = {
+                id: adrId,
+                title: 'Use Redis',
+                status: 'PROPOSED',
+            };
+            const mockUpdatedAdr = {
+                ...mockProposedAdr,
+                status: 'REJECTED',
+            };
+
+            mockPrismaService.adr.findUnique.mockResolvedValue(mockProposedAdr);
+            mockPrismaService.adr.update.mockResolvedValue(mockUpdatedAdr);
+
+            const result = await service.reviewAdr(adrId, 'REJECT', notes);
+
+            expect(result.success).toBe(true);
+            expect(result.message).toBe('ADR rejected successfully');
+            expect(result.adr.status).toBe('REJECTED');
+        });
+
+        it('should throw error when ADR not found', async () => {
+            mockPrismaService.adr.findUnique.mockResolvedValue(null);
+
+            await expect(service.reviewAdr('invalid-id', 'APPROVE')).rejects.toThrow('ADR not found');
+        });
+
+        it('should throw error when ADR already reviewed', async () => {
+            const mockReviewedAdr = {
+                id: 'adr-789',
+                status: 'ACCEPTED', // Already reviewed
+            };
+
+            mockPrismaService.adr.findUnique.mockResolvedValue(mockReviewedAdr);
+
+            await expect(service.reviewAdr('adr-789', 'REJECT')).rejects.toThrow('ADR has already been reviewed');
+        });
+
+        it('should handle MODIFY action (maps to PROPOSED)', async () => {
+            const adrId = 'adr-modify';
+            const mockProposedAdr = {
+                id: adrId,
+                title: 'Test ADR',
+                status: 'PROPOSED',
+            };
+            const mockUpdatedAdr = {
+                ...mockProposedAdr,
+                status: 'PROPOSED', // Stays PROPOSED since MODIFIED doesn't exist
+            };
+
+            mockPrismaService.adr.findUnique.mockResolvedValue(mockProposedAdr);
+            mockPrismaService.adr.update.mockResolvedValue(mockUpdatedAdr);
+
+            const result = await service.reviewAdr(adrId, 'MODIFY', 'Please fix architecture');
+
+            expect(result.success).toBe(true);
+            expect(result.adr.status).toBe('PROPOSED');
+        });
+    });
 });
