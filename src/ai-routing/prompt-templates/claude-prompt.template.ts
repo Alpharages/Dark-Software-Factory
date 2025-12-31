@@ -50,7 +50,12 @@ export class ClaudeCodePromptBuilder implements IPromptBuilder {
       sections.push(this.buildInlineFileContents(context.relevantFiles));
     }
 
-    // 7. Output Instructions (tool use emphasis)
+    // 7. Feedback from Previous Execution
+    if (input.feedback) {
+      sections.push(this.buildFeedback(input.feedback));
+    }
+
+    // 8. Output Instructions (tool use emphasis)
     sections.push(this.buildOutputInstructions());
 
     return sections.join('\n\n---\n\n');
@@ -344,6 +349,14 @@ If you make a significant architectural decision, include an ADR in your respons
 \`\`\`
 
 **Begin your implementation now.**`;
+  }
+
+  private buildFeedback(feedback: string): string {
+    return `## 🚨 Feedback from Previous Execution
+
+The previous execution was reviewed and changes were requested. You MUST address the following feedback:
+
+> ${feedback}`;
   }
 
   private getComplexityLabel(score: number): string {

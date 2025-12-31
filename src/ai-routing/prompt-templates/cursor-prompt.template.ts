@@ -45,7 +45,12 @@ export class CursorPromptBuilder implements IPromptBuilder {
       sections.push(this.buildRelevantFiles(context));
     }
 
-    // 7. Output Format Instructions
+    // 7. Feedback from Previous Execution
+    if (input.feedback) {
+      sections.push(this.buildFeedback(input.feedback));
+    }
+
+    // 8. Output Format Instructions
     sections.push(this.buildOutputFormat());
 
     return sections.join('\n\n');
@@ -282,6 +287,16 @@ If you make a significant architectural decision, include an ADR in your respons
   }
 }
 \`\`\``;
+  }
+
+  private buildFeedback(feedback: string): string {
+    return `## 🚨 Feedback from Previous Execution
+
+The previous execution was rejected or requested for modification. Please address the following feedback in your implementation:
+
+> ${feedback}
+
+**Requirement:** You MUST explicitly address this feedback in your changes.`;
   }
 
   private getComplexityLabel(score: number): string {

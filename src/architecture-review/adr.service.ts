@@ -3,6 +3,10 @@ import { PrismaService } from '../database/prisma.service';
 import { CreateAdrDto, UpdateAdrDto, AdrReviewQueueQueryDto, AdrQueueItemDto } from './dto';
 import { Prisma, AdrStatus, RiskLevel } from '@/prisma/client';
 import { RiskAssessmentService } from './risk-assessment.service';
+import { EventBusService } from '../common/event-bus.service';
+import { AdrReviewedEvent } from './events/adr-reviewed.event';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
+import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
 
 @Injectable()
 export class AdrService {
@@ -11,6 +15,9 @@ export class AdrService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly riskService: RiskAssessmentService,
+        private readonly eventBus: EventBusService,
+        private readonly auditLogger: AIDecisionLoggerService,
+        private readonly notificationService: ArchitectureReviewNotificationService,
     ) { }
 
     /**
@@ -351,6 +358,34 @@ export class AdrService {
         });
 
         this.logger.log(`ADR ${adrId} reviewed successfully. New status: ${newStatus}`);
+
+        // 1. Log Decision
+        await this.auditLogger.logDecision({
+            agentName: 'TL/User',
+            action: `ADR_${action}`,
+            reasoning: notes || action,
+            ticketId: adr.ticket_id || 'unknown',
+            executionId: adr.execution_id || undefined,
+            inputData: { adrId, action, notes },
+            outputData: { newStatus },
+            confidence: 1.0, // Human decision = 100% confidence
+        });
+
+        // 2. Notify Stakeholders
+        // We pass the updated/original adr object. To be safe, let's use the one with title/ticket_id
+        await this.notificationService.notifyDecision(adr, action, notes);
+
+        // 3. Emit Event for Side Effects (e.g. Retry Logic)
+        this.eventBus.emit(
+            'adr.reviewed',
+            new AdrReviewedEvent(
+                adrId,
+                adr.ticket_id || '',
+                action,
+                notes,
+                adr.execution_id || undefined,
+            ),
+        );
 
         const actionPastTense = {
             APPROVE: 'approved',

@@ -534,7 +534,12 @@ development_status:
   7-3-UI-architecture-risk-visualization:
     status: done
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented Risk Analysis Card and upgraded RiskBadge to use Shadcn Tooltip. All ACs met. Added missing UI dependencies."
-  7-4-architecture-decision-approval-rejection: backlog
+  7-4-architecture-decision-approval-rejection:
+    status: done
+    owner: "Senior Developer"
+    start_date: "2025-01-01"
+    end_date: "2025-01-02"
+    notes: "Story generated via create-story workflow. Implementation involves adding side-effects (Audit, Notification, Retry) to existing API."
   7-5-architecture-patterns-constraints: backlog
   7-6-ai-escalation-uncertainty-handling: backlog
   7-7-tl-capability-management-ai-limitations: backlog

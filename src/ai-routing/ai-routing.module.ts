@@ -31,21 +31,11 @@ import { ExecutionModule } from '@/execution/execution.module';
 import { FileLocksModule } from '../file-locks/file-locks.module';
 import { GitHubModule } from '../github/github.module';
 import { StorageModule } from '../storage/storage.module';
-import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // Story 11.4
-import { AdrParserService } from './adr-parser.service'; // Story 7.1
-import { ArchitectureReviewModule } from '../architecture-review/architecture-review.module'; // Story 7.1
+import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
+import { AdrParserService } from './adr-parser.service';
+import { ArchitectureReviewModule } from '../architecture-review/architecture-review.module';
+import { EventBusModule } from '../common/event-bus.module';
 
-/**
- * AI Routing Module
- *
- * FR60: System routes to appropriate AI tool based on task complexity
- *
- * Components:
- * - ComplexityScorerService: Calculate ticket complexity (0-20)
- * - ProviderHealthService: Track AI provider availability
- * - AIRoutingService: Main routing logic
- * - AIRoutingConsumer: Process routing queue
- */
 @Module({
   imports: [
     ConfigModule,
@@ -56,7 +46,8 @@ import { ArchitectureReviewModule } from '../architecture-review/architecture-re
     GitHubModule,
     forwardRef(() => StorageModule),
     AIDecisionLoggerModule,
-    ArchitectureReviewModule, // Story 7.1
+    ArchitectureReviewModule,
+    EventBusModule,
   ],
   providers: [
     // Story 2.3: Routing services

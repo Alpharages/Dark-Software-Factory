@@ -60,6 +60,7 @@ export class ExecutionService {
         generatedAt: dto.promptMetadata.generatedAt,
       },
       complexityScore: dto.complexityScore,
+      feedback: dto.feedback,
     };
 
     const execution = await this.tracker.startExecution(input);

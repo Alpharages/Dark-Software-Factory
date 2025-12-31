@@ -27,6 +27,7 @@ export interface IPromptGenerationInput {
   projectId: string;
   tags: string[];
   routedAt: string;
+  feedback?: string; // Optional feedback from previous execution (e.g. architecture review notes)
 }
 
 /**

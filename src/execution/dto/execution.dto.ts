@@ -41,6 +41,10 @@ export class StartExecutionDto {
   @ValidateNested()
   @Type(() => PromptMetadataSnapshotDto)
   promptMetadata!: PromptMetadataSnapshotDto;
+
+  @IsOptional()
+  @IsString()
+  feedback?: string;
 }
 
 /**

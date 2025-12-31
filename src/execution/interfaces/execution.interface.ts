@@ -18,6 +18,7 @@ export interface IStartExecutionInput {
   prompt: string;
   promptMetadata: IPromptMetadataSnapshot;
   complexityScore: number;
+  feedback?: string;
 }
 
 /**

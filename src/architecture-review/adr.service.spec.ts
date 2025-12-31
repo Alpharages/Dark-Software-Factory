@@ -1,14 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdrService } from './adr.service';
 import { PrismaService } from '../database/prisma.service';
-import { CreateAdrDto } from './dto';
 import { RiskAssessmentService } from './risk-assessment.service';
+import { AdrStatus, RiskLevel } from '@/prisma/client';
+import { EventBusService } from '../common/event-bus.service';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
+import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
+import { CreateAdrDto } from './dto';
 
 
 describe('AdrService', () => {
     let service: AdrService;
     let prismaService: PrismaService;
     let riskService: RiskAssessmentService;
+    let eventBusService: EventBusService;
 
     const mockPrismaService = {
         adr: {
@@ -24,6 +29,18 @@ describe('AdrService', () => {
         calculateRiskLevel: jest.fn(),
     };
 
+    const mockEventBusService = {
+        emit: jest.fn(),
+    };
+
+    const mockAuditLogger = {
+        logDecision: jest.fn(),
+    };
+
+    const mockNotificationService = {
+        notifyDecision: jest.fn(),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -36,12 +53,25 @@ describe('AdrService', () => {
                     provide: RiskAssessmentService,
                     useValue: mockRiskService,
                 },
+                {
+                    provide: EventBusService,
+                    useValue: mockEventBusService,
+                },
+                {
+                    provide: AIDecisionLoggerService,
+                    useValue: mockAuditLogger,
+                },
+                {
+                    provide: ArchitectureReviewNotificationService,
+                    useValue: mockNotificationService,
+                },
             ],
         }).compile();
 
         service = module.get<AdrService>(AdrService);
         prismaService = module.get<PrismaService>(PrismaService);
         riskService = module.get<RiskAssessmentService>(RiskAssessmentService);
+        eventBusService = module.get<EventBusService>(EventBusService);
     });
 
     afterEach(() => {
@@ -50,6 +80,46 @@ describe('AdrService', () => {
 
     it('should be defined', () => {
         expect(service).toBeDefined();
+    });
+
+    describe('reviewAdr', () => {
+        const adrId = 'adr-123';
+        const mockAdr = {
+            id: adrId,
+            title: 'Test ADR',
+            status: AdrStatus.PROPOSED,
+            ticket_id: 'ticket-1',
+            execution_id: 'exec-1',
+        };
+
+        it('should approve an ADR and trigger side effects', async () => {
+            mockPrismaService.adr.findUnique.mockResolvedValue(mockAdr);
+            mockPrismaService.adr.update.mockResolvedValue({ ...mockAdr, status: AdrStatus.ACCEPTED });
+
+            const result = await service.reviewAdr(adrId, 'APPROVE');
+
+            expect(mockAuditLogger.logDecision).toHaveBeenCalled();
+            expect(mockNotificationService.notifyDecision).toHaveBeenCalledWith(mockAdr, 'APPROVE', undefined);
+            expect(mockEventBusService.emit).toHaveBeenCalledWith('adr.reviewed', expect.objectContaining({
+                adrId,
+                action: 'APPROVE',
+            }));
+            expect(result.success).toBe(true);
+        });
+
+        it('should reject an ADR and trigger retry event', async () => {
+            mockPrismaService.adr.findUnique.mockResolvedValue(mockAdr);
+            mockPrismaService.adr.update.mockResolvedValue({ ...mockAdr, status: AdrStatus.REJECTED });
+
+            const notes = 'Fix security issue';
+            await service.reviewAdr(adrId, 'REJECT', notes);
+
+            expect(mockEventBusService.emit).toHaveBeenCalledWith('adr.reviewed', expect.objectContaining({
+                adrId,
+                action: 'REJECT',
+                notes,
+            }));
+        });
     });
 
     describe('create', () => {

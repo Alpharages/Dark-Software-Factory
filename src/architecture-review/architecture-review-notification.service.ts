@@ -89,4 +89,44 @@ This decision has been pending review for too long and is blocking progress.
 
         return ticket?.project?.clickup_list_id || null;
     }
+
+    async notifyDecision(adr: Adr, action: string, notes?: string) {
+        try {
+            this.logger.log(`[DECISION] ADR ${adr.id} ${action}. Notifying stakeholders.`);
+
+            const listId = await this.resolveListId(adr.ticket_id);
+            if (!listId) return;
+
+            const isApproved = action === 'APPROVE';
+            const icon = isApproved ? '✅' : '❌';
+            const title = `[Decision] ADR ${adr.title}: ${action}`;
+
+            let description = `
+# ${icon} Architecture Decision: ${action}
+
+**ADR:** ${adr.title}
+**Status:** ${action === 'APPROVE' ? 'APPROVED' : 'REJECTED/MODIFIED'}
+            `;
+
+            if (notes) {
+                description += `\n**Feedback/Notes:**\n${notes}\n`;
+            }
+
+            // Tag the PM/Owner if possible (mocking tag for now)
+            if (!isApproved) {
+                description += `\n\n@watchers Please review the feedback.`;
+            }
+
+            await this.clickUp.createTask(listId, {
+                name: title,
+                description: description,
+                priority: isApproved ? 3 : 1, // Normal if approved, Urgent if rejected
+                tags: ['architecture-decision', action.toLowerCase()],
+                notify_all: true,
+            });
+
+        } catch (error) {
+            this.logger.error(`Failed to notify ADR Decision: ${(error as Error).message}`);
+        }
+    }
 }
