@@ -8,12 +8,14 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
 import { CreateAdrDto } from './dto';
 
+import { ConstraintValidatorService } from './constraint-validator.service';
 
 describe('AdrService', () => {
     let service: AdrService;
     let prismaService: PrismaService;
     let riskService: RiskAssessmentService;
     let eventBusService: EventBusService;
+    let constraintValidator: ConstraintValidatorService;
 
     const mockPrismaService = {
         adr: {
@@ -41,6 +43,10 @@ describe('AdrService', () => {
         notifyDecision: jest.fn(),
     };
 
+    const mockConstraintValidator = {
+        validate: jest.fn().mockResolvedValue([]),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -65,6 +71,10 @@ describe('AdrService', () => {
                     provide: ArchitectureReviewNotificationService,
                     useValue: mockNotificationService,
                 },
+                {
+                    provide: ConstraintValidatorService,
+                    useValue: mockConstraintValidator,
+                },
             ],
         }).compile();
 
@@ -72,6 +82,7 @@ describe('AdrService', () => {
         prismaService = module.get<PrismaService>(PrismaService);
         riskService = module.get<RiskAssessmentService>(RiskAssessmentService);
         eventBusService = module.get<EventBusService>(EventBusService);
+        constraintValidator = module.get<ConstraintValidatorService>(ConstraintValidatorService);
     });
 
     afterEach(() => {
@@ -145,6 +156,7 @@ describe('AdrService', () => {
             const result = await service.create(createDto);
 
             expect(result).toEqual(expectedAdr);
+            expect(mockConstraintValidator.validate).toHaveBeenCalled();
             expect(mockPrismaService.adr.create).toHaveBeenCalledWith({
                 data: expect.objectContaining({
                     title: createDto.title,
@@ -181,6 +193,46 @@ describe('AdrService', () => {
             expect(mockPrismaService.adr.create).toHaveBeenCalledWith({
                 data: expect.objectContaining({
                     risk_level: 'LOW',
+                }),
+            });
+        });
+
+        it('should add constraint violations to risk factors', async () => {
+            const createDto: CreateAdrDto = {
+                title: 'Use Forbidden Tech',
+                context: 'Need it',
+                decision: 'Use it',
+                consequences: 'None',
+                risk_level: 'LOW',
+            };
+
+            mockConstraintValidator.validate.mockResolvedValueOnce([{
+                file: 'package.json',
+                constraintId: '1',
+                message: 'Forbidden tech detected',
+                severity: 'CRITICAL'
+            }]);
+
+            const expectedAdr = {
+                id: '789',
+                ...createDto,
+                risk_level: 'HIGH', // Should escalate to HIGH
+            };
+
+            mockPrismaService.adr.create.mockResolvedValue(expectedAdr);
+
+            await service.create(createDto);
+
+            expect(mockPrismaService.adr.create).toHaveBeenCalledWith({
+                data: expect.objectContaining({
+                    risk_level: 'HIGH',
+                    risk_factors: expect.arrayContaining([
+                        expect.objectContaining({
+                            type: 'CONSTRAINT_VIOLATION',
+                            severity: 'CRITICAL',
+                            message: 'Forbidden tech detected'
+                        })
+                    ])
                 }),
             });
         });

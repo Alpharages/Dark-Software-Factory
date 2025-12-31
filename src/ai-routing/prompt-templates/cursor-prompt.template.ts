@@ -196,15 +196,28 @@ ${requirements.join('\n')}`;
   }
 
   private buildProjectContext(context: IProjectContext): string {
-    return `## Project Context
+    const sections = [
+      `## Project Context`,
+      ``,
+      `**Project:** ${context.projectName}`,
+      `**Tech Stack:** ${context.techStack.join(', ')}`,
+      `**Key Dependencies:** ${context.dependencies.slice(0, 10).join(', ')}`,
+      ``,
+      `### Coding Standards`,
+      ``,
+      `${context.codingStandards.map((s) => `- ${s}`).join('\n')}`
+    ];
 
-**Project:** ${context.projectName}
-**Tech Stack:** ${context.techStack.join(', ')}
-**Key Dependencies:** ${context.dependencies.slice(0, 10).join(', ')}
+    if (context.architectureConstraints && context.architectureConstraints.length > 0) {
+      sections.push(``);
+      sections.push(`### Architecture Constraints`);
+      sections.push(``);
+      sections.push(`**CRITICAL: You must adhere to these architecture constraints:**`);
+      sections.push(``);
+      sections.push(`${context.architectureConstraints.map((s) => `- ${s}`).join('\n')}`);
+    }
 
-### Coding Standards
-
-${context.codingStandards.map((s) => `- ${s}`).join('\n')}`;
+    return sections.join('\n');
   }
 
   private buildRelevantFiles(context: IProjectContext): string {
@@ -248,7 +261,8 @@ Generate production-ready code that:
 - New design patterns or architectural patterns
 
 **ADR Output Format (JSON):**
-If you make a significant architectural decision, include an ADR in your response using this exact JSON structure:
+If you make a significant architectural decision, OR if you must violate a stated Architecture Constraint, include an ADR in your response using this exact JSON structure.
+IMPORTANT: If violating a constraint, 'context' must explain precisely WHY the violation is necessary.
 
 \`\`\`json
 {

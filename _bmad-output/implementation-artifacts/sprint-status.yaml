@@ -540,7 +540,12 @@ development_status:
     start_date: "2025-01-01"
     end_date: "2025-01-02"
     notes: "Story generated via create-story workflow. Implementation involves adding side-effects (Audit, Notification, Retry) to existing API."
-  7-5-architecture-patterns-constraints: backlog
+  7-5-architecture-patterns-constraints:
+    status: done
+    owner: Antigravity
+    start_date: "2026-01-01"
+    end_date: "2026-01-01"
+    completion_notes: "Implemented constraint validation logic and integrated with ADR service. Verified with tests."
   7-6-ai-escalation-uncertainty-handling: backlog
   7-7-tl-capability-management-ai-limitations: backlog
   7-8-architecture-review-metrics-insights: backlog

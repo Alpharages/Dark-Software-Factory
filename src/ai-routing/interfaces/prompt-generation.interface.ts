@@ -40,6 +40,7 @@ export interface IProjectContext {
   fileStructure: string;
   dependencies: string[];
   relevantFiles: IRelevantFile[];
+  architectureConstraints?: string[];
 }
 
 /**

@@ -5,6 +5,7 @@ import { PromptGeneratorService } from './prompt-generator.service';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
 import { IPromptGenerationInput, IProjectContext } from './interfaces';
+import { ArchitectureConstraintsService } from '@/architecture-review/architecture-constraints.service';
 
 describe('PromptGeneratorService', () => {
   let service: PromptGeneratorService;
@@ -15,6 +16,13 @@ describe('PromptGeneratorService', () => {
     inc: jest.fn(),
     observe: jest.fn(),
     startTimer: jest.fn(() => jest.fn()),
+  };
+
+  const mockConstraintsService = {
+    findAll: jest.fn().mockResolvedValue([
+      { type: 'ALLOWED_TECH', scope: 'GLOBAL', rules: { allowed: ['react'] } },
+      { type: 'FORBIDDEN_TECH', scope: 'GLOBAL', rules: { forbidden: ['jquery'] } }
+    ])
   };
 
   const createInput = (
@@ -79,6 +87,7 @@ describe('PromptGeneratorService', () => {
         { provide: getToken('prompt_generation_total'), useValue: mockMetrics },
         { provide: getToken('prompt_tokens_histogram'), useValue: mockMetrics },
         { provide: getToken('prompt_generation_duration_seconds'), useValue: mockMetrics },
+        { provide: ArchitectureConstraintsService, useValue: mockConstraintsService },
       ],
     }).compile();
 
@@ -93,6 +102,19 @@ describe('PromptGeneratorService', () => {
   });
 
   describe('generatePrompt', () => {
+    it('should inject architecture constraints into context', async () => {
+      const input = createInput({ provider: AIProvider.CURSOR_HEADLESS });
+      // Assume context is created by default if not provided, or provided one gets enriched
+      const context = createContext();
+
+      await service.generatePrompt(input, context);
+
+      expect(mockConstraintsService.findAll).toHaveBeenCalled();
+      expect(context.architectureConstraints).toBeDefined();
+      expect(context.architectureConstraints?.length).toBe(2);
+      expect(context.architectureConstraints?.[0]).toContain('ALLOWED_TECH');
+    });
+
     it('should generate Claude Code prompt with all sections', async () => {
       const input = createInput({ provider: AIProvider.CLAUDE_CODE });
       const context = createContext();

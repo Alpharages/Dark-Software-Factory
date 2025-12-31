@@ -79,7 +79,8 @@ export const ModelName = {
   ClientConversation: 'ClientConversation',
   Report: 'Report',
   SystemConfig: 'SystemConfig',
-  Adr: 'Adr'
+  Adr: 'Adr',
+  ArchitectureConstraint: 'ArchitectureConstraint'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -569,6 +570,20 @@ export const AdrScalarFieldEnum = {
 } as const
 
 export type AdrScalarFieldEnum = (typeof AdrScalarFieldEnum)[keyof typeof AdrScalarFieldEnum]
+
+
+export const ArchitectureConstraintScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  scope: 'scope',
+  type: 'type',
+  rules: 'rules',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ArchitectureConstraintScalarFieldEnum = (typeof ArchitectureConstraintScalarFieldEnum)[keyof typeof ArchitectureConstraintScalarFieldEnum]
 
 
 export const SortOrder = {

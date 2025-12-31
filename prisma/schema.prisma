@@ -925,3 +925,20 @@ enum RiskLevel {
   MEDIUM
   HIGH
 }
+
+// ============================================
+// STORY 7.5: ARCHITECTURE CONSTRAINTS
+// ============================================
+
+model ArchitectureConstraint {
+  id        String   @id @default(uuid())
+  projectId String?  // Null = Global
+  scope     String   // GLOBAL, PROJECT
+  type      String   // ALLOWED_TECH, FORBIDDEN_TECH, PATTERN, STANDARD
+  rules     Json     // Flexible rule definition
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("architecture_constraints")
+}

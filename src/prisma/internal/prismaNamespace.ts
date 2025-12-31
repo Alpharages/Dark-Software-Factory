@@ -412,7 +412,8 @@ export const ModelName = {
   ClientConversation: 'ClientConversation',
   Report: 'Report',
   SystemConfig: 'SystemConfig',
-  Adr: 'Adr'
+  Adr: 'Adr',
+  ArchitectureConstraint: 'ArchitectureConstraint'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -428,7 +429,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord" | "user" | "utilizationHistory" | "clientConversation" | "report" | "systemConfig" | "adr"
+    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord" | "user" | "utilizationHistory" | "clientConversation" | "report" | "systemConfig" | "adr" | "architectureConstraint"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2578,6 +2579,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ArchitectureConstraint: {
+      payload: Prisma.$ArchitectureConstraintPayload<ExtArgs>
+      fields: Prisma.ArchitectureConstraintFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ArchitectureConstraintFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ArchitectureConstraintFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>
+        }
+        findFirst: {
+          args: Prisma.ArchitectureConstraintFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ArchitectureConstraintFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>
+        }
+        findMany: {
+          args: Prisma.ArchitectureConstraintFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>[]
+        }
+        create: {
+          args: Prisma.ArchitectureConstraintCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>
+        }
+        createMany: {
+          args: Prisma.ArchitectureConstraintCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ArchitectureConstraintCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>[]
+        }
+        delete: {
+          args: Prisma.ArchitectureConstraintDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>
+        }
+        update: {
+          args: Prisma.ArchitectureConstraintUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>
+        }
+        deleteMany: {
+          args: Prisma.ArchitectureConstraintDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ArchitectureConstraintUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ArchitectureConstraintUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>[]
+        }
+        upsert: {
+          args: Prisma.ArchitectureConstraintUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchitectureConstraintPayload>
+        }
+        aggregate: {
+          args: Prisma.ArchitectureConstraintAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateArchitectureConstraint>
+        }
+        groupBy: {
+          args: Prisma.ArchitectureConstraintGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ArchitectureConstraintGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ArchitectureConstraintCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ArchitectureConstraintCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3088,6 +3163,20 @@ export const AdrScalarFieldEnum = {
 } as const
 
 export type AdrScalarFieldEnum = (typeof AdrScalarFieldEnum)[keyof typeof AdrScalarFieldEnum]
+
+
+export const ArchitectureConstraintScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  scope: 'scope',
+  type: 'type',
+  rules: 'rules',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ArchitectureConstraintScalarFieldEnum = (typeof ArchitectureConstraintScalarFieldEnum)[keyof typeof ArchitectureConstraintScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3645,6 +3734,7 @@ export type GlobalOmitConfig = {
   report?: Prisma.ReportOmit
   systemConfig?: Prisma.SystemConfigOmit
   adr?: Prisma.AdrOmit
+  architectureConstraint?: Prisma.ArchitectureConstraintOmit
 }
 
 /* Types for Logging */

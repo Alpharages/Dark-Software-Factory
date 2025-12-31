@@ -3,8 +3,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ArchitectureReviewController } from './architecture-review.controller';
 import { AdrService } from './adr.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
-import { AdrReviewActionDto } from './dto';
+import { AdrReviewActionDto, AdrReviewAction } from './dto';
 import { AdrStatus } from '@/prisma/client';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { JwtAuthGuard } from '@/common/guards/auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
 
 describe('ArchitectureReviewController', () => {
     let controller: ArchitectureReviewController;
@@ -28,7 +31,11 @@ describe('ArchitectureReviewController', () => {
                 { provide: AdrService, useValue: mockAdrService },
                 { provide: MetricsService, useValue: mockMetricsService },
             ],
-        }).compile();
+        })
+            .overrideGuard(ThrottlerGuard).useValue({ canActivate: () => true })
+            .overrideGuard(JwtAuthGuard).useValue({ canActivate: () => true })
+            .overrideGuard(RolesGuard).useValue({ canActivate: () => true })
+            .compile();
 
         controller = module.get<ArchitectureReviewController>(ArchitectureReviewController);
         adrService = module.get<AdrService>(AdrService);
@@ -58,7 +65,7 @@ describe('ArchitectureReviewController', () => {
 
     describe('reviewAdr', () => {
         it('should review an ADR and record metrics', async () => {
-            const dto: AdrReviewActionDto = { action: 'APPROVE', notes: 'Good job' };
+            const dto: AdrReviewActionDto = { action: AdrReviewAction.APPROVE, notes: 'Good job' };
             const mockResponse = {
                 success: true,
                 message: 'Approved',

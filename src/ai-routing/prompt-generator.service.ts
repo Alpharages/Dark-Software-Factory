@@ -12,6 +12,7 @@ import {
 } from './interfaces';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
+import { ArchitectureConstraintsService } from '@/architecture-review/architecture-constraints.service';
 
 /**
  * Prompt Generator Service
@@ -40,7 +41,8 @@ export class PromptGeneratorService implements OnModuleInit {
     private readonly tokenHistogram: Histogram<string>,
     @InjectMetric('prompt_generation_duration_seconds')
     private readonly durationHistogram: Histogram<string>,
-  ) {}
+    private readonly architectureConstraintsService: ArchitectureConstraintsService,
+  ) { }
 
   onModuleInit(): void {
     // Register prompt builders
@@ -69,7 +71,29 @@ export class PromptGeneratorService implements OnModuleInit {
     this.logger.log(`[${correlationId}] Generating ${provider} prompt for ticket ${ticketId}`);
 
     try {
-      // 1. Get appropriate builder
+      // 1. Enrich context with architecture constraints
+      if (!context) {
+        context = this.getDefaultProjectContext();
+      }
+
+      try {
+        // Fetch all applicable constraints (Global + Project specific if applicable)
+        // findAll logic: if projectId provided, it fetches specific + global. If not, just global.
+        const constraints = input.projectId
+          ? await this.architectureConstraintsService.findAll(input.projectId)
+          : await this.architectureConstraintsService.findAll();
+
+        if (constraints.length > 0) {
+          context.architectureConstraints = constraints.map((c: any) => {
+            const rulesStr = JSON.stringify(c.rules);
+            return `${c.type}: ${rulesStr} (${c.scope})`;
+          });
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to fetch architecture constraints: ${(err as Error).message}`);
+      }
+
+      // 2. Get appropriate builder
       const builder = this.getBuilder(provider);
 
       // 2. Build the prompt (with explicit error handling)
@@ -112,7 +136,7 @@ export class PromptGeneratorService implements OnModuleInit {
 
       this.logger.log(
         `[${correlationId}] Prompt generated: ${metadata.promptLength} chars, ` +
-          `~${metadata.estimatedTokens} tokens, ${metadata.sectionsIncluded.length} sections`,
+        `~${metadata.estimatedTokens} tokens, ${metadata.sectionsIncluded.length} sections`,
       );
 
       return result;

@@ -162,3 +162,8 @@ export type SystemConfig = Prisma.SystemConfigModel
  * 
  */
 export type Adr = Prisma.AdrModel
+/**
+ * Model ArchitectureConstraint
+ * 
+ */
+export type ArchitectureConstraint = Prisma.ArchitectureConstraintModel

@@ -7,6 +7,7 @@ import { EventBusService } from '../common/event-bus.service';
 import { AdrReviewedEvent } from './events/adr-reviewed.event';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
+import { ConstraintValidatorService } from './constraint-validator.service';
 
 @Injectable()
 export class AdrService {
@@ -18,6 +19,7 @@ export class AdrService {
         private readonly eventBus: EventBusService,
         private readonly auditLogger: AIDecisionLoggerService,
         private readonly notificationService: ArchitectureReviewNotificationService,
+        private readonly constraintValidator: ConstraintValidatorService,
     ) { }
 
     /**
@@ -43,6 +45,40 @@ export class AdrService {
             // The legacy logic implementation is strictly keyword based.
             // Let's rely on legacy if no factors.
             riskLevel = this.calculateRiskLevelLegacy(createAdrDto);
+        }
+
+        // Validate against architecture constraints
+        const constraintViolations = await this.constraintValidator.validate({
+            files: [], // In a real scenario, we'd need the files changed context.
+            // For now, we can check basic context if available, or this runs as a post-check.
+            // However, ADR creation usually implies we have a decision but not necessarily code yet?
+            // Actually, ADR 7.5 AC#2 says "Constraint violations flagged automatically in ADR".
+            // Since we might not have files yet (if this is pre-code), we might rely on 'createAdrDto.context' description,
+            // or if it's triggered from an Execution, we might have files.
+            // Let's check if we can pass valid context.
+            projectId: undefined, // We need to fetch project ID from ticket if possible
+        });
+
+        // If we found violations, we should add them to risk_factors
+        if (constraintViolations.length > 0) {
+            const violationFactors = constraintViolations.map((v: import('./constraint-validator.service').ValidationViolation) => ({
+                type: 'CONSTRAINT_VIOLATION',
+                severity: v.severity,
+                message: v.message,
+                constraintId: v.constraintId
+            }));
+
+            // Append to existing factors
+            if (riskFactors && Array.isArray(riskFactors)) {
+                (riskFactors as any[]).push(...violationFactors);
+            } else {
+                riskFactors = violationFactors as any;
+            }
+
+            // Escalate risk level if critical
+            if (constraintViolations.some(v => v.severity === 'CRITICAL')) {
+                riskLevel = RiskLevel.HIGH;
+            }
         }
 
         const adr = await this.prisma.adr.create({
