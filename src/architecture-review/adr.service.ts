@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateAdrDto, UpdateAdrDto, AdrReviewQueueQueryDto, AdrQueueItemDto } from './dto';
 import { Prisma, AdrStatus, RiskLevel } from '@/prisma/client';
+import { RiskAssessmentService } from './risk-assessment.service';
 
 @Injectable()
 export class AdrService {
     private readonly logger = new Logger(AdrService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly riskService: RiskAssessmentService,
+    ) { }
 
     /**
      * Create a new Architecture Decision Record
@@ -17,8 +21,22 @@ export class AdrService {
     async create(createAdrDto: CreateAdrDto) {
         this.logger.log(`Creating ADR: ${createAdrDto.title}`);
 
-        // Calculate risk level if not provided
-        const riskLevel = createAdrDto.risk_level || this.calculateRiskLevel(createAdrDto);
+        let riskLevel = createAdrDto.risk_level;
+        let riskFactors = createAdrDto.risk_factors;
+
+        // Calculate risk level if factors provided but level missing
+        if (!riskLevel && riskFactors) {
+            riskLevel = this.riskService.calculateRiskLevel(riskFactors);
+        } else if (!riskLevel) {
+            // Fallback to legacy calculation if no factors provided
+            // or construct default factors?
+            // Task: "Update AdrService to call RiskAssessmentService during ADR creation"
+            // Assuming we try to use new service if possible, or legacy logic.
+            // For now, let's keep legacy logic as fallback or deprecate it?
+            // The legacy logic implementation is strictly keyword based.
+            // Let's rely on legacy if no factors.
+            riskLevel = this.calculateRiskLevelLegacy(createAdrDto);
+        }
 
         const adr = await this.prisma.adr.create({
             data: {
@@ -30,6 +48,7 @@ export class AdrService {
                 ai_confidence: createAdrDto.ai_confidence,
                 status: (createAdrDto.status || 'PROPOSED') as any,
                 risk_level: riskLevel as any,
+                risk_factors: riskFactors ? (riskFactors as any) : Prisma.JsonNull,
                 execution_id: createAdrDto.execution_id,
                 ticket_id: createAdrDto.ticket_id,
             },
@@ -203,12 +222,12 @@ export class AdrService {
     }
 
     /**
-     * Calculate risk level based on ADR content
+     * Calculate risk level based on ADR content (Legacy/Fallback)
      * Logic: High if new_dependencies or schema_changes; Medium if refactoring; Low otherwise
      * @param adr - ADR DTO
      * @returns Risk level (HIGH/MEDIUM/LOW)
      */
-    calculateRiskLevel(adr: CreateAdrDto): string {
+    calculateRiskLevelLegacy(adr: CreateAdrDto): string {
         const content = `${adr.title} ${adr.context} ${adr.decision}`.toLowerCase();
 
         // High risk indicators

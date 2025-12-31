@@ -1,4 +1,21 @@
-import { IsString, IsOptional, IsNumber, IsEnum, Min, Max, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum, Min, Max, IsNotEmpty, IsObject, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class RiskFactorsDto {
+    @IsEnum(['single-file', 'module', 'cross-module'])
+    scope!: 'single-file' | 'module' | 'cross-module';
+
+    @IsEnum(['easy', 'migration-required', 'irreversible'])
+    reversibility!: 'easy' | 'migration-required' | 'irreversible';
+
+    @IsNumber()
+    @Min(0)
+    @Max(1)
+    confidence!: number;
+
+    @IsEnum(['low', 'medium', 'high'])
+    domain_complexity!: 'low' | 'medium' | 'high';
+}
 
 export class CreateAdrDto {
     @IsOptional()
@@ -42,4 +59,10 @@ export class CreateAdrDto {
     @IsOptional()
     @IsEnum(['LOW', 'MEDIUM', 'HIGH'])
     risk_level?: string;
+
+    @IsOptional()
+    @IsObject()
+    @ValidateNested()
+    @Type(() => RiskFactorsDto)
+    risk_factors?: RiskFactorsDto;
 }

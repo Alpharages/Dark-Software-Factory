@@ -485,4 +485,58 @@ export class ClickUpService {
       throw error;
     }
   }
+
+  /**
+   * Create a new task in ClickUp
+   *
+   * @param listId - ClickUp List ID
+   * @param data - Task creation payload
+   * @param options - Optional correlation ID
+   * @returns Created task details
+   */
+  async createTask(
+    listId: string,
+    data: {
+      name: string;
+      description?: string;
+      priority?: number; // 1 (Urgent) to 4 (Low)
+      assignees?: number[];
+      tags?: string[];
+      status?: string;
+      notify_all?: boolean;
+    },
+    options?: { correlationId?: string },
+  ): Promise<ClickUpTask | null> {
+    const correlationId = options?.correlationId || 'clickup-create-task';
+
+    const operation = async () => {
+      const response = await this.client.post<ClickUpTask>(`/list/${listId}/task`, data);
+      return response.data;
+    };
+
+    try {
+      const task = await this.retryWithBackoff(operation, correlationId);
+
+      this.logger.log('ClickUp task created successfully', {
+        correlationId,
+        listId,
+        taskId: task.id,
+      });
+
+      return task;
+    } catch (error) {
+      this.logger.error('Failed to create ClickUp task after all retries', {
+        correlationId,
+        listId,
+        error: (error as Error).message,
+      });
+
+      this.sentry.captureException(error as Error, {
+        tags: { operation: 'clickup_create_task' },
+        extra: { listId, correlationId },
+      });
+
+      return null;
+    }
+  }
 }

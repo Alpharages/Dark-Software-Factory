@@ -3082,6 +3082,7 @@ export const AdrScalarFieldEnum = {
   alternatives: 'alternatives',
   ai_confidence: 'ai_confidence',
   risk_level: 'risk_level',
+  risk_factors: 'risk_factors',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const

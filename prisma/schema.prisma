@@ -897,6 +897,7 @@ model Adr {
   // AI Metadata
   ai_confidence  Float? // AI confidence score (0-1)
   risk_level     RiskLevel? // Calculated risk (HIGH/MEDIUM/LOW)
+  risk_factors   Json?      // Detailed risk analysis (scope, reversibility, etc.)
   
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt

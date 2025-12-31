@@ -527,10 +527,13 @@ development_status:
     status: done
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Fixed CRITICAL issues: (1) Replaced hardcoded project list with dynamic API fetching (AC#2), (2) Implemented Markdown rendering for ADR details (AC#3), (3) Created missing unit tests for AdrReviewQueueTable and AdrDetailModal. Note: Unit tests currently failing in CI due to React 19/Vitest environment configuration issues, but logic is verified via code review and manual check capabilities."
   7-3-risk-based-review-prioritization:
-    status: backlog
+    status: done
     delegation_opportunity: "IDENTIFIED 2025-12-07"
     v3_enhancement: "Epic 14.1 (PR Risk Assessor) provides risk scores for architecture review prioritization"
-    notes: "PARTIAL DELEGATION: AI assesses architecture risk level (scope, reversibility, complexity analysis) with reasoning. Orchestrator handles escalation workflow and TL alerting. Pattern recognition = AI strength. Effort reduction: ~50% (5 days → 2-3 days). Priority: Phase 2. See: /docs/architecture/epic-5-10-delegation-strategy.md"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented 'ArchitectureReviewNotificationService' with ClickUp integration for high-priority task creation. Backported 'createTask' to ClickUpService. All 4 ACs met. Unit tests passing."
+  7-3-UI-architecture-risk-visualization:
+    status: ready-for-dev
+    notes: "Frontend for Story 7-3. Visualizes detailed risk factors (Scope, Reversibility, Complexity) in ADR Detail Modal."
   7-4-architecture-decision-approval-rejection: backlog
   7-5-architecture-patterns-constraints: backlog
   7-6-ai-escalation-uncertainty-handling: backlog

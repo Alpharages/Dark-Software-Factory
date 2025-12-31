@@ -2,10 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdrService } from './adr.service';
 import { PrismaService } from '../database/prisma.service';
 import { CreateAdrDto } from './dto';
+import { RiskAssessmentService } from './risk-assessment.service';
+
 
 describe('AdrService', () => {
     let service: AdrService;
     let prismaService: PrismaService;
+    let riskService: RiskAssessmentService;
 
     const mockPrismaService = {
         adr: {
@@ -17,6 +20,10 @@ describe('AdrService', () => {
         },
     };
 
+    const mockRiskService = {
+        calculateRiskLevel: jest.fn(),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -25,11 +32,16 @@ describe('AdrService', () => {
                     provide: PrismaService,
                     useValue: mockPrismaService,
                 },
+                {
+                    provide: RiskAssessmentService,
+                    useValue: mockRiskService,
+                },
             ],
         }).compile();
 
         service = module.get<AdrService>(AdrService);
         prismaService = module.get<PrismaService>(PrismaService);
+        riskService = module.get<RiskAssessmentService>(RiskAssessmentService);
     });
 
     afterEach(() => {
@@ -113,7 +125,7 @@ describe('AdrService', () => {
                 consequences: 'Functionality added',
             };
 
-            const result = service.calculateRiskLevel(dto);
+            const result = service.calculateRiskLevelLegacy(dto);
             expect(result).toBe('HIGH');
         });
 
@@ -125,7 +137,7 @@ describe('AdrService', () => {
                 consequences: 'New fields available',
             };
 
-            const result = service.calculateRiskLevel(dto);
+            const result = service.calculateRiskLevelLegacy(dto);
             expect(result).toBe('HIGH');
         });
 
@@ -137,7 +149,7 @@ describe('AdrService', () => {
                 consequences: 'Better code quality',
             };
 
-            const result = service.calculateRiskLevel(dto);
+            const result = service.calculateRiskLevelLegacy(dto);
             expect(result).toBe('MEDIUM');
         });
 
@@ -149,7 +161,7 @@ describe('AdrService', () => {
                 consequences: 'Better docs',
             };
 
-            const result = service.calculateRiskLevel(dto);
+            const result = service.calculateRiskLevelLegacy(dto);
             expect(result).toBe('LOW');
         });
     });
