@@ -31,6 +31,8 @@ import { DeploymentModule } from './deployment/deployment.module';
 import { ProductionMonitoringModule } from './production-monitoring/production-monitoring.module';
 import { CostTrackingModule } from './cost-tracking/cost-tracking.module';
 import { ProgressValidatorModule } from './ai-monitoring/progress-validator.module';
+import { FinancialMetricsModule } from './financial-metrics/financial-metrics.module'; // Story 6-R-3
+
 
 // User interfaces
 import { DashboardsModule } from './dashboards/dashboards.module';
@@ -100,6 +102,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     ProductionMonitoringModule,
     CostTrackingModule,
     ProgressValidatorModule, // Story 11.3: AI Progress Validator
+    FinancialMetricsModule, // Story 6-R-3: Financial Metrics Business Oversight
 
     // User interfaces
     DashboardsModule,
