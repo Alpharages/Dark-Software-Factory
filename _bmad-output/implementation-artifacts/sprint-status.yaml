@@ -517,7 +517,10 @@ development_status:
     code_review_date: '2025-12-31T23:05:00Z'
     code_review_fixes: '8 CRITICAL, 2 MEDIUM issues fixed'
     notes: "✅ CODE REVIEW APPROVED - ADR generation complete and fully functional. REMEDIATED 2025-12-31 23:05 UTC: Fixed all CRITICAL issues - (C1/C2) Integrated AdrParserService + AdrService into OrchestratorService, (C3/C4) Fixed FALSE completion claims, (C5) Added adr_creation_total metric, (C6) Added ArchitectureReviewModule to AppModule, (C7) Committed migration to git, (C8) Non-blocking error handling. Tests: 27/27 passing. Build: ✅ passing. AC#1-5 fully implemented. AI now automatically generates and saves ADRs when making architecture decisions."
-  7-2-tl-architecture-review-queue: backlog
+  7-2-tl-architecture-review-queue:
+    status: done
+    notes: "✅ Story 7-2 COMPLETE (2025-12-31): Implemented TL Architecture Review Queue API. Created GET /api/v1/architecture-review/queue endpoint with filter/sort (status, risk_level, project_id, confidence), review time estimation (HIGH:15min, MEDIUM:8min, LOW:3min), RBAC (TL/ADMIN only), Swagger docs, and Prometheus metrics (adr_queue_accessed_total counter, adr_queue_depth gauge). Tests: 7/7 passing. Build: ✅ passing. Files: 4 new (controller, DTOs, tests), 3 modified (service, module, dto barrel). All AC#1-3 validated."
+  7-2-UI-architecture-review-queue: drafted
   7-3-risk-based-review-prioritization:
     status: backlog
     delegation_opportunity: "IDENTIFIED 2025-12-07"

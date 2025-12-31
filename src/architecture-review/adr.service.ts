@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { CreateAdrDto, UpdateAdrDto } from './dto';
-import { Prisma } from '@/prisma/client';
+import { CreateAdrDto, UpdateAdrDto, AdrReviewQueueQueryDto, AdrQueueItemDto } from './dto';
+import { Prisma, AdrStatus, RiskLevel } from '@/prisma/client';
 
 @Injectable()
 export class AdrService {
@@ -98,6 +98,108 @@ export class AdrService {
         return this.prisma.adr.delete({
             where: { id },
         });
+    }
+
+    /**
+     * Get ADR review queue with filtering, sorting, and ticket context
+     * @param filters - Query filters (status, risk_level, project_id, confidence range, sorting)
+     * @returns Array of ADRs formatted for review queue with estimated review time
+     */
+    async getReviewQueue(filters: AdrReviewQueueQueryDto): Promise<AdrQueueItemDto[]> {
+        this.logger.log(`Fetching ADR review queue with filters: ${JSON.stringify(filters)}`);
+
+        // Build where clause
+        const where: Prisma.AdrWhereInput = {
+            status: filters.status || AdrStatus.PROPOSED,
+        };
+
+        if (filters.risk_level) {
+            where.risk_level = filters.risk_level;
+        }
+
+        if (filters.project_id) {
+            where.execution = {
+                ticket: {
+                    project_id: filters.project_id,
+                },
+            };
+        }
+
+        // Confidence range filters
+        if (filters.min_confidence !== undefined || filters.max_confidence !== undefined) {
+            where.ai_confidence = {};
+            if (filters.min_confidence !== undefined) {
+                where.ai_confidence.gte = filters.min_confidence;
+            }
+            if (filters.max_confidence !== undefined) {
+                where.ai_confidence.lte = filters.max_confidence;
+            }
+        }
+
+        // Build orderBy clause
+        const orderBy: Prisma.AdrOrderByWithRelationInput = {};
+        const sortBy = filters.sort_by || 'risk_level';
+        const sortOrder = filters.sort_order || 'DESC';
+
+        if (sortBy === 'created_at' || sortBy === 'confidence') {
+            orderBy[sortBy === 'confidence' ? 'ai_confidence' : sortBy] = sortOrder.toLowerCase() as 'asc' | 'desc';
+        } else {
+            // For risk_level sorting
+            orderBy.risk_level = sortOrder.toLowerCase() as 'asc' | 'desc';
+        }
+
+        // Fetch ADRs with nested relations
+        const adrs = await this.prisma.adr.findMany({
+            where,
+            include: {
+                execution: {
+                    include: {
+                        ticket: {
+                            select: {
+                                id: true,
+                                title: true,
+                                clickup_task_id: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy,
+        });
+
+        // Map to queue item DTOs with calculated review time
+        return adrs.map((adr) => ({
+            id: adr.id,
+            title: adr.title,
+            status: adr.status as AdrStatus,
+            risk_level: adr.risk_level as RiskLevel | null,
+            ai_confidence: adr.ai_confidence ?? 0,
+            created_at: adr.created_at,
+            estimated_review_time_minutes: this.calculateReviewTime(adr.risk_level as RiskLevel | null),
+            ticket: adr.execution?.ticket ? {
+                id: adr.execution.ticket.id,
+                title: adr.execution.ticket.title,
+                clickup_task_id: adr.execution.ticket.clickup_task_id,
+            } : null,
+            execution_id: adr.execution_id,
+        }));
+    }
+
+    /**
+     * Calculate estimated review time based on risk level
+     * @param riskLevel - Risk level of the ADR
+     * @returns Estimated review time in minutes
+     */
+    calculateReviewTime(riskLevel: RiskLevel | null): number {
+        switch (riskLevel) {
+            case RiskLevel.HIGH:
+                return 15;
+            case RiskLevel.MEDIUM:
+                return 8;
+            case RiskLevel.LOW:
+            default:
+                return 3;
+        }
     }
 
     /**
