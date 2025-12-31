@@ -1,8 +1,15 @@
 # Story 7.3-UI: Architecture Risk Visualization
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+
+> [!IMPORTANT]
+> **Adversarial Review Completed (2026-01-01)**
+> **Result:** ✅ APPROVED WITH REMEDIATION
+> **Findings:** 
+> - RiskBadge used native `title` instead of Shadcn `Tooltip`. [FIXED]
+> - Tooltip integration required dependency installation. [FIXED]
 
 ## Story
 
@@ -29,25 +36,25 @@ So that I understand *why* AI flagged a decision as High Risk without having to 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update Types & API (AC: #1)
-  - [ ] Update `AdrQueueItem` type in `src/types/architectureReview.ts` to include `risk_factors` (match backend interface).
-  - [ ] Update mock data/fixtures if used.
+- [x] Task 1: Update Types & API (AC: #1)
+  - [x] Update `AdrQueueItem` type in `src/types/architectureReview.ts` to include `risk_factors` (match backend interface).
+  - [x] Update mock data/fixtures if used.
 
-- [ ] Task 2: Create Risk Analysis Component (AC: #1, #2)
-  - [ ] Create `RiskAnalysisCard.tsx` or `RiskReasoning.tsx`.
-  - [ ] Use icons (Lucide React) for factors:
+- [x] Task 2: Create Risk Analysis Component (AC: #1, #2)
+  - [x] Create `RiskAnalysisCard.tsx` or `RiskReasoning.tsx`.
+  - [x] Use icons (Lucide React) for factors:
     - Scope: `Box` / `Boxes`
     - Reversibility: `Undo2` (crossed out if irreversible)
     - Complexity: `Brain` / `Activity`
-  - [ ] Style with alerting colors (Red for high-risk factors).
+  - [x] Style with alerting colors (Red for high-risk factors).
 
-- [ ] Task 3: Integrate into Detail Modal (AC: #1)
-  - [ ] Add `RiskAnalysisCard` to `AdrDetailModal.tsx` (below Header, above Context).
-  - [ ] Ensure layout handles missing factors gracefully (backward compatibility).
+- [x] Task 3: Integrate into Detail Modal (AC: #1)
+  - [x] Add `RiskAnalysisCard` to `AdrDetailModal.tsx` (below Header, above Context).
+  - [x] Ensure layout handles missing factors gracefully (backward compatibility).
 
-- [ ] Task 4: Update Queue Table Badge (AC: #3)
-  - [ ] Update `RiskBadge.tsx` to support `Tooltip` (Shadcn UI).
-  - [ ] passing `risk_factors` summary to the badge.
+- [x] Task 4: Update Queue Table Badge (AC: #3)
+  - [x] Update `RiskBadge.tsx` to support `Tooltip` (Shadcn UI).
+  - [x] passing `risk_factors` summary to the badge.
 
 ## Dev Notes
 
@@ -70,3 +77,10 @@ interface RiskFactors {
 - **Red Flags:** Highlight "Irreversible" and "Security" factors prominently.
 
 ### File List
+- src/types/architectureReview.ts
+- src/components/architecture-review/RiskAnalysisCard.tsx
+- src/components/architecture-review/AdrDetailModal.tsx
+- src/components/architecture-review/RiskBadge.tsx
+- src/components/architecture-review/AdrReviewQueueTable.tsx
+- src/components/architecture-review/AdrDetailModal.test.tsx
+- src/components/architecture-review/AdrReviewQueueTable.test.tsx

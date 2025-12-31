@@ -532,8 +532,8 @@ development_status:
     v3_enhancement: "Epic 14.1 (PR Risk Assessor) provides risk scores for architecture review prioritization"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented 'ArchitectureReviewNotificationService' with ClickUp integration for high-priority task creation. Backported 'createTask' to ClickUpService. All 4 ACs met. Unit tests passing."
   7-3-UI-architecture-risk-visualization:
-    status: ready-for-dev
-    notes: "Frontend for Story 7-3. Visualizes detailed risk factors (Scope, Reversibility, Complexity) in ADR Detail Modal."
+    status: done
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented Risk Analysis Card and upgraded RiskBadge to use Shadcn Tooltip. All ACs met. Added missing UI dependencies."
   7-4-architecture-decision-approval-rejection: backlog
   7-5-architecture-patterns-constraints: backlog
   7-6-ai-escalation-uncertainty-handling: backlog
