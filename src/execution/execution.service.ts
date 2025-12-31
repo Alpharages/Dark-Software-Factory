@@ -36,7 +36,7 @@ export class ExecutionService {
     private readonly stateMachine: ExecutionStateMachine,
     private readonly qaCheckPublisher: QaCheckPublisher,
     private readonly executionGateway: ExecutionGateway,
-  ) {}
+  ) { }
 
   /**
    * Start a new AI execution
@@ -362,5 +362,36 @@ export class ExecutionService {
       createdAt: execution.created_at,
       updatedAt: execution.updated_at,
     };
+  }
+  /**
+   * Resume execution for a ticket (after approval)
+   */
+  async resumeExecution(ticketId: string): Promise<void> {
+    this.logger.log(`Resuming execution for ticket ${ticketId}`);
+
+    // Find the latest execution
+    const executions = await this.tracker.getExecutionsForTicket(ticketId);
+    // Sort by created_at desc
+    const latest = executions.sort((a, b) => b.created_at.getTime() - a.created_at.getTime())[0];
+
+    if (latest && (latest.status === ExecutionStatus.AWAITING_APPROVAL || latest.status === ExecutionStatus.FAILED)) {
+      // Transition to QUEUED
+      await this.tracker.updateStatus(latest.id, ExecutionStatus.QUEUED);
+
+      // Emit event
+      this.executionGateway.emitProgress({
+        executionId: latest.id,
+        ticketId: latest.ticket_id,
+        status: ExecutionStatus.QUEUED,
+        timestamp: new Date().toISOString(),
+        aiProvider: latest.ai_provider,
+      });
+
+      // Trigger processing (Placeholder: depends on how queue consumption works. 
+      // Often updating status to QUEUED is enough if poller picks it up. 
+      // If RMQ driven, might need to republish. Assuming Tracker/Poller picks up QUEUED items.)
+    } else {
+      this.logger.warn(`No resumable execution found for ticket ${ticketId}`);
+    }
   }
 }

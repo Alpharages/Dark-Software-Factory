@@ -258,4 +258,35 @@ export class AICostTrackerService {
     });
     return ticket?.project_id;
   }
+
+  async getCostStats(ticketId: string): Promise<{ totalCost: number; projectBudget: number; projectSpend: number }> {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!ticket) {
+      return { totalCost: 0, projectBudget: 0, projectSpend: 0 };
+    }
+
+    // Ticket total cost
+    const ticketCostAgg = await this.prisma.aICostLog.aggregate({
+      where: { ticket_id: ticketId },
+      _sum: { cost_usd: true },
+    });
+    const totalCost = ticketCostAgg._sum.cost_usd?.toNumber() || 0;
+
+    // Project stats
+    const projectId = ticket.project_id;
+    const projectCostAgg = await this.prisma.aICostLog.aggregate({
+      where: { ticket: { project_id: projectId } },
+      _sum: { cost_usd: true },
+    });
+    const projectSpend = projectCostAgg._sum.cost_usd?.toNumber() || 0;
+    const projectBudget = ticket.project?.budget_usd?.toNumber() || 100;
+
+    return { totalCost, projectBudget, projectSpend };
+  }
 }

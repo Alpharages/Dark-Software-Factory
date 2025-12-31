@@ -6,6 +6,7 @@ import {
   makeCounterProvider,
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
+import { DecisionDashboardModule } from './decision-dashboard.module';
 import { ObservabilityDashboardController } from './observability-dashboard.controller';
 import { ObservabilityDashboardService } from './services/observability-dashboard.service';
 import { PmDashboardController } from './pm-dashboard.controller';
@@ -23,6 +24,7 @@ import { AppMetricsModule } from '@/common/metrics';
     DatabaseModule,
     RabbitMQModule,
     AppMetricsModule,
+    DecisionDashboardModule,
     CacheModule.register({
       ttl: 300, // 5 minutes
       max: 100, // Maximum items in cache
@@ -90,4 +92,4 @@ import { AppMetricsModule } from '@/common/metrics';
   ],
   exports: [ObservabilityDashboardService, PmDashboardService, WorkloadService, DashboardGateway],
 })
-export class DashboardsModule {}
+export class DashboardsModule { }
