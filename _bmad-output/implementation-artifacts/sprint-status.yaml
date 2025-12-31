@@ -400,7 +400,7 @@ development_status:
     code_review_date: "2025-12-26"
     code_review_fixes: "10 issues fixed (4 CRITICAL, 6 MEDIUM)"
     notes: "✅ CODE REVIEW APPROVED - Backend implementation COMPLETE with all critical fixes applied. Delivered: (1) User + UtilizationHistory models with migration committed, (2) WorkloadService with N+1 query fix using aggregation, (3) 4 REST API endpoints with RBAC + rate limiting, (4) Cron jobs with upsert race condition fix, (5) Project reassignment API with transaction-wrapped audit logging, (6) 10 Prometheus metrics registered. Tests: 21/21 unit tests passing. Build: ✅ passing. AC Coverage: AC#1-2,4-8 ✅ complete, AC#3 ⚠️ partial (logging only, notification service deferred), AC#9 ⚠️ deferred (frontend in dsf-dashboard). Known Limitations: Notification service integration required for AC#3 alerts, frontend components delegated to AI, burnout threshold hardcoded at 80% (recommend making configurable), pagination not implemented (acceptable for MVP). PERFORMANCE OPTIMIZED: getTeamCapacity() uses aggregation instead of N+1 queries. OBSERVABILITY ENABLED: All metrics properly registered. DATA INTEGRITY: Upsert prevents duplicate snapshots, transaction ensures audit log atomicity. Ready for production deployment."
-  5-4-UI-workload-capacity-dashboard: drafted
+  5-4-UI-workload-capacity-dashboard: done
   5-5-client-communication-intelligence:
     status: done
     developer: "Antigravity"
