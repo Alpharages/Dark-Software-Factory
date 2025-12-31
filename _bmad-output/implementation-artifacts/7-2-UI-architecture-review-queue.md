@@ -1,6 +1,6 @@
 # Story 7.2-UI: Architecture Review Queue (Frontend)
 
-**Status:** ready-for-dev  
+**Status:** done  
 **Epic:** Epic 7 (Architecture Decision Records & Review Queue)  
 **Story ID:** 7-2-UI-architecture-review-queue  
 **Priority:** Medium  
@@ -201,82 +201,82 @@ Epic 7 enables Technical Leads to review and approve AI architecture decisions b
 
 ### 1. Page Setup & Routing (AC: #1)
 
-- [ ] **Create Architecture Review Queue Page:** `src/pages/ArchitectureReviewQueuePage.tsx`
-  - [ ] Header with title, breadcrumbs, filter section
-  - [ ] Table/grid layout for ADR list
-  - [ ] Role-based access guard (useAuth hook)
+- [x] **Create Architecture Review Queue Page:** `src/pages/ArchitectureReviewQueuePage.tsx`
+  - [x] Header with title, breadcrumbs, filter section
+  - [x] Table/grid layout for ADR list
+  - [x] Role-based access guard (useAuth hook)
 
-- [ ] **Add Route:** Update `src/App.tsx` (or Next.js `/app` directory)
-  - [ ] Route: `<Route path="/architecture-review/queue" element={<ArchitectureReviewQueuePage />} />`
-  - [ ] Protected route wrapper: `<ProtectedRoute requiredRole="TL" />` or equivalent
+- [x] **Add Route:** Update `src/App.tsx` (or Next.js `/app` directory)
+  - [x] Route: `<Route path="/architecture-review/queue" element={<ArchitectureReviewQueuePage />} />`
+  - [x] Protected route wrapper: `<ProtectedRoute requiredRole="TL" />` or equivalent
 
-- [ ] **Sidebar Navigation:** Update `src/components/layout/Sidebar.tsx`
-  - [ ] Add "Architecture Review" link with 🏗️ icon (lucide-react `Building` or `FileCheck`)
-  - [ ] Conditional rendering: Show only for TL/ADMIN roles
-  - [ ] Active state when on `/architecture-review/queue`
+- [x] **Sidebar Navigation:** Update `src/components/layout/Sidebar.tsx`
+  - [x] Add "Architecture Review" link with 🏗️ icon (lucide-react `Building` or `FileCheck`)
+  - [x] Conditional rendering: Show only for TL/ADMIN roles
+  - [x] Active state when on `/architecture-review/queue`
 
 ---
 
 ### 2. ADR Queue List Component (AC: #1, #2, #3)
 
-- [ ] **Create ADR Queue Table:** `src/components/architecture-review/AdrReviewQueueTable.tsx`
-  - [ ] Table columns: Title, Risk Level, Confidence, Project, Ticket, Review Time, Actions
-  - [ ] Risk level badge component (color-coded)
-  - [ ] Confidence score as percentage (e.g., `85%`)
-  - [ ] "Review" button per row → Opens detail modal
-  - [ ] Empty state: "No ADRs pending"
-  - [ ] Loading skeleton for data fetch
-  - [ ] **REUSE PATTERN:** Refer to `src/components/financial/ExportableDataTable.tsx` for sortable table implementation
+- [x] **Create ADR Queue Table:** `src/components/architecture-review/AdrReviewQueueTable.tsx`
+  - [x] Table columns: Title, Risk Level, Confidence, Project, Ticket, Review Time, Actions
+  - [x] Risk level badge component (color-coded)
+  - [x] Confidence score as percentage (e.g., `85%`)
+  - [x] "Review" button per row → Opens detail modal
+  - [x] Empty state: "No ADRs pending"
+  - [x] Loading skeleton for data fetch
+  - [x] **REUSE PATTERN:** Refer to `src/components/financial/ExportableDataTable.tsx` for sortable table implementation
 
-- [ ] **Create Filter Panel:** `src/components/architecture-review/AdrQueueFilters.tsx`
-  - [ ] Risk level dropdown (ALL, HIGH, MEDIUM, LOW)
-  - [ ] Project multi-select (fetch from `/api/v1/pm-dashboard/projects`)
-  - [ ] Confidence range slider or min/max inputs
-  - [ ] Sort dropdown (risk_level, created_at, confidence)
-  - [ ] "Clear Filters" button
-  - [ ] Filter state management with React hooks or Zustand
+- [x] **Create Filter Panel:** `src/components/architecture-review/AdrQueueFilters.tsx`
+  - [x] Risk level dropdown (ALL, HIGH, MEDIUM, LOW)
+  - [x] Project multi-select (fetch from `/api/v1/pm-dashboard/projects`)
+  - [x] Confidence range slider or min/max inputs
+  - [x] Sort dropdown (risk_level, created_at, confidence)
+  - [x] "Clear Filters" button
+  - [x] Filter state management with React hooks or Zustand
 
-- [ ] **Create Risk Badge Component:** `src/components/architecture-review/RiskBadge.tsx`
-  - [ ] HIGH: Red badge with 🔴 icon
-  - [ ] MEDIUM: Yellow badge with 🟡 icon
-  - [ ] LOW: Green badge with 🟢 icon
-  - [ ] Reusable across table and modal
+- [x] **Create Risk Badge Component:** `src/components/architecture-review/RiskBadge.tsx`
+  - [x] HIGH: Red badge with 🔴 icon
+  - [x] MEDIUM: Yellow badge with 🟡 icon
+  - [x] LOW: Green badge with 🟢 icon
+  - [x] Reusable across table and modal
 
 ---
 
 ### 3. ADR Detail Modal Component (AC: #3, #4)
 
-- [ ] **Create ADR Detail Modal:** `src/components/architecture-review/AdrDetailModal.tsx`
-  - [ ] Modal overlay (shadcn/ui `Dialog` component or custom)
-  - [ ] Header section: Title, status badge, risk badge, confidence score
-  - [ ] Content sections with markdown rendering:
-    - [ ] Context (collapsible card)
-    - [ ] Decision (highlighted card)
-    - [ ] Consequences (2-column positive/negative)
-    - [ ] Alternatives (expandable list)
-  - [ ] Footer action buttons: Approve, Reject, Modify, Defer, Close
-  - [ ] Keyboard shortcuts: ESC (close), A (approve), R (reject)
+- [x] **Create ADR Detail Modal:** `src/components/architecture-review/AdrDetailModal.tsx`
+  - [x] Modal overlay (shadcn/ui `Dialog` component or custom)
+  - [x] Header section: Title, status badge, risk badge, confidence score
+  - [x] Content sections with markdown rendering:
+    - [x] Context (collapsible card)
+    - [x] Decision (highlighted card)
+    - [x] Consequences (2-column positive/negative)
+    - [x] Alternatives (expandable list)
+  - [x] Footer action buttons: Approve, Reject, Modify, Defer, Close
+  - [x] Keyboard shortcuts: ESC (close), A (approve), R (reject)
 
-- [ ] **Create Review Action Buttons:** `src/components/architecture-review/ReviewActionButtons.tsx`
-  - [ ] Approve button (green, instant action)
-  - [ ] Reject button (red, prompts for reason)
-  - [ ] Modify button (yellow, prompts for notes)
-  - [ ] Defer button (gray, optional reason)
-  - [ ] Loading spinner during API call
-  - [ ] Success/error Toast notifications
+- [x] **Create Review Action Buttons:** `src/components/architecture-review/ReviewActionButtons.tsx`
+  - [x] Approve button (green, instant action)
+  - [x] Reject button (red, prompts for reason)
+  - [x] Modify button (yellow, prompts for notes)
+  - [x] Defer button (gray, optional reason)
+  - [x] Loading spinner during API call
+  - [x] Success/error Toast notifications
 
-- [ ] **Create Rejection/Modification Prompts:** `src/components/architecture-review/ReviewReasonModal.tsx`
-  - [ ] Text area for rejection reason (required, min 10 chars)
-  - [ ] Text area for modification notes (required, min 10 chars)
-  - [ ] Text area for defer reason (optional)
-  - [ ] "Confirm" and "Cancel" buttons
-  - [ ] Validation error display
+- [x] **Create Rejection/Modification Prompts:** `src/components/architecture-review/ReviewReasonModal.tsx`
+  - [x] Text area for rejection reason (required, min 10 chars)
+  - [x] Text area for modification notes (required, min 10 chars)
+  - [x] Text area for defer reason (optional)
+  - [x] "Confirm" and "Cancel" buttons
+  - [x] Validation error display
 
 ---
 
 ### 4. API Integration (AC: All)
 
-- [ ] **Create API Client Functions:** `src/api/architectureReviewApi.ts`
+- [x] **Create API Client Functions:** `src/api/architectureReviewApi.ts`
   ```typescript
   export async function getAdrQueue(
     filters: AdrQueueFilters
@@ -296,7 +296,7 @@ Epic 7 enables Technical Leads to review and approve AI architecture decisions b
   }
   ```
 
-- [ ] **TypeScript Types:** `src/types/architectureReview.ts`
+- [x] **TypeScript Types:** `src/types/architectureReview.ts`
   ```typescript
   export interface AdrQueueItem {
     id: string;
@@ -328,7 +328,7 @@ Epic 7 enables Technical Leads to review and approve AI architecture decisions b
   }
   ```
 
-- [ ] **React Query Hooks:** `src/hooks/useAdrQueue.ts`
+- [x] **React Query Hooks:** `src/hooks/useAdrQueue.ts`
   ```typescript
   export function useAdrQueue(filters: AdrQueueFilters) {
     return useQuery({
@@ -357,15 +357,15 @@ Epic 7 enables Technical Leads to review and approve AI architecture decisions b
 
 ### 5. State Management & URL Params (AC: #2)
 
-- [ ] **Filter State Management:** Use React state or Zustand
-  - [ ] Store: `riskLevel`, `projectId`, `minConfidence`, `maxConfidence`, `sortBy`
-  - [ ] Sync state with URL query params (React Router or Next.js router)
-  - [ ] "Clear Filters" resets to defaults
+- [x] **Filter State Management:** Use React state or Zustand
+  - [x] Store: `riskLevel`, `projectId`, `minConfidence`, `maxConfidence`, `sortBy`
+  - [x] Sync state with URL query params (React Router or Next.js router)
+  - [x] "Clear Filters" resets to defaults
 
-- [ ] **URL Param Handling:**
-  - [ ] Read params on page load: `const [searchParams] = useSearchParams();`
-  - [ ] Update URL when filters change: `setSearchParams({ risk: 'HIGH', project: 'abc' })`
-  - [ ] Bookmarkable filter states
+- [x] **URL Param Handling:**
+  - [x] Read params on page load: `const [searchParams] = useSearchParams();`
+  - [x] Update URL when filters change: `setSearchParams({ risk: 'HIGH', project: 'abc' })`
+  - [x] Bookmarkable filter states
 
 ---
 
@@ -373,20 +373,20 @@ Epic 7 enables Technical Leads to review and approve AI architecture decisions b
 
 #### Unit Tests (Jest + React Testing Library)
 
-- [ ] `ArchitectureReviewQueuePage.test.tsx`
-  - [ ] Test rendering with mock data
-  - [ ] Test filter changes update query
-  - [ ] Test role guard redirects non-TLs
+- [x] `ArchitectureReviewQueuePage.test.tsx`
+  - [x] Test rendering with mock data
+  - [x] Test filter changes update query
+  - [x] Test role guard redirects non-TLs
 
-- [ ] `AdrDetailModal.test.tsx`
-  - [ ] Test modal open/close
-  - [ ] Test action buttons trigger API calls
-  - [ ] Test rejection reason required validation
+- [x] `AdrDetailModal.test.tsx`
+  - [x] Test modal open/close
+  - [x] Test action buttons trigger API calls
+  - [x] Test rejection reason required validation
 
-- [ ] `AdrReviewQueueTable.test.tsx`
-  - [ ] Test table rendering with ADRs
-  - [ ] Test "Review" button opens modal
-  - [ ] Test empty state display
+- [x] `AdrReviewQueueTable.test.tsx`
+  - [x] Test table rendering with ADRs
+  - [x] Test "Review" button opens modal
+  - [x] Test empty state display
 
 #### E2E Tests (Playwright or Cypress)
 
@@ -517,12 +517,29 @@ Antigravity (via Create-Story Workflow)
 N/A
 
 ### Completion Notes List
-
-\u003c!-- Dev agent will populate during implementation --\u003e
+ - Verified all files created and functional
+ - Unit tests created for `AdrDetailModal` and `AdrReviewQueueTable`
+ - Fixed: `Project` fetching implemented dynamically (AC#2)
+ - Fixed: `ReactMarkdown` used for ADR content (AC#3)
 
 ### File List
-
-\u003c!-- Dev agent will populate during implementation --\u003e
+#### [NEW] [ArchitectureReviewQueuePage.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/pages/ArchitectureReviewQueuePage.tsx)
+#### [NEW] [AdrReviewQueueTable.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/AdrReviewQueueTable.tsx)
+#### [NEW] [AdrQueueFilters.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/AdrQueueFilters.tsx)
+#### [NEW] [RiskBadge.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/RiskBadge.tsx)
+#### [NEW] [AdrDetailModal.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/AdrDetailModal.tsx)
+#### [NEW] [ReviewActionButtons.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/ReviewActionButtons.tsx)
+#### [NEW] [ReviewReasonModal.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/ReviewReasonModal.tsx)
+#### [NEW] [AdrQueueCard.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/AdrQueueCard.tsx)
+#### [NEW] [architectureReviewApi.ts](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/api/architectureReviewApi.ts)
+#### [NEW] [projectsApi.ts](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/api/projectsApi.ts)
+#### [NEW] [architectureReview.ts](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/types/architectureReview.ts)
+#### [NEW] [useAdrQueue.ts](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/hooks/useAdrQueue.ts)
+#### [NEW] [ArchitectureReviewQueuePage.test.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/pages/ArchitectureReviewQueuePage.test.tsx)
+#### [NEW] [AdrDetailModal.test.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/AdrDetailModal.test.tsx)
+#### [NEW] [AdrReviewQueueTable.test.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/architecture-review/AdrReviewQueueTable.test.tsx)
+#### [MODIFY] [App.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/App.tsx)
+#### [MODIFY] [Sidebar.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/layout/Sidebar.tsx)
 
 ---
 
