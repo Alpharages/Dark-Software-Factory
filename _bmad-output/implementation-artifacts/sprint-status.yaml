@@ -546,6 +546,7 @@ development_status:
     start_date: "2026-01-01"
     end_date: "2026-01-01"
     completion_notes: "Implemented constraint validation logic and integrated with ADR service. Verified with tests."
+  7-9-UI-architecture-constraints-management: backlog
   7-6-ai-escalation-uncertainty-handling: backlog
   7-7-tl-capability-management-ai-limitations: backlog
   7-8-architecture-review-metrics-insights: backlog
