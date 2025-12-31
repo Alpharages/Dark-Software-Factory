@@ -194,3 +194,23 @@ export const ReportStatus = {
 } as const
 
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus]
+
+
+export const AdrStatus = {
+  PROPOSED: 'PROPOSED',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  DEPRECATED: 'DEPRECATED',
+  SUPERSEDED: 'SUPERSEDED'
+} as const
+
+export type AdrStatus = (typeof AdrStatus)[keyof typeof AdrStatus]
+
+
+export const RiskLevel = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH'
+} as const
+
+export type RiskLevel = (typeof RiskLevel)[keyof typeof RiskLevel]

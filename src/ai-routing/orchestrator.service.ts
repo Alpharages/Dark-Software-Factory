@@ -25,6 +25,8 @@ import { ProviderFactoryService } from './provider-factory.service';
 import { FallbackStrategyService } from './fallback-strategy.service';
 import { AIExecutionService } from './ai-execution.service'; // Story 5.6
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service'; // Story 11.4
+import { AdrParserService } from './adr-parser.service'; // Story 7.1
+import { AdrService } from '../architecture-review/adr.service'; // Story 7.1
 
 @Injectable()
 export class OrchestratorService {
@@ -49,13 +51,17 @@ export class OrchestratorService {
     private readonly fallbackStrategy: FallbackStrategyService,
     private readonly aiExecution: AIExecutionService, // Story 5.6
     private readonly aiDecisionLogger: AIDecisionLoggerService, // Story 11.4
+    private readonly adrParser: AdrParserService, // Story 7.1
+    private readonly adrService: AdrService, // Story 7.1
     @InjectMetric('orchestrator_executions_total')
     private readonly executionsCounter: Counter<string>,
     @InjectMetric('orchestrator_execution_duration_seconds')
     private readonly durationHistogram: Histogram<string>,
     @InjectMetric('orchestrator_cost_cents')
     private readonly costGauge: Gauge<string>,
-  ) {}
+    @InjectMetric('adr_creation_total')
+    private readonly adrCreationCounter: Counter<string>,
+  ) { }
 
   /**
    * Execute AI code generation with intelligent orchestration
@@ -85,7 +91,7 @@ export class OrchestratorService {
 
         this.logger.log(
           `[${correlationId}] Provider selected: primary=${selection.primary}, ` +
-            `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
+          `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
         );
       }
 
@@ -125,8 +131,32 @@ export class OrchestratorService {
 
         this.logger.log(
           `[${correlationId}] Orchestration successful: provider=${result.executedBy}, ` +
-            `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
+          `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
         );
+
+        // Story 7.1: Parse and store ADR if AI generated one
+        try {
+          const aiResponse = executionResult.result.codeDiff || '';
+          if (this.adrParser.hasAdr(aiResponse)) {
+            const adrDto = this.adrParser.parseAdrFromResponse(
+              aiResponse,
+              input.executionId,
+              input.ticketId,
+            );
+
+            if (adrDto) {
+              const savedAdr = await this.adrService.create(adrDto);
+              this.adrCreationCounter.inc({ risk_level: savedAdr.risk_level || 'UNKNOWN' });
+              this.logger.log(
+                `[${correlationId}] ADR created: ${savedAdr.title} (Risk: ${savedAdr.risk_level})`,
+              );
+            }
+          }
+        } catch (adrError) {
+          // Non-blocking error - log but don't fail the execution
+          const errMsg = adrError instanceof Error ? adrError.message : String(adrError);
+          this.logger.warn(`[${correlationId}] Failed to parse/save ADR: ${errMsg}`);
+        }
       } else {
         this.executionsCounter.inc({
           status: 'failed',
@@ -336,6 +366,30 @@ export class OrchestratorService {
 
       if (!result.success) {
         throw new Error(`AI Provider failed: ${result.error?.message || 'Unknown error'}`);
+      }
+
+      // Story 7.1: Parse and store ADR if AI generated one  
+      try {
+        const aiResponse = result.response || '';
+        if (this.adrParser.hasAdr(aiResponse)) {
+          const adrDto = this.adrParser.parseAdrFromResponse(
+            aiResponse,
+            correlationId,
+            ticketId,
+          );
+
+          if (adrDto) {
+            const savedAdr = await this.adrService.create(adrDto);
+            this.adrCreationCounter.inc({ risk_level: savedAdr.risk_level || 'UNKNOWN' });
+            this.logger.log(
+              `[${correlationId}] ADR created from task: ${savedAdr.title} (Risk: ${savedAdr.risk_level})`,
+            );
+          }
+        }
+      } catch (adrError) {
+        // Non-blocking error - log but don't fail the task
+        const errMsg = adrError instanceof Error ? adrError.message : String(adrError);
+        this.logger.warn(`[${correlationId}] Failed to parse/save ADR from task: ${errMsg}`);
       }
 
       return {

@@ -78,7 +78,8 @@ export const ModelName = {
   UtilizationHistory: 'UtilizationHistory',
   ClientConversation: 'ClientConversation',
   Report: 'Report',
-  SystemConfig: 'SystemConfig'
+  SystemConfig: 'SystemConfig',
+  Adr: 'Adr'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -548,6 +549,25 @@ export const SystemConfigScalarFieldEnum = {
 } as const
 
 export type SystemConfigScalarFieldEnum = (typeof SystemConfigScalarFieldEnum)[keyof typeof SystemConfigScalarFieldEnum]
+
+
+export const AdrScalarFieldEnum = {
+  id: 'id',
+  execution_id: 'execution_id',
+  ticket_id: 'ticket_id',
+  title: 'title',
+  status: 'status',
+  context: 'context',
+  decision: 'decision',
+  consequences: 'consequences',
+  alternatives: 'alternatives',
+  ai_confidence: 'ai_confidence',
+  risk_level: 'risk_level',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type AdrScalarFieldEnum = (typeof AdrScalarFieldEnum)[keyof typeof AdrScalarFieldEnum]
 
 
 export const SortOrder = {

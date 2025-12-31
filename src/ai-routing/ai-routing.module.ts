@@ -32,6 +32,8 @@ import { FileLocksModule } from '../file-locks/file-locks.module';
 import { GitHubModule } from '../github/github.module';
 import { StorageModule } from '../storage/storage.module';
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // Story 11.4
+import { AdrParserService } from './adr-parser.service'; // Story 7.1
+import { ArchitectureReviewModule } from '../architecture-review/architecture-review.module'; // Story 7.1
 
 /**
  * AI Routing Module
@@ -54,6 +56,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // 
     GitHubModule,
     forwardRef(() => StorageModule),
     AIDecisionLoggerModule,
+    ArchitectureReviewModule, // Story 7.1
   ],
   providers: [
     // Story 2.3: Routing services
@@ -81,6 +84,9 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // 
     ProviderFactoryService,
     FallbackStrategyService,
     // OrchestratorConsumer, // DISABLED: Conflicts with AIExecutionConsumer on ai-execution-queue
+
+    // Story 7.1: ADR Parser Service
+    AdrParserService,
 
     // Story 2.3 Metrics
     // Prometheus metrics
@@ -228,6 +234,13 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // 
       labelNames: ['from_provider', 'to_provider'],
       buckets: [30, 60, 120, 180, 300],
     }),
+
+    // Story 7.1: ADR Metrics
+    makeCounterProvider({
+      name: 'adr_creation_total',
+      help: 'Total ADRs created by AI',
+      labelNames: ['risk_level'],
+    }),
   ],
   exports: [
     // Story 2.3: Routing exports
@@ -251,4 +264,4 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // 
     FallbackStrategyService,
   ],
 })
-export class AiRoutingModule {}
+export class AiRoutingModule { }

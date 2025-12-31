@@ -411,7 +411,8 @@ export const ModelName = {
   UtilizationHistory: 'UtilizationHistory',
   ClientConversation: 'ClientConversation',
   Report: 'Report',
-  SystemConfig: 'SystemConfig'
+  SystemConfig: 'SystemConfig',
+  Adr: 'Adr'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -427,7 +428,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord" | "user" | "utilizationHistory" | "clientConversation" | "report" | "systemConfig"
+    modelProps: "project" | "ticket" | "execution" | "qAResult" | "gitHubInstallation" | "gitHubPush" | "deployment" | "costRecord" | "productionError" | "metric" | "auditLog" | "contextDocument" | "coverageBaseline" | "projectCoverageConfig" | "webhookEvent" | "workspace" | "aIDecisionLog" | "fileLock" | "fileLockQueue" | "aICostLog" | "ticketDependency" | "workspaceArchive" | "approvalRecord" | "user" | "utilizationHistory" | "clientConversation" | "report" | "systemConfig" | "adr"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2503,6 +2504,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Adr: {
+      payload: Prisma.$AdrPayload<ExtArgs>
+      fields: Prisma.AdrFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdrFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdrFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>
+        }
+        findFirst: {
+          args: Prisma.AdrFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdrFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>
+        }
+        findMany: {
+          args: Prisma.AdrFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>[]
+        }
+        create: {
+          args: Prisma.AdrCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>
+        }
+        createMany: {
+          args: Prisma.AdrCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdrCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>[]
+        }
+        delete: {
+          args: Prisma.AdrDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>
+        }
+        update: {
+          args: Prisma.AdrUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdrDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdrUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdrUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdrUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdrPayload>
+        }
+        aggregate: {
+          args: Prisma.AdrAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdr>
+        }
+        groupBy: {
+          args: Prisma.AdrGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdrGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdrCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdrCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2995,6 +3070,25 @@ export const SystemConfigScalarFieldEnum = {
 export type SystemConfigScalarFieldEnum = (typeof SystemConfigScalarFieldEnum)[keyof typeof SystemConfigScalarFieldEnum]
 
 
+export const AdrScalarFieldEnum = {
+  id: 'id',
+  execution_id: 'execution_id',
+  ticket_id: 'ticket_id',
+  title: 'title',
+  status: 'status',
+  context: 'context',
+  decision: 'decision',
+  consequences: 'consequences',
+  alternatives: 'alternatives',
+  ai_confidence: 'ai_confidence',
+  risk_level: 'risk_level',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type AdrScalarFieldEnum = (typeof AdrScalarFieldEnum)[keyof typeof AdrScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -3398,6 +3492,34 @@ export type EnumReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
 export type ListEnumReportStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReportStatus[]'>
     
 
+
+/**
+ * Reference to a field of type 'AdrStatus'
+ */
+export type EnumAdrStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AdrStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'AdrStatus[]'
+ */
+export type ListEnumAdrStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AdrStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RiskLevel'
+ */
+export type EnumRiskLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RiskLevel'>
+    
+
+
+/**
+ * Reference to a field of type 'RiskLevel[]'
+ */
+export type ListEnumRiskLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RiskLevel[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -3521,6 +3643,7 @@ export type GlobalOmitConfig = {
   clientConversation?: Prisma.ClientConversationOmit
   report?: Prisma.ReportOmit
   systemConfig?: Prisma.SystemConfigOmit
+  adr?: Prisma.AdrOmit
 }
 
 /* Types for Logging */

@@ -177,3 +177,8 @@ export type Report = Prisma.ReportModel
  * 
  */
 export type SystemConfig = Prisma.SystemConfigModel
+/**
+ * Model Adr
+ * 
+ */
+export type Adr = Prisma.AdrModel

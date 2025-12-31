@@ -61,6 +61,7 @@ model Ticket {
   ai_cost_logs      AICostLog[] // Story 13.1: AI cost tracking
   conversation      ClientConversation? @relation("ConversationTickets", fields: [conversation_id], references: [id]) // Story 5.5
   conversation_id   String? // Story 5.5: Optional link to conversation
+  adrs              Adr[] // One-to-many: Architecture Decision Records (Story 7.1)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -194,6 +195,7 @@ model Execution {
   fileLockQueueEntries FileLockQueue[] // One-to-many: File lock acquisition queue (Story 12.3)
   aiCostLogs           AICostLog[] // One-to-many: AI cost tracking
   archive              WorkspaceArchive? // One-to-one: Workspace archive metadata
+  adrs                 Adr[] // One-to-many: Architecture Decision Records (Story 7.1)
 
   @@index([ticket_id, status])
   @@index([ai_provider, status])
@@ -873,4 +875,52 @@ model SystemConfig {
   updated_at  DateTime @updatedAt
 
   @@map("system_configs")
+}
+
+// ============================================
+// STORY 7.1: ARCHITECTURE DECISION RECORDS (ADR)
+// ============================================
+
+model Adr {
+  id             String   @id @default(uuid())
+  execution_id   String?
+  ticket_id      String?
+  
+  // ADR Core Fields (Michael Nygard template)
+  title          String // Short descriptive name (e.g., "Use Redis for Session Storage")
+  status         AdrStatus @default(PROPOSED)
+  context        String   @db.Text // Why this decision is needed
+  decision       String   @db.Text // What was chosen
+  consequences   String   @db.Text // Positive and negative impacts
+  alternatives   String?  @db.Text // Other options AI evaluated
+  
+  // AI Metadata
+  ai_confidence  Float? // AI confidence score (0-1)
+  risk_level     RiskLevel? // Calculated risk (HIGH/MEDIUM/LOW)
+  
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  
+  // Relations
+  execution Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+  ticket    Ticket?    @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
+  
+  @@index([execution_id])
+  @@index([ticket_id])
+  @@index([status])
+  @@map("adrs")
+}
+
+enum AdrStatus {
+  PROPOSED // Awaiting TL review
+  ACCEPTED
+  REJECTED
+  DEPRECATED
+  SUPERSEDED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
 }

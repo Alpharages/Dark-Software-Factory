@@ -290,6 +290,59 @@ ${fileBlocks.join('\n\n')}`;
 5. **Testing Consideration:**
    Ensure your implementation is testable and follows the existing test patterns.
 
+## Architecture Decision Records (ADR)
+
+**When to generate an ADR:** If your implementation involves ANY of the following significant architectural decisions:
+- Adding new dependencies or libraries
+- Database schema changes or migrations
+- Breaking changes to existing APIs
+- Infrastructure or deployment changes
+- Major refactoring affecting multiple modules
+- Security-sensitive changes
+- Performance optimization strategies
+- New design patterns or architectural patterns
+
+**ADR Output Format (JSON):**
+If you make a significant architectural decision, include an ADR in your response using this exact JSON structure:
+
+\`\`\`json
+{
+  "adr": {
+    "title": "Short descriptive name (e.g., 'Use Redis for Session Storage')",
+    "context": "Why this decision is needed",
+    "decision": "What was chosen",
+    "consequences": "Positive and negative impacts",
+    "alternatives": "Other options considered",
+    "ai_confidence": 0.85,
+    "risk_level": "HIGH | MEDIUM | LOW"
+  }
+}
+\`\`\`
+
+**ADR Fields:**
+- \`title\`: Clear, concise name (1-10 words)
+- \`context\`: Why the decision is needed (2-3 sentences)
+- \`decision\`: What was chosen and why (2-4 sentences)
+- \`consequences\`: Positive/negative trade-offs (3-5 bullet points)
+- \`alternatives\`: Other options you evaluated (2-3 alternatives)
+- \`ai_confidence\`: Your confidence in this decision (0.0-1.0)
+- \`risk_level\`: HIGH (dependencies/schema), MEDIUM (refactoring), LOW (minor changes)
+
+**Example ADR:**
+\`\`\`json
+{
+  "adr": {
+    "title": "Use Zod for Runtime Validation",
+    "context": "NestJS class-validator doesn't provide runtime type safety for complex nested objects",
+    "decision": "Adopt Zod for DTO validation to get both compile-time and runtime safety",
+    "consequences": "+ Type-safe validation\\n+ Better error messages\\n+ Developer experience improved\\n- New dependency\\n- Migration effort needed",
+    "alternatives": "io-ts (more complex), AJV (JSON schema only), stick with class-validator (no runtime safety)",
+    "ai_confidence": 0.90,
+    "risk_level": "MEDIUM"
+  }
+}
+\`\`\`
+
 **Begin your implementation now.**`;
   }
 

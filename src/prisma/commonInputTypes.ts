@@ -772,6 +772,40 @@ export type EnumReportStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumReportStatusFilter<$PrismaModel>
 }
 
+export type EnumAdrStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.AdrStatus | Prisma.EnumAdrStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAdrStatusFilter<$PrismaModel> | $Enums.AdrStatus
+}
+
+export type EnumRiskLevelNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel> | $Enums.RiskLevel | null
+}
+
+export type EnumAdrStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AdrStatus | Prisma.EnumAdrStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAdrStatusWithAggregatesFilter<$PrismaModel> | $Enums.AdrStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAdrStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAdrStatusFilter<$PrismaModel>
+}
+
+export type EnumRiskLevelNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRiskLevelNullableWithAggregatesFilter<$PrismaModel> | $Enums.RiskLevel | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1465,6 +1499,40 @@ export type NestedEnumReportStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumReportStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumReportStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumAdrStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.AdrStatus | Prisma.EnumAdrStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAdrStatusFilter<$PrismaModel> | $Enums.AdrStatus
+}
+
+export type NestedEnumRiskLevelNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel> | $Enums.RiskLevel | null
+}
+
+export type NestedEnumAdrStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AdrStatus | Prisma.EnumAdrStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AdrStatus[] | Prisma.ListEnumAdrStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAdrStatusWithAggregatesFilter<$PrismaModel> | $Enums.AdrStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAdrStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAdrStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumRiskLevelNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRiskLevelNullableWithAggregatesFilter<$PrismaModel> | $Enums.RiskLevel | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel>
 }
 
 
