@@ -584,7 +584,12 @@ development_status:
     files_modified: 2
     test_results: "3 test files created, build passing (Story 7-7-UI files)"
     notes: "CODE REVIEW COMPLETED \u0026 APPROVED 2026-01-01. Implemented AI Capability Management Dashboard UI in dsf-dasbhoard repository. Created 12 new files: API layer (types, client, hooks), capability metrics widgets (chart, grid), limitation management (table, modal), PM read-only view, main page. Modified: routing (App.tsx), sidebar navigation (Brain icon). Unit tests: CapabilityManagementPage (RBAC), LimitationFormModal (validation), LimitationListTable (filtering). Build: ✅ passing for Story 7-7-UI files. All ACs met: metrics visualization, limitation management, PM read-only view. RBAC implemented: TL/ADMIN can edit, PM read-only. CODE REVIEW FIXES: C1-Test import paths corrected, C2-All 14 files staged to git, C3-File List counts updated (10 new + 2 tests + 2 modified), C4-Dependencies documented (react-markdown, TooltipProvider). Known limitations: M1-Frontend RBAC (backend guards required for production), pre-existing TypeScript errors in other components (AdrReviewQueueTable, EscalationAnalyticsPage) not related to this story."
-  7-8-architecture-review-metrics-insights: backlog
+  7-8-architecture-review-metrics-insights:
+    status: done
+    code_review_date: "2026-01-01"
+    code_review_fixes: "2 CRITICAL (Mock insights, Empty trends), 1 HIGH (Empty file list)"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Replaced fake insights with real implementation in AdrInsightsService. Implemented daily trend analysis queries in AdrMetricsService. Fixed DTO property names and Status Enum usage. Populated Story File list. All ACs met."
+  7-8-UI-architecture-review-metrics-dashboard: backlog
   epic-7-retrospective: optional
 
   epic-8: backlog

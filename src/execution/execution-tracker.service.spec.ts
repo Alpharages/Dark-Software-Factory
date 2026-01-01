@@ -43,6 +43,7 @@ describe('ExecutionTrackerService', () => {
     circular_dep_detected: false,
     // Story 13.2: Cost Optimization
     selected_model: null,
+    task_type: null,
   };
 
   const mockMetricCounter = {

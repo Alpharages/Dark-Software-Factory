@@ -919,9 +919,14 @@ model Adr {
   tl_guidance           String?   @db.Text // TL's guidance response
   delegate_to           String?   // User ID if delegated to architect
   guidance_provided_at  DateTime? // When TL provided guidance
-  resolved_at           DateTime? // When escalation was resolved
-  escalation_duration_seconds Int? // Metrics: time from ESCALATED to GUIDANCE_PROVIDED
+  escalation_duration_seconds Int? // Time spent in escalation
+  resolving_execution_id String? // ID of execution that resolved the escalation
   
+  // Story 7.8: Review Metrics
+  reviewed_at           DateTime? // When review decision was made
+  review_duration_seconds Int?    // Time from proposal to decision
+  rejection_reason      String?   // Feedback for rejections
+
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
   
@@ -944,6 +949,17 @@ enum AdrStatus {
   ESCALATED      // Story 7.6: AI escalated due to low confidence
   GUIDANCE_PROVIDED // Story 7.6: TL provided guidance
   RESOLVED        // Story 7.6: Escalation resolved, new ADR created
+}
+
+// Story 7.8: Architecture Review Alerts
+model AdrAlert {
+  id           String   @id @default(uuid())
+  alert_type   String   // QUEUE_DEPTH, APPROVAL_RATE, DELAY
+  triggered_at DateTime @default(now())
+  metadata     Json?
+  
+  @@index([alert_type, triggered_at])
+  @@map("adr_alerts")
 }
 
 enum RiskLevel {

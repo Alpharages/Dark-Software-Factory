@@ -29,11 +29,13 @@ export type AggregateAdr = {
 export type AdrAvgAggregateOutputType = {
   ai_confidence: number | null
   escalation_duration_seconds: number | null
+  review_duration_seconds: number | null
 }
 
 export type AdrSumAggregateOutputType = {
   ai_confidence: number | null
   escalation_duration_seconds: number | null
+  review_duration_seconds: number | null
 }
 
 export type AdrMinAggregateOutputType = {
@@ -52,8 +54,11 @@ export type AdrMinAggregateOutputType = {
   tl_guidance: string | null
   delegate_to: string | null
   guidance_provided_at: Date | null
-  resolved_at: Date | null
   escalation_duration_seconds: number | null
+  resolving_execution_id: string | null
+  reviewed_at: Date | null
+  review_duration_seconds: number | null
+  rejection_reason: string | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -74,8 +79,11 @@ export type AdrMaxAggregateOutputType = {
   tl_guidance: string | null
   delegate_to: string | null
   guidance_provided_at: Date | null
-  resolved_at: Date | null
   escalation_duration_seconds: number | null
+  resolving_execution_id: string | null
+  reviewed_at: Date | null
+  review_duration_seconds: number | null
+  rejection_reason: string | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -99,8 +107,11 @@ export type AdrCountAggregateOutputType = {
   tl_guidance: number
   delegate_to: number
   guidance_provided_at: number
-  resolved_at: number
   escalation_duration_seconds: number
+  resolving_execution_id: number
+  reviewed_at: number
+  review_duration_seconds: number
+  rejection_reason: number
   created_at: number
   updated_at: number
   _all: number
@@ -110,11 +121,13 @@ export type AdrCountAggregateOutputType = {
 export type AdrAvgAggregateInputType = {
   ai_confidence?: true
   escalation_duration_seconds?: true
+  review_duration_seconds?: true
 }
 
 export type AdrSumAggregateInputType = {
   ai_confidence?: true
   escalation_duration_seconds?: true
+  review_duration_seconds?: true
 }
 
 export type AdrMinAggregateInputType = {
@@ -133,8 +146,11 @@ export type AdrMinAggregateInputType = {
   tl_guidance?: true
   delegate_to?: true
   guidance_provided_at?: true
-  resolved_at?: true
   escalation_duration_seconds?: true
+  resolving_execution_id?: true
+  reviewed_at?: true
+  review_duration_seconds?: true
+  rejection_reason?: true
   created_at?: true
   updated_at?: true
 }
@@ -155,8 +171,11 @@ export type AdrMaxAggregateInputType = {
   tl_guidance?: true
   delegate_to?: true
   guidance_provided_at?: true
-  resolved_at?: true
   escalation_duration_seconds?: true
+  resolving_execution_id?: true
+  reviewed_at?: true
+  review_duration_seconds?: true
+  rejection_reason?: true
   created_at?: true
   updated_at?: true
 }
@@ -180,8 +199,11 @@ export type AdrCountAggregateInputType = {
   tl_guidance?: true
   delegate_to?: true
   guidance_provided_at?: true
-  resolved_at?: true
   escalation_duration_seconds?: true
+  resolving_execution_id?: true
+  reviewed_at?: true
+  review_duration_seconds?: true
+  rejection_reason?: true
   created_at?: true
   updated_at?: true
   _all?: true
@@ -292,8 +314,11 @@ export type AdrGroupByOutputType = {
   tl_guidance: string | null
   delegate_to: string | null
   guidance_provided_at: Date | null
-  resolved_at: Date | null
   escalation_duration_seconds: number | null
+  resolving_execution_id: string | null
+  reviewed_at: Date | null
+  review_duration_seconds: number | null
+  rejection_reason: string | null
   created_at: Date
   updated_at: Date
   _count: AdrCountAggregateOutputType | null
@@ -340,8 +365,11 @@ export type AdrWhereInput = {
   tl_guidance?: Prisma.StringNullableFilter<"Adr"> | string | null
   delegate_to?: Prisma.StringNullableFilter<"Adr"> | string | null
   guidance_provided_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
-  resolved_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
   escalation_duration_seconds?: Prisma.IntNullableFilter<"Adr"> | number | null
+  resolving_execution_id?: Prisma.StringNullableFilter<"Adr"> | string | null
+  reviewed_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
+  review_duration_seconds?: Prisma.IntNullableFilter<"Adr"> | number | null
+  rejection_reason?: Prisma.StringNullableFilter<"Adr"> | string | null
   created_at?: Prisma.DateTimeFilter<"Adr"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Adr"> | Date | string
   execution?: Prisma.XOR<Prisma.ExecutionNullableScalarRelationFilter, Prisma.ExecutionWhereInput> | null
@@ -367,8 +395,11 @@ export type AdrOrderByWithRelationInput = {
   tl_guidance?: Prisma.SortOrderInput | Prisma.SortOrder
   delegate_to?: Prisma.SortOrderInput | Prisma.SortOrder
   guidance_provided_at?: Prisma.SortOrderInput | Prisma.SortOrder
-  resolved_at?: Prisma.SortOrderInput | Prisma.SortOrder
   escalation_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder
+  resolving_execution_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  reviewed_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  review_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder
+  rejection_reason?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   execution?: Prisma.ExecutionOrderByWithRelationInput
@@ -397,8 +428,11 @@ export type AdrWhereUniqueInput = Prisma.AtLeast<{
   tl_guidance?: Prisma.StringNullableFilter<"Adr"> | string | null
   delegate_to?: Prisma.StringNullableFilter<"Adr"> | string | null
   guidance_provided_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
-  resolved_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
   escalation_duration_seconds?: Prisma.IntNullableFilter<"Adr"> | number | null
+  resolving_execution_id?: Prisma.StringNullableFilter<"Adr"> | string | null
+  reviewed_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
+  review_duration_seconds?: Prisma.IntNullableFilter<"Adr"> | number | null
+  rejection_reason?: Prisma.StringNullableFilter<"Adr"> | string | null
   created_at?: Prisma.DateTimeFilter<"Adr"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Adr"> | Date | string
   execution?: Prisma.XOR<Prisma.ExecutionNullableScalarRelationFilter, Prisma.ExecutionWhereInput> | null
@@ -424,8 +458,11 @@ export type AdrOrderByWithAggregationInput = {
   tl_guidance?: Prisma.SortOrderInput | Prisma.SortOrder
   delegate_to?: Prisma.SortOrderInput | Prisma.SortOrder
   guidance_provided_at?: Prisma.SortOrderInput | Prisma.SortOrder
-  resolved_at?: Prisma.SortOrderInput | Prisma.SortOrder
   escalation_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder
+  resolving_execution_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  reviewed_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  review_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder
+  rejection_reason?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.AdrCountOrderByAggregateInput
@@ -457,8 +494,11 @@ export type AdrScalarWhereWithAggregatesInput = {
   tl_guidance?: Prisma.StringNullableWithAggregatesFilter<"Adr"> | string | null
   delegate_to?: Prisma.StringNullableWithAggregatesFilter<"Adr"> | string | null
   guidance_provided_at?: Prisma.DateTimeNullableWithAggregatesFilter<"Adr"> | Date | string | null
-  resolved_at?: Prisma.DateTimeNullableWithAggregatesFilter<"Adr"> | Date | string | null
   escalation_duration_seconds?: Prisma.IntNullableWithAggregatesFilter<"Adr"> | number | null
+  resolving_execution_id?: Prisma.StringNullableWithAggregatesFilter<"Adr"> | string | null
+  reviewed_at?: Prisma.DateTimeNullableWithAggregatesFilter<"Adr"> | Date | string | null
+  review_duration_seconds?: Prisma.IntNullableWithAggregatesFilter<"Adr"> | number | null
+  rejection_reason?: Prisma.StringNullableWithAggregatesFilter<"Adr"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Adr"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"Adr"> | Date | string
 }
@@ -480,8 +520,11 @@ export type AdrCreateInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   execution?: Prisma.ExecutionCreateNestedOneWithoutAdrsInput
@@ -507,8 +550,11 @@ export type AdrUncheckedCreateInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -530,8 +576,11 @@ export type AdrUpdateInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   execution?: Prisma.ExecutionUpdateOneWithoutAdrsNestedInput
@@ -557,8 +606,11 @@ export type AdrUncheckedUpdateInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -582,8 +634,11 @@ export type AdrCreateManyInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -605,8 +660,11 @@ export type AdrUpdateManyMutationInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -630,8 +688,11 @@ export type AdrUncheckedUpdateManyInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -665,8 +726,11 @@ export type AdrCountOrderByAggregateInput = {
   tl_guidance?: Prisma.SortOrder
   delegate_to?: Prisma.SortOrder
   guidance_provided_at?: Prisma.SortOrder
-  resolved_at?: Prisma.SortOrder
   escalation_duration_seconds?: Prisma.SortOrder
+  resolving_execution_id?: Prisma.SortOrder
+  reviewed_at?: Prisma.SortOrder
+  review_duration_seconds?: Prisma.SortOrder
+  rejection_reason?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -674,6 +738,7 @@ export type AdrCountOrderByAggregateInput = {
 export type AdrAvgOrderByAggregateInput = {
   ai_confidence?: Prisma.SortOrder
   escalation_duration_seconds?: Prisma.SortOrder
+  review_duration_seconds?: Prisma.SortOrder
 }
 
 export type AdrMaxOrderByAggregateInput = {
@@ -692,8 +757,11 @@ export type AdrMaxOrderByAggregateInput = {
   tl_guidance?: Prisma.SortOrder
   delegate_to?: Prisma.SortOrder
   guidance_provided_at?: Prisma.SortOrder
-  resolved_at?: Prisma.SortOrder
   escalation_duration_seconds?: Prisma.SortOrder
+  resolving_execution_id?: Prisma.SortOrder
+  reviewed_at?: Prisma.SortOrder
+  review_duration_seconds?: Prisma.SortOrder
+  rejection_reason?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -714,8 +782,11 @@ export type AdrMinOrderByAggregateInput = {
   tl_guidance?: Prisma.SortOrder
   delegate_to?: Prisma.SortOrder
   guidance_provided_at?: Prisma.SortOrder
-  resolved_at?: Prisma.SortOrder
   escalation_duration_seconds?: Prisma.SortOrder
+  resolving_execution_id?: Prisma.SortOrder
+  reviewed_at?: Prisma.SortOrder
+  review_duration_seconds?: Prisma.SortOrder
+  rejection_reason?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -723,6 +794,7 @@ export type AdrMinOrderByAggregateInput = {
 export type AdrSumOrderByAggregateInput = {
   ai_confidence?: Prisma.SortOrder
   escalation_duration_seconds?: Prisma.SortOrder
+  review_duration_seconds?: Prisma.SortOrder
 }
 
 export type AdrCreateNestedManyWithoutTicketInput = {
@@ -834,8 +906,11 @@ export type AdrCreateWithoutTicketInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   execution?: Prisma.ExecutionCreateNestedOneWithoutAdrsInput
@@ -859,8 +934,11 @@ export type AdrUncheckedCreateWithoutTicketInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -913,8 +991,11 @@ export type AdrScalarWhereInput = {
   tl_guidance?: Prisma.StringNullableFilter<"Adr"> | string | null
   delegate_to?: Prisma.StringNullableFilter<"Adr"> | string | null
   guidance_provided_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
-  resolved_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
   escalation_duration_seconds?: Prisma.IntNullableFilter<"Adr"> | number | null
+  resolving_execution_id?: Prisma.StringNullableFilter<"Adr"> | string | null
+  reviewed_at?: Prisma.DateTimeNullableFilter<"Adr"> | Date | string | null
+  review_duration_seconds?: Prisma.IntNullableFilter<"Adr"> | number | null
+  rejection_reason?: Prisma.StringNullableFilter<"Adr"> | string | null
   created_at?: Prisma.DateTimeFilter<"Adr"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Adr"> | Date | string
 }
@@ -936,8 +1017,11 @@ export type AdrCreateWithoutExecutionInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   ticket?: Prisma.TicketCreateNestedOneWithoutAdrsInput
@@ -961,8 +1045,11 @@ export type AdrUncheckedCreateWithoutExecutionInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -1011,8 +1098,11 @@ export type AdrCreateManyTicketInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -1034,8 +1124,11 @@ export type AdrUpdateWithoutTicketInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   execution?: Prisma.ExecutionUpdateOneWithoutAdrsNestedInput
@@ -1059,8 +1152,11 @@ export type AdrUncheckedUpdateWithoutTicketInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1083,8 +1179,11 @@ export type AdrUncheckedUpdateManyWithoutTicketInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1107,8 +1206,11 @@ export type AdrCreateManyExecutionInput = {
   tl_guidance?: string | null
   delegate_to?: string | null
   guidance_provided_at?: Date | string | null
-  resolved_at?: Date | string | null
   escalation_duration_seconds?: number | null
+  resolving_execution_id?: string | null
+  reviewed_at?: Date | string | null
+  review_duration_seconds?: number | null
+  rejection_reason?: string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -1130,8 +1232,11 @@ export type AdrUpdateWithoutExecutionInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ticket?: Prisma.TicketUpdateOneWithoutAdrsNestedInput
@@ -1155,8 +1260,11 @@ export type AdrUncheckedUpdateWithoutExecutionInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1179,8 +1287,11 @@ export type AdrUncheckedUpdateManyWithoutExecutionInput = {
   tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolved_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1206,8 +1317,11 @@ export type AdrSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   tl_guidance?: boolean
   delegate_to?: boolean
   guidance_provided_at?: boolean
-  resolved_at?: boolean
   escalation_duration_seconds?: boolean
+  resolving_execution_id?: boolean
+  reviewed_at?: boolean
+  review_duration_seconds?: boolean
+  rejection_reason?: boolean
   created_at?: boolean
   updated_at?: boolean
   execution?: boolean | Prisma.Adr$executionArgs<ExtArgs>
@@ -1233,8 +1347,11 @@ export type AdrSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   tl_guidance?: boolean
   delegate_to?: boolean
   guidance_provided_at?: boolean
-  resolved_at?: boolean
   escalation_duration_seconds?: boolean
+  resolving_execution_id?: boolean
+  reviewed_at?: boolean
+  review_duration_seconds?: boolean
+  rejection_reason?: boolean
   created_at?: boolean
   updated_at?: boolean
   execution?: boolean | Prisma.Adr$executionArgs<ExtArgs>
@@ -1260,8 +1377,11 @@ export type AdrSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   tl_guidance?: boolean
   delegate_to?: boolean
   guidance_provided_at?: boolean
-  resolved_at?: boolean
   escalation_duration_seconds?: boolean
+  resolving_execution_id?: boolean
+  reviewed_at?: boolean
+  review_duration_seconds?: boolean
+  rejection_reason?: boolean
   created_at?: boolean
   updated_at?: boolean
   execution?: boolean | Prisma.Adr$executionArgs<ExtArgs>
@@ -1287,13 +1407,16 @@ export type AdrSelectScalar = {
   tl_guidance?: boolean
   delegate_to?: boolean
   guidance_provided_at?: boolean
-  resolved_at?: boolean
   escalation_duration_seconds?: boolean
+  resolving_execution_id?: boolean
+  reviewed_at?: boolean
+  review_duration_seconds?: boolean
+  rejection_reason?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type AdrOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "execution_id" | "ticket_id" | "title" | "status" | "context" | "decision" | "consequences" | "alternatives" | "ai_confidence" | "risk_level" | "risk_factors" | "escalation_reason" | "escalation_questions" | "trade_offs" | "tl_guidance" | "delegate_to" | "guidance_provided_at" | "resolved_at" | "escalation_duration_seconds" | "created_at" | "updated_at", ExtArgs["result"]["adr"]>
+export type AdrOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "execution_id" | "ticket_id" | "title" | "status" | "context" | "decision" | "consequences" | "alternatives" | "ai_confidence" | "risk_level" | "risk_factors" | "escalation_reason" | "escalation_questions" | "trade_offs" | "tl_guidance" | "delegate_to" | "guidance_provided_at" | "escalation_duration_seconds" | "resolving_execution_id" | "reviewed_at" | "review_duration_seconds" | "rejection_reason" | "created_at" | "updated_at", ExtArgs["result"]["adr"]>
 export type AdrInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   execution?: boolean | Prisma.Adr$executionArgs<ExtArgs>
   ticket?: boolean | Prisma.Adr$ticketArgs<ExtArgs>
@@ -1332,8 +1455,11 @@ export type $AdrPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     tl_guidance: string | null
     delegate_to: string | null
     guidance_provided_at: Date | null
-    resolved_at: Date | null
     escalation_duration_seconds: number | null
+    resolving_execution_id: string | null
+    reviewed_at: Date | null
+    review_duration_seconds: number | null
+    rejection_reason: string | null
     created_at: Date
     updated_at: Date
   }, ExtArgs["result"]["adr"]>
@@ -1779,8 +1905,11 @@ export interface AdrFieldRefs {
   readonly tl_guidance: Prisma.FieldRef<"Adr", 'String'>
   readonly delegate_to: Prisma.FieldRef<"Adr", 'String'>
   readonly guidance_provided_at: Prisma.FieldRef<"Adr", 'DateTime'>
-  readonly resolved_at: Prisma.FieldRef<"Adr", 'DateTime'>
   readonly escalation_duration_seconds: Prisma.FieldRef<"Adr", 'Int'>
+  readonly resolving_execution_id: Prisma.FieldRef<"Adr", 'String'>
+  readonly reviewed_at: Prisma.FieldRef<"Adr", 'DateTime'>
+  readonly review_duration_seconds: Prisma.FieldRef<"Adr", 'Int'>
+  readonly rejection_reason: Prisma.FieldRef<"Adr", 'String'>
   readonly created_at: Prisma.FieldRef<"Adr", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"Adr", 'DateTime'>
 }

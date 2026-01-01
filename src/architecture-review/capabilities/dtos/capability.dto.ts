@@ -5,7 +5,7 @@ import { TaskType } from '@/prisma/client';
 export class CreateLimitationDto {
   @ApiProperty({ enum: TaskType, description: 'Type of task to apply limitation to' })
   @IsEnum(TaskType)
-  taskType: TaskType;
+  taskType: TaskType = TaskType.CODE_GENERATION;
 
   @ApiPropertyOptional({ description: 'Description of known issues' })
   @IsOptional()
@@ -42,29 +42,29 @@ export class UpdateLimitationDto {
 
 export class CapabilityDashboardResponseDto {
   @ApiProperty({ description: 'Capabilities by task type' })
-  capabilities: CapabilityMetricDto[];
+  capabilities: CapabilityMetricDto[] = [];
 
   @ApiProperty({ description: 'Top limitations requiring attention' })
-  topLimitations: LimitationDto[];
+  topLimitations: LimitationDto[] = [];
 }
 
 export class CapabilityMetricDto {
   @ApiProperty({ enum: TaskType })
-  taskType: TaskType;
+  taskType: TaskType = TaskType.CODE_GENERATION;
 
   @ApiProperty({ description: 'Success rate percentage' })
-  successRate: number;
+  successRate: number = 0;
 
   @ApiProperty({ description: 'Trend indicator' })
-  trend: 'UP' | 'DOWN' | 'STABLE';
+  trend: 'UP' | 'DOWN' | 'STABLE' = 'STABLE';
 }
 
 export class LimitationDto {
   @ApiProperty({ enum: TaskType })
-  taskType: TaskType;
+  taskType: TaskType = TaskType.CODE_GENERATION;
 
   @ApiProperty({ description: 'Current failure rate' })
-  failureRate: number;
+  failureRate: number = 0;
 
   @ApiPropertyOptional({ description: 'Known issues description' })
   knownIssues?: string;
@@ -73,5 +73,5 @@ export class LimitationDto {
   workaround?: string;
 
   @ApiProperty({ description: 'Whether AI is disabled for this task' })
-  isDisabled: boolean;
+  isDisabled: boolean = false;
 }

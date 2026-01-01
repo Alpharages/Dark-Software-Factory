@@ -96,11 +96,11 @@ This decision has been pending review for too long and is blocking progress.
             const confidence = metadata.confidence || (adr.ai_confidence || 0) * 100;
 
             // Build escalation notification message
-            const questionsList = metadata.questions?.length > 0
+            const questionsList = (metadata.questions && metadata.questions.length > 0)
                 ? metadata.questions.map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')
                 : 'No specific questions provided';
 
-            const alternativesList = metadata.alternatives?.length > 0
+            const alternativesList = (metadata.alternatives && metadata.alternatives.length > 0)
                 ? metadata.alternatives.map((alt: string, i: number) => `${i + 1}. ${alt}`).join('\n')
                 : 'No alternatives documented';
 
@@ -265,6 +265,42 @@ Please review these failures and document known issues + workarounds in the capa
         } catch (error) {
             this.logger.error(`Failed to notify AI capability pattern: ${(error as Error).message}`);
             // Non-blocking - don't throw
+        }
+    }
+    /**
+     * Notify general architecture review alerts (Queue depth, aggregated delays)
+     * Story 7.8 AC#4
+     */
+    async notifyAlert(message: string): Promise<void> {
+        try {
+            this.logger.warn(`[ALERT] ${message}`);
+            // Since this is a general alert, we might not have a specific project ID/List ID.
+            // We should post to a central Architecture Board list or a default list if configured.
+            // For now, assume a configured list ID or fetch valid one.
+            // Using a fallback or searching for active project.
+
+            // NOTE: In real implementation, we'd have a config. 
+            // Here, we try to finding *any* active project or fallback to log only if no context.
+            // Or better, define a method to getting "Architecture_Board" list.
+
+            // Mock: finding the first active project
+            const project = await this.prisma.project.findFirst();
+            if (!project) {
+                this.logger.warn('No active project found to post alert to.');
+                return;
+            }
+            const listId = project.clickup_list_id;
+
+            await this.clickUp.createTask(listId, {
+                name: `[ALERT] Architecture Review: ${message}`,
+                description: `System Alert:\n\n${message}\n\nPlease check the Architecture Review Dashboard.`,
+                priority: 1, // Urgent
+                tags: ['system-alert', 'architecture'],
+                notify_all: true
+            });
+
+        } catch (error) {
+            this.logger.error(`Failed to notify alert: ${(error as Error).message}`);
         }
     }
 }

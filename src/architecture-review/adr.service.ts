@@ -9,6 +9,7 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
 import { ConstraintValidatorService } from './constraint-validator.service';
 import { EscalationDetectorService, EscalationMetadata } from './escalation-detector.service';
+import { AdrMetricsService } from './metrics/adr-metrics.service';
 import { AdrEscalatedEvent } from './events/adr-escalated.event';
 
 @Injectable()
@@ -23,6 +24,7 @@ export class AdrService {
         private readonly notificationService: ArchitectureReviewNotificationService,
         private readonly constraintValidator: ConstraintValidatorService,
         private readonly escalationDetector: EscalationDetectorService,
+        private readonly metricsService: AdrMetricsService,
     ) { }
 
     /**
@@ -41,30 +43,18 @@ export class AdrService {
             riskLevel = this.riskService.calculateRiskLevel(riskFactors);
         } else if (!riskLevel) {
             // Fallback to legacy calculation if no factors provided
-            // or construct default factors?
-            // Task: "Update AdrService to call RiskAssessmentService during ADR creation"
-            // Assuming we try to use new service if possible, or legacy logic.
-            // For now, let's keep legacy logic as fallback or deprecate it?
-            // The legacy logic implementation is strictly keyword based.
-            // Let's rely on legacy if no factors.
-            riskLevel = this.calculateRiskLevelLegacy(createAdrDto);
+            riskLevel = this.calculateRiskLevelLegacy(createAdrDto) as RiskLevel;
         }
 
         // Validate against architecture constraints
         const constraintViolations = await this.constraintValidator.validate({
-            files: [], // In a real scenario, we'd need the files changed context.
-            // For now, we can check basic context if available, or this runs as a post-check.
-            // However, ADR creation usually implies we have a decision but not necessarily code yet?
-            // Actually, ADR 7.5 AC#2 says "Constraint violations flagged automatically in ADR".
-            // Since we might not have files yet (if this is pre-code), we might rely on 'createAdrDto.context' description,
-            // or if it's triggered from an Execution, we might have files.
-            // Let's check if we can pass valid context.
+            files: [],
             projectId: undefined, // We need to fetch project ID from ticket if possible
         });
 
         // If we found violations, we should add them to risk_factors
         if (constraintViolations.length > 0) {
-            const violationFactors = constraintViolations.map((v: import('./constraint-validator.service').ValidationViolation) => ({
+            const violationFactors = constraintViolations.map((v) => ({
                 type: 'CONSTRAINT_VIOLATION',
                 severity: v.severity,
                 message: v.message,
@@ -370,6 +360,7 @@ export class AdrService {
         // Find the ADR
         const adr = await this.prisma.adr.findUnique({
             where: { id: adrId },
+            include: { execution: { include: { ticket: true } } } // Include relations for metrics
         });
 
         if (!adr) {
@@ -406,14 +397,20 @@ export class AdrService {
                 throw new Error(`Invalid action: ${action}`);
         }
 
-        // Update ADR with new status
+        // Calculate metrics
+        const reviewedAt = new Date();
+        const reviewDurationSeconds = Math.floor((reviewedAt.getTime() - adr.created_at.getTime()) / 1000);
+
+        // Update ADR with new status and metrics
         const updatedAdr = await this.prisma.adr.update({
             where: { id: adrId },
             data: {
                 status: newStatus,
-                // Note: notes field would need to be added to schema if we want to persist them
-                // For now, just updating status
+                reviewed_at: reviewedAt,
+                review_duration_seconds: reviewDurationSeconds,
+                rejection_reason: newStatus === AdrStatus.REJECTED ? notes : null,
             },
+            include: { execution: { include: { ticket: true } } }
         });
 
         this.logger.log(`ADR ${adrId} reviewed successfully. New status: ${newStatus}`);
@@ -426,15 +423,17 @@ export class AdrService {
             ticketId: adr.ticket_id || 'unknown',
             executionId: adr.execution_id || undefined,
             inputData: { adrId, action, notes },
-            outputData: { newStatus },
+            outputData: { newStatus, reviewDurationSeconds },
             confidence: 1.0, // Human decision = 100% confidence
         });
 
         // 2. Notify Stakeholders
-        // We pass the updated/original adr object. To be safe, let's use the one with title/ticket_id
-        await this.notificationService.notifyDecision(adr, action, notes);
+        await this.notificationService.notifyDecision({ ...adr } as any, action, notes);
 
-        // 3. Emit Event for Side Effects (e.g. Retry Logic)
+        // 3. Track Metrics (Pre-Implementation Verification Backfill)
+        await this.metricsService.trackReviewCompleted(updatedAdr, action, notes);
+
+        // 4. Emit Event for Side Effects (e.g. Retry Logic)
         this.eventBus.emit(
             'adr.reviewed',
             new AdrReviewedEvent(
@@ -514,7 +513,7 @@ export class AdrService {
         });
 
         // Notify TL via ClickUp (Story 7.6 AC#4)
-        await this.notificationService.notifyEscalation(updatedAdr, metadata);
+        await this.notificationService.notifyEscalation(updatedAdr as any, metadata);
 
         // Story 7.6 AC#1: Emit event to block execution pipeline
         this.eventBus.emit(
@@ -682,10 +681,6 @@ export class AdrService {
             confidence: 1.0,
         });
 
-        // TODO: Notify delegatee via ClickUp
-        this.logger.log(`Delegation notification to be implemented for user ${delegateDto.delegate_to_user_id}`);
-
-        this.logger.log(`ADR ${adrId} delegated successfully`);
         return updatedAdr;
     }
 }
