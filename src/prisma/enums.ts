@@ -201,7 +201,10 @@ export const AdrStatus = {
   ACCEPTED: 'ACCEPTED',
   REJECTED: 'REJECTED',
   DEPRECATED: 'DEPRECATED',
-  SUPERSEDED: 'SUPERSEDED'
+  SUPERSEDED: 'SUPERSEDED',
+  ESCALATED: 'ESCALATED',
+  GUIDANCE_PROVIDED: 'GUIDANCE_PROVIDED',
+  RESOLVED: 'RESOLVED'
 } as const
 
 export type AdrStatus = (typeof AdrStatus)[keyof typeof AdrStatus]

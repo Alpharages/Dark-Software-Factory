@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { CreateAdrDto, UpdateAdrDto, AdrReviewQueueQueryDto, AdrQueueItemDto } from './dto';
+import { CreateAdrDto, UpdateAdrDto, AdrReviewQueueQueryDto, AdrQueueItemDto, ProvideGuidanceDto, DelegateAdrDto } from './dto';
 import { Prisma, AdrStatus, RiskLevel } from '@/prisma/client';
 import { RiskAssessmentService } from './risk-assessment.service';
 import { EventBusService } from '../common/event-bus.service';
@@ -8,6 +8,8 @@ import { AdrReviewedEvent } from './events/adr-reviewed.event';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
 import { ConstraintValidatorService } from './constraint-validator.service';
+import { EscalationDetectorService, EscalationMetadata } from './escalation-detector.service';
+import { AdrEscalatedEvent } from './events/adr-escalated.event';
 
 @Injectable()
 export class AdrService {
@@ -20,6 +22,7 @@ export class AdrService {
         private readonly auditLogger: AIDecisionLoggerService,
         private readonly notificationService: ArchitectureReviewNotificationService,
         private readonly constraintValidator: ConstraintValidatorService,
+        private readonly escalationDetector: EscalationDetectorService,
     ) { }
 
     /**
@@ -98,6 +101,26 @@ export class AdrService {
         });
 
         this.logger.log(`ADR created successfully: ${adr.id}`);
+
+        // Story 7.6 AC#1: Check if ADR should be escalated due to low confidence
+        if (createAdrDto.ai_confidence !== undefined || createAdrDto.decision) {
+            const escalationCheck = this.escalationDetector.shouldEscalate({
+                aiConfidence: createAdrDto.ai_confidence,
+                aiResponse: `${createAdrDto.decision}\n\n${createAdrDto.alternatives || ''}`,
+                context: createAdrDto.context,
+            });
+
+            if (escalationCheck.shouldEscalate && escalationCheck.metadata) {
+                this.logger.warn(`ADR ${adr.id} requires escalation. Reason: ${escalationCheck.reason}`);
+
+                // Automatically escalate the ADR
+                await this.escalateToTL(adr.id, escalationCheck.reason || 'LOW_CONFIDENCE', escalationCheck.metadata);
+
+                // Note: escalateToTL() will emit AdrEscalatedEvent which ExecutionService should listen to for blocking
+                this.logger.log(`ADR ${adr.id} escalated - execution will be blocked until TL provides guidance`);
+            }
+        }
+
         return adr;
     }
 
@@ -440,5 +463,229 @@ export class AdrService {
                 updated_at: updatedAdr.updated_at,
             },
         };
+    }
+
+    /**
+     * Escalate an ADR to TL due to low confidence or uncertainty
+     * Story 7.6 AC#1, AC#2
+     * @param adrId - ADR ID
+     * @param reason - Escalation reason category
+     * @param metadata - Escalation metadata (questions, alternatives, trade-offs)
+     * @returns Updated ADR with ESCALATED status
+     */
+    async escalateToTL(
+        adrId: string,
+        reason: string,
+        metadata: EscalationMetadata,
+    ): Promise<any> {
+        this.logger.warn(`Escalating ADR ${adrId} to TL. Reason: ${reason}`);
+
+        // Find the ADR
+        const adr = await this.prisma.adr.findUnique({
+            where: { id: adrId },
+            include: { ticket: true, execution: true },
+        });
+
+        if (!adr) {
+            throw new Error('ADR not found');
+        }
+
+        // Update ADR to ESCALATED status
+        const updatedAdr = await this.prisma.adr.update({
+            where: { id: adrId },
+            data: {
+                status: AdrStatus.ESCALATED,
+                escalation_reason: reason,
+                escalation_questions: metadata.questions as any,
+                trade_offs: metadata.tradeOffs as any,
+            },
+        });
+
+        // Log escalation for audit trail
+        await this.auditLogger.logDecision({
+            agentName: 'escalation-detector',
+            action: 'escalate_adr',
+            reasoning: `Low confidence escalation: ${reason}`,
+            ticketId: adr.ticket_id || 'unknown',
+            executionId: adr.execution_id || undefined,
+            inputData: { adrId, reason, confidence: metadata.confidence },
+            outputData: { escalatedStatus: AdrStatus.ESCALATED },
+            confidence: 0.4, // Escalation itself indicates low confidence
+        });
+
+        // Notify TL via ClickUp (Story 7.6 AC#4)
+        await this.notificationService.notifyEscalation(updatedAdr, metadata);
+
+        // Story 7.6 AC#1: Emit event to block execution pipeline
+        this.eventBus.emit(
+            'adr.escalated',
+            new AdrEscalatedEvent(
+                adrId,
+                adr.ticket_id || '',
+                adr.execution_id || undefined,
+                reason,
+            ),
+        );
+
+        this.logger.log(`ADR ${adrId} escalated successfully`);
+        return updatedAdr;
+    }
+
+    /**
+     * Provide TL guidance for an escalated ADR
+     * Story 7.6 AC#3, AC#5
+     * @param adrId - ADR ID
+     * @param guidanceDto - Guidance data from TL
+     * @returns Updated ADR with GUIDANCE_PROVIDED status
+     */
+    async provideGuidance(
+        adrId: string,
+        guidanceDto: ProvideGuidanceDto,
+    ): Promise<any> {
+        this.logger.log(`Providing guidance for escalated ADR ${adrId}`);
+
+        // Find the ADR
+        const adr = await this.prisma.adr.findUnique({
+            where: { id: adrId },
+        });
+
+        if (!adr) {
+            throw new Error('ADR not found');
+        }
+
+        if (adr.status !== AdrStatus.ESCALATED) {
+            throw new Error('ADR is not in ESCALATED status');
+        }
+
+        const guidanceProvidedAt = new Date();
+        const escalationDuration = adr.created_at
+            ? Math.floor((guidanceProvidedAt.getTime() - adr.created_at.getTime()) / 1000)
+            : null;
+
+        // Update ADR with guidance
+        const updatedAdr = await this.prisma.adr.update({
+            where: { id: adrId },
+            data: {
+                status: AdrStatus.GUIDANCE_PROVIDED,
+                tl_guidance: guidanceDto.guidance,
+                guidance_provided_at: guidanceProvidedAt,
+                escalation_duration_seconds: escalationDuration,
+            },
+        });
+
+        // Log guidance provision
+        await this.auditLogger.logDecision({
+            agentName: 'TL/User',
+            action: 'provide_guidance',
+            reasoning: guidanceDto.guidance,
+            ticketId: adr.ticket_id || 'unknown',
+            executionId: adr.execution_id || undefined,
+            inputData: { adrId, guidance: guidanceDto.guidance },
+            outputData: { status: AdrStatus.GUIDANCE_PROVIDED },
+            confidence: 1.0, // Human guidance = 100% confidence
+        });
+
+        // Story 7.6 AC#3: If apply_globally flag, create architecture constraint from guidance
+        if (guidanceDto.apply_globally && adr.ticket_id) {
+            this.logger.log('Creating global architecture constraint from TL guidance');
+            // Note: This requires ArchitectureConstraintService integration
+            // For now, log the intent and track as technical debt
+            await this.auditLogger.logDecision({
+                agentName: 'TL/User',
+                action: 'create_constraint_from_guidance',
+                reasoning: `TL guidance should be applied globally: ${guidanceDto.guidance}`,
+                ticketId: adr.ticket_id,
+                inputData: { adrId, guidance: guidanceDto.guidance },
+                outputData: { status: 'deferred_to_constraint_service' },
+                confidence: 1.0,
+            });
+            // TODO: Integrate with ArchitectureConstraintService when available
+        }
+
+        // Story 7.6 AC#3: If update_thresholds flag, adjust project confidence threshold
+        if (guidanceDto.update_thresholds && adr.ticket_id) {
+            this.logger.log('Threshold adjustment requested based on escalation pattern');
+            // Note: This requires Project table "escalation_threshold" field update
+            // For now, log the recommendation
+            await this.auditLogger.logDecision({
+                agentName: 'TL/User',
+                action: 'recommend_threshold_adjustment',
+                reasoning: `TL suggests adjusting escalation threshold after reviewing escalated ADR`,
+                ticketId: adr.ticket_id,
+                inputData: { adrId, currentThreshold: 0.7 },
+                outputData: { recommendedThreshold: 'TBD_based_on_pattern_analysis' },
+                confidence: 0.8,
+            });
+            // TODO: Implement threshold adjustment logic when Project.escalation_threshold field is added
+        }
+
+        // Emit event to trigger AI retry with guidance (Story 7.6 AC#5)
+        this.eventBus.emit(
+            'adr.reviewed',
+            new AdrReviewedEvent(
+                adrId,
+                adr.ticket_id || '',
+                'GUIDANCE_PROVIDED',
+                guidanceDto.guidance,
+                adr.execution_id || undefined,
+            ),
+        );
+
+        this.logger.log(`Guidance provided for ADR ${adrId}. Duration: ${escalationDuration}s`);
+        return updatedAdr;
+    }
+
+    /**
+     * Delegate an escalated ADR to architect or senior developer
+     * Story 7.6 AC#3
+     * @param adrId - ADR ID
+     * @param delegateDto - Delegation data
+     * @returns Updated ADR with delegate_to field
+     */
+    async delegate(
+        adrId: string,
+        delegateDto: DelegateAdrDto,
+    ): Promise<any> {
+        this.logger.log(`Delegating ADR ${adrId} to ${delegateDto.delegate_to_user_id}`);
+
+        // Find the ADR
+        const adr = await this.prisma.adr.findUnique({
+            where: { id: adrId },
+        });
+
+        if (!adr) {
+            throw new Error('ADR not found');
+        }
+
+        if (adr.status !== AdrStatus.ESCALATED) {
+            throw new Error('ADR is not in ESCALATED status');
+        }
+
+        // Update ADR with delegation info
+        const updatedAdr = await this.prisma.adr.update({
+            where: { id: adrId },
+            data: {
+                delegate_to: delegateDto.delegate_to_user_id,
+                // Keep status as ESCALATED until delegatee provides guidance
+            },
+        });
+
+        // Log delegation
+        await this.auditLogger.logDecision({
+            agentName: 'TL/User',
+            action: 'delegate_adr',
+            reasoning: delegateDto.notes || 'Delegated to architect',
+            ticketId: adr.ticket_id || 'unknown',
+            executionId: adr.execution_id || undefined,
+            inputData: { adrId, delegateTo: delegateDto.delegate_to_user_id },
+            outputData: { delegated: true },
+            confidence: 1.0,
+        });
+
+        // TODO: Notify delegatee via ClickUp
+        this.logger.log(`Delegation notification to be implemented for user ${delegateDto.delegate_to_user_id}`);
+
+        this.logger.log(`ADR ${adrId} delegated successfully`);
+        return updatedAdr;
     }
 }

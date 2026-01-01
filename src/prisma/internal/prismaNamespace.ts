@@ -3158,6 +3158,14 @@ export const AdrScalarFieldEnum = {
   ai_confidence: 'ai_confidence',
   risk_level: 'risk_level',
   risk_factors: 'risk_factors',
+  escalation_reason: 'escalation_reason',
+  escalation_questions: 'escalation_questions',
+  trade_offs: 'trade_offs',
+  tl_guidance: 'tl_guidance',
+  delegate_to: 'delegate_to',
+  guidance_provided_at: 'guidance_provided_at',
+  resolved_at: 'resolved_at',
+  escalation_duration_seconds: 'escalation_duration_seconds',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const

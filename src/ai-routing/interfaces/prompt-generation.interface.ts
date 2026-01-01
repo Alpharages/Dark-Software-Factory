@@ -41,6 +41,7 @@ export interface IProjectContext {
   dependencies: string[];
   relevantFiles: IRelevantFile[];
   architectureConstraints?: string[];
+  previousEscalationGuidance?: string; // Story 7.6 AC#5: TL guidance from escalated ADRs
 }
 
 /**

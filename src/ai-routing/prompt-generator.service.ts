@@ -93,6 +93,29 @@ export class PromptGeneratorService implements OnModuleInit {
         this.logger.warn(`Failed to fetch architecture constraints: ${(err as Error).message}`);
       }
 
+      // Story 7.6 AC#5: Fetch TL guidance from previous escalations for this ticket
+      if (input.ticketId) {
+        try {
+          // Query ADR table for most recent GUIDANCE_PROVIDED or RESOLVED ADR for this ticket
+          const adrsWithGuidance = await this.architectureConstraintsService['prisma'].adr.findFirst({
+            where: {
+              ticket_id: input.ticketId,
+              status: { in: ['GUIDANCE_PROVIDED', 'RESOLVED'] },
+              tl_guidance: { not: null },
+            },
+            orderBy: { guidance_provided_at: 'desc' },
+            select: { tl_guidance: true },
+          });
+
+          if (adrsWithGuidance?.tl_guidance) {
+            context.previousEscalationGuidance = adrsWithGuidance.tl_guidance;
+            this.logger.log(`[${correlationId}] Injecting TL guidance into prompt for ticket ${input.ticketId}`);
+          }
+        } catch (err) {
+          this.logger.warn(`Failed to fetch TL guidance for ticket ${input.ticketId}: ${(err as Error).message}`);
+        }
+      }
+
       // 2. Get appropriate builder
       const builder = this.getBuilder(provider);
 

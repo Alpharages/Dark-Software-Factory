@@ -899,6 +899,16 @@ model Adr {
   risk_level     RiskLevel? // Calculated risk (HIGH/MEDIUM/LOW)
   risk_factors   Json?      // Detailed risk analysis (scope, reversibility, etc.)
   
+  // Story 7.6: Escalation Fields
+  escalation_reason     String?   // Categorized reason (LOW_CONFIDENCE, MISSING_CONTEXT, etc.)
+  escalation_questions  Json?     // Array of specific questions for TL
+  trade_offs            Json?     // {option1: {pros: [], cons: []}, ...}
+  tl_guidance           String?   @db.Text // TL's guidance response
+  delegate_to           String?   // User ID if delegated to architect
+  guidance_provided_at  DateTime? // When TL provided guidance
+  resolved_at           DateTime? // When escalation was resolved
+  escalation_duration_seconds Int? // Metrics: time from ESCALATED to GUIDANCE_PROVIDED
+  
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
   
@@ -918,6 +928,9 @@ enum AdrStatus {
   REJECTED
   DEPRECATED
   SUPERSEDED
+  ESCALATED      // Story 7.6: AI escalated due to low confidence
+  GUIDANCE_PROVIDED // Story 7.6: TL provided guidance
+  RESOLVED        // Story 7.6: Escalation resolved, new ADR created
 }
 
 enum RiskLevel {

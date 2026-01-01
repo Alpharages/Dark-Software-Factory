@@ -49,9 +49,13 @@ TL Review is mandatory before implementation proceeds.
         }
     }
 
-    async notifyEscalation(adr: Adr) {
+    /**
+     * Notify TL of stuck high-risk ADR (existing escalation for time-based)
+     * Story 7.3
+     */
+    async notifyStuckEscalation(adr: Adr) {
         try {
-            this.logger.warn(`[ESCALATION] High Risk ADR stuck in review > 4h: ${adr.title} (${adr.id}). Escalating to Architect.`);
+            this.logger.warn(`[ESCALATION] High Risk ADR stuck in review >4h: ${adr.title} (${adr.id}). Escalating to Architect.`);
 
             const listId = await this.resolveListId(adr.ticket_id);
             if (!listId) return;
@@ -76,6 +80,83 @@ This decision has been pending review for too long and is blocking progress.
 
         } catch (error) {
             this.logger.error(`Failed to notify Escalation: ${(error as Error).message}`);
+        }
+    }
+
+    /**
+     * Notify TL of AI escalation due to uncertainty
+     * Story 7.6 AC#4
+     * @param adr - Escalated ADR
+     * @param metadata - Escalation metadata with questions and alternatives
+     */
+    async notifyEscalation(adr: any, metadata: any): Promise<void> {
+        try {
+            const adrTitle = adr.title || 'Unknown ADR';
+            const ticketId = adr.ticket?.clickup_task_id || adr.ticket_id || 'No ticket linked';
+            const confidence = metadata.confidence || (adr.ai_confidence || 0) * 100;
+
+            // Build escalation notification message
+            const questionsList = metadata.questions?.length > 0
+                ? metadata.questions.map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')
+                : 'No specific questions provided';
+
+            const alternativesList = metadata.alternatives?.length > 0
+                ? metadata.alternatives.map((alt: string, i: number) => `${i + 1}. ${alt}`).join('\n')
+                : 'No alternatives documented';
+
+            const notificationMessage = `
+🚨 **AI Architecture Escalation**
+
+**Ticket:** ${ticketId}
+**Decision:** ${adrTitle}
+**Confidence:** ${confidence.toFixed(0)}% (below 70% threshold)
+**Uncertainty:** ${adr.escalation_reason || 'Low confidence'}
+
+**AI Questions:**
+${questionsList}
+
+**Alternatives Considered:**
+${alternativesList}
+
+**AI Recommendation:** ${metadata.aiRecommendation || adr.decision || 'See ADR for details'}
+
+Please review and provide guidance in the architecture review queue.
+            `.trim();
+
+            this.logger.log(`Sending escalation notification to TL for ADR ${adr.id}`);
+            this.logger.debug(`Notification content: ${notificationMessage}`);
+
+            const listId = await this.resolveListId(ticketId);
+            if (listId) {
+                await this.clickUp.createTask(listId, {
+                    name: `[ESCALATION] Low Confidence ADR: ${adrTitle}`,
+                    description: notificationMessage,
+                    priority: 1, // Urgent
+                    tags: ['architecture-escalation', 'needs-guidance'],
+                    notify_all: true,
+                    status: 'review' // Ensure it lands in review status
+                });
+                this.logger.log(`Escalation task created in ClickUp for ADR ${adr.id}`);
+            } else {
+                this.logger.warn(`Could not resolve ClickUp List ID for ticket ${ticketId}. Notification logged but task not created.`);
+            }
+
+            // Also notify PM of blocking delay (AC#4)
+            const pmDelayNotification = `
+⏸️ **Ticket Blocked - TL Review Required**
+
+**Ticket:** ${ticketId}
+**Reason:** AI escalated architecture decision (low confidence)
+**Expected Resolution:** 2-4 hours (TL review SLA)
+
+AI is uncertain about technical approach and needs TL guidance before proceeding.
+            `.trim();
+
+            this.logger.log(`PM delay notification: ${pmDelayNotification}`);
+
+        } catch (error) {
+            this.logger.error('Failed to notify escalation', error);
+            // Non-blocking error: don't throw
         }
     }
 

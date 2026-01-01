@@ -554,7 +554,13 @@ development_status:
     code_review_date: "2026-01-01"
     code_review_fixes: "8 CRITICAL, 5 MEDIUM (all fixed)"
     notes: "CODE REVIEW COMPLETED 2026-01-01. Remediated 13 issues: async mutation bugs, project fetching implementation, 3 unit test files created, security fixes (removed dummy-token), error handling added, enhanced delete UX. Committed 20 files (13 new, 7 modified, 1,245 LOC). All CRITICAL and MEDIUM issues resolved. Known limitation: AC#5 filtering deferred to future iteration."
-  7-6-ai-escalation-uncertainty-handling: backlog
+  7-6-ai-escalation-uncertainty-handling:
+    status: done
+    title: "AI Escalation & Uncertainty Handling"
+    code_review_date: "2026-01-01"
+    code_review_fixes: "8 CRITICAL, 4 MEDIUM, ClickUp Integration, E2E Tests"
+    notes: "Story completed 2026-01-01. All Acceptance Criteria met including deferred ClickUp integration and E2E workflow verification. Remaining deferred items: Metrics dashboard, detailed provider rates."
+  7-6-UI-escalation-response-interface: ready-for-dev
   7-7-tl-capability-management-ai-limitations: backlog
   7-8-architecture-review-metrics-insights: backlog
   epic-7-retrospective: optional

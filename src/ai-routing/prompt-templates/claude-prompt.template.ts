@@ -45,6 +45,11 @@ export class ClaudeCodePromptBuilder implements IPromptBuilder {
       sections.push(this.buildProjectContext(context));
     }
 
+    // 5.5. TL Guidance from Escalation (Story 7.6 AC#5)
+    if (context?.previousEscalationGuidance) {
+      sections.push(this.buildEscalationGuidance(context.previousEscalationGuidance));
+    }
+
     // 6. Relevant File Contents (INLINE - Claude's strength)
     if (context?.relevantFiles?.length) {
       sections.push(this.buildInlineFileContents(context.relevantFiles));
@@ -365,5 +370,24 @@ The previous execution was reviewed and changes were requested. You MUST address
     if (score >= 8) return 'Medium - Moderate scope';
     if (score >= 4) return 'Low - Focused change';
     return 'Very Low - Simple fix';
+  }
+
+  private buildEscalationGuidance(guidance: string): string {
+    return `## 🎯 Technical Lead Guidance (Architecture Escalation)
+
+**CRITICAL:** This task was previously escalated to the Technical Lead due to AI uncertainty or conflicting requirements. The TL has provided authoritative guidance:
+
+---
+
+${guidance}
+
+---
+
+**Implementation Requirements:**
+- Follow the TL's guidance precisely - it overrides any conflicting information
+- If the guidance specifies a particular technology or approach, use it exactly as described
+- Document this decision in your ADR output (reference this TL guidance in the 'context' field)
+- If you discover a critical blocker that prevents following the guidance, explain in detail in your ADR
+- This guidance represents team consensus and architectural decisions - deviation requires justification`;
   }
 }

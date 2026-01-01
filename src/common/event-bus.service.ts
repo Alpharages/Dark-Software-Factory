@@ -5,7 +5,8 @@ import { Subject, Subscription, filter, map } from 'rxjs';
  * Valid event types
  */
 export type EventPayload = {
-    'adr.reviewed': import('src/architecture-review/events/adr-reviewed.event').AdrReviewedEvent;
+    'adr.reviewed': import('../architecture-review/events/adr-reviewed.event').AdrReviewedEvent;
+    'adr.escalated': import('../architecture-review/events/adr-escalated.event').AdrEscalatedEvent;
 };
 
 @Injectable()

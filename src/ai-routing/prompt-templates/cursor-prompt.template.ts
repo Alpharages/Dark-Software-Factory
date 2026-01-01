@@ -40,6 +40,11 @@ export class CursorPromptBuilder implements IPromptBuilder {
       sections.push(this.buildProjectContext(context));
     }
 
+    // 5.5. TL Guidance from Escalation (Story 7.6 AC#5)
+    if (context?.previousEscalationGuidance) {
+      sections.push(this.buildEscalationGuidance(context.previousEscalationGuidance));
+    }
+
     // 6. Relevant Files (paths only - Cursor fetches content)
     if (context?.relevantFiles?.length) {
       sections.push(this.buildRelevantFiles(context));
@@ -311,6 +316,20 @@ The previous execution was rejected or requested for modification. Please addres
 > ${feedback}
 
 **Requirement:** You MUST explicitly address this feedback in your changes.`;
+  }
+
+  private buildEscalationGuidance(guidance: string): string {
+    return `## 🎯 Technical Lead Guidance (Architecture Escalation)
+
+**IMPORTANT:** This task was previously escalated due to AI uncertainty. The Technical Lead has provided the following guidance to resolve the architectural decision:
+
+> ${guidance}
+
+**Requirements:**
+- Follow the TL's guidance precisely
+- If the guidance references specific approaches or patterns, implement them exactly as described
+- Document this decision in your ADR output (reference this guidance in the 'context' field)
+- Do NOT deviate from the TL's recommendation unless there's a critical blocker (in which case, explain in ADR)`;
   }
 
   private getComplexityLabel(score: number): string {

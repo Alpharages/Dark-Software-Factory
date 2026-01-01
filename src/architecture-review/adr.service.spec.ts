@@ -9,6 +9,7 @@ import { ArchitectureReviewNotificationService } from './architecture-review-not
 import { CreateAdrDto } from './dto';
 
 import { ConstraintValidatorService } from './constraint-validator.service';
+import { EscalationDetectorService } from './escalation-detector.service';
 
 describe('AdrService', () => {
     let service: AdrService;
@@ -47,6 +48,17 @@ describe('AdrService', () => {
         validate: jest.fn().mockResolvedValue([]),
     };
 
+    const mockEscalationDetector = {
+        shouldEscalate: jest.fn().mockReturnValue({ shouldEscalate: false }),
+        extractMetadata: jest.fn().mockReturnValue({
+            questions: [],
+            alternatives: [],
+            tradeOffs: {},
+            confidence: 0.8,
+        }),
+        getEscalationThreshold: jest.fn().mockResolvedValue(0.7),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -75,6 +87,7 @@ describe('AdrService', () => {
                     provide: ConstraintValidatorService,
                     useValue: mockConstraintValidator,
                 },
+                { provide: EscalationDetectorService, useValue: mockEscalationDetector },
             ],
         }).compile();
 

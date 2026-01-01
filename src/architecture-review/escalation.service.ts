@@ -33,7 +33,7 @@ export class EscalationService {
         if (stuckAdrs.length > 0) {
             this.logger.warn(`Found ${stuckAdrs.length} stuck High Risk ADRs. Escalating...`);
             for (const adr of stuckAdrs) {
-                await this.notificationService.notifyEscalation(adr);
+                await this.notificationService.notifyStuckEscalation(adr);
             }
         }
     }
