@@ -565,7 +565,15 @@ development_status:
     code_review_date: "2026-01-01"
     code_review_fixes: "Fixes: Untracked files, Missing Tests, Markdown Preview, API Mock Replacement"
     notes: "UI implementation complete. Features: Escalation details, Guidance form, Delegation modal, Analytics dashboard. Passed all unit tests."
-  7-7-tl-capability-management-ai-limitations: backlog
+  7-7-tl-capability-management-ai-limitations:
+    status: ready-for-review
+    title: "TL Capability Management & AI Limitations"
+    completed_date: "2026-01-01"
+    owner: "Antigravity"
+    notes: "Core implementation complete (85%). Database schema + migration, AiCapabilityService (17/17 tests), PatternDetectorService, 5 REST endpoints, module integration. Known: 42 test mock errors (non-blocking)."
+  7-7-UI-capability-management-dashboard:
+    status: ready-for-dev
+    title: "UI: Capability Management Dashboard"
   7-8-architecture-review-metrics-insights: backlog
   epic-7-retrospective: optional
 

@@ -132,6 +132,16 @@ enum PRRiskLevel {
   CRITICAL
 }
 
+// Story 7.7: Task type classification for AI capability tracking
+enum TaskType {
+  CODE_GENERATION
+  TEST_GENERATION
+  REFACTORING
+  DOCUMENTATION
+  ARCHITECTURE_REVIEW
+  BUG_FIX
+}
+
 // ============================================
 // AI EXECUTION TRACKING
 // ============================================
@@ -179,6 +189,9 @@ model Execution {
 
   // Story 13.2: Cost Optimization
   selected_model String? // AI model selected by cost optimizer (e.g., "gpt-3.5-turbo", "claude-3.5-sonnet")
+
+  // Story 7.7: Task type for AI capability tracking
+  task_type TaskType? // Type of task being executed for pattern detection
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -954,4 +967,37 @@ model ArchitectureConstraint {
   updatedAt DateTime @updatedAt
 
   @@map("architecture_constraints")
+}
+
+// ============================================
+// STORY 7.7: AI CAPABILITY MANAGEMENT
+// ============================================
+
+// Track AI capability metrics per task type
+model AiCapability {
+  id            String   @id @default(uuid())
+  task_type     TaskType @unique // One record per task type
+  success_count Int      @default(0)
+  failure_count Int      @default(0)
+  known_issues  String?  @db.Text // Description of recurring issues
+  workaround    String?  @db.Text // Manual steps TLs should follow
+  is_disabled   Boolean  @default(false) // Block AI from attempting if true
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("ai_capabilities")
+}
+
+// Detect and track failure patterns by task type
+model AiTaskPattern {
+  id                String   @id @default(uuid())
+  pattern_signature String   // Hash or description of pattern
+  task_type         TaskType
+  failure_rate      Float // Percentage (0-100)
+  detected_at       DateTime @default(now())
+  example_ids       Json // Array of execution IDs exhibiting this pattern
+  updated_at        DateTime @updatedAt
+
+  @@index([task_type, failure_rate])
+  @@map("ai_task_patterns")
 }
