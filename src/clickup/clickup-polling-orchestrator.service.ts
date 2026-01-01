@@ -45,11 +45,11 @@ interface ClickUpTaskUpdate {
 
 @Injectable()
 export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy {
-  private pollingStates = new Map<string, PollingState>();
+  // Removed MONITORED_LISTS property as we fetch from DB now
   private readonly POLL_INTERVAL_MS: number;
   private readonly MAX_POLL_INTERVAL_MS: number;
   private readonly ENABLED: boolean;
-  private readonly MONITORED_LISTS: string[];
+  private pollingStates = new Map<string, PollingState>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -67,16 +67,11 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
 
     this.POLL_INTERVAL_MS = this.config.get<number>('CLICKUP_POLL_INTERVAL_MS', 60000); // 60s default
     this.MAX_POLL_INTERVAL_MS = this.config.get<number>('CLICKUP_MAX_POLL_INTERVAL_MS', 300000); // 5min max
-    this.MONITORED_LISTS = this.config
-      .get<string>('CLICKUP_MONITORED_LISTS', '')
-      .split(',')
-      .filter(Boolean);
 
     this.logger.log('ClickUp Polling Orchestrator initialized', {
       enabled: this.ENABLED,
       useWebhooks,
       pollInterval: this.POLL_INTERVAL_MS,
-      monitoredLists: this.MONITORED_LISTS.length,
     });
   }
 
@@ -86,9 +81,35 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
       return;
     }
 
-    // Start polling for monitored lists
-    for (const listId of this.MONITORED_LISTS) {
-      await this.startPolling(listId);
+    // NEW: Fetch monitored projects from DB instead of env var
+    // Supports multi-provider extensibility (filtering by provider: CLICKUP)
+    try {
+      const monitoredProjects = await this.prisma.project.findMany({
+        where: {
+          provider: 'CLICKUP',
+          monitor_tasks: true,
+          status: 'active', // Only poll active projects
+        },
+        select: {
+          clickup_list_id: true,
+        },
+      });
+
+      this.logger.log(`Found ${monitoredProjects.length} monitored ClickUp projects in DB`, {
+        ids: monitoredProjects.map((p) => p.clickup_list_id),
+      });
+
+      // Start polling for monitored lists
+      for (const project of monitoredProjects) {
+        if (project.clickup_list_id) {
+          await this.startPolling(project.clickup_list_id);
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to fetch monitored projects from DB',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
   }
 
@@ -101,6 +122,59 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
     });
     this.pollingStates.clear();
     this.logger.log('Cleaned up all ClickUp polling states', 'ClickUpPollingOrchestrator');
+  }
+
+  /**
+   * REFRESH POLLING: Called when project settings change
+   * Public method to allow ProjectsController to trigger an update
+   */
+  async refreshMonitoredLists(): Promise<void> {
+    if (!this.ENABLED) return;
+
+    this.logger.log('Refreshing monitored lists from DB...');
+    try {
+      const monitoredProjects = await this.prisma.project.findMany({
+        where: {
+          provider: 'CLICKUP',
+          monitor_tasks: true,
+          status: 'active',
+        },
+        select: {
+          clickup_list_id: true,
+        },
+      });
+
+      const monitoredListIds = new Set(monitoredProjects.map((p) => p.clickup_list_id));
+
+      // 1. Start polling for new lists
+      for (const id of monitoredListIds) {
+        if (id && !this.isPolling(id)) {
+          await this.startPolling(id);
+        }
+      }
+
+      // 2. Stop polling for lists that are no longer monitored
+      this.pollingStates.forEach((state, key) => {
+        // key format is usually listId or spaceId:listId
+        // simplistic check: if key contains listId not in monitored, stop
+        // better: store listId clearly in state
+        if (state.listId && !monitoredListIds.has(state.listId)) {
+          this.stopPolling(state.listId, state.spaceId);
+        }
+      });
+    } catch (error) {
+      this.logger.error('Failed to refresh monitored lists', String(error));
+    }
+  }
+
+  private isPolling(listId: string): boolean {
+    // Iterate to find if any key contains this listId (simplistic)
+    // Keys are spaceId:listId or just listId
+    // Better: check state.listId
+    for (const state of this.pollingStates.values()) {
+      if (state.listId === listId && state.isActive) return true;
+    }
+    return false;
   }
 
   /**

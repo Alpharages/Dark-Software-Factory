@@ -10,6 +10,17 @@ interface ClickUpStatus {
   color: string;
 }
 
+export interface ClickUpHierarchy {
+  spaces: {
+    id: string;
+    name: string;
+    lists: {
+      id: string;
+      name: string;
+    }[];
+  }[];
+}
+
 interface ClickUpTask {
   id: string;
   name: string;
@@ -487,6 +498,30 @@ export class ClickUpService {
   }
 
   /**
+   * Get details of a specific list
+   * Used for project import verification
+   *
+   * @param listId - ClickUp List ID
+   * @returns List details or throws if not found
+   */
+  async getList(listId: string): Promise<{ id: string; name: string }> {
+    try {
+      const response = await this.client.get(`/list/${listId}`);
+      return {
+        id: response.data.id,
+        name: response.data.name,
+      };
+    } catch (error) {
+      const msg = (error as Error).message;
+      this.logger.error('Failed to fetch list from ClickUp', {
+        listId,
+        error: msg,
+      });
+      throw new Error(`Failed to fetch ClickUp list ${listId}: ${msg}`);
+    }
+  }
+
+  /**
    * Create a new task in ClickUp
    *
    * @param listId - ClickUp List ID
@@ -539,4 +574,87 @@ export class ClickUpService {
       return null;
     }
   }
+
+
+  /**
+   * Get hierarchy of Spaces and Lists for discovery
+   * Used by UI to allow users to select lists to import
+   */
+  async getHierarchy(options?: { correlationId?: string }): Promise<ClickUpHierarchy> {
+    const correlationId = options?.correlationId || 'clickup-get-hierarchy';
+
+    try {
+      // 1. Get Teams (Workspaces) - usually the first team is the main one
+      const teamsRes = await this.client.get('/team');
+      const teams = teamsRes.data.teams;
+
+      if (!teams || teams.length === 0) {
+        throw new Error('No ClickUp teams found');
+      }
+
+      // For MVP, we'll just check the first team.
+      // Future: Iterate all teams or allow team selection
+      const teamId = teams[0].id;
+
+      // 2. Get Spaces for the Team
+      const spacesRes = await this.client.get(`/team/${teamId}/space`);
+      const spaces = spacesRes.data.spaces;
+
+      const hierarchy: ClickUpHierarchy = { spaces: [] };
+
+      // 3. For each Space, get Lists
+      // Using Promise.all for parallelism, but be mindful of rate limits
+      await Promise.all(
+        spaces.map(async (space: any) => {
+          try {
+            // Get Folderless Lists
+            const folderlessListsRes = await this.client.get(`/space/${space.id}/list`);
+            const lists = folderlessListsRes.data.lists.map((l: any) => ({
+              id: l.id,
+              name: l.name,
+            }));
+
+            // Include Folders? For MVP, we might skip folders or assume tasks are in lists directly.
+            // ClickUp structure: Team -> Space -> Folder -> List -> Task
+            // OR Team -> Space -> List -> Task (folderless)
+            // Let's also fetch folders and their lists to be complete
+
+            const foldersRes = await this.client.get(`/space/${space.id}/folder`);
+            for (const folder of foldersRes.data.folders) {
+              // Folders have lists too
+              if (folder.lists) {
+                lists.push(
+                  ...folder.lists.map((l: any) => ({
+                    id: l.id,
+                    name: `${folder.name} > ${l.name}`, // Flatten structure for simple UI
+                  })),
+                );
+              }
+            }
+
+            hierarchy.spaces.push({
+              id: space.id,
+              name: space.name,
+              lists,
+            });
+          } catch (err) {
+            this.logger.warn(`Failed to fetch lists for space ${space.id}`, {
+              error: String(err),
+            });
+            // Continue with other spaces
+          }
+        }),
+      );
+
+      return hierarchy;
+    } catch (error) {
+      this.logger.error('Failed to fetch ClickUp hierarchy', {
+        error: (error as Error).message,
+        correlationId,
+      });
+      throw error;
+    }
+  }
 }
+
+

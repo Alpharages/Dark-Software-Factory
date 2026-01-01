@@ -9,6 +9,15 @@
 * 🟢 You can import this file directly.
 */
 
+export const ProjectProvider = {
+  CLICKUP: 'CLICKUP',
+  JIRA: 'JIRA',
+  ASANA: 'ASANA'
+} as const
+
+export type ProjectProvider = (typeof ProjectProvider)[keyof typeof ProjectProvider]
+
+
 export const TicketStatus = {
   RECEIVED: 'RECEIVED',
   VALIDATED: 'VALIDATED',

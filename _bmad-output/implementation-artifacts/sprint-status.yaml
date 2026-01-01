@@ -999,3 +999,25 @@ development_status:
     notes: "E2E test full v3 flow. Load test 100 concurrent tickets. Validate circular deps, file locks, metrics."
   epic-15-retrospective: optional
 
+  epic-16: in-progress
+  epic-16-name: "ClickUp Dynamic Sync & Project Management"
+  epic-16-phase: "Phase 5 (Week 6-8)"
+  epic-16-priority: high
+  epic-16-dependencies: "Epic 2, Epic 4"
+  epic-16-estimated_effort: "6 days"
+  epic-16-notes: "Enables dynamic ClickUp project syncing via UI, removing environment variable dependencies."
+  16-1-backend-clickup-sync:
+    status: done
+    effort: "3 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/16-1-backend-clickup-sync.md"
+    developer: "Antigravity"
+    completed_at: "2026-01-02"
+    code_review_date: "2026-01-02"
+    notes: "Review passed with automated remediation (Schema, Tests, DTOs)."
+  16-2-ui-clickup-sync:
+    status: ready-for-dev
+    effort: "3 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/16-2-ui-clickup-sync.md"
+

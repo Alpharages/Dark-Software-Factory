@@ -106,7 +106,10 @@ export const ProjectScalarFieldEnum = {
   id: 'id',
   name: 'name',
   client_name: 'client_name',
+  provider: 'provider',
   clickup_list_id: 'clickup_list_id',
+  monitor_tasks: 'monitor_tasks',
+  sync_config: 'sync_config',
   github_repository_url: 'github_repository_url',
   pm_id: 'pm_id',
   status: 'status',
@@ -670,14 +673,6 @@ export const QueryMode = {
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
-
-
 export const JsonNullValueFilter = {
   DbNull: 'DbNull',
   JsonNull: 'JsonNull',
@@ -685,4 +680,12 @@ export const JsonNullValueFilter = {
 } as const
 
 export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

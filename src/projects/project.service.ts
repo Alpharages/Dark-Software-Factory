@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { ClickUpService } from '@/clickup/clickup.service';
 import { ProjectRepository } from './project.repository';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
+import { ImportProjectDto } from './dto/import-project.dto';
 import { Project } from '@/prisma/client';
+import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '@/database/prisma.service';
@@ -19,7 +22,9 @@ export class ProjectService {
     private readonly operationsCounter: Counter<string>,
     @InjectMetric('project_lookups_total')
     private readonly lookupCounter: Counter<string>,
-  ) {}
+    @Inject(forwardRef(() => ClickUpService))
+    private readonly clickupService: ClickUpService,
+  ) { }
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
     try {
@@ -148,6 +153,54 @@ export class ProjectService {
     }
   }
 
+  /**
+   * Import a project from an external provider
+   * AC#3: Import API accepts provider and resourceId
+   * Fetches list details from ClickUp and creates project record
+   */
+  async importProject(importDto: ImportProjectDto, userId: string): Promise<Project> {
+    const { provider, resourceId } = importDto;
+
+    // Validate provider (currently on ClickUp supported per AC#2)
+    if (provider !== ProjectProvider.CLICKUP) {
+      throw new Error(`Provider ${provider} import not yet supported`);
+    }
+
+    try {
+      // 1. Fetch details from provider to validate and get name
+      const listDetails = await this.clickupService.getList(resourceId);
+
+      this.logger.log(`Importing ClickUp list: ${listDetails.name} (${listDetails.id})`);
+
+      // 2. Create Project Record
+      // Check if already exists first? repository.create might fail or we should check.
+      const existing = await this.repository.findByListId(resourceId);
+      if (existing) {
+        throw new Error(`Project already imported for ClickUp List ${resourceId}`);
+      }
+
+      const project = await this.repository.create({
+        name: listDetails.name, // Use list name as project name
+        clickup_list_id: listDetails.id,
+        github_repository_url: '', // Placeholder, user can update later? Or optional? 
+        default_branch: 'main',
+        pm_id: userId,
+        status: 'active',
+        client_name: 'Internal', // Default
+        provider: ProjectProvider.CLICKUP,
+        monitor_tasks: true, // Auto-enable monitoring for imports
+      } as any);
+
+      this.operationsCounter.inc({ operation: 'import', status: 'success' });
+      return project;
+    } catch (error) {
+      this.operationsCounter.inc({ operation: 'import', status: 'error' });
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to import project: ${msg}`);
+      throw error;
+    }
+  }
+
   async remove(id: string): Promise<Project> {
     try {
       await this.findOne(id); // Ensure exists
@@ -160,3 +213,4 @@ export class ProjectService {
     }
   }
 }
+

@@ -1047,10 +1047,6 @@ export type NullableIntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type NullableEnumAIProviderFieldUpdateOperationsInput = {
   set?: $Enums.AIProvider | null
 }

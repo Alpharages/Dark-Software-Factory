@@ -15,11 +15,20 @@ datasource db {
 // Maps ClickUp lists to GitHub repositories
 // ============================================
 
+enum ProjectProvider {
+  CLICKUP
+  JIRA
+  ASANA
+}
+
 model Project {
-  id                    String   @id @default(uuid())
+  id                    String          @id @default(uuid())
   name                  String
-  client_name           String   @default("Internal")
-  clickup_list_id       String   @unique
+  client_name           String          @default("Internal")
+  provider              ProjectProvider @default(CLICKUP) // NEW: Multi-provider support
+  clickup_list_id       String?         @unique // Legacy/Specific ID. Future: make optional or map to generic external_id
+  monitor_tasks         Boolean         @default(false) // NEW: Toggle sync
+  sync_config           Json? // NEW: Provider-specific settings
   github_repository_url String
   pm_id                 String // NEW: UUID of PM (matches external Auth 'sub' claim)
   status                String   @default("active") // NEW: active|paused|completed
