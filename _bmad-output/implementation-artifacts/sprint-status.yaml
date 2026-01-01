@@ -589,7 +589,13 @@ development_status:
     code_review_date: "2026-01-01"
     code_review_fixes: "2 CRITICAL (Mock insights, Empty trends), 1 HIGH (Empty file list)"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Replaced fake insights with real implementation in AdrInsightsService. Implemented daily trend analysis queries in AdrMetricsService. Fixed DTO property names and Status Enum usage. Populated Story File list. All ACs met."
-  7-8-UI-architecture-review-metrics-dashboard: backlog
+  7-8-UI-architecture-review-metrics-dashboard:
+    status: done
+    story_file: "_bmad-output/implementation-artifacts/7-8-UI-architecture-review-metrics-dashboard.md"
+    story_points: 5
+    created_date: "2026-01-01"
+    code_review_date: "2026-01-01"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented Date Range Picker with presets (AC#4), refactored CSV logic (AC#5), added manual refresh/cache invalidation (AC#6), corrected sidebar icon (L1), and enhanced unit tests (M2). All files staged."
   epic-7-retrospective: optional
 
   epic-8: backlog
