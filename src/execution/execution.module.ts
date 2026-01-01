@@ -35,6 +35,8 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
 import { ProgressValidatorModule } from '../ai-monitoring/progress-validator.module';
 import { ClickUpModule } from '../clickup/clickup.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
+// Story 7.7: AI Capability Management & Limitations
+import { CapabilitiesModule } from '../architecture-review/capabilities/capabilities.module';
 // LoggerModule not needed - consumer uses NestJS Logger directly
 
 /**
@@ -68,6 +70,8 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
     ProgressValidatorModule,
     ClickUpModule,
     AppMetricsModule,
+    // Story 7.7: AI Capability Management & Limitations
+    CapabilitiesModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1h' },
@@ -181,4 +185,4 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
     ApprovalService,
   ],
 })
-export class ExecutionModule {}
+export class ExecutionModule { }

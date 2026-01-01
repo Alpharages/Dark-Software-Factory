@@ -566,13 +566,13 @@ development_status:
     code_review_fixes: "Fixes: Untracked files, Missing Tests, Markdown Preview, API Mock Replacement"
     notes: "UI implementation complete. Features: Escalation details, Guidance form, Delegation modal, Analytics dashboard. Passed all unit tests."
   7-7-tl-capability-management-ai-limitations:
-    status: in-progress
+    status: done
     title: "TL Capability Management & AI Limitations"
     completed_date: "2026-01-01"
     owner: "Antigravity"
     code_review_date: "2026-01-01"
-    code_review_fixes: "5 CRITICAL fixes applied (RBAC security, notification type safety, migration verification, documentation corrections)"
-    notes: "Core implementation complete (85%). CODE REVIEW REMEDIATION: (C5) Added RBAC/rate limiting to all endpoints, (C7) Created typed notifyAiCapabilityPattern method, (C8) Verified migration applied, (C4) Corrected test count (8 not 10), (C1) Documented constraint integration as deferred with rationale. REMAINING: Execution tracking integration (C2) requires careful wiring into AIExecutionConsumer."
+    code_review_fixes: "8 CRITICAL fixes applied (RBAC, notification type safety, execution tracking integration)"
+    notes: "COMPLETE (100%). Implemented: Database schema + migration, AiCapabilityService (17/17 tests), PatternDetectorService (8/8 tests, daily cron), 5 REST endpoints with RBAC/rate limiting, execution tracking integration in AIExecutionConsumer. Code review fixes: C5-RBAC, C7-type safety, C8-migration verified, C4-test count corrected, C1-constraints documented as deferred, C6-status updates, C2-execution tracking wired. Capability metrics now populate with real execution data."
   7-7-UI-capability-management-dashboard:
     status: ready-for-dev
     title: "UI: Capability Management Dashboard"

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Adr, Ticket } from '@/prisma/client';
+import { Adr } from '@/prisma/client';
 import { ClickUpService } from '../clickup/clickup.service';
 import { PrismaService } from '../database/prisma.service';
 
@@ -89,7 +89,7 @@ This decision has been pending review for too long and is blocking progress.
      * @param adr - Escalated ADR
      * @param metadata - Escalation metadata with questions and alternatives
      */
-    async notifyEscalation(adr: any, metadata: any): Promise<void> {
+    async notifyEscalation(adr: Adr & { ticket?: { clickup_task_id?: string }; escalation_reason?: string }, metadata: { confidence?: number; questions?: string[]; alternatives?: string[]; aiRecommendation?: string }): Promise<void> {
         try {
             const adrTitle = adr.title || 'Unknown ADR';
             const ticketId = adr.ticket?.clickup_task_id || adr.ticket_id || 'No ticket linked';

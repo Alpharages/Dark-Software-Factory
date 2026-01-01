@@ -23,6 +23,8 @@ import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { ErrorSeverity } from '../common/sentry/sentry.constants';
+// Story 7.7: AI Capability Management & Limitations
+import { AiCapabilityTrackerService } from '../architecture-review/capabilities/ai-capability-tracker.service';
 import { ClickUpService } from '../clickup/clickup.service';
 import { Prisma } from '@/prisma/client';
 type Decimal = Prisma.Decimal;
@@ -79,6 +81,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     // Story 13.3: AI Cost Tracking & Optimization
     private readonly aiCostTracker: AICostTrackerService,
+    // Story 7.7: AI Capability Management & Limitations
+    private readonly capabilityTracker: AiCapabilityTrackerService,
     private readonly costOptimizer: CostOptimizerService,
     private readonly sentry: SentryService,
     private readonly clickup: ClickUpService,
@@ -564,6 +568,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         };
         await this.executionTracker.completeExecution(completion, correlationId);
 
+        // Story 7.7: Track AI capability success (C2 fix)
+        await this.capabilityTracker.trackExecution(true, payload.prompt);
+
         return {
           success: true,
           executionId,
@@ -598,6 +605,14 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           errorCode: result.error?.code,
         };
         await this.executionTracker.failExecution(failure, correlationId);
+
+        // Story 7.7: Track AI capability failure (C2 fix)
+        await this.capabilityTracker.trackExecution(
+          false,
+          payload.prompt,
+          undefined,
+          result.error?.message,
+        );
 
         return {
           success: false,
