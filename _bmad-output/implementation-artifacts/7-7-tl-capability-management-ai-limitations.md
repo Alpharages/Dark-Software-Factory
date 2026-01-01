@@ -1,6 +1,6 @@
 # Story 7.7: TL Capability Management & AI Limitations
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -60,7 +60,10 @@ so that I can manually intervene or provide guidance.
 - [x] Implement Workaround and Limitation Management (AC#1, #3)
   - [x] Create API `POST /api/v1/capabilities/limitations` to document manual limitations
   - [x] Create API `PUT /api/v1/capabilities/limitations/:id` to update workarounds
-  - [ ] Implement "Update Constraints" action (link to `ArchitectureConstraintService` from Story 7.5) **[Deferred]**
+  - [ ] **DEFERRED**: Implement "Update Constraints" action (link to `ArchitectureConstraintService` from Story 7.5)
+    - **Rationale**: Core capability tracking is functional. Constraint automation is a future enhancement that requires refactoring the constraint service API.
+    - **Impact**: TLs can document limitations but must manually update constraints via Story 7.9 UI.
+    - **Follow-up**: Create integration story for automated constraint updates based on detected patterns.
 
 - [ ] Prompt Generator Integration (Enhancement) **[Deferred - Optional]**
   - [ ] Update `PromptGeneratorService`: Inject known limitations into system prompt
@@ -79,7 +82,7 @@ so that I can manually intervene or provide guidance.
 
 - [x] Integration and Testing
   - [x] Unit tests for `AiCapabilityService` (17/17 passing)
-  - [x] Unit tests for `PatternDetectorService` (10 test cases created)
+  - [x] Unit tests for `PatternDetectorService` (8/8 passing - corrected from initial claim of 10)
   - [ ] Integration tests for full tracking flow **[Deferred - Can be added when integration testing infrastructure is ready]**
 
 ## Dev Notes

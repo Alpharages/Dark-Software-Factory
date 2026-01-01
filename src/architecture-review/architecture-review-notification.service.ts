@@ -210,4 +210,61 @@ AI is uncertain about technical approach and needs TL guidance before proceeding
             this.logger.error(`Failed to notify ADR Decision: ${(error as Error).message}`);
         }
     }
+
+    /**
+     * Notify TL of detected AI capability pattern (Story 7.7 C7 fix)
+     * @param pattern - Detected failure pattern details
+     * @param isCritical - Whether the pattern exceeds critical threshold
+     */
+    async notifyAiCapabilityPattern(pattern: {
+        taskType: string;
+        failureRate: number;
+        executionsSampled: number;
+        patternSignature: string;
+        exampleIds: string[];
+    }, isCritical: boolean): Promise<void> {
+        try {
+            const severity = isCritical ? 'CRITICAL' : 'WARNING';
+            const action = isCritical ? 'AI has been disabled for this task type' : 'Review recommended';
+
+            const message = `
+🚨 **AI Capability ${severity}**: ${pattern.taskType}
+
+**Failure Rate**: ${pattern.failureRate}% (${pattern.executionsSampled} samples)
+**Pattern**: ${pattern.patternSignature}
+**Action**: ${action}
+
+**Example Execution IDs**:
+${pattern.exampleIds.map((id) => `- ${id}`).join('\n')}
+
+Please review these failures and document known issues + workarounds in the capability management dashboard.
+            `.trim();
+
+            this.logger.log(`[AI CAPABILITY] ${severity} pattern detected for ${pattern.taskType}`);
+
+            // Create ClickUp task for TL review
+            // Note: Using first example execution to resolve project/list
+            const firstExecution = await this.prisma.execution.findUnique({
+                where: { id: pattern.exampleIds[0] },
+                include: { ticket: { include: { project: true } } },
+            });
+
+            const listId = firstExecution?.ticket?.project?.clickup_list_id;
+            if (listId) {
+                await this.clickUp.createTask(listId, {
+                    name: `[${severity}] AI Capability Issue: ${pattern.taskType}`,
+                    description: message,
+                    priority: isCritical ? 1 : 2, // Urgent for critical, High for warning
+                    tags: ['ai-capability', 'pattern-detection', severity.toLowerCase()],
+                    notify_all: true,
+                });
+                this.logger.log(`ClickUp task created for ${severity} pattern in ${pattern.taskType}`);
+            } else {
+                this.logger.warn(`Could not resolve ClickUp List ID for pattern notification. Message logged: ${message}`);
+            }
+        } catch (error) {
+            this.logger.error(`Failed to notify AI capability pattern: ${(error as Error).message}`);
+            // Non-blocking - don't throw
+        }
+    }
 }

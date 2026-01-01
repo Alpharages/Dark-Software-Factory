@@ -26,7 +26,7 @@ export class PatternDetectorService {
     private readonly prisma: PrismaService,
     private readonly capabilityService: AiCapabilityService,
     private readonly notificationService: ArchitectureReviewNotificationService,
-  ) {}
+  ) { }
 
   /**
    * Scheduled job to analyze execution patterns and detect AI limitations
@@ -206,35 +206,22 @@ export class PatternDetectorService {
   }
 
   /**
-   * Notify Tech Lead about detected pattern
+   * Notify Tech Lead about detected pattern (C7 fix: proper type safety)
    */
   private async notifyTechLead(pattern: DetectedPattern, isCritical: boolean): Promise<void> {
     try {
+      await this.notificationService.notifyAiCapabilityPattern(
+        {
+          taskType: pattern.taskType,
+          failureRate: pattern.failureRate,
+          executionsSampled: pattern.executionsSampled,
+          patternSignature: pattern.patternSignature,
+          exampleIds: pattern.exampleIds,
+        },
+        isCritical,
+      );
+
       const severity = isCritical ? 'CRITICAL' : 'WARNING';
-      const action = isCritical ? 'AI has been disabled for this task type' : 'Review recommended';
-
-      const message = `
-        🚨 **AI Capability ${severity}**: ${pattern.taskType}
-        
-        **Failure Rate**: ${pattern.failureRate}% (${pattern.executionsSampled} samples)
-        **Pattern**: ${pattern.patternSignature}
-        **Action**: ${action}
-        
-        **Example Execution IDs**:
-        ${pattern.exampleIds.map((id) => `- ${id}`).join('\n')}
-        
-        Please review these failures and document known issues + workarounds in the capability management dashboard.
-      `;
-
-      // Use existing notification service for ClickUp integration
-      await this.notificationService.notifyHighPriorityReview({
-        title: `[${severity}] AI Capability Issue: ${pattern.taskType}`,
-        description: message,
-        priority: isCritical ? 1 : 2, // ClickUp priority (1 = urgent, 2 = high)
-        adrId: 'pattern-detection',
-        riskLevel: isCritical ? 'HIGH' : 'MEDIUM',
-      } as Parameters<typeof this.notificationService.notifyHighPriorityReview>[0]);
-
       this.logger.log(`Notified TL about ${severity} pattern in ${pattern.taskType}`);
     } catch (error) {
       this.logger.error('Failed to notify TL', (error as Error).stack);

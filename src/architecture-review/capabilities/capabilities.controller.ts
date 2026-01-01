@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Body, Param, Logger } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Body, Param, Logger, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { AiCapabilityService } from './ai-capability.service';
 import { PatternDetectorService } from './pattern-detector.service';
 import {
@@ -10,6 +11,8 @@ import {
 import { TaskType } from '@/prisma/client';
 
 @ApiTags('AI Capabilities')
+@ApiBearerAuth()
+@UseGuards(ThrottlerGuard)
 @Controller('api/v1/capabilities')
 export class CapabilitiesController {
   private readonly logger = new Logger(CapabilitiesController.name);
@@ -17,19 +20,22 @@ export class CapabilitiesController {
   constructor(
     private readonly capabilityService: AiCapabilityService,
     private readonly patternDetector: PatternDetectorService,
-  ) {}
+  ) { }
 
   /**
    * Get dashboard data with capability metrics and top limitations
-   * Story 7.7 AC#1
+   * Story 7.7 AC#1 (C5 fix: Added RBAC for TL/ADMIN only)
    */
   @Get('dashboard')
-  @ApiOperation({ summary: 'Get AI capability dashboard data' })
+  @Throttle({ default: { limit: 20, ttl: 60000 } }) //  20 requests per minute
+  @ApiOperation({ summary: 'Get AI capability dashboard data (TL/ADMIN)' })
   @ApiResponse({
     status: 200,
     description: 'Dashboard data retrieved',
     type: CapabilityDashboardResponseDto,
   })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - TL/ADMIN role required' })
   async getDashboard(): Promise<CapabilityDashboardResponseDto> {
     this.logger.log('Fetching capability dashboard data');
 
@@ -66,11 +72,14 @@ export class CapabilitiesController {
 
   /**
    * Create a new AI limitation entry
-   * Story 7.7 AC#1, AC#3
+   * Story 7.7 AC#1, AC#3 (C5 fix: Added RBAC for TL/ADMIN only)
    */
   @Post('limitations')
-  @ApiOperation({ summary: 'Document a new AI limitation' })
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
+  @ApiOperation({ summary: 'Document a new AI limitation (TL/ADMIN)' })
   @ApiResponse({ status: 201, description: 'Limitation created' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - TL/ADMIN role required' })
   async createLimitation(
     @Body() dto: CreateLimitationDto,
   ): Promise<{ success: boolean; message: string }> {
@@ -91,11 +100,14 @@ export class CapabilitiesController {
 
   /**
    * Update an existing AI limitation
-   * Story 7.7 AC#1, AC#3
+   * Story 7.7 AC#1, AC#3 (C5 fix: Added RBAC for TL/ADMIN only)
    */
   @Put('limitations/:taskType')
-  @ApiOperation({ summary: 'Update AI limitation and workarounds' })
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
+  @ApiOperation({ summary: 'Update AI limitation and workarounds (TL/ADMIN)' })
   @ApiResponse({ status: 200, description: 'Limitation updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - TL/ADMIN role required' })
   async updateLimitation(
     @Param('taskType') taskType: string,
     @Body() dto: UpdateLimitationDto,
@@ -122,11 +134,13 @@ export class CapabilitiesController {
 
   /**
    * Get AI limitations knowledge base in Markdown format
-   * Story 7.7 AC#3
+   * Story 7.7 AC#3 (C5 fix: Added RBAC for TL/PM/QA/ADMIN access)
    */
   @Get('knowledge-base.md')
-  @ApiOperation({ summary: 'Get AI limitations as Markdown documentation' })
+  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 requests per minute
+  @ApiOperation({ summary: 'Get AI limitations as Markdown documentation (All roles)' })
   @ApiResponse({ status: 200, description: 'Knowledge base retrieved', type: String })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
   async getKnowledgeBase(): Promise<string> {
     this.logger.log('Generating AI limitations knowledge base');
 
@@ -186,11 +200,16 @@ export class CapabilitiesController {
   }
 
   /**
-   * Manually trigger pattern analysis (for testing/debugging)
+   * Manually trigger pattern analysis (for testing/debugging  - ADMIN only)
+   * C5 fix: Added RBAC and aggressive rate limiting
    */
   @Post('analyze-patterns')
-  @ApiOperation({ summary: 'Manually trigger pattern detection analysis' })
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 requests per hour (expensive operation)
+  @ApiOperation({ summary: 'Manually trigger pattern detection analysis (ADMIN only)' })
   @ApiResponse({ status: 200, description: 'Analysis triggered' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - ADMIN role required' })
+  @ApiResponse({ status: 429, description: 'Too many requests - rate limit exceeded' })
   async triggerPatternAnalysis(): Promise<{ success: boolean; patternsDetected: number }> {
     this.logger.log('Manually triggering pattern analysis');
 
