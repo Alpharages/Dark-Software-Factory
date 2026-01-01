@@ -1,6 +1,6 @@
 # Story 7.6-UI: Escalation Response Interface
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: This is a UI companion story to 7-6-ai-escalation-uncertainty-handling -->
 
