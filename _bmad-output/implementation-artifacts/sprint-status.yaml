@@ -596,7 +596,7 @@ development_status:
     created_date: "2026-01-01"
     code_review_date: "2026-01-01"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented Date Range Picker with presets (AC#4), refactored CSV logic (AC#5), added manual refresh/cache invalidation (AC#6), corrected sidebar icon (L1), and enhanced unit tests (M2). All files staged."
-  epic-7-retrospective: optional
+  epic-7-retrospective: completed
 
   epic-8: backlog
   epic-8-dependencies-v3: "Epic 3 (QA Automation), Epic 13 (AI Self-Healing)"
@@ -615,6 +615,10 @@ development_status:
     delegation_opportunity: "IDENTIFIED 2025-12-07 - HIGH IMPACT"
     notes: "DELEGATION OPPORTUNITY ⭐ HIGH IMPACT: AI analyzes quality metrics trends, detects anomalies with statistical reasoning. Identifies sudden drops, trend declines, spikes with possible causes and recommended actions. Eliminates complex statistical algorithm implementation. Effort reduction: ~70% (1 week → 2 days). Priority: Phase 2 (Quality enhancement). See: /docs/architecture/epic-5-10-delegation-strategy.md"
   8-8-quality-review-metrics-qa-workload: backlog
+  8-UI-lead-qa-review-dashboard:
+    status: backlog
+    priority: high
+    notes: "UI Gateway for Epic 8. Defined during Epic 7 Retrospective."
   epic-8-retrospective: optional
 
   # ===================================================================
@@ -669,6 +673,10 @@ development_status:
     notes: "Ops team dashboard for production errors. Real-time alerts. Uses Epic 14.5 observability APIs. Merged from 9-8."
     original_story: "9-8"
     v3_enhancement: "Epic 14.5 provides real-time observability APIs"
+  9-UI-production-error-monitoring-dashboard:
+    status: backlog
+    priority: medium
+    notes: "UI Gateway for Epic 9. Defined during Epic 7 Retrospective."
   epic-9-U-retrospective: optional
 
   # ===================================================================
@@ -734,6 +742,10 @@ development_status:
     story_points: 3
     notes: "User preferences: Slack, email, in-app. Notification filtering. Channel management. From original 10-10."
     original_story: "10-10"
+  10-UI-system-controls-preferences:
+    status: backlog
+    priority: low
+    notes: "UI Gateway for Epic 10. Defined during Epic 7 Retrospective."
   epic-10-U-retrospective: optional
 
   # ===================================================================
