@@ -107,7 +107,7 @@ export class ProjectService {
         // Verify new PM exists and is actually a PM
         const newPm = await tx.user.findUnique({
           where: { id: reassignDto.new_pm_id },
-          select: { id: true, name: true, email: true, role: true },
+          select: { id: true, full_name: true, email: true, role: true },
         });
 
         if (!newPm) {
@@ -141,7 +141,7 @@ export class ProjectService {
         });
 
         this.logger.log(
-          `Project "${project.name}" (${id}) reassigned from PM ${oldPmId} to PM ${newPm.name} (${reassignDto.new_pm_id}). Reason: ${reassignDto.reason || 'Not specified'}`,
+          `Project "${project.name}" (${id}) reassigned from PM ${oldPmId} to PM ${newPm.full_name} (${reassignDto.new_pm_id}). Reason: ${reassignDto.reason || 'Not specified'}`,
         );
 
         this.operationsCounter.inc({ operation: 'reassign', status: 'success' });

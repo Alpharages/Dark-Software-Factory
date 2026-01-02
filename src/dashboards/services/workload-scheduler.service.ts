@@ -30,7 +30,7 @@ export class WorkloadSchedulerService {
         where: { role: 'PM' },
         select: {
           id: true,
-          name: true,
+          full_name: true,
           max_tickets: true,
         },
       });
@@ -73,7 +73,7 @@ export class WorkloadSchedulerService {
 
           successCount++;
           this.logger.debug(
-            `Snapshot created/updated for PM ${pm.name}: ${utilization.utilization_pct}% utilization`,
+            `Snapshot created/updated for PM ${pm.full_name}: ${utilization.utilization_pct}% utilization`,
           );
         } catch (_error) {
           errorCount++;
@@ -121,7 +121,7 @@ export class WorkloadSchedulerService {
         where: { role: 'PM' },
         select: {
           id: true,
-          name: true,
+          full_name: true,
           email: true,
           managed_by_id: true,
         },
@@ -138,7 +138,7 @@ export class WorkloadSchedulerService {
 
             // Log the alert (actual notification service would be integrated here)
             this.logger.warn(
-              `🚨 BURNOUT ALERT: PM ${pm.name} (${pm.email}) at ${utilization.utilization_pct}% utilization (${utilization.active_tickets}/${utilization.max_tickets} tickets)`,
+              `🚨 BURNOUT ALERT: PM ${pm.full_name} (${pm.email}) at ${utilization.utilization_pct}% utilization (${utilization.active_tickets}/${utilization.max_tickets} tickets)`,
             );
 
             // TODO: Integrate with notification service to send alerts to:
@@ -152,13 +152,13 @@ export class WorkloadSchedulerService {
             // Record metric for this specific PM
             this.metricsService.setGauge('pm_burnout_risk_total', 1, {
               pm_id: pm.id,
-              pm_name: pm.name,
+              pm_name: pm.full_name,
             });
           } else {
             // No burnout risk - set metric to 0
             this.metricsService.setGauge('pm_burnout_risk_total', 0, {
               pm_id: pm.id,
-              pm_name: pm.name,
+              pm_name: pm.full_name,
             });
           }
         } catch (_error) {

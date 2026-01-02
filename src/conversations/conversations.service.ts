@@ -260,7 +260,7 @@ export class ConversationsService {
           where,
           include: {
             project: { select: { name: true } },
-            pm: { select: { name: true, email: true } },
+            pm: { select: { full_name: true, email: true } },
           },
           orderBy: { conversation_date: 'desc' },
           skip: (page - 1) * limit,
@@ -299,7 +299,7 @@ export class ConversationsService {
       where: { id },
       include: {
         project: { select: { name: true } },
-        pm: { select: { name: true, email: true } },
+        pm: { select: { full_name: true, email: true } },
       },
     });
 

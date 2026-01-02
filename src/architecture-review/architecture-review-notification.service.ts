@@ -303,8 +303,10 @@ Please review these failures and document known issues + workarounds in the capa
       // Or better, define a method to getting "Architecture_Board" list.
 
       // Mock: finding the first active project
-      const project = await this.prisma.project.findFirst();
-      if (!project) {
+      const project = await this.prisma.project.findFirst({
+        where: { clickup_list_id: { not: null } },
+      });
+      if (!project || !project.clickup_list_id) {
         this.logger.warn('No active project found to post alert to.');
         return;
       }

@@ -53,7 +53,7 @@ export class WorkloadService {
       where: { id: pmId },
       select: {
         id: true,
-        name: true,
+        full_name: true,
         email: true,
         max_tickets: true,
         role: true,
@@ -95,17 +95,17 @@ export class WorkloadService {
     // Record metrics
     this.metricsService.setGauge('pm_utilization_percent', utilizationPct, {
       pm_id: pmId,
-      pm_name: pm.name,
+      pm_name: pm.full_name,
     });
 
     this.metricsService.setGauge('pm_burnout_risk_total', risk === 'red' ? 1 : 0, {
       pm_id: pmId,
-      pm_name: pm.name,
+      pm_name: pm.full_name,
     });
 
     return {
       pm_id: pm.id,
-      pm_name: pm.name,
+      pm_name: pm.full_name,
       pm_email: pm.email,
       active_tickets: activeTickets,
       max_tickets: pm.max_tickets,
@@ -152,12 +152,12 @@ export class WorkloadService {
       where: whereClause,
       select: {
         id: true,
-        name: true,
+        full_name: true,
         email: true,
         max_tickets: true,
       },
       orderBy: {
-        name: 'asc',
+        full_name: 'asc',
       },
     });
 
@@ -214,7 +214,7 @@ export class WorkloadService {
 
       return {
         pm_id: pm.id,
-        pm_name: pm.name,
+        pm_name: pm.full_name,
         pm_email: pm.email,
         active_tickets: activeTickets,
         max_tickets: pm.max_tickets,
