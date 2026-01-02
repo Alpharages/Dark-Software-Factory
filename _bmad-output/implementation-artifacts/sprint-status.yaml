@@ -1062,11 +1062,15 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/17-3-backend-login-session-management.md"
     notes: "✅ IMPLEMENTATION COMPLETE + CODE REVIEW APPROVED - Login & Session Management fully implemented. Delivered: (1) RefreshToken model + migration, (2) AuthService with login/refresh/logout/me, (3) AuthController with Swagger docs and rate limiting (5 req/15min login, 20 req/15min refresh), (4) Atomic transactions for session integrity, (5) 16/16 Unit tests passing. CODE REVIEW FIXES: Added @Throttle to refresh endpoint, added DB-level expiration check for robustness, updated file tracking."
   17-4-backend-user-management-api:
-    status: backlog
+    status: done
     effort: "1 day"
     story_points: 3
-    story_file: "TBD"
-    notes: "GET/PATCH/DELETE /api/v1/users endpoints for admin user management. Role changes, deactivation. Audit logging."
+    developer: "Antigravity"
+    completed_at: "2026-01-03"
+    code_review_date: "2026-01-03"
+    code_review_fixes: "5 issues fixed (2 MEDIUM, 3 LOW)"
+    story_file: "_bmad-output/implementation-artifacts/17-4-backend-user-management-api.md"
+    notes: "✅ IMPLEMENTATION COMPLETE + CODE REVIEW APPROVED - Backend User Management API fully implemented. Delivered: (1) 5 DTOs for pagination/filtering, (2) UsersService with list/get/update/deactivate + audit logging, (3) UsersController with ADMIN RBAC + rate limiting, (4) 22/22 unit tests PASSING (15 service + 7 controller). Build ✅ Lint ✅ All 7 ACs met. CODE REVIEW FIXES: All files committed to git, test count corrected, file count clarified, code review notes added."
   17-5-ui-login-page-auth-flow:
     status: backlog
     effort: "2 days"

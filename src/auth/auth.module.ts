@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { InvitationsModule } from './invitations/invitations.module';
 import { RegistrationModule } from './registration/registration.module';
+import { UsersModule } from './users/users.module';
 import { DatabaseModule } from '../database/database.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
@@ -51,9 +52,19 @@ import { AuthController } from './auth.controller';
 
     // Story 17-2: User Registration
     RegistrationModule,
+
+    // Story 17-4: User Management
+    UsersModule,
   ],
   providers: [JwtStrategy, AuthService],
   controllers: [AuthController],
-  exports: [PassportModule, JwtModule, InvitationsModule, RegistrationModule, AuthService],
+  exports: [
+    PassportModule,
+    JwtModule,
+    InvitationsModule,
+    RegistrationModule,
+    UsersModule,
+    AuthService,
+  ],
 })
 export class AuthModule {}
