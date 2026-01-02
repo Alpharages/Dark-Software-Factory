@@ -185,4 +185,4 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
     ApprovalService,
   ],
 })
-export class ExecutionModule { }
+export class ExecutionModule {}

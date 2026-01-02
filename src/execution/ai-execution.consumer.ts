@@ -96,7 +96,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly queueDepthGauge: Gauge<string>,
     @InjectMetric('queue_consumer_count')
     private readonly consumerCountGauge: Gauge<string>,
-  ) { }
+  ) {}
 
   async onModuleInit(): Promise<void> {
     await this.startConsuming();
@@ -146,7 +146,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
 
             this.logger.log(
               `[${correlationId}] Processing execution ${payload.executionId} ` +
-              `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
+                `(provider: ${payload.aiProvider}, priority: ${payload.priority})`,
             );
 
             // Process the execution
@@ -159,7 +159,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             if (result.success) {
               this.logger.log(
                 `[${correlationId}] Execution ${payload.executionId} completed ` +
-                `(${duration}ms)`,
+                  `(${duration}ms)`,
               );
 
               // Acknowledge message
@@ -353,12 +353,12 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           await this.clickup.addComment(
             payload.ticketId,
             `🚨 **AI Execution Blocked: Budget Exceeded**\n\n` +
-            `The requested AI operation was blocked. Reason: ${reason}\n\n` +
-            `**Analysis:**\n` +
-            `- Budget: $${budgetCheck.budget?.toFixed(2)}\n` +
-            `- Current Spend: $${budgetCheck.spend?.toFixed(2)}\n` +
-            `- Estimated Cost: $${estimatedCost.toFixed(4)}\n\n` +
-            `Please increase the project budget or optimize usage to proceed.`,
+              `The requested AI operation was blocked. Reason: ${reason}\n\n` +
+              `**Analysis:**\n` +
+              `- Budget: $${budgetCheck.budget?.toFixed(2)}\n` +
+              `- Current Spend: $${budgetCheck.spend?.toFixed(2)}\n` +
+              `- Estimated Cost: $${estimatedCost.toFixed(4)}\n\n` +
+              `Please increase the project budget or optimize usage to proceed.`,
           );
 
           // 2. Log Decision

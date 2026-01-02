@@ -7,13 +7,13 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module'; // 
 import { ExecutionModule } from '../execution/execution.module';
 
 @Module({
-    imports: [
-        DatabaseModule,
-        CostTrackingModule,
-        AIDecisionLoggerModule, // Check this name
-        ExecutionModule
-    ],
-    controllers: [DecisionDashboardController],
-    providers: [DecisionService],
+  imports: [
+    DatabaseModule,
+    CostTrackingModule,
+    AIDecisionLoggerModule, // Check this name
+    ExecutionModule,
+  ],
+  controllers: [DecisionDashboardController],
+  providers: [DecisionService],
 })
-export class DecisionDashboardModule { }
+export class DecisionDashboardModule {}

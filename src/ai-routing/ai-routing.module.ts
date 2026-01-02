@@ -255,4 +255,4 @@ import { EventBusModule } from '../common/event-bus.module';
     FallbackStrategyService,
   ],
 })
-export class AiRoutingModule { }
+export class AiRoutingModule {}

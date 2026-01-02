@@ -575,7 +575,6 @@ export class ClickUpService {
     }
   }
 
-
   /**
    * Get hierarchy of Spaces and Lists for discovery
    * Used by UI to allow users to select lists to import
@@ -656,5 +655,3 @@ export class ClickUpService {
     }
   }
 }
-
-

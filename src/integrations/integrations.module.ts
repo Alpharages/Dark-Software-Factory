@@ -3,7 +3,7 @@ import { IntegrationsController } from './integrations.controller';
 import { ClickUpModule } from '../clickup/clickup.module';
 
 @Module({
-    imports: [ClickUpModule],
-    controllers: [IntegrationsController],
+  imports: [ClickUpModule],
+  controllers: [IntegrationsController],
 })
-export class IntegrationsModule { }
+export class IntegrationsModule {}

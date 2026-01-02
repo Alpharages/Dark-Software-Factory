@@ -13,7 +13,12 @@ import { ArchitectureReviewNotificationService } from '../architecture-review-no
     ScheduleModule.forRoot(), // Enable cron jobs
   ],
   controllers: [CapabilitiesController],
-  providers: [AiCapabilityService, PatternDetectorService, AiCapabilityTrackerService, ArchitectureReviewNotificationService],
+  providers: [
+    AiCapabilityService,
+    PatternDetectorService,
+    AiCapabilityTrackerService,
+    ArchitectureReviewNotificationService,
+  ],
   exports: [AiCapabilityService, PatternDetectorService, AiCapabilityTrackerService],
 })
-export class CapabilitiesModule { }
+export class CapabilitiesModule {}

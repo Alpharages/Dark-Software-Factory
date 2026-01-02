@@ -92,4 +92,4 @@ import { AppMetricsModule } from '@/common/metrics';
   ],
   exports: [ObservabilityDashboardService, PmDashboardService, WorkloadService, DashboardGateway],
 })
-export class DashboardsModule { }
+export class DashboardsModule {}

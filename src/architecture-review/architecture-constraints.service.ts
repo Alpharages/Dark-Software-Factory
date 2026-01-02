@@ -5,60 +5,60 @@ import { UpdateConstraintDto } from './dto/update-constraint.dto';
 
 @Injectable()
 export class ArchitectureConstraintsService {
-    private readonly logger = new Logger(ArchitectureConstraintsService.name);
+  private readonly logger = new Logger(ArchitectureConstraintsService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    async create(createDto: CreateConstraintDto) {
-        this.logger.log(`Creating constraint: ${createDto.type} (${createDto.scope})`);
-        return this.prisma.architectureConstraint.create({
-            data: createDto,
-        });
+  async create(createDto: CreateConstraintDto) {
+    this.logger.log(`Creating constraint: ${createDto.type} (${createDto.scope})`);
+    return this.prisma.architectureConstraint.create({
+      data: createDto,
+    });
+  }
+
+  async findAll(projectId?: string) {
+    this.logger.log(`Finding constraints for project: ${projectId || 'GLOBAL'}`);
+
+    // Get globals
+    const globals = await this.prisma.architectureConstraint.findMany({
+      where: { scope: 'GLOBAL' },
+    });
+
+    if (!projectId) {
+      return globals;
     }
 
-    async findAll(projectId?: string) {
-        this.logger.log(`Finding constraints for project: ${projectId || 'GLOBAL'}`);
+    // Get project specifics
+    const projectSpecific = await this.prisma.architectureConstraint.findMany({
+      where: { projectId },
+    });
 
-        // Get globals
-        const globals = await this.prisma.architectureConstraint.findMany({
-            where: { scope: 'GLOBAL' },
-        });
+    // Merge logic: Currently additive.
+    // Project constraints are returned alongside global constraints.
+    // The Policy Validator applies all of them.
+    // Future enhancement: Allow project constraints to explicitly disable/override specific global rules.
+    return [...globals, ...projectSpecific];
+  }
 
-        if (!projectId) {
-            return globals;
-        }
+  async findOne(id: string) {
+    return this.prisma.architectureConstraint.findUniqueOrThrow({
+      where: { id },
+    });
+  }
 
-        // Get project specifics
-        const projectSpecific = await this.prisma.architectureConstraint.findMany({
-            where: { projectId },
-        });
+  async update(id: string, updateDto: UpdateConstraintDto) {
+    return this.prisma.architectureConstraint.update({
+      where: { id },
+      data: {
+        ...updateDto,
+        version: { increment: 1 },
+      },
+    });
+  }
 
-        // Merge logic: Currently additive.
-        // Project constraints are returned alongside global constraints.
-        // The Policy Validator applies all of them.
-        // Future enhancement: Allow project constraints to explicitly disable/override specific global rules.
-        return [...globals, ...projectSpecific];
-    }
-
-    async findOne(id: string) {
-        return this.prisma.architectureConstraint.findUniqueOrThrow({
-            where: { id },
-        });
-    }
-
-    async update(id: string, updateDto: UpdateConstraintDto) {
-        return this.prisma.architectureConstraint.update({
-            where: { id },
-            data: {
-                ...updateDto,
-                version: { increment: 1 },
-            },
-        });
-    }
-
-    async remove(id: string) {
-        return this.prisma.architectureConstraint.delete({
-            where: { id },
-        });
-    }
+  async remove(id: string) {
+    return this.prisma.architectureConstraint.delete({
+      where: { id },
+    });
+  }
 }

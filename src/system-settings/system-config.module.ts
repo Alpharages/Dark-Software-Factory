@@ -5,9 +5,9 @@ import { DatabaseModule } from '@/database/database.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-    imports: [DatabaseModule, ConfigModule],
-    controllers: [SystemConfigController],
-    providers: [SystemConfigService],
-    exports: [SystemConfigService],
+  imports: [DatabaseModule, ConfigModule],
+  controllers: [SystemConfigController],
+  providers: [SystemConfigService],
+  exports: [SystemConfigService],
 })
-export class SystemConfigModule { }
+export class SystemConfigModule {}

@@ -21,8 +21,8 @@ describe('PromptGeneratorService', () => {
   const mockConstraintsService = {
     findAll: jest.fn().mockResolvedValue([
       { type: 'ALLOWED_TECH', scope: 'GLOBAL', rules: { allowed: ['react'] } },
-      { type: 'FORBIDDEN_TECH', scope: 'GLOBAL', rules: { forbidden: ['jquery'] } }
-    ])
+      { type: 'FORBIDDEN_TECH', scope: 'GLOBAL', rules: { forbidden: ['jquery'] } },
+    ]),
   };
 
   const createInput = (

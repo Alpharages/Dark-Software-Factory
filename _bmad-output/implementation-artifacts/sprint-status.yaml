@@ -1016,8 +1016,15 @@ development_status:
     code_review_date: "2026-01-02"
     notes: "Review passed with automated remediation (Schema, Tests, DTOs)."
   16-2-ui-clickup-sync:
-    status: ready-for-dev
+    status: done
     effort: "3 days"
     story_points: 5
     story_file: "_bmad-output/implementation-artifacts/16-2-ui-clickup-sync.md"
+    developer: "Antigravity"
+    completed_at: "2026-01-02"
+    code_review_date: "2026-01-02"
+    code_review_fixes: "6 HIGH, 4 MEDIUM (all remediated)"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - UI implementation complete with all code review fixes applied. Created ProjectsTable with monitoring toggle, ClickUpImportModal with provider selection & hierarchy browser, React Query hooks (useClickUpHierarchy, useImportProject), ProjectsSyncPage, and shadcn UI components (Table, Switch, Badge, Dialog). Added routing and tests. CODE REVIEW FIXES: (H2) Fixed React Fragment key warning, (H3/H4) Improved error handling with typed API responses extracting actual error messages, (H6) Enhanced test coverage 5→9 comprehensive test cases (API integration, error handling, loading states), (M1) Changed provider default from 'CLICKUP' to 'Unknown'. Build passing for story files."
+
+
 

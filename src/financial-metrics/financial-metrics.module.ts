@@ -8,18 +8,18 @@ import { FinancialMetricsController } from './financial-metrics.controller';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-    imports: [
-        DatabaseModule,
-        LoggerModule,
-        SentryModule,
-        AppMetricsModule,
-        JwtModule.register({
-            secret: process.env.JWT_SECRET || 'fallback-secret',
-            signOptions: { expiresIn: '7d' },
-        }),
-    ],
-    controllers: [FinancialMetricsController],
-    providers: [FinancialMetricsService],
-    exports: [FinancialMetricsService],
+  imports: [
+    DatabaseModule,
+    LoggerModule,
+    SentryModule,
+    AppMetricsModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'fallback-secret',
+      signOptions: { expiresIn: '7d' },
+    }),
+  ],
+  controllers: [FinancialMetricsController],
+  providers: [FinancialMetricsService],
+  exports: [FinancialMetricsService],
 })
-export class FinancialMetricsModule { }
+export class FinancialMetricsModule {}

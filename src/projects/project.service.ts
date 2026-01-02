@@ -24,7 +24,7 @@ export class ProjectService {
     private readonly lookupCounter: Counter<string>,
     @Inject(forwardRef(() => ClickUpService))
     private readonly clickupService: ClickUpService,
-  ) { }
+  ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
     try {
@@ -182,7 +182,7 @@ export class ProjectService {
       const project = await this.repository.create({
         name: listDetails.name, // Use list name as project name
         clickup_list_id: listDetails.id,
-        github_repository_url: '', // Placeholder, user can update later? Or optional? 
+        github_repository_url: '', // Placeholder, user can update later? Or optional?
         default_branch: 'main',
         pm_id: userId,
         status: 'active',
@@ -213,4 +213,3 @@ export class ProjectService {
     }
   }
 }
-

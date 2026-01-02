@@ -210,7 +210,7 @@ ${requirements.join('\n')}`;
       ``,
       `### Coding Standards`,
       ``,
-      `${context.codingStandards.map((s) => `- ${s}`).join('\n')}`
+      `${context.codingStandards.map((s) => `- ${s}`).join('\n')}`,
     ];
 
     if (context.architectureConstraints && context.architectureConstraints.length > 0) {

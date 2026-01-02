@@ -26,7 +26,7 @@ export class PatternDetectorService {
     private readonly prisma: PrismaService,
     private readonly capabilityService: AiCapabilityService,
     private readonly notificationService: ArchitectureReviewNotificationService,
-  ) { }
+  ) {}
 
   /**
    * Scheduled job to analyze execution patterns and detect AI limitations

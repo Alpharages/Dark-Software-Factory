@@ -42,7 +42,7 @@ export class PromptGeneratorService implements OnModuleInit {
     @InjectMetric('prompt_generation_duration_seconds')
     private readonly durationHistogram: Histogram<string>,
     private readonly architectureConstraintsService: ArchitectureConstraintsService,
-  ) { }
+  ) {}
 
   onModuleInit(): void {
     // Register prompt builders
@@ -97,7 +97,9 @@ export class PromptGeneratorService implements OnModuleInit {
       if (input.ticketId) {
         try {
           // Query ADR table for most recent GUIDANCE_PROVIDED or RESOLVED ADR for this ticket
-          const adrsWithGuidance = await this.architectureConstraintsService['prisma'].adr.findFirst({
+          const adrsWithGuidance = await this.architectureConstraintsService[
+            'prisma'
+          ].adr.findFirst({
             where: {
               ticket_id: input.ticketId,
               status: { in: ['GUIDANCE_PROVIDED', 'RESOLVED'] },
@@ -109,10 +111,14 @@ export class PromptGeneratorService implements OnModuleInit {
 
           if (adrsWithGuidance?.tl_guidance) {
             context.previousEscalationGuidance = adrsWithGuidance.tl_guidance;
-            this.logger.log(`[${correlationId}] Injecting TL guidance into prompt for ticket ${input.ticketId}`);
+            this.logger.log(
+              `[${correlationId}] Injecting TL guidance into prompt for ticket ${input.ticketId}`,
+            );
           }
         } catch (err) {
-          this.logger.warn(`Failed to fetch TL guidance for ticket ${input.ticketId}: ${(err as Error).message}`);
+          this.logger.warn(
+            `Failed to fetch TL guidance for ticket ${input.ticketId}: ${(err as Error).message}`,
+          );
         }
       }
 
@@ -159,7 +165,7 @@ export class PromptGeneratorService implements OnModuleInit {
 
       this.logger.log(
         `[${correlationId}] Prompt generated: ${metadata.promptLength} chars, ` +
-        `~${metadata.estimatedTokens} tokens, ${metadata.sectionsIncluded.length} sections`,
+          `~${metadata.estimatedTokens} tokens, ${metadata.sectionsIncluded.length} sections`,
       );
 
       return result;

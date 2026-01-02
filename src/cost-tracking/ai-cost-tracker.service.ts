@@ -16,7 +16,7 @@ export class AICostTrackerService {
     private readonly prisma: PrismaService,
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
-  ) { }
+  ) {}
 
   /**
    * Check if project budget allows for this execution
@@ -45,9 +45,7 @@ export class AICostTrackerService {
       }
 
       const projectId = ticket.project_id;
-      const budget = ticket.project.budget_usd
-        ? ticket.project.budget_usd.toNumber()
-        : 100.0; // Default $100
+      const budget = ticket.project.budget_usd ? ticket.project.budget_usd.toNumber() : 100.0; // Default $100
 
       // 2. Get Current Spend
       const totalCostAggregation = await this.prisma.aICostLog.aggregate({
@@ -259,7 +257,9 @@ export class AICostTrackerService {
     return ticket?.project_id;
   }
 
-  async getCostStats(ticketId: string): Promise<{ totalCost: number; projectBudget: number; projectSpend: number }> {
+  async getCostStats(
+    ticketId: string,
+  ): Promise<{ totalCost: number; projectBudget: number; projectSpend: number }> {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
       include: {

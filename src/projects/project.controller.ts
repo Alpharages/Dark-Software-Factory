@@ -31,7 +31,7 @@ import { Role } from '@/auth/constants/roles.enum';
 export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);
 
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.MANAGER) // Changed to use Role enum for consistency with existing code

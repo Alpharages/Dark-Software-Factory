@@ -61,7 +61,7 @@ export class OrchestratorService {
     private readonly costGauge: Gauge<string>,
     @InjectMetric('adr_creation_total')
     private readonly adrCreationCounter: Counter<string>,
-  ) { }
+  ) {}
 
   /**
    * Execute AI code generation with intelligent orchestration
@@ -91,7 +91,7 @@ export class OrchestratorService {
 
         this.logger.log(
           `[${correlationId}] Provider selected: primary=${selection.primary}, ` +
-          `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
+            `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
         );
       }
 
@@ -131,7 +131,7 @@ export class OrchestratorService {
 
         this.logger.log(
           `[${correlationId}] Orchestration successful: provider=${result.executedBy}, ` +
-          `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
+            `fallback=${result.usedFallback}, files=${result.filesChanged.length}`,
         );
 
         // Story 7.1: Parse and store ADR if AI generated one
@@ -368,15 +368,11 @@ export class OrchestratorService {
         throw new Error(`AI Provider failed: ${result.error?.message || 'Unknown error'}`);
       }
 
-      // Story 7.1: Parse and store ADR if AI generated one  
+      // Story 7.1: Parse and store ADR if AI generated one
       try {
         const aiResponse = result.response || '';
         if (this.adrParser.hasAdr(aiResponse)) {
-          const adrDto = this.adrParser.parseAdrFromResponse(
-            aiResponse,
-            correlationId,
-            ticketId,
-          );
+          const adrDto = this.adrParser.parseAdrFromResponse(aiResponse, correlationId, ticketId);
 
           if (adrDto) {
             const savedAdr = await this.adrService.create(adrDto);

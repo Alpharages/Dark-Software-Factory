@@ -20,7 +20,7 @@ export class CapabilitiesController {
   constructor(
     private readonly capabilityService: AiCapabilityService,
     private readonly patternDetector: PatternDetectorService,
-  ) { }
+  ) {}
 
   /**
    * Get dashboard data with capability metrics and top limitations

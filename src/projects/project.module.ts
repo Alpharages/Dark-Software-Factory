@@ -26,4 +26,4 @@ import { ClickUpModule } from '@/clickup/clickup.module';
   ],
   exports: [ProjectService],
 })
-export class ProjectModule { }
+export class ProjectModule {}

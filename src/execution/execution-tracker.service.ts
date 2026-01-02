@@ -45,7 +45,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly statusGauge: Gauge<string>,
     @InjectMetric('execution_retry_total')
     private readonly retryCounter: Counter<string>,
-  ) { }
+  ) {}
 
   async onModuleInit(): Promise<void> {
     this.logger.log('Execution Tracker Service initialized');
@@ -228,7 +228,7 @@ export class ExecutionTrackerService implements OnModuleInit {
 
     this.logger.log(
       `[${correlationId}] Execution ${executionId} completed in ${durationSec.toFixed(2)}s ` +
-      `(confidence: ${confidenceScore}, files: ${filesChanged.length})`,
+        `(confidence: ${confidenceScore}, files: ${filesChanged.length})`,
     );
 
     return transition;

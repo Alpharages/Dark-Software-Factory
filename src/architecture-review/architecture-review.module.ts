@@ -15,14 +15,28 @@ import { CapabilitiesModule } from './capabilities/capabilities.module';
 import { AdrMetricsService } from './metrics/adr-metrics.service';
 import { AdrInsightsService } from './metrics/adr-insights.service';
 import { AdrAlertService } from './metrics/adr-alert.service';
-import { makeCounterProvider, makeGaugeProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
+import {
+  makeCounterProvider,
+  makeGaugeProvider,
+  makeHistogramProvider,
+} from '@willsoto/nestjs-prometheus';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 
 import { ArchitectureReviewMetricsController } from './architecture-review-metrics.controller';
 
 @Module({
-  imports: [ClickUpModule, AIDecisionLoggerModule, EventBusModule, CapabilitiesModule, AppMetricsModule],
-  controllers: [ArchitectureReviewController, ArchitectureConstraintsController, ArchitectureReviewMetricsController],
+  imports: [
+    ClickUpModule,
+    AIDecisionLoggerModule,
+    EventBusModule,
+    CapabilitiesModule,
+    AppMetricsModule,
+  ],
+  controllers: [
+    ArchitectureReviewController,
+    ArchitectureConstraintsController,
+    ArchitectureReviewMetricsController,
+  ],
   providers: [
     AdrService,
     RiskAssessmentService,
@@ -57,5 +71,4 @@ import { ArchitectureReviewMetricsController } from './architecture-review-metri
   ],
   exports: [AdrService],
 })
-export class ArchitectureReviewModule { }
-
+export class ArchitectureReviewModule {}

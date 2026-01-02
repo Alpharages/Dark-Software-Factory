@@ -269,7 +269,7 @@ describe('AIExecutionConsumer', () => {
       // Verify ClickUp alert
       expect(_clickupService.addComment).toHaveBeenCalledWith(
         'ticket-456',
-        expect.stringContaining('Budget exceeded')
+        expect.stringContaining('Budget exceeded'),
       );
     });
   });

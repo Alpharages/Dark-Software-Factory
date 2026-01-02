@@ -29,7 +29,7 @@ export class WebhookSyncStrategy implements IClickUpSyncStrategy {
   constructor(
     private readonly webhookEnabled: boolean,
     private readonly hasSecret: boolean,
-  ) { }
+  ) {}
 
   isEnabled(): boolean {
     return this.webhookEnabled && this.hasSecret;
@@ -68,7 +68,7 @@ export class PollingSyncStrategy implements IClickUpSyncStrategy {
   constructor(
     private readonly pollingEnabled: boolean,
     private readonly hasMonitoredLists: boolean,
-  ) { }
+  ) {}
 
   isEnabled(): boolean {
     return this.pollingEnabled && this.hasMonitoredLists;
