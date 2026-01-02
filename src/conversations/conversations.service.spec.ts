@@ -63,7 +63,7 @@ describe('ConversationsService', () => {
 
     it('should record success metrics on successful ticket creation', async () => {
       (prisma.clientConversation.findUnique as jest.Mock).mockResolvedValue(
-        mockConversation as { id: string; actionItems: unknown[] },
+        mockConversation as unknown as { id: string; actionItems: unknown[] },
       );
       (aetherFlowClient.createTasks as jest.Mock).mockResolvedValue({
         success: true,
@@ -78,7 +78,7 @@ describe('ConversationsService', () => {
 
     it('should record failure metrics on AetherFlow failure', async () => {
       (prisma.clientConversation.findUnique as jest.Mock).mockResolvedValue(
-        mockConversation as { id: string; actionItems: unknown[] },
+        mockConversation as unknown as { id: string; actionItems: unknown[] },
       );
       (aetherFlowClient.createTasks as jest.Mock).mockResolvedValue({
         success: false,

@@ -172,11 +172,13 @@ export class ConversationsService {
       const estimatedCost = (inputTokens * 0.01 + outputTokens * 0.03) / 1000;
 
       // Update conversation with results
+
       await this.prisma.clientConversation.update({
         where: { id: conversationId },
         data: {
           summary: summary.summary,
-          action_items: actionItems as Prisma.InputJsonValue,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          action_items: actionItems as any,
           sentiment,
           status: 'completed',
           processing_cost: estimatedCost,

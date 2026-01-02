@@ -559,7 +559,16 @@ export class AdrService {
     });
 
     // Notify TL via ClickUp (Story 7.6 AC#4)
-    await this.notificationService.notifyEscalation(updatedAdr, metadata);
+
+    await this.notificationService.notifyEscalation(
+      {
+        ...updatedAdr,
+        ticket: updatedAdr.ticket || undefined,
+        escalation_reason: updatedAdr.escalation_reason,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+      metadata,
+    );
 
     // Story 7.6 AC#1: Emit event to block execution pipeline
     this.eventBus.emit(

@@ -227,7 +227,7 @@ export class GitHubBranchService {
         }
       }
 
-      throw _error;
+      throw error;
     }
   }
 

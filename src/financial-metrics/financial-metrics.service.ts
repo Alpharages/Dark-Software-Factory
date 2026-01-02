@@ -241,13 +241,13 @@ export class FinancialMetricsService {
             lte: currentEndDate,
           },
         },
-        _sum: {
-          story_points: true,
+        _count: {
+          id: true,
         },
       });
 
-      const storyPointsDelivered =
-        (deliveredTickets._sum as { story_points?: number })?.story_points || 0;
+      // Using ticket count as a proxy for story points since story_points field doesn't exist
+      const storyPointsDelivered = deliveredTickets._count?.id || 0;
       const totalValueUsd = (storyPointsDelivered * valuePerPoint).toFixed(2);
 
       // Calculate ROI

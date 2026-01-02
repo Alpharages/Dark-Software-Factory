@@ -64,7 +64,8 @@ export class AetherFlowClientService {
     try {
       const response = await this.executeWithRetry<CreateTasksResponseDto>(
         '/api/integrations/clickup/create-tasks',
-        requestBody,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        requestBody as any,
       );
 
       this.logger.log(`Successfully created ${response.count || 0} tasks via AetherFlow`);
@@ -120,7 +121,8 @@ export class AetherFlowClientService {
 
       // Check if we should retry
       if (attemptNumber < this.retryAttempts - 1) {
-        const shouldRetry = this.isRetryableError(_error);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const shouldRetry = this.isRetryableError(_error as any);
 
         if (shouldRetry) {
           this.metrics.incrementAetherFlowApiCall(endpoint, 'retry');

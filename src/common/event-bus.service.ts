@@ -11,13 +11,15 @@ export type EventPayload = {
 
 @Injectable()
 export class EventBusService implements OnModuleDestroy {
-  private subject$ = new Subject<{ key: keyof EventPayload; data: Record<string, unknown> }>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private subject$ = new Subject<{ key: keyof EventPayload; data: any }>();
 
   /**
    * Emit an event
    */
   emit<K extends keyof EventPayload>(key: K, data: EventPayload[K]) {
-    this.subject$.next({ key, data });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.subject$.next({ key, data: data as any });
   }
 
   /**

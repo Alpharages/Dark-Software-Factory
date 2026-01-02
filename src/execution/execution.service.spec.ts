@@ -158,7 +158,8 @@ describe('ExecutionService', () => {
       jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.IN_PROGRESS,
-      } as Record<string, unknown>);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const result = await service.markInProgress('exec-123', 'corr-123');
 
@@ -190,7 +191,8 @@ describe('ExecutionService', () => {
       jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.COMPLETED,
-      } as Record<string, unknown>);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const result = await service.completeExecution(dto, 'corr-123');
 
@@ -222,7 +224,8 @@ describe('ExecutionService', () => {
       jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.FAILED,
-      } as Record<string, unknown>);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const result = await service.failExecution(dto, 'corr-123', true);
 
@@ -241,7 +244,8 @@ describe('ExecutionService', () => {
       jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.TIMEOUT,
-      } as Record<string, unknown>);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const result = await service.timeoutExecution('exec-123', 300, 'corr-123');
 
@@ -260,7 +264,8 @@ describe('ExecutionService', () => {
       jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.CANCELLED,
-      } as Record<string, unknown>);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const result = await service.cancelExecution('exec-123', 'User cancelled', 'corr-123');
 

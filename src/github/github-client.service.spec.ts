@@ -70,7 +70,8 @@ describe('GitHubClientService', () => {
     metricsService = module.get<MetricsService>(MetricsService);
     sentryService = module.get<SentryService>(SentryService);
     publisherService = module.get<RabbitMQPublisherService>(RabbitMQPublisherService);
-    logger = module.get(LoggerService) as unknown;
+
+    logger = module.get(LoggerService) as any;
   });
 
   it('should be defined', () => {

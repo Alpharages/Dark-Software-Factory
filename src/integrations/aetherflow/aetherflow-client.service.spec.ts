@@ -63,7 +63,8 @@ describe('AetherFlowClientService', () => {
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as Record<string, unknown>,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        config: {} as any,
       };
 
       httpService.post.mockReturnValue(of(response));
@@ -92,14 +93,14 @@ describe('AetherFlowClientService', () => {
 
     it('should record retry metrics when API failure is retryable', async () => {
       const retryableError = new AxiosError('Retryable', '500');
-      retryableError.response = { status: 500 } as unknown;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      retryableError.response = { status: 500 } as any;
 
       // Fails first time, succeeds second time
       httpService.post
         .mockReturnValueOnce(throwError(() => retryableError))
-        .mockReturnValueOnce(
-          of({ data: { success: true }, status: 200 } as Record<string, unknown>),
-        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .mockReturnValueOnce(of({ data: { success: true }, status: 200 } as any));
 
       await service.createTasks(params);
 

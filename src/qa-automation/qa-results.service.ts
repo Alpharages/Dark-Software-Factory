@@ -661,32 +661,34 @@ export class QaResultsService {
 
   private mapToInterface(result: Record<string, unknown>): IQaResult {
     return {
-      id: result.id,
-      execution_id: result.execution_id,
-      linting_passed: result.linting_passed,
+      id: result.id as string,
+      execution_id: result.execution_id as string,
+      linting_passed: result.linting_passed as boolean,
       linting_errors: result.linting_errors as Record<string, unknown> | null,
-      tests_passed: result.tests_passed,
+      tests_passed: result.tests_passed as boolean,
       test_results: result.test_results as Record<string, unknown> | null,
-      test_coverage: result.test_coverage,
-      code_review_passed: result.code_review_passed,
+      test_coverage: result.test_coverage as number | null,
+      code_review_passed: result.code_review_passed as boolean,
       code_review_issues: result.code_review_issues as Record<string, unknown> | null,
-      overall_passed: result.overall_passed,
-      created_at: result.created_at,
-      updated_at: result.updated_at,
+      overall_passed: result.overall_passed as boolean,
+      created_at: result.created_at as Date,
+      updated_at: result.updated_at as Date,
     };
   }
 
   private mapToInterfaceWithExecution(result: Record<string, unknown>): IQaResultWithExecution {
     const base = this.mapToInterface(result);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const execution = result.execution as any;
     return {
       ...base,
-      execution: result.execution
+      execution: execution
         ? {
-            id: result.execution.id,
-            ticket_id: result.execution.ticket_id,
-            ai_provider: result.execution.ai_provider,
-            status: result.execution.status,
-            ticket: result.execution.ticket,
+            id: execution.id,
+            ticket_id: execution.ticket_id,
+            ai_provider: execution.ai_provider,
+            status: execution.status,
+            ticket: execution.ticket,
           }
         : undefined,
     };

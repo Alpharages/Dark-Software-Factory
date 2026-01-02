@@ -63,7 +63,7 @@ export class ReportsController {
     @Res() res: Response,
     @Req() req: Request,
   ) {
-    const userId = (req as { user: { sub: string } }).user.sub;
+    const userId = (req as unknown as { user: { sub: string } }).user.sub;
     this.logger.log(`Downloading report ${id} in ${format} format by user ${userId}`);
     const fileStream = await this.reportsService.getReportFileStream(id, format, userId);
 

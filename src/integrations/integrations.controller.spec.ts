@@ -61,7 +61,8 @@ describe('IntegrationsController', () => {
     });
 
     it('should throw error for unsupported provider', async () => {
-      await expect(controller.getHierarchy('JIRA' as Record<string, unknown>)).rejects.toThrow(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await expect(controller.getHierarchy('JIRA' as any)).rejects.toThrow(
         'Provider "JIRA" not supported',
       );
     });

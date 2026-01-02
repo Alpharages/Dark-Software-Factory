@@ -147,7 +147,8 @@ describe('ClickUpService', () => {
       });
 
       // Simulate ECONNRESET error (retryable)
-      const networkError: Record<string, unknown> = new Error('ECONNRESET');
+
+      const networkError: any = new Error('ECONNRESET');
       networkError.code = 'ECONNRESET';
       mockAxiosInstance.put
         .mockRejectedValueOnce(networkError)
@@ -167,7 +168,7 @@ describe('ClickUpService', () => {
         },
       });
 
-      const rateLimitError: Record<string, unknown> = new Error('Rate limit exceeded');
+      const rateLimitError: any = new Error('Rate limit exceeded');
       rateLimitError.response = {
         status: 429,
         headers: { 'x-ratelimit-reset': '1670400000' },
@@ -222,7 +223,7 @@ describe('ClickUpService', () => {
     });
 
     it('should retry on transient 5xx errors', async () => {
-      const serverError: Record<string, unknown> = new Error('Server error');
+      const serverError: any = new Error('Server error');
       serverError.response = { status: 503 };
 
       mockAxiosInstance.post
@@ -236,7 +237,7 @@ describe('ClickUpService', () => {
     });
 
     it('should return false after all retries exhausted', async () => {
-      const serverError: Record<string, unknown> = new Error('Server error');
+      const serverError: any = new Error('Server error');
       serverError.response = { status: 500 };
 
       mockAxiosInstance.post.mockRejectedValue(serverError);

@@ -159,11 +159,13 @@ export class ReportsService {
       }
 
       // 3. Update Report with data and content
+
       await this.prisma.report.update({
         where: { id: reportId },
         data: {
           status: 'COMPLETED',
-          raw_data: aggregatedData as Record<string, unknown>,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          raw_data: aggregatedData as any,
           summary,
           narrative,
           insights,

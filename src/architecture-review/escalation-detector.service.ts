@@ -102,15 +102,13 @@ export class EscalationDetectorService {
    */
   async getEscalationThreshold(projectId: string): Promise<number> {
     try {
-      const project = await this.prisma.project.findUnique({
+      // escalation_threshold field doesn't exist in schema, using default
+      const _project = await this.prisma.project.findUnique({
         where: { id: projectId },
-        select: { escalation_threshold: true } as { escalation_threshold: boolean },
+        select: { id: true },
       });
 
-      return (
-        (project as { escalation_threshold?: number })?.escalation_threshold ||
-        this.DEFAULT_THRESHOLD
-      );
+      return this.DEFAULT_THRESHOLD;
     } catch (_error) {
       this.logger.warn(
         `Failed to fetch escalation threshold for project ${projectId}, using default`,

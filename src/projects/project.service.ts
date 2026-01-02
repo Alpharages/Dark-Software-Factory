@@ -189,12 +189,8 @@ export class ProjectService {
         client_name: 'Internal', // Default
         provider: ProjectProvider.CLICKUP,
         monitor_tasks: true, // Auto-enable monitoring for imports
-      } as {
-        name: string;
-        clickup_list_id: string;
-        provider: ProjectProvider;
-        monitor_tasks: boolean;
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       this.operationsCounter.inc({ operation: 'import', status: 'success' });
       return project;

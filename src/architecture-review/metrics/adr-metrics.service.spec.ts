@@ -92,23 +92,19 @@ describe('AdrMetricsService', () => {
 
       mockPrismaService.adr.count.mockResolvedValue(5); // Queue depth
 
-      await service.trackReviewCompleted(
-        adr as {
-          id: string;
-          status: AdrStatus;
-          execution: { ticket: { project_id: string } };
-          risk_level: RiskLevel;
-          review_duration_seconds: number;
-        },
-        'APPROVE',
-      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await service.trackReviewCompleted(adr as any, 'APPROVE');
 
-      expect(mockReviewsCounter.labels).toHaveBeenCalledWith('APPROVE', 'LOW', 'proj1');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(mockReviewsCounter.labels as any).toHaveBeenCalledWith('APPROVE', 'LOW', 'proj1');
       // Verify inc() was called on the result of labels()
-      expect(mockReviewsCounter.labels().inc).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((mockReviewsCounter.labels as any)().inc).toHaveBeenCalled();
 
-      expect(mockDurationHistogram.labels).toHaveBeenCalledWith('LOW');
-      expect(mockDurationHistogram.labels().observe).toHaveBeenCalledWith(120);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(mockDurationHistogram.labels as any).toHaveBeenCalledWith('LOW');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((mockDurationHistogram.labels as any)().observe).toHaveBeenCalledWith(120);
     });
   });
 

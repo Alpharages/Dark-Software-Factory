@@ -45,14 +45,14 @@ describe('Escalation DetectorService', () => {
       expect(result.shouldEscalate).toBe(false);
     });
 
-    it('should use custom threshold when provided', async () => {
+    it('should use default threshold (escalation_threshold field not in schema)', async () => {
       jest.spyOn(prisma.project, 'findUnique').mockResolvedValue({
         id: 'project-1',
-        escalation_threshold: 0.8,
-      } as { id: string; escalation_threshold: number });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const threshold = await service.getEscalationThreshold('project-1');
-      expect(threshold).toBe(0.8);
+      expect(threshold).toBe(0.3); // DEFAULT_THRESHOLD
     });
 
     it('should escalate when multiple valid approaches are mentioned', () => {
