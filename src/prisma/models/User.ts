@@ -36,8 +36,11 @@ export type UserSumAggregateOutputType = {
 export type UserMinAggregateOutputType = {
   id: string | null;
   email: string | null;
-  name: string | null;
+  full_name: string | null;
+  password_hash: string | null;
   role: string | null;
+  is_active: boolean | null;
+  last_login_at: Date | null;
   managed_by_id: string | null;
   max_tickets: number | null;
   created_at: Date | null;
@@ -47,8 +50,11 @@ export type UserMinAggregateOutputType = {
 export type UserMaxAggregateOutputType = {
   id: string | null;
   email: string | null;
-  name: string | null;
+  full_name: string | null;
+  password_hash: string | null;
   role: string | null;
+  is_active: boolean | null;
+  last_login_at: Date | null;
   managed_by_id: string | null;
   max_tickets: number | null;
   created_at: Date | null;
@@ -58,8 +64,11 @@ export type UserMaxAggregateOutputType = {
 export type UserCountAggregateOutputType = {
   id: number;
   email: number;
-  name: number;
+  full_name: number;
+  password_hash: number;
   role: number;
+  is_active: number;
+  last_login_at: number;
   managed_by_id: number;
   max_tickets: number;
   created_at: number;
@@ -78,8 +87,11 @@ export type UserSumAggregateInputType = {
 export type UserMinAggregateInputType = {
   id?: true;
   email?: true;
-  name?: true;
+  full_name?: true;
+  password_hash?: true;
   role?: true;
+  is_active?: true;
+  last_login_at?: true;
   managed_by_id?: true;
   max_tickets?: true;
   created_at?: true;
@@ -89,8 +101,11 @@ export type UserMinAggregateInputType = {
 export type UserMaxAggregateInputType = {
   id?: true;
   email?: true;
-  name?: true;
+  full_name?: true;
+  password_hash?: true;
   role?: true;
+  is_active?: true;
+  last_login_at?: true;
   managed_by_id?: true;
   max_tickets?: true;
   created_at?: true;
@@ -100,8 +115,11 @@ export type UserMaxAggregateInputType = {
 export type UserCountAggregateInputType = {
   id?: true;
   email?: true;
-  name?: true;
+  full_name?: true;
+  password_hash?: true;
   role?: true;
+  is_active?: true;
+  last_login_at?: true;
   managed_by_id?: true;
   max_tickets?: true;
   created_at?: true;
@@ -199,8 +217,11 @@ export type UserGroupByArgs<
 export type UserGroupByOutputType = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role: string;
+  is_active: boolean;
+  last_login_at: Date | null;
   managed_by_id: string | null;
   max_tickets: number;
   created_at: Date;
@@ -230,8 +251,11 @@ export type UserWhereInput = {
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[];
   id?: Prisma.StringFilter<'User'> | string;
   email?: Prisma.StringFilter<'User'> | string;
-  name?: Prisma.StringFilter<'User'> | string;
+  full_name?: Prisma.StringFilter<'User'> | string;
+  password_hash?: Prisma.StringFilter<'User'> | string;
   role?: Prisma.StringFilter<'User'> | string;
+  is_active?: Prisma.BoolFilter<'User'> | boolean;
+  last_login_at?: Prisma.DateTimeNullableFilter<'User'> | Date | string | null;
   managed_by_id?: Prisma.StringNullableFilter<'User'> | string | null;
   max_tickets?: Prisma.IntFilter<'User'> | number;
   created_at?: Prisma.DateTimeFilter<'User'> | Date | string;
@@ -240,13 +264,17 @@ export type UserWhereInput = {
   team_members?: Prisma.UserListRelationFilter;
   utilization_history?: Prisma.UtilizationHistoryListRelationFilter;
   conversations?: Prisma.ClientConversationListRelationFilter;
+  invitations?: Prisma.UserInvitationListRelationFilter;
 };
 
 export type UserOrderByWithRelationInput = {
   id?: Prisma.SortOrder;
   email?: Prisma.SortOrder;
-  name?: Prisma.SortOrder;
+  full_name?: Prisma.SortOrder;
+  password_hash?: Prisma.SortOrder;
   role?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  last_login_at?: Prisma.SortOrderInput | Prisma.SortOrder;
   managed_by_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   max_tickets?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -255,6 +283,7 @@ export type UserOrderByWithRelationInput = {
   team_members?: Prisma.UserOrderByRelationAggregateInput;
   utilization_history?: Prisma.UtilizationHistoryOrderByRelationAggregateInput;
   conversations?: Prisma.ClientConversationOrderByRelationAggregateInput;
+  invitations?: Prisma.UserInvitationOrderByRelationAggregateInput;
 };
 
 export type UserWhereUniqueInput = Prisma.AtLeast<
@@ -264,8 +293,11 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
     AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[];
     OR?: Prisma.UserWhereInput[];
     NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[];
-    name?: Prisma.StringFilter<'User'> | string;
+    full_name?: Prisma.StringFilter<'User'> | string;
+    password_hash?: Prisma.StringFilter<'User'> | string;
     role?: Prisma.StringFilter<'User'> | string;
+    is_active?: Prisma.BoolFilter<'User'> | boolean;
+    last_login_at?: Prisma.DateTimeNullableFilter<'User'> | Date | string | null;
     managed_by_id?: Prisma.StringNullableFilter<'User'> | string | null;
     max_tickets?: Prisma.IntFilter<'User'> | number;
     created_at?: Prisma.DateTimeFilter<'User'> | Date | string;
@@ -274,6 +306,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
     team_members?: Prisma.UserListRelationFilter;
     utilization_history?: Prisma.UtilizationHistoryListRelationFilter;
     conversations?: Prisma.ClientConversationListRelationFilter;
+    invitations?: Prisma.UserInvitationListRelationFilter;
   },
   'id' | 'email'
 >;
@@ -281,8 +314,11 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder;
   email?: Prisma.SortOrder;
-  name?: Prisma.SortOrder;
+  full_name?: Prisma.SortOrder;
+  password_hash?: Prisma.SortOrder;
   role?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  last_login_at?: Prisma.SortOrderInput | Prisma.SortOrder;
   managed_by_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   max_tickets?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -300,8 +336,11 @@ export type UserScalarWhereWithAggregatesInput = {
   NOT?: Prisma.UserScalarWhereWithAggregatesInput | Prisma.UserScalarWhereWithAggregatesInput[];
   id?: Prisma.StringWithAggregatesFilter<'User'> | string;
   email?: Prisma.StringWithAggregatesFilter<'User'> | string;
-  name?: Prisma.StringWithAggregatesFilter<'User'> | string;
+  full_name?: Prisma.StringWithAggregatesFilter<'User'> | string;
+  password_hash?: Prisma.StringWithAggregatesFilter<'User'> | string;
   role?: Prisma.StringWithAggregatesFilter<'User'> | string;
+  is_active?: Prisma.BoolWithAggregatesFilter<'User'> | boolean;
+  last_login_at?: Prisma.DateTimeNullableWithAggregatesFilter<'User'> | Date | string | null;
   managed_by_id?: Prisma.StringNullableWithAggregatesFilter<'User'> | string | null;
   max_tickets?: Prisma.IntWithAggregatesFilter<'User'> | number;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'User'> | Date | string;
@@ -311,8 +350,11 @@ export type UserScalarWhereWithAggregatesInput = {
 export type UserCreateInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
@@ -320,13 +362,17 @@ export type UserCreateInput = {
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserUncheckedCreateInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   managed_by_id?: string | null;
   max_tickets?: number;
   created_at?: Date | string;
@@ -334,13 +380,17 @@ export type UserUncheckedCreateInput = {
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -348,13 +398,17 @@ export type UserUpdateInput = {
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -362,13 +416,17 @@ export type UserUncheckedUpdateInput = {
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserCreateManyInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   managed_by_id?: string | null;
   max_tickets?: number;
   created_at?: Date | string;
@@ -378,8 +436,11 @@ export type UserCreateManyInput = {
 export type UserUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -388,8 +449,11 @@ export type UserUpdateManyMutationInput = {
 export type UserUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -414,8 +478,11 @@ export type UserOrderByRelationAggregateInput = {
 export type UserCountOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   email?: Prisma.SortOrder;
-  name?: Prisma.SortOrder;
+  full_name?: Prisma.SortOrder;
+  password_hash?: Prisma.SortOrder;
   role?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  last_login_at?: Prisma.SortOrder;
   managed_by_id?: Prisma.SortOrder;
   max_tickets?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -429,8 +496,11 @@ export type UserAvgOrderByAggregateInput = {
 export type UserMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   email?: Prisma.SortOrder;
-  name?: Prisma.SortOrder;
+  full_name?: Prisma.SortOrder;
+  password_hash?: Prisma.SortOrder;
   role?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  last_login_at?: Prisma.SortOrder;
   managed_by_id?: Prisma.SortOrder;
   max_tickets?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -440,8 +510,11 @@ export type UserMaxOrderByAggregateInput = {
 export type UserMinOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   email?: Prisma.SortOrder;
-  name?: Prisma.SortOrder;
+  full_name?: Prisma.SortOrder;
+  password_hash?: Prisma.SortOrder;
   role?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  last_login_at?: Prisma.SortOrder;
   managed_by_id?: Prisma.SortOrder;
   max_tickets?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -623,30 +696,64 @@ export type UserUpdateOneRequiredWithoutConversationsNestedInput = {
   >;
 };
 
+export type UserCreateNestedOneWithoutInvitationsInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutInvitationsInput,
+    Prisma.UserUncheckedCreateWithoutInvitationsInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInvitationsInput;
+  connect?: Prisma.UserWhereUniqueInput;
+};
+
+export type UserUpdateOneRequiredWithoutInvitationsNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutInvitationsInput,
+    Prisma.UserUncheckedCreateWithoutInvitationsInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutInvitationsInput;
+  upsert?: Prisma.UserUpsertWithoutInvitationsInput;
+  connect?: Prisma.UserWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.UserUpdateToOneWithWhereWithoutInvitationsInput,
+      Prisma.UserUpdateWithoutInvitationsInput
+    >,
+    Prisma.UserUncheckedUpdateWithoutInvitationsInput
+  >;
+};
+
 export type UserCreateWithoutTeam_membersInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserUncheckedCreateWithoutTeam_membersInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   managed_by_id?: string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserCreateOrConnectWithoutTeam_membersInput = {
@@ -660,27 +767,35 @@ export type UserCreateOrConnectWithoutTeam_membersInput = {
 export type UserCreateWithoutManagerInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserUncheckedCreateWithoutManagerInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserCreateOrConnectWithoutManagerInput = {
@@ -719,27 +834,35 @@ export type UserUpdateToOneWithWhereWithoutTeam_membersInput = {
 export type UserUpdateWithoutTeam_membersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutTeam_membersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserUpsertWithWhereUniqueWithoutManagerInput = {
@@ -776,8 +899,11 @@ export type UserScalarWhereInput = {
   NOT?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[];
   id?: Prisma.StringFilter<'User'> | string;
   email?: Prisma.StringFilter<'User'> | string;
-  name?: Prisma.StringFilter<'User'> | string;
+  full_name?: Prisma.StringFilter<'User'> | string;
+  password_hash?: Prisma.StringFilter<'User'> | string;
   role?: Prisma.StringFilter<'User'> | string;
+  is_active?: Prisma.BoolFilter<'User'> | boolean;
+  last_login_at?: Prisma.DateTimeNullableFilter<'User'> | Date | string | null;
   managed_by_id?: Prisma.StringNullableFilter<'User'> | string | null;
   max_tickets?: Prisma.IntFilter<'User'> | number;
   created_at?: Prisma.DateTimeFilter<'User'> | Date | string;
@@ -787,27 +913,35 @@ export type UserScalarWhereInput = {
 export type UserCreateWithoutUtilization_historyInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserUncheckedCreateWithoutUtilization_historyInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   managed_by_id?: string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserCreateOrConnectWithoutUtilization_historyInput = {
@@ -841,53 +975,69 @@ export type UserUpdateToOneWithWhereWithoutUtilization_historyInput = {
 export type UserUpdateWithoutUtilization_historyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutUtilization_historyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserCreateWithoutConversationsInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserUncheckedCreateWithoutConversationsInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   managed_by_id?: string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
 };
 
 export type UserCreateOrConnectWithoutConversationsInput = {
@@ -921,57 +1071,125 @@ export type UserUpdateToOneWithWhereWithoutConversationsInput = {
 export type UserUpdateWithoutConversationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutConversationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
 };
 
-export type UserCreateManyManagerInput = {
+export type UserCreateWithoutInvitationsInput = {
   id: string;
   email: string;
-  name: string;
+  full_name: string;
+  password_hash: string;
   role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
   max_tickets?: number;
   created_at?: Date | string;
   updated_at?: Date | string;
+  manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
+  team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
 };
 
-export type UserUpdateWithoutManagerInput = {
+export type UserUncheckedCreateWithoutInvitationsInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  managed_by_id?: string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+};
+
+export type UserCreateOrConnectWithoutInvitationsInput = {
+  where: Prisma.UserWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutInvitationsInput,
+    Prisma.UserUncheckedCreateWithoutInvitationsInput
+  >;
+};
+
+export type UserUpsertWithoutInvitationsInput = {
+  update: Prisma.XOR<
+    Prisma.UserUpdateWithoutInvitationsInput,
+    Prisma.UserUncheckedUpdateWithoutInvitationsInput
+  >;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutInvitationsInput,
+    Prisma.UserUncheckedCreateWithoutInvitationsInput
+  >;
+  where?: Prisma.UserWhereInput;
+};
+
+export type UserUpdateToOneWithWhereWithoutInvitationsInput = {
+  where?: Prisma.UserWhereInput;
+  data: Prisma.XOR<
+    Prisma.UserUpdateWithoutInvitationsInput,
+    Prisma.UserUncheckedUpdateWithoutInvitationsInput
+  >;
+};
+
+export type UserUpdateWithoutInvitationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
 };
 
-export type UserUncheckedUpdateWithoutManagerInput = {
+export type UserUncheckedUpdateWithoutInvitationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -980,11 +1198,61 @@ export type UserUncheckedUpdateWithoutManagerInput = {
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
 };
 
+export type UserCreateManyManagerInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+};
+
+export type UserUpdateWithoutManagerInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+};
+
+export type UserUncheckedUpdateWithoutManagerInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+};
+
 export type UserUncheckedUpdateManyWithoutManagerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   email?: Prisma.StringFieldUpdateOperationsInput | string;
-  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
   role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -998,6 +1266,7 @@ export type UserCountOutputType = {
   team_members: number;
   utilization_history: number;
   conversations: number;
+  invitations: number;
 };
 
 export type UserCountOutputTypeSelect<
@@ -1006,6 +1275,7 @@ export type UserCountOutputTypeSelect<
   team_members?: boolean | UserCountOutputTypeCountTeam_membersArgs;
   utilization_history?: boolean | UserCountOutputTypeCountUtilization_historyArgs;
   conversations?: boolean | UserCountOutputTypeCountConversationsArgs;
+  invitations?: boolean | UserCountOutputTypeCountInvitationsArgs;
 };
 
 /**
@@ -1047,14 +1317,26 @@ export type UserCountOutputTypeCountConversationsArgs<
   where?: Prisma.ClientConversationWhereInput;
 };
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountInvitationsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.UserInvitationWhereInput;
+};
+
 export type UserSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetSelect<
   {
     id?: boolean;
     email?: boolean;
-    name?: boolean;
+    full_name?: boolean;
+    password_hash?: boolean;
     role?: boolean;
+    is_active?: boolean;
+    last_login_at?: boolean;
     managed_by_id?: boolean;
     max_tickets?: boolean;
     created_at?: boolean;
@@ -1063,6 +1345,7 @@ export type UserSelect<
     team_members?: boolean | Prisma.User$team_membersArgs<ExtArgs>;
     utilization_history?: boolean | Prisma.User$utilization_historyArgs<ExtArgs>;
     conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>;
+    invitations?: boolean | Prisma.User$invitationsArgs<ExtArgs>;
     _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['user']
@@ -1074,8 +1357,11 @@ export type UserSelectCreateManyAndReturn<
   {
     id?: boolean;
     email?: boolean;
-    name?: boolean;
+    full_name?: boolean;
+    password_hash?: boolean;
     role?: boolean;
+    is_active?: boolean;
+    last_login_at?: boolean;
     managed_by_id?: boolean;
     max_tickets?: boolean;
     created_at?: boolean;
@@ -1091,8 +1377,11 @@ export type UserSelectUpdateManyAndReturn<
   {
     id?: boolean;
     email?: boolean;
-    name?: boolean;
+    full_name?: boolean;
+    password_hash?: boolean;
     role?: boolean;
+    is_active?: boolean;
+    last_login_at?: boolean;
     managed_by_id?: boolean;
     max_tickets?: boolean;
     created_at?: boolean;
@@ -1105,8 +1394,11 @@ export type UserSelectUpdateManyAndReturn<
 export type UserSelectScalar = {
   id?: boolean;
   email?: boolean;
-  name?: boolean;
+  full_name?: boolean;
+  password_hash?: boolean;
   role?: boolean;
+  is_active?: boolean;
+  last_login_at?: boolean;
   managed_by_id?: boolean;
   max_tickets?: boolean;
   created_at?: boolean;
@@ -1116,7 +1408,17 @@ export type UserSelectScalar = {
 export type UserOmit<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetOmit<
-  'id' | 'email' | 'name' | 'role' | 'managed_by_id' | 'max_tickets' | 'created_at' | 'updated_at',
+  | 'id'
+  | 'email'
+  | 'full_name'
+  | 'password_hash'
+  | 'role'
+  | 'is_active'
+  | 'last_login_at'
+  | 'managed_by_id'
+  | 'max_tickets'
+  | 'created_at'
+  | 'updated_at',
   ExtArgs['result']['user']
 >;
 export type UserInclude<
@@ -1126,6 +1428,7 @@ export type UserInclude<
   team_members?: boolean | Prisma.User$team_membersArgs<ExtArgs>;
   utilization_history?: boolean | Prisma.User$utilization_historyArgs<ExtArgs>;
   conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>;
+  invitations?: boolean | Prisma.User$invitationsArgs<ExtArgs>;
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type UserIncludeCreateManyAndReturn<
@@ -1148,13 +1451,17 @@ export type $UserPayload<
     team_members: Prisma.$UserPayload<ExtArgs>[];
     utilization_history: Prisma.$UtilizationHistoryPayload<ExtArgs>[];
     conversations: Prisma.$ClientConversationPayload<ExtArgs>[];
+    invitations: Prisma.$UserInvitationPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
       id: string;
       email: string;
-      name: string;
+      full_name: string;
+      password_hash: string;
       role: string;
+      is_active: boolean;
+      last_login_at: Date | null;
       managed_by_id: string | null;
       max_tickets: number;
       created_at: Date;
@@ -1710,6 +2017,17 @@ export interface Prisma__UserClient<
       >
     | Null
   >;
+  invitations<T extends Prisma.User$invitationsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.User$invitationsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$UserInvitationPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1743,8 +2061,11 @@ export interface Prisma__UserClient<
 export interface UserFieldRefs {
   readonly id: Prisma.FieldRef<'User', 'String'>;
   readonly email: Prisma.FieldRef<'User', 'String'>;
-  readonly name: Prisma.FieldRef<'User', 'String'>;
+  readonly full_name: Prisma.FieldRef<'User', 'String'>;
+  readonly password_hash: Prisma.FieldRef<'User', 'String'>;
   readonly role: Prisma.FieldRef<'User', 'String'>;
+  readonly is_active: Prisma.FieldRef<'User', 'Boolean'>;
+  readonly last_login_at: Prisma.FieldRef<'User', 'DateTime'>;
   readonly managed_by_id: Prisma.FieldRef<'User', 'String'>;
   readonly max_tickets: Prisma.FieldRef<'User', 'Int'>;
   readonly created_at: Prisma.FieldRef<'User', 'DateTime'>;
@@ -2272,6 +2593,34 @@ export type User$conversationsArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.ClientConversationScalarFieldEnum | Prisma.ClientConversationScalarFieldEnum[];
+};
+
+/**
+ * User.invitations
+ */
+export type User$invitationsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the UserInvitation
+   */
+  select?: Prisma.UserInvitationSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the UserInvitation
+   */
+  omit?: Prisma.UserInvitationOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInvitationInclude<ExtArgs> | null;
+  where?: Prisma.UserInvitationWhereInput;
+  orderBy?:
+    | Prisma.UserInvitationOrderByWithRelationInput
+    | Prisma.UserInvitationOrderByWithRelationInput[];
+  cursor?: Prisma.UserInvitationWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.UserInvitationScalarFieldEnum | Prisma.UserInvitationScalarFieldEnum[];
 };
 
 /**

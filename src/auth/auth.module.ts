@@ -3,6 +3,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { InvitationsModule } from './invitations/invitations.module';
 
 /**
  * Authentication Module
@@ -35,8 +36,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         },
       }),
     }),
+
+    // Story 17-1: User Invitations
+    InvitationsModule,
   ],
   providers: [JwtStrategy],
-  exports: [PassportModule, JwtModule],
+  exports: [PassportModule, JwtModule, InvitationsModule],
 })
 export class AuthModule {}

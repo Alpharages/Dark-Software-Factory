@@ -233,7 +233,7 @@ export type ProjectGroupByOutputType = {
   name: string;
   client_name: string;
   provider: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id: string | null;
   monitor_tasks: boolean;
   sync_config: runtime.JsonValue | null;
   github_repository_url: string;
@@ -270,7 +270,7 @@ export type ProjectWhereInput = {
   name?: Prisma.StringFilter<'Project'> | string;
   client_name?: Prisma.StringFilter<'Project'> | string;
   provider?: Prisma.EnumProjectProviderFilter<'Project'> | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFilter<'Project'> | string;
+  clickup_list_id?: Prisma.StringNullableFilter<'Project'> | string | null;
   monitor_tasks?: Prisma.BoolFilter<'Project'> | boolean;
   sync_config?: Prisma.JsonNullableFilter<'Project'>;
   github_repository_url?: Prisma.StringFilter<'Project'> | string;
@@ -304,7 +304,7 @@ export type ProjectOrderByWithRelationInput = {
   name?: Prisma.SortOrder;
   client_name?: Prisma.SortOrder;
   provider?: Prisma.SortOrder;
-  clickup_list_id?: Prisma.SortOrder;
+  clickup_list_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   monitor_tasks?: Prisma.SortOrder;
   sync_config?: Prisma.SortOrderInput | Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
@@ -366,7 +366,7 @@ export type ProjectOrderByWithAggregationInput = {
   name?: Prisma.SortOrder;
   client_name?: Prisma.SortOrder;
   provider?: Prisma.SortOrder;
-  clickup_list_id?: Prisma.SortOrder;
+  clickup_list_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   monitor_tasks?: Prisma.SortOrder;
   sync_config?: Prisma.SortOrderInput | Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
@@ -395,7 +395,7 @@ export type ProjectScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   client_name?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   provider?: Prisma.EnumProjectProviderWithAggregatesFilter<'Project'> | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringWithAggregatesFilter<'Project'> | string;
+  clickup_list_id?: Prisma.StringNullableWithAggregatesFilter<'Project'> | string | null;
   monitor_tasks?: Prisma.BoolWithAggregatesFilter<'Project'> | boolean;
   sync_config?: Prisma.JsonNullableWithAggregatesFilter<'Project'>;
   github_repository_url?: Prisma.StringWithAggregatesFilter<'Project'> | string;
@@ -418,7 +418,7 @@ export type ProjectCreateInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -440,7 +440,7 @@ export type ProjectUncheckedCreateInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -462,7 +462,7 @@ export type ProjectUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -490,7 +490,7 @@ export type ProjectUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -518,7 +518,7 @@ export type ProjectCreateManyInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -535,7 +535,7 @@ export type ProjectUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -558,7 +558,7 @@ export type ProjectUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -644,6 +644,10 @@ export type StringFieldUpdateOperationsInput = {
 
 export type EnumProjectProviderFieldUpdateOperationsInput = {
   set?: $Enums.ProjectProvider;
+};
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null;
 };
 
 export type BoolFieldUpdateOperationsInput = {
@@ -797,7 +801,7 @@ export type ProjectCreateWithoutTicketsInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -818,7 +822,7 @@ export type ProjectUncheckedCreateWithoutTicketsInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -867,7 +871,7 @@ export type ProjectUpdateWithoutTicketsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -894,7 +898,7 @@ export type ProjectUncheckedUpdateWithoutTicketsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -921,7 +925,7 @@ export type ProjectCreateWithoutCoverage_baselineInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -942,7 +946,7 @@ export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -991,7 +995,7 @@ export type ProjectUpdateWithoutCoverage_baselineInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1018,7 +1022,7 @@ export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1045,7 +1049,7 @@ export type ProjectCreateWithoutCoverage_configInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -1066,7 +1070,7 @@ export type ProjectUncheckedCreateWithoutCoverage_configInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -1115,7 +1119,7 @@ export type ProjectUpdateWithoutCoverage_configInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1142,7 +1146,7 @@ export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1169,7 +1173,7 @@ export type ProjectCreateWithoutConversationsInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -1190,7 +1194,7 @@ export type ProjectUncheckedCreateWithoutConversationsInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -1239,7 +1243,7 @@ export type ProjectUpdateWithoutConversationsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1266,7 +1270,7 @@ export type ProjectUncheckedUpdateWithoutConversationsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1293,7 +1297,7 @@ export type ProjectCreateWithoutReportsInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -1314,7 +1318,7 @@ export type ProjectUncheckedCreateWithoutReportsInput = {
   name: string;
   client_name?: string;
   provider?: $Enums.ProjectProvider;
-  clickup_list_id: string;
+  clickup_list_id?: string | null;
   monitor_tasks?: boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
@@ -1363,7 +1367,7 @@ export type ProjectUpdateWithoutReportsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1390,7 +1394,7 @@ export type ProjectUncheckedUpdateWithoutReportsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string;
   client_name?: Prisma.StringFieldUpdateOperationsInput | string;
   provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
-  clickup_list_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
@@ -1611,7 +1615,7 @@ export type $ProjectPayload<
       name: string;
       client_name: string;
       provider: $Enums.ProjectProvider;
-      clickup_list_id: string;
+      clickup_list_id: string | null;
       monitor_tasks: boolean;
       sync_config: runtime.JsonValue | null;
       github_repository_url: string;

@@ -40,4 +40,5 @@ export type * from './models/AdrAlert';
 export type * from './models/ArchitectureConstraint';
 export type * from './models/AiCapability';
 export type * from './models/AiTaskPattern';
+export type * from './models/UserInvitation';
 export type * from './commonInputTypes';

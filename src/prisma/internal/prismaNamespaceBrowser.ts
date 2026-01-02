@@ -81,6 +81,7 @@ export const ModelName = {
   ArchitectureConstraint: 'ArchitectureConstraint',
   AiCapability: 'AiCapability',
   AiTaskPattern: 'AiTaskPattern',
+  UserInvitation: 'UserInvitation',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -479,8 +480,11 @@ export type ApprovalRecordScalarFieldEnum =
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  name: 'name',
+  full_name: 'full_name',
+  password_hash: 'password_hash',
   role: 'role',
+  is_active: 'is_active',
+  last_login_at: 'last_login_at',
   managed_by_id: 'managed_by_id',
   max_tickets: 'max_tickets',
   created_at: 'created_at',
@@ -636,6 +640,21 @@ export const AiTaskPatternScalarFieldEnum = {
 
 export type AiTaskPatternScalarFieldEnum =
   (typeof AiTaskPatternScalarFieldEnum)[keyof typeof AiTaskPatternScalarFieldEnum];
+
+export const UserInvitationScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  role: 'role',
+  invite_token: 'invite_token',
+  invited_by_id: 'invited_by_id',
+  status: 'status',
+  expires_at: 'expires_at',
+  accepted_at: 'accepted_at',
+  created_at: 'created_at',
+} as const;
+
+export type UserInvitationScalarFieldEnum =
+  (typeof UserInvitationScalarFieldEnum)[keyof typeof UserInvitationScalarFieldEnum];
 
 export const SortOrder = {
   asc: 'asc',

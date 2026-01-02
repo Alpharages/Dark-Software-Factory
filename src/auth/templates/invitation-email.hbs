@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invitation to Join DSF Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 30px;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            text-align: center;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">DSF Dashboard</div>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+            <p>You have been invited by <strong>{{inviterName}}</strong> to join the Dark Software Factory (DSF) Dashboard.</p>
+            <p>You have been assigned the role of: <strong>{{role}}</strong></p>
+            <p>To accept this invitation and set up your account, please click the button below:</p>
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{{registrationLink}}" class="button">Accept Invitation</a>
+            </p>
+            <p>This link will expire on <strong>{{expiresAt}}</strong>.</p>
+            <p>If you were not expecting this invitation, you can simply ignore this email.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{year}} Dark Software Factory. All rights reserved.</p>
+            <p>This is an automated message, please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

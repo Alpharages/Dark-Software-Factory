@@ -770,8 +770,11 @@ enum ApprovalDecision {
 model User {
   id            String  @id // External Auth 'sub' claim (UUID)
   email         String  @unique
-  name          String
+  full_name     String // Story 17-1: Renamed from 'name'
+  password_hash String // Story 17-1: For local authentication
   role          String  @default("PM") // PM, MANAGER, TL, QA, ADMIN
+  is_active     Boolean @default(true) // Story 17-1: Account status
+  last_login_at DateTime? // Story 17-1: Last successful login
   managed_by_id String? // Manager link (null for top-level managers)
   max_tickets   Int     @default(20) // PM capacity threshold
 
@@ -780,12 +783,14 @@ model User {
   team_members        User[]               @relation("ManagerTeam")
   utilization_history UtilizationHistory[]
   conversations       ClientConversation[] @relation("PMConversations") // Story 5.5
+  invitations         UserInvitation[]     @relation("InvitedBy") // Story 17-1: Invitations sent by this user
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   @@index([managed_by_id])
   @@index([role])
+  @@index([email]) // Story 17-1: Optimize login queries
   @@map("users")
 }
 
@@ -1025,4 +1030,36 @@ model AiTaskPattern {
 
   @@index([task_type, failure_rate])
   @@map("ai_task_patterns")
+}
+
+// ============================================
+// STORY 17.1: USER INVITATION SYSTEM
+// ============================================
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model UserInvitation {
+  id             String           @id @default(uuid())
+  email          String
+  role           String // Role enum value as string
+  invite_token   String           @unique
+  invited_by_id  String
+  status         InvitationStatus @default(PENDING)
+  expires_at     DateTime
+  accepted_at    DateTime?
+  created_at     DateTime         @default(now())
+
+  // Relation to User who created the invitation
+  invited_by User @relation("InvitedBy", fields: [invited_by_id], references: [id])
+
+  @@index([email])
+  @@index([invite_token])
+  @@index([status])
+  @@index([email, status]) // Composite index for duplicate checking
+  @@map("user_invitations")
 }

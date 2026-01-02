@@ -643,10 +643,6 @@ export type EnumTicketStatusFieldUpdateOperationsInput = {
   set?: $Enums.TicketStatus;
 };
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null;
-};
-
 export type TicketCreateNestedOneWithoutExecutionsInput = {
   create?: Prisma.XOR<
     Prisma.TicketCreateWithoutExecutionsInput,

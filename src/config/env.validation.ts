@@ -298,4 +298,19 @@ export const envValidationSchema = Joi.object({
   AETHERFLOW_DEFAULT_CLICKUP_LIST: Joi.string()
     .optional()
     .description('Default ClickUp list name for conversation-derived tickets'),
+
+  // Story 17.1: User Invitation System
+  FRONTEND_URL: Joi.string().uri().required().messages({
+    'any.required': 'FRONTEND_URL is required for invitation links',
+  }),
+
+  // Email Configuration (SMTP)
+  SMTP_HOST: Joi.string().required(),
+  SMTP_PORT: Joi.number().port().default(587),
+  SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_USER: Joi.string().required(),
+  SMTP_PASS: Joi.string().required(),
+  SMTP_FROM: Joi.string().email().required().messages({
+    'any.required': 'SMTP_FROM is required. Example: noreply@dsf.com',
+  }),
 });

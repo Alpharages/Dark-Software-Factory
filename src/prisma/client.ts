@@ -205,3 +205,8 @@ export type AiCapability = Prisma.AiCapabilityModel;
  *
  */
 export type AiTaskPattern = Prisma.AiTaskPatternModel;
+/**
+ * Model UserInvitation
+ *
+ */
+export type UserInvitation = Prisma.UserInvitationModel;

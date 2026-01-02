@@ -408,6 +408,7 @@ export const ModelName = {
   ArchitectureConstraint: 'ArchitectureConstraint',
   AiCapability: 'AiCapability',
   AiTaskPattern: 'AiTaskPattern',
+  UserInvitation: 'UserInvitation',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -460,7 +461,8 @@ export type TypeMap<
       | 'adrAlert'
       | 'architectureConstraint'
       | 'aiCapability'
-      | 'aiTaskPattern';
+      | 'aiTaskPattern'
+      | 'userInvitation';
     txIsolationLevel: TransactionIsolationLevel;
   };
   model: {
@@ -2940,6 +2942,82 @@ export type TypeMap<
         };
       };
     };
+    UserInvitation: {
+      payload: Prisma.$UserInvitationPayload<ExtArgs>;
+      fields: Prisma.UserInvitationFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.UserInvitationFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.UserInvitationFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>;
+        };
+        findFirst: {
+          args: Prisma.UserInvitationFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.UserInvitationFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>;
+        };
+        findMany: {
+          args: Prisma.UserInvitationFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>[];
+        };
+        create: {
+          args: Prisma.UserInvitationCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>;
+        };
+        createMany: {
+          args: Prisma.UserInvitationCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.UserInvitationCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>[];
+        };
+        delete: {
+          args: Prisma.UserInvitationDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>;
+        };
+        update: {
+          args: Prisma.UserInvitationUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>;
+        };
+        deleteMany: {
+          args: Prisma.UserInvitationDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.UserInvitationUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.UserInvitationUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>[];
+        };
+        upsert: {
+          args: Prisma.UserInvitationUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserInvitationPayload>;
+        };
+        aggregate: {
+          args: Prisma.UserInvitationAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserInvitation>;
+        };
+        groupBy: {
+          args: Prisma.UserInvitationGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.UserInvitationGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.UserInvitationCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.UserInvitationCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
   };
 } & {
   other: {
@@ -3359,8 +3437,11 @@ export type ApprovalRecordScalarFieldEnum =
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  name: 'name',
+  full_name: 'full_name',
+  password_hash: 'password_hash',
   role: 'role',
+  is_active: 'is_active',
+  last_login_at: 'last_login_at',
   managed_by_id: 'managed_by_id',
   max_tickets: 'max_tickets',
   created_at: 'created_at',
@@ -3516,6 +3597,21 @@ export const AiTaskPatternScalarFieldEnum = {
 
 export type AiTaskPatternScalarFieldEnum =
   (typeof AiTaskPatternScalarFieldEnum)[keyof typeof AiTaskPatternScalarFieldEnum];
+
+export const UserInvitationScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  role: 'role',
+  invite_token: 'invite_token',
+  invited_by_id: 'invited_by_id',
+  status: 'status',
+  expires_at: 'expires_at',
+  accepted_at: 'accepted_at',
+  created_at: 'created_at',
+} as const;
+
+export type UserInvitationScalarFieldEnum =
+  (typeof UserInvitationScalarFieldEnum)[keyof typeof UserInvitationScalarFieldEnum];
 
 export const SortOrder = {
   asc: 'asc',
@@ -3972,6 +4068,22 @@ export type ListEnumRiskLevelFieldRefInput<$PrismaModel> = FieldRefInputType<
 >;
 
 /**
+ * Reference to a field of type 'InvitationStatus'
+ */
+export type EnumInvitationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'InvitationStatus'
+>;
+
+/**
+ * Reference to a field of type 'InvitationStatus[]'
+ */
+export type ListEnumInvitationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'InvitationStatus[]'
+>;
+
+/**
  * Batch Payload for updateMany & deleteMany & createMany
  */
 export type BatchPayload = {
@@ -4107,6 +4219,7 @@ export type GlobalOmitConfig = {
   architectureConstraint?: Prisma.ArchitectureConstraintOmit;
   aiCapability?: Prisma.AiCapabilityOmit;
   aiTaskPattern?: Prisma.AiTaskPatternOmit;
+  userInvitation?: Prisma.UserInvitationOmit;
 };
 
 /* Types for Logging */
