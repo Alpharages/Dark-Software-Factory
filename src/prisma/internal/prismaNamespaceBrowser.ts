@@ -82,6 +82,7 @@ export const ModelName = {
   AiCapability: 'AiCapability',
   AiTaskPattern: 'AiTaskPattern',
   UserInvitation: 'UserInvitation',
+  RefreshToken: 'RefreshToken',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -655,6 +656,18 @@ export const UserInvitationScalarFieldEnum = {
 
 export type UserInvitationScalarFieldEnum =
   (typeof UserInvitationScalarFieldEnum)[keyof typeof UserInvitationScalarFieldEnum];
+
+export const RefreshTokenScalarFieldEnum = {
+  id: 'id',
+  token_id: 'token_id',
+  user_id: 'user_id',
+  is_revoked: 'is_revoked',
+  expires_at: 'expires_at',
+  created_at: 'created_at',
+} as const;
+
+export type RefreshTokenScalarFieldEnum =
+  (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum];
 
 export const SortOrder = {
   asc: 'asc',

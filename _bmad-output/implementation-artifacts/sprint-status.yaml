@@ -1052,11 +1052,15 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/17-2-backend-user-registration-via-invite.md"
     notes: "✅ IMPLEMENTATION COMPLETE + CODE REVIEW APPROVED - Backend user registration via invite token fully implemented. Delivered: (1) Public POST /api/v1/auth/register endpoint, (2) Strong password validation with custom decorator, (3) Bcrypt password hashing (cost 12), (4) Atomic Prisma transaction for user creation + invitation update, (5) JWT token generation using existing JwtService, (6) Comprehensive error handling (400/404/409/410). Unit tests: 12/12 PASSING (7 service + 5 controller). Build: ✅ passing. Files: 9 new (4 DTOs, 3 services, 2 tests), 2 modified (AuthModule, package.json). Dependencies: bcrypt + @types/bcrypt installed. Security: password_hash excluded from responses, role from invitation not user-selectable, atomic transactions prevent data inconsistency. CODE REVIEW FIXES: All files committed to git, documentation updated (JWT HS256 24h expiration, bcrypt 6.0.0)."
   17-3-backend-login-session-management:
-    status: backlog
+    status: done
     effort: "1 day"
     story_points: 3
-    story_file: "TBD"
-    notes: "POST /api/v1/auth/login, /auth/refresh, /auth/logout, /auth/me endpoints. Refresh tokens (30-day). Rate limiting: 5 attempts per 15 min."
+    developer: "Antigravity"
+    completed_at: "2026-01-03"
+    code_review_date: "2026-01-03"
+    code_review_fixes: "1 MEDIUM (Rate limit), 1 LOW (DB Check) issues fixed"
+    story_file: "_bmad-output/implementation-artifacts/17-3-backend-login-session-management.md"
+    notes: "✅ IMPLEMENTATION COMPLETE + CODE REVIEW APPROVED - Login & Session Management fully implemented. Delivered: (1) RefreshToken model + migration, (2) AuthService with login/refresh/logout/me, (3) AuthController with Swagger docs and rate limiting (5 req/15min login, 20 req/15min refresh), (4) Atomic transactions for session integrity, (5) 16/16 Unit tests passing. CODE REVIEW FIXES: Added @Throttle to refresh endpoint, added DB-level expiration check for robustness, updated file tracking."
   17-4-backend-user-management-api:
     status: backlog
     effort: "1 day"

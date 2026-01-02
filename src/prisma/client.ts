@@ -210,3 +210,8 @@ export type AiTaskPattern = Prisma.AiTaskPatternModel;
  *
  */
 export type UserInvitation = Prisma.UserInvitationModel;
+/**
+ * Model RefreshToken
+ *
+ */
+export type RefreshToken = Prisma.RefreshTokenModel;

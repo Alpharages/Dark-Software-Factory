@@ -265,6 +265,7 @@ export type UserWhereInput = {
   utilization_history?: Prisma.UtilizationHistoryListRelationFilter;
   conversations?: Prisma.ClientConversationListRelationFilter;
   invitations?: Prisma.UserInvitationListRelationFilter;
+  refreshTokens?: Prisma.RefreshTokenListRelationFilter;
 };
 
 export type UserOrderByWithRelationInput = {
@@ -284,6 +285,7 @@ export type UserOrderByWithRelationInput = {
   utilization_history?: Prisma.UtilizationHistoryOrderByRelationAggregateInput;
   conversations?: Prisma.ClientConversationOrderByRelationAggregateInput;
   invitations?: Prisma.UserInvitationOrderByRelationAggregateInput;
+  refreshTokens?: Prisma.RefreshTokenOrderByRelationAggregateInput;
 };
 
 export type UserWhereUniqueInput = Prisma.AtLeast<
@@ -307,6 +309,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
     utilization_history?: Prisma.UtilizationHistoryListRelationFilter;
     conversations?: Prisma.ClientConversationListRelationFilter;
     invitations?: Prisma.UserInvitationListRelationFilter;
+    refreshTokens?: Prisma.RefreshTokenListRelationFilter;
   },
   'id' | 'email'
 >;
@@ -363,6 +366,7 @@ export type UserCreateInput = {
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateInput = {
@@ -381,6 +385,7 @@ export type UserUncheckedCreateInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserUpdateInput = {
@@ -399,6 +404,7 @@ export type UserUpdateInput = {
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateInput = {
@@ -417,6 +423,7 @@ export type UserUncheckedUpdateInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserCreateManyInput = {
@@ -722,6 +729,32 @@ export type UserUpdateOneRequiredWithoutInvitationsNestedInput = {
   >;
 };
 
+export type UserCreateNestedOneWithoutRefreshTokensInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutRefreshTokensInput,
+    Prisma.UserUncheckedCreateWithoutRefreshTokensInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRefreshTokensInput;
+  connect?: Prisma.UserWhereUniqueInput;
+};
+
+export type UserUpdateOneRequiredWithoutRefreshTokensNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutRefreshTokensInput,
+    Prisma.UserUncheckedCreateWithoutRefreshTokensInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRefreshTokensInput;
+  upsert?: Prisma.UserUpsertWithoutRefreshTokensInput;
+  connect?: Prisma.UserWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.UserUpdateToOneWithWhereWithoutRefreshTokensInput,
+      Prisma.UserUpdateWithoutRefreshTokensInput
+    >,
+    Prisma.UserUncheckedUpdateWithoutRefreshTokensInput
+  >;
+};
+
 export type UserCreateWithoutTeam_membersInput = {
   id: string;
   email: string;
@@ -737,6 +770,7 @@ export type UserCreateWithoutTeam_membersInput = {
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutTeam_membersInput = {
@@ -754,6 +788,7 @@ export type UserUncheckedCreateWithoutTeam_membersInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutTeam_membersInput = {
@@ -779,6 +814,7 @@ export type UserCreateWithoutManagerInput = {
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutManagerInput = {
@@ -796,6 +832,7 @@ export type UserUncheckedCreateWithoutManagerInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutManagerInput = {
@@ -846,6 +883,7 @@ export type UserUpdateWithoutTeam_membersInput = {
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutTeam_membersInput = {
@@ -863,6 +901,7 @@ export type UserUncheckedUpdateWithoutTeam_membersInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUpsertWithWhereUniqueWithoutManagerInput = {
@@ -925,6 +964,7 @@ export type UserCreateWithoutUtilization_historyInput = {
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutUtilization_historyInput = {
@@ -942,6 +982,7 @@ export type UserUncheckedCreateWithoutUtilization_historyInput = {
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutUtilization_historyInput = {
@@ -987,6 +1028,7 @@ export type UserUpdateWithoutUtilization_historyInput = {
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutUtilization_historyInput = {
@@ -1004,6 +1046,7 @@ export type UserUncheckedUpdateWithoutUtilization_historyInput = {
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserCreateWithoutConversationsInput = {
@@ -1021,6 +1064,7 @@ export type UserCreateWithoutConversationsInput = {
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutConversationsInput = {
@@ -1038,6 +1082,7 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutConversationsInput = {
@@ -1083,6 +1128,7 @@ export type UserUpdateWithoutConversationsInput = {
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutConversationsInput = {
@@ -1100,6 +1146,7 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserCreateWithoutInvitationsInput = {
@@ -1117,6 +1164,7 @@ export type UserCreateWithoutInvitationsInput = {
   team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
 };
 
 export type UserUncheckedCreateWithoutInvitationsInput = {
@@ -1134,6 +1182,7 @@ export type UserUncheckedCreateWithoutInvitationsInput = {
   team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
 };
 
 export type UserCreateOrConnectWithoutInvitationsInput = {
@@ -1179,6 +1228,7 @@ export type UserUpdateWithoutInvitationsInput = {
   team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutInvitationsInput = {
@@ -1196,6 +1246,107 @@ export type UserUncheckedUpdateWithoutInvitationsInput = {
   team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+};
+
+export type UserCreateWithoutRefreshTokensInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
+  team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+};
+
+export type UserUncheckedCreateWithoutRefreshTokensInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  managed_by_id?: string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+};
+
+export type UserCreateOrConnectWithoutRefreshTokensInput = {
+  where: Prisma.UserWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutRefreshTokensInput,
+    Prisma.UserUncheckedCreateWithoutRefreshTokensInput
+  >;
+};
+
+export type UserUpsertWithoutRefreshTokensInput = {
+  update: Prisma.XOR<
+    Prisma.UserUpdateWithoutRefreshTokensInput,
+    Prisma.UserUncheckedUpdateWithoutRefreshTokensInput
+  >;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutRefreshTokensInput,
+    Prisma.UserUncheckedCreateWithoutRefreshTokensInput
+  >;
+  where?: Prisma.UserWhereInput;
+};
+
+export type UserUpdateToOneWithWhereWithoutRefreshTokensInput = {
+  where?: Prisma.UserWhereInput;
+  data: Prisma.XOR<
+    Prisma.UserUpdateWithoutRefreshTokensInput,
+    Prisma.UserUncheckedUpdateWithoutRefreshTokensInput
+  >;
+};
+
+export type UserUpdateWithoutRefreshTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
+  team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+};
+
+export type UserUncheckedUpdateWithoutRefreshTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
 };
 
 export type UserCreateManyManagerInput = {
@@ -1226,6 +1377,7 @@ export type UserUpdateWithoutManagerInput = {
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutManagerInput = {
@@ -1243,6 +1395,7 @@ export type UserUncheckedUpdateWithoutManagerInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
 };
 
 export type UserUncheckedUpdateManyWithoutManagerInput = {
@@ -1267,6 +1420,7 @@ export type UserCountOutputType = {
   utilization_history: number;
   conversations: number;
   invitations: number;
+  refreshTokens: number;
 };
 
 export type UserCountOutputTypeSelect<
@@ -1276,6 +1430,7 @@ export type UserCountOutputTypeSelect<
   utilization_history?: boolean | UserCountOutputTypeCountUtilization_historyArgs;
   conversations?: boolean | UserCountOutputTypeCountConversationsArgs;
   invitations?: boolean | UserCountOutputTypeCountInvitationsArgs;
+  refreshTokens?: boolean | UserCountOutputTypeCountRefreshTokensArgs;
 };
 
 /**
@@ -1326,6 +1481,15 @@ export type UserCountOutputTypeCountInvitationsArgs<
   where?: Prisma.UserInvitationWhereInput;
 };
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountRefreshTokensArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.RefreshTokenWhereInput;
+};
+
 export type UserSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetSelect<
@@ -1346,6 +1510,7 @@ export type UserSelect<
     utilization_history?: boolean | Prisma.User$utilization_historyArgs<ExtArgs>;
     conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>;
     invitations?: boolean | Prisma.User$invitationsArgs<ExtArgs>;
+    refreshTokens?: boolean | Prisma.User$refreshTokensArgs<ExtArgs>;
     _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['user']
@@ -1429,6 +1594,7 @@ export type UserInclude<
   utilization_history?: boolean | Prisma.User$utilization_historyArgs<ExtArgs>;
   conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>;
   invitations?: boolean | Prisma.User$invitationsArgs<ExtArgs>;
+  refreshTokens?: boolean | Prisma.User$refreshTokensArgs<ExtArgs>;
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type UserIncludeCreateManyAndReturn<
@@ -1452,6 +1618,7 @@ export type $UserPayload<
     utilization_history: Prisma.$UtilizationHistoryPayload<ExtArgs>[];
     conversations: Prisma.$ClientConversationPayload<ExtArgs>[];
     invitations: Prisma.$UserInvitationPayload<ExtArgs>[];
+    refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -2022,6 +2189,17 @@ export interface Prisma__UserClient<
   ): Prisma.PrismaPromise<
     | runtime.Types.Result.GetResult<
         Prisma.$UserInvitationPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  refreshTokens<T extends Prisma.User$refreshTokensArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.User$refreshTokensArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$RefreshTokenPayload<ExtArgs>,
         T,
         'findMany',
         GlobalOmitOptions
@@ -2621,6 +2799,34 @@ export type User$invitationsArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.UserInvitationScalarFieldEnum | Prisma.UserInvitationScalarFieldEnum[];
+};
+
+/**
+ * User.refreshTokens
+ */
+export type User$refreshTokensArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the RefreshToken
+   */
+  select?: Prisma.RefreshTokenSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the RefreshToken
+   */
+  omit?: Prisma.RefreshTokenOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RefreshTokenInclude<ExtArgs> | null;
+  where?: Prisma.RefreshTokenWhereInput;
+  orderBy?:
+    | Prisma.RefreshTokenOrderByWithRelationInput
+    | Prisma.RefreshTokenOrderByWithRelationInput[];
+  cursor?: Prisma.RefreshTokenWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.RefreshTokenScalarFieldEnum | Prisma.RefreshTokenScalarFieldEnum[];
 };
 
 /**

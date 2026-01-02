@@ -5,6 +5,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { InvitationsModule } from './invitations/invitations.module';
 import { RegistrationModule } from './registration/registration.module';
+import { DatabaseModule } from '../database/database.module';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 
 /**
  * Authentication Module
@@ -12,7 +15,8 @@ import { RegistrationModule } from './registration/registration.module';
  * Provides:
  * - JWT validation via Passport
  * - JwtStrategy for token extraction and validation
- * - User registration via invite tokens
+ * - User registration via invite tokens (Story 17-2)
+ * - Login & session management (Story 17-3)
  *
  * Per architecture.md:
  * - Separate Auth Service issues JWTs (external)
@@ -23,7 +27,7 @@ import { RegistrationModule } from './registration/registration.module';
     // Enable Passport with JWT as default strategy
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
-    // Configure JWT module (for token verification)
+    // Configure JWT module (for token verification and signing)
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -39,13 +43,17 @@ import { RegistrationModule } from './registration/registration.module';
       }),
     }),
 
+    // Database access for user and token operations
+    DatabaseModule,
+
     // Story 17-1: User Invitations
     InvitationsModule,
 
     // Story 17-2: User Registration
     RegistrationModule,
   ],
-  providers: [JwtStrategy],
-  exports: [PassportModule, JwtModule, InvitationsModule, RegistrationModule],
+  providers: [JwtStrategy, AuthService],
+  controllers: [AuthController],
+  exports: [PassportModule, JwtModule, InvitationsModule, RegistrationModule, AuthService],
 })
 export class AuthModule {}

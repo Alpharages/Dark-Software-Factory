@@ -784,6 +784,7 @@ model User {
   utilization_history UtilizationHistory[]
   conversations       ClientConversation[] @relation("PMConversations") // Story 5.5
   invitations         UserInvitation[]     @relation("InvitedBy") // Story 17-1: Invitations sent by this user
+  refreshTokens       RefreshToken[]       // Story 17-3: User's refresh tokens
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -1062,4 +1063,22 @@ model UserInvitation {
   @@index([status])
   @@index([email, status]) // Composite index for duplicate checking
   @@map("user_invitations")
+}
+
+// ============================================
+// STORY 17.3: REFRESH TOKEN MANAGEMENT
+// ============================================
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token_id   String   @unique // From JWT jti claim for revocation
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  is_revoked Boolean  @default(false)
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@index([token_id])
+  @@index([user_id, is_revoked]) // Query active tokens for a user
+  @@map("refresh_tokens")
 }
