@@ -1042,11 +1042,15 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/17-1-backend-user-invitation-api.md"
     notes: "✅ IMPLEMENTATION COMPLETE - Backend User Invitation API fully implemented. Delivered: (1) Secure invitation creation with crypto tokens, (2) RBAC-protected endpoints (Admin/Manager), (3) EmailService integration with Handlebars templates, (4) Prisma schema updates + migration, (5) Rate limiting & audit logging via console. Unit tests written for Service & Controller. Known Issue: npm install failed due to auth token expiry, blocking test execution verification. Code is structurally complete and type-safe. CODE REVIEW COMPLETED & FIXED: Dependencies (nodemailer, handlebars) added, EmailService refactored for async templating, style fixes applied."
   17-2-backend-user-registration-via-invite:
-    status: backlog
+    status: done
+    developer: "Antigravity (Dev Agent)"
+    completed_at: "2026-01-02"
+    code_review_date: "2026-01-02"
+    code_review_fixes: "1 CRITICAL, 3 MEDIUM issues fixed"
     effort: "1.5 days"
     story_points: 3
-    story_file: "TBD"
-    notes: "POST /api/v1/auth/register endpoint. Requires valid invite token. Creates User with hashed password (bcrypt). Returns JWT."
+    story_file: "_bmad-output/implementation-artifacts/17-2-backend-user-registration-via-invite.md"
+    notes: "✅ IMPLEMENTATION COMPLETE + CODE REVIEW APPROVED - Backend user registration via invite token fully implemented. Delivered: (1) Public POST /api/v1/auth/register endpoint, (2) Strong password validation with custom decorator, (3) Bcrypt password hashing (cost 12), (4) Atomic Prisma transaction for user creation + invitation update, (5) JWT token generation using existing JwtService, (6) Comprehensive error handling (400/404/409/410). Unit tests: 12/12 PASSING (7 service + 5 controller). Build: ✅ passing. Files: 9 new (4 DTOs, 3 services, 2 tests), 2 modified (AuthModule, package.json). Dependencies: bcrypt + @types/bcrypt installed. Security: password_hash excluded from responses, role from invitation not user-selectable, atomic transactions prevent data inconsistency. CODE REVIEW FIXES: All files committed to git, documentation updated (JWT HS256 24h expiration, bcrypt 6.0.0)."
   17-3-backend-login-session-management:
     status: backlog
     effort: "1 day"

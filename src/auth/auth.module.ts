@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { InvitationsModule } from './invitations/invitations.module';
+import { RegistrationModule } from './registration/registration.module';
 
 /**
  * Authentication Module
@@ -11,6 +12,7 @@ import { InvitationsModule } from './invitations/invitations.module';
  * Provides:
  * - JWT validation via Passport
  * - JwtStrategy for token extraction and validation
+ * - User registration via invite tokens
  *
  * Per architecture.md:
  * - Separate Auth Service issues JWTs (external)
@@ -39,8 +41,11 @@ import { InvitationsModule } from './invitations/invitations.module';
 
     // Story 17-1: User Invitations
     InvitationsModule,
+
+    // Story 17-2: User Registration
+    RegistrationModule,
   ],
   providers: [JwtStrategy],
-  exports: [PassportModule, JwtModule, InvitationsModule],
+  exports: [PassportModule, JwtModule, InvitationsModule, RegistrationModule],
 })
 export class AuthModule {}
