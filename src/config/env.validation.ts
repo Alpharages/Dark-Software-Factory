@@ -254,7 +254,8 @@ export const envValidationSchema = Joi.object({
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
   OPENAI_API_KEY: Joi.string()
-    .required()
+    .optional()
+    .allow('')
     .messages({
       'any.required': 'OPENAI_API_KEY is required for AI conversation processing (Story 5.5)',
     })
@@ -278,7 +279,8 @@ export const envValidationSchema = Joi.object({
   // Story 5.5.1: AetherFlow ClickUp Integration
   AETHERFLOW_API_URL: Joi.string()
     .uri()
-    .required()
+    .optional()
+    .allow('')
     .messages({
       'any.required':
         'AETHERFLOW_API_URL is required for ClickUp integration via AetherFlow (Story 5.5.1)',
@@ -286,7 +288,8 @@ export const envValidationSchema = Joi.object({
     .description('AetherFlow API base URL'),
   AETHERFLOW_API_KEY: Joi.string()
     .min(32)
-    .required()
+    .optional()
+    .allow('')
     .messages({
       'any.required': 'AETHERFLOW_API_KEY is required for AetherFlow authentication',
       'string.min': 'AETHERFLOW_API_KEY must be at least 32 characters for security',

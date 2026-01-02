@@ -6,10 +6,12 @@ import { AiCapabilityTrackerService } from './ai-capability-tracker.service';
 import { CapabilitiesController } from './capabilities.controller';
 import { DatabaseModule } from '../../database/database.module';
 import { ArchitectureReviewNotificationService } from '../architecture-review-notification.service';
+import { ClickUpModule } from '../../clickup/clickup.module';
 
 @Module({
   imports: [
     DatabaseModule,
+    ClickUpModule,
     ScheduleModule.forRoot(), // Enable cron jobs
   ],
   controllers: [CapabilitiesController],

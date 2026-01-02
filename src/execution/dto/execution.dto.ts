@@ -13,6 +13,23 @@ import {
 import { Type } from 'class-transformer';
 
 /**
+ * DTO for prompt metadata snapshot
+ */
+export class PromptMetadataSnapshotDto {
+  @IsNumber()
+  promptLength!: number;
+
+  @IsNumber()
+  estimatedTokens!: number;
+
+  @IsString()
+  templateVersion!: string;
+
+  @IsString()
+  generatedAt!: string;
+}
+
+/**
  * DTO for starting an execution
  */
 export class StartExecutionDto {
@@ -45,23 +62,6 @@ export class StartExecutionDto {
   @IsOptional()
   @IsString()
   feedback?: string;
-}
-
-/**
- * DTO for prompt metadata snapshot
- */
-export class PromptMetadataSnapshotDto {
-  @IsNumber()
-  promptLength!: number;
-
-  @IsNumber()
-  estimatedTokens!: number;
-
-  @IsString()
-  templateVersion!: string;
-
-  @IsString()
-  generatedAt!: string;
 }
 
 /**

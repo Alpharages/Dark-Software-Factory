@@ -69,6 +69,6 @@ import { ArchitectureReviewMetricsController } from './architecture-review-metri
       labelNames: ['status'],
     }),
   ],
-  exports: [AdrService],
+  exports: [AdrService, ArchitectureConstraintsService],
 })
 export class ArchitectureReviewModule {}

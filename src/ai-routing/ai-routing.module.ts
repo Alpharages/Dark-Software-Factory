@@ -35,6 +35,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 import { AdrParserService } from './adr-parser.service';
 import { ArchitectureReviewModule } from '../architecture-review/architecture-review.module';
 import { EventBusModule } from '../common/event-bus.module';
+import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { EventBusModule } from '../common/event-bus.module';
     AIDecisionLoggerModule,
     ArchitectureReviewModule,
     EventBusModule,
+    CostTrackingModule,
   ],
   providers: [
     // Story 2.3: Routing services
