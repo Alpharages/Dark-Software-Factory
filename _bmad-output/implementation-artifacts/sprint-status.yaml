@@ -996,13 +996,14 @@ development_status:
     notes: "E2E test full v3 flow. Load test 100 concurrent tickets. Validate circular deps, file locks, metrics."
   epic-15-retrospective: optional
 
-  epic-16: in-progress
+  epic-16: done
   epic-16-name: "ClickUp Dynamic Sync & Project Management"
   epic-16-phase: "Phase 5 (Week 6-8)"
   epic-16-priority: high
   epic-16-dependencies: "Epic 2, Epic 4"
   epic-16-estimated_effort: "6 days"
-  epic-16-notes: "Enables dynamic ClickUp project syncing via UI, removing environment variable dependencies."
+  epic-16-completed_at: "2026-01-02"
+  epic-16-notes: "✅ COMPLETE - Enables dynamic ClickUp project syncing via UI, removing environment variable dependencies. Backend API and full UI implementation completed with code review approval."
   16-1-backend-clickup-sync:
     status: done
     effort: "3 days"
@@ -1023,5 +1024,73 @@ development_status:
     code_review_fixes: "6 HIGH, 4 MEDIUM (all remediated)"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - UI implementation complete with all code review fixes applied. Created ProjectsTable with monitoring toggle, ClickUpImportModal with provider selection & hierarchy browser, React Query hooks (useClickUpHierarchy, useImportProject), ProjectsSyncPage, and shadcn UI components (Table, Switch, Badge, Dialog). Added routing and tests. CODE REVIEW FIXES: (H2) Fixed React Fragment key warning, (H3/H4) Improved error handling with typed API responses extracting actual error messages, (H6) Enhanced test coverage 5→9 comprehensive test cases (API integration, error handling, loading states), (M1) Changed provider default from 'CLICKUP' to 'Unknown'. Build passing for story files."
 
+  epic-17: backlog
+  epic-17-name: "Authentication & Access Control"
+  epic-17-phase: "Critical Security"
+  epic-17-priority: critical
+  epic-17-dependencies: "Epic 1 Story 1.6 (JWT Infrastructure)"
+  epic-17-estimated_effort: "13.5 days"
+  epic-17-notes: "Implement invite-only authentication to secure dsf-dashboard from public access. Currently dashboard is publicly accessible. No signup - invite-only registration. 4 backend + 6 frontend stories. See: _bmad-output/implementation-artifacts/epic-17-authentication-access-control.md"
+  17-1-backend-user-invitation-api:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    story_file: "TBD"
+    notes: "Create invitation API with email sending. Endpoints: POST/GET/DELETE invitations, verify token. 7-day expiration. UserInvitation table schema."
+  17-2-backend-user-registration-via-invite:
+    status: backlog
+    effort: "1.5 days"
+    story_points: 3
+    story_file: "TBD"
+    notes: "POST /api/v1/auth/register endpoint. Requires valid invite token. Creates User with hashed password (bcrypt). Returns JWT."
+  17-3-backend-login-session-management:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    story_file: "TBD"
+    notes: "POST /api/v1/auth/login, /auth/refresh, /auth/logout, /auth/me endpoints. Refresh tokens (30-day). Rate limiting: 5 attempts per 15 min."
+  17-4-backend-user-management-api:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    story_file: "TBD"
+    notes: "GET/PATCH/DELETE /api/v1/users endpoints for admin user management. Role changes, deactivation. Audit logging."
+  17-5-ui-login-page-auth-flow:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    story_file: "TBD"
+    notes: "Create /login route. AuthProvider context. Remember me. Auto-redirect. JWT storage (httpOnly cookie + localStorage). Auto-refresh logic."
+  17-6-ui-protected-routes-auth-guards:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    story_file: "TBD"
+    notes: "ProtectedRoute component. Role-based guards. 403 Forbidden page. Fix API client auth interceptor (src/api/client.ts:27-28)."
+  17-7-ui-registration-page-invite-only:
+    status: backlog
+    effort: "1.5 days"
+    story_points: 3
+    story_file: "TBD"
+    notes: "Create /register/:inviteToken route. Verify token. Password strength indicator (zxcvbn). Auto-login after registration."
+  17-8-ui-invite-management-dashboard:
+    status: backlog
+    effort: "2 days"
+    story_points: 5
+    story_file: "TBD"
+    notes: "Create /admin/invitations route (ADMIN/MANAGER only). Table, create invite modal, copy link, revoke. Pagination."
+  17-9-ui-user-management-dashboard:
+    status: backlog
+    effort: "1.5 days"
+    story_points: 3
+    story_file: "TBD"
+    notes: "Create /admin/users route (ADMIN only). User table, edit modal, deactivate. Search and filter."
+  17-10-ui-user-profile-settings:
+    status: backlog
+    effort: "1 day"
+    story_points: 3
+    story_file: "TBD"
+    notes: "Create /profile route. Display user info. Change password form. Logout button."
+  epic-17-retrospective: optional
 
 
