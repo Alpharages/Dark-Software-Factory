@@ -47,6 +47,21 @@ async function bootstrap() {
   const logger = app.get(LoggerService);
   app.useLogger(logger);
 
+  // Enable CORS for frontend development
+  // Parse CORS origins from environment variable (comma-separated)
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id'],
+  });
+
+  logger.log(`CORS enabled for origins: ${corsOrigins.join(', ')}`);
+
   // Enable URI-based versioning (Story 5.1)
   app.enableVersioning({
     type: VersioningType.URI,
