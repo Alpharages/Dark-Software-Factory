@@ -6,7 +6,7 @@ import { PrismaService } from '../database/prisma.service';
 import { EventBusService } from '../common/event-bus.service';
 import { ClickUpService } from '../clickup/clickup.service';
 import { CreateAdrDto } from './dto/create-adr.dto';
-import { AdrStatus, AIProvider } from '@/prisma/client';
+import { AdrStatus } from '@/prisma/client';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { PromptGeneratorService } from '../ai-routing/prompt-generator.service';
 import { ConfigService } from '@nestjs/config';
@@ -62,7 +62,7 @@ const mockConstraintValidator = {
 
 describe('Escalation Workflow E2E', () => {
   let adrService: AdrService;
-  let notificationService: ArchitectureReviewNotificationService;
+  let _notificationService: ArchitectureReviewNotificationService;
 
   beforeEach(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -82,7 +82,7 @@ describe('Escalation Workflow E2E', () => {
     }).compile();
 
     adrService = moduleRef.get<AdrService>(AdrService);
-    notificationService = moduleRef.get<ArchitectureReviewNotificationService>(
+    _notificationService = moduleRef.get<ArchitectureReviewNotificationService>(
       ArchitectureReviewNotificationService,
     );
   });

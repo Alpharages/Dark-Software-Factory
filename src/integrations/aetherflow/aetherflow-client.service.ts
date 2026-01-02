@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 import { CreateTasksRequestDto, CreateTaskDto } from './dto/create-tasks-request.dto';
 import { CreateTasksResponseDto } from './dto/create-tasks-response.dto';
@@ -70,21 +70,21 @@ export class AetherFlowClientService {
       this.logger.log(`Successfully created ${response.count || 0} tasks via AetherFlow`);
 
       return response;
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to create tasks via AetherFlow', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: _error instanceof Error ? _error.message : 'Unknown error',
         userId: params.userId,
       });
 
-      if (error instanceof AxiosError) {
+      if (_error instanceof AxiosError) {
         return {
           success: false,
-          error: error.response?.data?.error || error.message,
-          message: error.response?.data?.message || 'AetherFlow API call failed',
+          error: _error.response?.data?.error || _error.message,
+          message: _error.response?.data?.message || 'AetherFlow API call failed',
         };
       }
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -93,7 +93,7 @@ export class AetherFlowClientService {
    */
   private async executeWithRetry<T>(
     endpoint: string,
-    body: any,
+    body: Record<string, unknown>,
     attemptNumber: number = 0,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
@@ -114,21 +114,22 @@ export class AetherFlowClientService {
       this.metrics.recordAetherFlowApiDuration(endpoint, duration);
       this.metrics.incrementAetherFlowApiCall(endpoint, 'success');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       const duration = (Date.now() - startTime) / 1000;
       this.metrics.recordAetherFlowApiDuration(endpoint, duration);
 
       // Check if we should retry
       if (attemptNumber < this.retryAttempts - 1) {
-        const shouldRetry = this.isRetryableError(error);
+        const shouldRetry = this.isRetryableError(_error);
 
         if (shouldRetry) {
           this.metrics.incrementAetherFlowApiCall(endpoint, 'retry');
+          // eslint-disable-next-line security/detect-object-injection
           const delay = this.retryDelays[attemptNumber];
           this.logger.warn(
             `AetherFlow API call failed, retrying in ${delay}ms (attempt ${attemptNumber + 1}/${this.retryAttempts})`,
             {
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: _error instanceof Error ? _error.message : 'Unknown error',
             },
           );
 
@@ -139,14 +140,14 @@ export class AetherFlowClientService {
 
       // No more retries or non-retryable error
       this.metrics.incrementAetherFlowApiCall(endpoint, 'error');
-      throw error;
+      throw _error;
     }
   }
 
   /**
    * Determine if an error is retryable
    */
-  private isRetryableError(error: any): boolean {
+  private isRetryableError(error: Record<string, unknown>): boolean {
     if (error instanceof AxiosError) {
       const status = error.response?.status;
 

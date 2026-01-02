@@ -23,5 +23,5 @@ export class CreateConstraintDto {
     example: { items: ['axios'], reason: 'Use fetch' },
   })
   @IsObject()
-  rules: any;
+  rules!: Record<string, unknown>;
 }

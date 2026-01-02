@@ -50,8 +50,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         if (modelDelegate && typeof modelDelegate.deleteMany === 'function') {
           await modelDelegate.deleteMany();
         }
-      } catch (error) {
-        console.warn(`Could not clean ${model}:`, error);
+      } catch (_error) {
+        console.warn(`Could not clean ${model}:`, _error);
       }
     }
   }

@@ -88,8 +88,8 @@ export class WebhookSignatureGuard implements CanActivate {
       }
 
       return crypto.timingSafeEqual(signatureBuffer, digestBuffer);
-    } catch (error) {
-      this.logger.error(`Signature verification error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Signature verification error: ${(_error as Error).message}`);
       return false;
     }
   }

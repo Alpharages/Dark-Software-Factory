@@ -269,23 +269,23 @@ export class QaOrchestratorService {
       });
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       // Record error metric (Story 3.8)
       this.qaMetrics.recordCheckError('linting', 'error', Date.now() - startTime, {
         projectId,
         aiProvider,
       });
       this.logger.error(
-        `[${correlationId}] QA checks failed: ${(error as Error).message}`,
-        (error as Error).stack,
+        `[${correlationId}] QA checks failed: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
 
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId, ticketId, correlationId },
       });
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -555,20 +555,20 @@ export class QaOrchestratorService {
         },
         qualityGateResult: gateResult,
       };
-    } catch (error) {
+    } catch (_error) {
       // Record error metric (Story 3.8)
       this.qaMetrics.recordCheckError('linting', 'error', Date.now() - startTime, { projectId });
       this.logger.error(
-        `[${correlationId}] QA orchestration failed: ${(error as Error).message} `,
-        (error as Error).stack,
+        `[${correlationId}] QA orchestration failed: ${(_error as Error).message} `,
+        (_error as Error).stack,
       );
 
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId, ticketId, correlationId },
       });
 
-      throw error;
+      throw _error;
     } finally {
       this.logger.log(
         `[${correlationId}] QA orchestration completed in ${Date.now() - startTime} ms`,
@@ -628,9 +628,9 @@ export class QaOrchestratorService {
         filesLinted: [],
         durationMs: result.duration || 0,
       };
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `[${correlationId}] AI-delegated lint check failed: ${(error as Error).message}`,
+        `[${correlationId}] AI-delegated lint check failed: ${(_error as Error).message}`,
       );
       return null;
     }
@@ -933,15 +933,15 @@ export class QaOrchestratorService {
         data: result.data,
         duration: Date.now() - startTime,
       };
-    } catch (error) {
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'linting' },
       });
 
       await this.savePartialQaResult(message.executionId, {
         linting_passed: false,
-        linting_errors: { error: (error as Error).message } as never,
+        linting_errors: { error: (_error as Error).message } as never,
       });
 
       return { type: 'linting', passed: false, data: [], duration: Date.now() - startTime };
@@ -989,15 +989,15 @@ export class QaOrchestratorService {
         data: result.data,
         duration: Date.now() - startTime,
       };
-    } catch (error) {
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'testing' },
       });
 
       await this.savePartialQaResult(message.executionId, {
         tests_passed: false,
-        test_results: { error: (error as Error).message } as never,
+        test_results: { error: (_error as Error).message } as never,
       });
 
       return { type: 'testing', passed: false, data: null, duration: Date.now() - startTime };
@@ -1046,8 +1046,8 @@ export class QaOrchestratorService {
         data: coverage,
         duration,
       };
-    } catch (error) {
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'coverage' },
       });
@@ -1097,8 +1097,8 @@ export class QaOrchestratorService {
         data: result.data,
         duration,
       };
-    } catch (error) {
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, checkType: 'security' },
       });
@@ -1149,13 +1149,13 @@ export class QaOrchestratorService {
       this.logger.log(
         `[${result.correlationId}] Published QA result event: ${result.passed ? 'COMPLETED' : 'FAILED'}`,
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `[${result.correlationId}] Failed to publish QA result event: ${(error as Error).message}`,
-        (error as Error).stack,
+        `[${result.correlationId}] Failed to publish QA result event: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
 
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: {
           executionId: result.executionId,
@@ -1166,7 +1166,7 @@ export class QaOrchestratorService {
       });
 
       // Re-throw to fail QA check if event publishing fails
-      throw error;
+      throw _error;
     }
   }
 

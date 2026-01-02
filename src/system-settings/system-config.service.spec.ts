@@ -5,8 +5,8 @@ import { ConfigService } from '@nestjs/config';
 
 describe('SystemConfigService', () => {
   let service: SystemConfigService;
-  let prisma: any;
-  let config: any;
+  let prisma: Record<string, unknown>;
+  let config: Record<string, unknown>;
 
   beforeEach(async () => {
     prisma = {

@@ -128,13 +128,13 @@ export class SelfHealingOrchestratorService {
           attemptNumber: attempts,
           startTime,
         });
-      } catch (error) {
+      } catch (_error) {
         this.logger.error('Progress validation failed', {
           executionId,
-          error: (error as Error).message,
+          error: (_error as Error).message,
         });
 
-        this.sentryService.captureException(error as Error, {
+        this.sentryService.captureException(_error as Error, {
           tags: { operation: 'self_healing_progress_validation' },
           extra: {
             executionId,
@@ -149,7 +149,7 @@ export class SelfHealingOrchestratorService {
           ticketId,
           executionId,
           errorsAfter,
-          `Progress validation error: ${(error as Error).message}`,
+          `Progress validation error: ${(_error as Error).message}`,
           attempts,
         );
       }
@@ -332,14 +332,14 @@ export class SelfHealingOrchestratorService {
         ticketId,
         executionId,
       });
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to add ClickUp escalation comment', {
         ticketId,
         executionId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
 
-      this.sentryService.captureException(error as Error, {
+      this.sentryService.captureException(_error as Error, {
         tags: { operation: 'self_healing_escalation' },
         extra: { ticketId, executionId, errorCounts },
       });

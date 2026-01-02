@@ -659,8 +659,7 @@ export class QaResultsService {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mapToInterface(result: any): IQaResult {
+  private mapToInterface(result: Record<string, unknown>): IQaResult {
     return {
       id: result.id,
       execution_id: result.execution_id,
@@ -677,8 +676,7 @@ export class QaResultsService {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mapToInterfaceWithExecution(result: any): IQaResultWithExecution {
+  private mapToInterfaceWithExecution(result: Record<string, unknown>): IQaResultWithExecution {
     const base = this.mapToInterface(result);
     return {
       ...base,

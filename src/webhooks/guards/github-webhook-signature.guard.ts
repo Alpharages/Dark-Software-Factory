@@ -68,8 +68,8 @@ export class GitHubWebhookSignatureGuard implements CanActivate {
       if (a.length !== b.length) return false;
 
       return crypto.timingSafeEqual(a, b);
-    } catch (error) {
-      this.logger.error(`GitHub signature verification error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`GitHub signature verification error: ${(_error as Error).message}`);
       return false;
     }
   }

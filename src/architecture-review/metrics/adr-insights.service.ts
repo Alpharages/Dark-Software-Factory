@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { AdrStatus, RiskLevel } from '@/prisma/client';
+import { AdrStatus, RiskLevel, Prisma } from '@/prisma/client';
 
 @Injectable()
 export class AdrInsightsService {
@@ -10,7 +10,7 @@ export class AdrInsightsService {
 
   async generateInsights(projectId?: string): Promise<{ patterns: string[] }> {
     const insights: string[] = [];
-    const where: any = {};
+    const where: Prisma.AdrWhereInput = {};
 
     if (projectId) {
       where.execution = { ticket: { project_id: projectId } };
@@ -64,8 +64,8 @@ export class AdrInsightsService {
       } else {
         insights.push(`No architecture decisions recorded yet`);
       }
-    } catch (error) {
-      this.logger.error(`Failed to generate insights: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to generate insights: ${(_error as Error).message}`);
       insights.push('Unable to generate insights due to error');
     }
 

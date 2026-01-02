@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter, Gauge, Histogram } from 'prom-client';
-import { AdrStatus, RiskLevel, Prisma } from '@/prisma/client';
+import { AdrStatus, Prisma } from '@/prisma/client';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { categorizeRejectionReason } from './rejection-reason.helper';
 import { AdrMetricsDto, AdrTrendsDto } from './dto/adr-metrics.dto';
@@ -23,7 +23,11 @@ export class AdrMetricsService {
   /**
    * Hook called after an ADR review is completed
    */
-  async trackReviewCompleted(adr: any, action: string, reason?: string) {
+  async trackReviewCompleted(
+    adr: Prisma.AdrGetPayload<{ include: { execution: { include: { ticket: true } } } }>,
+    action: string,
+    _reason?: string,
+  ) {
     this.logger.log(`Tracking review metrics for ADR ${adr.id}, Action: ${action}`);
 
     try {
@@ -50,8 +54,9 @@ export class AdrMetricsService {
 
       // If REJECTED, categorize reason (for internal analytics, maybe store in separate table if we had one,
       // but we added rejection_reason to Adr model)
-    } catch (error: any) {
-      this.logger.error(`Failed to track review metrics: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Failed to track review metrics: ${err.message}`, err.stack);
     }
   }
 
@@ -88,6 +93,7 @@ export class AdrMetricsService {
       // Ensure date object handling
       const d = new Date(r.date);
       const dateStr = d.toISOString().split('T')[0];
+      // eslint-disable-next-line security/detect-object-injection
       review_volume[dateStr] = Number(r.count);
     });
 
@@ -127,6 +133,7 @@ export class AdrMetricsService {
     rejections.forEach((r) => {
       if (r.rejection_reason) {
         const cat = categorizeRejectionReason(r.rejection_reason);
+        // eslint-disable-next-line security/detect-object-injection
         rejection_reasons[cat] = (rejection_reasons[cat] || 0) + 1;
       }
     });
@@ -206,8 +213,9 @@ export class AdrMetricsService {
         const rate = val.total > 0 ? (val.approved / val.total) * 100 : 0;
         trends.approval_rate_trend.push({ date, value: Math.round(rate * 10) / 10 }); // Round to 1 decimal
       });
-    } catch (error: any) {
-      this.logger.error(`Failed to get trend analysis: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      this.logger.error(`Failed to get trend analysis: ${err.message}`);
     }
 
     return trends;

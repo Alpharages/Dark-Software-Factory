@@ -47,8 +47,8 @@ TL Review is mandatory before implementation proceeds.
         tags: ['architecture-review', 'high-risk'],
         notify_all: true,
       });
-    } catch (error) {
-      this.logger.error(`Failed to notify High Risk ADR: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to notify High Risk ADR: ${(_error as Error).message}`);
     }
   }
 
@@ -82,8 +82,8 @@ This decision has been pending review for too long and is blocking progress.
         tags: ['escalation', 'architect-review'],
         notify_all: true,
       });
-    } catch (error) {
-      this.logger.error(`Failed to notify Escalation: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to notify Escalation: ${(_error as Error).message}`);
     }
   }
 
@@ -169,8 +169,8 @@ AI is uncertain about technical approach and needs TL guidance before proceeding
             `.trim();
 
       this.logger.log(`PM delay notification: ${pmDelayNotification}`);
-    } catch (error) {
-      this.logger.error('Failed to notify escalation', error);
+    } catch (_error) {
+      this.logger.error('Failed to notify escalation', _error);
       // Non-blocking error: don't throw
     }
   }
@@ -220,8 +220,8 @@ AI is uncertain about technical approach and needs TL guidance before proceeding
         tags: ['architecture-decision', action.toLowerCase()],
         notify_all: true,
       });
-    } catch (error) {
-      this.logger.error(`Failed to notify ADR Decision: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to notify ADR Decision: ${(_error as Error).message}`);
     }
   }
 
@@ -281,8 +281,8 @@ Please review these failures and document known issues + workarounds in the capa
           `Could not resolve ClickUp List ID for pattern notification. Message logged: ${message}`,
         );
       }
-    } catch (error) {
-      this.logger.error(`Failed to notify AI capability pattern: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to notify AI capability pattern: ${(_error as Error).message}`);
       // Non-blocking - don't throw
     }
   }
@@ -317,8 +317,8 @@ Please review these failures and document known issues + workarounds in the capa
         tags: ['system-alert', 'architecture'],
         notify_all: true,
       });
-    } catch (error) {
-      this.logger.error(`Failed to notify alert: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to notify alert: ${(_error as Error).message}`);
     }
   }
 }

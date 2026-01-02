@@ -70,8 +70,8 @@ describe('AIDecisionLoggerService', () => {
      * Note: TypeScript will still show errors on `prisma.aIDecisionLog.create.mockResolvedValue()`
      * but the tests compile and run successfully at runtime.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma = module.get(PrismaService) as any;
+
+    prisma = module.get(PrismaService) as unknown;
     sentry = module.get(SentryService) as jest.Mocked<SentryService>;
     metrics = module.get(MetricsService) as jest.Mocked<MetricsService>;
 

@@ -113,12 +113,12 @@ export class QaCheckConsumer extends RabbitMQConsumerBase implements OnModuleIni
         `QA consumer started (concurrency=${this.concurrency})`,
         'QaCheckConsumer',
       );
-    } catch (error) {
-      this.sentryService.captureException(error as Error, {
+    } catch (_error) {
+      this.sentryService.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { queue: QUEUE_NAMES.QA_CHECK },
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -151,12 +151,12 @@ export class QaCheckConsumer extends RabbitMQConsumerBase implements OnModuleIni
         `QA check completed: ${result.passed ? 'PASSED' : 'FAILED'} (${Date.now() - startTime}ms)`,
         { context: 'QaCheckConsumer', correlationId, executionId: message.executionId },
       );
-    } catch (error) {
-      this.sentryService.captureException(error as Error, {
+    } catch (_error) {
+      this.sentryService.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId: message.executionId, correlationId },
       });
-      throw error; // Re-throw to trigger retry logic in base class
+      throw _error; // Re-throw to trigger retry logic in base class
     }
   }
 
@@ -169,9 +169,9 @@ export class QaCheckConsumer extends RabbitMQConsumerBase implements OnModuleIni
       try {
         const queueInfo = await channel.checkQueue(QUEUE_NAMES.QA_CHECK);
         this.queueDepthGauge.set({ queue: QUEUE_NAMES.QA_CHECK }, queueInfo.messageCount);
-      } catch (error) {
+      } catch (_error) {
         this.loggerService.warn(
-          `Failed to check queue depth: ${(error as Error).message}`,
+          `Failed to check queue depth: ${(_error as Error).message}`,
           'QaCheckConsumer',
         );
       }

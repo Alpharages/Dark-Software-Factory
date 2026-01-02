@@ -61,9 +61,9 @@ export class RabbitMQPublisherService {
       }
 
       return sent;
-    } catch (error) {
-      this.logger.error(`Error publishing to ${queueName}:`, error);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Error publishing to ${queueName}:`, _error);
+      throw _error;
     }
   }
 
@@ -101,9 +101,9 @@ export class RabbitMQPublisherService {
       }
 
       return sent;
-    } catch (error) {
-      this.logger.error(`Error publishing to exchange ${exchangeName}:`, error);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Error publishing to exchange ${exchangeName}:`, _error);
+      throw _error;
     }
   }
 
@@ -124,9 +124,9 @@ export class RabbitMQPublisherService {
         if (result) {
           return true;
         }
-      } catch (error) {
-        lastError = error as Error;
-        this.logger.warn(`Publish attempt ${attempt}/${maxRetries} failed:`, error);
+      } catch (_error) {
+        lastError = _error as Error;
+        this.logger.warn(`Publish attempt ${attempt}/${maxRetries} failed:`, _error);
 
         if (attempt < maxRetries) {
           // Exponential backoff: 1s, 2s, 4s

@@ -75,11 +75,11 @@ export class WorkloadSchedulerService {
           this.logger.debug(
             `Snapshot created/updated for PM ${pm.name}: ${utilization.utilization_pct}% utilization`,
           );
-        } catch (error) {
+        } catch (_error) {
           errorCount++;
           this.logger.error(
             `Failed to create snapshot for PM ${pm.id}`,
-            error instanceof Error ? error.stack : String(error),
+            _error instanceof Error ? _error.stack : String(_error),
           );
         }
       }
@@ -96,10 +96,10 @@ export class WorkloadSchedulerService {
       this.metricsService.recordHistogram('workload_snapshot_job_duration_seconds', duration);
       this.metricsService.setGauge('workload_snapshot_success_count', successCount);
       this.metricsService.setGauge('workload_snapshot_error_count', errorCount);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
         'Snapshot job failed',
-        error instanceof Error ? error.stack : String(error),
+        _error instanceof Error ? _error.stack : String(_error),
       );
       this.metricsService.incrementCounter('workload_snapshot_job_total', {
         status: 'failed',
@@ -161,10 +161,10 @@ export class WorkloadSchedulerService {
               pm_name: pm.name,
             });
           }
-        } catch (error) {
+        } catch (_error) {
           this.logger.error(
             `Failed to check burnout alert for PM ${pm.id}`,
-            error instanceof Error ? error.stack : String(error),
+            _error instanceof Error ? _error.stack : String(_error),
           );
         }
       }
@@ -180,10 +180,10 @@ export class WorkloadSchedulerService {
         status: 'completed',
       });
       this.metricsService.setGauge('workload_burnout_alerts_triggered', alertsTriggered);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
         'Burnout alert check failed',
-        error instanceof Error ? error.stack : String(error),
+        _error instanceof Error ? _error.stack : String(_error),
       );
       this.metricsService.incrementCounter('workload_burnout_check_total', {
         status: 'failed',

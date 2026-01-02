@@ -402,10 +402,10 @@ export class GitHubErrorMonitor {
           error_message: ErrorSanitizer.sanitize(context.errorMessage),
         },
       });
-    } catch (error) {
+    } catch (_error) {
       this.logger.warn('Failed to update deployment status', {
         deploymentId: context.deploymentId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
     }
   }
@@ -425,11 +425,11 @@ export class GitHubErrorMonitor {
           error_message: `GitHub operation failed: ${classification.type}`,
         },
       });
-    } catch (error) {
+    } catch (_error) {
       // AC#5: Log but don't fail - graceful degradation
       this.logger.warn('Failed to update execution status', {
         executionId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
     }
   }

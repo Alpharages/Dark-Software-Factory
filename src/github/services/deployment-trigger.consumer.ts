@@ -86,8 +86,8 @@ export class DeploymentTriggerConsumer extends RabbitMQConsumerBase {
           executionId: message.executionId,
         });
       }
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error(
         `[${correlationId}] Failed to trigger deployment`,
         err.stack || err.message,
@@ -98,7 +98,7 @@ export class DeploymentTriggerConsumer extends RabbitMQConsumerBase {
       );
 
       // Rethrow to trigger RabbitMQ retry/DLQ logic
-      throw error;
+      throw _error;
     }
   }
 }

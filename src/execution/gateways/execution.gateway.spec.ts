@@ -46,7 +46,7 @@ describe('ExecutionGateway', () => {
     gateway = module.get<ExecutionGateway>(ExecutionGateway);
     jwtService = module.get<JwtService>(JwtService);
     metricsService = module.get<MetricsService>(MetricsService);
-    gateway.server = mockServer as any;
+    gateway.server = mockServer as unknown;
   });
 
   it('should be defined', () => {
@@ -55,7 +55,7 @@ describe('ExecutionGateway', () => {
 
   describe('handleConnection', () => {
     it('should verify token and increment metrics', async () => {
-      await gateway.handleConnection(mockClient as any);
+      await gateway.handleConnection(mockClient as Record<string, unknown>);
 
       expect(jwtService.verifyAsync).toHaveBeenCalledWith('valid-token');
       expect(metricsService.incrementGauge).toHaveBeenCalledWith(
@@ -70,7 +70,7 @@ describe('ExecutionGateway', () => {
         id: 'bad-client',
         handshake: { auth: {}, headers: {} },
         disconnect: jest.fn(),
-      } as any;
+      } as unknown;
       await gateway.handleConnection(clientWithoutToken);
 
       expect(clientWithoutToken.disconnect).toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe('ExecutionGateway', () => {
 
   describe('handleSubscribe', () => {
     it('should join the ticket room', () => {
-      gateway.handleSubscribe(mockClient as any, 'ticket-123');
+      gateway.handleSubscribe(mockClient as { join: jest.Mock }, 'ticket-123');
 
       expect(mockClient.join).toHaveBeenCalledWith('ticket_ticket-123');
     });

@@ -127,8 +127,8 @@ export class FinancialMetricsController {
       }
 
       return result;
-    } catch (error) {
-      this.logger.error(`Cost per feature error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Cost per feature error: ${(_error as Error).message}`);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -181,8 +181,8 @@ export class FinancialMetricsController {
         period: query.period,
         valuePerPoint: query.valuePerPoint,
       });
-    } catch (error) {
-      this.logger.error(`ROI calculation error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`ROI calculation error: ${(_error as Error).message}`);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -245,8 +245,8 @@ export class FinancialMetricsController {
       }
 
       return result;
-    } catch (error) {
-      this.logger.error(`Budget trends error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Budget trends error: ${(_error as Error).message}`);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -300,8 +300,8 @@ export class FinancialMetricsController {
         startDate,
         endDate,
       });
-    } catch (error) {
-      this.logger.error(`Model efficiency error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Model efficiency error: ${(_error as Error).message}`);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -328,8 +328,8 @@ export class FinancialMetricsController {
     try {
       this.loggerService.debug('POST /share-link', { body });
       return await this.financialMetricsService.generateShareLink(body);
-    } catch (error) {
-      this.logger.error(`Share link generation error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Share link generation error: ${(_error as Error).message}`);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -355,8 +355,8 @@ export class FinancialMetricsController {
     try {
       this.loggerService.debug('POST /schedule-report', { body });
       return await this.financialMetricsService.scheduleReport(body);
-    } catch (error) {
-      this.logger.error(`Report scheduling error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Report scheduling error: ${(_error as Error).message}`);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -388,8 +388,8 @@ export class FinancialMetricsController {
         startDate,
         endDate,
       });
-    } catch (error) {
-      this.logger.error(`Historical ROI error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Historical ROI error: ${(_error as Error).message}`);
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

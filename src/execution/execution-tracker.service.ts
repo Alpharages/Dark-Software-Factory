@@ -544,16 +544,16 @@ export class ExecutionTrackerService implements OnModuleInit {
       this.logger.debug(
         `[${event.correlationId}] Emitted ${event.eventType} event for execution ${event.executionId}`,
       );
-    } catch (error) {
-      if (error instanceof Error) {
+    } catch (_error) {
+      if (_error instanceof Error) {
         this.logger.error(
-          `[${event.correlationId}] Failed to emit event: ${error.message}`,
-          error.stack,
+          `[${event.correlationId}] Failed to emit event: ${_error.message}`,
+          _error.stack,
         );
       } else {
         this.logger.error(
           `[${event.correlationId}] Failed to emit event with unknown error:`,
-          error,
+          _error,
         );
       }
       // Don't throw - event emission failure shouldn't break execution tracking
@@ -570,11 +570,11 @@ export class ExecutionTrackerService implements OnModuleInit {
       for (const [provider, count] of Object.entries(counts)) {
         this.statusGauge.set({ provider, status: 'active' }, count);
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        this.logger.error(`Failed to update status gauges: ${error.message}`, error.stack);
+    } catch (_error) {
+      if (_error instanceof Error) {
+        this.logger.error(`Failed to update status gauges: ${_error.message}`, _error.stack);
       } else {
-        this.logger.error('Failed to update status gauges with unknown error:', error);
+        this.logger.error('Failed to update status gauges with unknown error:', _error);
       }
     }
   }

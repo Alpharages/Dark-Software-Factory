@@ -84,9 +84,9 @@ export class GitHubPushTriggerConsumer
 
       this.consumerTag = result.consumerTag;
       this.logger.log(`GitHub push trigger consumer started - listening on ${this.queueName}`);
-    } catch (error) {
-      this.logger.error('Failed to initialize GitHub push trigger consumer', error);
-      throw error;
+    } catch (_error) {
+      this.logger.error('Failed to initialize GitHub push trigger consumer', _error);
+      throw _error;
     }
   }
 
@@ -202,8 +202,8 @@ export class GitHubPushTriggerConsumer
 
       // Note: GitHubPROrchestrator already publishes deployment trigger event
       // No additional event publishing needed here
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error(
         `[${correlationId}] GitHub push workflow failed`,
         err.stack || err.message,
@@ -214,7 +214,7 @@ export class GitHubPushTriggerConsumer
       );
 
       // Rethrow to trigger RabbitMQ retry/DLQ logic
-      throw error;
+      throw _error;
     }
   }
 }

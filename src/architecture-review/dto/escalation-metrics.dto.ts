@@ -1,6 +1,5 @@
-import { IsOptional, IsString, IsDateString, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { IsOptional, IsString, IsDateString } from 'class-validator';
 
 /**
  * Escalation reason categories

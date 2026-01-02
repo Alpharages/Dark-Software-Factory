@@ -87,9 +87,9 @@ export class AIDecisionLoggerService {
       });
 
       return log;
-    } catch (error) {
+    } catch (_error) {
       // Database failure - log but don't crash calling service
-      const err = error as Error;
+      const err = _error as Error;
       this.logger.error('Failed to create audit log', {
         error: err.message,
         ticketId: data.ticketId,
@@ -129,8 +129,8 @@ export class AIDecisionLoggerService {
       });
 
       return decisions;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error(`Failed to get timeline for ticket ${ticketId}`, {
         error: err.message,
         correlationId,
@@ -210,8 +210,8 @@ export class AIDecisionLoggerService {
           hasMore: page < totalPages,
         },
       };
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Failed to get low-confidence decisions', {
         error: err.message,
         options,
@@ -221,7 +221,7 @@ export class AIDecisionLoggerService {
         tags: { operation: 'getLowConfidenceDecisions' },
         extra: { options, correlationId },
       });
-      throw error; // Propagate for controller error handling
+      throw _error; // Propagate for controller error handling
     }
   }
 
@@ -314,8 +314,8 @@ export class AIDecisionLoggerService {
           hasMore: page < totalPages,
         },
       };
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Failed to search decisions', {
         error: err.message,
         filters,
@@ -325,7 +325,7 @@ export class AIDecisionLoggerService {
         tags: { operation: 'searchDecisions' },
         extra: { filters, correlationId },
       });
-      throw error; // Propagate for controller error handling
+      throw _error; // Propagate for controller error handling
     }
   }
 

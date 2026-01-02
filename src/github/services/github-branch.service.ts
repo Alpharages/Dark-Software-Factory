@@ -138,11 +138,11 @@ export class GitHubBranchService {
       });
 
       return this.mapToDto(githubPush);
-    } catch (error) {
+    } catch (_error) {
       const duration = Date.now() - startTime;
 
       // AC#5: Error handling
-      await this.handleBranchCreationError(error as Error, executionId, options, duration);
+      await this.handleBranchCreationError(_error as Error, executionId, options, duration);
 
       // Record failure
       // Record failure
@@ -150,10 +150,10 @@ export class GitHubBranchService {
       this.metrics.incrementCounter('github_branch_total', {
         status: 'failed',
         repository: this.getRepository(),
-        error_type: classifyGitHubError(error),
+        error_type: classifyGitHubError(_error),
       });
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -227,7 +227,7 @@ export class GitHubBranchService {
         }
       }
 
-      throw error;
+      throw _error;
     }
   }
 

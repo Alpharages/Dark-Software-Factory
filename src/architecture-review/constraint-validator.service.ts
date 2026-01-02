@@ -34,9 +34,9 @@ export class ConstraintValidatorService {
         } else if (constraint.type === 'PATTERN') {
           violations.push(...this.validatePattern(constraint, context.files));
         }
-      } catch (error) {
+      } catch (_error) {
         this.logger.error(
-          `Error validating constraint ${constraint.id}: ${(error as Error).message}`,
+          `Error validating constraint ${constraint.id}: ${(_error as Error).message}`,
         );
       }
     }
@@ -45,7 +45,7 @@ export class ConstraintValidatorService {
   }
 
   private validateForbiddenTech(
-    constraint: any,
+    constraint: { rules: unknown; id: string },
     files: { path: string; content: string }[],
   ): ValidationViolation[] {
     const violations: ValidationViolation[] = [];
@@ -61,6 +61,7 @@ export class ConstraintValidatorService {
         const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
 
         for (const banned of rules.items) {
+          // eslint-disable-next-line security/detect-object-injection
           if (allDeps[banned]) {
             violations.push({
               file: packageJson.path,
@@ -70,16 +71,16 @@ export class ConstraintValidatorService {
             });
           }
         }
-      } catch (e: any) {
-        this.logger.error(`Failed to parse package.json: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(`Failed to parse package.json: ${(e as Error).message}`);
       }
     }
     return violations;
   }
 
   private validateAllowedTech(
-    constraint: any,
-    files: { path: string; content: string }[],
+    constraint: { rules: unknown; id: string },
+    _files: { path: string; content: string }[],
   ): ValidationViolation[] {
     const violations: ValidationViolation[] = [];
     const rules = constraint.rules as { items: string[]; reason?: string };
@@ -108,7 +109,7 @@ export class ConstraintValidatorService {
   }
 
   private validatePattern(
-    constraint: any,
+    constraint: { rules: unknown; id: string },
     files: { path: string; content: string }[],
   ): ValidationViolation[] {
     const violations: ValidationViolation[] = [];

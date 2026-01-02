@@ -43,9 +43,9 @@ export class PRReminderConsumer
 
       this.consumerTag = result.consumerTag;
       this.logger.log(`PR reminder consumer started - listening on ${this.queueName}`);
-    } catch (error) {
-      this.logger.error('Failed to initialize PR reminder consumer', error);
-      throw error;
+    } catch (_error) {
+      this.logger.error('Failed to initialize PR reminder consumer', _error);
+      throw _error;
     }
   }
 

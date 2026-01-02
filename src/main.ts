@@ -112,8 +112,8 @@ async function bootstrap() {
       await app.close();
       logger.log('Application closed successfully');
       process.exit(0);
-    } catch (error) {
-      logger.error(`Error during shutdown: ${error}`);
+    } catch (_error) {
+      logger.error(`Error during shutdown: ${_error}`);
       process.exit(1);
     }
   };
@@ -123,17 +123,17 @@ async function bootstrap() {
 }
 
 // Wrap bootstrap in try-catch and capture errors to Sentry
-bootstrap().catch((error) => {
+bootstrap().catch((_error) => {
   // Capture bootstrap errors to Sentry
   if (process.env.SENTRY_DSN) {
-    Sentry.captureException(error);
+    Sentry.captureException(_error);
     // Flush events before exiting
     Sentry.close(2000).then(() => {
-      console.error('[Bootstrap Error]:', error);
+      console.error('[Bootstrap Error]:', _error);
       process.exit(1);
     });
   } else {
-    console.error('[Bootstrap Error]:', error);
+    console.error('[Bootstrap Error]:', _error);
     process.exit(1);
   }
 });

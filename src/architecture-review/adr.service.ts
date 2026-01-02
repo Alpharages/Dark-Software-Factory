@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service';
+import { PrismaService } from '@/database/prisma.service';
 import {
   CreateAdrDto,
   UpdateAdrDto,
@@ -10,7 +10,7 @@ import {
 } from './dto';
 import { Prisma, AdrStatus, RiskLevel } from '@/prisma/client';
 import { RiskAssessmentService } from './risk-assessment.service';
-import { EventBusService } from '../common/event-bus.service';
+import { EventBusService } from '@/common/event-bus.service';
 import { AdrReviewedEvent } from './events/adr-reviewed.event';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
@@ -43,11 +43,14 @@ export class AdrService {
     this.logger.log(`Creating ADR: ${createAdrDto.title}`);
 
     let riskLevel = createAdrDto.risk_level;
-    let riskFactors = createAdrDto.risk_factors;
+    let riskFactors: Prisma.JsonValue | undefined = createAdrDto.risk_factors as
+      | Prisma.JsonValue
+      | undefined;
 
     // Calculate risk level if factors provided but level missing
     if (!riskLevel && riskFactors) {
-      riskLevel = this.riskService.calculateRiskLevel(riskFactors);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      riskLevel = this.riskService.calculateRiskLevel(riskFactors as any);
     } else if (!riskLevel) {
       // Fallback to legacy calculation if no factors provided
       riskLevel = this.calculateRiskLevelLegacy(createAdrDto) as RiskLevel;
@@ -70,9 +73,9 @@ export class AdrService {
 
       // Append to existing factors
       if (riskFactors && Array.isArray(riskFactors)) {
-        (riskFactors as any[]).push(...violationFactors);
+        (riskFactors as Prisma.JsonArray).push(...violationFactors);
       } else {
-        riskFactors = violationFactors as any;
+        riskFactors = violationFactors as unknown as Prisma.JsonValue;
       }
 
       // Escalate risk level if critical
@@ -89,9 +92,11 @@ export class AdrService {
         consequences: createAdrDto.consequences,
         alternatives: createAdrDto.alternatives,
         ai_confidence: createAdrDto.ai_confidence,
-        status: (createAdrDto.status || 'PROPOSED') as any,
-        risk_level: riskLevel as any,
-        risk_factors: riskFactors ? (riskFactors as any) : Prisma.JsonNull,
+        status: (createAdrDto.status || 'PROPOSED') as AdrStatus,
+        risk_level: riskLevel as RiskLevel,
+        risk_factors: riskFactors
+          ? (riskFactors as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
         execution_id: createAdrDto.execution_id,
         ticket_id: createAdrDto.ticket_id,
       },
@@ -171,7 +176,7 @@ export class AdrService {
 
     return this.prisma.adr.update({
       where: { id },
-      data: updateAdrDto as any,
+      data: updateAdrDto as Prisma.AdrUpdateInput,
     });
   }
 
@@ -371,7 +376,11 @@ export class AdrService {
     adrId: string,
     action: string,
     notes?: string,
-  ): Promise<{ success: boolean; message: string; adr: any }> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    adr: { id: string; title: string; status: AdrStatus; updated_at: Date };
+  }> {
     this.logger.log(`Reviewing ADR ${adrId} with action: ${action}`);
 
     // Find the ADR
@@ -451,7 +460,11 @@ export class AdrService {
     });
 
     // 2. Notify Stakeholders
-    await this.notificationService.notifyDecision({ ...adr } as any, action, notes);
+    await this.notificationService.notifyDecision(
+      { ...adr } as Prisma.AdrGetPayload<{ include: { execution: { include: { ticket: true } } } }>,
+      action,
+      notes,
+    );
 
     // 3. Track Metrics (Pre-Implementation Verification Backfill)
     await this.metricsService.trackReviewCompleted(updatedAdr, action, notes);
@@ -469,6 +482,7 @@ export class AdrService {
     );
 
     const actionPastTense =
+      // eslint-disable-next-line security/detect-object-injection
       {
         APPROVE: 'approved',
         REJECT: 'rejected',
@@ -496,7 +510,11 @@ export class AdrService {
    * @param metadata - Escalation metadata (questions, alternatives, trade-offs)
    * @returns Updated ADR with ESCALATED status
    */
-  async escalateToTL(adrId: string, reason: string, metadata: EscalationMetadata): Promise<any> {
+  async escalateToTL(
+    adrId: string,
+    reason: string,
+    metadata: EscalationMetadata,
+  ): Promise<Prisma.AdrGetPayload<object>> {
     this.logger.warn(`Escalating ADR ${adrId} to TL. Reason: ${reason}`);
 
     // Find the ADR
@@ -515,8 +533,16 @@ export class AdrService {
       data: {
         status: AdrStatus.ESCALATED,
         escalation_reason: reason,
-        escalation_questions: metadata.questions as any,
-        trade_offs: metadata.tradeOffs as any,
+        escalation_questions: metadata.questions as Prisma.InputJsonValue,
+        trade_offs: metadata.tradeOffs as Prisma.InputJsonValue,
+      },
+      include: {
+        ticket: {
+          select: {
+            clickup_task_id: true,
+          },
+        },
+        execution: true,
       },
     });
 
@@ -533,7 +559,7 @@ export class AdrService {
     });
 
     // Notify TL via ClickUp (Story 7.6 AC#4)
-    await this.notificationService.notifyEscalation(updatedAdr as any, metadata);
+    await this.notificationService.notifyEscalation(updatedAdr, metadata);
 
     // Story 7.6 AC#1: Emit event to block execution pipeline
     this.eventBus.emit(
@@ -552,7 +578,10 @@ export class AdrService {
    * @param guidanceDto - Guidance data from TL
    * @returns Updated ADR with GUIDANCE_PROVIDED status
    */
-  async provideGuidance(adrId: string, guidanceDto: ProvideGuidanceDto): Promise<any> {
+  async provideGuidance(
+    adrId: string,
+    guidanceDto: ProvideGuidanceDto,
+  ): Promise<Prisma.AdrGetPayload<object>> {
     this.logger.log(`Providing guidance for escalated ADR ${adrId}`);
 
     // Find the ADR
@@ -653,7 +682,10 @@ export class AdrService {
    * @param delegateDto - Delegation data
    * @returns Updated ADR with delegate_to field
    */
-  async delegate(adrId: string, delegateDto: DelegateAdrDto): Promise<any> {
+  async delegate(
+    adrId: string,
+    delegateDto: DelegateAdrDto,
+  ): Promise<Prisma.AdrGetPayload<object>> {
     this.logger.log(`Delegating ADR ${adrId} to ${delegateDto.delegate_to_user_id}`);
 
     // Find the ADR

@@ -61,7 +61,7 @@ describe('IntegrationsController', () => {
     });
 
     it('should throw error for unsupported provider', async () => {
-      await expect(controller.getHierarchy('JIRA' as any)).rejects.toThrow(
+      await expect(controller.getHierarchy('JIRA' as Record<string, unknown>)).rejects.toThrow(
         'Provider "JIRA" not supported',
       );
     });

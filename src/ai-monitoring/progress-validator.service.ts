@@ -211,13 +211,13 @@ export class ProgressValidatorService {
         attemptNumber: metrics.attemptNumber,
         errorReduction: metrics.errorsBefore - metrics.errorsAfter,
       });
-    } catch (error) {
+    } catch (_error) {
       // Graceful degradation - don't crash if tracking fails
       this.logger.error('Failed to track fix attempt', {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         executionId: metrics.executionId,
       });
-      this.sentry.captureException(error as Error);
+      this.sentry.captureException(_error as Error);
     }
   }
 

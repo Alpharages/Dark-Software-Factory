@@ -23,6 +23,7 @@ import {
   DelegateAdrDto,
 } from './dto';
 import { MetricsService } from '@/common/metrics/metrics.service';
+import { Prisma } from '@/prisma/client';
 
 @ApiTags('architecture-review')
 @ApiBearerAuth()
@@ -250,7 +251,12 @@ export class ArchitectureReviewController {
   async provideGuidance(
     @Param('id') adrId: string,
     @Body() guidanceDto: ProvideGuidanceDto,
-  ): Promise<any> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    adr: { id: string; status: string };
+    escalation_duration_seconds?: number;
+  }> {
     this.logger.log(`TL providing guidance for escalated ADR ${adrId}`);
 
     // Record Prometheus metrics
@@ -269,7 +275,12 @@ export class ArchitectureReviewController {
       );
     }
 
-    return result;
+    return {
+      success: true,
+      message: 'Guidance provided successfully',
+      adr: { id: result.id, status: result.status },
+      escalation_duration_seconds: result.escalation_duration_seconds || undefined,
+    };
   }
 
   @Post(':id/delegate')
@@ -309,7 +320,10 @@ export class ArchitectureReviewController {
   })
   @ApiResponse({ status: 404, description: 'ADR not found' })
   @ApiResponse({ status: 400, description: 'ADR is not in ESCALATED status' })
-  async delegateAdr(@Param('id') adrId: string, @Body() delegateDto: DelegateAdrDto): Promise<any> {
+  async delegateAdr(
+    @Param('id') adrId: string,
+    @Body() delegateDto: DelegateAdrDto,
+  ): Promise<{ success: boolean; message: string; adr: { id: string; status: string } }> {
     this.logger.log(`TL delegating ADR ${adrId} to ${delegateDto.delegate_to_user_id}`);
 
     // Record Prometheus metrics
@@ -317,7 +331,12 @@ export class ArchitectureReviewController {
       role: Role.TL,
     });
 
-    return this.adrService.delegate(adrId, delegateDto);
+    const result = await this.adrService.delegate(adrId, delegateDto);
+    return {
+      success: true,
+      message: 'ADR delegated successfully',
+      adr: { id: result.id, status: result.status },
+    };
   }
 
   @Get('escalations/metrics')
@@ -395,13 +414,24 @@ export class ArchitectureReviewController {
     @Query('project_id') projectId?: string,
     @Query('start_date') startDate?: string,
     @Query('end_date') endDate?: string,
-  ): Promise<any> {
+  ): Promise<{
+    total_escalations: number;
+    escalation_rate: number;
+    by_reason: Record<string, number>;
+    by_provider: Record<string, number>;
+    avg_resolution_time_seconds: number;
+    resolution_outcomes: {
+      guidance_provided: number;
+      delegated: number;
+      constraint_updated: number;
+    };
+  }> {
     this.logger.log(
       `Fetching escalation metrics: project=${projectId}, start=${startDate}, end=${endDate}`,
     );
 
     // Build query filters
-    const where: any = {
+    const where: Prisma.AdrWhereInput = {
       status: { in: ['ESCALATED', 'GUIDANCE_PROVIDED', 'RESOLVED'] },
     };
 
@@ -427,7 +457,7 @@ export class ArchitectureReviewController {
 
     // Calculate metrics
     const byReason: Record<string, number> = {};
-    const byProvider: Record<string, { total: number; escalated: number }> = {};
+    const _byProvider: Record<string, { total: number; escalated: number }> = {};
     let totalResolutionTime = 0;
     let resolutionCount = 0;
     const resolutionOutcomes = {

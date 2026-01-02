@@ -55,8 +55,11 @@ export class AiCapabilityService {
           errorDetails ? `: ${errorDetails}` : ''
         }`,
       );
-    } catch (error) {
-      this.logger.error(`Failed to track execution result for ${taskType}`, (error as Error).stack);
+    } catch (_error) {
+      this.logger.error(
+        `Failed to track execution result for ${taskType}`,
+        (_error as Error).stack,
+      );
       // Don't throw - tracking failures shouldn't block execution
     }
   }
@@ -89,9 +92,9 @@ export class AiCapabilityService {
           isDisabled: cap.is_disabled,
         };
       });
-    } catch (error) {
-      this.logger.error('Failed to get capability metrics', (error as Error).stack);
-      throw error;
+    } catch (_error) {
+      this.logger.error('Failed to get capability metrics', (_error as Error).stack);
+      throw _error;
     }
   }
 
@@ -120,8 +123,8 @@ export class AiCapabilityService {
         knownIssues: capability.known_issues || undefined,
         workaround: capability.workaround || undefined,
       };
-    } catch (error) {
-      this.logger.error(`Failed to get limitations for ${taskType}`, (error as Error).stack);
+    } catch (_error) {
+      this.logger.error(`Failed to get limitations for ${taskType}`, (_error as Error).stack);
       return null;
     }
   }
@@ -153,9 +156,9 @@ export class AiCapabilityService {
       });
 
       this.logger.log(`Updated limitations for ${taskType}`);
-    } catch (error) {
-      this.logger.error(`Failed to update limitations for ${taskType}`, (error as Error).stack);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Failed to update limitations for ${taskType}`, (_error as Error).stack);
+      throw _error;
     }
   }
 
@@ -170,8 +173,8 @@ export class AiCapabilityService {
       });
 
       return capability?.is_disabled ?? false;
-    } catch (error) {
-      this.logger.error(`Failed to check if ${taskType} is disabled`, (error as Error).stack);
+    } catch (_error) {
+      this.logger.error(`Failed to check if ${taskType} is disabled`, (_error as Error).stack);
       return false; // Fail open - allow execution if check fails
     }
   }

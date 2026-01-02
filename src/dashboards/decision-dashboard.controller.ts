@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DecisionService, DecisionDto } from './decision.service';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -25,11 +25,12 @@ export class DecisionDashboardController {
   async submitDecision(
     @Param('ticketId') ticketId: string,
     @Body() decisionDto: DecisionDto,
-    @Req() req: any,
+    @Req() req: { user: { sub: string; role?: string } },
   ) {
     // Extract user ID and role from JWT
     const userId = req.user?.sub || 'unknown';
-    const userRole = req.user?.role || 'unknown';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userRole = (req.user as any)?.role || 'unknown';
     return this.decisionService.processDecision(ticketId, userId, userRole, decisionDto);
   }
 
@@ -39,10 +40,11 @@ export class DecisionDashboardController {
   async overrideDecision(
     @Param('ticketId') ticketId: string,
     @Body() body: { reason: string },
-    @Req() req: any,
+    @Req() req: { user: { sub: string; role?: string } },
   ) {
     const userId = req.user?.sub || 'unknown';
-    const userRole = req.user?.role || 'MANAGER';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userRole = (req.user as any)?.role || 'MANAGER';
     return this.decisionService.processDecision(ticketId, userId, userRole, {
       decision: 'OVERRIDE',
       reason: body.reason,

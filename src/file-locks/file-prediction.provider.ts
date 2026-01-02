@@ -65,11 +65,11 @@ export class FilePredictionProvider {
         reasoning:
           typeof parsed.reasoning === 'string' ? parsed.reasoning : 'No reasoning returned',
       };
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
+    } catch (_error) {
+      const msg = _error instanceof Error ? _error.message : String(_error);
 
       // Classify error type for better alerting
-      const errorType = this.classifyError(error);
+      const errorType = this.classifyError(_error);
       this.logger.error(`AI prediction failed (${errorType}), using heuristic fallback: ${msg}`, {
         ticketId: input.ticketId,
         errorType,

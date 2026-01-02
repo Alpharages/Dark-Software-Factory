@@ -63,7 +63,7 @@ describe('AetherFlowClientService', () => {
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as Record<string, unknown>,
       };
 
       httpService.post.mockReturnValue(of(response));
@@ -81,7 +81,7 @@ describe('AetherFlowClientService', () => {
 
       try {
         await service.createTasks(params);
-      } catch (e) {
+      } catch (_e) {
         // expected
       }
 
@@ -92,12 +92,14 @@ describe('AetherFlowClientService', () => {
 
     it('should record retry metrics when API failure is retryable', async () => {
       const retryableError = new AxiosError('Retryable', '500');
-      retryableError.response = { status: 500 } as any;
+      retryableError.response = { status: 500 } as unknown;
 
       // Fails first time, succeeds second time
       httpService.post
         .mockReturnValueOnce(throwError(() => retryableError))
-        .mockReturnValueOnce(of({ data: { success: true }, status: 200 } as any));
+        .mockReturnValueOnce(
+          of({ data: { success: true }, status: 200 } as Record<string, unknown>),
+        );
 
       await service.createTasks(params);
 

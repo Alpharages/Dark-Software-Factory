@@ -39,9 +39,9 @@ export class ProjectService {
       });
       this.operationsCounter.inc({ operation: 'create', status: 'success' });
       return project;
-    } catch (error) {
+    } catch (_error) {
       this.operationsCounter.inc({ operation: 'create', status: 'error' });
-      throw error;
+      throw _error;
     }
   }
 
@@ -77,9 +77,9 @@ export class ProjectService {
       const project = await this.repository.update(id, updateProjectDto);
       this.operationsCounter.inc({ operation: 'update', status: 'success' });
       return project;
-    } catch (error) {
+    } catch (_error) {
       this.operationsCounter.inc({ operation: 'update', status: 'error' });
-      throw error;
+      throw _error;
     }
   }
 
@@ -147,9 +147,9 @@ export class ProjectService {
         this.operationsCounter.inc({ operation: 'reassign', status: 'success' });
         return updatedProject;
       });
-    } catch (error) {
+    } catch (_error) {
       this.operationsCounter.inc({ operation: 'reassign', status: 'error' });
-      throw error;
+      throw _error;
     }
   }
 
@@ -189,15 +189,20 @@ export class ProjectService {
         client_name: 'Internal', // Default
         provider: ProjectProvider.CLICKUP,
         monitor_tasks: true, // Auto-enable monitoring for imports
-      } as any);
+      } as {
+        name: string;
+        clickup_list_id: string;
+        provider: ProjectProvider;
+        monitor_tasks: boolean;
+      });
 
       this.operationsCounter.inc({ operation: 'import', status: 'success' });
       return project;
-    } catch (error) {
+    } catch (_error) {
       this.operationsCounter.inc({ operation: 'import', status: 'error' });
-      const msg = error instanceof Error ? error.message : String(error);
+      const msg = _error instanceof Error ? _error.message : String(_error);
       this.logger.error(`Failed to import project: ${msg}`);
-      throw error;
+      throw _error;
     }
   }
 
@@ -207,9 +212,9 @@ export class ProjectService {
       const project = await this.repository.delete(id);
       this.operationsCounter.inc({ operation: 'delete', status: 'success' });
       return project;
-    } catch (error) {
+    } catch (_error) {
       this.operationsCounter.inc({ operation: 'delete', status: 'error' });
-      throw error;
+      throw _error;
     }
   }
 }

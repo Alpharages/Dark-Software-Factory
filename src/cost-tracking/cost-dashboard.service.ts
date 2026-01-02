@@ -120,13 +120,13 @@ export class CostDashboardService {
         byProvider,
         byModel,
       };
-    } catch (error) {
-      this.logger.error(`Failed to get cost summary: ${(error as Error).message}`, {
+    } catch (_error) {
+      this.logger.error(`Failed to get cost summary: ${(_error as Error).message}`, {
         period,
         correlationId,
-        error: (error as Error).stack,
+        error: (_error as Error).stack,
       });
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'getCostSummary', period },
       });
 
@@ -208,13 +208,13 @@ export class CostDashboardService {
         invocationCount: costLogs.length,
         costLogs: costLogDtos,
       };
-    } catch (error) {
-      this.logger.error(`Failed to get ticket cost: ${(error as Error).message}`, {
+    } catch (_error) {
+      this.logger.error(`Failed to get ticket cost: ${(_error as Error).message}`, {
         ticketId,
         correlationId,
-        error: (error as Error).stack,
+        error: (_error as Error).stack,
       });
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'getTicketCost', ticketId },
       });
 
@@ -327,18 +327,18 @@ export class CostDashboardService {
         data,
         meta,
       };
-    } catch (error) {
-      this.logger.error(`Failed to get cost breakdown: ${(error as Error).message}`, {
+    } catch (_error) {
+      this.logger.error(`Failed to get cost breakdown: ${(_error as Error).message}`, {
         groupBy: options.groupBy,
         correlationId,
-        error: (error as Error).stack,
+        error: (_error as Error).stack,
       });
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'getCostBreakdown', groupBy: options.groupBy },
       });
 
       // Re-throw to let controller handle HTTP status
-      throw error;
+      throw _error;
     }
   }
 }

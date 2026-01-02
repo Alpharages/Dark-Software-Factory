@@ -316,13 +316,13 @@ export class TicketIntakeService {
         status: TicketStatus.VALIDATED,
         qualityScore: qualityScore.totalScore,
       };
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `[${correlationId}] Error processing ticket: ${(error as Error).message}`,
-        (error as Error).stack,
+        `[${correlationId}] Error processing ticket: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
       this.intakeCounter.inc({ event_type: event.eventType, status: 'error' });
-      throw error;
+      throw _error;
     } finally {
       endTimer();
     }
@@ -540,8 +540,8 @@ export class TicketIntakeService {
       } else {
         this.logger.debug(`[${correlationId}] Posted validation comment to ClickUp task ${taskId}`);
       }
-    } catch (error) {
-      this.logger.error(`[${correlationId}] ClickUp API error: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`[${correlationId}] ClickUp API error: ${(_error as Error).message}`);
     }
   }
 
@@ -569,8 +569,8 @@ export class TicketIntakeService {
           },
         },
       });
-    } catch (error) {
-      this.logger.error(`[${correlationId}] Audit log failed: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`[${correlationId}] Audit log failed: ${(_error as Error).message}`);
     }
   }
 }

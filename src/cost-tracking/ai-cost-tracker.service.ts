@@ -77,8 +77,8 @@ export class AICostTrackerService {
         budget,
         spend: currentSpend,
       };
-    } catch (error) {
-      this.logger.error(`Failed to check budget availability: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to check budget availability: ${(_error as Error).message}`);
       // Fail open or closed? "Prevent unexpected cost overruns" suggests Fail Closed.
       // But if DB is down, blocking everything might be bad.
       // Let's return allowed: true but with reason, same as missing project context?
@@ -89,7 +89,7 @@ export class AICostTrackerService {
       // Let's log error and return allowed: false to be safe against overruns.
       return {
         allowed: false,
-        reason: `Error checking budget: ${(error as Error).message}`,
+        reason: `Error checking budget: ${(_error as Error).message}`,
       };
     }
   }
@@ -185,10 +185,10 @@ export class AICostTrackerService {
       if (ticketId) {
         await this.checkBudgetThresholds(ticketId);
       }
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to log AI cost: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to log AI cost: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
     }
   }
@@ -244,8 +244,8 @@ export class AICostTrackerService {
           ErrorSeverity.HIGH,
         );
       }
-    } catch (error) {
-      this.logger.error(`Failed to check budget thresholds: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to check budget thresholds: ${(_error as Error).message}`);
     }
   }
 

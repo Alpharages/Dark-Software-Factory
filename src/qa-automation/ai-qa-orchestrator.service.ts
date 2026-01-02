@@ -188,7 +188,7 @@ export class AiQaOrchestrator {
       await this.saveQaResult(executionId, checkType, parsedResult, duration, aiProvider);
 
       // 4. Record metrics
-      // NOT_CONFIGURED is treated as successful (tool not found, but not an error)
+      // NOT_CONFIGURED is treated as successful (tool not found, but not an _error)
       const status = (parsedResult.status as string) || 'UNKNOWN';
       const isPassed = status === 'PASSED' || status === 'NOT_CONFIGURED';
       this.qaMetrics.recordCheckComplete(checkType, isPassed, duration, {
@@ -219,8 +219,8 @@ export class AiQaOrchestrator {
         duration,
         aiProvider,
       };
-    } catch (error) {
-      return this.handleCheckError(ticketId, checkType, error as Error, startTime);
+    } catch (_error) {
+      return this.handleCheckError(ticketId, checkType, _error as Error, startTime);
     }
   }
 
@@ -273,8 +273,8 @@ export class AiQaOrchestrator {
 
       const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
       return { result: parsedResult, aiProvider: aiResponse.executedBy };
-    } catch (error) {
-      lastError = error as Error;
+    } catch (_error) {
+      lastError = _error as Error;
 
       // Only retry on JSON parse errors, not on AI execution failures
       if (!lastError.message.includes('Invalid JSON response')) {
@@ -383,9 +383,9 @@ export class AiQaOrchestrator {
       this.logger.debug(
         `[${executionId}] Saved ${checkType} result to database (aiProvider: ${aiProvider})`,
       );
-    } catch (error) {
+    } catch (_error) {
       // H6 FIX: Proper error handling - alert Sentry, record metric, and re-throw
-      const err = error as Error;
+      const err = _error as Error;
       this.logger.error(
         `[${executionId}] CRITICAL: Failed to save ${checkType} result: ${err.message}`,
         err.stack,

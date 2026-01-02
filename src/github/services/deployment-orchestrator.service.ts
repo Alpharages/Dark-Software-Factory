@@ -129,8 +129,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       });
 
       return deployment.id;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Failed to trigger deployment', err.stack || err.message, {
         githubPushId: dto.githubPushId,
         repository: dto.repository,
@@ -146,7 +146,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         environment: dto.environment || '',
       });
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -186,8 +186,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         cicdProvider: 'github-actions',
         workflowId: this.DEFAULT_WORKFLOW_ID,
       };
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.warn('Provider detection failed, using default', {
         repository,
         error: err.message,
@@ -257,8 +257,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       }
 
       return workflows;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.warn('Failed to discover workflows', {
         repository,
         error: err.message,
@@ -319,8 +319,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       });
 
       return runId;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Failed to trigger GitHub Actions', err.stack || err.message, {
         repository,
         workflowId,
@@ -330,7 +330,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
       // Record CI/CD API call metric
       this.metrics.recordCICDPipeline('github-actions', 'error');
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -437,8 +437,8 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
           timeoutHandle,
           environment,
         });
-      } catch (error) {
-        const err = error as Error;
+      } catch (_error) {
+        const err = _error as Error;
         this.logger.error('Polling error', err.stack || err.message, {
           deploymentId,
           runId,
@@ -511,9 +511,9 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
         created_at: run.created_at,
         updated_at: run.updated_at,
       };
-    } catch (error) {
+    } catch (_error) {
       this.metrics.recordCICDPipeline('github-actions', 'error');
-      throw error;
+      throw _error;
     }
   }
 
@@ -622,9 +622,9 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
 
       // Update ClickUp (AC#4) - Story 4.6 integration
       // Fire-and-forget: Do NOT await, do NOT block deployment updates
-      this.deploymentStatusSync.syncToClickUp(deploymentId).catch((error) => {
+      this.deploymentStatusSync.syncToClickUp(deploymentId).catch((_error) => {
         // Logged to Sentry within syncToClickUp, just prevent unhandled rejection
-        this.logger.error('ClickUp sync failed (non-blocking)', error.message, { deploymentId });
+        this.logger.error('ClickUp sync failed (non-blocking)', _error.message, { deploymentId });
       });
     }
 

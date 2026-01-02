@@ -44,7 +44,7 @@ describe('ClickUpPollingOrchestrator', () => {
   };
 
   const mockConfigService = {
-    get: jest.fn((key: string, defaultValue?: any) => {
+    get: jest.fn((key: string, defaultValue?: unknown) => {
       if (key === 'CLICKUP_USE_WEBHOOKS') return 'false';
       return defaultValue;
     }),
@@ -137,7 +137,7 @@ describe('ClickUpPollingOrchestrator', () => {
       // We need to validly adding '123' to state first.
 
       // Manually add to map using 'any' cast if necessary or use startPolling
-      (service as any).pollingStates.set('123', {
+      (service as { pollingStates: Map<string, unknown> }).pollingStates.set('123', {
         listId: '123',
         isActive: true,
         timeoutHandle: setTimeout(() => {}, 1000),

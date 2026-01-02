@@ -147,7 +147,7 @@ describe('ClickUpService', () => {
       });
 
       // Simulate ECONNRESET error (retryable)
-      const networkError: any = new Error('ECONNRESET');
+      const networkError: Record<string, unknown> = new Error('ECONNRESET');
       networkError.code = 'ECONNRESET';
       mockAxiosInstance.put
         .mockRejectedValueOnce(networkError)
@@ -167,7 +167,7 @@ describe('ClickUpService', () => {
         },
       });
 
-      const rateLimitError: any = new Error('Rate limit exceeded');
+      const rateLimitError: Record<string, unknown> = new Error('Rate limit exceeded');
       rateLimitError.response = {
         status: 429,
         headers: { 'x-ratelimit-reset': '1670400000' },
@@ -222,7 +222,7 @@ describe('ClickUpService', () => {
     });
 
     it('should retry on transient 5xx errors', async () => {
-      const serverError: any = new Error('Server error');
+      const serverError: Record<string, unknown> = new Error('Server error');
       serverError.response = { status: 503 };
 
       mockAxiosInstance.post
@@ -236,7 +236,7 @@ describe('ClickUpService', () => {
     });
 
     it('should return false after all retries exhausted', async () => {
-      const serverError: any = new Error('Server error');
+      const serverError: Record<string, unknown> = new Error('Server error');
       serverError.response = { status: 500 };
 
       mockAxiosInstance.post.mockRejectedValue(serverError);
@@ -264,12 +264,12 @@ describe('ClickUpService', () => {
     });
 
     it('should identify 5xx server errors as retryable', () => {
-      const error: any = { response: { status: 503 } };
+      const error: Record<string, unknown> = { response: { status: 503 } };
       expect((service as any).isRetryableError(error)).toBe(true);
     });
 
     it('should identify 4xx client errors as NOT retryable', () => {
-      const error: any = { response: { status: 404 } };
+      const error: Record<string, unknown> = { response: { status: 404 } };
       expect((service as any).isRetryableError(error)).toBe(false);
     });
   });

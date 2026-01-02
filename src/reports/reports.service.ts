@@ -117,7 +117,7 @@ export class ReportsService {
             
             UPCOMING:
             - Planned Tickets: ${aggregatedData.upcoming_sprint_plan.ticket_count}
-            - Top Priorities: ${aggregatedData.upcoming_sprint_plan.top_priorities.map((t: any) => t.title).join(', ')}
+            - Top Priorities: ${aggregatedData.upcoming_sprint_plan.top_priorities.map((t: Record<string, unknown>) => t.title).join(', ')}
             
             Please provide:
             1. A concise summary (max 200 chars)
@@ -150,8 +150,10 @@ export class ReportsService {
           summary = parsed.summary || summary;
           narrative = parsed.narrative || narrative;
           insights = parsed.insights || insights;
-        } catch (e: any) {
-          this.logger.warn(`Failed to parse AI response as JSON, using raw output: ${e.message}`);
+        } catch (e: unknown) {
+          this.logger.warn(
+            `Failed to parse AI response as JSON, using raw output: ${(e as Error).message}`,
+          );
           narrative = aiResult.output;
         }
       }
@@ -161,7 +163,7 @@ export class ReportsService {
         where: { id: reportId },
         data: {
           status: 'COMPLETED',
-          raw_data: aggregatedData as any,
+          raw_data: aggregatedData as Record<string, unknown>,
           summary,
           narrative,
           insights,
@@ -193,6 +195,7 @@ export class ReportsService {
       this.metrics.recordHistogram('report_generation_duration_seconds', duration, {
         project_id: report.project_id,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       this.logger.error(`Error processing report ${reportId}: ${error.stack}`);
       await this.prisma.report
@@ -217,7 +220,7 @@ export class ReportsService {
 
     if (!report) throw new NotFoundException(`Report ${id} not found`);
 
-    if ((report as any).project.pm_id !== userId) {
+    if ((report as { project: { pm_id: string } }).project.pm_id !== userId) {
       throw new Error(`Unauthorized: User ${userId} does not have access to report ${id}`);
     }
 

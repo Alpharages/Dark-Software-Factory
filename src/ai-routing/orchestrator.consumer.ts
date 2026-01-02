@@ -73,8 +73,8 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
       );
 
       this.logger.log('Orchestrator consumer started successfully');
-    } catch (error) {
-      this.logger.error('Failed to start orchestrator consumer', error);
+    } catch (_error) {
+      this.logger.error('Failed to start orchestrator consumer', _error);
     }
   }
 

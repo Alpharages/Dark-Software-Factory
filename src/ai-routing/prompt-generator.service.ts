@@ -84,10 +84,12 @@ export class PromptGeneratorService implements OnModuleInit {
           : await this.architectureConstraintsService.findAll();
 
         if (constraints.length > 0) {
-          context.architectureConstraints = constraints.map((c: any) => {
-            const rulesStr = JSON.stringify(c.rules);
-            return `${c.type}: ${rulesStr} (${c.scope})`;
-          });
+          context.architectureConstraints = constraints.map(
+            (c: { type: string; rules: unknown; scope: string }) => {
+              const rulesStr = JSON.stringify(c.rules);
+              return `${c.type}: ${rulesStr} (${c.scope})`;
+            },
+          );
         }
       } catch (err) {
         this.logger.warn(`Failed to fetch architecture constraints: ${(err as Error).message}`);

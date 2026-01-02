@@ -271,10 +271,10 @@ class FakePrisma {
       };
       try {
         return await fn(this);
-      } catch (e) {
+      } catch (_e) {
         this.fileLocks = snapshot.fileLocks;
         this.queue = snapshot.queue;
-        throw e;
+        throw _e;
       }
     });
   };

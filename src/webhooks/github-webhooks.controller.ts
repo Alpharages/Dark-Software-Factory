@@ -114,10 +114,10 @@ export class GitHubWebhooksController {
       );
 
       return { success: true };
-    } catch (error) {
+    } catch (_error) {
       // Best-effort: do not force GitHub retries for internal failures
       this.logger.error(
-        `[${correlationId}] GitHub webhook processing failed: ${(error as Error).message}`,
+        `[${correlationId}] GitHub webhook processing failed: ${(_error as Error).message}`,
       );
       return { success: true };
     }

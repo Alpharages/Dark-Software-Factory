@@ -70,7 +70,7 @@ describe('GitHubClientService', () => {
     metricsService = module.get<MetricsService>(MetricsService);
     sentryService = module.get<SentryService>(SentryService);
     publisherService = module.get<RabbitMQPublisherService>(RabbitMQPublisherService);
-    logger = module.get(LoggerService) as any;
+    logger = module.get(LoggerService) as unknown;
   });
 
   it('should be defined', () => {
@@ -89,7 +89,7 @@ describe('GitHubClientService', () => {
 
     it('should handle 429 Rate Limit error by publishing to retry queue', async () => {
       const resetTimeUnix = Math.floor(Date.now() / 1000) + 60; // 1 min from now
-      const error: any = {
+      const error: Record<string, unknown> = {
         status: 429,
         message: 'Too Many Requests',
         response: { headers: { 'x-ratelimit-reset': String(resetTimeUnix) } },
@@ -117,7 +117,7 @@ describe('GitHubClientService', () => {
     });
 
     it('should handle 404 error', async () => {
-      const error: any = { status: 404 };
+      const error: Record<string, unknown> = { status: 404 };
       const operation = jest.fn().mockRejectedValue(error);
 
       await expect(service.execute(operation, undefined, 'test_op')).rejects.toThrow(
@@ -128,7 +128,7 @@ describe('GitHubClientService', () => {
     });
 
     it('should handle 500 Network error', async () => {
-      const error: any = { status: 500, message: 'Server Error' };
+      const error: Record<string, unknown> = { status: 500, message: 'Server Error' };
       const operation = jest.fn().mockRejectedValue(error);
 
       await expect(service.execute(operation, undefined, 'test_op')).rejects.toThrow(

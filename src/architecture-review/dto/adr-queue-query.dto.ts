@@ -1,5 +1,5 @@
-import { IsOptional, IsEnum, IsUUID, IsInt, Min, Max } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { IsOptional, IsEnum, IsUUID, Min, Max } from 'class-validator';
 import { AdrStatus, RiskLevel } from '@/prisma/client';
 
 export class AdrReviewQueueQueryDto {

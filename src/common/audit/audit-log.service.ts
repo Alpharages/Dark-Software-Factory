@@ -39,8 +39,8 @@ export class AuditLogService {
         context: 'AuditLog',
         ...params,
       });
-    } catch (error) {
-      this.logger.error(`Failed to create audit log`, JSON.stringify(error), 'AuditLog');
+    } catch (_error) {
+      this.logger.error(`Failed to create audit log`, JSON.stringify(_error), 'AuditLog');
       // We don't throw here to avoid failing the main operation just because audit logging failed,
       // but in high security contexts we might want to throw.
     }

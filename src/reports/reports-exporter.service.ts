@@ -5,7 +5,7 @@ import { Readable } from 'stream';
 export class ReportsExporterService {
   private readonly logger = new Logger(ReportsExporterService.name);
 
-  async exportReport(report: any, format: 'pdf' | 'pptx'): Promise<Readable> {
+  async exportReport(report: Record<string, unknown>, format: 'pdf' | 'pptx'): Promise<Readable> {
     this.logger.log(`Exporting report ${report.id} to ${format}`);
 
     // In a real implementation:

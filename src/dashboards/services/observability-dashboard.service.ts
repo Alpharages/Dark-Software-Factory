@@ -133,9 +133,9 @@ export class ObservabilityDashboardService {
       events.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
       return { events };
-    } catch (error) {
-      this.logger.error(`Failed to get timeline for ticket ${ticketId}`, error);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Failed to get timeline for ticket ${ticketId}`, _error);
+      throw _error;
     }
   }
 
@@ -185,9 +185,9 @@ export class ObservabilityDashboardService {
           rate: dailyRate,
         },
       };
-    } catch (error) {
-      this.logger.error('Failed to get queue metrics', error);
-      throw error;
+    } catch (_error) {
+      this.logger.error('Failed to get queue metrics', _error);
+      throw _error;
     }
   }
 
@@ -232,9 +232,9 @@ export class ObservabilityDashboardService {
         },
         uptime_seconds: uptime,
       };
-    } catch (error) {
-      this.logger.error('Failed to get system health', error);
-      throw error;
+    } catch (_error) {
+      this.logger.error('Failed to get system health', _error);
+      throw _error;
     }
   }
 
@@ -295,9 +295,9 @@ export class ObservabilityDashboardService {
       const locks = Array.from(locksByFile.values());
 
       return { locks };
-    } catch (error) {
-      this.logger.error('Failed to get file locks', error);
-      throw error;
+    } catch (_error) {
+      this.logger.error('Failed to get file locks', _error);
+      throw _error;
     }
   }
 
@@ -319,8 +319,8 @@ export class ObservabilityDashboardService {
           connection_pool_active: 5, // TODO: Get from Prisma metrics
         },
       };
-    } catch (error) {
-      this.logger.error('Database health check failed', error);
+    } catch (_error) {
+      this.logger.error('Database health check failed', _error);
       return {
         status: 'down',
         latency_ms: Date.now() - startTime,
@@ -340,8 +340,8 @@ export class ObservabilityDashboardService {
         status: this.getHealthStatus(latency),
         latency_ms: latency,
       };
-    } catch (error) {
-      this.logger.error('RabbitMQ health check failed', error);
+    } catch (_error) {
+      this.logger.error('RabbitMQ health check failed', _error);
       return {
         status: 'down',
         latency_ms: Date.now() - startTime,
@@ -361,8 +361,8 @@ export class ObservabilityDashboardService {
         status: this.getHealthStatus(latency),
         latency_ms: latency,
       };
-    } catch (error) {
-      this.logger.error('Prometheus health check failed', error);
+    } catch (_error) {
+      this.logger.error('Prometheus health check failed', _error);
       return {
         status: 'down',
         latency_ms: Date.now() - startTime,

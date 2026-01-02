@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
+import { Prisma } from '@/prisma/client';
 import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { SentryService } from '@/common/sentry/sentry.service';
@@ -13,8 +14,6 @@ import {
 } from './dto';
 import { ActionItem } from './interfaces/action-item.interface';
 import { AIProvider } from '@/prisma/client';
-import * as path from 'path';
-import * as fs from 'fs/promises';
 
 /**
  * Conversations Service - Story 5.5
@@ -158,7 +157,7 @@ export class ConversationsService {
         100; // Sentiment output
 
       // Log GPT-4 cost (H2 FIX: Cost tracked in AICosts table)
-      const costResult = await this.costTracker.logCost({
+      const _costResult = await this.costTracker.logCost({
         ticketId: conversation.id,
         provider: AIProvider.CLAUDE_CODE,
         model: 'gpt-4-turbo-preview',
@@ -177,7 +176,7 @@ export class ConversationsService {
         where: { id: conversationId },
         data: {
           summary: summary.summary,
-          action_items: actionItems as any,
+          action_items: actionItems as Prisma.InputJsonValue,
           sentiment,
           status: 'completed',
           processing_cost: estimatedCost,
@@ -191,14 +190,14 @@ export class ConversationsService {
       this.logger.log(
         `Conversation ${conversationId} processed in ${duration}s (${actionItems.length} action items)`,
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to process conversation ${conversationId}: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to process conversation ${conversationId}: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
 
       // M3 FIX: Add Sentry error tracking
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { module: 'conversations', operation: 'processAIAnalysis' },
         extra: { conversationId },
       });
@@ -208,7 +207,7 @@ export class ConversationsService {
         data: { status: 'failed' },
       });
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -224,8 +223,8 @@ export class ConversationsService {
     // H3 FIX: Use PostgreSQL full-text search (simplified with contains for MVP)
     // NOTE: Prisma client doesn't expose @@fulltext operators directly
     // Using contains with mode insensitive as fallback - good enough for MVP
-    const where: any = {};
-    const andConditions: any[] = [];
+    const where: Record<string, unknown> = {};
+    const andConditions: unknown[] = [];
 
     // Full-text search using PostgreSQL @@fulltext index
     if (q) {
@@ -243,7 +242,7 @@ export class ConversationsService {
     }
 
     if (startDate || endDate) {
-      const dateFilter: any = {};
+      const dateFilter: Record<string, unknown> = {};
       if (startDate) dateFilter.gte = new Date(startDate);
       if (endDate) dateFilter.lte = new Date(endDate);
       andConditions.push({ conversation_date: dateFilter });
@@ -280,13 +279,13 @@ export class ConversationsService {
         totalPages,
         hasMore: page < totalPages,
       };
-    } catch (error) {
-      this.logger.error(`Search failed: ${(error as Error).message}`);
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.logger.error(`Search failed: ${(_error as Error).message}`);
+      this.sentry.captureException(_error as Error, {
         tags: { module: 'conversations', operation: 'searchConversations' },
         extra: { filters },
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -328,8 +327,10 @@ export class ConversationsService {
       throw new NotFoundException(`Conversation ${conversationId} not found`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const actionItems = (conversation.action_items as any[]) || [];
-    const selectedItems = actionItems.filter((item) => actionItemIds.includes(item.id));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const selectedItems = actionItems.filter((item: any) => actionItemIds.includes(item.id));
 
     if (selectedItems.length === 0) {
       this.logger.warn(`No action items found for IDs: ${actionItemIds.join(', ')}`);
@@ -339,9 +340,11 @@ export class ConversationsService {
     this.logger.log(`Creating ${selectedItems.length} tickets for conversation ${conversationId}`);
 
     // Map action items to AetherFlow task format
-    const tasks = selectedItems.map((item) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tasks = selectedItems.map((item: any) => ({
       name: item.task,
-      description: this.formatTaskDescription(conversation, item),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      description: this.formatTaskDescription(conversation as any, item),
       priority: this.mapPriorityToClickUp(item.priority),
       tags: ['from-conversation', `conversation-${conversationId}`],
     }));
@@ -383,12 +386,12 @@ export class ConversationsService {
         );
         throw new BadRequestException(result.error || 'Failed to create tickets');
       }
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Error creating tickets via AetherFlow: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Error creating tickets via AetherFlow: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
-      throw error;
+      throw _error;
     }
   }
 
@@ -413,7 +416,14 @@ export class ConversationsService {
   /**
    * Format task description with conversation context
    */
-  private formatTaskDescription(conversation: any, actionItem: any): string {
+  private formatTaskDescription(
+    conversation: {
+      title: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      conversation_date?: any;
+    },
+    actionItem: Record<string, unknown>,
+  ): string {
     return `From conversation: ${conversation.title}
 
 **Action Item:** ${actionItem.task}
@@ -422,7 +432,7 @@ export class ConversationsService {
 **Priority:** ${actionItem.priority || 'Medium'}
 
 **Source:** Client Communication Intelligence (Story 5.5)
-**Conversation Date:** ${new Date(conversation.conversation_date).toLocaleDateString()}
+**Conversation Date:** ${conversation.conversation_date ? new Date(conversation.conversation_date).toLocaleDateString() : 'N/A'}
 `;
   }
 
@@ -482,7 +492,7 @@ export class ConversationsService {
     await this.prisma.clientConversation.update({
       where: { id: conversationId },
       data: {
-        clickup_task_ids: tasks as any,
+        clickup_task_ids: tasks as Prisma.InputJsonValue,
       },
     });
 
@@ -492,21 +502,22 @@ export class ConversationsService {
   /**
    * Map database entity to DTO
    */
-  private mapToDto(conversation: any): ConversationResponseDto {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private mapToDto(conversation: Record<string, any>): ConversationResponseDto {
     return {
-      id: conversation.id,
-      project_id: conversation.project_id,
-      pm_id: conversation.pm_id,
-      conversation_date: conversation.conversation_date.toISOString(),
-      title: conversation.title,
-      summary: conversation.summary,
+      id: conversation.id as string,
+      project_id: conversation.project_id as string,
+      pm_id: conversation.pm_id as string,
+      conversation_date: (conversation.conversation_date as Date).toISOString(),
+      title: conversation.title as string,
+      summary: conversation.summary as string,
       action_items: conversation.action_items as ActionItem[],
-      sentiment: conversation.sentiment,
-      audio_file_url: conversation.audio_file_url,
-      status: conversation.status,
-      processing_cost: conversation.processing_cost,
-      created_at: conversation.created_at.toISOString(),
-      updated_at: conversation.updated_at.toISOString(),
+      sentiment: conversation.sentiment as string | undefined,
+      audio_file_url: conversation.audio_file_url as string | undefined,
+      status: conversation.status as string,
+      processing_cost: conversation.processing_cost as number | undefined,
+      created_at: (conversation.created_at as Date).toISOString(),
+      updated_at: (conversation.updated_at as Date).toISOString(),
     };
   }
 }

@@ -42,7 +42,8 @@ export class SystemConfigController {
   @ApiOperation({ summary: 'Create or update a system configuration' })
   @ApiResponse({ status: 201, description: 'Configuration created/updated' })
   async createConfig(@Body() createConfigDto: CreateSystemConfigDto, @Req() req: Request) {
-    const userId = (req as any).user.sub;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user?.sub;
     return this.systemConfigService.set(
       createConfigDto.key,
       createConfigDto.value,
@@ -61,7 +62,8 @@ export class SystemConfigController {
     @Body() updateConfigDto: UpdateSystemConfigDto,
     @Req() req: Request,
   ) {
-    const userId = (req as any).user.sub;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user?.sub;
     return this.systemConfigService.set(
       key,
       updateConfigDto.value,
@@ -76,7 +78,8 @@ export class SystemConfigController {
   @ApiOperation({ summary: 'Reset configurations to defaults' })
   @ApiResponse({ status: 200, description: 'Configurations reset' })
   async resetConfigPost(@Body() body: { keys?: string[] }, @Req() req: Request) {
-    const userId = (req as any).user.sub;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user?.sub;
     if (body.keys && body.keys.length > 0) {
       await Promise.all(body.keys.map((key) => this.systemConfigService.reset(key, userId)));
       return { success: true, message: `Configurations ${body.keys.join(', ')} reset to defaults` };
@@ -91,7 +94,8 @@ export class SystemConfigController {
   @ApiOperation({ summary: 'Reset a configuration to default (delete from DB)' })
   @ApiResponse({ status: 200, description: 'Configuration reset' })
   async resetConfig(@Param('key') key: string, @Req() req: Request) {
-    const userId = (req as any).user.sub;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = (req as any).user?.sub;
     await this.systemConfigService.reset(key, userId);
     return { success: true, message: `Configuration ${key} reset to defaults (env)` };
   }

@@ -9,9 +9,9 @@ import { AIProvider } from '@/prisma/client';
 
 describe('AdrReviewListener', () => {
   let listener: AdrReviewListener;
-  let executionService: ExecutionService;
-  let prisma: PrismaService;
-  let promptGenerator: PromptGeneratorService;
+  let _executionService: ExecutionService;
+  let _prisma: PrismaService;
+  let _promptGenerator: PromptGeneratorService;
 
   const mockExecutionService = {
     getExecution: jest.fn(),
@@ -45,9 +45,9 @@ describe('AdrReviewListener', () => {
     }).compile();
 
     listener = module.get<AdrReviewListener>(AdrReviewListener);
-    executionService = module.get<ExecutionService>(ExecutionService);
-    prisma = module.get<PrismaService>(PrismaService);
-    promptGenerator = module.get<PromptGeneratorService>(PromptGeneratorService);
+    _executionService = module.get<ExecutionService>(ExecutionService);
+    _prisma = module.get<PrismaService>(PrismaService);
+    _promptGenerator = module.get<PromptGeneratorService>(PromptGeneratorService);
   });
 
   afterEach(() => {

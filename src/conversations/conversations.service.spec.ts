@@ -63,13 +63,13 @@ describe('ConversationsService', () => {
 
     it('should record success metrics on successful ticket creation', async () => {
       (prisma.clientConversation.findUnique as jest.Mock).mockResolvedValue(
-        mockConversation as any,
+        mockConversation as { id: string; actionItems: unknown[] },
       );
       (aetherFlowClient.createTasks as jest.Mock).mockResolvedValue({
         success: true,
         count: 1,
         tasks: [{ id: 't1' }],
-      } as any);
+      } as { success: boolean; count: number; tasks: { id: string }[] });
 
       await service.createTicketsFromActionItems(conversationId, actionItemIds);
 
@@ -78,16 +78,16 @@ describe('ConversationsService', () => {
 
     it('should record failure metrics on AetherFlow failure', async () => {
       (prisma.clientConversation.findUnique as jest.Mock).mockResolvedValue(
-        mockConversation as any,
+        mockConversation as { id: string; actionItems: unknown[] },
       );
       (aetherFlowClient.createTasks as jest.Mock).mockResolvedValue({
         success: false,
         error: 'AetherFlow Unavailable',
-      } as any);
+      } as { success: boolean; error: string });
 
       try {
         await service.createTicketsFromActionItems(conversationId, actionItemIds);
-      } catch (e) {
+      } catch (_e) {
         // expected
       }
 

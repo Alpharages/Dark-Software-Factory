@@ -64,12 +64,13 @@ export class FinancialMetricsService {
       const epic_num = epicId.replace('epic-', '');
 
       // Strategic alignment using epic_num (Story 6-R-3 schema update)
-      (whereClause as any).ticket = {
+      (whereClause as Record<string, unknown>).ticket = {
         epic_num,
       };
 
       if (projectId) {
-        (whereClause as any).ticket.project_id = projectId;
+        ((whereClause as Record<string, unknown>).ticket as Record<string, unknown>).project_id =
+          projectId;
       }
 
       // Query cost logs and aggregate by ticket
@@ -82,7 +83,7 @@ export class FinancialMetricsService {
               title: true,
               clickup_task_id: true,
               completion_date: true,
-            } as any,
+            } as { title: boolean; clickup_task_id: boolean; completion_date: boolean },
           },
         },
       });
@@ -99,7 +100,9 @@ export class FinancialMetricsService {
       >();
 
       costLogs.forEach((log) => {
-        const ticketData = (log as any).ticket;
+        const ticketData = (
+          log as { ticket: { title: string; clickup_task_id: string; completion_date: Date } }
+        ).ticket;
         if (!log.ticket_id || !ticketData) return;
 
         const existing = ticketCostMap.get(log.ticket_id) || {
@@ -165,9 +168,9 @@ export class FinancialMetricsService {
           byProvider,
         },
       ];
-    } catch (error) {
-      this.logger.error(`Failed to get cost per feature: ${(error as Error).message}`);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Failed to get cost per feature: ${(_error as Error).message}`);
+      throw _error;
     }
   }
 
@@ -228,22 +231,23 @@ export class FinancialMetricsService {
       const totalCostUsd = currentCostAggregate._sum.cost_usd?.toString() || '0.00';
       const totalCost = parseFloat(totalCostUsd);
 
-      // Calculate delivered value based on story points and completion date
+      // Calculate delivered value based on story points and updated_at (completion proxy)
       const deliveredTickets = await this.prisma.ticket.aggregate({
         where: {
           project_id: projectId,
           status: 'COMPLETED',
-          completion_date: {
+          updated_at: {
             gte: currentStartDate,
             lte: currentEndDate,
-          } as any,
-        } as any,
+          },
+        },
         _sum: {
           story_points: true,
-        } as any,
+        },
       });
 
-      const storyPointsDelivered = (deliveredTickets._sum as any)?.story_points || 0;
+      const storyPointsDelivered =
+        (deliveredTickets._sum as { story_points?: number })?.story_points || 0;
       const totalValueUsd = (storyPointsDelivered * valuePerPoint).toFixed(2);
 
       // Calculate ROI
@@ -304,15 +308,15 @@ export class FinancialMetricsService {
         metrics,
         trend,
       };
-    } catch (error) {
-      this.logger.error(`Failed to calculate ROI: ${(error as Error).message}`, {
+    } catch (_error) {
+      this.logger.error(`Failed to calculate ROI: ${(_error as Error).message}`, {
         projectId: options.projectId,
-        error: (error as Error).stack,
+        error: (_error as Error).stack,
       });
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'calculateRoi' },
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -424,10 +428,12 @@ export class FinancialMetricsService {
               .slice(i - 7, i)
               .reduce((sum, day) => sum + parseFloat((day.cost as Decimal).toString()), 0) / 7;
 
+          // eslint-disable-next-line security/detect-object-injection
           const dayCost = parseFloat((dailyCosts[i].cost as Decimal).toString());
           if (dayCost > rollingAvg * 1.5) {
             const spike = ((dayCost / rollingAvg) * 100).toFixed(0);
             anomalies.push({
+              // eslint-disable-next-line security/detect-object-injection
               date: dailyCosts[i].date.toISOString().split('T')[0],
               cost: dayCost.toFixed(2),
               avgCost: rollingAvg.toFixed(2),
@@ -460,15 +466,15 @@ export class FinancialMetricsService {
         timeSeries,
         anomalies,
       };
-    } catch (error) {
-      this.logger.error(`Failed to get budget trends: ${(error as Error).message}`, {
+    } catch (_error) {
+      this.logger.error(`Failed to get budget trends: ${(_error as Error).message}`, {
         projectId: options.projectId,
-        error: (error as Error).stack,
+        error: (_error as Error).stack,
       });
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'getBudgetTrends' },
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -602,15 +608,15 @@ export class FinancialMetricsService {
         models,
         recommendation,
       };
-    } catch (error) {
-      this.logger.error(`Failed to get model efficiency: ${(error as Error).message}`, {
+    } catch (_error) {
+      this.logger.error(`Failed to get model efficiency: ${(_error as Error).message}`, {
         projectId: options.projectId,
-        error: (error as Error).stack,
+        error: (_error as Error).stack,
       });
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'getModelEfficiency' },
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -646,9 +652,9 @@ export class FinancialMetricsService {
         shareUrl,
         expiresAt: expiresAt.toISOString(),
       };
-    } catch (error) {
-      this.logger.error(`Failed to generate share link: ${(error as Error).message}`);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Failed to generate share link: ${(_error as Error).message}`);
+      throw _error;
     }
   }
 
@@ -693,9 +699,9 @@ export class FinancialMetricsService {
         success: true,
         message: `Report successfully scheduled for ${email} (${frequency})`,
       };
-    } catch (error) {
-      this.logger.error(`Failed to schedule report: ${(error as Error).message}`);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Failed to schedule report: ${(_error as Error).message}`);
+      throw _error;
     }
   }
 
@@ -785,9 +791,9 @@ export class FinancialMetricsService {
         projectId,
         timeSeries,
       };
-    } catch (error) {
-      this.logger.error(`Failed to get historical ROI: ${(error as Error).message}`);
-      throw error;
+    } catch (_error) {
+      this.logger.error(`Failed to get historical ROI: ${(_error as Error).message}`);
+      throw _error;
     }
   }
 }

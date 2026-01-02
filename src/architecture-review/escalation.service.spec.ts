@@ -6,8 +6,8 @@ import { AdrStatus, RiskLevel } from '@/prisma/client';
 
 describe('EscalationService', () => {
   let service: EscalationService;
-  let prismaService: PrismaService;
-  let notificationService: ArchitectureReviewNotificationService;
+  let _prismaService: PrismaService;
+  let _notificationService: ArchitectureReviewNotificationService;
 
   const mockPrismaService = {
     adr: {
@@ -35,8 +35,8 @@ describe('EscalationService', () => {
     }).compile();
 
     service = module.get<EscalationService>(EscalationService);
-    prismaService = module.get<PrismaService>(PrismaService);
-    notificationService = module.get<ArchitectureReviewNotificationService>(
+    _prismaService = module.get<PrismaService>(PrismaService);
+    _notificationService = module.get<ArchitectureReviewNotificationService>(
       ArchitectureReviewNotificationService,
     );
   });
@@ -64,7 +64,7 @@ describe('EscalationService', () => {
         created_at: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
       };
 
-      const newAdr = {
+      const _newAdr = {
         id: 'new-1',
         title: 'New High Risk ADR',
         status: AdrStatus.PROPOSED,
@@ -94,8 +94,8 @@ describe('EscalationService', () => {
       });
 
       // Verify Notification
-      expect(notificationService.notifyEscalation).toHaveBeenCalledWith(stuckAdr);
-      expect(notificationService.notifyEscalation).toHaveBeenCalledTimes(1);
+      expect(_notificationService.notifyEscalation).toHaveBeenCalledWith(stuckAdr);
+      expect(_notificationService.notifyEscalation).toHaveBeenCalledTimes(1);
     });
 
     it('should escalate multiple stuck ADRs', async () => {
@@ -106,7 +106,7 @@ describe('EscalationService', () => {
 
       await service.checkHighRiskAdrs();
 
-      expect(notificationService.notifyEscalation).toHaveBeenCalledTimes(2);
+      expect(_notificationService.notifyEscalation).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -223,11 +223,11 @@ export class GitHubPROrchestrator {
         prUrl: prInfo.prUrl,
         prNumber: prInfo.prNumber,
       };
-    } catch (error) {
+    } catch (_error) {
       const duration = Date.now() - startTime;
 
       this.logger.error('AI-delegated PR creation failed', executionId, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         duration,
       });
 
@@ -238,7 +238,7 @@ export class GitHubPROrchestrator {
       });
 
       // Capture critical error in Sentry
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         extra: {
           operation: 'pr_creation',
           executionId,
@@ -257,7 +257,7 @@ export class GitHubPROrchestrator {
             where: { id: githubPush.id },
             data: {
               push_status: 'FAILED',
-              error_message: (error as Error).message,
+              error_message: (_error as Error).message,
             },
           });
         }
@@ -269,7 +269,7 @@ export class GitHubPROrchestrator {
 
       return {
         success: false,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       };
     }
   }
@@ -355,12 +355,12 @@ Execute these tasks now and return ONLY the JSON response.`;
       }
 
       throw new Error('Could not parse PR URL from AI response');
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to parse PR response', 'unknown', {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         response: response.substring(0, 500),
       });
-      throw new Error(`Failed to parse PR response: ${(error as Error).message}`);
+      throw new Error(`Failed to parse PR response: ${(_error as Error).message}`);
     }
   }
 
@@ -397,11 +397,11 @@ Execute these tasks now and return ONLY the JSON response.`;
         prNumber: payload.prNumber,
         queue: 'github-pr-created-queue',
       });
-    } catch (error) {
+    } catch (_error) {
       // Log error but don't fail PR creation
       this.logger.warn('Failed to publish deployment trigger', {
         executionId: payload.executionId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
     }
   }

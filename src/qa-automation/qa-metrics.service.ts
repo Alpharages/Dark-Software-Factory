@@ -48,10 +48,10 @@ export class QaMetricsService {
         `QA metric: ${checkType} ${passed ? 'passed' : 'failed'} in ${(durationMs / 1000).toFixed(2)}s`,
         'QaMetricsService',
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to record QA check metric: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to record QA check metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
         'QaMetricsService',
       );
     }
@@ -79,10 +79,10 @@ export class QaMetricsService {
         projectId,
         aiProvider,
       });
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to record QA error metric: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to record QA error metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
         'QaMetricsService',
       );
     }
@@ -102,10 +102,10 @@ export class QaMetricsService {
         projectId: validProjectId,
         coverage: coveragePercent,
       });
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to record coverage metric: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to record coverage metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
         'QaMetricsService',
       );
     }
@@ -124,10 +124,10 @@ export class QaMetricsService {
     try {
       const validProjectId = projectId && projectId.trim() ? projectId : undefined;
       this.metricsService.incrementVulnerabilities(severity, count, validProjectId);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to record vulnerabilities metric: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to record vulnerabilities metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
         'QaMetricsService',
       );
     }
@@ -153,10 +153,10 @@ export class QaMetricsService {
         projectId,
         aiProvider,
       });
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to record gate decision metric: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to record gate decision metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
         'QaMetricsService',
       );
     }
@@ -172,10 +172,10 @@ export class QaMetricsService {
         ticket_id: ticketId,
         execution_id: executionId,
       });
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to record self-healing trigger metric: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to record self-healing trigger metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
         'QaMetricsService',
       );
     }
@@ -195,10 +195,10 @@ export class QaMetricsService {
         durationMs / 1000, // Convert ms to seconds
         { outcome },
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to record self-healing duration metric: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to record self-healing duration metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
         'QaMetricsService',
       );
     }

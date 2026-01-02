@@ -7,10 +7,10 @@ import { AdrStatus, RiskLevel } from '@/prisma/client';
 
 describe('AdrMetricsService', () => {
   let service: AdrMetricsService;
-  let prisma: PrismaService;
-  let metricsService: MetricsService;
-  let reviewsCounter: any;
-  let durationHistogram: any;
+  let _prisma: PrismaService;
+  let _metricsService: MetricsService;
+  let _reviewsCounter: Record<string, unknown>;
+  let _durationHistogram: Record<string, unknown>;
 
   const mockPrismaService = {
     $queryRaw: jest.fn(),
@@ -30,8 +30,8 @@ describe('AdrMetricsService', () => {
     setGauge: jest.fn(),
   };
 
-  const mockReviewsCounter: any = { inc: jest.fn(), labels: jest.fn() };
-  const mockDurationHistogram: any = { observe: jest.fn(), labels: jest.fn() };
+  const mockReviewsCounter: Record<string, unknown> = { inc: jest.fn(), labels: jest.fn() };
+  const mockDurationHistogram: Record<string, unknown> = { observe: jest.fn(), labels: jest.fn() };
   const mockQueueDepthGauge = { set: jest.fn() };
   const mockApprovalRateGauge = { set: jest.fn() };
 
@@ -67,9 +67,9 @@ describe('AdrMetricsService', () => {
     }).compile();
 
     service = module.get<AdrMetricsService>(AdrMetricsService);
-    prisma = module.get<PrismaService>(PrismaService);
-    reviewsCounter = module.get('PROM_METRIC_ADR_REVIEWS_TOTAL');
-    durationHistogram = module.get('PROM_METRIC_ADR_REVIEW_DURATION_SECONDS');
+    _prisma = module.get<PrismaService>(PrismaService);
+    _reviewsCounter = module.get('PROM_METRIC_ADR_REVIEWS_TOTAL');
+    _durationHistogram = module.get('PROM_METRIC_ADR_REVIEW_DURATION_SECONDS');
   });
 
   it('should be defined', () => {
@@ -92,7 +92,16 @@ describe('AdrMetricsService', () => {
 
       mockPrismaService.adr.count.mockResolvedValue(5); // Queue depth
 
-      await service.trackReviewCompleted(adr as any, 'APPROVE');
+      await service.trackReviewCompleted(
+        adr as {
+          id: string;
+          status: AdrStatus;
+          execution: { ticket: { project_id: string } };
+          risk_level: RiskLevel;
+          review_duration_seconds: number;
+        },
+        'APPROVE',
+      );
 
       expect(mockReviewsCounter.labels).toHaveBeenCalledWith('APPROVE', 'LOW', 'proj1');
       // Verify inc() was called on the result of labels()

@@ -31,8 +31,8 @@ export abstract class RabbitMQConsumerBase {
       // Acknowledge message (manual ack)
       channel.ack(message);
       this.logger.log(`Message ${messageId} processed successfully`);
-    } catch (error) {
-      this.logger.error(`Error processing message ${messageId}:`, error);
+    } catch (_error) {
+      this.logger.error(`Error processing message ${messageId}:`, _error);
 
       // Check retry count (stored in message headers)
       const retryCount = (message.properties.headers?.['x-retry-count'] as number) || 0;

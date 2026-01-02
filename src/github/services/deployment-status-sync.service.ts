@@ -207,14 +207,14 @@ export class DeploymentStatusSync {
         correlationId: finalCorrelationId,
         duration,
       });
-    } catch (error) {
+    } catch (_error) {
       // AC#3: Graceful degradation - log error but do NOT throw
-      this.logger.error('ClickUp sync failed (graceful degradation)', (error as Error).message, {
+      this.logger.error('ClickUp sync failed (graceful degradation)', (_error as Error).message, {
         deploymentId,
         correlationId: finalCorrelationId,
       });
 
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: {
           operation: 'deployment_status_sync',
           deployment_id: deploymentId,
@@ -519,10 +519,10 @@ ${prLine}**Deployment Logs:** [View Logs](${buildUrl})`;
           correlationId,
         },
       });
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to create audit log', {
         deploymentId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
     }
   }

@@ -113,11 +113,11 @@ export class BranchStrategistService {
       );
 
       return { selectedBranch, strategy, reasoning };
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Error selecting base branch for ticket ${ticketId}: ${(error as Error).message}`,
+        `Error selecting base branch for ticket ${ticketId}: ${(_error as Error).message}`,
       );
-      throw error;
+      throw _error;
     }
   }
 

@@ -48,8 +48,8 @@ export class ContextCacheService {
         this.logger.debug(`Cache hit for ticket ${ticketId}`);
         return cached;
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.logger.warn(`Cache get error: ${errorMessage}`);
     }
 
@@ -69,8 +69,8 @@ export class ContextCacheService {
     try {
       await this.cacheManager.set(cacheKey, context, this.cacheTtlMs);
       this.logger.debug(`Cached context for ticket ${ticketId}`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.logger.warn(`Cache set error: ${errorMessage}`);
     }
   }

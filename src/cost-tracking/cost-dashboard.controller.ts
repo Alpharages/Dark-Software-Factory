@@ -207,13 +207,13 @@ export class CostDashboardController {
         },
         correlationId,
       );
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error; // Re-throw validation errors
+    } catch (_error) {
+      if (_error instanceof HttpException) {
+        throw _error; // Re-throw validation errors
       }
 
       this.logger.error('Breakdown endpoint error', undefined, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         correlationId,
       });
 

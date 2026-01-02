@@ -79,10 +79,10 @@ export class WebhooksController {
       );
 
       return response;
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `[${correlationId}] Error processing webhook: ${(error as Error).message}`,
-        (error as Error).stack,
+        `[${correlationId}] Error processing webhook: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
 
       // Still return 200 to prevent ClickUp retries on processing errors

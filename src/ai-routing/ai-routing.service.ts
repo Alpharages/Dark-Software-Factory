@@ -288,10 +288,10 @@ export class AIRoutingService {
 
       endTimer();
       return decision;
-    } catch (error) {
+    } catch (_error) {
       endTimer();
-      this.logger.error(`[${correlationId}] Routing failed:`, error);
-      throw error;
+      this.logger.error(`[${correlationId}] Routing failed:`, _error);
+      throw _error;
     }
   }
 

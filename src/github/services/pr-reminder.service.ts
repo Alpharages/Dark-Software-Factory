@@ -67,9 +67,9 @@ export class PRReminderService {
       );
 
       this.logger.log(`Scheduled first PR reminder for ${repository}#${prNumber} (2h delay)`);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(`Failed to schedule initial reminder for ${repository}#${prNumber}`, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         executionId,
       });
     }
@@ -149,9 +149,9 @@ export class PRReminderService {
           `Scheduled next PR reminder for ${repository}#${prNumber} (attempt ${nextAttempt})`,
         );
       }
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(`Failed to process PR reminder for ${repository}#${prNumber}`, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         executionId,
       });
     }

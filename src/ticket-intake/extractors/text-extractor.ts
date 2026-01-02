@@ -36,11 +36,11 @@ export class TextExtractor extends BaseExtractor {
         lineCount,
         encoding: 'utf-8',
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.logger.error(
         `Text extraction failed: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
+        _error instanceof Error ? _error.stack : undefined,
       );
       return this.createErrorResult(
         `Text extraction failed: ${errorMessage}`,

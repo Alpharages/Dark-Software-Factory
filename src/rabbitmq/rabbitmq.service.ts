@@ -47,10 +47,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.logger.log('RabbitMQ connection established');
-    } catch (error) {
-      this.logger.error('Failed to connect to RabbitMQ:', error);
+    } catch (_error) {
+      this.logger.error('Failed to connect to RabbitMQ:', _error);
       if (process.env.NODE_ENV !== 'test') {
-        throw error;
+        throw _error;
       }
     }
   }
@@ -147,8 +147,8 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       }
 
       this.logger.log('🔌 RabbitMQ disconnected');
-    } catch (error) {
-      this.logger.error('Error disconnecting from RabbitMQ:', error);
+    } catch (_error) {
+      this.logger.error('Error disconnecting from RabbitMQ:', _error);
     }
   }
 
@@ -212,8 +212,8 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           rate: 0, // Will be calculated by ObservabilityDashboardService from Execution table
           oldest_message_age_seconds: 0, // Placeholder - requires RabbitMQ Management API
         });
-      } catch (error) {
-        this.logger.warn(`Failed to get stats for queue ${queueName}`, error);
+      } catch (_error) {
+        this.logger.warn(`Failed to get stats for queue ${queueName}`, _error);
         metricsMap.set(queueName, {
           depth: 0,
           rate: 0,

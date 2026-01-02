@@ -4,8 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import type { ConsumeMessage, Channel } from 'amqplib';
 import { Counter, Gauge, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
-import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { QUEUE_NAMES } from '@/rabbitmq/rabbitmq.config';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import {
   IAIExecutionMessage,
@@ -14,18 +14,18 @@ import {
   IExecutionCompletion,
   IExecutionFailure,
 } from './interfaces';
-import { OrchestratorService } from '../ai-routing/orchestrator.service';
+import { OrchestratorService } from '@/ai-routing/orchestrator.service';
 import { DEFAULT_COMPLEXITY_SCORE, DEFAULT_ESTIMATED_OUTPUT_TOKENS } from './execution.constants';
 // Story 11.4: AI Decision Audit Logging
-import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 // Story 13.3: AI Cost Tracking & Optimization
-import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
-import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
-import { SentryService } from '../common/sentry/sentry.service';
-import { ErrorSeverity } from '../common/sentry/sentry.constants';
+import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
+import { CostOptimizerService } from '@/cost-tracking/cost-optimizer.service';
+import { SentryService } from '@/common/sentry/sentry.service';
+import { ErrorSeverity } from '@/common/sentry/sentry.constants';
 // Story 7.7: AI Capability Management & Limitations
-import { AiCapabilityTrackerService } from '../architecture-review/capabilities/ai-capability-tracker.service';
-import { ClickUpService } from '../clickup/clickup.service';
+import { AiCapabilityTrackerService } from '@/architecture-review/capabilities/ai-capability-tracker.service';
+import { ClickUpService } from '@/clickup/clickup.service';
 import { Prisma } from '@/prisma/client';
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -205,10 +205,10 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       this.consumerState.startedAt = new Date();
 
       this.logger.log(`✅ AI execution consumer started (tag: ${tag})`);
-    } catch (error: unknown) {
-      const err = error as Error;
+    } catch (_error: unknown) {
+      const err = _error as Error;
       this.logger.error(`Failed to start consumer: ${err.message}`);
-      throw error;
+      throw _error;
     }
   }
 
@@ -397,8 +397,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             errorCode: 'BUDGET_EXCEEDED',
           };
         }
-      } catch (error) {
-        const err = error as Error;
+      } catch (_error) {
+        const err = _error as Error;
         this.logger.error(`[${correlationId}] Cost estimation failed: ${err.message}`);
 
         // H8 Fix: Alert to Sentry for silent failures
@@ -529,8 +529,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
               operationType: 'code_generation',
             });
           }
-        } catch (error) {
-          const err = error as Error;
+        } catch (_error) {
+          const err = _error as Error;
           this.logger.error(`[${correlationId}] Failed to log actual cost: ${err.message}`);
           // M3 Fix: Alert on cost logging failure (budget tracking broken)
           this.sentry.captureMessage(
@@ -718,9 +718,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
   /**
    * Check if error should trigger requeue (transient network issues)
    */
-  private shouldRequeueOnError(error: Error): boolean {
+  private shouldRequeueOnError(_error: Error): boolean {
     const transientPatterns = ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'Connection closed'];
-    return transientPatterns.some((p) => error.message.includes(p));
+    return transientPatterns.some((p) => _error.message.includes(p));
   }
 
   /**
@@ -759,9 +759,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       try {
         const channel = this.rabbitmq.getChannel();
         await channel.cancel(this.consumerState.consumerTag);
-      } catch (error: unknown) {
+      } catch (_error: unknown) {
         // Silently ignore if channel is already closed or invalid during shutdown
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage = _error instanceof Error ? _error.message : String(_error);
         this.logger.debug(`Could not cancel consumer tag during shutdown: ${errorMessage}`);
       } finally {
         this.consumerState.isActive = false;

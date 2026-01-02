@@ -49,7 +49,7 @@ describe('Escalation DetectorService', () => {
       jest.spyOn(prisma.project, 'findUnique').mockResolvedValue({
         id: 'project-1',
         escalation_threshold: 0.8,
-      } as any);
+      } as { id: string; escalation_threshold: number });
 
       const threshold = await service.getEscalationThreshold('project-1');
       expect(threshold).toBe(0.8);

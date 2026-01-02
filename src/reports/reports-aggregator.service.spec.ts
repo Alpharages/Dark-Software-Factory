@@ -4,7 +4,7 @@ import { PrismaService } from '../database/prisma.service';
 
 describe('ReportsAggregatorService', () => {
   let service: ReportsAggregatorService;
-  let prisma: PrismaService;
+  let _prisma: PrismaService;
 
   const mockPrismaService = {
     ticket: {
@@ -21,7 +21,7 @@ describe('ReportsAggregatorService', () => {
     }).compile();
 
     service = module.get<ReportsAggregatorService>(ReportsAggregatorService);
-    prisma = module.get<PrismaService>(PrismaService);
+    _prisma = module.get<PrismaService>(PrismaService);
   });
 
   it('should be defined', () => {

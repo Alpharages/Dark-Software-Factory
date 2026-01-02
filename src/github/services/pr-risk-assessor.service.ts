@@ -136,12 +136,12 @@ export class PRRiskAssessorService {
       });
 
       return assessment;
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(`PR risk assessment failed for ${repository}#${prNumber}`, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         executionId,
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -157,8 +157,8 @@ export class PRRiskAssessorService {
         };
       }
       throw new Error('Could not parse risk assessment response');
-    } catch (error) {
-      throw new Error(`Failed to parse risk assessment: ${(error as Error).message}`);
+    } catch (_error) {
+      throw new Error(`Failed to parse risk assessment: ${(_error as Error).message}`);
     }
   }
 }

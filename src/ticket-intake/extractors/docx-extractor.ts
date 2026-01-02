@@ -45,11 +45,11 @@ export class DocxExtractor extends BaseExtractor {
       return this.createSuccessResult(text, title, Date.now() - startTime, {
         warnings: result.messages?.map((m: { message: string }) => m.message) || [],
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.logger.error(
         `DOCX extraction failed: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
+        _error instanceof Error ? _error.stack : undefined,
       );
       return this.createErrorResult(
         `DOCX extraction failed: ${errorMessage}`,

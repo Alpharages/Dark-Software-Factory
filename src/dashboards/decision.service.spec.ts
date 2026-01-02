@@ -4,15 +4,14 @@ import { PrismaService } from '../database/prisma.service';
 import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { ExecutionService } from '../execution/execution.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { TicketStatus } from '../prisma/enums';
 
 describe('DecisionService', () => {
   let service: DecisionService;
-  let prisma: PrismaService;
-  let costTracker: AICostTrackerService;
-  let decisionLogger: AIDecisionLoggerService;
-  let executionService: ExecutionService;
+  let _prisma: PrismaService;
+  let _costTracker: AICostTrackerService;
+  let _decisionLogger: AIDecisionLoggerService;
+  let _executionService: ExecutionService;
 
   const mockPrismaService = {
     ticket: {
@@ -46,10 +45,10 @@ describe('DecisionService', () => {
     }).compile();
 
     service = module.get<DecisionService>(DecisionService);
-    prisma = module.get<PrismaService>(PrismaService);
-    costTracker = module.get<AICostTrackerService>(AICostTrackerService);
-    decisionLogger = module.get<AIDecisionLoggerService>(AIDecisionLoggerService);
-    executionService = module.get<ExecutionService>(ExecutionService);
+    _prisma = module.get<PrismaService>(PrismaService);
+    _costTracker = module.get<AICostTrackerService>(AICostTrackerService);
+    _decisionLogger = module.get<AIDecisionLoggerService>(AIDecisionLoggerService);
+    _executionService = module.get<ExecutionService>(ExecutionService);
 
     jest.clearAllMocks();
   });
@@ -121,6 +120,7 @@ describe('DecisionService', () => {
     it('should throw error if ticket not found', async () => {
       mockPrismaService.ticket.findUnique.mockResolvedValue(null);
       const decisionDto = { decision: 'APPROVE' as const };
+      const { NotFoundException } = await import('@nestjs/common');
       await expect(service.processDecision('999', 'user-1', 'PM', decisionDto)).rejects.toThrow(
         NotFoundException,
       );

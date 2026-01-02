@@ -235,15 +235,15 @@ export class AuditController {
         },
         correlationId,
       );
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       if (err.message.includes('Invalid date')) {
         throw new HttpException(
           'Invalid date format. Use ISO 8601 format (e.g., 2025-12-22T10:00:00.000Z).',
           HttpStatus.BAD_REQUEST,
         );
       }
-      throw error;
+      throw _error;
     }
   }
 }

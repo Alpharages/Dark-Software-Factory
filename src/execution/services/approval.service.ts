@@ -5,7 +5,7 @@ import { TicketStatus, ExecutionStatus, ApprovalDecision } from '@/prisma/client
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { EXCHANGE_NAMES, ROUTING_KEYS } from '@/rabbitmq/rabbitmq.config';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
-import { Cron, CronExpression } from '@nestjs/schedule'; // AC#4: Automatic escalation
+import { Cron } from '@nestjs/schedule'; // AC#4: Automatic escalation
 
 @Injectable()
 export class ApprovalService {
@@ -175,6 +175,7 @@ export class ApprovalService {
           'SYSTEM_AUTO_ESCALATOR',
           'Automatic escalation: Approval pending for more than 2 hours.',
         );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         this.logger.error(
           `Failed to automatically escalate execution ${execution.id}: ${err.message}`,

@@ -49,8 +49,8 @@ export class AdrParserService {
 
       const adrDataJson = adrJsonMatch[1];
       return this.extractAdrData(adrDataJson, executionId, ticketId);
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.warn(`Failed to parse ADR from response: ${err.message}`);
       return null;
     }
@@ -87,8 +87,8 @@ export class AdrParserService {
 
       this.logger.log(`Successfully parsed ADR: ${adrDto.title}`);
       return adrDto;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.warn(`Failed to parse ADR data: ${err.message}`);
       return null;
     }

@@ -57,8 +57,8 @@ export class FileLockManagerService {
           reasoning: cachedOutput.reasoning,
         };
       }
-    } catch (error) {
-      this.logger.debug(`Prediction cache lookup failed: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.debug(`Prediction cache lookup failed: ${(_error as Error).message}`);
     }
 
     // 2) Heuristic: if the ticket text already contains explicit file paths, use them
@@ -320,8 +320,8 @@ export class FileLockManagerService {
       });
 
       return result;
-    } catch (error) {
-      this.logger.warn(`Lock acquisition failed, returning conflict: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.warn(`Lock acquisition failed, returning conflict: ${(_error as Error).message}`);
 
       const conflicts = await this.checkConflicts({
         ticketId: request.ticketId,
@@ -760,8 +760,8 @@ export class FileLockManagerService {
       this.safeIncrementCounter('file_lock_stale_releases_total', {
         count: staleLocks.length.toString(),
       });
-    } catch (error) {
-      this.logger.error(`Stale lock cleanup failed: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Stale lock cleanup failed: ${(_error as Error).message}`);
     }
   }
 

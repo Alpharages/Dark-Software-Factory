@@ -250,8 +250,8 @@ describe('AIExecutionConsumer', () => {
       // Mock checkBudgetAvailability to return allowed: false
       // Access via casting since it is private property in consumer but public in service
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const costTracker = (consumer as any).aiCostTracker;
-      costTracker.checkBudgetAvailability = jest.fn().mockResolvedValue({
+      const _costTracker = (consumer as any).aiCostTracker;
+      _costTracker.checkBudgetAvailability = jest.fn().mockResolvedValue({
         allowed: false,
         reason: 'Budget exceeded',
         budget: 100,

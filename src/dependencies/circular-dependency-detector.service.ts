@@ -112,14 +112,14 @@ export class CircularDependencyDetectorService {
       });
 
       return result;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error(`Failed to detect circular dependencies for ${ticketId}`, {
         error: err.message,
         stack: err.stack,
         ticketId,
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -169,8 +169,8 @@ export class CircularDependencyDetectorService {
 
         // Add dependencies to queue for BFS traversal
         queue.push(...dependencies);
-      } catch (error) {
-        const err = error as Error;
+      } catch (_error) {
+        const err = _error as Error;
         this.logger.warn(`Failed to fetch task ${currentId}`, {
           error: err.message,
           stack: err.stack,
@@ -291,9 +291,9 @@ All tickets in this cycle have been marked as "Blocked - Circular Dependency" an
   async alertPM(cycle: string[], graph: DependencyGraph): Promise<CircularDependencyAlertDto> {
     // Validation: ensure cycle is not empty
     if (!cycle || cycle.length === 0) {
-      const error = new Error('Cannot send alert for empty cycle');
-      this.logger.error('alertPM called with empty cycle', { cycle, error: error.message });
-      throw error;
+      const _error = new Error('Cannot send alert for empty cycle');
+      this.logger.error('alertPM called with empty cycle', { cycle, error: _error.message });
+      throw _error;
     }
 
     const alertMessage = this.visualizeCycle(cycle, graph);
@@ -317,14 +317,14 @@ All tickets in this cycle have been marked as "Blocked - Circular Dependency" an
 
       // Return structured DTO
       return new CircularDependencyAlertDto(alertMessage, cyclePath, [...new Set(cycle)]);
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error(`Failed to send PM alerts`, {
         error: err.message,
         stack: err.stack,
         cycle,
       });
-      throw error;
+      throw _error;
     }
   }
 
@@ -352,8 +352,8 @@ All tickets in this cycle have been marked as "Blocked - Circular Dependency" an
 
         this.logger.debug(`Marked ticket ${ticketId} as circular dependency`);
         return { ticketId, success: true };
-      } catch (error) {
-        const err = error as Error;
+      } catch (_error) {
+        const err = _error as Error;
         this.logger.error(`Failed to update ticket ${ticketId}`, {
           error: err.message,
           stack: err.stack,

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { Prisma } from '@/prisma/client';
 import { CreateConstraintDto } from './dto/create-constraint.dto';
 import { UpdateConstraintDto } from './dto/update-constraint.dto';
 
@@ -12,7 +13,10 @@ export class ArchitectureConstraintsService {
   async create(createDto: CreateConstraintDto) {
     this.logger.log(`Creating constraint: ${createDto.type} (${createDto.scope})`);
     return this.prisma.architectureConstraint.create({
-      data: createDto,
+      data: {
+        ...createDto,
+        rules: createDto.rules as Prisma.InputJsonValue,
+      },
     });
   }
 
@@ -51,6 +55,7 @@ export class ArchitectureConstraintsService {
       where: { id },
       data: {
         ...updateDto,
+        rules: updateDto.rules ? (updateDto.rules as Prisma.InputJsonValue) : undefined,
         version: { increment: 1 },
       },
     });

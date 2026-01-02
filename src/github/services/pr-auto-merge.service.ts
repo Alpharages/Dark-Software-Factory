@@ -113,9 +113,9 @@ export class PRAutoMergeService {
       });
 
       return true;
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(`[${executionId}] Auto-merge failed for ${repository}#${prNumber}`, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         executionId,
       });
 

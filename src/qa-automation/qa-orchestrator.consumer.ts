@@ -69,12 +69,12 @@ export class QaOrchestratorConsumer extends RabbitMQConsumerBase implements OnMo
       );
 
       this.logger.log(`Consumer started for ${QUEUE_NAMES.QA_CHECK} (prefetch: 1)`);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to start consumer: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to start consumer: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { queue: QUEUE_NAMES.QA_CHECK },
       });
@@ -97,14 +97,14 @@ export class QaOrchestratorConsumer extends RabbitMQConsumerBase implements OnMo
       });
 
       this.logger.log(`[${correlationId}] QA check completed for execution ${executionId}`);
-    } catch (error) {
-      this.logger.error(`[${correlationId}] QA check failed: ${(error as Error).message}`);
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.logger.error(`[${correlationId}] QA check failed: ${(_error as Error).message}`);
+      this.sentry.captureException(_error as Error, {
         category: ErrorCategory.QA_AUTOMATION,
         extra: { executionId, correlationId },
       });
       // Re-throw to trigger nack in base class
-      throw error;
+      throw _error;
     }
   }
 }

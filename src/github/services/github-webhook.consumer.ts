@@ -74,9 +74,9 @@ export class GitHubWebhookConsumer
 
       this.consumerTag = result.consumerTag;
       this.logger.log(`GitHub webhook consumer started - listening on ${this.queueName}`);
-    } catch (error) {
-      this.logger.error('Failed to initialize GitHub webhook consumer', error);
-      throw error;
+    } catch (_error) {
+      this.logger.error('Failed to initialize GitHub webhook consumer', _error);
+      throw _error;
     }
   }
 
@@ -133,14 +133,14 @@ export class GitHubWebhookConsumer
       this.logger.log(
         `[${correlationId}] Completed risk re-assessment for ${repoFullName}#${prNumber}`,
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(`[${correlationId}] Failed to process PR risk re-assessment`, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         repo: repoFullName,
         pr: prNumber,
       });
       // Rethrow for RabbitMQ retry
-      throw error;
+      throw _error;
     }
   }
 }

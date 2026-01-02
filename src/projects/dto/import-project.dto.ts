@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEnum, IsNumberString } from 'class-validator';
+import { IsNotEmpty, IsEnum, IsNumberString } from 'class-validator';
 import { ProjectProvider } from '@/prisma/enums';
 
 export class ImportProjectDto {

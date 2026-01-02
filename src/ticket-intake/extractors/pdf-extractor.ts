@@ -57,11 +57,11 @@ export class PdfExtractor extends BaseExtractor {
         },
         durationMs: Date.now() - startTime,
       };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.logger.error(
         `PDF extraction failed: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
+        _error instanceof Error ? _error.stack : undefined,
       );
       return this.createErrorResult(
         `PDF extraction failed: ${errorMessage}`,

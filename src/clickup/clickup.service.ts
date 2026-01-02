@@ -117,15 +117,15 @@ export class ClickUpService {
       });
 
       return await this.updateStatusById(ticketId, statusId, correlationId);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to update ClickUp status after all retries', {
         correlationId,
         ticketId,
         statusName,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
 
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'clickup_update_status' },
         extra: { ticketId, statusName, correlationId },
       });
@@ -185,14 +185,14 @@ export class ClickUpService {
       }
 
       return success;
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to add ClickUp comment after all retries', {
         correlationId,
         ticketId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
 
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'clickup_add_comment' },
         extra: { ticketId, commentLength: truncatedComment.length, correlationId },
       });
@@ -242,12 +242,12 @@ export class ClickUpService {
       });
 
       return statusName;
-    } catch (error) {
+    } catch (_error) {
       this.logger.warn('Failed to resolve status ID, using status name as fallback', {
         correlationId,
         ticketId,
         statusName,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
 
       return statusName;
@@ -306,9 +306,9 @@ export class ClickUpService {
     for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
       try {
         return await operation();
-      } catch (error) {
-        lastError = error as Error;
-        const axiosError = error as AxiosError;
+      } catch (_error) {
+        lastError = _error as Error;
+        const axiosError = _error as AxiosError;
 
         // AC#3: Check for rate limit (HTTP 429)
         if (axiosError.response?.status === 429) {
@@ -326,7 +326,7 @@ export class ClickUpService {
 
         // Check if error is retryable
         if (!this.isRetryableError(axiosError) || attempt === this.retryAttempts) {
-          throw error;
+          throw _error;
         }
 
         // Exponential backoff: 1s, 2s, 4s
@@ -335,7 +335,7 @@ export class ClickUpService {
           correlationId,
           attempt,
           delay,
-          error: (error as Error).message,
+          error: (_error as Error).message,
         });
 
         await this.sleep(delay);
@@ -436,8 +436,8 @@ export class ClickUpService {
       return {
         tasks: response.data.tasks || [],
       };
-    } catch (error) {
-      const axiosError = error as AxiosError;
+    } catch (_error) {
+      const axiosError = _error as AxiosError;
 
       // Check for rate limit
       if (axiosError.response?.status === 429) {
@@ -452,10 +452,10 @@ export class ClickUpService {
 
       this.logger.error('Failed to fetch tasks from ClickUp', {
         listId: options.list_id,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -487,13 +487,13 @@ export class ClickUpService {
         status: response.data.status,
         text_content: response.data.text_content,
       };
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to fetch task from ClickUp', {
         taskId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -511,8 +511,8 @@ export class ClickUpService {
         id: response.data.id,
         name: response.data.name,
       };
-    } catch (error) {
-      const msg = (error as Error).message;
+    } catch (_error) {
+      const msg = (_error as Error).message;
       this.logger.error('Failed to fetch list from ClickUp', {
         listId,
         error: msg,
@@ -559,14 +559,14 @@ export class ClickUpService {
       });
 
       return task;
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to create ClickUp task after all retries', {
         correlationId,
         listId,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       });
 
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { operation: 'clickup_create_task' },
         extra: { listId, correlationId },
       });
@@ -604,11 +604,11 @@ export class ClickUpService {
       // 3. For each Space, get Lists
       // Using Promise.all for parallelism, but be mindful of rate limits
       await Promise.all(
-        spaces.map(async (space: any) => {
+        spaces.map(async (space: Record<string, unknown>) => {
           try {
             // Get Folderless Lists
             const folderlessListsRes = await this.client.get(`/space/${space.id}/list`);
-            const lists = folderlessListsRes.data.lists.map((l: any) => ({
+            const lists = folderlessListsRes.data.lists.map((l: Record<string, unknown>) => ({
               id: l.id,
               name: l.name,
             }));
@@ -623,7 +623,7 @@ export class ClickUpService {
               // Folders have lists too
               if (folder.lists) {
                 lists.push(
-                  ...folder.lists.map((l: any) => ({
+                  ...folder.lists.map((l: Record<string, unknown>) => ({
                     id: l.id,
                     name: `${folder.name} > ${l.name}`, // Flatten structure for simple UI
                   })),
@@ -632,8 +632,8 @@ export class ClickUpService {
             }
 
             hierarchy.spaces.push({
-              id: space.id,
-              name: space.name,
+              id: space.id as string,
+              name: space.name as string,
               lists,
             });
           } catch (err) {
@@ -646,12 +646,12 @@ export class ClickUpService {
       );
 
       return hierarchy;
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to fetch ClickUp hierarchy', {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         correlationId,
       });
-      throw error;
+      throw _error;
     }
   }
 }

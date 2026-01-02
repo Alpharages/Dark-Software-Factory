@@ -162,7 +162,7 @@ describe('DeploymentStatusSync', () => {
     });
 
     it('should gracefully skip if github_push relation missing', async () => {
-      const deploymentNoRelation = { ...mockDeployment, github_push: null } as any;
+      const deploymentNoRelation = { ...mockDeployment, github_push: null } as unknown;
       (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(deploymentNoRelation);
 
       await service.syncToClickUp('deployment-123');

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsString, IsOptional } from 'class-validator';
 import { ApprovalDecision } from '@/prisma/client';
 
 export class ApprovalActionDto {

@@ -4,15 +4,14 @@ import { PrismaService } from '@/database/prisma.service';
 import { ExecutionTrackerService } from '../execution-tracker.service';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
-import { ExecutionStatus, ApprovalDecision, TicketStatus } from '@/prisma/client';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ExecutionStatus, ApprovalDecision } from '@/prisma/client';
 
 describe('ApprovalService', () => {
   let service: ApprovalService;
-  let prisma: PrismaService;
-  let tracker: ExecutionTrackerService;
-  let publisher: RabbitMQPublisherService;
-  let logger: AIDecisionLoggerService;
+  let _prisma: PrismaService;
+  let _tracker: ExecutionTrackerService;
+  let _publisher: RabbitMQPublisherService;
+  let _logger: AIDecisionLoggerService;
 
   const mockPrisma = {
     execution: {
@@ -52,10 +51,10 @@ describe('ApprovalService', () => {
     }).compile();
 
     service = module.get<ApprovalService>(ApprovalService);
-    prisma = module.get<PrismaService>(PrismaService);
-    tracker = module.get<ExecutionTrackerService>(ExecutionTrackerService);
-    publisher = module.get<RabbitMQPublisherService>(RabbitMQPublisherService);
-    logger = module.get<AIDecisionLoggerService>(AIDecisionLoggerService);
+    _prisma = module.get<PrismaService>(PrismaService);
+    _tracker = module.get<ExecutionTrackerService>(ExecutionTrackerService);
+    _publisher = module.get<RabbitMQPublisherService>(RabbitMQPublisherService);
+    _logger = module.get<AIDecisionLoggerService>(AIDecisionLoggerService);
   });
 
   afterEach(() => {
@@ -88,6 +87,7 @@ describe('ApprovalService', () => {
     });
 
     it('should throw BadRequestException if status is not AWAITING_APPROVAL', async () => {
+      const { BadRequestException } = await import('@nestjs/common');
       mockPrisma.execution.findUnique.mockResolvedValue({ status: ExecutionStatus.IN_PROGRESS });
       await expect(service.approve('exec-1', 'pm-1')).rejects.toThrow(BadRequestException);
     });

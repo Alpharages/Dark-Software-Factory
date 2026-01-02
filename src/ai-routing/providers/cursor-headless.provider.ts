@@ -367,11 +367,11 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
         this.logger.debug(`[${executionId}]    Output preview: ${stdout.substring(0, 200)}...`);
 
         resolve({ stdout, stderr: '' });
-      } catch (error) {
+      } catch (_error) {
         this.logger.log(`[${executionId}] 🏁 CLI process completed with error`);
 
         // Type assertion for execSync error object
-        const execError = error as {
+        const execError = _error as {
           killed?: boolean;
           signal?: string;
           status?: number;

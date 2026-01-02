@@ -73,8 +73,10 @@ export class ExecutionService {
         timestamp: execution.created_at.toISOString(),
         aiProvider: execution.ai_provider,
       });
-    } catch (e: any) {
-      this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(
+        `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
+      );
     }
 
     return this.toResponseDto(execution);
@@ -98,8 +100,10 @@ export class ExecutionService {
           timestamp: transition.transitionedAt.toISOString(),
           aiProvider: execution.ai_provider,
         });
-      } catch (e: any) {
-        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(
+          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
+        );
       }
     }
 
@@ -137,9 +141,9 @@ export class ExecutionService {
           aiProvider: execution.ai_provider,
         });
         this.executionGateway.emitCompletion(execution.id, execution.ticket_id);
-      } catch (e: any) {
+      } catch (e: unknown) {
         this.logger.error(
-          `Failed to emit graduation events for execution ${execution.id}: ${e.message}`,
+          `Failed to emit graduation events for execution ${execution.id}: ${(e as Error).message}`,
         );
       }
     }
@@ -172,11 +176,11 @@ export class ExecutionService {
 
         this.logger.log(`[${correlationId}] Published QA check for execution ${dto.executionId}`);
       }
-    } catch (error) {
+    } catch (_error) {
       // Log error but don't fail execution completion
       this.logger.error(
-        `[${correlationId}] Failed to publish QA check: ${(error as Error).message}`,
-        (error as Error).stack,
+        `[${correlationId}] Failed to publish QA check: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
     }
 
@@ -236,8 +240,10 @@ export class ExecutionService {
           timestamp: result.transitionedAt.toISOString(),
           aiProvider: execution.ai_provider,
         });
-      } catch (e: any) {
-        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(
+          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
+        );
       }
     }
 
@@ -273,8 +279,10 @@ export class ExecutionService {
           timestamp: result.transitionedAt.toISOString(),
           aiProvider: execution.ai_provider,
         });
-      } catch (e: any) {
-        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(
+          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
+        );
       }
     }
 
@@ -299,8 +307,10 @@ export class ExecutionService {
           timestamp: result.transitionedAt.toISOString(),
           aiProvider: execution.ai_provider,
         });
-      } catch (e: any) {
-        this.logger.error(`Failed to emit progress for execution ${execution.id}: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(
+          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
+        );
       }
     }
 

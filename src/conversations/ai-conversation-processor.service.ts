@@ -37,6 +37,7 @@ export class AIConversationProcessorService {
   async transcribeAudio(filePath: string): Promise<{ text: string; language?: string } | null> {
     try {
       const formData = new FormData();
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       formData.append('file', fs.createReadStream(filePath));
       formData.append('model', 'whisper-1');
 
@@ -54,12 +55,12 @@ export class AIConversationProcessorService {
         text: response.data.text,
         language: response.data.language,
       };
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Whisper transcription failed: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Whisper transcription failed: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         tags: { module: 'ai-conversation-processor', operation: 'transcribeAudio' },
         extra: { filePath },
       });
@@ -116,9 +117,9 @@ Output JSON:
         decisions: parsed.decisions || [],
         next_steps: parsed.next_steps || [],
       };
-    } catch (error) {
-      this.logger.error(`GPT-4 summary generation failed: ${(error as Error).message}`);
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.logger.error(`GPT-4 summary generation failed: ${(_error as Error).message}`);
+      this.sentry.captureException(_error as Error, {
         tags: { module: 'ai-conversation-processor', operation: 'generateSummary' },
       });
       return {
@@ -181,9 +182,9 @@ Output JSON array:
 
       this.logger.log(`Extracted ${itemsWithIds.length} action items`);
       return itemsWithIds;
-    } catch (error) {
-      this.logger.error(`GPT-4 action item extraction failed: ${(error as Error).message}`);
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.logger.error(`GPT-4 action item extraction failed: ${(_error as Error).message}`);
+      this.sentry.captureException(_error as Error, {
         tags: { module: 'ai-conversation-processor', operation: 'extractActionItems' },
       });
       return [];
@@ -229,9 +230,9 @@ Output JSON:
 
       this.logger.log(`Sentiment analysis: ${sentiment} (${parsed.reasoning || 'no reasoning'})`);
       return sentiment;
-    } catch (error) {
-      this.logger.error(`GPT-4 sentiment analysis failed: ${(error as Error).message}`);
-      this.sentry.captureException(error as Error, {
+    } catch (_error) {
+      this.logger.error(`GPT-4 sentiment analysis failed: ${(_error as Error).message}`);
+      this.sentry.captureException(_error as Error, {
         tags: { module: 'ai-conversation-processor', operation: 'analyzeSentiment' },
       });
       return 'neutral'; // Default fallback

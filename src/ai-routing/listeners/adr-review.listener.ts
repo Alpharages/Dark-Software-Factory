@@ -130,9 +130,9 @@ export class AdrReviewListener implements OnModuleInit {
 
       await this.executionService.startExecution(startDto);
       this.logger.log(`Triggered retry execution ${correlationId} for Ticket ${ticket.id}`);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to trigger retry for ADR ${event.adrId}: ${(error as Error).message}`,
+        `Failed to trigger retry for ADR ${event.adrId}: ${(_error as Error).message}`,
       );
     }
   }

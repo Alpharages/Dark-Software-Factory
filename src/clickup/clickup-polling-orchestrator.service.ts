@@ -105,10 +105,10 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
           await this.startPolling(project.clickup_list_id);
         }
       }
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
         'Failed to fetch monitored projects from DB',
-        error instanceof Error ? error.stack : String(error),
+        _error instanceof Error ? _error.stack : String(_error),
       );
     }
   }
@@ -154,16 +154,16 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
       }
 
       // 2. Stop polling for lists that are no longer monitored
-      this.pollingStates.forEach((state, key) => {
-        // key format is usually listId or spaceId:listId
-        // simplistic check: if key contains listId not in monitored, stop
+      this.pollingStates.forEach((state, _key) => {
+        // _key format is usually listId or spaceId:listId
+        // simplistic check: if _key contains listId not in monitored, stop
         // better: store listId clearly in state
         if (state.listId && !monitoredListIds.has(state.listId)) {
           this.stopPolling(state.listId, state.spaceId);
         }
       });
-    } catch (error) {
-      this.logger.error('Failed to refresh monitored lists', String(error));
+    } catch (_error) {
+      this.logger.error('Failed to refresh monitored lists', String(_error));
     }
   }
 
@@ -259,8 +259,8 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
           timeoutHandle,
           isActive: true,
         });
-      } catch (error) {
-        const err = error as Error;
+      } catch (_error) {
+        const err = _error as Error;
         this.logger.error('ClickUp polling error', err.stack || err.message, {
           listId,
           spaceId,
@@ -384,15 +384,15 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
       });
 
       return tasks;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
 
       // Check for rate limit error
       if (err.message.includes('rate limit') || err.message.includes('429')) {
         throw new Error('ClickUp rate limit exceeded');
       }
 
-      throw error;
+      throw _error;
     }
   }
 
@@ -433,8 +433,8 @@ export class ClickUpPollingOrchestrator implements OnModuleInit, OnModuleDestroy
         );
 
         this.logger.debug('Published task update to queue', { taskId: task.id, messageId });
-      } catch (error) {
-        const err = error as Error;
+      } catch (_error) {
+        const err = _error as Error;
         this.logger.error('Failed to publish task update', err.message, { taskId: task.id });
         this.sentry.captureException(err, {
           tags: { operation: 'publish_task_update' },

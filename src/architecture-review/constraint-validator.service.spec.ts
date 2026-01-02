@@ -4,7 +4,7 @@ import { ArchitectureConstraintsService } from './architecture-constraints.servi
 
 describe('ConstraintValidatorService', () => {
   let service: ConstraintValidatorService;
-  let constraintsService: ArchitectureConstraintsService;
+  let _constraintsService: ArchitectureConstraintsService;
 
   const mockConstraintsService = {
     findAll: jest.fn(),
@@ -19,7 +19,9 @@ describe('ConstraintValidatorService', () => {
     }).compile();
 
     service = module.get<ConstraintValidatorService>(ConstraintValidatorService);
-    constraintsService = module.get<ArchitectureConstraintsService>(ArchitectureConstraintsService);
+    _constraintsService = module.get<ArchitectureConstraintsService>(
+      ArchitectureConstraintsService,
+    );
   });
 
   it('should be defined', () => {

@@ -22,7 +22,7 @@ export class ApprovalController {
   async handleApproval(
     @Param('id') id: string,
     @Body() dto: ApprovalActionDto,
-    @Req() req: any,
+    @Req() req: { user: { sub: string } },
   ): Promise<ApprovalResponseDto> {
     const pmId = req.user.sub; // Assuming 'sub' is the user ID from the JWT
 

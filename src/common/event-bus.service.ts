@@ -11,7 +11,7 @@ export type EventPayload = {
 
 @Injectable()
 export class EventBusService implements OnModuleDestroy {
-  private subject$ = new Subject<{ key: keyof EventPayload; data: any }>();
+  private subject$ = new Subject<{ key: keyof EventPayload; data: Record<string, unknown> }>();
 
   /**
    * Emit an event

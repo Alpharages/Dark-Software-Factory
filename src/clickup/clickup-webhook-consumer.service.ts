@@ -78,8 +78,8 @@ export class ClickUpWebhookConsumer {
       });
 
       return isValid;
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Signature verification failed', err.message);
       this.metrics.incrementCounter('clickup_webhook_signature_verification', {
         status: 'error',
@@ -256,8 +256,8 @@ export class ClickUpWebhookConsumer {
         success: true,
         message: 'Webhook processed successfully',
       };
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       const duration = Date.now() - startTime;
 
       this.logger.error('Failed to process webhook', err.stack || err.message, {

@@ -56,8 +56,8 @@ export class PatternDetectorService {
       } else {
         this.logger.log('Pattern detection complete: No concerning patterns found');
       }
-    } catch (error) {
-      this.logger.error('Pattern detection analysis failed', (error as Error).stack);
+    } catch (_error) {
+      this.logger.error('Pattern detection analysis failed', (_error as Error).stack);
     }
   }
 
@@ -112,8 +112,8 @@ export class PatternDetectorService {
       };
 
       return pattern;
-    } catch (error) {
-      this.logger.error(`Failed to analyze task type ${taskType}`, (error as Error).stack);
+    } catch (_error) {
+      this.logger.error(`Failed to analyze task type ${taskType}`, (_error as Error).stack);
       return null;
     }
   }
@@ -164,10 +164,10 @@ export class PatternDetectorService {
 
       // Notify TL about the pattern
       await this.notifyTechLead(pattern, isCritical);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
         `Failed to handle detected pattern for ${pattern.taskType}`,
-        (error as Error).stack,
+        (_error as Error).stack,
       );
     }
   }
@@ -191,6 +191,7 @@ export class PatternDetectorService {
         .filter((word) => word.length > 4); // Filter short words
 
       words.forEach((word) => {
+        // eslint-disable-next-line security/detect-object-injection
         keywords[word] = (keywords[word] || 0) + 1;
       });
     });
@@ -223,8 +224,8 @@ export class PatternDetectorService {
 
       const severity = isCritical ? 'CRITICAL' : 'WARNING';
       this.logger.log(`Notified TL about ${severity} pattern in ${pattern.taskType}`);
-    } catch (error) {
-      this.logger.error('Failed to notify TL', (error as Error).stack);
+    } catch (_error) {
+      this.logger.error('Failed to notify TL', (_error as Error).stack);
       // Don't throw - notification failures shouldn't block pattern detection
     }
   }

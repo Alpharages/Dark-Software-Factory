@@ -66,10 +66,10 @@ export class TicketIntakeConsumer extends RabbitMQConsumerBase implements OnModu
       );
 
       this.logger.log(`Consumer started for ${QUEUE_NAMES.TICKET_INTAKE} (prefetch: 5)`);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to start consumer: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to start consumer: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
     }
   }

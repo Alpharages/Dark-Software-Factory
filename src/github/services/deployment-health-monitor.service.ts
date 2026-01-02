@@ -75,8 +75,8 @@ export class DeploymentHealthMonitorService implements OnModuleDestroy {
       }, this.MONITORING_WINDOW_MS);
 
       this.monitoringTimers.set(deploymentId, timer);
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Failed to start health monitoring', err.stack || err.message, {
         deploymentId,
       });
@@ -177,8 +177,8 @@ export class DeploymentHealthMonitorService implements OnModuleDestroy {
         'deployment_health_window_duration_seconds',
         this.MONITORING_WINDOW_MS / 1000,
       );
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Health check failed', err.stack || err.message, { deploymentId });
       this.sentry.captureException(err);
     } finally {
@@ -299,11 +299,11 @@ export class DeploymentHealthMonitorService implements OnModuleDestroy {
       await this.deploymentStatusSync.syncToClickUp(deploymentId);
 
       this.logger.log('Auto-rollback completed', { deploymentId, reason });
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.error('Rollback failed', err.stack || err.message, { deploymentId });
       this.sentry.captureException(err);
-      throw error;
+      throw _error;
     }
   }
 }

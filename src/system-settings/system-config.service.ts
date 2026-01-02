@@ -82,9 +82,9 @@ export class SystemConfigService {
     this.logger.log(`Resetting config key: ${key}, user: ${updatedBy}`);
     try {
       await this.prisma.systemConfig.delete({ where: { key } });
-    } catch (error) {
+    } catch (_error) {
       // Ignore if not found
-      this.logger.warn(`Failed to reset config ${key}: ${(error as Error).message}`);
+      this.logger.warn(`Failed to reset config ${key}: ${(_error as Error).message}`);
     }
   }
 

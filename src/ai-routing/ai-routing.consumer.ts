@@ -57,8 +57,8 @@ export class AIRoutingConsumer extends RabbitMQConsumerBase implements OnModuleI
       );
 
       this.logger.log(`Consumer started for ${QUEUE_NAMES.AI_ROUTING}`);
-    } catch (error) {
-      this.logger.error(`Failed to start consumer: ${(error as Error).message}`);
+    } catch (_error) {
+      this.logger.error(`Failed to start consumer: ${(_error as Error).message}`);
     }
   }
 

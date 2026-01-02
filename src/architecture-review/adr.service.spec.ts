@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdrService } from './adr.service';
 import { PrismaService } from '../database/prisma.service';
 import { RiskAssessmentService } from './risk-assessment.service';
-import { AdrStatus, RiskLevel } from '@/prisma/client';
+import { AdrStatus } from '@/prisma/client';
 import { EventBusService } from '../common/event-bus.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
@@ -13,10 +13,10 @@ import { EscalationDetectorService } from './escalation-detector.service';
 
 describe('AdrService', () => {
   let service: AdrService;
-  let prismaService: PrismaService;
-  let riskService: RiskAssessmentService;
-  let eventBusService: EventBusService;
-  let constraintValidator: ConstraintValidatorService;
+  let _prismaService: PrismaService;
+  let _riskService: RiskAssessmentService;
+  let _eventBusService: EventBusService;
+  let _constraintValidator: ConstraintValidatorService;
 
   const mockPrismaService = {
     adr: {
@@ -92,10 +92,10 @@ describe('AdrService', () => {
     }).compile();
 
     service = module.get<AdrService>(AdrService);
-    prismaService = module.get<PrismaService>(PrismaService);
-    riskService = module.get<RiskAssessmentService>(RiskAssessmentService);
-    eventBusService = module.get<EventBusService>(EventBusService);
-    constraintValidator = module.get<ConstraintValidatorService>(ConstraintValidatorService);
+    _prismaService = module.get<PrismaService>(PrismaService);
+    _riskService = module.get<RiskAssessmentService>(RiskAssessmentService);
+    _eventBusService = module.get<EventBusService>(EventBusService);
+    _constraintValidator = module.get<ConstraintValidatorService>(ConstraintValidatorService);
   });
 
   afterEach(() => {
@@ -342,7 +342,7 @@ describe('AdrService', () => {
     });
 
     it('should filter ADRs by where clause', async () => {
-      const whereClause: any = { status: 'PROPOSED' };
+      const whereClause: Record<string, unknown> = { status: 'PROPOSED' };
       mockPrismaService.adr.findMany.mockResolvedValue([]);
 
       await service.findAll(whereClause);

@@ -35,8 +35,8 @@ export class AiCapabilityTrackerService {
       this.logger.debug(
         `Capability tracked: ${inferredTaskType} ${success ? 'SUCCESS' : 'FAILURE'}${errorDetails ? ` - ${errorDetails}` : ''}`,
       );
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       this.logger.warn(`Failed to track capability: ${err.message}`);
       // Never throw - capability tracking is non-critical
     }

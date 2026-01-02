@@ -131,13 +131,13 @@ export class WebhooksService implements OnModuleDestroy {
 
       // Per NFR-P1: Return 200 OK within 5 seconds
       return this.createResponse(correlationId, true, 'Webhook received and queued');
-    } catch (error) {
+    } catch (_error) {
       // Track errors (NFR-O5)
       this.webhookErrorsCounter.inc({
         event_type: eventTypeLabel,
-        error_type: (error as Error).name || 'unknown',
+        error_type: (_error as Error).name || 'unknown',
       });
-      throw error;
+      throw _error;
     } finally {
       // Always record duration
       endTimer();
@@ -203,10 +203,10 @@ export class WebhooksService implements OnModuleDestroy {
           },
         },
       });
-    } catch (error) {
+    } catch (_error) {
       // Don't fail webhook processing if audit logging fails
       this.logger.error(
-        `[${correlationId}] Failed to log to audit trail: ${(error as Error).message}`,
+        `[${correlationId}] Failed to log to audit trail: ${(_error as Error).message}`,
       );
     }
   }
@@ -306,11 +306,11 @@ export class WebhooksService implements OnModuleDestroy {
       this.logger.debug(
         `[${correlationId}] Published to ticket-intake-queue: task ${event.taskId}`,
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `[${correlationId}] Failed to publish to queue: ${(error as Error).message}`,
+        `[${correlationId}] Failed to publish to queue: ${(_error as Error).message}`,
       );
-      throw error;
+      throw _error;
     }
   }
 

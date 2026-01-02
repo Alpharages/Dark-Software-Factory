@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Histogram, Counter } from 'prom-client';
 import * as path from 'path';
-import { safeMkdir, safeWriteFile } from '../common/utils/safe-fs.util';
+import { safeMkdir, safeWriteFile } from '@/common/utils/safe-fs.util';
 import * as crypto from 'crypto';
-import { PrismaService } from '../database/prisma.service';
+import { PrismaService } from '@/database/prisma.service';
 import { ContextCacheService } from './context-cache.service';
 import { PdfExtractor, MarkdownExtractor, TextExtractor, DocxExtractor } from './extractors';
 import {
@@ -77,8 +77,8 @@ export class ContextExtractionService {
       // Use path.parse to get filesystem root for safe mkdir
       const fsRoot = path.parse(this.storagePath).root;
       await safeMkdir(this.storagePath, fsRoot, { recursive: true });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.logger.error(`Failed to create storage directory: ${errorMessage}`);
     }
   }
@@ -265,9 +265,9 @@ export class ContextExtractionService {
       }
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       timer({ format: document.file_format, status: 'error' });
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.errorsCounter.inc({
         format: document.file_format,
         reason: 'exception',
@@ -275,18 +275,18 @@ export class ContextExtractionService {
       await this.updateExtractionError(documentId, errorMessage);
       this.logger.error(
         `${logPrefix} Extraction failed: ${errorMessage}`,
-        error instanceof Error ? error.stack : undefined,
+        _error instanceof Error ? _error.stack : undefined,
       );
       return { success: false, error: errorMessage, durationMs: 0 };
     }
   }
 
-  private async updateExtractionError(documentId: string, error: string): Promise<void> {
+  private async updateExtractionError(documentId: string, _error: string): Promise<void> {
     await this.prisma.contextDocument.update({
       where: { id: documentId },
       data: {
         extraction_status: ExtractionStatus.FAILED,
-        extraction_error: error,
+        extraction_error: _error,
       },
     });
   }
@@ -430,8 +430,8 @@ ${sections.join('\n')}
     try {
       const { safeUnlink } = await import('../common/utils/safe-fs.util');
       await safeUnlink(document.storage_path, this.storagePath);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       this.logger.warn(`Failed to delete file: ${errorMessage}`);
     }
 

@@ -212,11 +212,11 @@ export class GitHubCommitOrchestrator {
         filesChanged: commitInfo.filesChanged,
         commitMessage: commitInfo.commitMessage,
       };
-    } catch (error) {
+    } catch (_error) {
       const duration = Date.now() - startTime;
 
       this.logger.error('AI-delegated commit and push failed', executionId, {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         duration,
       });
 
@@ -232,7 +232,7 @@ export class GitHubCommitOrchestrator {
       });
 
       // Capture critical error in Sentry
-      this.sentry.captureException(error as Error, {
+      this.sentry.captureException(_error as Error, {
         extra: {
           operation: 'commit_and_push',
           executionId,
@@ -251,7 +251,7 @@ export class GitHubCommitOrchestrator {
             where: { id: githubPush.id },
             data: {
               push_status: 'FAILED',
-              error_message: (error as Error).message,
+              error_message: (_error as Error).message,
             },
           });
         }
@@ -263,7 +263,7 @@ export class GitHubCommitOrchestrator {
 
       return {
         success: false,
-        error: (error as Error).message,
+        error: (_error as Error).message,
       };
     }
   }
@@ -351,12 +351,12 @@ Execute these tasks now and return ONLY the JSON response.`;
       }
 
       throw new Error('Could not parse commit SHA from AI response');
-    } catch (error) {
+    } catch (_error) {
       this.logger.error('Failed to parse commit response', 'unknown', {
-        error: (error as Error).message,
+        error: (_error as Error).message,
         response: response.substring(0, 500),
       });
-      throw new Error(`Failed to parse commit response: ${(error as Error).message}`);
+      throw new Error(`Failed to parse commit response: ${(_error as Error).message}`);
     }
   }
 }

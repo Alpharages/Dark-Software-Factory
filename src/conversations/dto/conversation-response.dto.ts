@@ -1,4 +1,3 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ActionItem } from '../interfaces/action-item.interface';
 
 export interface ConversationResponseDto {

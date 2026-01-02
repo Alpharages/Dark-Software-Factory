@@ -91,10 +91,10 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
       );
 
       this.logger.log(`✅ Consumer started for ${CLICKUP_TASK_UPDATED_QUEUE} (prefetch: 5)`);
-    } catch (error) {
+    } catch (_error) {
       this.logger.error(
-        `Failed to start consumer: ${(error as Error).message}`,
-        (error as Error).stack,
+        `Failed to start consumer: ${(_error as Error).message}`,
+        (_error as Error).stack,
       );
     }
   }
@@ -154,10 +154,10 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
             taskId: message.task_id,
             hasDescription: !!taskDescription,
           });
-        } catch (error) {
+        } catch (_error) {
           this.loggerService.warn('Failed to fetch task description from ClickUp', {
             taskId: message.task_id,
-            error: (error as Error).message,
+            error: (_error as Error).message,
           });
         }
 
@@ -285,8 +285,8 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
       this.metrics.recordHistogram('clickup_task_sync_duration_seconds', duration / 1000, {
         source: message.source,
       });
-    } catch (error) {
-      const err = error as Error;
+    } catch (_error) {
+      const err = _error as Error;
       const duration = Date.now() - startTime;
 
       this.loggerService.error('Failed to process ClickUp task update', err.stack || err.message, {
@@ -309,7 +309,7 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
       });
 
       // Re-throw to trigger RabbitMQ retry
-      throw error;
+      throw _error;
     }
   }
 

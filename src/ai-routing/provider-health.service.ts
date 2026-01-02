@@ -177,8 +177,8 @@ export class ProviderHealthService implements OnModuleInit, OnModuleDestroy {
     for (const provider of providers) {
       try {
         await this.getProviderHealth(provider);
-      } catch (error) {
-        this.logger.error(`Failed to check provider ${provider}:`, error);
+      } catch (_error) {
+        this.logger.error(`Failed to check provider ${provider}:`, _error);
       }
     }
   }
