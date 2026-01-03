@@ -176,4 +176,39 @@ describe('AuthService', () => {
       await expect(service.getCurrentUser('user-1')).rejects.toThrow(UnauthorizedException);
     });
   });
+
+  describe('changePassword', () => {
+    const changePasswordDto = { currentPassword: 'oldPassword', newPassword: 'newPassword' };
+
+    it('should change password successfully', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.genSalt as jest.Mock).mockResolvedValue('salt');
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashedNewPassword');
+
+      await service.changePassword('user-1', changePasswordDto);
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { password_hash: 'hashedNewPassword' },
+      });
+    });
+
+    it('should throw UnauthorizedException if user not found', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.changePassword('user-1', changePasswordDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if current password is wrong', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.changePassword('user-1', changePasswordDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
 });

@@ -225,4 +225,42 @@ export class AuthService {
       isActive: user.is_active,
     };
   }
+
+  /**
+   * Change user password
+   * Story 17.10
+   */
+  async changePassword(
+    userId: string,
+    dto: { currentPassword: string; newPassword: string },
+  ): Promise<void> {
+    // 1. Get user with password hash
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      this.logger.warn(`Change password failed: user not found ${userId}`);
+      throw new UnauthorizedException('User not found');
+    }
+
+    // 2. Verify current password
+    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password_hash);
+    if (!isPasswordValid) {
+      this.logger.warn(`Change password failed: invalid current password for user ${userId}`);
+      throw new UnauthorizedException('Invalid current password');
+    }
+
+    // 3. Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(dto.newPassword, salt);
+
+    // 4. Update user password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password_hash: hashedPassword },
+    });
+
+    this.logger.log(`Password changed successfully for user: ${userId}`);
+  }
 }

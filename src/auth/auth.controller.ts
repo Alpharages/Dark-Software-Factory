@@ -7,6 +7,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -17,6 +18,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RefreshResponseDto } from './dto/refresh-response.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { UserDto } from './dto/user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 
 /**
@@ -144,5 +146,40 @@ export class AuthController {
   async getCurrentUser(@Request() req: { user: { sub: string } }): Promise<UserDto> {
     // req.user is populated by JwtAuthGuard with JWT payload
     return this.authService.getCurrentUser(req.user.sub);
+  }
+
+  /**
+   * POST /api/v1/auth/change-password
+   * Story 17.10
+   */
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Change user password',
+    description: 'Change the password for the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid current password',
+  })
+  async changePassword(
+    @Request() req: { user: { sub: string } },
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException('New password and confirm password do not match');
+    }
+    await this.authService.changePassword(req.user.sub, dto);
+    return { message: 'Password changed successfully' };
   }
 }

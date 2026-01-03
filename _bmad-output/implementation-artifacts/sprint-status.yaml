@@ -1154,11 +1154,15 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/17-9-ui-user-management-dashboard.md"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - User Management Dashboard fully implemented. Delivered: (1) UsersPage with server-side pagination/filtering, (2) EditUserModal with deactivation safety warning, (3) UsersTable with responsive card view, (4) Shared RoleBadge/StatusBadge components refactored from InvitationsTable. CODE REVIEW FIXES: (C1) Updated story file from 'ready-for-dev' to 'done', (C2) Populated File List with 9 new/modified files, (C3) Committed all code to git. Quality: Excellent (AC 1-6 met), 0 lint errors, consistent styling."
   17-10-ui-user-profile-settings:
-    status: backlog
+    status: done
     effort: "1 day"
     story_points: 3
-    story_file: "TBD"
-    notes: "Create /profile route. Display user info. Change password form. Logout button."
+    developer: "Antigravity"
+    completed_at: "2026-01-04"
+    code_review_date: "2026-01-04"
+    code_review_fixes: "2 CRITICAL, 2 HIGH issues fixed on spot"
+    story_file: "_bmad-output/implementation-artifacts/17-10-ui-user-profile-settings.md"
+    notes: "✅ APPROVED - Code review completed 2026-01-04. ALL CRITICAL/HIGH ISSUES FIXED: (C1) Installed missing deps (react-hook-form, zod), (C2) Created unit tests for ChangePasswordForm (5/5 PASS), (H1) Fixed accessibility (id/htmlFor), (H2) Fixed 'any' type in error handling, (M1) Added backend DTO complexity regex. Implementation verified."
   epic-17-retrospective: optional
 
 
