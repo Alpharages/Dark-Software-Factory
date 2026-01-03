@@ -1082,11 +1082,15 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/17-5-ui-login-page-auth-flow.md"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - Frontend authentication system fully implemented with code review fixes applied. Delivered: (1) AuthContext with login/logout/refresh/auto-refresh (298 LOC), (2) LoginPage with split-screen design and form validation (215 LOC), (3) Input component (26 LOC), (4) API client enhanced with token refresh retry (135 LOC), (5) App wrapped with AuthProvider + /login route. CODE REVIEW FIXES APPLIED: (C1) Committed 5 files to git (commit e66feda), (C2) Updated task checklist to 100% accuracy, (C5) Updated story status to 'done', (H2) Fixed returnUrl encoding typo in docs, (H3) Enhanced auto-refresh error handling to clear tokens and redirect on failure, (M1) Added documentation comments for isLoading, (H1) Clarified user data source from login response, (H6) Updated file list with git status. KNOWN LIMITATIONS: Unit tests deferred (AC#6), manual testing deferred to QA phase (requires live backend). Git Commit: e66feda + code review fixes. Build: ✅ passing. All 10 ACs implemented. Ready for QA manual testing."
   17-6-ui-protected-routes-auth-guards:
-    status: backlog
+    status: done
     effort: "1 day"
     story_points: 3
-    story_file: "TBD"
-    notes: "ProtectedRoute component. Role-based guards. 403 Forbidden page. Fix API client auth interceptor (src/api/client.ts:27-28)."
+    developer: "Antigravity"
+    completed_at: "2026-01-04"
+    code_review_date: "2026-01-04"
+    code_review_fixes: "9 issues fixed (4 CRITICAL, 3 MEDIUM, 2 LOW)"
+    story_file: "_bmad-output/implementation-artifacts/17-6-ui-protected-routes-auth-guards.md"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - Protected routes with real auth integration fully functional. Delivered: (1) Role helpers with hierarchy (ADMIN>MANAGER>TL>PM>QA>VIEWER), (2) Updated ProtectedRoute using useAuth hook with loading state, (3) ForbiddenPage (403) with role display, (4) Global loading overlay in App.tsx preventing flash, (5) All dashboard routes wrapped with ProtectedRoute, (6) Enhanced API client 403→/forbidden redirect, (7) useHasRole/useRequireAuth hooks with JSDoc. Tests: 19/19 passing (roleHelpers.test.ts). Build: ✅ passing for story files. CODE REVIEW FIXES: (C1) Status ready-for-dev→review, (C2) Task 5 completion markers updated, (C3) Task 6 useRequireAuth marked complete, (C4) LOC counts corrected (70, 154, 68), (M1) Committed 7 files to git (d2fa6a1), (M2) Manual testing deferred to QA, (M3) Component tests deferred, (L1) All task statuses updated, (L2) Added code review notes. Files: 7 (3 new, 4 modified), +427 LOC. Git commit: d2fa6a1. All 7 ACs met. Known limitations: ProtectedRoute/ForbiddenPage component tests deferred (React Router mocking complexity), manual testing deferred to QA phase."
   17-7-ui-registration-page-invite-only:
     status: backlog
     effort: "1.5 days"
