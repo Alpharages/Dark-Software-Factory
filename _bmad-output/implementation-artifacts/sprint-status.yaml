@@ -1144,11 +1144,15 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/17-8-ui-invite-management-dashboard.md"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - Invite Management Dashboard fully functional. CRITICAL FIXES: (1) Implemented missing mobile responsive card layout in InvitationsTable.tsx (AC#8), (2) Refactored Sidebar.tsx to use proper useAuth hook for RBAC, (3) Fixed App.tsx route validation. Delivered: /admin/invitations route, invitations table with filtering/sorting, create invite modal, revoke dialog, responsive UI. Build verified."
   17-9-ui-user-management-dashboard:
-    status: backlog
+    status: done
     effort: "1.5 days"
     story_points: 3
-    story_file: "TBD"
-    notes: "Create /admin/users route (ADMIN only). User table, edit modal, deactivate. Search and filter."
+    developer: "Antigravity"
+    completed_at: "2026-01-04"
+    code_review_date: "2026-01-04"
+    code_review_fixes: "9 files committed, Story file updated, File List populated"
+    story_file: "_bmad-output/implementation-artifacts/17-9-ui-user-management-dashboard.md"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - User Management Dashboard fully implemented. Delivered: (1) UsersPage with server-side pagination/filtering, (2) EditUserModal with deactivation safety warning, (3) UsersTable with responsive card view, (4) Shared RoleBadge/StatusBadge components refactored from InvitationsTable. CODE REVIEW FIXES: (C1) Updated story file from 'ready-for-dev' to 'done', (C2) Populated File List with 9 new/modified files, (C3) Committed all code to git. Quality: Excellent (AC 1-6 met), 0 lint errors, consistent styling."
   17-10-ui-user-profile-settings:
     status: backlog
     effort: "1 day"
