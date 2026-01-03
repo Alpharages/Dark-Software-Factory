@@ -1134,11 +1134,15 @@ development_status:
       
       TESTING STATUS: TypeScript clean, build has pre-existing errors in other components.
   17-8-ui-invite-management-dashboard:
-    status: backlog
+    status: done
     effort: "2 days"
     story_points: 5
-    story_file: "TBD"
-    notes: "Create /admin/invitations route (ADMIN/MANAGER only). Table, create invite modal, copy link, revoke. Pagination."
+    developer: "Antigravity"
+    completion_date: "2026-01-04"
+    code_review_date: "2026-01-04"
+    code_review_fixes: "6 issues fixed (2 CRITICAL, 2 MEDIUM, 2 LOW)"
+    story_file: "_bmad-output/implementation-artifacts/17-8-ui-invite-management-dashboard.md"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - Invite Management Dashboard fully functional. CRITICAL FIXES: (1) Implemented missing mobile responsive card layout in InvitationsTable.tsx (AC#8), (2) Refactored Sidebar.tsx to use proper useAuth hook for RBAC, (3) Fixed App.tsx route validation. Delivered: /admin/invitations route, invitations table with filtering/sorting, create invite modal, revoke dialog, responsive UI. Build verified."
   17-9-ui-user-management-dashboard:
     status: backlog
     effort: "1.5 days"
