@@ -1,9 +1,33 @@
-import { PrismaClient, TicketStatus, AIProvider, ExecutionStatus } from '@prisma/client';
+import { PrismaClient } from '../src/prisma/client';
+import { TicketStatus, AIProvider, ExecutionStatus } from '../src/prisma/enums';
+import { seedAdminUser } from './seeds/admin.seeder';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
+import 'dotenv/config';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
     console.log('🌱 Seeding database...');
+
+    // Seed Admin User
+    await seedAdminUser(prisma);
+
+    // Create sample project
+    await prisma.project.upsert({
+        where: { id: 'sample-project' },
+        update: {},
+        create: {
+            id: 'sample-project',
+            name: 'Sample Project',
+            github_repository_url: 'https://github.com/sample/project',
+            pm_id: 'admin-001', // Using the admin we just created (or random)
+            // status: 'active', // Default is active
+        },
+    });
 
     // Create sample ticket
     const ticket = await prisma.ticket.create({
@@ -24,7 +48,7 @@ async function main() {
     const execution = await prisma.execution.create({
         data: {
             ticket_id: ticket.id,
-            ai_provider: AIProvider.CURSOR,
+            ai_provider: AIProvider.CURSOR_HEADLESS,
             prompt: 'Implement JWT authentication...',
             status: ExecutionStatus.COMPLETED,
             confidence_score: 0.92,
@@ -41,7 +65,7 @@ async function main() {
     const costRecord = await prisma.costRecord.create({
         data: {
             ticket_id: ticket.id,
-            ai_provider: AIProvider.CURSOR,
+            ai_provider: AIProvider.CURSOR_HEADLESS,
             operation_type: 'code_generation',
             tokens_used: 1500,
             api_calls: 1,
