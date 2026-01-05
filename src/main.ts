@@ -30,7 +30,7 @@ if (process.env.SENTRY_DSN) {
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { VersioningType } from '@nestjs/common';
+import { VersioningType, RequestMethod } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { LoggerService } from './common/logger';
 
@@ -51,7 +51,7 @@ async function bootstrap() {
   // Parse CORS origins from environment variable (comma-separated)
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
-    : ['http://localhost:5173', 'http://localhost:3000'];
+    : [];
 
   app.enableCors({
     origin: corsOrigins,
@@ -62,9 +62,15 @@ async function bootstrap() {
 
   logger.log(`CORS enabled for origins: ${corsOrigins.join(', ')}`);
 
+  // Set global prefix for API routes, but exclude /metrics for Prometheus
+  app.setGlobalPrefix('api', {
+    exclude: [{ path: 'metrics', method: RequestMethod.GET }],
+  });
+
   // Enable URI-based versioning (Story 5.1)
   app.enableVersioning({
     type: VersioningType.URI,
+    defaultVersion: '1',
   });
 
   // Enable graceful shutdown to properly close all connections
@@ -78,10 +84,10 @@ async function bootstrap() {
       .setTitle('Dark Software Factory API')
       .setDescription(
         'AI Dev Tool Orchestrator API - Automates the pipeline from PM tickets to deployed code.\n\n' +
-          '## Authentication\n' +
-          'Most endpoints require JWT Bearer authentication. Use the Authorize button to set your token.\n\n' +
-          '## Roles\n' +
-          'Valid roles: `ADMIN`, `MANAGER`, `PM`, `TL`, `QA`, `VIEWER`',
+        '## Authentication\n' +
+        'Most endpoints require JWT Bearer authentication. Use the Authorize button to set your token.\n\n' +
+        '## Roles\n' +
+        'Valid roles: `ADMIN`, `MANAGER`, `PM`, `TL`, `QA`, `VIEWER`',
       )
       .setVersion('1.0.0')
       .setContact(

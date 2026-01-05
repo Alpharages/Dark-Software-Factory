@@ -20,6 +20,7 @@ import { LogoutDto } from './dto/logout.dto';
 import { UserDto } from './dto/user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 /**
  * Authentication Controller
@@ -34,12 +35,13 @@ import { JwtAuthGuard } from '../common/guards/auth.guard';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   /**
    * POST /api/v1/auth/login
    * AC#1, AC#2, AC#3, AC#4, AC#5, AC#9
    */
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 attempts per 15 minutes
@@ -77,6 +79,7 @@ export class AuthController {
    * POST /api/v1/auth/refresh
    * AC#7
    */
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 20, ttl: 900000 } }) // 20 attempts per 15 minutes

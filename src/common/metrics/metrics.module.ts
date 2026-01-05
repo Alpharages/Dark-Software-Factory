@@ -8,6 +8,7 @@ import {
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MetricsService } from './metrics.service';
 import { MetricsController } from './metrics.controller';
+import { PrometheusMetricsController } from './prometheus-metrics.controller';
 import { HttpCollector, BusinessCollector, SystemCollector, QueueCollector } from './collectors';
 import {
   HTTP_METRICS,
@@ -34,22 +35,16 @@ import {
 @Global()
 @Module({
   imports: [
-    PrometheusModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        path: '/metrics',
-        defaultMetrics: {
-          enabled: configService.get<boolean>('metrics.collectDefaultMetrics', true),
-          config: {
-            prefix: METRICS_CONSTANTS.PREFIX,
-          },
-        },
-        defaultLabels: {
-          app: 'ai-dev-orchestrator',
-          environment: configService.get<string>('nodeEnv', 'development'),
-        },
-      }),
+    PrometheusModule.register({
+      controller: PrometheusMetricsController,
+      defaultMetrics: {
+        enabled: true,
+        config: { prefix: METRICS_CONSTANTS.PREFIX },
+      },
+      defaultLabels: {
+        app: 'ai-dev-orchestrator',
+        environment: process.env.NODE_ENV || 'development',
+      },
     }),
   ],
   controllers: [MetricsController],
@@ -466,4 +461,4 @@ import {
   ],
   exports: [MetricsService],
 })
-export class AppMetricsModule {}
+export class AppMetricsModule { }

@@ -1163,6 +1163,9 @@ development_status:
     code_review_fixes: "2 CRITICAL, 2 HIGH issues fixed on spot"
     story_file: "_bmad-output/implementation-artifacts/17-10-ui-user-profile-settings.md"
     notes: "✅ APPROVED - Code review completed 2026-01-04. ALL CRITICAL/HIGH ISSUES FIXED: (C1) Installed missing deps (react-hook-form, zod), (C2) Created unit tests for ChangePasswordForm (5/5 PASS), (H1) Fixed accessibility (id/htmlFor), (H2) Fixed 'any' type in error handling, (M1) Added backend DTO complexity regex. Implementation verified."
-  epic-17-retrospective: optional
+  epic-17-retrospective:
+    status: done
+    completion_date: "2026-01-04"
+    retro_file: "_bmad-output/implementation-artifacts/epic-17-retro-2026-01-04.md"
 
 
