@@ -15,6 +15,9 @@ import { ProviderFactoryService } from '../src/ai-routing/provider-factory.servi
 import { FallbackStrategyService } from '../src/ai-routing/fallback-strategy.service';
 import { AIExecutionService } from '../src/ai-routing/ai-execution.service';
 import { ComplexityScorerService } from '../src/ai-routing/complexity-scorer.service';
+import { AIDecisionLoggerService } from '../src/audit/ai-decision-logger.service';
+import { AdrParserService } from '../src/ai-routing/adr-parser.service';
+import { AdrService } from '../src/architecture-review/adr.service';
 import {
   ProviderSelectionReason,
   ComplexityGrade,
@@ -50,6 +53,19 @@ describe('Orchestrator (e2e)', () => {
       set: jest.fn(),
     };
 
+    const mockAIDecisionLogger = {
+      logDecision: jest.fn().mockResolvedValue({}),
+    };
+
+    const mockAdrParser = {
+      hasAdr: jest.fn().mockReturnValue(false),
+      parseAdrFromResponse: jest.fn().mockReturnValue(null),
+    };
+
+    const mockAdrService = {
+      create: jest.fn().mockResolvedValue({ id: 'adr-1', title: 'Test ADR' }),
+    };
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -63,6 +79,9 @@ describe('Orchestrator (e2e)', () => {
         FallbackStrategyService,
         ComplexityScorerService,
         { provide: AIExecutionService, useValue: mockAIExecution },
+        { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
+        { provide: AdrParserService, useValue: mockAdrParser },
+        { provide: AdrService, useValue: mockAdrService },
         // Metrics
         { provide: 'PROM_METRIC_ORCHESTRATOR_EXECUTIONS_TOTAL', useValue: mockMetrics },
         {
@@ -83,6 +102,7 @@ describe('Orchestrator (e2e)', () => {
           provide: 'PROM_METRIC_ORCHESTRATOR_FALLBACK_DURATION_SECONDS',
           useValue: mockMetrics,
         },
+        { provide: 'PROM_METRIC_ADR_CREATION_TOTAL', useValue: mockMetrics },
       ],
     }).compile();
 

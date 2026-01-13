@@ -21,6 +21,8 @@ import { WorkspaceService } from '../src/ai-routing/providers/workspace.service'
 import { GitOperationsService } from '../src/ai-routing/providers/git-operations.service';
 import { CursorHeadlessProvider, ClaudeCodeProvider } from '../src/ai-routing/providers';
 import { ExecutionService } from '../src/execution/execution.service';
+import { AICostTrackerService } from '../src/cost-tracking/ai-cost-tracker.service';
+import { StorageManagerService } from '../src/storage/storage-manager.service';
 
 describe('AI Execution (e2e)', () => {
   let app: INestApplication;
@@ -56,18 +58,66 @@ describe('AI Execution (e2e)', () => {
       update: jest.fn().mockResolvedValue({}),
       count: jest.fn().mockResolvedValue(0),
       findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
+      groupBy: jest.fn().mockResolvedValue([]),
     },
     $transaction: jest.fn((cb) =>
       cb({
+        execution: {
+          findMany: jest.fn().mockResolvedValue([]),
+          findFirst: jest.fn().mockResolvedValue(null),
+          findUnique: jest.fn().mockResolvedValue(null),
+          count: jest.fn().mockResolvedValue(0),
+          groupBy: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+        },
         workspace: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          update: jest.fn(),
-          count: jest.fn(),
-          findMany: jest.fn(),
+          findMany: jest.fn().mockResolvedValue([]),
+          findUnique: jest.fn().mockResolvedValue(null),
+          count: jest.fn().mockResolvedValue(0),
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          findFirst: jest.fn().mockResolvedValue(null),
+          groupBy: jest.fn().mockResolvedValue([]),
+        },
+        auditLog: {
+          create: jest.fn().mockResolvedValue({ id: 'audit-log-1' }),
+        },
+        aIDecisionLog: {
+          create: jest.fn().mockResolvedValue({ id: 'decision-log-1' }),
+        },
+        fileLock: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findMany: jest.fn().mockResolvedValue([]),
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({}),
+          deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        qaResult: {
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        qAResult: {
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+          findFirst: jest.fn().mockResolvedValue(null),
         },
       }),
     ),
+  };
+
+  const mockCostTracker = {
+    logCost: jest.fn().mockResolvedValue({}),
+  };
+
+  const mockStorageManager = {
+    ensureWorkspace: jest.fn().mockResolvedValue('/tmp/workspace'),
+    cleanupWorkspace: jest.fn().mockResolvedValue(undefined),
+    getWorkspaceSize: jest.fn().mockResolvedValue(0),
   };
 
   beforeAll(async () => {
@@ -107,6 +157,8 @@ describe('AI Execution (e2e)', () => {
         { provide: GitOperationsService, useValue: mockGitService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: ExecutionService, useValue: mockExecutionService },
+        { provide: AICostTrackerService, useValue: mockCostTracker },
+        { provide: StorageManagerService, useValue: mockStorageManager },
         // Metrics providers
         makeGaugeProvider({
           name: 'cursor_workspaces_active',
@@ -143,11 +195,19 @@ describe('AI Execution (e2e)', () => {
 
   afterAll(async () => {
     // Cleanup any remaining workspaces
-    const workspaces = await workspaceService.getActiveWorkspaces();
-    for (const ws of workspaces) {
-      await workspaceService.cleanupWorkspace(ws.executionId, true);
+    if (workspaceService) {
+      try {
+        const workspaces = await workspaceService.getActiveWorkspaces();
+        for (const ws of workspaces) {
+          await workspaceService.cleanupWorkspace(ws.executionId, true);
+        }
+      } catch (_e) {
+        // Ignore cleanup errors in tests
+      }
     }
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   afterEach(() => {

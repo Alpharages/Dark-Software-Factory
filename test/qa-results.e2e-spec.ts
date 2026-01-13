@@ -11,6 +11,8 @@ import { JwtService } from '@nestjs/jwt';
 import { AppModule } from '../src/app.module';
 import { Role } from '../src/auth/constants/roles.enum';
 import { PrismaService } from '@/database/prisma.service';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 
 describe('QA Results API (e2e)', () => {
   let app: INestApplication;
@@ -71,6 +73,18 @@ describe('QA Results API (e2e)', () => {
       findUnique: jest.fn().mockResolvedValue({ id: 'ticket-e2e-1' }),
       groupBy: jest.fn().mockResolvedValue([]),
     },
+    workspace: {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    },
+    project: {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    },
+    providerHealth: {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    },
   };
 
   const createToken = (role: Role): string => {
@@ -88,6 +102,29 @@ describe('QA Results API (e2e)', () => {
     })
       .overrideProvider(PrismaService)
       .useValue(mockPrismaService)
+      .overrideProvider(RabbitMQService)
+      .useValue({
+        onModuleInit: jest.fn(),
+        onModuleDestroy: jest.fn(),
+        getConnection: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+        getChannel: jest.fn().mockReturnValue({
+          assertQueue: jest.fn().mockResolvedValue({}),
+          assertExchange: jest.fn().mockResolvedValue({}),
+          bindQueue: jest.fn().mockResolvedValue({}),
+          consume: jest.fn().mockResolvedValue({ consumerTag: 'test' }),
+          prefetch: jest.fn(),
+          cancel: jest.fn().mockResolvedValue({}),
+          close: jest.fn().mockResolvedValue({}),
+          checkQueue: jest.fn().mockResolvedValue({ messageCount: 0 }),
+        }),
+        publishToQueue: jest.fn().mockResolvedValue(true),
+      })
+      .overrideProvider(RabbitMQPublisherService)
+      .useValue({
+        publish: jest.fn(),
+        publishToQueue: jest.fn().mockResolvedValue(true),
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();

@@ -11,14 +11,15 @@ import { ApiExcludeController } from '@nestjs/swagger';
 @ApiExcludeController()
 @Controller({ path: 'metrics', version: VERSION_NEUTRAL })
 export class PrometheusMetricsController {
-    /**
-     * Prometheus metrics endpoint
-     * Returns all registered metrics in Prometheus text format
-     */
-    @Public()
-    @Get()
-    async getMetrics(@Res({ passthrough: true }) response: any): Promise<string> {
-        response.header('Content-Type', register.contentType);
-        return register.metrics();
-    }
+  /**
+   * Prometheus metrics endpoint
+   * Returns all registered metrics in Prometheus text format
+   */
+  @Public()
+  @Get()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getMetrics(@Res({ passthrough: true }) response: any): Promise<string> {
+    response.header('Content-Type', register.contentType);
+    return register.metrics();
+  }
 }

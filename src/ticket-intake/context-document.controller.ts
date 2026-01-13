@@ -30,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '../common/guards';
 import { Roles, CorrelationId } from '../common/decorators';
+import { Role } from '../auth/constants/roles.enum';
 import { ContextExtractionService } from './context-extraction.service';
 import {
   UploadContextDocumentDto,
@@ -60,7 +61,7 @@ export class ContextDocumentController {
    */
   @Post('upload')
   @HttpCode(HttpStatus.CREATED)
-  @Roles('pm', 'admin')
+  @Roles(Role.PM, Role.ADMIN)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 uploads per minute
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Upload context document (PM/Admin only) - FR3' })
@@ -150,7 +151,7 @@ export class ContextDocumentController {
    * Get all documents for a ticket
    */
   @Get('ticket/:ticketId')
-  @Roles('pm', 'admin', 'developer')
+  @Roles(Role.PM, Role.ADMIN, Role.TL)
   @ApiOperation({ summary: 'Get all context documents for a ticket' })
   @ApiResponse({ status: 200, type: [ContextDocumentResponseDto] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -180,7 +181,7 @@ export class ContextDocumentController {
    * Get aggregated context for AI prompts (FR59: Extract project context)
    */
   @Get('ticket/:ticketId/aggregated')
-  @Roles('pm', 'admin', 'developer', 'system')
+  @Roles(Role.PM, Role.ADMIN, Role.TL)
   @ApiOperation({ summary: 'Get aggregated context for AI prompts - FR59' })
   @ApiResponse({ status: 200, type: AggregatedContextResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -210,7 +211,7 @@ export class ContextDocumentController {
    * Get a single context document by ID
    */
   @Get(':documentId')
-  @Roles('pm', 'admin', 'developer')
+  @Roles(Role.PM, Role.ADMIN, Role.TL)
   @ApiOperation({ summary: 'Get a single context document' })
   @ApiResponse({ status: 200, type: ContextDocumentResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -246,7 +247,7 @@ export class ContextDocumentController {
    */
   @Delete(':documentId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles('pm', 'admin')
+  @Roles(Role.PM, Role.ADMIN)
   @ApiOperation({ summary: 'Delete a context document (PM/Admin only)' })
   @ApiResponse({ status: 204, description: 'Document deleted' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

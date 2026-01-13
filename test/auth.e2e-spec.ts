@@ -5,6 +5,8 @@ import { JwtService } from '@nestjs/jwt';
 import { AppModule } from '../src/app.module';
 import { Role } from '../src/auth/constants/roles.enum';
 import { PrismaService } from '@/database/prisma.service';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 
 describe('Authentication (e2e)', () => {
   let app: INestApplication;
@@ -28,6 +30,71 @@ describe('Authentication (e2e)', () => {
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }]),
+        project: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+          findUnique: jest.fn().mockResolvedValue({}),
+        },
+        ticket: {
+          groupBy: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+        },
+        execution: {
+          groupBy: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        workspace: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+        },
+        fileLock: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findMany: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockResolvedValue({}),
+          deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        qaResult: {
+          create: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+        qAResult: {
+          create: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+        providerHealth: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+        },
+        auditLog: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        aIDecisionLog: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+      })
+      .overrideProvider(RabbitMQService)
+      .useValue({
+        onModuleInit: jest.fn(),
+        onModuleDestroy: jest.fn(),
+        getConnection: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+        getChannel: jest.fn().mockReturnValue({
+          assertQueue: jest.fn().mockResolvedValue({}),
+          assertExchange: jest.fn().mockResolvedValue({}),
+          bindQueue: jest.fn().mockResolvedValue({}),
+          consume: jest.fn().mockResolvedValue({ consumerTag: 'test' }),
+          prefetch: jest.fn(),
+          cancel: jest.fn().mockResolvedValue({}),
+          close: jest.fn().mockResolvedValue({}),
+          checkQueue: jest.fn().mockResolvedValue({ messageCount: 0 }),
+        }),
+        publishToQueue: jest.fn().mockResolvedValue(true),
+      })
+      .overrideProvider(RabbitMQPublisherService)
+      .useValue({
+        publish: jest.fn(),
+        publishToQueue: jest.fn().mockResolvedValue(true),
       })
       .compile();
 

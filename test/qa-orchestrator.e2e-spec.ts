@@ -10,7 +10,7 @@ import { AiQaOrchestrator } from '../src/qa-automation/ai-qa-orchestrator.servic
 import { QualityGatesService } from '../src/qa-automation/quality-gates.service';
 import { QaMetricsService } from '../src/qa-automation/qa-metrics.service';
 import { PrismaService } from '@/database/prisma.service';
-import { TicketStatus } from '@/prisma/client';
+import { TicketStatus, ExecutionStatus } from '@/prisma/client';
 import { Role } from '../src/auth/constants/roles.enum';
 import { RabbitMQPublisherService } from '../src/rabbitmq/rabbitmq-publisher.service';
 import { RabbitMQService } from '../src/rabbitmq/rabbitmq.service';
@@ -37,6 +37,7 @@ describe('QaOrchestrator (E2E)', () => {
     sendToQueue: jest.fn().mockResolvedValue(true),
     publish: jest.fn().mockResolvedValue(true),
     cancel: jest.fn().mockResolvedValue({}),
+    checkQueue: jest.fn().mockResolvedValue({ messageCount: 0, consumerCount: 0 }),
     close: jest.fn().mockResolvedValue(undefined),
   };
 
@@ -45,6 +46,8 @@ describe('QaOrchestrator (E2E)', () => {
     onModuleInit: jest.fn().mockResolvedValue(undefined),
     getChannel: jest.fn().mockReturnValue(mockChannel),
     getQueueStats: jest.fn().mockResolvedValue({ messageCount: 0, consumerCount: 0 }),
+    isHealthy: jest.fn().mockResolvedValue(true),
+    publishToQueue: jest.fn().mockResolvedValue(true),
     onModuleDestroy: jest.fn().mockResolvedValue(undefined),
     disconnect: jest.fn().mockResolvedValue(undefined),
   };
@@ -75,6 +78,7 @@ describe('QaOrchestrator (E2E)', () => {
     recordGateDecision: jest.fn(),
     recordCheck: jest.fn(),
     recordQuery: jest.fn(),
+    recordCheckError: jest.fn(),
   };
 
   // Improved mock Prisma with Proxy to handle all model methods automatically
@@ -87,6 +91,30 @@ describe('QaOrchestrator (E2E)', () => {
       $use: jest.fn(),
     };
 
+    const createModelMock = () => ({
+      findUnique: jest.fn().mockResolvedValue(null),
+      findFirst: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockResolvedValue({}),
+      update: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      delete: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0),
+      upsert: jest.fn().mockResolvedValue({}),
+      groupBy: jest.fn().mockResolvedValue([]),
+    });
+
+    // Pre-populate common models with unique mock objects
+    mockPrisma.execution = createModelMock();
+    mockPrisma.ticket = createModelMock();
+    mockPrisma.project = createModelMock();
+    mockPrisma.workspace = createModelMock();
+    mockPrisma.auditLog = createModelMock();
+    mockPrisma.aIDecisionLog = createModelMock();
+    mockPrisma.qaResult = createModelMock();
+    mockPrisma.qAResult = createModelMock();
+    mockPrisma.fileLock = createModelMock();
+
     return new Proxy(mockPrisma, {
       get: (target, prop: string) => {
         if (prop in target) return target[prop];
@@ -96,21 +124,12 @@ describe('QaOrchestrator (E2E)', () => {
           prop[0] === prop[0].toLowerCase() &&
           !prop.startsWith('$')
         ) {
-          const model: any = {
-            findUnique: jest.fn().mockResolvedValue(null),
-            findFirst: jest.fn().mockResolvedValue(null),
-            findMany: jest.fn().mockResolvedValue([]),
-            create: jest.fn().mockResolvedValue({}),
-            update: jest.fn().mockResolvedValue({}),
-            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-            delete: jest.fn().mockResolvedValue({}),
-            count: jest.fn().mockResolvedValue(0),
-            groupBy: jest.fn().mockResolvedValue([]),
-          };
-          target[prop] = model;
-          return model;
+          const newModel = createModelMock();
+          target[prop] = newModel;
+          return newModel;
         }
-        return undefined;
+
+        return target[prop];
       },
     });
   };
@@ -166,7 +185,22 @@ describe('QaOrchestrator (E2E)', () => {
       id: 'ticket-e2e-1',
       status: TicketStatus.GITHUB_PUSH,
     });
-    (mockPrismaService.qAResult.create as jest.Mock).mockResolvedValue({ id: 'qa-1' });
+    // 1. Setup mocks for specific models needed for this test
+    mockPrismaService.execution.findUnique.mockResolvedValue({
+      id: 'exec-1',
+      status: ExecutionStatus.IN_PROGRESS,
+      clickup_task_id: 'ticket-e2e-1',
+      project_id: 'proj-e2e-1',
+    });
+    mockPrismaService.ticket.findUnique.mockResolvedValue({
+      id: 'ticket-e2e-1',
+      status: TicketStatus.QA_REVIEW,
+    });
+    mockPrismaService.project.findUnique.mockResolvedValue({
+      id: 'proj-e2e-1',
+      name: 'Test Project',
+    });
+    mockPrismaService.qaResult.create.mockResolvedValue({ id: 'qa-1' });
 
     // 2. Define message
     const message = {

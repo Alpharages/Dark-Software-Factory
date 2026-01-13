@@ -3,6 +3,9 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import { JwtService } from '@nestjs/jwt';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '@/database/prisma.service';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
+import { Role } from '../src/auth/constants/roles.enum';
 
 /**
  * Story 2.12: Context Extraction E2E Tests
@@ -22,15 +25,132 @@ describe('Context Extraction (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue({
+        $connect: jest.fn(),
+        $disconnect: jest.fn(),
+        $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }]),
+        contextDocument: {
+          findMany: jest.fn().mockResolvedValue([]),
+          findUnique: jest.fn().mockImplementation((args) => {
+            if (args.where.id === '00000000-0000-0000-0000-000000000000') {
+              return Promise.resolve(null);
+            }
+            return Promise.resolve({
+              id: args.where.id || '22222222-2222-2222-2222-222222222222',
+              ticketId: '11111111-1111-1111-1111-111111111111',
+              originalFilename: 'test.pdf',
+              fileFormat: 'pdf',
+              fileSizeBytes: 1024,
+              extractionStatus: 'COMPLETED',
+              documentTitle: 'Test Document',
+              documentType: 'spec',
+              createdAt: new Date(),
+            });
+          }),
+          findFirst: jest.fn().mockResolvedValue(null),
+          delete: jest.fn().mockResolvedValue({}),
+          deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+          create: jest
+            .fn()
+            .mockImplementation((args) =>
+              Promise.resolve({ id: '22222222-2222-2222-2222-222222222222', ...args.data }),
+            ),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        ticket: {
+          findUnique: jest.fn().mockResolvedValue({ id: '11111111-1111-1111-1111-111111111111' }),
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest
+            .fn()
+            .mockImplementation((args) =>
+              Promise.resolve({ id: '11111111-1111-1111-1111-111111111111', ...args.data }),
+            ),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        execution: {
+          findMany: jest.fn().mockResolvedValue([]),
+          findFirst: jest.fn().mockResolvedValue(null),
+          findUnique: jest.fn().mockResolvedValue(null),
+          count: jest.fn().mockResolvedValue(0),
+          groupBy: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        project: {
+          findMany: jest.fn().mockResolvedValue([]),
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+        providerHealth: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+        },
+        workspace: {
+          findMany: jest.fn().mockResolvedValue([]),
+          findUnique: jest.fn().mockResolvedValue(null),
+          count: jest.fn().mockResolvedValue(0),
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        auditLog: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        aIDecisionLog: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        fileLock: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findMany: jest.fn().mockResolvedValue([]),
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({}),
+          deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        qaResult: {
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        qAResult: {
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      })
+      .overrideProvider(RabbitMQService)
+      .useValue({
+        onModuleInit: jest.fn(),
+        onModuleDestroy: jest.fn(),
+        getConnection: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+        getChannel: jest.fn().mockReturnValue({
+          assertQueue: jest.fn().mockResolvedValue({}),
+          assertExchange: jest.fn().mockResolvedValue({}),
+          bindQueue: jest.fn().mockResolvedValue({}),
+          consume: jest.fn().mockResolvedValue({ consumerTag: 'test' }),
+          prefetch: jest.fn(),
+          cancel: jest.fn().mockResolvedValue({}),
+          close: jest.fn().mockResolvedValue({}),
+          checkQueue: jest.fn().mockResolvedValue({ messageCount: 0 }),
+        }),
+        publishToQueue: jest.fn().mockResolvedValue(true),
+      })
+      .overrideProvider(RabbitMQPublisherService)
+      .useValue({
+        publish: jest.fn(),
+        publishToQueue: jest.fn().mockResolvedValue(true),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
     const jwtService = moduleFixture.get<JwtService>(JwtService);
-    pmToken = jwtService.sign({ sub: 'pm-user-123', role: 'pm' });
-    devToken = jwtService.sign({ sub: 'dev-user-123', role: 'developer' });
+    pmToken = jwtService.sign({ sub: 'pm-user-123', role: Role.PM });
+    devToken = jwtService.sign({ sub: 'dev-user-123', role: Role.TL });
 
     prisma = moduleFixture.get<PrismaService>(PrismaService);
 

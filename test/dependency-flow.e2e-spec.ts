@@ -2,8 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '@/database/prisma.service';
-import { RabbitMQPublisherService } from '../src/rabbitmq/rabbitmq-publisher.service';
 import { TicketStatus } from '@/prisma/client';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { RabbitMQPublisherService } from '../src/rabbitmq/rabbitmq-publisher.service';
 import { TicketIntakeService } from '../src/ticket-intake/ticket-intake.service';
 import { AIRoutingService } from '../src/ai-routing/ai-routing.service';
 import { CircularDependencyDetectorService } from '../src/dependencies/circular-dependency-detector.service';
@@ -30,8 +31,101 @@ describe('Dependency & Conflict Flow (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue({
+        $connect: jest.fn(),
+        $disconnect: jest.fn(),
+        $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }]),
+        project: {
+          findUnique: jest.fn().mockResolvedValue(mockProject),
+          findFirst: jest.fn().mockResolvedValue(mockProject),
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+        },
+        ticket: {
+          create: jest
+            .fn()
+            .mockImplementation((args) => Promise.resolve({ id: 'ticket-123', ...args.data })),
+          update: jest
+            .fn()
+            .mockImplementation((args) => Promise.resolve({ id: args.where.id, ...args.data })),
+          findUnique: jest.fn(),
+          findMany: jest.fn().mockResolvedValue([]),
+          upsert: jest.fn().mockResolvedValue({}),
+        },
+        ticketDependency: {
+          findMany: jest.fn().mockResolvedValue([]),
+          create: jest.fn(),
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        execution: {
+          findMany: jest.fn().mockResolvedValue([]),
+          findFirst: jest.fn().mockResolvedValue(null),
+          findUnique: jest.fn().mockResolvedValue(null),
+          count: jest.fn().mockResolvedValue(0),
+          groupBy: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        providerHealth: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0),
+        },
+        workspace: {
+          findMany: jest.fn().mockResolvedValue([]),
+          findUnique: jest.fn().mockResolvedValue(null),
+          count: jest.fn().mockResolvedValue(0),
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        auditLog: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        aIDecisionLog: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        fileLock: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findMany: jest.fn().mockResolvedValue([]),
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({}),
+          deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        qaResult: {
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        qAResult: {
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+          findUnique: jest.fn().mockResolvedValue(null),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      })
+      .overrideProvider(RabbitMQService)
+      .useValue({
+        onModuleInit: jest.fn(),
+        onModuleDestroy: jest.fn(),
+        getConnection: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+        getChannel: jest.fn().mockReturnValue({
+          assertQueue: jest.fn().mockResolvedValue({}),
+          assertExchange: jest.fn().mockResolvedValue({}),
+          bindQueue: jest.fn().mockResolvedValue({}),
+          consume: jest.fn().mockResolvedValue({ consumerTag: 'test' }),
+          prefetch: jest.fn(),
+          cancel: jest.fn().mockResolvedValue({}),
+          close: jest.fn().mockResolvedValue({}),
+          checkQueue: jest.fn().mockResolvedValue({ messageCount: 0 }),
+        }),
+        publishToQueue: jest.fn().mockResolvedValue(true),
+      })
       .overrideProvider(RabbitMQPublisherService)
       .useValue({
+        publish: jest.fn(),
         publishToQueue: jest.fn().mockResolvedValue(true),
         publishToExchange: jest.fn().mockResolvedValue(true),
       })
