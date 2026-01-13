@@ -79,7 +79,7 @@
     "@octokit/app": "^16.1.2",
     "@octokit/rest": "^22.0.1",
     "@prisma/client": "^7.1.0",
-    "@sentry/node": "^10.27.0",
+    "@sentry/node": "^10.33.0",
     "@sentry/profiling-node": "^10.27.0",
     "@types/archiver": "^7.0.0",
     "@types/bcrypt": "^6.0.0",
