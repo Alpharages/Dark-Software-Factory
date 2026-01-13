@@ -44,4 +44,11 @@ export class SearchConversationsDto {
   @Min(1)
   @IsOptional()
   limit: number = 20;
+
+  @ApiPropertyOptional({ description: 'Offset for pagination (overrides page)' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  offset?: number;
 }

@@ -220,7 +220,7 @@ export class ConversationsService {
   async searchConversations(
     filters: SearchConversationsDto,
   ): Promise<PaginatedConversationsResponseDto> {
-    const { q, projectId, sentiment, startDate, endDate, page, limit } = filters;
+    const { q, projectId, sentiment, startDate, endDate, page, limit, offset } = filters;
 
     // H3 FIX: Use PostgreSQL full-text search (simplified with contains for MVP)
     // NOTE: Prisma client doesn't expose @@fulltext operators directly
@@ -254,6 +254,9 @@ export class ConversationsService {
       where.AND = andConditions;
     }
 
+    // Determine skip based on offset or page
+    const skip = offset !== undefined ? offset : (page - 1) * limit;
+
     try {
       const [conversations, total] = await Promise.all([
         this.prisma.clientConversation.findMany({
@@ -263,7 +266,7 @@ export class ConversationsService {
             pm: { select: { full_name: true, email: true } },
           },
           orderBy: { conversation_date: 'desc' },
-          skip: (page - 1) * limit,
+          skip,
           take: limit,
         }),
         this.prisma.clientConversation.count({ where }),

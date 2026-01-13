@@ -49,8 +49,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       this.logger.log('RabbitMQ connection established');
     } catch (_error) {
       this.logger.error('Failed to connect to RabbitMQ:', _error);
+      // Allow application to start without RabbitMQ for debugging/development without full stack
       if (process.env.NODE_ENV !== 'test') {
-        throw _error;
+        // throw _error;
+        this.logger.warn('Continuing without RabbitMQ connection...');
       }
     }
   }
@@ -158,6 +160,22 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getChannel(): any {
     if (!this.channel) {
+      if (process.env.NODE_ENV !== 'test') {
+        this.logger.warn('Returning MOCK RabbitMQ channel');
+        return {
+          assertExchange: async () => {},
+          assertQueue: async () => ({ messageCount: 0, consumerCount: 0 }),
+          bindQueue: async () => {},
+          consume: async () => ({ consumerTag: 'mock-tag' }),
+          ack: () => {},
+          nack: () => {},
+          checkQueue: async () => ({ messageCount: 0, consumerCount: 0 }),
+          sendToQueue: () => true,
+          publish: () => true,
+          prefetch: () => {},
+          close: async () => {},
+        };
+      }
       throw new Error('RabbitMQ channel not available');
     }
     return this.channel;

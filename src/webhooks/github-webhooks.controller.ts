@@ -34,7 +34,7 @@ interface GitHubWebhookPayload {
  * Handles PR merge events and triggers automatic file lock release (Story 12.3 AC#4).
  */
 @ApiTags('webhooks')
-@Controller('api/v1/webhooks')
+@Controller('webhooks')
 export class GitHubWebhooksController {
   private readonly logger = new Logger(GitHubWebhooksController.name);
 

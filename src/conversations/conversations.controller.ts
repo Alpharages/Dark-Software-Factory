@@ -15,6 +15,8 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   BadRequestException,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -149,6 +151,9 @@ export class ConversationsController {
   @Roles('PM', 'MANAGER')
   @ApiOperation({ summary: 'List conversations (filterable)' })
   @ApiResponse({ status: 200 })
+  @UsePipes(
+    new ValidationPipe({ transform: true, transformOptions: { enableImplicitConversion: true } }),
+  )
   async listConversations(
     @Query() filters: SearchConversationsDto,
   ): Promise<PaginatedConversationsResponseDto> {
@@ -163,6 +168,9 @@ export class ConversationsController {
   @Roles('PM', 'MANAGER')
   @ApiOperation({ summary: 'Search conversations (AC#6)' })
   @ApiResponse({ status: 200 })
+  @UsePipes(
+    new ValidationPipe({ transform: true, transformOptions: { enableImplicitConversion: true } }),
+  )
   async searchConversations(
     @Query() filters: SearchConversationsDto,
   ): Promise<PaginatedConversationsResponseDto> {

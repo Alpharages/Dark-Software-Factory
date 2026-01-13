@@ -12,6 +12,7 @@ describe('AuthController', () => {
     refreshAccessToken: jest.fn(),
     logout: jest.fn(),
     getCurrentUser: jest.fn(),
+    changePassword: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -75,12 +76,30 @@ describe('AuthController', () => {
 
   describe('getCurrentUser', () => {
     it('should return user profile', async () => {
-      const req = { user: { sub: 'user-1' } };
+      const req = { user: { id: 'user-1' } };
       const expectedResult = { id: 'user-1', email: 'test@example.com' };
 
       mockAuthService.getCurrentUser.mockResolvedValue(expectedResult);
 
       expect(await controller.getCurrentUser(req)).toBe(expectedResult);
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should change password successfully', async () => {
+      const req = { user: { id: 'user-1' } };
+      const dto = {
+        currentPassword: 'oldPass',
+        newPassword: 'newPass',
+        confirmPassword: 'newPass',
+      };
+
+      mockAuthService.changePassword.mockResolvedValue(undefined);
+
+      expect(await controller.changePassword(req, dto)).toEqual({
+        message: 'Password changed successfully',
+      });
+      expect(mockAuthService.changePassword).toHaveBeenCalledWith('user-1', dto);
     });
   });
 });

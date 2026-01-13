@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ClickUpService } from './clickup.service';
 import { ClickUpPollingOrchestrator } from './clickup-polling-orchestrator.service';
 import { ClickUpWebhookConsumer } from './clickup-webhook-consumer.service';
-import { ClickUpWebhookController } from './clickup-webhook.controller';
 import { ClickUpTaskUpdateConsumer } from './clickup-task-update.consumer';
 import { SentryModule } from '../common/sentry/sentry.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
@@ -35,7 +34,7 @@ import { AuditLogModule } from '../common/audit/audit-log.module';
     RabbitMQModule,
     AuditLogModule,
   ],
-  controllers: [ClickUpWebhookController],
+  controllers: [],
   providers: [
     ClickUpService,
     ClickUpPollingOrchestrator,

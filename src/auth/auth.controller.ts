@@ -146,9 +146,9 @@ export class AuthController {
     status: 401,
     description: 'Not authenticated - missing or invalid access token',
   })
-  async getCurrentUser(@Request() req: { user: { sub: string } }): Promise<UserDto> {
+  async getCurrentUser(@Request() req: { user: { id: string } }): Promise<UserDto> {
     // req.user is populated by JwtAuthGuard with JWT payload
-    return this.authService.getCurrentUser(req.user.sub);
+    return this.authService.getCurrentUser(req.user.id);
   }
 
   /**
@@ -176,13 +176,13 @@ export class AuthController {
     description: 'Invalid current password',
   })
   async changePassword(
-    @Request() req: { user: { sub: string } },
+    @Request() req: { user: { id: string } },
     @Body() dto: ChangePasswordDto,
   ): Promise<{ message: string }> {
     if (dto.newPassword !== dto.confirmPassword) {
       throw new BadRequestException('New password and confirm password do not match');
     }
-    await this.authService.changePassword(req.user.sub, dto);
+    await this.authService.changePassword(req.user.id, dto);
     return { message: 'Password changed successfully' };
   }
 }
