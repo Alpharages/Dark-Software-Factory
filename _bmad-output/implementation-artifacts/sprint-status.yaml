@@ -1168,4 +1168,62 @@ development_status:
     completion_date: "2026-01-04"
     retro_file: "_bmad-output/implementation-artifacts/epic-17-retro-2026-01-04.md"
 
+  # ===================================================================
+  # EPIC 18 - API VERSIONING CENTRALIZATION
+  # Refactor API versioning to move version prefix from controllers to global config
+  # Created: 2026-01-15
+  # ===================================================================
+
+  epic-18: in-progress
+  epic-18-name: "API Versioning Centralization"
+  epic-18-priority: medium
+  epic-18-dependencies: "None"
+  epic-18-story-points: 14
+  epic-18-notes: "Centralize API version management by moving version prefix from 21+ controllers to global configuration in main.ts. Makes future version updates easier (single-line change). Zero breaking changes to API routes."
+  epic-18-file: "_bmad-output/implementation-artifacts/epic-18-api-versioning-centralization.md"
+  
+  18-1-update-global-api-prefix:
+    status: done
+    developer: "Antigravity"
+    started_at: "2026-01-24T04:05:42Z"
+    completed_at: "2026-01-24T04:24:00Z"
+    notes: "Implemented proper NestJS versioning strategy. Kept global prefix as 'api' and enabled NestJS URI versioning with defaultVersion: '1'. This provides better architecture than string-based 'api/v1' prefix: easier v2 implementation, consistency with NestJS best practices, and proper version management. Swagger remains at '/api/docs' (version-neutral). Verified with E2E tests. All routes functional at /api/v1/*."
+  
+  18-2-refactor-controllers-part-1:
+    status: backlog
+    title: "Refactor Controllers to Remove Version Prefix - Part 1"
+    effort: "2 hours"
+    story_points: 3
+    dependencies: "Story 18.1"
+    controllers_count: 9
+    notes: "Update 9 controllers to remove 'api/v1' prefix: architecture-review (3 controllers), capabilities, file-locks, webhooks, audit, decision-dashboard, observability-dashboard. Run unit tests for all."
+  
+  18-3-refactor-controllers-part-2:
+    status: backlog
+    title: "Refactor Controllers to Remove Version Prefix - Part 2"
+    effort: "2 hours"
+    story_points: 3
+    dependencies: "Story 18.1"
+    controllers_count: 8
+    notes: "Update 8 controllers to remove 'api/v1' prefix: approval, execution, qa-results (2 controllers), integrations, system-config, financial-metrics, invitations, users. Maintain nested paths where needed."
+  
+  18-4-refactor-controllers-part-3:
+    status: backlog
+    title: "Refactor Controllers to Remove Version Prefix - Part 3"
+    effort: "1.5 hours"
+    story_points: 2
+    dependencies: "Story 18.1"
+    controllers_count: 5
+    notes: "Update 5 controllers + fix edge cases: project, ticket-quality, reports. Fix conversations.controller.ts double-version issue. Fix cost-dashboard.controller.ts unversioned route."
+  
+  18-5-integration-testing-verification:
+    status: backlog
+    title: "Integration Testing and Verification"
+    effort: "3 hours"
+    story_points: 5
+    dependencies: "Stories 18.2, 18.3, 18.4"
+    notes: "Run full E2E test suite. Manual cURL testing for all affected endpoints. Verify Swagger documentation shows correct paths. Test frontend integration with dsf-dashboard. Update API documentation with versioning strategy."
+  
+  epic-18-retrospective: optional
+
 

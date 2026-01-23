@@ -46,7 +46,7 @@ import * as path from 'path';
  * REST API for client communication intelligence
  */
 @ApiTags('Conversations')
-@Controller('api/v1/conversations')
+@Controller('v1/conversations')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @ApiBearerAuth()
 export class ConversationsController {
@@ -174,6 +174,7 @@ export class ConversationsController {
   async searchConversations(
     @Query() filters: SearchConversationsDto,
   ): Promise<PaginatedConversationsResponseDto> {
+    console.log(`Searching conversations with filters: ${JSON.stringify(filters)}`);
     return this.conversationsService.searchConversations(filters);
   }
 
