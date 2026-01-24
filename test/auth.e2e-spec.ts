@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, VersioningType, RequestMethod } from '@nestjs/common';
 import request from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { AppModule } from '../src/app.module';
@@ -99,6 +99,16 @@ describe('Authentication (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+
+    app.setGlobalPrefix('api', {
+      exclude: [{ path: 'metrics', method: RequestMethod.GET }],
+    });
+
+    app.enableVersioning({
+      type: VersioningType.URI,
+      defaultVersion: '1',
+    });
+
     await app.init();
 
     jwtService = moduleFixture.get<JwtService>(JwtService);
@@ -109,13 +119,13 @@ describe('Authentication (e2e)', () => {
   });
 
   describe('Public endpoints', () => {
-    it('GET / should be accessible without token', () => {
-      return request(app.getHttpServer()).get('/').expect(200);
+    it('GET /api/v1 should be accessible without token', () => {
+      return request(app.getHttpServer()).get('/api/v1').expect(200);
     });
 
-    it('GET /health should be accessible without token', () => {
+    it('GET /api/v1/health should be accessible without token', () => {
       return request(app.getHttpServer())
-        .get('/health')
+        .get('/api/v1/health')
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('status');
@@ -125,30 +135,30 @@ describe('Authentication (e2e)', () => {
   });
 
   describe('Protected endpoints', () => {
-    it('GET /profile should return 401 without token', () => {
+    it('GET /api/v1/profile should return 401 without token', () => {
       return request(app.getHttpServer())
-        .get('/profile')
+        .get('/api/v1/profile')
         .expect(401)
         .expect((res) => {
           expect(res.body.message).toContain('Authentication required');
         });
     });
 
-    it('GET /profile should return 401 with invalid token', () => {
+    it('GET /api/v1/profile should return 401 with invalid token', () => {
       return request(app.getHttpServer())
-        .get('/profile')
+        .get('/api/v1/profile')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
     });
 
-    it('GET /profile should return 401 with expired token', () => {
+    it('GET /api/v1/profile should return 401 with expired token', () => {
       const expiredToken = jwtService.sign(
         { sub: 'user-1', role: Role.PM, email: 'test@test.com', name: 'Test' },
         { expiresIn: '-1h' },
       );
 
       return request(app.getHttpServer())
-        .get('/profile')
+        .get('/api/v1/profile')
         .set('Authorization', `Bearer ${expiredToken}`)
         .expect(401)
         .expect((res) => {
@@ -156,7 +166,7 @@ describe('Authentication (e2e)', () => {
         });
     });
 
-    it('GET /profile should return user with valid token', () => {
+    it('GET /api/v1/profile should return user with valid token', () => {
       const token = createToken({
         sub: 'user-123',
         email: 'test@example.com',
@@ -165,7 +175,7 @@ describe('Authentication (e2e)', () => {
       });
 
       return request(app.getHttpServer())
-        .get('/profile')
+        .get('/api/v1/profile')
         .set('Authorization', `Bearer ${token}`)
         .expect(200)
         .expect((res) => {
@@ -177,7 +187,7 @@ describe('Authentication (e2e)', () => {
   });
 
   describe('Role-based access', () => {
-    it('GET /admin/stats should return 403 for VIEWER role', () => {
+    it('GET /api/v1/admin/stats should return 403 for VIEWER role', () => {
       const token = createToken({
         sub: 'user-1',
         email: 'viewer@test.com',
@@ -186,12 +196,12 @@ describe('Authentication (e2e)', () => {
       });
 
       return request(app.getHttpServer())
-        .get('/admin/stats')
+        .get('/api/v1/admin/stats')
         .set('Authorization', `Bearer ${token}`)
         .expect(403);
     });
 
-    it('GET /admin/stats should return 200 for ADMIN role', () => {
+    it('GET /api/v1/admin/stats should return 200 for ADMIN role', () => {
       const token = createToken({
         sub: 'user-1',
         email: 'admin@test.com',
@@ -200,12 +210,12 @@ describe('Authentication (e2e)', () => {
       });
 
       return request(app.getHttpServer())
-        .get('/admin/stats')
+        .get('/api/v1/admin/stats')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
     });
 
-    it('GET /admin/stats should return 200 for MANAGER role', () => {
+    it('GET /api/v1/admin/stats should return 200 for MANAGER role', () => {
       const token = createToken({
         sub: 'user-1',
         email: 'manager@test.com',
@@ -214,7 +224,7 @@ describe('Authentication (e2e)', () => {
       });
 
       return request(app.getHttpServer())
-        .get('/admin/stats')
+        .get('/api/v1/admin/stats')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
     });

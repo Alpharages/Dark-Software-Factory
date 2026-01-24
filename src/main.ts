@@ -108,7 +108,7 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, config);
 
-    await SwaggerModule.setup('api/docs', app, document, {
+    await SwaggerModule.setup('api/v1/docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,
         tagsSorter: 'alpha',

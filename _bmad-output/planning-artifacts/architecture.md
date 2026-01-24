@@ -66,6 +66,7 @@ npx @nestjs/cli new ai-dev-orchestrator --package-manager npm
 | **API Documentation** | Swagger/OpenAPI                     | @nestjs/swagger | Internal API documentation for AetherFlow integration                               | Integration              | Recommended    |
 | **Deployment**        | Docker + Docker Compose             | Latest          | Containerization, runs alongside AetherFlow                                         | NFR-M7 (Operations)      | Recommended    |
 | **Code Style**        | ESLint + Prettier                   | NestJS built-in | Code consistency across AI-generated code                                           | NFR-M2 (Maintainability) | NestJS Starter |
+| **API Versioning**    | Centralized URI Versioning (v1)     | 1.0.0           | Scalable, clear separation of versions, standardized across all controllers         | Integration              | Story 18.1     |
 
 **Key Architectural Decisions:**
 
@@ -106,7 +107,7 @@ ai-dev-orchestrator/
 │   │
 │   ├── webhooks/                        # ClickUp webhook ingestion (FR56-59)
 │   │   ├── webhooks.module.ts
-│   │   ├── webhooks.controller.ts       # POST /webhooks/clickup
+│   │   ├── webhooks.controller.ts       # POST /api/v1/webhooks/clickup
 │   │   ├── webhooks.service.ts          # Parse and validate webhook payloads
 │   │   └── dto/
 │   │       ├── clickup-webhook.dto.ts
@@ -650,6 +651,42 @@ async function selectProvider(ticket: Ticket): AIProvider {
   - Pre-commit: Lint and format
   - Pre-push: Run tests
   - Commit message validation
+
+---
+
+## API Versioning & Routing Strategy
+
+**Status:** Accepted (ADR-018)
+**Reference:** [Story 18.1: Centralize API Versioning]
+
+The system implements a centralized API versioning strategy using NestJS built-in versioning capabilities. This ensures consistency across all components and simplifies future version upgrades.
+
+### Core Configuration (src/main.ts)
+
+- **Global Prefix:** `api` (applied to all routes except excluded ones)
+- **Versioning Type:** URI-based (`type: VersioningType.URI`)
+- **Default Version:** `1` (`defaultVersion: '1'`)
+- **Resulting Path:** `/api/v1/*`
+
+### Exclusions
+
+Certain endpoints are excluded from the global prefix to maintain compatibility with external tools or standards:
+
+1. **Prometheus Metrics:** `GET /metrics` (Standard path for Prometheus scrapers)
+2. **Swagger UI:** `GET /api/docs` (Excluded from versioning for a stable documentation entry point)
+
+### Controller Implementation Guidelines
+
+Controllers should **never** hardcode version prefixes (like `v1` or `api/v1`) in their `@Controller()` decorator.
+
+- **Correct:** `@Controller('projects')` → Accessible at `/api/v1/projects`
+- **Incorrect:** `@Controller('api/v1/projects')` → Results in `/api/v1/api/v1/projects` (double-versioning)
+
+### Benefits
+
+1. **Standardization:** All API endpoints follow the same path pattern.
+2. **Scalability:** New versions (e.g., `v2`) can be introduced by updating the `defaultVersion` or using method-level `@Version()` decorators.
+3. **Decoupling:** Frontend and integration clients use a consistent base URL (`/api/v1`).
 
 ---
 

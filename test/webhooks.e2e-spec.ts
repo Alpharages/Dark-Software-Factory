@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import { VersioningType, RequestMethod } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { AppModule } from '../src/app.module';
 import { ConfigService } from '@nestjs/config';
@@ -124,6 +125,16 @@ describe('Webhooks (e2e)', () => {
     app = moduleFixture.createNestApplication<NestFastifyApplication>(new FastifyAdapter(), {
       rawBody: true,
     });
+
+    app.setGlobalPrefix('api', {
+      exclude: [{ path: 'metrics', method: RequestMethod.GET }],
+    });
+
+    app.enableVersioning({
+      type: VersioningType.URI,
+      defaultVersion: '1',
+    });
+
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
