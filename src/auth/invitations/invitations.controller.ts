@@ -24,7 +24,7 @@ import { CurrentUser as User } from '../../common/decorators/current-user.decora
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Invitations')
-@Controller('api/v1/auth/invitations')
+@Controller('auth/invitations')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class InvitationsController {

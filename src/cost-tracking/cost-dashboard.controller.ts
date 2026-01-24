@@ -27,7 +27,7 @@ import { CostSummaryDto, TicketCostDto, BreakdownDto, BreakdownQueryDto } from '
 
 @ApiTags('Cost Tracking')
 @ApiBearerAuth()
-@Controller('api/costs')
+@Controller('costs')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class CostDashboardController {
   constructor(

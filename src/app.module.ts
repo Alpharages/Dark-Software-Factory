@@ -40,7 +40,7 @@ import { ConversationsModule } from './conversations/conversations.module'; // S
 import { ReportsModule } from './reports/reports.module'; // Story 5.6
 
 // External integrations
-import { IntegrationModule } from './integration/integration.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 import { ClickUpModule } from './clickup/clickup.module';
 import { ProjectModule } from './projects/project.module';
 
@@ -110,7 +110,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     RealtimeModule,
 
     // External integrations
-    IntegrationModule,
+    IntegrationsModule,
     ClickUpModule,
     ProjectModule,
 

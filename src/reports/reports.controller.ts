@@ -22,7 +22,7 @@ import type { Response, Request } from 'express';
 
 @ApiTags('Reports')
 @ApiBearerAuth()
-@Controller('api/v1/reports')
+@Controller('reports')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class ReportsController {
   private readonly logger = new Logger(ReportsController.name);

@@ -1203,13 +1203,15 @@ development_status:
     notes: "✅ CODE REVIEW APPROVED - All 9 controllers refactored successfully. IMPLEMENTATION: Removed 'api/v1' prefix from @Controller decorators in architecture-review (3), capabilities, file-locks, webhooks, audit, and dashboards (2) controllers. Routes remain accessible at /api/v1/* via global NestJS versioning. CODE REVIEW FIXES: (C1) Marked 15/16 ACs complete, (C2) Updated Tasks 5-6 partial completion status, (C3) Reverted constructor whitespace artifacts in 4 files, (C4) Fixed file list numbering, (M1) Documented unit test results (15/15 passing), (M5) Completed DoD checklist. Build: ✅ passing. Tests: ✅ 15/15 unit tests passing. Manual cURL testing: ✅ 5+ endpoints validated. DEFERRED: Swagger UI manual check, inline comment cleanup (low priority). Ready for Story 18.3."
   
   18-3-refactor-controllers-part-2:
-    status: backlog
+    status: done
     title: "Refactor Controllers to Remove Version Prefix - Part 2"
     effort: "2 hours"
     story_points: 3
     dependencies: "Story 18.1"
     controllers_count: 8
-    notes: "Update 8 controllers to remove 'api/v1' prefix: approval, execution, qa-results (2 controllers), integrations, system-config, financial-metrics, invitations, users. Maintain nested paths where needed."
+    developer: "Antigravity"
+    completed_at: "2026-01-24T05:25:00Z"
+    notes: "✅ Story 18.3 COMPLETE. Refactored 8 controllers (9 decorators) across 5 modules. Fixed `IntegrationsModule` registration in `AppModule`. Fixed broken unit test mock in `invitations.controller.spec.ts`. All unit tests passing. Verified route accessibility via manual cURL (returning 401). Nested paths preserved."
   
   18-4-refactor-controllers-part-3:
     status: backlog

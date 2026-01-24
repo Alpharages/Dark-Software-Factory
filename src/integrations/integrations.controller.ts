@@ -9,7 +9,7 @@ import { ClickUpService } from '@/clickup/clickup.service';
 
 @ApiTags('Integrations')
 @ApiBearerAuth()
-@Controller('api/v1/integrations')
+@Controller('integrations')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class IntegrationsController {
   private readonly logger = new Logger(IntegrationsController.name);

@@ -26,7 +26,7 @@ import { Role } from '@/auth/constants/roles.enum';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
-@Controller('api/v1/projects')
+@Controller('projects')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);

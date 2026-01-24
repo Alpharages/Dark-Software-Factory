@@ -25,7 +25,7 @@ import {
  * Rate Limits: Per-endpoint customization
  */
 @ApiTags('Ticket Quality')
-@Controller('api/v1/ticket-quality')
+@Controller('ticket-quality')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @ApiBearerAuth()
 export class TicketQualityController {

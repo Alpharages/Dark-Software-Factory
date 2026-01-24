@@ -37,7 +37,7 @@ import {
   HistoricalRoiResponseDto,
 } from './dto';
 
-@Controller('api/v1/financial-metrics')
+@Controller('financial-metrics')
 @ApiTags('Financial Metrics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)

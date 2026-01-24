@@ -37,18 +37,28 @@ describe('InvitationsController', () => {
   describe('create', () => {
     it('should create an invitation', async () => {
       const dto: CreateInvitationDto = { email: 'test@example.com', role: Role.PM };
+      const serviceResult = {
+        id: 'uuid',
+        ...dto,
+        status: 'PENDING',
+        invite_token: 'token',
+        expires_at: new Date(),
+        created_at: new Date(),
+        invited_by: { id: 'admin-id', email: 'admin@example.com', full_name: 'Admin' },
+      };
+
       const expectedResult = {
         id: 'uuid',
         ...dto,
         status: 'PENDING',
         inviteToken: 'token',
-        expiresAt: new Date(),
-        createdAt: new Date(),
+        expiresAt: serviceResult.expires_at,
+        createdAt: serviceResult.created_at,
         invitedBy: { id: 'admin-id', email: 'admin@example.com', fullName: 'Admin' },
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      jest.spyOn(service, 'createInvitation').mockResolvedValue(expectedResult as any);
+      jest.spyOn(service, 'createInvitation').mockResolvedValue(serviceResult as any);
 
       expect(await controller.create('admin-id', dto)).toEqual(expectedResult);
     });

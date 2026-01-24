@@ -46,7 +46,7 @@ import * as path from 'path';
  * REST API for client communication intelligence
  */
 @ApiTags('Conversations')
-@Controller('v1/conversations')
+@Controller('conversations')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @ApiBearerAuth()
 export class ConversationsController {

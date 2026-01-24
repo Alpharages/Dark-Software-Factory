@@ -9,7 +9,7 @@ import { Role } from '@/auth/constants/roles.enum';
 import { ApprovalDecision } from '@/prisma/client';
 
 @ApiTags('Execution Approval')
-@Controller('api/v1/executions/:id/approve')
+@Controller('executions/:id/approve')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ApprovalController {
   constructor(private readonly approvalService: ApprovalService) {}

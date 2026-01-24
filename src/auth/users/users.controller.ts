@@ -32,7 +32,7 @@ interface AuthenticatedRequest {
 }
 
 @ApiTags('Auth - User Management')
-@Controller('api/v1/users')
+@Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class UsersController {

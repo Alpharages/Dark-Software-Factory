@@ -8,7 +8,7 @@ import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/auth/constants/roles.enum';
 
 @ApiTags('Execution')
-@Controller('api/v1/executions')
+@Controller('executions')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ExecutionController {
   constructor(private readonly executionService: ExecutionService) {}

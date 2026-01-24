@@ -25,7 +25,7 @@ import { CostTrackingModule } from './cost-tracking/cost-tracking.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
 import { RealtimeModule } from './realtime/realtime.module';
-import { IntegrationModule } from './integration/integration.module';
+import { IntegrationsModule } from '@/integrations/integrations.module';
 
 describe('AppModule', () => {
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe('AppModule', () => {
       { name: 'MetricsModule', module: MetricsModule },
       { name: 'DashboardsModule', module: DashboardsModule },
       { name: 'RealtimeModule', module: RealtimeModule },
-      { name: 'IntegrationModule', module: IntegrationModule },
+      { name: 'IntegrationsModule', module: IntegrationsModule },
     ];
 
     test.each(modules)('$name should be defined', ({ module }) => {

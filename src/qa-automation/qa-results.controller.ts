@@ -31,7 +31,7 @@ import {
 
 @ApiTags('QA Results')
 @ApiBearerAuth()
-@Controller('api/v1/qa-results')
+@Controller('qa-results')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class QaResultsController {
   constructor(
@@ -123,7 +123,7 @@ export class QaResultsController {
 
 @ApiTags('Quality Gate')
 @ApiBearerAuth()
-@Controller('api/v1/quality-gate')
+@Controller('quality-gate')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class QualityGateController {
   constructor(

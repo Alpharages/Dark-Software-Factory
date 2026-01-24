@@ -22,7 +22,7 @@ import { Request } from 'express';
 
 @ApiTags('System Config')
 @ApiBearerAuth()
-@Controller('api/v1/config')
+@Controller('config')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class SystemConfigController {
   private readonly logger = new Logger(SystemConfigController.name);
