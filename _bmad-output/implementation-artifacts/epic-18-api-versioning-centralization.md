@@ -162,6 +162,25 @@ NestJS provides built-in URI versioning support that is already enabled in the a
 - [ ] No breaking changes to external consumers
 - [ ] Documentation updated with versioning strategy
 
+---
+
+#### **[18.6] Dashboard API Synchronization**
+
+- **Effort**: 4 hours | **Story Points**: 3
+- **Dependencies**: Story 18.5
+- **Scope**:
+  - Verify `dsf-dashboard` API client configuration
+  - Test core dashboard modules (Projects, Conversations, Reports)
+  - Fix any hardcoded paths or double-versioning issues in frontend
+  - Verify authentication and token refresh flows
+
+**Acceptance Criteria:**
+
+- [ ] `dsf-dashboard` remains fully functional with refactored backend
+- [ ] All frontend API calls use the correct `/api/v1` prefix
+- [ ] Zero 404 errors in browser console during dashboard usage
+- [ ] Authentication and refresh tokens work as expected
+
 ## Success Metrics
 
 1. **Zero Breaking Changes**: All existing API routes remain functional

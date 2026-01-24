@@ -1235,6 +1235,14 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/18-5-integration-testing-verification.md"
     notes: "Ultimate context engine analysis completed - comprehensive developer guide created"
   
+  18-6-dashboard-api-sync:
+    status: done
+    title: "Dashboard API Synchronization"
+    developer: "Antigravity (Code Reviewer)"
+    completed_at: "2026-01-24T06:06:00Z"
+    story_file: "_bmad-output/implementation-artifacts/18-6-dashboard-api-sync.md"
+    notes: "✅ CODE REVIEW COMPLETED & APPROVED. Verified frontend sync with v1 API. Fixed: (1) Updated story file list with actual git history (9 missing files), (2) Added AI-Review notes documenting /costs vs /financial-metrics discrepancy, (3) Cleaned up JSDoc in capabilitiesApi.ts to remove redundant prefixes. Frontend confirmed to be hitting /api/v1/ via client.ts configuration. Build: ✅ passing."
+  
   epic-18-retrospective: optional
 
 
