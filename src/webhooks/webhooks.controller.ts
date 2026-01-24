@@ -27,7 +27,7 @@ import { IClickUpWebhookPayload } from './interfaces';
  * Per FR56: System can receive ClickUp webhook events (task created, updated)
  */
 @ApiTags('webhooks')
-@Controller('api/v1/webhooks')
+@Controller('webhooks')
 export class WebhooksController {
   private readonly logger = new Logger(WebhooksController.name);
 

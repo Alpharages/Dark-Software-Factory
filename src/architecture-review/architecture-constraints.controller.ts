@@ -9,7 +9,7 @@ import { UpdateConstraintDto } from './dto/update-constraint.dto';
 // import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('architecture-constraints')
-@Controller('api/v1/architecture-constraints')
+@Controller('architecture-constraints')
 export class ArchitectureConstraintsController {
   constructor(private readonly constraintsService: ArchitectureConstraintsService) {}
 

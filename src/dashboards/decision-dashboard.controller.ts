@@ -8,7 +8,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 @ApiTags('Decision Dashboard')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('api/v1/decisions')
+@Controller('decisions')
 export class DecisionDashboardController {
   constructor(private readonly decisionService: DecisionService) {}
 

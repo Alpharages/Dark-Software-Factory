@@ -34,7 +34,7 @@ import {
 
 @ApiTags('Audit Logs')
 @ApiBearerAuth()
-@Controller('api/v1/audit')
+@Controller('audit')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class AuditController {
   constructor(

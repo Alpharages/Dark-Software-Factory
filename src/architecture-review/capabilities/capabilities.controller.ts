@@ -13,7 +13,7 @@ import { TaskType } from '@/prisma/client';
 @ApiTags('AI Capabilities')
 @ApiBearerAuth()
 @UseGuards(ThrottlerGuard)
-@Controller('api/v1/capabilities')
+@Controller('capabilities')
 export class CapabilitiesController {
   private readonly logger = new Logger(CapabilitiesController.name);
 

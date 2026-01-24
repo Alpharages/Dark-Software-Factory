@@ -5,7 +5,7 @@ import { AdrInsightsService } from './metrics/adr-insights.service';
 import { AdrMetricsDto, AdrTrendsDto } from './metrics/dto/adr-metrics.dto';
 
 @ApiTags('architecture-review')
-@Controller('api/v1/architecture-review')
+@Controller('architecture-review')
 export class ArchitectureReviewMetricsController {
   constructor(
     private readonly metricsService: AdrMetricsService,

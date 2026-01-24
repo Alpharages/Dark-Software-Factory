@@ -14,7 +14,7 @@ import {
 
 @ApiTags('Observability Dashboard')
 @ApiBearerAuth()
-@Controller('api/v1/dashboard')
+@Controller('dashboard')
 export class ObservabilityDashboardController {
   private readonly logger = new Logger(ObservabilityDashboardController.name);
 

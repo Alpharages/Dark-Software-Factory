@@ -10,7 +10,7 @@ import { FileLockWaitingQueryDto } from './dto/file-lock-waiting-query.dto';
 
 @ApiTags('File Locks')
 @ApiBearerAuth()
-@Controller('api/v1/file-locks')
+@Controller('file-locks')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class FileLocksController {
   constructor(private readonly fileLocks: FileLockManagerService) {}

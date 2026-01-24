@@ -27,7 +27,7 @@ import { Prisma } from '@/prisma/client';
 
 @ApiTags('architecture-review')
 @ApiBearerAuth()
-@Controller('api/v1/architecture-review')
+@Controller('architecture-review')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class ArchitectureReviewController {
   private readonly logger = new Logger(ArchitectureReviewController.name);
