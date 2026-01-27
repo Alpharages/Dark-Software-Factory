@@ -51,6 +51,7 @@
     "docker:studio": "docker compose exec app npx prisma studio",
     "docker:monitoring": "docker compose --profile monitoring up -d",
     "clean": "rm -rf dist node_modules/.cache",
+    "claude": "./scripts/run-claude.sh",
     "check": "pnpm run lint && pnpm run test && pnpm run build",
     "check:versions": "echo 'Node:' && node -v && echo 'pnpm:' && pnpm -v && echo 'Docker:' && docker -v",
     "prepare": "husky"

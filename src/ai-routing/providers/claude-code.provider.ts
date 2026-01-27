@@ -101,6 +101,7 @@ export class ClaudeCodeProvider
 
   async onModuleInit(): Promise<void> {
     const apiKey = this.config.get<string>('anthropic.apiKey');
+    const baseURL = this.config.get<string>('anthropic.baseURL');
     this.model = this.config.get<string>('anthropic.model') || 'claude-sonnet-4-20250514';
     this.maxTokens = this.config.get<number>('anthropic.maxTokens') || 8000;
     this.timeoutMs = this.config.get<number>('anthropic.timeoutMs') || 120_000;
@@ -112,7 +113,7 @@ export class ClaudeCodeProvider
     }
 
     try {
-      this.client = new Anthropic({ apiKey });
+      this.client = new Anthropic({ apiKey, baseURL });
       this.isConfigured = true;
 
       this.logger.log(

@@ -147,6 +147,7 @@ export default () => {
     // Model: claude-sonnet-4-20250514 is the latest Sonnet model as of implementation
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
+      baseURL: process.env.ANTHROPIC_BASE_URL,
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
       timeoutMs: parseInt(process.env.ANTHROPIC_TIMEOUT_MS || '120000', 10),

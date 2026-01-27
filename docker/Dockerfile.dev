@@ -22,6 +22,12 @@ COPY package.json pnpm-lock.yaml ./
 # Install ALL dependencies (including devDependencies for development)
 RUN pnpm install --frozen-lockfile
 
+# Install Claude CLI for Ollama integration (Story 2.7)
+# Install dependencies for native Claude Code
+RUN apk add --no-cache libgcc libstdc++ ripgrep curl bash
+# Install Claude Code via native installer
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
 # Copy Prisma schema for client generation
 COPY prisma ./prisma/
 
