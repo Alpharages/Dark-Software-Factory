@@ -146,16 +146,30 @@ describe('PromptGeneratorService', () => {
       expect(result.metadata.contextFilesIncluded).toBe(false);
     });
 
-    it('should include inline file contents for Claude Code', async () => {
+    it('should NOT include inline file contents for Claude Code', async () => {
       const input = createInput({ provider: AIProvider.CLAUDE_CODE });
       const context = createContext();
 
       const result = await service.generatePrompt(input, context);
 
-      // Claude prompts include file contents inline
-      expect(result.prompt).toContain('```typescript');
-      expect(result.prompt).toContain(context.relevantFiles[0].content);
-      expect(result.metadata.contextFilesIncluded).toBe(true);
+      // Claude prompts should NO LONGER include file contents inline (Story 19-2)
+      // They should emphasize exploration instead.
+      expect(result.prompt).not.toContain(context.relevantFiles[0].content);
+      expect(result.prompt).toContain('Explore First');
+      // Metadata might still track relevant files if context was passed,
+      // but builder ignores them.
+      // Actually per my builder change, I removed buildInlineFileContents.
+      // So the prompt won't have the content.
+    });
+
+    it('should skip architecture constraints loading for Claude Code', async () => {
+      const input = createInput({ provider: AIProvider.CLAUDE_CODE });
+      // We don't pass context, so it would normally fetch default + constraints
+      // But for Claude it should skip.
+
+      await service.generatePrompt(input);
+
+      expect(mockConstraintsService.findAll).not.toHaveBeenCalled();
     });
 
     it('should work without project context', async () => {

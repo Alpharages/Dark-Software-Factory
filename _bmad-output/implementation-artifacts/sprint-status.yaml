@@ -1262,11 +1262,8 @@ development_status:
     code_review_fixes: "1 CRITICAL, 2 MEDIUM issues fixed"
     notes: "✅ CODE REVIEW COMPLETED & FIXED - ClaudeCodeProvider implemented using cli-spawn architecture. CRITICAL FIX: Enabled output logging. MEDIUM FIXES: Documented missing metrics and interface gaps. Status updated to done."
   19-2-remove-legacy-context-management-code:
-    status: backlog
-    priority: medium
-    effort: "0.5 days"
-    story_points: 2
-    dependencies: "Story 19.1"
-    notes: "Clean up ContextLoader, PromptGeneratorService, and unused file reading logic after 19-1 is verified."
+    status: done
+    completed_at: "2026-01-27T23:30:00Z"
+    notes: "✅ CODE REVIEW APPROVED. Refactored ClaudeCodePromptBuilder to remove legacy context injection (AC#1, #2). Optimized PromptGeneratorService to skip expensive context fetching for Claude Code (AC#4). Updated ClaudeCodeProvider to simplified prompt construction (AC#5). Verified with unit tests, ensuring no regression for Cursor (AC#3)."
 
 

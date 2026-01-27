@@ -307,30 +307,10 @@ export class ClaudeCodeProvider
    * Construct the prompt for the CLI
    */
   private constructCliPrompt(input: IAIExecutionInput): string {
-    const { prompt, ticketId } = input;
-    // We assume 'prompt' input already contains ticket description/AC from the service layer,
-    // or we construct it here if needed.
-    // Based on story "AC 1 ... the prompt MUST contain the ticket title, description, and acceptance criteria"
-    // The input 'prompt' usually comes from PromptGeneratorService which likely formats it.
-    // If input.prompt is just the "task", we might need more data.
-    // However, IAIExecutionInput typically has the prepared prompt.
-    // Let's assume input.prompt is the fully formed prompt or at least the core task.
-    // Story says: "TASK: {ticket.title} ... DESCRIPTION: {ticket.description} ..."
-
-    // We'll wrap it in the required structure if it doesn't look like it already.
-    // For now, simply using the input prompt + instructions.
-
-    return `TASK: Ticket ${ticketId}
-
-${prompt}
-
-INSTRUCTIONS:
-You are an autonomous coding agent. 
-1. Explore the codebase to understand the context.
-2. Implement the requested changes and acceptance criteria.
-3. Verify your work.
-4. Do NOT ask for user input. Proceed autonomously.
-`;
+    // Story 19-2: The prompt is now fully constructed by ClaudeCodePromptBuilder
+    // with all necessary context, instructions, and task details.
+    // We pass it through directly to avoid redundant wrapping.
+    return input.prompt;
   }
 
   /**
