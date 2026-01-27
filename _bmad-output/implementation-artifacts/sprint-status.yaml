@@ -1245,4 +1245,28 @@ development_status:
   
   epic-18-retrospective: done
 
+  epic-19: ready-for-dev
+  epic-19-name: "Claude Code CLI Integration"
+  epic-19-priority: high
+  epic-19-phase: "Refactor"
+  epic-19-dependencies: "None"
+  epic-19-notes: "Refactor Claude Code provider to use CLI natively, removing manual context handling. See: planning-artifacts/epics.md"
+  19-1-implement-claude-code-cli-provider:
+    status: done
+    priority: high
+    effort: "1 day"
+    story_points: 3
+    story_file: "_bmad-output/implementation-artifacts/19-1-implement-claude-code-cli-provider.md"
+    completed_at: "2026-01-27T18:00:00Z"
+    code_review_date: "2026-01-27T18:05:00Z"
+    code_review_fixes: "1 CRITICAL, 2 MEDIUM issues fixed"
+    notes: "✅ CODE REVIEW COMPLETED & FIXED - ClaudeCodeProvider implemented using cli-spawn architecture. CRITICAL FIX: Enabled output logging. MEDIUM FIXES: Documented missing metrics and interface gaps. Status updated to done."
+  19-2-remove-legacy-context-management-code:
+    status: backlog
+    priority: medium
+    effort: "0.5 days"
+    story_points: 2
+    dependencies: "Story 19.1"
+    notes: "Clean up ContextLoader, PromptGeneratorService, and unused file reading logic after 19-1 is verified."
+
 
