@@ -274,4 +274,69 @@ describe('ClickUpService', () => {
       expect((service as any).isRetryableError(error)).toBe(false);
     });
   });
+
+  describe('getHierarchy', () => {
+    const teams = [
+      { id: 'team-1', name: 'Team One' },
+      { id: 'team-2', name: 'Team Two' },
+    ];
+    const spaces1 = [{ id: 'space-1', name: 'Space One' }];
+    const spaces2 = [{ id: 'space-2', name: 'Space Two' }];
+    const lists1 = [{ id: 'list-1', name: 'List One' }];
+    const folders1 = [
+      { id: 'folder-1', name: 'Folder One', lists: [{ id: 'list-f1', name: 'List Folder One' }] },
+    ];
+
+    beforeEach(() => {
+      mockAxiosInstance.get.mockImplementation((url: string) => {
+        if (url === '/team') {
+          return Promise.resolve({ data: { teams } });
+        }
+        if (url === '/team/team-1/space') {
+          return Promise.resolve({ data: { spaces: spaces1 } });
+        }
+        if (url === '/team/team-2/space') {
+          return Promise.resolve({ data: { spaces: spaces2 } });
+        }
+        if (url.includes('/list')) {
+          return Promise.resolve({ data: { lists: lists1 } });
+        }
+        if (url.includes('/folder')) {
+          return Promise.resolve({ data: { folders: folders1 } });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+    });
+
+    it('should return all organizations when no teamId is provided', async () => {
+      const result = await service.getHierarchy();
+      expect(result.organizations).toHaveLength(2);
+      expect(result.organizations[0].id).toBe('team-1');
+      expect(result.organizations[1].id).toBe('team-2');
+    });
+
+    it('should return only specified organization when teamId is provided', async () => {
+      const result = await service.getHierarchy({ teamId: 'team-1' });
+      expect(result.organizations).toHaveLength(1);
+      expect(result.organizations[0].id).toBe('team-1');
+    });
+
+    it('should throw error if specified teamId is not found', async () => {
+      await expect(service.getHierarchy({ teamId: 'team-999' })).rejects.toThrow(
+        'ClickUp team team-999 not found',
+      );
+    });
+
+    it('should verify spaces and lists are structure correctly', async () => {
+      const result = await service.getHierarchy({ teamId: 'team-1' });
+      const org = result.organizations[0];
+      expect(org.spaces).toHaveLength(1);
+      expect(org.spaces[0].lists).toHaveLength(2); // 1 folderless + 1 from folder
+    });
+
+    it('should handle API validation errors', async () => {
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('API Fail'));
+      await expect(service.getHierarchy()).rejects.toThrow('API Fail');
+    });
+  });
 });

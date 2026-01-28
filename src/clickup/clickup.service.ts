@@ -10,7 +10,9 @@ interface ClickUpStatus {
   color: string;
 }
 
-export interface ClickUpHierarchy {
+export interface ClickUpOrganization {
+  id: string;
+  name: string;
   spaces: {
     id: string;
     name: string;
@@ -19,6 +21,10 @@ export interface ClickUpHierarchy {
       name: string;
     }[];
   }[];
+}
+
+export interface ClickUpHierarchy {
+  organizations: ClickUpOrganization[];
 }
 
 interface ClickUpTask {
@@ -578,72 +584,100 @@ export class ClickUpService {
   /**
    * Get hierarchy of Spaces and Lists for discovery
    * Used by UI to allow users to select lists to import
+   *
+   * @param options - Query options
    */
-  async getHierarchy(options?: { correlationId?: string }): Promise<ClickUpHierarchy> {
+  async getHierarchy(options?: {
+    teamId?: string;
+    correlationId?: string;
+  }): Promise<ClickUpHierarchy> {
     const correlationId = options?.correlationId || 'clickup-get-hierarchy';
+    const requestTeamId = options?.teamId;
 
     try {
-      // 1. Get Teams (Workspaces) - usually the first team is the main one
+      // 1. Get Teams (Workspaces)
       const teamsRes = await this.client.get('/team');
-      const teams = teamsRes.data.teams;
+      let teams = teamsRes.data.teams;
 
       if (!teams || teams.length === 0) {
         throw new Error('No ClickUp teams found');
       }
 
-      // For MVP, we'll just check the first team.
-      // Future: Iterate all teams or allow team selection
-      const teamId = teams[0].id;
+      // Filter teams if teamId is provided
+      if (requestTeamId) {
+        teams = teams.filter((t: { id: string }) => t.id === requestTeamId);
+        if (teams.length === 0) {
+          throw new Error(`ClickUp team ${requestTeamId} not found`);
+        }
+      }
 
-      // 2. Get Spaces for the Team
-      const spacesRes = await this.client.get(`/team/${teamId}/space`);
-      const spaces = spacesRes.data.spaces;
+      const hierarchy: ClickUpHierarchy = { organizations: [] };
 
-      const hierarchy: ClickUpHierarchy = { spaces: [] };
+      // 2. Process each team (Organization)
+      // AC#2: Always return spaces for all organizations if teamId is omitted
+      const shouldFetchSpaces = true;
 
-      // 3. For each Space, get Lists
-      // Using Promise.all for parallelism, but be mindful of rate limits
-      await Promise.all(
-        spaces.map(async (space: Record<string, unknown>) => {
+      // 2. Process each team (Organization)
+      for (const team of teams) {
+        const organization: ClickUpOrganization = {
+          id: team.id,
+          name: team.name,
+          spaces: [],
+        };
+
+        if (shouldFetchSpaces) {
           try {
-            // Get Folderless Lists
-            const folderlessListsRes = await this.client.get(`/space/${space.id}/list`);
-            const lists = folderlessListsRes.data.lists.map((l: Record<string, unknown>) => ({
-              id: l.id,
-              name: l.name,
-            }));
+            // Get Spaces for the Team
+            const spacesRes = await this.client.get(`/team/${team.id}/space`);
+            const spaces = spacesRes.data.spaces;
 
-            // Include Folders? For MVP, we might skip folders or assume tasks are in lists directly.
-            // ClickUp structure: Team -> Space -> Folder -> List -> Task
-            // OR Team -> Space -> List -> Task (folderless)
-            // Let's also fetch folders and their lists to be complete
-
-            const foldersRes = await this.client.get(`/space/${space.id}/folder`);
-            for (const folder of foldersRes.data.folders) {
-              // Folders have lists too
-              if (folder.lists) {
-                lists.push(
-                  ...folder.lists.map((l: Record<string, unknown>) => ({
+            // 3. For each Space, get Lists
+            await Promise.all(
+              spaces.map(async (space: Record<string, unknown>) => {
+                try {
+                  // Get Folderless Lists
+                  const folderlessListsRes = await this.client.get(`/space/${space.id}/list`);
+                  const lists = folderlessListsRes.data.lists.map((l: Record<string, unknown>) => ({
                     id: l.id,
-                    name: `${folder.name} > ${l.name}`, // Flatten structure for simple UI
-                  })),
-                );
-              }
-            }
+                    name: l.name,
+                  }));
 
-            hierarchy.spaces.push({
-              id: space.id as string,
-              name: space.name as string,
-              lists,
-            });
+                  // Get Folders and their lists
+                  const foldersRes = await this.client.get(`/space/${space.id}/folder`);
+                  for (const folder of foldersRes.data.folders) {
+                    if (folder.lists) {
+                      lists.push(
+                        ...folder.lists.map((l: Record<string, unknown>) => ({
+                          id: l.id,
+                          name: `${folder.name} > ${l.name}`,
+                        })),
+                      );
+                    }
+                  }
+
+                  organization.spaces.push({
+                    id: space.id as string,
+                    name: space.name as string,
+                    lists,
+                  });
+                } catch (err) {
+                  this.logger.warn(`Failed to fetch lists for space ${space.id}`, {
+                    error: String(err),
+                    teamId: team.id,
+                  });
+                }
+              }),
+            );
           } catch (err) {
-            this.logger.warn(`Failed to fetch lists for space ${space.id}`, {
+            this.logger.warn(`Failed to fetch spaces for team ${team.id}`, {
               error: String(err),
             });
-            // Continue with other spaces
+            // Continue with other teams
           }
-        }),
-      );
+        }
+
+        hierarchy.organizations.push(organization);
+      }
 
       return hierarchy;
     } catch (_error) {

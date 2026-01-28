@@ -41,11 +41,11 @@ export const envValidationSchema = Joi.object({
   CURSOR_MAX_CONCURRENT: Joi.number().default(3),
 
   CLAUDE_CODE_ENABLED: Joi.boolean().default(false),
-  ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {
-    is: true,
-    then: Joi.required(),
-    otherwise: Joi.optional().allow(''),
-  }),
+  // ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {
+  //   is: true,
+  //   then: Joi.required(),
+  //   otherwise: Joi.optional().allow(''),
+  // }),
   CLAUDE_CODE_TIMEOUT: Joi.number().default(180000),
   CLAUDE_MAX_CONCURRENT: Joi.number().default(5),
 

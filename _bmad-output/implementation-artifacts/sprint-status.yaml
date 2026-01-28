@@ -1267,3 +1267,15 @@ development_status:
     notes: "✅ CODE REVIEW APPROVED. Refactored ClaudeCodePromptBuilder to remove legacy context injection (AC#1, #2). Optimized PromptGeneratorService to skip expensive context fetching for Claude Code (AC#4). Updated ClaudeCodeProvider to simplified prompt construction (AC#5). Verified with unit tests, ensuring no regression for Cursor (AC#3)."
 
 
+  19-3-clickup-multi-organization-support:
+    status: done
+    priority: high
+    effort: "1.5 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/19-3-clickup-multi-organization-support.md"
+    created_at: "2026-01-28T19:45:00Z"
+    notes: "✅ CODE REVIEW COMPLETED & APPROVED. Fixed Critical Issue AC#2 (backend now fetches full hierarchy by default) and created missing frontend types. Frontend/Backend tests passing. Multi-org support fully implemented."
+    developer: "Antigravity (via Amelia Dev Agent)"
+    started_at: '2026-01-28T19:48:00Z'
+    completed_at: '2026-01-28T20:40:00Z'
+    test_results: "✅ Backend tests passing, ✅ Frontend component tests passing"
