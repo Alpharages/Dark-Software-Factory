@@ -150,6 +150,35 @@ export class TicketIntakeService {
         };
       }
 
+      // Story 19.4: Check if project is active
+      if (project.is_active === false) {
+        this.logger.warn(
+          `[${correlationId}] Project "${project.name}" is inactive. Rejecting ticket.`,
+        );
+
+        await this.aiDecisionLogger.logDecision({
+          agentName: 'TicketIntakeService',
+          action: 'ticket_rejection',
+          reasoning: `Project "${project.name}" is inactive. Tickets cannot be processed until project is reactivated.`,
+          ticketId: parsed.clickupTaskId,
+          inputData: { projectId: project.id, is_active: project.is_active },
+          outputData: {
+            decision: 'rejected',
+            reason: 'project_inactive',
+            status: TicketStatus.VALIDATION_FAILED,
+          },
+          confidence: 1.0,
+        });
+
+        return {
+          success: false,
+          status: TicketStatus.VALIDATION_FAILED,
+          errors: [
+            `Project "${project.name}" is inactive. Please reactivate project to process tickets.`,
+          ],
+        };
+      }
+
       // Store resolved project ID back into parsed ticket for DB storage
       parsed.projectId = project.id;
 

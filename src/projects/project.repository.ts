@@ -43,10 +43,16 @@ export class ProjectRepository {
   }
 
   /**
-   * Find all projects
+   * Find all projects with optional active status filter
+   * @param activeFilter - true for active only, false for inactive only, undefined for all
    */
-  async findAll(): Promise<Project[]> {
+  async findAll(activeFilter?: boolean): Promise<Project[]> {
+    const where: Prisma.ProjectWhereInput = {};
+    if (activeFilter !== undefined) {
+      where.is_active = activeFilter;
+    }
     return this.prisma.project.findMany({
+      where,
       orderBy: { name: 'asc' },
     });
   }
@@ -71,6 +77,48 @@ export class ProjectRepository {
       where: { id },
     });
     this.logger.log(`Deleted project ${id} (${project.name})`);
+    return project;
+  }
+
+  /**
+   * Update GitHub repository URL
+   */
+  async updateRepository(id: string, repositoryUrl: string): Promise<Project> {
+    const project = await this.prisma.project.update({
+      where: { id },
+      data: { github_repository_url: repositoryUrl },
+    });
+    this.logger.log(`Updated repository for project ${id} to ${repositoryUrl}`);
+    return project;
+  }
+
+  /**
+   * Count active tickets for a project
+   * Active = Not in terminal state (COMPLETED, FAILED, REJECTED)
+   */
+  async countActiveTickets(id: string): Promise<number> {
+    return this.prisma.ticket.count({
+      where: {
+        project_id: id,
+        status: {
+          notIn: ['COMPLETED', 'FAILED', 'REJECTED'],
+        },
+      },
+    });
+  }
+
+  /**
+   * Update project active status
+   */
+  async updateStatus(id: string, isActive: boolean): Promise<Project> {
+    const project = await this.prisma.project.update({
+      where: { id },
+      data: {
+        is_active: isActive,
+        deactivated_at: isActive ? null : new Date(),
+      },
+    });
+    this.logger.log(`Updated project ${id} status to ${isActive ? 'active' : 'inactive'}`);
     return project;
   }
 }

@@ -26,6 +26,8 @@ describe('TicketIntakeService', () => {
   let mockWaitingCounter: { inc: jest.Mock };
   let mockCircularCounter: { inc: jest.Mock };
 
+  let mockProjectService: { findByListId: jest.Mock };
+
   const mockRawEvent: IRawTaskEvent = {
     correlationId: 'test-corr-123',
     webhookEventId: 'wh-123',
@@ -119,12 +121,13 @@ describe('TicketIntakeService', () => {
     };
 
     // Story 4.9: Mock ProjectService
-    const mockProjectService = {
+    mockProjectService = {
       findByListId: jest.fn().mockResolvedValue({
         id: '00000000-0000-0000-0000-000000000000',
         name: 'Legacy Project',
         clickup_list_id: 'legacy-list-id',
         github_repository_url: 'https://github.com/test/repo',
+        is_active: true,
       }),
     };
 
@@ -260,6 +263,22 @@ describe('TicketIntakeService', () => {
       expect(mockValidationCounter.inc).toHaveBeenCalledWith({ result: 'success' });
       expect(mockQualityHistogram.observe).toHaveBeenCalledWith({ grade: 'good' }, 75);
       expect(mockDurationHistogram.startTimer).toHaveBeenCalled();
+    });
+
+    it('should reject ticket if project is inactive', async () => {
+      mockProjectService.findByListId.mockResolvedValue({
+        id: 'proj-inactive',
+        name: 'Inactive Project',
+        is_active: false,
+      });
+
+      const result = await service.processTaskEvent(mockRawEvent);
+
+      expect(result.success).toBe(false);
+      expect(result.status).toBe(TicketStatus.VALIDATION_FAILED);
+      expect(result.errors).toContain(
+        'Project "Inactive Project" is inactive. Please reactivate project to process tickets.',
+      );
     });
   });
 });

@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  Inject,
+  forwardRef,
+  BadRequestException,
+} from '@nestjs/common';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { ProjectRepository } from './project.repository';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -10,6 +17,8 @@ import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '@/database/prisma.service';
+// TODO: Uncomment when ai-decision-logging module is implemented (AC#2)
+// import { AIDecisionLoggerService } from '@/ai-decision-logging/ai-decision-logger.service';
 
 @Injectable()
 export class ProjectService {
@@ -22,8 +31,14 @@ export class ProjectService {
     private readonly operationsCounter: Counter<string>,
     @InjectMetric('project_lookups_total')
     private readonly lookupCounter: Counter<string>,
+    @InjectMetric('project_deletion_total')
+    private readonly deletionCounter: Counter<string>,
+    @InjectMetric('project_sync_total')
+    private readonly syncCounter: Counter<string>,
     @Inject(forwardRef(() => ClickUpService))
     private readonly clickupService: ClickUpService,
+    // TODO: Inject AIDecisionLoggerService when module is implemented (AC#2)
+    // private readonly aiDecisionLogger: AIDecisionLoggerService,
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
@@ -45,8 +60,8 @@ export class ProjectService {
     }
   }
 
-  async findAll(): Promise<Project[]> {
-    return this.repository.findAll();
+  async findAll(activeFilter?: boolean): Promise<Project[]> {
+    return this.repository.findAll(activeFilter);
   }
 
   async findOne(id: string): Promise<Project> {
@@ -203,13 +218,97 @@ export class ProjectService {
   }
 
   async remove(id: string): Promise<Project> {
+    // Deprecated in favor of deleteProject
+    return this.deleteProject(id, false);
+  }
+
+  /**
+   * Delete project with safety check
+   * Checks for active tickets before deletion
+   */
+  async deleteProject(id: string, force = false): Promise<Project> {
     try {
-      await this.findOne(id); // Ensure exists
-      const project = await this.repository.delete(id);
+      const project = await this.findOne(id); // Ensure exists
+      const activeTickets = await this.repository.countActiveTickets(id);
+
+      if (activeTickets > 0 && !force) {
+        throw new BadRequestException(
+          `Cannot delete project with ${activeTickets} active tickets. Use force=true to bypass.`,
+        );
+      }
+
+      // Log AI decision for deletion (AC#2)
+      // TODO: Use AIDecisionLoggerService when module is implemented
+      this.logger.log(
+        `Project deletion decision - Operation: ${force ? 'force_delete' : 'safe_delete'}, ` +
+          `Project: "${project.name}" (${id}), Active Tickets: ${activeTickets}, Force: ${force}`,
+      );
+
+      const deletedProject = await this.repository.delete(id);
       this.operationsCounter.inc({ operation: 'delete', status: 'success' });
-      return project;
+      this.deletionCounter.inc({ status: 'success', force: String(force) });
+      return deletedProject;
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'delete', status: 'error' });
+      this.deletionCounter.inc({ status: 'error', force: String(force) });
+      throw _error;
+    }
+  }
+
+  /**
+   * Update GitHub repository URL
+   */
+  async updateGitHubRepository(id: string, repositoryUrl: string): Promise<Project> {
+    try {
+      await this.findOne(id);
+      const project = await this.repository.updateRepository(id, repositoryUrl);
+      this.operationsCounter.inc({ operation: 'update_repo', status: 'success' });
+      return project;
+    } catch (_error) {
+      this.operationsCounter.inc({ operation: 'update_repo', status: 'error' });
+      throw _error;
+    }
+  }
+
+  /**
+   * Update project active status
+   */
+  async updateStatus(id: string, isActive: boolean): Promise<Project> {
+    try {
+      await this.findOne(id);
+      const project = await this.repository.updateStatus(id, isActive);
+      this.operationsCounter.inc({ operation: 'update_status', status: 'success' });
+      return project;
+    } catch (_error) {
+      this.operationsCounter.inc({ operation: 'update_status', status: 'error' });
+      throw _error;
+    }
+  }
+
+  /**
+   * Sync project details from ClickUp
+   */
+  async syncFromClickUp(id: string): Promise<Project> {
+    const project = await this.findOne(id);
+
+    if (project.provider !== ProjectProvider.CLICKUP || !project.clickup_list_id) {
+      throw new BadRequestException('Project is not linked to ClickUp');
+    }
+
+    try {
+      const listDetails = await this.clickupService.getList(project.clickup_list_id);
+
+      // Update name if changed
+      const updated = await this.repository.update(id, {
+        name: listDetails.name,
+      });
+
+      this.operationsCounter.inc({ operation: 'sync', status: 'success' });
+      this.syncCounter.inc({ status: 'success' });
+      return updated;
+    } catch (_error) {
+      this.operationsCounter.inc({ operation: 'sync', status: 'error' });
+      this.syncCounter.inc({ status: 'error' });
       throw _error;
     }
   }

@@ -25,6 +25,8 @@ describe('ProjectController', () => {
     budget_usd: new Prisma.Decimal(100.0),
     created_at: new Date(),
     updated_at: new Date(),
+    is_active: true,
+    deactivated_at: null,
   };
 
   beforeEach(async () => {
@@ -39,6 +41,12 @@ describe('ProjectController', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
+            importProject: jest.fn(),
+            reassign: jest.fn(),
+            updateGitHubRepository: jest.fn(),
+            updateStatus: jest.fn(),
+            syncFromClickUp: jest.fn(),
+            deleteProject: jest.fn(),
           },
         },
       ],
@@ -96,6 +104,49 @@ describe('ProjectController', () => {
 
       expect(result).toEqual(mockProject);
       expect(service.findOne).toHaveBeenCalledWith('project-123');
+    });
+  });
+
+  describe('updateRepository', () => {
+    it('should update repository url', async () => {
+      service.updateGitHubRepository.mockResolvedValue(mockProject);
+      const dto = { repositoryUrl: 'https://github.com/owner/new-repo' };
+      const result = await controller.updateRepository('project-123', dto);
+      expect(result).toEqual(mockProject);
+      expect(service.updateGitHubRepository).toHaveBeenCalledWith('project-123', dto.repositoryUrl);
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('should update status', async () => {
+      service.updateStatus.mockResolvedValue(mockProject);
+      const dto = { isActive: false };
+      const result = await controller.updateStatus('project-123', dto);
+      expect(result).toEqual(mockProject);
+      expect(service.updateStatus).toHaveBeenCalledWith('project-123', false);
+    });
+  });
+
+  describe('syncClickUp', () => {
+    it('should sync project', async () => {
+      service.syncFromClickUp.mockResolvedValue(mockProject);
+      const result = await controller.syncClickUp('project-123');
+      expect(result).toEqual(mockProject);
+      expect(service.syncFromClickUp).toHaveBeenCalledWith('project-123');
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete project without force', async () => {
+      service.deleteProject.mockResolvedValue(mockProject);
+      await controller.remove('project-123');
+      expect(service.deleteProject).toHaveBeenCalledWith('project-123', false);
+    });
+
+    it('should delete project with force=true', async () => {
+      service.deleteProject.mockResolvedValue(mockProject);
+      await controller.remove('project-123', true);
+      expect(service.deleteProject).toHaveBeenCalledWith('project-123', true);
     });
   });
 });

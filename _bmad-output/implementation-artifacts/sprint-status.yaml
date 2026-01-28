@@ -636,18 +636,6 @@ development_status:
     - "9-7: Self-Healing Metrics → Epic 13 Prometheus metrics (80% overlap)"
   
   epic-9-U: in-progress
-  epic-9-U-name: "Production Error Management"
-  epic-9-U-priority: medium
-  epic-9-U-dependencies: "Epic 13 (AI Self-Healing), Epic 14 (Health Monitoring)"
-  epic-9-U-notes: "Reduced from 8→5 stories. AI self-healing logic moved to Epic 13. Post-deployment health monitoring in Epic 14. This epic focuses on production error tracking, severity classification, and ticket creation."
-  9-U-1-production-error-monitoring-integration:
-    status: ready-for-dev
-    notes: "Ultimate context engine analysis completed - comprehensive developer guide created"
-  9-U-2-error-severity-classification-prioritization:
-    status: backlog
-    effort: "2 days"
-    story_points: 3
-    delegation_opportunity: "IDENTIFIED 2025-12-07"
     notes: "AI classifies error severity (CRITICAL/HIGH/MEDIUM/LOW) with reasoning. Pattern recognition task. Keep: DB storage, queue ordering. From original 9-2."
     original_story: "9-2"
   9-U-3-automatic-fix-ticket-creation:
@@ -1279,3 +1267,30 @@ development_status:
     started_at: '2026-01-28T19:48:00Z'
     completed_at: '2026-01-28T20:40:00Z'
     test_results: "✅ Backend tests passing, ✅ Frontend component tests passing"
+
+  19-4-project-management-enhancements:
+    status: done
+    developer: "Antigravity"
+    started_at: "2026-01-28"
+    priority: high
+    effort: "3 days"
+    story_points: 8
+    story_file: "_bmad-output/implementation-artifacts/19-4-project-management-enhancements.md"
+    created_at: "2026-01-28T21:24:00Z"
+    approved_at: "2026-01-28T21:41:00Z"
+    notes: "Story approved and ready for development. Addresses missing project management features: GitHub repository assignment, project deletion with safety checks, active/inactive status management, and ClickUp project sync. Includes both backend API enhancements and frontend UI components."
+    based_on: "Story 4-9"
+    blocks: []
+    test_results: "✅ Frontend tests passing, ✅ Backend tests passing"
+
+  19-5-ai-decision-logging-module:
+    status: ready-for-dev
+    developer: "Antigravity"
+    priority: medium
+    effort: "1 day"
+    story_points: 3
+    story_file: "_bmad-output/implementation-artifacts/19-5-ai-decision-logging-module.md"
+    created_at: "2026-01-28T23:30:00Z"
+    notes: "Follow-up to Story 19-4 to implement dedicated AI decision logging service."
+    based_on: "Story 19-4"
+    blocks: []

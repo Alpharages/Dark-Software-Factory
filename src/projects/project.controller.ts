@@ -9,6 +9,7 @@ import {
   UseGuards,
   Logger,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { User } from '@/prisma/client';
@@ -17,7 +18,16 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { UpdateRepositoryDto } from './dto/update-repository.dto';
+import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -55,9 +65,20 @@ export class ProjectController {
   @Get()
   @Roles(Role.PM, Role.TL, Role.QA, Role.MANAGER, Role.ADMIN)
   @ApiOperation({ summary: 'List all projects' })
+  @ApiQuery({
+    name: 'active',
+    required: false,
+    enum: ['true', 'false', 'all'],
+    description:
+      'Filter by active status (true=active only, false=inactive only, all=all projects)',
+  })
   @ApiResponse({ status: 200, description: 'Return all projects' })
-  findAll() {
-    return this.projectService.findAll();
+  findAll(@Query('active') active?: string) {
+    let activeFilter: boolean | undefined;
+    if (active === 'true') activeFilter = true;
+    else if (active === 'false') activeFilter = false;
+    // If 'all' or undefined, activeFilter remains undefined (fetch all)
+    return this.projectService.findAll(activeFilter);
   }
 
   @Get(':id')
@@ -104,12 +125,48 @@ export class ProjectController {
     return this.projectService.reassign(id, reassignDto);
   }
 
+  @Patch(':id/repository')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiOperation({ summary: 'Update GitHub repository for project' })
+  @ApiResponse({ status: 200, description: 'Repository updated successfully' })
+  updateRepository(@Param('id') id: string, @Body() dto: UpdateRepositoryDto) {
+    return this.projectService.updateGitHubRepository(id, dto.repositoryUrl);
+  }
+
+  @Patch(':id/status')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiOperation({ summary: 'Update project active status' })
+  @ApiResponse({ status: 200, description: 'Status updated successfully' })
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateProjectStatusDto) {
+    return this.projectService.updateStatus(id, dto.isActive);
+  }
+
+  @Post(':id/sync')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @ApiOperation({ summary: 'Sync project details from ClickUp' })
+  @ApiResponse({ status: 200, description: 'Project synced successfully' })
+  syncClickUp(@Param('id') id: string) {
+    return this.projectService.syncFromClickUp(id);
+  }
+
   @Delete(':id')
   @Roles(Role.ADMIN, Role.MANAGER)
   @ApiOperation({ summary: 'Delete a project' })
+  @ApiQuery({
+    name: 'force',
+    required: false,
+    type: Boolean,
+    description: 'Force delete even if active tickets exist',
+  })
   @ApiResponse({ status: 200, description: 'Project deleted successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot delete active project (unless force=true)',
+  })
   @ApiResponse({ status: 404, description: 'Project not found' })
-  remove(@Param('id') id: string) {
-    return this.projectService.remove(id);
+  remove(@Param('id') id: string, @Query('force') force?: boolean) {
+    // Handle string 'true' from query param
+    const forceDelete = force === true || String(force) === 'true';
+    return this.projectService.deleteProject(id, forceDelete);
   }
 }

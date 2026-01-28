@@ -34,6 +34,8 @@ model Project {
   status                String   @default("active") // NEW: active|paused|completed
   default_branch        String   @default("main")
   budget_usd            Decimal? @default(100.00) @db.Decimal(10, 2)
+  is_active             Boolean  @default(true) // Story 19.4
+  deactivated_at        DateTime?
 
   // Relationships
   tickets           Ticket[]

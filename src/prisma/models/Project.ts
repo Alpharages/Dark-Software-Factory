@@ -45,6 +45,8 @@ export type ProjectMinAggregateOutputType = {
   status: string | null;
   default_branch: string | null;
   budget_usd: runtime.Decimal | null;
+  is_active: boolean | null;
+  deactivated_at: Date | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -61,6 +63,8 @@ export type ProjectMaxAggregateOutputType = {
   status: string | null;
   default_branch: string | null;
   budget_usd: runtime.Decimal | null;
+  is_active: boolean | null;
+  deactivated_at: Date | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -78,6 +82,8 @@ export type ProjectCountAggregateOutputType = {
   status: number;
   default_branch: number;
   budget_usd: number;
+  is_active: number;
+  deactivated_at: number;
   created_at: number;
   updated_at: number;
   _all: number;
@@ -103,6 +109,8 @@ export type ProjectMinAggregateInputType = {
   status?: true;
   default_branch?: true;
   budget_usd?: true;
+  is_active?: true;
+  deactivated_at?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -119,6 +127,8 @@ export type ProjectMaxAggregateInputType = {
   status?: true;
   default_branch?: true;
   budget_usd?: true;
+  is_active?: true;
+  deactivated_at?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -136,6 +146,8 @@ export type ProjectCountAggregateInputType = {
   status?: true;
   default_branch?: true;
   budget_usd?: true;
+  is_active?: true;
+  deactivated_at?: true;
   created_at?: true;
   updated_at?: true;
   _all?: true;
@@ -241,6 +253,8 @@ export type ProjectGroupByOutputType = {
   status: string;
   default_branch: string;
   budget_usd: runtime.Decimal | null;
+  is_active: boolean;
+  deactivated_at: Date | null;
   created_at: Date;
   updated_at: Date;
   _count: ProjectCountAggregateOutputType | null;
@@ -284,6 +298,8 @@ export type ProjectWhereInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFilter<'Project'> | boolean;
+  deactivated_at?: Prisma.DateTimeNullableFilter<'Project'> | Date | string | null;
   created_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
   tickets?: Prisma.TicketListRelationFilter;
@@ -312,6 +328,8 @@ export type ProjectOrderByWithRelationInput = {
   status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrderInput | Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   tickets?: Prisma.TicketOrderByRelationAggregateInput;
@@ -344,6 +362,8 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
       | number
       | string
       | null;
+    is_active?: Prisma.BoolFilter<'Project'> | boolean;
+    deactivated_at?: Prisma.DateTimeNullableFilter<'Project'> | Date | string | null;
     created_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
     tickets?: Prisma.TicketListRelationFilter;
@@ -374,6 +394,8 @@ export type ProjectOrderByWithAggregationInput = {
   status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrderInput | Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   _count?: Prisma.ProjectCountOrderByAggregateInput;
@@ -409,6 +431,8 @@ export type ProjectScalarWhereWithAggregatesInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolWithAggregatesFilter<'Project'> | boolean;
+  deactivated_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Project'> | Date | string | null;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'Project'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'Project'> | Date | string;
 };
@@ -426,6 +450,8 @@ export type ProjectCreateInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
@@ -448,6 +474,8 @@ export type ProjectUncheckedCreateInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
@@ -476,6 +504,8 @@ export type ProjectUpdateInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
@@ -504,6 +534,8 @@ export type ProjectUncheckedUpdateInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
@@ -526,6 +558,8 @@ export type ProjectCreateManyInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
 };
@@ -549,6 +583,8 @@ export type ProjectUpdateManyMutationInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -572,6 +608,8 @@ export type ProjectUncheckedUpdateManyInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -589,6 +627,8 @@ export type ProjectCountOrderByAggregateInput = {
   status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -609,6 +649,8 @@ export type ProjectMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -625,6 +667,8 @@ export type ProjectMinOrderByAggregateInput = {
   status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -660,6 +704,10 @@ export type NullableDecimalFieldUpdateOperationsInput = {
   decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string;
   multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string;
   divide?: runtime.Decimal | runtime.DecimalJsLike | number | string;
+};
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null;
 };
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -809,6 +857,8 @@ export type ProjectCreateWithoutTicketsInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
@@ -830,6 +880,8 @@ export type ProjectUncheckedCreateWithoutTicketsInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
@@ -885,6 +937,8 @@ export type ProjectUpdateWithoutTicketsInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
@@ -912,6 +966,8 @@ export type ProjectUncheckedUpdateWithoutTicketsInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
@@ -933,6 +989,8 @@ export type ProjectCreateWithoutCoverage_baselineInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
@@ -954,6 +1012,8 @@ export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
@@ -1009,6 +1069,8 @@ export type ProjectUpdateWithoutCoverage_baselineInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
@@ -1036,6 +1098,8 @@ export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
@@ -1057,6 +1121,8 @@ export type ProjectCreateWithoutCoverage_configInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
@@ -1078,6 +1144,8 @@ export type ProjectUncheckedCreateWithoutCoverage_configInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
@@ -1133,6 +1201,8 @@ export type ProjectUpdateWithoutCoverage_configInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
@@ -1160,6 +1230,8 @@ export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
@@ -1181,6 +1253,8 @@ export type ProjectCreateWithoutConversationsInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
@@ -1202,6 +1276,8 @@ export type ProjectUncheckedCreateWithoutConversationsInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
@@ -1257,6 +1333,8 @@ export type ProjectUpdateWithoutConversationsInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
@@ -1284,6 +1362,8 @@ export type ProjectUncheckedUpdateWithoutConversationsInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
@@ -1305,6 +1385,8 @@ export type ProjectCreateWithoutReportsInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
@@ -1326,6 +1408,8 @@ export type ProjectUncheckedCreateWithoutReportsInput = {
   status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
   tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
@@ -1381,6 +1465,8 @@ export type ProjectUpdateWithoutReportsInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
@@ -1408,6 +1494,8 @@ export type ProjectUncheckedUpdateWithoutReportsInput = {
     | number
     | string
     | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
@@ -1489,6 +1577,8 @@ export type ProjectSelect<
     status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
+    is_active?: boolean;
+    deactivated_at?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     tickets?: boolean | Prisma.Project$ticketsArgs<ExtArgs>;
@@ -1517,6 +1607,8 @@ export type ProjectSelectCreateManyAndReturn<
     status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
+    is_active?: boolean;
+    deactivated_at?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
   },
@@ -1539,6 +1631,8 @@ export type ProjectSelectUpdateManyAndReturn<
     status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
+    is_active?: boolean;
+    deactivated_at?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
   },
@@ -1558,6 +1652,8 @@ export type ProjectSelectScalar = {
   status?: boolean;
   default_branch?: boolean;
   budget_usd?: boolean;
+  is_active?: boolean;
+  deactivated_at?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
 };
@@ -1577,6 +1673,8 @@ export type ProjectOmit<
   | 'status'
   | 'default_branch'
   | 'budget_usd'
+  | 'is_active'
+  | 'deactivated_at'
   | 'created_at'
   | 'updated_at',
   ExtArgs['result']['project']
@@ -1623,6 +1721,8 @@ export type $ProjectPayload<
       status: string;
       default_branch: string;
       budget_usd: runtime.Decimal | null;
+      is_active: boolean;
+      deactivated_at: Date | null;
       created_at: Date;
       updated_at: Date;
     },
@@ -2242,6 +2342,8 @@ export interface ProjectFieldRefs {
   readonly status: Prisma.FieldRef<'Project', 'String'>;
   readonly default_branch: Prisma.FieldRef<'Project', 'String'>;
   readonly budget_usd: Prisma.FieldRef<'Project', 'Decimal'>;
+  readonly is_active: Prisma.FieldRef<'Project', 'Boolean'>;
+  readonly deactivated_at: Prisma.FieldRef<'Project', 'DateTime'>;
   readonly created_at: Prisma.FieldRef<'Project', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'Project', 'DateTime'>;
 }
