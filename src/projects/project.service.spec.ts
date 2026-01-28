@@ -45,6 +45,9 @@ describe('ProjectService', () => {
     auditLog: {
       create: jest.fn(),
     },
+    ticket: {
+      upsert: jest.fn(),
+    },
   };
 
   const mockPrisma = {
@@ -54,7 +57,25 @@ describe('ProjectService', () => {
 
   const mockClickUpService = {
     getList: jest.fn(),
+    getTasks: jest.fn(),
   };
+
+  const mockTasks = [
+    {
+      id: 'task-1',
+      name: 'Test Task 1',
+      description: 'Desc 1',
+      status: { status: 'open', color: '#ff0000' },
+      date_updated: '123',
+    },
+    {
+      id: 'task-2',
+      name: 'Test Task 2',
+      description: '',
+      status: { status: 'complete', color: '#00ff00' },
+      date_updated: '456',
+    },
+  ];
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -240,18 +261,35 @@ describe('ProjectService', () => {
   });
 
   describe('syncFromClickUp', () => {
-    it('should sync project details from ClickUp', async () => {
+    it('should sync project details and tasks from ClickUp', async () => {
       const clickUpList = { id: 'list-123', name: 'Updated Project Name' };
       const syncedProject = { ...mockProject, name: 'Updated Project Name' };
 
       repository.findById.mockResolvedValue(mockProject);
       mockClickUpService.getList.mockResolvedValue(clickUpList);
+      mockClickUpService.getTasks.mockResolvedValue({ tasks: mockTasks });
       repository.update.mockResolvedValue(syncedProject);
+      mockPrismaTx.ticket.upsert.mockResolvedValue({});
 
       const result = await service.syncFromClickUp('project-123');
 
       expect(result.name).toBe('Updated Project Name');
+      expect(result.syncedTasksCount).toBe(2);
       expect(mockClickUpService.getList).toHaveBeenCalledWith('list-123');
+      expect(mockClickUpService.getTasks).toHaveBeenCalledWith({ list_id: 'list-123' });
+
+      // Verify task upserts
+      expect(mockPrismaTx.ticket.upsert).toHaveBeenCalledTimes(2);
+      expect(mockPrismaTx.ticket.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clickup_task_id: 'task-1' },
+          create: expect.objectContaining({
+            title: 'Test Task 1',
+            status: 'RECEIVED', // Mapped from 'open'
+          }),
+        }),
+      );
+
       expect(mockCounter.inc).toHaveBeenCalledWith({ operation: 'sync', status: 'success' });
     });
 

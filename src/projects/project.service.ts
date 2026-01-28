@@ -12,7 +12,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
-import { Project } from '@/prisma/client';
+import { Project, TicketStatus } from '@/prisma/client';
 import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -288,7 +288,7 @@ export class ProjectService {
   /**
    * Sync project details from ClickUp
    */
-  async syncFromClickUp(id: string): Promise<Project> {
+  async syncFromClickUp(id: string): Promise<Project & { syncedTasksCount: number }> {
     const project = await this.findOne(id);
 
     if (project.provider !== ProjectProvider.CLICKUP || !project.clickup_list_id) {
@@ -296,6 +296,7 @@ export class ProjectService {
     }
 
     try {
+      // 1. Sync List Details
       const listDetails = await this.clickupService.getList(project.clickup_list_id);
 
       // Update name if changed
@@ -303,13 +304,76 @@ export class ProjectService {
         name: listDetails.name,
       });
 
+      // 2. Sync Tasks
+      const { tasks } = await this.clickupService.getTasks({
+        list_id: project.clickup_list_id,
+      });
+
+      this.logger.log(`Syncing ${tasks.length} tasks for project ${id}`);
+
+      let syncedCount = 0;
+      for (const task of tasks) {
+        // Map Status
+        const status = this.mapClickUpStatus(task.status.status);
+
+        // Upsert Ticket
+        await this.prisma.ticket.upsert({
+          where: { clickup_task_id: task.id },
+          create: {
+            clickup_task_id: task.id,
+            project_id: project.id,
+            title: task.name,
+            description: task.description || task.text_content || '',
+            status: status,
+            ticket_quality_score: 0,
+            acceptance_criteria: '',
+          },
+          update: {
+            title: task.name,
+            description: task.description || task.text_content || '',
+            status: status,
+          },
+        });
+        syncedCount++;
+      }
+
       this.operationsCounter.inc({ operation: 'sync', status: 'success' });
       this.syncCounter.inc({ status: 'success' });
-      return updated;
+
+      this.logger.log(`Successfully synced project ${id} and ${syncedCount} tasks`);
+
+      return { ...updated, syncedTasksCount: syncedCount };
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'sync', status: 'error' });
       this.syncCounter.inc({ status: 'error' });
       throw _error;
+    }
+  }
+
+  private mapClickUpStatus(status: string): TicketStatus {
+    const s = status.toLowerCase();
+    switch (s) {
+      case 'open':
+      case 'to do':
+      case 'todo':
+        return TicketStatus.RECEIVED;
+      case 'in progress':
+      case 'doing':
+        return TicketStatus.AI_PROCESSING;
+      case 'review':
+      case 'qa':
+        return TicketStatus.QA_REVIEW;
+      case 'complete':
+      case 'completed':
+      case 'done':
+      case 'closed':
+        return TicketStatus.COMPLETED;
+      default:
+        // Try to match exact enum key
+        if (Object.values(TicketStatus).includes(status as TicketStatus)) {
+          return status as TicketStatus;
+        }
+        return TicketStatus.RECEIVED;
     }
   }
 }

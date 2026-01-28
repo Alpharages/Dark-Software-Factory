@@ -129,9 +129,10 @@ describe('ProjectController', () => {
 
   describe('syncClickUp', () => {
     it('should sync project', async () => {
-      service.syncFromClickUp.mockResolvedValue(mockProject);
+      const mockResult = { ...mockProject, syncedTasksCount: 5 };
+      service.syncFromClickUp.mockResolvedValue(mockResult);
       const result = await controller.syncClickUp('project-123');
-      expect(result).toEqual(mockProject);
+      expect(result).toEqual(mockResult);
       expect(service.syncFromClickUp).toHaveBeenCalledWith('project-123');
     });
   });

@@ -413,6 +413,8 @@ export class ClickUpService {
     tasks: Array<{
       id: string;
       name: string;
+      description?: string;
+      text_content?: string;
       status: { status: string; color: string };
       date_updated: string;
       assignees?: Array<{ id: number; username: string }>;
