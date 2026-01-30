@@ -14,8 +14,6 @@ import { ConfigService } from '@nestjs/config';
 import { AIProvider } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { execFile, execSync, ChildProcess } from 'child_process';
-import { promisify } from 'util';
 import {
   IAIProvider,
   IAIExecutionInput,
@@ -27,10 +25,9 @@ import {
   IAIPromptExecutionInput,
   IAIPromptExecutionResult,
 } from '../interfaces';
+import { PtyExecutionService } from '../services/pty-execution.service';
 import { WorkspaceService } from './workspace.service';
 import { CircuitBreaker, CircuitState } from './circuit-breaker';
-
-const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, OnModuleInit {
@@ -41,7 +38,7 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
   defaultTimeoutMs: number = 300_000; // 5 minutes
 
   /** Active executions map */
-  private readonly activeExecutions: Map<string, ChildProcess> = new Map();
+  private readonly activeExecutions: Map<string, number> = new Map();
 
   /** Circuit breaker for resilience */
   private readonly circuitBreaker: CircuitBreaker;
@@ -53,6 +50,7 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
   constructor(
     private readonly config: ConfigService,
     private readonly workspace: WorkspaceService,
+    private readonly ptyService: PtyExecutionService,
     @InjectMetric('cursor_executions_total')
     private readonly executionsCounter: Counter<string>,
     @InjectMetric('cursor_execution_duration_seconds')
@@ -248,11 +246,11 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
    * Cancel an ongoing execution
    */
   async cancel(executionId: string): Promise<void> {
-    const process = this.activeExecutions.get(executionId);
-    if (process) {
-      process.kill('SIGTERM');
+    const pid = this.activeExecutions.get(executionId);
+    if (pid) {
+      this.ptyService.kill(pid, 'SIGTERM');
       this.activeExecutions.delete(executionId);
-      this.logger.log(`[${executionId}] Execution cancelled`);
+      this.logger.log(`[${executionId}] Execution cancelled (killed PID ${pid})`);
     }
 
     // Workspace cleanup is now handled by GitHubCommitOrchestrator after push
@@ -314,7 +312,7 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
   }
 
   /**
-   * Execute Cursor CLI command safely using spawn (prevents command injection)
+   * Execute Cursor CLI command safely using PtyExecutionService
    */
   private async executeCursorCli(
     executionId: string,
@@ -326,102 +324,130 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
     // Cursor Headless CLI (docs): `cursor-agent -p --force "<prompt>"`
     // We rely on WorkspaceService extracting changes from the workspace after the CLI finishes.
 
-    //AI-native dependency installation: Let Cursor CLI detect and install deps automatically
-    const dependencyHint = `IMPORTANT: Before making any code changes, check if dependencies are missing (e.g., no node_modules/, vendor/, venv/, etc.). If so, install them using the appropriate package manager for this project.
-
-`;
+    const dependencyHint =
+      'IMPORTANT: Before making any code changes, check if dependencies are missing (e.g., no node_modules/, vendor/, venv/, etc.). If so, install them using the appropriate package manager for this project.\n\n';
 
     const scopedPrompt =
       targetFiles && targetFiles.length > 0
         ? `${dependencyHint}Focus changes only in these files if possible:\n${targetFiles.map((f) => `- ${f}`).join('\n')}\n\n${prompt}`
         : `${dependencyHint}${prompt}`;
 
-    this.logger.log(`[${executionId}] 🚀 Starting Cursor CLI execution`);
+    this.logger.log(`[${executionId}] 🚀 Starting Cursor CLI execution (PTY)`);
     this.logger.log(`[${executionId}]    Command: ${this.cliPath}`);
     this.logger.log(`[${executionId}]    Args: -p --force --output-format text "<prompt>"`);
     this.logger.log(`[${executionId}]    Working dir: ${workspacePath}`);
     this.logger.log(`[${executionId}]    Timeout: ${timeout}ms`);
     this.logger.debug(`[${executionId}]    Prompt preview: ${prompt.substring(0, 100)}...`);
 
-    // Use execSync wrapped in Promise - proven to work (completes in ~15s)
-    // execFile was timing out for unknown reasons
     return new Promise((resolve, reject) => {
-      // Build command string
-      const quotedPrompt = scopedPrompt.replace(/"/g, '\\"');
-      const command = `${this.cliPath} -p --force --output-format text "${quotedPrompt}"`;
+      // Build command arguments
+      // Note: pty.spawn takes command and args array, unlike execSync which takes a string
+      const args = ['-p', '--force', '--output-format', 'text', scopedPrompt];
 
-      this.logger.debug(`[${executionId}] Executing CLI command...`);
+      this.logger.debug(`[${executionId}] Spawning PTY process...`);
+
+      let pid = 0;
+      let stdout = '';
+      let timer: NodeJS.Timeout;
 
       try {
-        const stdout = execSync(command, {
+        const ptyResult = this.ptyService.spawn(this.cliPath, args, {
           cwd: workspacePath,
-          timeout,
-          encoding: 'utf8',
-          maxBuffer: 50 * 1024 * 1024, // 50MB
-          stdio: 'pipe',
+          cols: 120, // Wider terminal for better output
+          rows: 40,
+          env: {
+            ...process.env,
+            KUBECONFIG: '', // Security: ensure no sensitive env leaks if not needed
+            NODE_ENV: process.env.NODE_ENV || 'development',
+          },
         });
 
-        this.logger.log(`[${executionId}] 🏁 CLI process completed`);
-        this.logger.debug(`[${executionId}]    stdout length: ${stdout.length} bytes`);
-        this.logger.log(`[${executionId}] ✅ CLI execution completed successfully`);
-        this.logger.debug(`[${executionId}]    Output preview: ${stdout.substring(0, 200)}...`);
+        pid = ptyResult.pid;
+        this.activeExecutions.set(executionId, pid);
+        this.logger.log(`[${executionId}]    ✅ PTY spawned with PID ${pid}`);
 
-        resolve({ stdout, stderr: '' });
-      } catch (_error) {
-        this.logger.log(`[${executionId}] 🏁 CLI process completed with error`);
+        // AC #5: Support writing to stdin if needed
+        // For now, we just ensure the service is capable
+        // ptyService.write(pid, 'some input');
 
-        // Type assertion for execSync error object
-        const execError = _error as {
-          killed?: boolean;
-          signal?: string;
-          status?: number;
-          stdout?: Buffer;
-          stderr?: Buffer;
-          message?: string;
-        };
-
-        // Check if it's a timeout
-        if (execError.killed || execError.signal === 'SIGTERM') {
+        timer = setTimeout(() => {
           this.logger.error(`[${executionId}] ⏱️  CLI execution timed out after ${timeout}ms`);
+          this.ptyService.kill(pid, 'SIGTERM');
+          // Wait a bit then force kill if needed
+          setTimeout(() => this.ptyService.kill(pid, 'SIGKILL'), 2000);
+
           reject({
             code: AIErrorCode.TIMEOUT,
             message: `Cursor CLI timed out after ${timeout}ms`,
             isRetryable: true,
-            exitCode: execError.status,
           });
-          return;
-        }
+        }, timeout);
 
-        // Other errors
-        const exitCode = execError.status || 0;
-        const stdout = execError.stdout?.toString() || '';
-        const stderr = execError.stderr?.toString() || '';
+        // Subscribe to output
+        const outputSub = ptyResult.output$.subscribe({
+          next: (data) => {
+            stdout += data;
+            // Real-time logging of output (debug level to avoid noise)
+            // Trim newlines for cleaner logs
+            const trimData = data.trim();
+            if (trimData) {
+              this.logger.debug(`[${executionId}][PTY] ${trimData}`);
+            }
+          },
+          error: (err) => {
+            this.logger.error(`[${executionId}] PTY stream error: ${err}`);
+          },
+        });
 
-        this.logger.debug(`[${executionId}]    stdout length: ${stdout.length} bytes`);
-        this.logger.debug(`[${executionId}]    stderr length: ${stderr.length} bytes`);
+        // Subscribe to exit
+        const exitSub = ptyResult.exit$.subscribe({
+          next: ({ exitCode, signal }) => {
+            clearTimeout(timer);
+            outputSub.unsubscribe();
+            exitSub.unsubscribe();
+            this.activeExecutions.delete(executionId);
 
-        if (exitCode !== 0) {
-          const mappedCode =
-            exitCode === 127 ? AIErrorCode.CLI_NOT_FOUND : AIErrorCode.PROCESS_CRASH;
-          this.logger.error(`[${executionId}] ❌ CLI failed with exit code ${exitCode}`);
-          this.logger.error(`[${executionId}]    Error type: ${mappedCode}`);
-          if (stderr) this.logger.error(`[${executionId}]    stderr: ${stderr.substring(0, 500)}`);
-          if (stdout) this.logger.debug(`[${executionId}]    stdout: ${stdout.substring(0, 500)}`);
+            this.logger.log(
+              `[${executionId}] 🏁 PTY process exited with code ${exitCode}, signal ${signal || 'none'}`,
+            );
+            this.logger.debug(`[${executionId}]    Total output length: ${stdout.length} bytes`);
 
-          reject({
-            code: mappedCode,
-            message: `Cursor CLI exited with code ${exitCode}`,
-            isRetryable: mappedCode !== AIErrorCode.CLI_NOT_FOUND && this.isRetryableExit(exitCode),
-            exitCode,
-            rawOutput: stderr || stdout,
-          });
-          return;
-        }
+            if (exitCode !== 0) {
+              // CLI failure
+              const mappedCode =
+                exitCode === 127 ? AIErrorCode.CLI_NOT_FOUND : AIErrorCode.PROCESS_CRASH;
 
-        // Shouldn't reach here
+              this.logger.error(`[${executionId}] ❌ CLI failed with exit code ${exitCode}`);
+              this.logger.error(`[${executionId}]    Error type: ${mappedCode}`);
+
+              reject({
+                code: mappedCode,
+                message: `Cursor CLI exited with code ${exitCode}`,
+                isRetryable:
+                  mappedCode !== AIErrorCode.CLI_NOT_FOUND && this.isRetryableExit(exitCode),
+                exitCode,
+                rawOutput: stdout, // PTY mixes stdout/stderr
+              });
+            } else {
+              // Success
+              this.logger.log(`[${executionId}] ✅ CLI execution completed successfully`);
+              resolve({ stdout, stderr: '' }); // PTY merges output
+            }
+          },
+          error: (err) => {
+            // Should not happen, but safe to handle
+            this.logger.error(`[${executionId}] PTY exit stream error: ${err}`);
+            reject(err);
+          },
+        });
+      } catch (error) {
+        if (timer!) clearTimeout(timer);
+        this.activeExecutions.delete(executionId);
+
+        this.logger.error(`[${executionId}] Failed to spawn PTY: ${error}`);
         reject({
           code: AIErrorCode.UNKNOWN,
-          message: execError.message || 'Unknown error',
+          message: error instanceof Error ? error.message : String(error),
           isRetryable: true,
         });
       }
@@ -429,43 +455,84 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
   }
 
   /**
-   * Check if Cursor CLI is available
+   * Check if Cursor CLI is available using PtyExecutionService
    */
   private async checkCliAvailability(): Promise<void> {
     try {
-      await execFileAsync(this.cliPath, ['--version'], { timeout: 5000 });
-      this.isCliAvailable = true;
-      this.logger.log(`Cursor CLI available at: ${this.cliPath}`);
-    } catch {
+      const ptyResult = this.ptyService.spawn(this.cliPath, ['--version'], {
+        cols: 80,
+        rows: 24,
+      });
+
+      return new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.ptyService.kill(ptyResult.pid, 'SIGKILL');
+          reject(new Error('CLI version check timed out'));
+        }, 5000);
+
+        ptyResult.exit$.subscribe({
+          next: ({ exitCode }) => {
+            clearTimeout(timeout);
+            if (exitCode === 0) {
+              this.isCliAvailable = true;
+              this.logger.log(`Cursor CLI available at: ${this.cliPath}`);
+              resolve();
+            } else {
+              this.isCliAvailable = false;
+              this.logger.warn(`Cursor CLI returned error code ${exitCode} at: ${this.cliPath}`);
+              resolve(); // Don't throw, just mark unavailable
+            }
+          },
+          error: (err) => {
+            clearTimeout(timeout);
+            this.isCliAvailable = false;
+            this.logger.warn(`Cursor CLI availability check failed: ${err}`);
+            resolve();
+          },
+        });
+      });
+    } catch (error) {
       this.isCliAvailable = false;
-      this.logger.warn(`Cursor CLI not available at: ${this.cliPath}`);
+      this.logger.warn(`Failed to check Cursor CLI availability: ${error}`);
     }
   }
 
   /**
    * Calculate confidence score based on changes
+   * More robust scoring based on files changed and diff size
    */
   private calculateConfidence(filesChanged: string[], diff: string): number {
+    if (filesChanged.length === 0) return 0;
+
     // Base confidence
-    let confidence = 0.5;
+    let confidence = 0.4;
 
-    // More files = higher confidence (up to a point)
-    if (filesChanged.length > 0 && filesChanged.length <= 5) {
-      confidence += 0.1 * filesChanged.length;
-    } else if (filesChanged.length > 5) {
-      confidence += 0.3; // Cap at +0.3 for many files
+    // Reliability of changes (number of files)
+    // 1-3 files is sweet spot for focused AI changes
+    if (filesChanged.length >= 1 && filesChanged.length <= 3) {
+      confidence += 0.3;
+    } else if (filesChanged.length > 3 && filesChanged.length <= 8) {
+      confidence += 0.2;
+    } else {
+      confidence += 0.1; // Large changes are riskier/less predictable
     }
 
-    // Significant diff = higher confidence
-    if (diff.length > 1000) {
+    // Entropy of changes (diff size)
+    const diffSize = diff.length;
+    if (diffSize > 100 && diffSize < 5000) {
+      confidence += 0.15;
+    } else if (diffSize >= 5000 && diffSize < 20000) {
       confidence += 0.1;
-    }
-    if (diff.length > 5000) {
-      confidence += 0.1;
+    } else if (diffSize >= 20000) {
+      confidence += 0.05; // Very large diffs might include noise
     }
 
-    // Cap at 0.95 (never 100% confident)
-    return Math.min(confidence, 0.95);
+    // Penalty for extremely large changes without many files
+    if (diffSize > 30000 && filesChanged.length < 2) {
+      confidence -= 0.1;
+    }
+
+    return Math.max(0.1, Math.min(confidence, 0.98));
   }
 
   /**

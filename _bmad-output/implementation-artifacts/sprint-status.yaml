@@ -1311,6 +1311,13 @@ development_status:
     story_points: 3
     notes: "✅ CODE REVIEW APPROVED (AI). Fixed persistence logic flaw - workspaces now reused by ticketId (AC#5). Verified logging of commit hash (AC#7). Added unit test spec to documentation. All tests passing."
 
+  19-4-implement-cursor-pty-integration:
+    status: done
+    priority: high
+    effort: "1 day"
+    story_points: 3
+    notes: "✅ Refactored CursorHeadlessProvider to use PtyExecutionService. Implemented real-time output streaming and process lifecycle management using Node-PTY. Verified with unit tests."
+
   epic-19-retrospective: optional
 
   epic-20: in-progress

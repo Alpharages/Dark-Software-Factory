@@ -170,6 +170,20 @@ So that the agent can see the files, run git commands, and manage its own contex
 **And** It MUST ensure the environment variables (API keys) are passed to the PTY session.
 **And** Legacy code that manually loads context files MUST be removed/bypassed.
 
+### Story 19.4: Implement Cursor PTY Integration
+
+As a System Integrator,
+I want to refactor the `CursorHeadlessProvider` to use the shared `PtyExecutionService`,
+So that all AI execution uses a consistent, robust terminal emulation layer supporting real-time streaming and interactive prompts.
+
+**Acceptance Criteria:**
+
+**Given** The `CursorHeadlessProvider` is executing a task
+**When** It spawns the `cursor` CLI process
+**Then** It MUST use `PtyExecutionService` implementation
+**And** It MUST stream output in real-time to logs
+**And** It MUST handle process management (cancellation, exit codes) via the PTY service.
+
 ## Epic 20: AI Task Pickup Reliability
 
 Ensure consistent AI task pickup from both automated webhooks and manual syncs, handling status transitions correctly without duplication.
