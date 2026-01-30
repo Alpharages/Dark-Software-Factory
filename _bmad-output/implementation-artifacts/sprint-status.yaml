@@ -1273,7 +1273,7 @@ development_status:
   
   epic-18-retrospective: done
 
-  epic-19: ready-for-dev
+  epic-19: done
   epic-19-name: "Claude Code CLI Integration (Node-PTY)"
   epic-19-priority: critical
   epic-19-phase: "Refactor"
@@ -1318,7 +1318,7 @@ development_status:
     story_points: 3
     notes: "✅ Refactored CursorHeadlessProvider to use PtyExecutionService. Implemented real-time output streaming and process lifecycle management using Node-PTY. Verified with unit tests."
 
-  epic-19-retrospective: optional
+  epic-19-retrospective: completed
 
   epic-20: in-progress
   epic-20-name: "AI Task Pickup Reliability"
