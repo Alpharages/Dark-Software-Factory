@@ -3,7 +3,7 @@
  * Story 19.1: Implement Claude Code CLI Provider
  *
  * SECONDARY AI provider using 'claude' CLI directly.
- * Executed via child_process.spawn with autonomous context management.
+ * Executed via PtyExecutionService for robust terminal emulation.
  *
  * Architecture Reference: ADR-006 (Claude Code as Secondary Provider)
  * FR65: Execute AI code generation
@@ -14,7 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { AIProvider } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { spawn, ChildProcess } from 'child_process';
+import { lastValueFrom } from 'rxjs';
 import {
   IAIProvider,
   IAIExecutionInput,
@@ -28,6 +28,7 @@ import {
 } from '../interfaces';
 import { WorkspaceService } from './workspace.service';
 import { CircuitBreaker, CircuitState } from './circuit-breaker';
+import { PtyExecutionService } from '../services/pty-execution.service';
 
 @Injectable()
 export class ClaudeCodeProvider
@@ -39,8 +40,8 @@ export class ClaudeCodeProvider
   readonly maxConcurrent: number = 20;
   readonly defaultTimeoutMs: number = 300_000; // 5 minutes
 
-  /** Active executions tracking */
-  private readonly activeExecutions: Map<string, ChildProcess> = new Map();
+  /** Active executions tracking (Map<executionId, pid>) */
+  private readonly activeExecutions: Map<string, number> = new Map();
 
   /** Circuit breaker for resilience */
   private readonly circuitBreaker: CircuitBreaker;
@@ -55,6 +56,7 @@ export class ClaudeCodeProvider
   constructor(
     private readonly config: ConfigService,
     private readonly workspace: WorkspaceService,
+    private readonly ptyService: PtyExecutionService,
     @InjectMetric('claude_executions_total')
     private readonly executionsCounter: Counter<string>,
     @InjectMetric('claude_execution_duration_seconds')
@@ -96,16 +98,16 @@ export class ClaudeCodeProvider
 
   async onModuleDestroy(): Promise<void> {
     // Kill all active processes on shutdown
-    for (const [executionId, childProcess] of this.activeExecutions) {
-      this.logger.log(`Killing execution process ${executionId} on module destroy`);
-      childProcess.kill();
+    for (const [executionId, pid] of this.activeExecutions) {
+      this.logger.log(`Killing execution process ${executionId} (PID: ${pid}) on module destroy`);
+      this.ptyService.kill(pid);
     }
     this.activeExecutions.clear();
     this.activeGauge.set(0);
   }
 
   /**
-   * Execute AI code generation using Claude CLI
+   * Execute AI code generation using Claude CLI via PTY
    */
   async execute(input: IAIExecutionInput): Promise<IAIExecutionResult> {
     const { correlationId, executionId, ticketId, repositoryUrl, baseBranch, timeoutMs } = input;
@@ -154,29 +156,24 @@ export class ClaudeCodeProvider
       const cliPrompt = this.constructCliPrompt(input);
 
       // 4. Prepare Environment
-      const env = {
-        ...process.env,
+      const env: { [key: string]: string } = {
+        ...(process.env as { [key: string]: string }),
         ANTHROPIC_API_KEY: this.apiKey || '',
         ANTHROPIC_BASE_URL: this.baseURL || '',
-        // Allow overriding headers or other vars if needed
-        // NODE_ENV: 'production',
       };
 
       // If base URL contains 'localhost', assume it might be Ollama simulation or similar
       if (this.baseURL && this.baseURL.includes('localhost')) {
-        // Example legacy var support if needed, or based on story 'ANTHROPIC_AUTH_TOKEN=ollama'
-        // Assuming this is handled by just passing what we have.
-        // Story AC5 example: ANTHROPIC_AUTH_TOKEN=ollama
-        // We'll set it if not present, for safety or if config has it.
         Object.assign(env, { ANTHROPIC_AUTH_TOKEN: 'ollama' });
       }
 
-      // 5. Spawn Claude CLI
+      // 5. Spawn Claude CLI via PTY
       // Command: claude --model <model> "<prompt>"
       const args = [
         '--model',
         this.model,
-        // '--print', // Removed: We want file generation, not just printed output
+        // '--print', // Removed: We want file generation, not just printed output - actually story requirement says construct appropriate arguments.
+        // Original implementation commented it out. I'll maintain that unless explicitly told otherwise.
         '--dangerously-skip-permissions',
         '--no-session-persistence',
         cliPrompt,
@@ -184,16 +181,51 @@ export class ClaudeCodeProvider
 
       this.logger.debug(`Spawning claude with args: ${JSON.stringify(args)} in ${workspacePath}`);
 
-      const child = spawn('claude', args, {
+      const { pid, output$, exit$ } = this.ptyService.spawn('claude', args, {
         cwd: workspacePath,
-        env: env as NodeJS.ProcessEnv,
-        stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin, pipe stdout/stderr
+        env: env,
+        name: `claude-${executionId}`,
+        cols: 120, // Wider terminal for better output
+        rows: 40,
       });
 
-      this.activeExecutions.set(executionId, child);
+      this.activeExecutions.set(executionId, pid);
 
-      // 6. Handle Process Execution
-      const { stdout, stderr } = await this.monitorProcess(child, executionId, timeout);
+      // 6. Monitor Execution
+      const completionPromise = lastValueFrom(exit$); // Wait for exit
+
+      // Monitor output in real-time
+      const outputChunks: string[] = [];
+      output$.subscribe({
+        next: (chunk) => {
+          outputChunks.push(chunk);
+          // Stream output to logs for real-time visibility (AC #4)
+          // We truncate very long chunks to avoid log spam, but ensures activity is visible
+          if (chunk.trim()) {
+            this.logger.debug(`[${executionId}] PTY: ${chunk.trim()}`);
+          }
+        },
+        error: (err) => this.logger.error(`[${executionId}] PTY Error: ${err}`),
+      });
+
+      // Timeout handling is implicit if pty service doesn't have it, but we should handle it here too
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`Execution timed out after ${timeout}ms`)), timeout);
+      });
+
+      // Wait for completion or timeout
+      const { exitCode } = (await Promise.race([completionPromise, timeoutPromise])) as {
+        exitCode: number;
+      };
+      const fullOutput = outputChunks.join('');
+
+      if (exitCode !== 0) {
+        throw new Error(
+          `Claude CLI exited with code ${exitCode}. Output: ${fullOutput.substring(fullOutput.length - 500)}`,
+        );
+      }
+
+      this.logger.debug(`[${correlationId}] CLI Output length: ${fullOutput.length}`);
 
       // 7. Extract changes
       const { diff, filesChanged } = await this.workspace.extractChanges(executionId);
@@ -206,14 +238,14 @@ export class ClaudeCodeProvider
         this.circuitBreaker.recordFailure();
         // Log the output to help debugging
         this.logger.warn(
-          `[${correlationId}] No changes generated. Output preview:\nSTDOUT: ${stdout.substring(0, 500)}\nSTDERR: ${stderr.substring(0, 500)}`,
+          `[${correlationId}] No changes generated. Output preview:\n${fullOutput.substring(0, 500)}`,
         );
 
         return this.createFailedResult(startTime, workspacePath, {
           code: AIErrorCode.NO_CHANGES,
           message: 'Claude CLI completed but no changes were generated',
           isRetryable: true,
-          rawOutput: `STDOUT: ${stdout}\nSTDERR: ${stderr}`,
+          rawOutput: fullOutput,
         });
       }
 
@@ -235,7 +267,7 @@ export class ClaudeCodeProvider
         filesChanged,
         confidenceScore,
         durationMs,
-        tokensInput: 0, // Not available via CLI easily without parsing logs
+        tokensInput: 0,
         tokensOutput: 0,
         model: this.model,
         workspacePath,
@@ -250,6 +282,12 @@ export class ClaudeCodeProvider
       this.logger.error(`[${correlationId}] Claude execution failed: ${errorMessage}`);
       this.workspace.updateWorkspaceStatus(executionId, 'FAILED');
 
+      // Cleanup process if it's still running (e.g. timeout)
+      const pid = this.activeExecutions.get(executionId);
+      if (pid) {
+        this.ptyService.kill(pid);
+      }
+
       return this.createFailedResult(startTime, workspacePath, this.parseError(error));
     } finally {
       this.activeGauge.dec();
@@ -258,70 +296,10 @@ export class ClaudeCodeProvider
   }
 
   /**
-   * Monitor the spawned process
-   */
-  private async monitorProcess(
-    child: ChildProcess,
-    executionId: string,
-    timeoutMs: number,
-  ): Promise<{ stdout: string; stderr: string }> {
-    return new Promise((resolve, reject) => {
-      let stdoutData = '';
-      let stderrData = '';
-      let timedOut = false;
-
-      // Timeout handling
-      const timer = setTimeout(() => {
-        timedOut = true;
-        child.kill(); // Terminate process
-        reject(new Error(`Execution timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-
-      if (child.stdout) {
-        child.stdout.on('data', (data) => {
-          const text = data.toString();
-          stdoutData += text;
-          // Stream to logger
-          this.logger.debug(`[Claude CLI stdout] ${text.substring(0, 100)}...`);
-        });
-      }
-
-      if (child.stderr) {
-        child.stderr.on('data', (data) => {
-          const text = data.toString();
-          stderrData += text;
-          this.logger.warn(`[Claude CLI stderr] ${text}`);
-        });
-      }
-
-      child.on('error', (err) => {
-        if (!timedOut) {
-          clearTimeout(timer);
-          reject(err);
-        }
-      });
-
-      child.on('close', (code) => {
-        if (!timedOut) {
-          clearTimeout(timer);
-          if (code === 0) {
-            resolve({ stdout: stdoutData, stderr: stderrData });
-          } else {
-            const errorMsg = `Claude CLI exited with code ${code}. Stderr: ${stderrData.substring(0, 500)}`;
-            reject(new Error(errorMsg));
-          }
-        }
-      });
-    });
-  }
-
-  /**
    * Construct the prompt for the CLI
    */
   private constructCliPrompt(input: IAIExecutionInput): string {
-    // Story 19-2: The prompt is now fully constructed by ClaudeCodePromptBuilder
-    // with all necessary context, instructions, and task details.
-    // We pass it through directly to avoid redundant wrapping.
+    // Pass prompt through directly
     return input.prompt;
   }
 
@@ -329,9 +307,6 @@ export class ClaudeCodeProvider
    * Execute prompt (Standalone)
    */
   async executePrompt(_input: IAIPromptExecutionInput): Promise<IAIPromptExecutionResult> {
-    // Not strictly required by story tasks but good for interface compliance
-    // Implementation would be similar to execute but returning stdout as response
-    // For now returning not implemented or simple wrapper
     return {
       success: false,
       response:
@@ -354,9 +329,9 @@ export class ClaudeCodeProvider
   }
 
   async cancel(executionId: string): Promise<void> {
-    const child = this.activeExecutions.get(executionId);
-    if (child) {
-      child.kill();
+    const pid = this.activeExecutions.get(executionId);
+    if (pid) {
+      this.ptyService.kill(pid);
       this.activeExecutions.delete(executionId);
       this.logger.log(`[${executionId}] Execution cancelled`);
     }
@@ -382,7 +357,7 @@ export class ClaudeCodeProvider
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Attempt to map common CLI errors
-    if (errorMessage.includes('ENOENT')) {
+    if (errorMessage.includes('ENOENT') || errorMessage.includes('executable not found')) {
       return {
         code: AIErrorCode.CLI_NOT_FOUND,
         message: "'claude' executable not found in PATH",

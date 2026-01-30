@@ -1,6 +1,6 @@
 # Story 19.2: Implement Claude Code Provider Strategy
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation of this story was performed by the create-story workflow. -->
 
@@ -22,20 +22,20 @@ so that I can execute tasks using the Claude CLI without changing the Orchestrat
 
 ## Tasks / Subtasks
 
-- [ ] Refactor `ClaudeCodeProvider` in `src/ai-routing/providers/claude-code.provider.ts` <!-- id: 1 -->
-  - [ ] Inject `PtyExecutionService`
-  - [ ] Remove `child_process` usage
-  - [ ] Implement `executeTask` using `pty.spawn()`
-  - [ ] Construct initial prompt from ticket details
-- [ ] Implement Output Handling <!-- id: 2 -->
-  - [ ] Subscribe to PTY output stream
-  - [ ] Parse relevant events (if needed) or pass through logs
-- [ ] Remove Legacy Context Logic <!-- id: 3 -->
-  - [ ] Remove code that manually reads files and appends to prompt
-- [ ] Update Unit Tests (`src/ai-routing/providers/claude-code.provider.spec.ts`) <!-- id: 4 -->
-  - [ ] Mock `PtyExecutionService`
-  - [ ] Verify command construction
-  - [ ] Verify interaction flow
+- [x] Refactor `ClaudeCodeProvider` in `src/ai-routing/providers/claude-code.provider.ts` <!-- id: 1 -->
+  - [x] Inject `PtyExecutionService`
+  - [x] Remove `child_process` usage
+  - [x] Implement `executeTask` using `pty.spawn()`
+  - [x] Construct initial prompt from ticket details
+- [x] Implement Output Handling <!-- id: 2 -->
+  - [x] Subscribe to PTY output stream
+  - [x] Parse relevant events (if needed) or pass through logs
+- [x] Remove Legacy Context Logic <!-- id: 3 -->
+  - [x] Remove code that manually reads files and appends to prompt
+- [x] Update Unit Tests (`src/ai-routing/providers/claude-code.provider.spec.ts`) <!-- id: 4 -->
+  - [x] Mock `PtyExecutionService`
+  - [x] Verify command construction
+  - [x] Verify interaction flow
 
 ## Dev Notes
 
@@ -76,3 +76,11 @@ Antigravity (simulated Create-Story Workflow)
 
 - src/ai-routing/providers/claude-code.provider.ts
 - src/ai-routing/providers/claude-code.provider.spec.ts
+
+## Dev Agent Record
+
+- **Date:** 2026-01-31
+- **Status:** Complete
+- **Approach:** Refactored `ClaudeCodeProvider` to inject and use `PtyExecutionService`. Removed direct `child_process` usage. Updated unit tests to mock PTY service. Verified pass.
+- **AI Review (2026-01-31):** Fixed critical issue regarding real-time output stream (AC #4) by adding debug logging of PTY chunks. Updated story checklist to reflect completion.
+- **Artifacts:** walthrough.md

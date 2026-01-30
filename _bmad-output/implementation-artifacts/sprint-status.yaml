@@ -1294,11 +1294,15 @@ development_status:
     notes: "✅ CODE REVIEW APPROVED - PtyExecutionService implemented wrapping node-pty. Features: TTY spawning, real-time stdout/stderr streaming, stdin writing, resizing, killing. Unit tests passing. Code Review: Fixed Git tracking issues (staged 5 missing files), updated story File List. Ready for Claude Code Provider integration."
   
   19-2-implement-claude-code-provider-strategy:
-    status: ready-for-dev
+    status: done
     priority: critical
     effort: "1 day"
     story_points: 5
-    notes: "Implement ClaudeCodeProvider using PtyExecutionService. Pass ticket description as prompt. Rely on agentic context gathering."
+    notes: "✅ CODE REVIEW APPROVED. Fixed critical issue with real-time logging of PTY output (AC#4). Updated story checklist to reflect completion. Refactored ClaudeCodeProvider to use PtyExecutionService, removing legacy child_process code. Unit tests updated and verified."
+    files:
+      - src/ai-routing/providers/claude-code.provider.ts
+      - src/ai-routing/providers/claude-code.provider.spec.ts
+      - _bmad-output/implementation-artifacts/19-2-implement-claude-code-provider-strategy.md
   
   19-3-autonomous-workspace-management:
     status: ready-for-dev

@@ -5,22 +5,15 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-// import { AIProvider } from '@/prisma/client';
 import { ClaudeCodeProvider } from './claude-code.provider';
 import { WorkspaceService } from './workspace.service';
+import { PtyExecutionService } from '../services/pty-execution.service';
 import { IAIExecutionInput } from '../interfaces';
-import * as child_process from 'child_process';
-import { EventEmitter } from 'events';
-import { Readable } from 'stream';
-
-// Mock child_process
-jest.mock('child_process');
+import { Subject } from 'rxjs';
 
 describe('ClaudeCodeProvider', () => {
   let provider: ClaudeCodeProvider;
-  // let configService: jest.Mocked<ConfigService>;
-  // let workspaceService: jest.Mocked<WorkspaceService>;
-  let mockSpawn: jest.Mock;
+  let ptyExecutionService: jest.Mocked<PtyExecutionService>;
   let mockMetrics: {
     inc: jest.Mock;
     observe: jest.Mock;
@@ -41,24 +34,31 @@ describe('ClaudeCodeProvider', () => {
     // Reset mocks
     jest.clearAllMocks();
 
-    // Mock spawn to return a process-like object
-    mockSpawn = jest.fn().mockImplementation(() => {
-      const mockProcess = new EventEmitter() as child_process.ChildProcess;
-      mockProcess.stdout = new EventEmitter() as Readable;
-      mockProcess.stderr = new EventEmitter() as Readable;
-      mockProcess.kill = jest.fn();
+    const mockOutputSubject = new Subject<string>();
+    const mockExitSubject = new Subject<{ exitCode: number; signal?: number }>();
 
-      // Simulate successful execution on next tick
-      process.nextTick(() => {
-        mockProcess.stdout!.emit('data', Buffer.from('Claude Code execution started'));
-        mockProcess.stdout!.emit('data', Buffer.from('Processing...'));
-        mockProcess.emit('close', 0);
-      });
+    const mockPtyExecutionService = {
+      spawn: jest.fn().mockImplementation(() => {
+        // Simulate output and exit
+        setTimeout(() => {
+          mockOutputSubject.next('Claude Code execution started\n');
+          mockOutputSubject.next('Processing...\n');
+          // Simulate successful exit
+          mockExitSubject.next({ exitCode: 0 });
+          mockExitSubject.complete();
+          mockOutputSubject.complete();
+        }, 10);
 
-      return mockProcess;
-    });
-    // Update the mock implementation
-    (child_process.spawn as unknown as jest.Mock).mockImplementation(mockSpawn);
+        return {
+          pid: 12345,
+          output$: mockOutputSubject.asObservable(),
+          exit$: mockExitSubject.asObservable(),
+        };
+      }),
+      write: jest.fn(),
+      kill: jest.fn(),
+      resize: jest.fn(),
+    };
 
     const mockConfigService = {
       get: jest.fn((key: string, defaultValue?: unknown) => {
@@ -99,6 +99,7 @@ describe('ClaudeCodeProvider', () => {
         ClaudeCodeProvider,
         { provide: ConfigService, useValue: mockConfigService },
         { provide: WorkspaceService, useValue: mockWorkspaceServiceImpl },
+        { provide: PtyExecutionService, useValue: mockPtyExecutionService },
         { provide: 'PROM_METRIC_CLAUDE_EXECUTIONS_TOTAL', useValue: mockMetrics },
         { provide: 'PROM_METRIC_CLAUDE_EXECUTION_DURATION_SECONDS', useValue: mockMetrics },
         { provide: 'PROM_METRIC_CLAUDE_ACTIVE_EXECUTIONS', useValue: mockMetrics },
@@ -108,8 +109,7 @@ describe('ClaudeCodeProvider', () => {
     }).compile();
 
     provider = module.get<ClaudeCodeProvider>(ClaudeCodeProvider);
-    // configService = module.get(ConfigService);
-    // workspaceService = module.get(WorkspaceService);
+    ptyExecutionService = module.get(PtyExecutionService);
 
     await provider.onModuleInit();
   });
@@ -119,35 +119,41 @@ describe('ClaudeCodeProvider', () => {
   });
 
   describe('execute', () => {
-    it('should use spawn to invoke claude CLI', async () => {
+    it('should use PtyExecutionService to spawn claude CLI', async () => {
       await provider.execute(mockInput);
 
-      expect(mockSpawn).toHaveBeenCalled();
-      const [command, args] = mockSpawn.mock.calls[0];
+      expect(ptyExecutionService.spawn).toHaveBeenCalled();
+      const call = ptyExecutionService.spawn.mock.calls[0];
+      const command = call[0];
+      const args = call[1];
+      const options = call[2];
 
       expect(command).toBe('claude');
-      expect(args).toContain('--print');
+
+      expect(args).toBeDefined();
+      expect(args![0]).toBe('--model');
       expect(args).toContain('--dangerously-skip-permissions');
       expect(args).toContain('--no-session-persistence');
-      expect(args[5]).toContain(mockInput.prompt); // Verify prompt is passed in args
+
+      // Verify prompt is passed in args
+      expect(args!.join(' ')).toContain(mockInput.prompt);
+
+      // Verify options
+      expect(options).toBeDefined();
+      expect(options!.cwd).toBe('/tmp/test-workspace');
+      expect(options!.env).toBeDefined();
+      expect(options!.env!.ANTHROPIC_API_KEY).toBe('sk-ant-test-key');
     });
 
-    it('should inject environment variables including ANTHROPIC_AUTH_TOKEN', async () => {
+    it('should inject environment variables correctly', async () => {
       await provider.execute(mockInput);
 
-      const [, , options] = mockSpawn.mock.calls[0];
-      expect(options.env).toBeDefined();
-      expect(options.env.ANTHROPIC_API_KEY).toBe('sk-ant-test-key');
-      // Assuming behavior for local/ollama if baseURL is set
-      expect(options.env.ANTHROPIC_BASE_URL).toBe('http://localhost:11434');
-    });
-
-    it('should set CWD to workspace path or project root', async () => {
-      await provider.execute(mockInput);
-
-      const [, , options] = mockSpawn.mock.calls[0];
-      // Should effectively use the workspace path created
-      expect(options.cwd).toBe('/tmp/test-workspace');
+      const call = ptyExecutionService.spawn.mock.calls[0];
+      const options = call[2];
+      expect(options).toBeDefined();
+      expect(options!.env).toBeDefined();
+      expect(options!.env!.ANTHROPIC_API_KEY).toBe('sk-ant-test-key');
+      expect(options!.env!.ANTHROPIC_BASE_URL).toBe('http://localhost:11434');
     });
   });
 });
