@@ -73,6 +73,26 @@ describe('WorkspaceService', () => {
           if (!found) throw new Error('Not found');
           return found;
         }),
+        findFirst: jest.fn(
+          async ({
+            where,
+          }: {
+            where: {
+              ticket_id: string;
+              status: { in: string[] } | { notIn: string[] };
+            };
+            orderBy: { updated_at: 'desc' };
+          }) => {
+            // simplified findFirst implementation to match test scenario
+            const matches = workspaces.filter((w) => w.ticket_id === where.ticket_id);
+            // Sort by updated_at desc (if we were tracking it)
+            // matches.sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
+
+            // Filter by status if provided
+            // For test, we assume if ticket_id matches, it's the one we want unless test specifically sets bad status
+            return matches[0] || null;
+          },
+        ),
         findMany: jest.fn(async () => {
           // Used by recoverWorkspaces / cleanup scheduler; return all
           return workspaces;
@@ -81,6 +101,7 @@ describe('WorkspaceService', () => {
         create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
           const record = { ...data, created_at: new Date(), updated_at: new Date() } as unknown as {
             execution_id: string;
+            ticket_id: string;
           };
           workspaces.push(record);
           return record;
@@ -90,10 +111,39 @@ describe('WorkspaceService', () => {
             where,
             data,
           }: {
-            where: { execution_id: string };
+            where: { execution_id?: string; id?: string };
             data: Record<string, unknown>;
           }) => {
-            const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
+            // Check if we are updating by id or execution_id
+            let idx = -1;
+            if (where.execution_id) {
+              idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
+            } else if (where.id) {
+              // In mock, allow lookup by id (which might be workspace_id depending on how it's used, but let's assume we find it)
+              // The real findFirst returns a full object including 'id'.
+              // For this mock, 'id' is probably not set/used consistently unless we did so in create.
+              // Let's assume we can fallback to searching by ticket_id or iterate all
+              // But wait, the update call in the service is: update({ where: { id: existingTicketWorkspace.id }, ... })
+              // We need to ensure logic works.
+              idx = workspaces.findIndex(
+                (w) => w.workspace_id === where.id || w.execution_id === where.id,
+              ); // hack for mock
+              // Ideally we should assign 'id' on create.
+            }
+
+            if (idx < 0) {
+              // Try one last ditch effort: if we found it via findFirst, it exists.
+              // If we are updating it, we likely have the object ref in memory in real usage.
+              // For the mock, let's just grab the first one if we can't find it? No that's dangerous.
+              // Inspect 'where':
+              if (where.id) {
+                // In create, we didn't explicitly set 'id', only 'workspace_id'. Prisma usually sets 'id' (int/uuid).
+                // Let's assume for this mock that 'workspace_id' is used as 'id' or we need to fix create to set 'id'.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                idx = workspaces.findIndex((w) => (w as any).id === where.id);
+              }
+            }
+
             if (idx < 0) throw new Error('Not found');
             workspaces[idx] = { ...workspaces[idx], ...data, updated_at: new Date() };
             return workspaces[idx];
@@ -118,9 +168,11 @@ describe('WorkspaceService', () => {
               // Create new
               const record = {
                 ...create,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                id: (create as any).workspace_id, // Hack to ensure ID exists for update later
                 created_at: new Date(),
                 updated_at: new Date(),
-              } as unknown as { execution_id: string };
+              } as unknown as { execution_id: string; ticket_id: string };
               workspaces.push(record);
               return record;
             }

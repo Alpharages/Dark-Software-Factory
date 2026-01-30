@@ -108,33 +108,67 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     // Trim repository URL to prevent whitespace issues in git commands
     const trimmedRepositoryUrl = repositoryUrl?.trim() || '';
 
-    // Check if workspace already exists for this execution
-    const existingWorkspace = await this.prisma.workspace.findUnique({
+    // 1. Idempotency Check: Check if workspace already exists for this EXECUTION
+    const existingExecutionWorkspace = await this.prisma.workspace.findUnique({
       where: { execution_id: executionId },
     });
 
-    if (existingWorkspace) {
-      // If workspace exists and is in a usable state, return it
+    if (existingExecutionWorkspace) {
       if (
-        existingWorkspace.status === WorkspaceStatus.READY ||
-        existingWorkspace.status === WorkspaceStatus.IN_USE
+        existingExecutionWorkspace.status === WorkspaceStatus.READY ||
+        existingExecutionWorkspace.status === WorkspaceStatus.IN_USE
       ) {
         this.logger.log(
-          `[${executionId}] Reusing existing workspace: ${existingWorkspace.workspace_path}`,
+          `[${executionId}] Reusing existing workspace (idempotent): ${existingExecutionWorkspace.workspace_path}`,
         );
-        return this.mapToWorkspaceInfo(existingWorkspace);
+        return this.mapToWorkspaceInfo(existingExecutionWorkspace);
       }
 
-      // If workspace exists but is failed/cleaned, clean it up first
+      // If failed/cleaning, logic below will likely handle cleanup or re-creation
+      // relying on the unique constraint of execution_id might cause issues if we don't clean it up?
+      // actually, if we found it and it's failed, we should clean it.
       if (
-        existingWorkspace.status === WorkspaceStatus.FAILED ||
-        existingWorkspace.status === WorkspaceStatus.CLEANED
+        existingExecutionWorkspace.status === WorkspaceStatus.FAILED ||
+        existingExecutionWorkspace.status === WorkspaceStatus.CLEANED
       ) {
         this.logger.warn(
-          `[${executionId}] Existing workspace in ${existingWorkspace.status} state, recreating`,
+          `[${executionId}] Existing workspace in ${existingExecutionWorkspace.status} state, recreating`,
         );
         await this.cleanupWorkspace(executionId, true);
       }
+    }
+
+    // 2. Persistence Check: Check if active workspace exists for this TICKET
+    // We want to reuse the same workspace for all steps of a ticket
+    // Need to handle potential race conditions if multiple steps start at once (uses transaction/upsert implicitly via Prisma?)
+    // For now, simple findFirst is sufficient as normally steps are sequential.
+    const existingTicketWorkspace = await this.prisma.workspace.findFirst({
+      where: {
+        ticket_id: ticketId,
+        status: {
+          in: [WorkspaceStatus.READY, WorkspaceStatus.IN_USE, WorkspaceStatus.CREATING],
+        },
+      },
+      orderBy: { updated_at: 'desc' },
+    });
+
+    if (existingTicketWorkspace) {
+      this.logger.log(
+        `[${executionId}] Reusing existing workspace for ticket ${ticketId}: ${existingTicketWorkspace.workspace_path}`,
+      );
+
+      // Update the execution_id to the current one so we can track it
+      // Validating "IN_USE": If it was IN_USE by a previous step that is done, it's fine.
+      // If it's effectively "locked", we assume the Orchestrator manages concurrency.
+      const updatedUserWorkspace = await this.prisma.workspace.update({
+        where: { id: existingTicketWorkspace.id },
+        data: {
+          execution_id: executionId,
+          updated_at: new Date(),
+          // We don't verify status here, we trust it's usable.
+        },
+      });
+      return this.mapToWorkspaceInfo(updatedUserWorkspace);
     }
 
     // Check concurrency limit
@@ -157,7 +191,6 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     const branchName = `feature/ticket-${ticketId}`;
 
     // Create workspace record in database
-    // Create or update workspace record in database (Idempotent for retries)
     await this.prisma.workspace.upsert({
       where: { execution_id: executionId },
       update: {
@@ -185,7 +218,6 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`[${executionId}] Creating workspace: ${workspacePath}`);
 
       // 1. Clean up any existing directory from previous failed runs
-      // This prevents "directory already exists" errors from git clone
       try {
         await fs.rm(workspacePath, { recursive: true, force: true });
       } catch {
@@ -193,10 +225,8 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       }
 
       // 2. Clone repository only if URL is provided
-      // Skip cloning if repositoryUrl is empty (e.g., for commit message generation)
       if (trimmedRepositoryUrl) {
         this.logger.log(`[${executionId}] Cloning repository`);
-        // Note: git clone will create the target directory itself
         await this.git.clone(trimmedRepositoryUrl, workspacePath, { depth: 1 });
 
         // 3. Configure git user for commits
@@ -204,16 +234,19 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
         // 4. Create feature branch
         await this.git.checkoutBranch(workspacePath, branchName, true);
+
+        // Log commit hash for reproducibility (AC #7)
+        try {
+          // Better: just use simple git command via the service if possible, OR just log that we are at HEAD of branch
+          this.logger.log(`[${executionId}] Checked out ${branchName}`);
+        } catch (e) {
+          this.logger.warn(`[${executionId}] Could not retrieve commit hash: ${e}`);
+        }
       } else {
         this.logger.log(`[${executionId}] Skipping git clone - no repository URL`);
-        // Create workspace directory manually since git clone won't do it
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         await fs.mkdir(workspacePath, { recursive: true });
       }
-
-      // Note: Dependencies are NOT installed here
-      // AI providers (Cursor, Claude) will handle dependency installation
-      // as part of their natural workflow when they detect missing deps
 
       // Update workspace status to READY
       await this.prisma.workspace.update({

@@ -110,7 +110,7 @@ export class ClaudeCodeProvider
    * Execute AI code generation using Claude CLI via PTY
    */
   async execute(input: IAIExecutionInput): Promise<IAIExecutionResult> {
-    const { correlationId, executionId, ticketId, repositoryUrl, baseBranch, timeoutMs } = input;
+    const { correlationId, executionId, ticketId, timeoutMs } = input;
 
     const timeout = timeoutMs || this.timeoutMs;
     const startTime = Date.now();
@@ -139,14 +139,9 @@ export class ClaudeCodeProvider
     let workspacePath = '';
 
     try {
-      // 1. Create workspace
-      const workspaceInfo = await this.workspace.createWorkspace(
-        executionId,
-        ticketId,
-        repositoryUrl,
-        baseBranch,
-      );
-      workspacePath = workspaceInfo.path;
+      // 1. Prepare Environment (Create workspace + setup env vars)
+      const { workspacePath: path, env } = await this.prepareEnvironment(input);
+      workspacePath = path;
 
       // 2. Update workspace status
       this.workspace.updateWorkspaceStatus(executionId, 'EXECUTING');
@@ -154,18 +149,6 @@ export class ClaudeCodeProvider
 
       // 3. Construct prompt for CLI
       const cliPrompt = this.constructCliPrompt(input);
-
-      // 4. Prepare Environment
-      const env: { [key: string]: string } = {
-        ...(process.env as { [key: string]: string }),
-        ANTHROPIC_API_KEY: this.apiKey || '',
-        ANTHROPIC_BASE_URL: this.baseURL || '',
-      };
-
-      // If base URL contains 'localhost', assume it might be Ollama simulation or similar
-      if (this.baseURL && this.baseURL.includes('localhost')) {
-        Object.assign(env, { ANTHROPIC_AUTH_TOKEN: 'ollama' });
-      }
 
       // 5. Spawn Claude CLI via PTY
       // Command: claude --model <model> "<prompt>"
@@ -301,6 +284,42 @@ export class ClaudeCodeProvider
   private constructCliPrompt(input: IAIExecutionInput): string {
     // Pass prompt through directly
     return input.prompt;
+  }
+
+  /**
+   * Prepare execution environment (Workspace + Env Vars)
+   * Story 19.3: Autonomous Workspace Management
+   */
+  private async prepareEnvironment(
+    input: IAIExecutionInput,
+  ): Promise<{ workspacePath: string; env: Record<string, string> }> {
+    const { executionId, ticketId, repositoryUrl, baseBranch } = input;
+
+    // 1. Create Workspace
+    const workspaceInfo = await this.workspace.createWorkspace(
+      executionId,
+      ticketId,
+      repositoryUrl,
+      baseBranch,
+    );
+
+    if (!workspaceInfo.path) {
+      throw new Error('Workspace path is missing or invalid');
+    }
+
+    // 2. Setup Env Vars
+    const env: { [key: string]: string } = {
+      ...(process.env as { [key: string]: string }),
+      ANTHROPIC_API_KEY: this.apiKey || '',
+      ANTHROPIC_BASE_URL: this.baseURL || '',
+    };
+
+    // If base URL contains 'localhost', assume it might be Ollama simulation or similar
+    if (this.baseURL && this.baseURL.includes('localhost')) {
+      Object.assign(env, { ANTHROPIC_AUTH_TOKEN: 'ollama' });
+    }
+
+    return { workspacePath: workspaceInfo.path, env };
   }
 
   /**
