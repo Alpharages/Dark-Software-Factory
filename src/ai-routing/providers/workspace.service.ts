@@ -105,6 +105,9 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     repositoryUrl: string,
     _baseBranch: string = 'main',
   ): Promise<IWorkspaceInfo> {
+    // Trim repository URL to prevent whitespace issues in git commands
+    const trimmedRepositoryUrl = repositoryUrl?.trim() || '';
+
     // Check if workspace already exists for this execution
     const existingWorkspace = await this.prisma.workspace.findUnique({
       where: { execution_id: executionId },
@@ -154,13 +157,24 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     const branchName = `feature/ticket-${ticketId}`;
 
     // Create workspace record in database
-    await this.prisma.workspace.create({
-      data: {
+    // Create or update workspace record in database (Idempotent for retries)
+    await this.prisma.workspace.upsert({
+      where: { execution_id: executionId },
+      update: {
+        workspace_id: workspaceId,
+        workspace_path: workspacePath,
+        repository_url: trimmedRepositoryUrl || null,
+        branch_name: branchName,
+        status: WorkspaceStatus.CREATING,
+        ticket_id: ticketId,
+        updated_at: new Date(),
+      },
+      create: {
         workspace_id: workspaceId,
         execution_id: executionId,
         ticket_id: ticketId,
         workspace_path: workspacePath,
-        repository_url: repositoryUrl || null,
+        repository_url: trimmedRepositoryUrl || null,
         branch_name: branchName,
         status: WorkspaceStatus.CREATING,
       },
@@ -180,10 +194,10 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
       // 2. Clone repository only if URL is provided
       // Skip cloning if repositoryUrl is empty (e.g., for commit message generation)
-      if (repositoryUrl && repositoryUrl.trim() !== '') {
+      if (trimmedRepositoryUrl) {
         this.logger.log(`[${executionId}] Cloning repository`);
         // Note: git clone will create the target directory itself
-        await this.git.clone(repositoryUrl, workspacePath, { depth: 1 });
+        await this.git.clone(trimmedRepositoryUrl, workspacePath, { depth: 1 });
 
         // 3. Configure git user for commits
         await this.git.configureUser(workspacePath, this.gitUserName, this.gitUserEmail);

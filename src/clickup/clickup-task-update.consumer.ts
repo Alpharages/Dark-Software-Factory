@@ -1,10 +1,3 @@
-/**
- * ClickUp Task Update Consumer
- *
- * Processes task updates from RabbitMQ queue (unified webhook + polling)
- * Updates local database and triggers downstream workflows
- */
-
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as amqp from 'amqplib';
 import { PrismaService } from '../database/prisma.service';
@@ -17,6 +10,10 @@ import { RabbitMQConsumerBase } from '../rabbitmq/rabbitmq-consumer.base';
 import { TicketStatus } from '@/prisma/client';
 import { ClickUpService } from './clickup.service';
 import { ConfigService } from '@nestjs/config';
+// Story 20.1: Provider-Agnostic Intake
+import { mapClickUpToTaskEvent, TaskTriggerSource } from '@/ticket-intake/dto';
+import { IRawTaskEvent } from '@/ticket-intake/interfaces/ticket-intake.interface';
+import { QUEUE_NAMES } from '@/rabbitmq/rabbitmq.config';
 
 interface ClickUpTaskUpdateMessage {
   task_id: string;
@@ -120,6 +117,8 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
    * Process task updates (called externally or via message broker)
    * Handles both webhook and polling sources
    *
+   * Story 20.1: Now uses provider-agnostic ITaskEvent for routing to intake
+   *
    * Production behavior: Auto-creates tickets if they don't exist
    * This ensures polling discovers new tasks without manual intervention
    */
@@ -208,35 +207,48 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
           status: 'created',
         });
 
-        // Route newly created ticket to intake queue for validation and AI processing
-        const intakeMessageId = `intake-${ticket.id}-${Date.now()}`;
-        await this.rabbitMQService.publishToQueue(
-          'ticket-intake-queue',
-          {
-            messageId: intakeMessageId,
-            correlationId: intakeMessageId,
-            payload: {
-              taskId: message.task_id,
-              taskName: message.name || `Task ${message.task_id}`,
-              taskDescription: taskDescription, // Include fetched description
-              taskUrl: `https://app.clickup.com/t/${message.task_id}`,
-              listId: 'clickup-polling',
-              projectId: 'clickup-polling',
-              eventType: 'taskCreated',
-              tags: [],
-              creatorEmail: 'system@clickup-polling',
-            },
-          },
-          {
-            persistent: true,
-            correlationId: intakeMessageId,
-          },
-        );
+        // Story 20.1: Route newly created ticket using provider-agnostic ITaskEvent
+        const correlationId = `webhook-${message.task_id}-${Date.now()}`;
+        const triggerSource =
+          message.source === 'webhook' ? TaskTriggerSource.WEBHOOK : TaskTriggerSource.SYNC;
+
+        // Create IRawTaskEvent from ClickUp message
+        const rawEvent: IRawTaskEvent = {
+          taskId: message.task_id,
+          taskName: message.name || `Task ${message.task_id}`,
+          taskDescription: taskDescription,
+          taskStatus: message.status,
+          taskUrl: `https://app.clickup.com/t/${message.task_id}`,
+          listId: 'clickup-polling', // Fallback - should be from project mapping
+          listName: 'ClickUp Polling',
+          projectId: defaultRepository,
+          projectName: 'Default Project',
+          spaceId: '',
+          eventType: 'taskCreated',
+          tags: [],
+          customFields: (message.custom_fields || {}) as Record<string, unknown>,
+          creatorEmail: 'system@clickup-polling',
+          eventTimestamp: message.date_updated,
+          receivedAt: new Date().toISOString(),
+          correlationId,
+          webhookEventId: message.webhookId || '',
+        };
+
+        // Map to provider-agnostic ITaskEvent
+        const taskEvent = mapClickUpToTaskEvent(rawEvent, triggerSource);
+
+        // Publish to ticket-intake-queue
+        await this.rabbitMQService.publishToQueue(QUEUE_NAMES.TICKET_INTAKE, taskEvent, {
+          persistent: true,
+          correlationId,
+        });
 
         this.loggerService.log('Routed new ticket to intake queue for processing', {
           ticketId: ticket.id,
           clickUpTaskId: message.task_id,
-          messageId: intakeMessageId,
+          correlationId,
+          providerType: taskEvent.providerType,
+          triggerSource: taskEvent.triggerSource,
         });
 
         return; // Skip status update for newly created tickets

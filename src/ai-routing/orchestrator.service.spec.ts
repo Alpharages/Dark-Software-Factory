@@ -8,6 +8,10 @@ import { AIProvider } from '@/prisma/client';
 import { OrchestratorService } from './orchestrator.service';
 import { ProviderFactoryService } from './provider-factory.service';
 import { FallbackStrategyService } from './fallback-strategy.service';
+import { AIExecutionService } from './ai-execution.service';
+import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
+import { AdrParserService } from './adr-parser.service';
+import { AdrService } from '../architecture-review/adr.service';
 import {
   IOrchestrationInput,
   ProviderSelectionReason,
@@ -47,17 +51,39 @@ describe('OrchestratorService', () => {
       getMaxFallbackAttempts: jest.fn().mockReturnValue(2),
     };
 
+    const mockAIExecutionService = {
+      getProvider: jest.fn(),
+    };
+
+    const mockAIDecisionLoggerService = {
+      logDecision: jest.fn(),
+    };
+
+    const mockAdrParserService = {
+      hasAdr: jest.fn(),
+      parseAdrFromResponse: jest.fn(),
+    };
+
+    const mockAdrService = {
+      create: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrchestratorService,
         { provide: ProviderFactoryService, useValue: mockProviderFactory },
         { provide: FallbackStrategyService, useValue: mockFallbackStrategy },
+        { provide: AIExecutionService, useValue: mockAIExecutionService },
+        { provide: AIDecisionLoggerService, useValue: mockAIDecisionLoggerService },
+        { provide: AdrParserService, useValue: mockAdrParserService },
+        { provide: AdrService, useValue: mockAdrService },
         { provide: 'PROM_METRIC_ORCHESTRATOR_EXECUTIONS_TOTAL', useValue: mockMetrics },
         {
           provide: 'PROM_METRIC_ORCHESTRATOR_EXECUTION_DURATION_SECONDS',
           useValue: mockMetrics,
         },
         { provide: 'PROM_METRIC_ORCHESTRATOR_COST_CENTS', useValue: mockMetrics },
+        { provide: 'PROM_METRIC_ADR_CREATION_TOTAL', useValue: mockMetrics },
       ],
     }).compile();
 
@@ -212,6 +238,14 @@ describe('OrchestratorService', () => {
         providerOverride: AIProvider.CLAUDE_CODE,
       };
 
+      providerFactory.selectProvider.mockResolvedValue({
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: null,
+        reason: ProviderSelectionReason.OVERRIDE,
+        complexityScore: 50,
+        complexityGrade: ComplexityGrade.MEDIUM,
+      });
+
       fallbackStrategy.executeWithFallback.mockResolvedValue({
         result: {
           success: true,
@@ -230,13 +264,8 @@ describe('OrchestratorService', () => {
 
       expect(result.success).toBe(true);
       expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
-      // Provider override bypasses providerFactory selection
-      expect(providerFactory.selectProvider).not.toHaveBeenCalled();
-      expect(fallbackStrategy.executeWithFallback).toHaveBeenCalledWith(
-        AIProvider.CLAUDE_CODE,
-        null,
-        inputWithOverride,
-      );
+      expect(providerFactory.selectProvider).toHaveBeenCalledWith(inputWithOverride);
+      expect(fallbackStrategy.executeWithFallback).toHaveBeenCalled();
     });
   });
 

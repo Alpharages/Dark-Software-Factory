@@ -6,12 +6,15 @@ import { IRawTaskEvent } from './interfaces';
 import { ValidationResultDto } from './dto';
 import { CircularDependencyDetectorService } from '../dependencies/circular-dependency-detector.service';
 import { DependencyManagerService } from '../dependencies/dependency-manager.service';
+// Story 20.1: Provider-Agnostic Intake imports
+import { ITaskEvent, TaskProviderType, TaskTriggerSource } from './dto';
 
 describe('TicketIntakeService', () => {
   let service: TicketIntakeService;
   let mockPrisma: {
-    ticket: { findUnique: jest.Mock; upsert: jest.Mock };
+    ticket: { findUnique: jest.Mock; findFirst: jest.Mock; upsert: jest.Mock };
     auditLog: { create: jest.Mock };
+    execution: { findFirst: jest.Mock }; // Story 20.1: For idempotency check
   };
   let mockRabbitMQPublisher: { publishToQueue: jest.Mock };
   let mockConfigService: { get: jest.Mock };
@@ -35,7 +38,7 @@ describe('TicketIntakeService', () => {
     taskId: 'task-456',
     taskName: 'Implement user authentication',
     taskDescription:
-      'Create login endpoints because we need secure access.\n\n## Acceptance Criteria\nGiven user submits credentials\nWhen API validates\nThen token returned',
+      'Create login endpoints because we need secure access.\\n\\n## Acceptance Criteria\\nGiven user submits credentials\\nWhen API validates\\nThen token returned',
     taskStatus: 'Open',
     listId: 'list-1',
     listName: 'Sprint 1',
@@ -50,16 +53,40 @@ describe('TicketIntakeService', () => {
     receivedAt: new Date().toISOString(),
   };
 
+  // Story 20.1: Provider-agnostic ITaskEvent mock
+  const mockTaskEvent: ITaskEvent = {
+    externalId: 'task-789',
+    providerType: TaskProviderType.CLICKUP,
+    internalStatus: 'QUEUED',
+    title: 'Provider-agnostic task',
+    description:
+      'Test description\\n\\n## Acceptance Criteria\\nGiven test\\nWhen executed\\nThen passes',
+    triggerSource: TaskTriggerSource.WEBHOOK,
+    correlationId: 'test-corr-789',
+    projectIdentifier: 'list-2',
+    taskUrl: 'https://app.clickup.com/t/task-789',
+    tags: ['feature', 'provider-agnostic'],
+    customFields: {},
+    creatorEmail: 'test@example.com',
+    eventTimestamp: new Date().toISOString(),
+    receivedAt: new Date().toISOString(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
     mockPrisma = {
       ticket: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(), // Story 20.1: Used by new normalized flow
         upsert: jest.fn().mockResolvedValue({ id: 'ticket-uuid-123' }),
       },
       auditLog: {
         create: jest.fn().mockResolvedValue({}),
+      },
+      // Story 20.1: Mock execution table for idempotency check
+      execution: {
+        findFirst: jest.fn().mockResolvedValue(null), // No active execution by default
       },
     };
 
@@ -167,11 +194,18 @@ describe('TicketIntakeService', () => {
       expect(mockQualityService.calculateScore).toHaveBeenCalled();
       expect(mockPrisma.ticket.upsert).toHaveBeenCalled();
       expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalled();
-      expect(mockIntakeCounter.inc).toHaveBeenCalledWith({ event_type: 'taskCreated' });
+      // Story 20.1: New metrics track provider/trigger instead of event_type
+      expect(mockIntakeCounter.inc).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: 'CLICKUP',
+          trigger: 'WEBHOOK',
+        }),
+      );
     });
 
     it('should skip taskUpdated if ticket not in VALIDATION_FAILED state', async () => {
-      mockPrisma.ticket.findUnique.mockResolvedValue({
+      // Story 20.1: New flow uses findFirst instead of findUnique
+      mockPrisma.ticket.findFirst.mockResolvedValue({
         status: TicketStatus.VALIDATED,
       });
 
@@ -186,7 +220,8 @@ describe('TicketIntakeService', () => {
     });
 
     it('should re-validate taskUpdated if in VALIDATION_FAILED state', async () => {
-      mockPrisma.ticket.findUnique.mockResolvedValue({
+      // Story 20.1: New flow uses findFirst instead of findUnique
+      mockPrisma.ticket.findFirst.mockResolvedValue({
         status: TicketStatus.VALIDATION_FAILED,
       });
 
@@ -279,6 +314,98 @@ describe('TicketIntakeService', () => {
       expect(result.errors).toContain(
         'Project "Inactive Project" is inactive. Please reactivate project to process tickets.',
       );
+    });
+  });
+
+  // ===== Story 20.1: Provider-Agnostic Intake Tests =====
+  describe('Story 20.1: Provider-Agnostic Intake', () => {
+    describe('ITaskEvent Processing', () => {
+      it('should accept and process ITaskEvent directly (AC#3)', async () => {
+        const result = await service.processTaskEvent(mockTaskEvent);
+
+        expect(result.success).toBe(true);
+        expect(result.status).toBe(TicketStatus.VALIDATED);
+
+        // Verify that validator was called with correctly transformed data
+        const validatorCall = mockValidator.validate.mock.calls[0][0];
+        expect(validatorCall.title).toBe('Provider-agnostic task');
+        expect(validatorCall.description).toBe(mockTaskEvent.description);
+        expect(validatorCall.tags).toContain('provider-agnostic');
+
+        // Verify metrics tracked provider type
+        expect(mockIntakeCounter.inc).toHaveBeenCalledWith(
+          expect.objectContaining({
+            provider: 'CLICKUP',
+            trigger: 'WEBHOOK',
+          }),
+        );
+      });
+
+      it('should maintain backward compatibility with IRawTaskEvent (AC#3)', async () => {
+        // Process legacy event
+        const result = await service.processTaskEvent(mockRawEvent);
+
+        expect(result.success).toBe(true);
+        expect(result.status).toBe(TicketStatus.VALIDATED);
+
+        // Verify the adapter correctly converted IRawTaskEvent → ITaskEvent
+        expect(mockValidator.validate).toHaveBeenCalled();
+        expect(mockPrisma.ticket.upsert).toHaveBeenCalled();
+      });
+    });
+
+    describe('Idempotency Check (AC#4)', () => {
+      it('should prevent duplicate AI processing for active executions', async () => {
+        // Mock active execution exists
+        mockPrisma.execution.findFirst.mockResolvedValueOnce({
+          id: 'exec-123',
+          ticket_id: 'ticket-uuid-456',
+          status: 'IN_PROGRESS',
+        });
+
+        const result = await service.processTaskEvent(mockTaskEvent);
+
+        // Should succeed but not route to AI queue
+        expect(result.success).toBe(true);
+        expect(mockRabbitMQPublisher.publishToQueue).not.toHaveBeenCalled();
+
+        // Verify idempotency check was called
+        expect(mockPrisma.execution.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              ticket: { clickup_task_id: mockTaskEvent.externalId },
+              status: { in: ['QUEUED', 'IN_PROGRESS'] },
+            }),
+          }),
+        );
+      });
+
+      it('should allow processing if no active execution exists', async () => {
+        // No active execution (default mock returns null)
+        const result = await service.processTaskEvent(mockTaskEvent);
+
+        expect(result.success).toBe(true);
+        expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalled();
+        expect(mockPrisma.execution.findFirst).toHaveBeenCalled();
+      });
+    });
+
+    describe('Provider-Conditional Operations', () => {
+      it('should track provider-specific metrics for non-ClickUp providers', async () => {
+        const asanaEvent: ITaskEvent = {
+          ...mockTaskEvent,
+          externalId: 'asana-task-123',
+          providerType: TaskProviderType.ASANA,
+        };
+
+        await service.processTaskEvent(asanaEvent);
+
+        expect(mockIntakeCounter.inc).toHaveBeenCalledWith(
+          expect.objectContaining({
+            provider: 'ASANA',
+          }),
+        );
+      });
     });
   });
 });

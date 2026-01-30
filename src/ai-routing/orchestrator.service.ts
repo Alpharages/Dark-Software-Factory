@@ -67,7 +67,7 @@ export class OrchestratorService {
    * Execute AI code generation with intelligent orchestration
    */
   async execute(input: IOrchestrationInput): Promise<IOrchestrationResult> {
-    const { correlationId, ticketId, providerOverride } = input;
+    const { correlationId, ticketId } = input;
 
     const startTime = Date.now();
     this.totalExecutions++;
@@ -75,25 +75,14 @@ export class OrchestratorService {
     this.logger.log(`[${correlationId}] Orchestrating AI execution for ticket ${ticketId}`);
 
     try {
-      let selection: { primary: AIProvider; fallback: AIProvider | null; complexityScore: number };
+      // 1. Select provider via AI routing (Delegate to factory which handles overrides & fallbacks)
+      const selection = await this.providerFactory.selectProvider(input);
 
-      // Check if provider override is specified (e.g., for commit operations)
-      if (providerOverride) {
-        this.logger.log(`[${correlationId}] Using provider override: ${providerOverride}`);
-        selection = {
-          primary: providerOverride,
-          fallback: null, // No fallback when using override
-          complexityScore: 50, // Default complexity
-        };
-      } else {
-        // 1. Select provider via AI routing
-        selection = await this.providerFactory.selectProvider(input);
-
-        this.logger.log(
-          `[${correlationId}] Provider selected: primary=${selection.primary}, ` +
-            `fallback=${selection.fallback}, complexity=${selection.complexityScore}`,
-        );
-      }
+      this.logger.log(
+        `[${correlationId}] Provider selected: primary=${selection.primary}, ` +
+          `fallback=${selection.fallback}, complexity=${selection.complexityScore}, ` +
+          `reason=${selection.reason}`,
+      );
 
       // 2. Execute with fallback strategy
       const executionResult = await this.fallbackStrategy.executeWithFallback(

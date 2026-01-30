@@ -434,6 +434,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         repositoryUrl,
         allowFallback: payload.allowFallback ?? true,
         selectedModel, // Story 13.3: Pass selected model to orchestrator
+        providerOverride: payload.aiProvider, // Respect the routing service's decision
       });
 
       if (result.success) {

@@ -417,8 +417,13 @@ export class ClickUpService {
       text_content?: string;
       status: { status: string; color: string };
       date_updated: string;
+      date_created: string;
+      url: string;
+      creator: { id: number; username: string; color: string; email: string };
       assignees?: Array<{ id: number; username: string }>;
+      tags?: Array<{ name: string; tag_fg: string; tag_bg: string }>;
       custom_fields?: Array<{ id: string; name: string; value: unknown }>;
+      space?: { id: string };
     }>;
   }> {
     try {

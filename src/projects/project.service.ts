@@ -17,6 +17,11 @@ import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '@/database/prisma.service';
+// Story 20.1: Provider-Agnostic Intake
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
+import { QUEUE_NAMES } from '@/rabbitmq/rabbitmq.config';
+import { mapClickUpToTaskEvent, isActionableStatus, TaskTriggerSource } from '@/ticket-intake/dto';
+import { IRawTaskEvent } from '@/ticket-intake/interfaces/ticket-intake.interface';
 // TODO: Uncomment when ai-decision-logging module is implemented (AC#2)
 // import { AIDecisionLoggerService } from '@/ai-decision-logging/ai-decision-logger.service';
 
@@ -37,6 +42,8 @@ export class ProjectService {
     private readonly syncCounter: Counter<string>,
     @Inject(forwardRef(() => ClickUpService))
     private readonly clickupService: ClickUpService,
+    // Story 20.1: Inject RabbitMQ for provider-agnostic event publishing
+    private readonly rabbitMQPublisher: RabbitMQPublisherService,
     // TODO: Inject AIDecisionLoggerService when module is implemented (AC#2)
     // private readonly aiDecisionLogger: AIDecisionLoggerService,
   ) {}
@@ -46,7 +53,7 @@ export class ProjectService {
       const project = await this.repository.create({
         name: createProjectDto.name,
         clickup_list_id: createProjectDto.clickup_list_id,
-        github_repository_url: createProjectDto.github_repository_url,
+        github_repository_url: createProjectDto.github_repository_url.trim(),
         default_branch: createProjectDto.default_branch || 'main',
         pm_id: createProjectDto.pm_id,
         status: createProjectDto.status || 'active',
@@ -261,7 +268,7 @@ export class ProjectService {
   async updateGitHubRepository(id: string, repositoryUrl: string): Promise<Project> {
     try {
       await this.findOne(id);
-      const project = await this.repository.updateRepository(id, repositoryUrl);
+      const project = await this.repository.updateRepository(id, repositoryUrl.trim());
       this.operationsCounter.inc({ operation: 'update_repo', status: 'success' });
       return project;
     } catch (_error) {
@@ -287,6 +294,7 @@ export class ProjectService {
 
   /**
    * Sync project details from ClickUp
+   * Story 20.1: Now uses provider-agnostic flow - publishes ITaskEvent to queue
    */
   async syncFromClickUp(id: string): Promise<Project & { syncedTasksCount: number }> {
     const project = await this.findOne(id);
@@ -304,7 +312,7 @@ export class ProjectService {
         name: listDetails.name,
       });
 
-      // 2. Sync Tasks
+      // 2. Sync Tasks - Story 20.1: Provider-agnostic flow
       const { tasks } = await this.clickupService.getTasks({
         list_id: project.clickup_list_id,
       });
@@ -312,37 +320,81 @@ export class ProjectService {
       this.logger.log(`Syncing ${tasks.length} tasks for project ${id}`);
 
       let syncedCount = 0;
-      for (const task of tasks) {
-        // Map Status
-        const status = this.mapClickUpStatus(task.status.status);
+      let publishedCount = 0;
 
-        // Upsert Ticket
-        await this.prisma.ticket.upsert({
-          where: { clickup_task_id: task.id },
-          create: {
-            clickup_task_id: task.id,
-            project_id: project.id,
-            title: task.name,
-            description: task.description || task.text_content || '',
-            status: status,
-            ticket_quality_score: 0,
-            acceptance_criteria: '',
-          },
-          update: {
-            title: task.name,
-            description: task.description || task.text_content || '',
-            status: status,
-          },
-        });
+      for (const task of tasks) {
+        // Story 20.1: Convert ClickUp API task to IRawTaskEvent, then map to ITaskEvent
+        const correlationId = `sync-${project.id}-${task.id}-${Date.now()}`;
+
+        const rawEvent: Partial<IRawTaskEvent> = {
+          taskId: task.id,
+          taskName: task.name,
+          taskDescription: task.description || task.text_content || '',
+          taskStatus: task.status?.status || 'to do',
+          listId: project.clickup_list_id!,
+          taskUrl: task.url || `https://app.clickup.com/t/${task.id}`,
+          tags: task.tags?.map((t) => t.name) || [],
+          customFields:
+            task.custom_fields?.reduce(
+              (acc, field) => {
+                acc[field.name] = field.value;
+                return acc;
+              },
+              {} as Record<string, unknown>,
+            ) || {},
+          creatorEmail: task.creator?.email || '',
+          eventTimestamp: task.date_created || new Date().toISOString(),
+          receivedAt: new Date().toISOString(),
+          correlationId,
+          projectId: project.id,
+          listName: listDetails.name,
+          projectName: project.name,
+          spaceId: task.space?.id || '',
+          eventType: 'taskCreated',
+          webhookEventId: '',
+        };
+
+        const taskEvent = mapClickUpToTaskEvent(rawEvent as IRawTaskEvent, TaskTriggerSource.SYNC);
+
+        // Story 20.1 (AC#1, AC#2): Only process AI-actionable tasks
+        if (isActionableStatus(taskEvent.internalStatus)) {
+          try {
+            // Publish to ticket-intake-queue for processing
+            await this.rabbitMQPublisher.publishToQueue(
+              QUEUE_NAMES.TICKET_INTAKE,
+              taskEvent,
+              taskEvent.correlationId,
+            );
+            publishedCount++;
+            this.logger.debug(
+              `Published task ${task.id} to intake queue (status: ${taskEvent.internalStatus})`,
+            );
+          } catch (error) {
+            const publishError = error as Error;
+            this.logger.error(
+              `Failed to publish task ${task.id} to queue: ${publishError.message}`,
+              publishError.stack,
+            );
+            // Re-throw to inform the user that sync failed
+            throw new Error(`Failed to publish task ${task.id} to queue: ${publishError.message}`);
+          }
+        } else {
+          this.logger.debug(
+            `Skipped non-actionable task ${task.id} (status: ${taskEvent.internalStatus})`,
+          );
+        }
+
         syncedCount++;
       }
 
       this.operationsCounter.inc({ operation: 'sync', status: 'success' });
       this.syncCounter.inc({ status: 'success' });
 
-      this.logger.log(`Successfully synced project ${id} and ${syncedCount} tasks`);
+      this.logger.log(
+        `Successfully synced project ${id}: ${syncedCount} tasks fetched, ${publishedCount} published to intake queue`,
+      );
 
-      return { ...updated, syncedTasksCount: syncedCount };
+      return { ...updated, syncedTasksCount: publishedCount };
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'sync', status: 'error' });
       this.syncCounter.inc({ status: 'error' });

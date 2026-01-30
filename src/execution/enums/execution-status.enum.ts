@@ -9,28 +9,37 @@ import { SafeMap } from '../../common/utils/safe-access.util';
  *                    │   QUEUED    │
  *                    └──────┬──────┘
  *                           │
- *                           ▼
- *                    ┌─────────────┐
- *        ┌───────────│ IN_PROGRESS │───────────┐
- *        │           └──────┬──────┘           │
- *        │                  │                  │
- *        ▼                  ▼                  ▼
- *   ┌─────────┐      ┌───────────┐      ┌─────────┐
- *   │ TIMEOUT │      │ COMPLETED │      │ FAILED  │
- *   └─────────┘      └───────────┘      └─────────┘
- *        │                                    │
- *        │          ┌───────────┐             │
- *        └─────────►│ CANCELLED │◄────────────┘
- *                   └───────────┘
+ *              ┌────────────┼────────────┐
+ *              │            │            │
+ *              ▼            ▼            ▼
+ *       ┌───────────┐ ┌─────────┐ ┌─────────────┐
+ *       │  FAILED   │ │CANCELLED│ │ IN_PROGRESS │
+ *       └───────────┘ └─────────┘ └──────┬──────┘
+ *                                        │
+ *                           ┌────────────┼────────────┐
+ *                           │            │            │
+ *                           ▼            ▼            ▼
+ *                    ┌─────────┐  ┌───────────┐ ┌─────────┐
+ *                    │ TIMEOUT │  │ COMPLETED │ │ FAILED  │
+ *                    └─────────┘  └───────────┘ └─────────┘
+ *                           │            │            │
+ *                           │      ┌───────────┐      │
+ *                           └─────►│ CANCELLED │◄─────┘
+ *                                  └───────────┘
  *
  * Note: CANCELLED can be reached from any non-terminal state
+ * Note: FAILED can be reached from QUEUED (e.g., budget exceeded before execution starts)
  */
 
 /**
  * Map of valid transitions from each status
  */
 export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
-  [ExecutionStatus.QUEUED]: [ExecutionStatus.IN_PROGRESS, ExecutionStatus.CANCELLED],
+  [ExecutionStatus.QUEUED]: [
+    ExecutionStatus.IN_PROGRESS,
+    ExecutionStatus.FAILED, // Allow early failure (e.g., budget exceeded, validation failed)
+    ExecutionStatus.CANCELLED,
+  ],
   [ExecutionStatus.IN_PROGRESS]: [
     ExecutionStatus.COMPLETED,
     ExecutionStatus.FAILED,

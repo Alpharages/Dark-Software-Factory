@@ -34,7 +34,13 @@ describe('ProviderFactoryService', () => {
     };
 
     const mockConfig = {
-      get: jest.fn((key: string, defaultValue: number) => defaultValue),
+      get: jest.fn((key: string, defaultValue?: unknown) => {
+        // Return enabled status for providers
+        if (key === 'ai.providers.cursorHeadless.enabled') return true;
+        if (key === 'ai.providers.claudeCode.enabled') return true;
+        // Return default values for thresholds
+        return defaultValue;
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -172,7 +178,7 @@ describe('ProviderFactoryService', () => {
       const result = await service.selectProvider(baseInput);
 
       expect(result.primary).toBe(AIProvider.CURSOR_HEADLESS);
-      expect(result.fallback).toBeNull();
+      expect(result.fallback).toBe(AIProvider.CLAUDE_CODE); // Both enabled, Claude is fallback
       expect(result.reason).toBe(ProviderSelectionReason.AVAILABILITY);
     });
 
@@ -199,7 +205,7 @@ describe('ProviderFactoryService', () => {
       const result = await service.selectProvider(baseInput);
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.fallback).toBeNull();
+      expect(result.fallback).toBe(AIProvider.CURSOR_HEADLESS); // Both enabled, Cursor is fallback
       expect(result.reason).toBe(ProviderSelectionReason.AVAILABILITY);
     });
 
@@ -222,7 +228,7 @@ describe('ProviderFactoryService', () => {
 
       const result = await service.selectProvider(baseInput);
 
-      // Should still return a selection (will fail but trigger alerts)
+      // Both are enabled but neither is available - should return CURSOR as first enabled
       expect(result.primary).toBe(AIProvider.CURSOR_HEADLESS);
       expect(result.fallback).toBe(AIProvider.CLAUDE_CODE);
       expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);

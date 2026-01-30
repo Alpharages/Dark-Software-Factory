@@ -19,7 +19,13 @@ describe('AIRoutingService', () => {
   let _prisma: PrismaService;
 
   const mockConfigService = {
-    get: jest.fn((key: string, defaultValue: unknown) => defaultValue),
+    get: jest.fn((key: string, defaultValue: unknown) => {
+      // Handle provider enabled checks
+      if (key === 'ai.providers.cursorHeadless.enabled') return true;
+      if (key === 'ai.providers.claudeCode.enabled') return true;
+      // For all other config values, return default
+      return defaultValue;
+    }),
   };
 
   const mockPrisma = {
@@ -174,6 +180,7 @@ describe('AIRoutingService', () => {
     mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 10 });
     mockProviderHealth.getAvailableProvider.mockResolvedValue(null); // No provider
     mockProviderHealth.shouldAlert.mockReturnValue(false);
+    mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });
 
     await expect(service.routeTicket(mockRequest)).rejects.toThrow(
       'No AI provider currently available',
@@ -186,10 +193,14 @@ describe('AIRoutingService', () => {
       mockRequest.correlationId,
     );
 
-    // Verify NO execution created
-    expect(mockPrisma.execution.create).not.toHaveBeenCalled();
+    // Execution is created early for file locks, but then cancelled
+    expect(mockPrisma.execution.create).toHaveBeenCalled();
+    expect(mockPrisma.execution.update).toHaveBeenCalledWith({
+      where: { id: 'exec-1' },
+      data: { status: 'CANCELLED', error_message: 'No AI provider available' },
+    });
 
-    // Verify NO ticket update
+    // Verify NO ticket update (it will be retried)
     expect(mockPrisma.ticket.update).not.toHaveBeenCalled();
   });
 });

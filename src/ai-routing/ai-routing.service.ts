@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AIProvider, TicketStatus, ExecutionStatus } from '@/prisma/client';
+import { AIProvider, TicketStatus, ExecutionStatus, Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '@/rabbitmq/rabbitmq.config';
@@ -64,15 +64,49 @@ export class AIRoutingService {
         complexityScore,
       );
 
-      // 2. Determine preferred provider based on complexity
+      // 2. Determine preferred provider based on enabled providers and complexity
+      const cursorEnabled = this.configService.get<boolean>(
+        'ai.providers.cursorHeadless.enabled',
+        false,
+      );
+      const claudeEnabled = this.configService.get<boolean>(
+        'ai.providers.claudeCode.enabled',
+        false,
+      );
       const complexityThreshold = this.configService.get<number>(
         'ai.routing.complexityThreshold',
         10,
       );
-      const preferredProvider =
-        complexityScore >= complexityThreshold
-          ? AIProvider.CURSOR_HEADLESS
-          : AIProvider.CLAUDE_CODE;
+
+      // Validate that at least one provider is enabled
+      if (!cursorEnabled && !claudeEnabled) {
+        this.logger.error(
+          `[${correlationId}] CRITICAL: No AI providers enabled in configuration. ` +
+            `Set CURSOR_HEADLESS_ENABLED=true or CLAUDE_CODE_ENABLED=true in .env`,
+        );
+        throw new Error('No AI providers enabled in configuration');
+      }
+
+      let preferredProvider: AIProvider;
+
+      // If only one provider is enabled, use it regardless of complexity
+      if (cursorEnabled && !claudeEnabled) {
+        preferredProvider = AIProvider.CURSOR_HEADLESS;
+        this.logger.log(`[${correlationId}] Using CURSOR_HEADLESS (only enabled provider)`);
+      } else if (!cursorEnabled && claudeEnabled) {
+        preferredProvider = AIProvider.CLAUDE_CODE;
+        this.logger.log(`[${correlationId}] Using CLAUDE_CODE (only enabled provider)`);
+      } else {
+        // Both providers enabled - use complexity-based routing
+        preferredProvider =
+          complexityScore >= complexityThreshold
+            ? AIProvider.CURSOR_HEADLESS
+            : AIProvider.CLAUDE_CODE;
+        this.logger.log(
+          `[${correlationId}] Complexity-based routing: ${preferredProvider} ` +
+            `(score=${complexityScore}, threshold=${complexityThreshold})`,
+        );
+      }
 
       // RECORD PROJECT FOR USE IN PREDICTION
       const project = await this.prisma.project.findUnique({
@@ -88,10 +122,26 @@ export class AIRoutingService {
         );
       }
 
+      // 2a. Create Initial Execution Record (Required for File Locks)
+      // We create this early to satisfy foreign key constraints in file_lock_queue
+      const execution = await this.prisma.execution.create({
+        data: {
+          ticket_id: ticketId,
+          ai_provider: preferredProvider,
+          prompt: '', // Will be populated by Story 2.4
+          status: ExecutionStatus.QUEUED,
+          complexity_score: complexityScore,
+          complexity_breakdown: complexityBreakdown as unknown as Prisma.InputJsonObject,
+          routing_reason: RoutingReason.COMPLEXITY_LOW, // Placeholder, updated later
+          fallback_used: false,
+          original_provider: null,
+        },
+      });
+
       // AC#6: File Lock Prediction & Acquisition
       const predictionResult = await this.fileLockManager.predictFileModifications({
         ticketId,
-        executionId: 'TEMP_EXECUTION_ID',
+        executionId: execution.id,
         repoFullName: project.github_repository_url.replace(/^.*github\.com\//, ''), // Extract org/repo
         ticketTitle: request.title,
         ticketDescription: request.description,
@@ -99,12 +149,17 @@ export class AIRoutingService {
       const filePathsToLock = predictionResult.filePaths;
       const locksResult = await this.fileLockManager.acquireLocks({
         ticketId,
-        executionId: 'TEMP_EXECUTION_ID',
+        executionId: execution.id,
         filePaths: filePathsToLock,
       });
 
       if (!locksResult.acquired) {
         await this.handleLockConflict(request, complexityScore, filePathsToLock);
+        // Cancel the execution since we are postponing
+        await this.prisma.execution.update({
+          where: { id: execution.id },
+          data: { status: ExecutionStatus.CANCELLED, error_message: 'Waiting for file locks' },
+        });
         return {
           correlationId,
           ticketId,
@@ -124,6 +179,11 @@ export class AIRoutingService {
       if (!availableProvider) {
         // No provider available
         await this.handleNoProviderAvailable(request, complexityScore, complexityBreakdown);
+        // Cancel execution as we will retry later with a new request
+        await this.prisma.execution.update({
+          where: { id: execution.id },
+          data: { status: ExecutionStatus.CANCELLED, error_message: 'No AI provider available' },
+        });
         throw new Error('No AI provider currently available');
       }
 
@@ -144,32 +204,22 @@ export class AIRoutingService {
       const dependencyIds = dependencies.map((d) => d.depends_on);
       const branchDecision = await this.branchStrategist.selectBaseBranch(ticketId, dependencyIds);
 
-      // 5. Create execution record
-      const execution = await this.prisma.execution.create({
+      // 5. Update execution record with final routing details
+      await this.prisma.execution.update({
+        where: { id: execution.id },
         data: {
-          ticket_id: ticketId,
           ai_provider: provider,
-          prompt: '', // Will be populated by Story 2.4
-          status: ExecutionStatus.QUEUED,
-          complexity_score: complexityScore,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          complexity_breakdown: complexityBreakdown as any,
           routing_reason: routingReason,
           fallback_used: fallbackUsed,
           original_provider: fallbackUsed ? preferredProvider : null,
           // Story 12.5: Execution context
           base_branch: branchDecision.selectedBranch,
           branch_selection_log: branchDecision.reasoning,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          file_modifications: filePathsToLock as any,
+          file_modifications: filePathsToLock,
         },
       });
 
-      // Update lock with real execution ID
-      await this.prisma.fileLock.updateMany({
-        where: { ticket_id: ticketId, execution_id: 'TEMP_EXECUTION_ID' },
-        data: { execution_id: execution.id },
-      });
+      // (Step 6-7 remain roughly the same, but we don't need to update locks again)
 
       // 6. Update ticket status
       await this.prisma.ticket.update({

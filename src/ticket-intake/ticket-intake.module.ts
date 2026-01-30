@@ -102,7 +102,7 @@ const METRICS = {
     makeCounterProvider({
       name: METRICS.INTAKE_TOTAL,
       help: 'Total tickets processed',
-      labelNames: ['event_type', 'status'],
+      labelNames: ['provider', 'trigger', 'status'],
     }),
     makeCounterProvider({
       name: METRICS.VALIDATION_TOTAL,

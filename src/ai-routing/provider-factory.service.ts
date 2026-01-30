@@ -156,41 +156,92 @@ export class ProviderFactoryService {
     cursorAvailable: boolean,
     claudeAvailable: boolean,
   ): IProviderSelection {
-    // Neither available - return Cursor as primary (will fail but trigger alerts)
-    if (!cursorAvailable && !claudeAvailable) {
-      this.logger.warn(`[${correlationId}] No providers available!`);
+    // Check which providers are ENABLED in configuration
+    const cursorEnabled = this.config.get<boolean>('ai.providers.cursorHeadless.enabled', false);
+    const claudeEnabled = this.config.get<boolean>('ai.providers.claudeCode.enabled', false);
+
+    // Filter availability by enabled status
+    const cursorReady = cursorAvailable && cursorEnabled;
+    const claudeReady = claudeAvailable && claudeEnabled;
+
+    // Neither enabled - return error case
+    if (!cursorEnabled && !claudeEnabled) {
+      this.logger.error(`[${correlationId}] No providers ENABLED in configuration!`);
+      throw new Error(
+        'No AI providers enabled. Set CURSOR_HEADLESS_ENABLED=true or CLAUDE_CODE_ENABLED=true',
+      );
+    }
+
+    // Neither available - return enabled one as primary (will queue or retry)
+    if (!cursorReady && !claudeReady) {
+      this.logger.warn(
+        `[${correlationId}] No providers currently available, but providers are enabled`,
+      );
+      // Return the first enabled provider as primary
+      if (cursorEnabled) {
+        return {
+          primary: AIProvider.CURSOR_HEADLESS,
+          fallback: claudeEnabled ? AIProvider.CLAUDE_CODE : null,
+          reason: ProviderSelectionReason.SINGLE_PROVIDER,
+          complexityScore: score,
+          complexityGrade: grade,
+        };
+      } else {
+        return {
+          primary: AIProvider.CLAUDE_CODE,
+          fallback: null,
+          reason: ProviderSelectionReason.SINGLE_PROVIDER,
+          complexityScore: score,
+          complexityGrade: grade,
+        };
+      }
+    }
+
+    // Only Cursor enabled and available
+    if (cursorReady && !claudeEnabled) {
       return {
         primary: AIProvider.CURSOR_HEADLESS,
-        fallback: AIProvider.CLAUDE_CODE,
+        fallback: null,
         reason: ProviderSelectionReason.SINGLE_PROVIDER,
         complexityScore: score,
         complexityGrade: grade,
       };
     }
 
-    // Only Cursor available
-    if (cursorAvailable && !claudeAvailable) {
-      return {
-        primary: AIProvider.CURSOR_HEADLESS,
-        fallback: null,
-        reason: ProviderSelectionReason.AVAILABILITY,
-        complexityScore: score,
-        complexityGrade: grade,
-      };
-    }
-
-    // Only Claude available
-    if (!cursorAvailable && claudeAvailable) {
+    // Only Claude enabled and available
+    if (claudeReady && !cursorEnabled) {
       return {
         primary: AIProvider.CLAUDE_CODE,
         fallback: null,
+        reason: ProviderSelectionReason.SINGLE_PROVIDER,
+        complexityScore: score,
+        complexityGrade: grade,
+      };
+    }
+
+    // Only Cursor available (but both enabled)
+    if (cursorReady && !claudeReady) {
+      return {
+        primary: AIProvider.CURSOR_HEADLESS,
+        fallback: AIProvider.CLAUDE_CODE, // Enabled but not available
         reason: ProviderSelectionReason.AVAILABILITY,
         complexityScore: score,
         complexityGrade: grade,
       };
     }
 
-    // Both available - select based on complexity
+    // Only Claude available (but both enabled)
+    if (!cursorReady && claudeReady) {
+      return {
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: AIProvider.CURSOR_HEADLESS, // Enabled but not available
+        reason: ProviderSelectionReason.AVAILABILITY,
+        complexityScore: score,
+        complexityGrade: grade,
+      };
+    }
+
+    // Both enabled and available - select based on complexity
     // High complexity (>=10): Cursor primary (better for complex tasks)
     // Medium complexity (5-9): Claude primary (complexity-based selection)
     // Low complexity (<5): Claude primary (cost optimization)
@@ -223,15 +274,15 @@ export class ProviderFactoryService {
     }
   }
 
-  /**
-   * Get fallback provider for a given provider
-   */
   private getFallbackFor(provider: AIProvider): AIProvider | null {
+    const cursorEnabled = this.config.get<boolean>('ai.providers.cursorHeadless.enabled', false);
+    const claudeEnabled = this.config.get<boolean>('ai.providers.claudeCode.enabled', false);
+
     switch (provider) {
       case AIProvider.CURSOR_HEADLESS:
-        return AIProvider.CLAUDE_CODE;
+        return claudeEnabled ? AIProvider.CLAUDE_CODE : null;
       case AIProvider.CLAUDE_CODE:
-        return AIProvider.CURSOR_HEADLESS;
+        return cursorEnabled ? AIProvider.CURSOR_HEADLESS : null;
       default:
         return null;
     }

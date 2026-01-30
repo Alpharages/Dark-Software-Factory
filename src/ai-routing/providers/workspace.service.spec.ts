@@ -9,6 +9,7 @@ import { WorkspaceService } from './workspace.service';
 import { GitOperationsService } from './git-operations.service';
 import * as fs from 'fs/promises';
 import { PrismaService } from '@/database/prisma.service';
+import { StorageManagerService } from '../../storage/storage-manager.service';
 
 // Mock fs/promises
 jest.mock('fs/promises');
@@ -98,6 +99,33 @@ describe('WorkspaceService', () => {
             return workspaces[idx];
           },
         ),
+        upsert: jest.fn(
+          async ({
+            where,
+            update,
+            create,
+          }: {
+            where: { execution_id: string };
+            update: Record<string, unknown>;
+            create: Record<string, unknown>;
+          }) => {
+            const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
+            if (idx >= 0) {
+              // Update existing
+              workspaces[idx] = { ...workspaces[idx], ...update, updated_at: new Date() };
+              return workspaces[idx];
+            } else {
+              // Create new
+              const record = {
+                ...create,
+                created_at: new Date(),
+                updated_at: new Date(),
+              } as unknown as { execution_id: string };
+              workspaces.push(record);
+              return record;
+            }
+          },
+        ),
         delete: jest.fn(async ({ where }: { where: { execution_id: string } }) => {
           const idx = workspaces.findIndex((w) => w.execution_id === where.execution_id);
           if (idx < 0) throw new Error('Not found');
@@ -112,12 +140,22 @@ describe('WorkspaceService', () => {
       },
     };
 
+    const mockStorageManagerService = {
+      getDiskUsage: jest.fn().mockResolvedValue({
+        availableBytes: 1000 * 1024 * 1024,
+        usedBytes: 500 * 1024 * 1024,
+        totalBytes: 1500 * 1024 * 1024,
+      }),
+      archiveWorkspace: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkspaceService,
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GitOperationsService, useValue: mockGitService },
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: StorageManagerService, useValue: mockStorageManagerService },
         { provide: 'PROM_METRIC_CURSOR_WORKSPACES_ACTIVE', useValue: mockActiveGauge },
         {
           provide: 'PROM_METRIC_CURSOR_WORKSPACE_OPERATIONS_TOTAL',
@@ -212,6 +250,31 @@ describe('WorkspaceService', () => {
         operation: 'create',
         status: 'error',
       });
+    });
+
+    it('should handle re-creation of existing workspace (idempotency)', async () => {
+      gitService.clone.mockResolvedValue();
+      gitService.configureUser.mockResolvedValue();
+      gitService.checkoutBranch.mockResolvedValue();
+
+      // First creation
+      await service.createWorkspace(
+        'exec-retry',
+        'retry-ticket',
+        'https://github.com/test/repo.git',
+        'main',
+      );
+
+      // Retry creation (should update existing record and not fail)
+      const workspace = await service.createWorkspace(
+        'exec-retry',
+        'retry-ticket',
+        'https://github.com/test/repo.git',
+        'main',
+      );
+
+      expect(workspace.executionId).toBe('exec-retry');
+      expect(workspace.status).toBe('READY');
     });
   });
 
@@ -374,7 +437,7 @@ describe('WorkspaceService', () => {
       const result = await service.checkDiskSpace();
 
       expect(result.available).toBe(true);
-      expect(result.usedMB).toBe(0);
+      expect(result.usedMB).toBe(500);
     });
   });
 });

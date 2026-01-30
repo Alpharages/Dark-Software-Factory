@@ -10,6 +10,8 @@ import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
 // Story 4.9: Project Mapping
 import { ProjectService } from '../projects/project.service';
+// Story 20.1: Provider-Agnostic Intake
+import { ITaskEvent, TaskTriggerSource, mapClickUpToTaskEvent } from './dto';
 import { IRawTaskEvent, IParsedTicket, ITicketProcessingResult } from './interfaces';
 import { ValidationResultDto, QualityScoreDto } from './dto';
 // Story 11.4: AI Decision Audit Logging
@@ -33,8 +35,11 @@ const METRICS = {
  * FR57: Parse ticket details from ClickUp
  * FR58: Validate ticket quality
  *
+ * Story 20.1: Provider-Agnostic Intake
+ * AC#3: Now accepts ITaskEvent (provider-agnostic) for core processing
+ *
  * Main orchestration service for processing incoming tickets:
- * 1. Parse raw task events from webhook queue
+ * 1. Parse task events (provider-agnostic via ITaskEvent)
  * 2. Validate ticket data quality
  * 3. Calculate quality scores
  * 4. Store in database
@@ -78,32 +83,78 @@ export class TicketIntakeService {
   }
 
   /**
-   * Process a task event from the webhook queue
+   * Story 20.1: Backward-compatible adapter
+   * Converts IRawTaskEvent (legacy ClickUp-specific) to ITaskEvent (provider-agnostic)
+   * This maintains compatibility with existing webhook consumers during transition
+   *
+   * @deprecated Use processTaskEvent(ITaskEvent) directly for new code
    */
-  async processTaskEvent(event: IRawTaskEvent): Promise<ITicketProcessingResult> {
+  async processTaskEvent(event: IRawTaskEvent): Promise<ITicketProcessingResult>;
+  async processTaskEvent(event: ITaskEvent): Promise<ITicketProcessingResult>;
+  async processTaskEvent(event: IRawTaskEvent | ITaskEvent): Promise<ITicketProcessingResult> {
+    // AC#3: Detect if event is legacy IRawTaskEvent or new ITaskEvent
+    const isLegacyEvent = 'taskId' in event && !('externalId' in event);
+
+    let taskEvent: ITaskEvent;
+    if (isLegacyEvent) {
+      // Convert legacy IRawTaskEvent to ITaskEvent using mapper
+      this.logger.debug(`[${event.correlationId}] Converting legacy IRawTaskEvent to ITaskEvent`);
+      taskEvent = mapClickUpToTaskEvent(
+        event as IRawTaskEvent,
+        TaskTriggerSource.WEBHOOK, // Legacy events are assumed to be webhooks
+      );
+    } else {
+      // Already an ITaskEvent
+      taskEvent = event as ITaskEvent;
+    }
+
+    return this.processNormalizedTaskEvent(taskEvent);
+  }
+
+  /**
+   * Story 20.1 AC#3: Core intake logic now uses provider-agnostic ITaskEvent
+   * This method processes normalized events regardless of provider (ClickUp, Asana, Jira)
+   */
+  private async processNormalizedTaskEvent(event: ITaskEvent): Promise<ITicketProcessingResult> {
     const endTimer = this.durationHistogram.startTimer();
     const correlationId = event.correlationId;
 
-    this.logger.log(`[${correlationId}] Processing ticket: ${event.taskId} (${event.eventType})`);
-    this.intakeCounter.inc({ event_type: event.eventType });
+    this.logger.log(
+      `[${correlationId}] Processing task: ${event.externalId} (provider: ${event.providerType}, trigger: ${event.triggerSource})`,
+    );
+    this.intakeCounter.inc({ provider: event.providerType, trigger: event.triggerSource });
 
     try {
+      // Story 20.1 AC#4: Idempotency check - prevent duplicate processing
+      const existingExecution = await this.checkActiveExecution(event.externalId);
+      if (existingExecution) {
+        this.logger.debug(
+          `[${correlationId}] Task ${event.externalId} is already being processed (execution ${existingExecution.id}), skipping duplicate`,
+        );
+        return {
+          success: true,
+          status: 'AI_PROCESSING',
+          ticketId: existingExecution.ticket_id,
+        };
+      }
+
       // For taskUpdated: handle dependency re-triggering and re-validation
-      if (event.eventType === 'taskUpdated') {
-        // AC#8: Re-trigger dependent tickets if this one is resolved
-        if (this.dependencyManager.isStatusResolved(event.taskStatus)) {
+      // Note: We need to determine event type from trigger source or add eventType to ITaskEvent
+      const existing = await this.prisma.ticket.findFirst({
+        where: { clickup_task_id: event.externalId },
+        select: { status: true },
+      });
+
+      if (existing) {
+        // Re-trigger dependent tickets if this one is resolved
+        if (this.dependencyManager.isStatusResolved(event.internalStatus)) {
           this.logger.log(
-            `[${correlationId}] Ticket ${event.taskId} resolved (${event.taskStatus}), notifying dependents`,
+            `[${correlationId}] Task ${event.externalId} resolved (${event.internalStatus}), notifying dependents`,
           );
-          await this.dependencyManager.notifyDependentTickets(event.taskId);
+          await this.dependencyManager.notifyDependentTickets(event.externalId);
         }
 
-        const existing = await this.prisma.ticket.findUnique({
-          where: { clickup_task_id: event.taskId },
-          select: { status: true },
-        });
-
-        if (existing && existing.status !== TicketStatus.VALIDATION_FAILED) {
+        if (existing.status !== TicketStatus.VALIDATION_FAILED) {
           this.logger.debug(
             `[${correlationId}] Skipping re-validation - ticket already validated or in final state`,
           );
@@ -111,16 +162,16 @@ export class TicketIntakeService {
         }
       }
 
-      // Parse the task event
+      // Parse the task event into structured ticket data
       const parsed = this.parseTaskEvent(event);
 
-      // Story 4.9: Resolve Project from listId
+      // Story 4.9: Resolve Project from projectIdentifier
       const clickupListId = parsed.projectId;
       const project = await this.projectService.findByListId(clickupListId);
 
       if (!project) {
         this.logger.error(
-          `[${correlationId}] CRITICAL: No project mapping found for ClickUp list ${clickupListId}. ` +
+          `[${correlationId}] CRITICAL: No project mapping found for identifier ${clickupListId}. ` +
             `Ticket cannot be processed. Admin must create project mapping via POST /api/v1/projects`,
         );
 
@@ -128,24 +179,23 @@ export class TicketIntakeService {
         await this.aiDecisionLogger.logDecision({
           agentName: 'TicketIntakeService',
           action: 'project_resolution_failed',
-          reasoning: `No project mapping exists for ClickUp list ${clickupListId}. Ticket rejected. Admin must create project via API.`,
+          reasoning: `No project mapping exists for project identifier ${clickupListId}. Ticket rejected. Admin must create project via API.`,
           ticketId: parsed.clickupTaskId,
-          inputData: { listId: clickupListId },
+          inputData: { projectIdentifier: clickupListId, provider: event.providerType },
           outputData: {
             error: 'NO_PROJECT_MAPPING',
-            listId: clickupListId,
-            resolution: 'Create project mapping via POST /api/v1/projects with this listId',
+            projectIdentifier: clickupListId,
+            resolution: 'Create project mapping via POST /api/v1/projects with this identifier',
           },
           confidence: 1.0,
         });
 
-        // Return validation failure with actionable error
         return {
           success: false,
           status: TicketStatus.VALIDATION_FAILED,
           errors: [
-            `No project mapping found for ClickUp list "${clickupListId}". ` +
-              `Admin must create a project mapping via POST /api/v1/projects API with clickup_list_id="${clickupListId}".`,
+            `No project mapping found for project identifier "${clickupListId}". ` +
+              `Admin must create a project mapping via POST /api/v1/projects API.`,
           ],
         };
       }
@@ -186,9 +236,9 @@ export class TicketIntakeService {
       await this.aiDecisionLogger.logDecision({
         agentName: 'TicketIntakeService',
         action: 'project_resolution',
-        reasoning: `Successfully mapped ClickUp list ${clickupListId} to project "${project.name}" (${project.id}).`,
+        reasoning: `Successfully mapped project identifier ${clickupListId} to project "${project.name}" (${project.id}).`,
         ticketId: parsed.clickupTaskId,
-        inputData: { listId: clickupListId },
+        inputData: { projectIdentifier: clickupListId, provider: event.providerType },
         outputData: {
           projectId: project.id,
           projectName: project.name,
@@ -267,16 +317,18 @@ export class TicketIntakeService {
           },
         });
 
-        // Comment on ClickUp with ETA
-        const etaMsg = depCheck.estimatedETA
-          ? `Waiting for ${depCheck.unresolvedDependencies.length} dependencies. Estimated start: ${depCheck.estimatedETA.toLocaleString()}`
-          : `Waiting for ${depCheck.unresolvedDependencies.length} dependencies.`;
+        // Comment on ClickUp with ETA (provider-specific, only for ClickUp)
+        if (event.providerType === 'CLICKUP') {
+          const etaMsg = depCheck.estimatedETA
+            ? `Waiting for ${depCheck.unresolvedDependencies.length} dependencies. Estimated start: ${depCheck.estimatedETA.toLocaleString()}`
+            : `Waiting for ${depCheck.unresolvedDependencies.length} dependencies.`;
 
-        await this.commentOnClickUpTask(
-          parsed.clickupTaskId,
-          `⏳ **Ticket Waiting:** ${etaMsg}`,
-          correlationId,
-        );
+          await this.commentOnClickUpTask(
+            parsed.clickupTaskId,
+            `⏳ **Ticket Waiting:** ${etaMsg}`,
+            correlationId,
+          );
+        }
 
         return {
           success: false,
@@ -347,10 +399,14 @@ export class TicketIntakeService {
       };
     } catch (_error) {
       this.logger.error(
-        `[${correlationId}] Error processing ticket: ${(_error as Error).message}`,
+        `[${correlationId}] Error processing task: ${(_error as Error).message}`,
         (_error as Error).stack,
       );
-      this.intakeCounter.inc({ event_type: event.eventType, status: 'error' });
+      this.intakeCounter.inc({
+        provider: event.providerType,
+        trigger: event.triggerSource,
+        status: 'error',
+      });
       throw _error;
     } finally {
       endTimer();
@@ -358,21 +414,43 @@ export class TicketIntakeService {
   }
 
   /**
-   * Parse raw task event into structured ticket data
+   * Story 20.1 AC#4: Idempotency check
+   * Prevents duplicate AI executions for the same task
    */
-  private parseTaskEvent(event: IRawTaskEvent): IParsedTicket {
+  private async checkActiveExecution(externalId: string) {
+    return await this.prisma.execution.findFirst({
+      where: {
+        ticket: {
+          clickup_task_id: externalId,
+        },
+        status: {
+          in: ['QUEUED', 'IN_PROGRESS'],
+        },
+      },
+      select: {
+        id: true,
+        ticket_id: true,
+        status: true,
+      },
+    });
+  }
+
+  /**
+   * Parse task event into structured ticket data
+   * Story 20.1: Now accepts ITaskEvent (provider-agnostic)
+   */
+  private parseTaskEvent(event: ITaskEvent): IParsedTicket {
     return {
-      clickupTaskId: event.taskId,
-      projectId:
-        (event.customFields?.['project_id'] as string) || event.projectId || event.listId || '',
-      title: event.taskName,
-      description: event.taskDescription || '',
-      acceptanceCriteria: this.extractAcceptanceCriteria(event.taskDescription || ''),
+      clickupTaskId: event.externalId,
+      projectId: event.projectIdentifier,
+      title: event.title,
+      description: event.description || '',
+      acceptanceCriteria: this.extractAcceptanceCriteria(event.description || ''),
       tags: event.tags || [],
       priority: null,
-      creatorEmail: event.creatorEmail,
+      creatorEmail: event.creatorEmail || '',
       taskUrl: event.taskUrl,
-      rawEvent: event,
+      rawEvent: event as unknown as IRawTaskEvent, // Type cast for backward compatibility
     };
   }
 
