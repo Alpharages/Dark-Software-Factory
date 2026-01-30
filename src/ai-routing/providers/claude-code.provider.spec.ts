@@ -126,8 +126,10 @@ describe('ClaudeCodeProvider', () => {
       const [command, args] = mockSpawn.mock.calls[0];
 
       expect(command).toBe('claude');
-      expect(args).toContain('--model');
-      expect(args[2]).toContain(mockInput.prompt); // Verify prompt is passed in args
+      expect(args).toContain('--print');
+      expect(args).toContain('--dangerously-skip-permissions');
+      expect(args).toContain('--no-session-persistence');
+      expect(args[5]).toContain(mockInput.prompt); // Verify prompt is passed in args
     });
 
     it('should inject environment variables including ANTHROPIC_AUTH_TOKEN', async () => {

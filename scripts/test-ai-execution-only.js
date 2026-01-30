@@ -24,6 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 const amqp = require('amqplib');
+const { v4: uuidv4 } = require('uuid');
 
 // Colors
 const c = {
@@ -100,70 +101,116 @@ function sleep(ms) {
  * Publish a test message to RabbitMQ ai-execution-queue
  */
 async function publishTestMessage(client) {
-    const { v4: uuidv4 } = require('uuid');
+    let executionId = EXECUTION_ID;
+    let ticketId = TICKET_ID;
+    let projectId = PROJECT_ID;
+    let repositoryUrl = REPOSITORY_URL;
+    let prompt = PROMPT;
+    let provider = PROVIDER;
+    let isExisting = false;
 
-    // Validate required args
-    if (!REPOSITORY_URL) {
-        if (!process.env.GITHUB_DEFAULT_REPOSITORY) {
+    // 1. If Execution ID provided, try to fetch details from DB
+    if (executionId) {
+        log(`🔍 Looking up execution ${executionId}...`);
+        const res = await client.query(`
+            SELECT e.id, e.ticket_id, e.ai_provider, e.prompt,
+                   t.project_id, p.github_repository_url
+            FROM executions e
+            LEFT JOIN tickets t ON e.ticket_id = t.id
+            LEFT JOIN projects p ON t.project_id = p.id
+            WHERE e.id = $1
+        `, [executionId]);
+
+        if (res.rows.length > 0) {
+            const row = res.rows[0];
+            ticketId = row.ticket_id;
+            projectId = row.project_id;
+            repositoryUrl = row.github_repository_url;
+            prompt = row.prompt;
+            provider = row.ai_provider;
+            isExisting = true;
+            log(`✅ Found existing data: Ticket=${ticketId}, Project=${projectId}`);
+
+            // Reset status to QUEUED so it can be picked up again
+            await client.query(
+                `UPDATE executions SET status = 'QUEUED', error_message = NULL, updated_at = NOW() WHERE id = $1`,
+                [executionId]
+            );
+        } else {
+            log(`⚠️ Execution ${executionId} not found, will create new records.`);
+        }
+    } else {
+        executionId = uuidv4();
+    }
+
+    // 2. Prepare Data & Create Records if needed
+    if (!isExisting) {
+        projectId = projectId || 'test-project';
+
+        // Validate required args
+        if (!repositoryUrl && !process.env.GITHUB_DEFAULT_REPOSITORY) {
             console.error('❌ ERROR: --repository-url required or GITHUB_DEFAULT_REPOSITORY env var must be set');
             process.exit(1);
         }
+        repositoryUrl = repositoryUrl || process.env.GITHUB_DEFAULT_REPOSITORY;
+        ticketId = ticketId || `task-test-${Date.now()}`;
+
+        log(`   Project ID: ${projectId}`);
+        log(`   Repository: ${repositoryUrl}`);
+        log(`   Prompt: ${prompt.substring(0, 60)}...`);
+
+        // Create project if missing
+        await client.query(
+            `INSERT INTO projects (
+                id, name, github_repository_url, pm_id, status, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, 'active', NOW(), NOW())
+            ON CONFLICT (id) DO NOTHING`,
+            [projectId, 'Test Project', repositoryUrl, 'admin-001']
+        );
+
+        // Create ticket record
+        await client.query(
+            `INSERT INTO tickets (
+                id, clickup_task_id, project_id, title, description, 
+                acceptance_criteria, ticket_quality_score, status,
+                created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            ON CONFLICT (clickup_task_id) DO NOTHING`,
+            [
+                ticketId,
+                ticketId,
+                projectId,
+                `Test Ticket: ${prompt.substring(0, 50)}...`,
+                prompt,
+                'Execution completes successfully',
+                80, // Good quality score
+                'QUEUED'
+            ]
+        );
+        log(`✅ Ticket record created: ${ticketId}`);
+
+        // Create execution record
+        await client.query(
+            `INSERT INTO executions (
+                id, ticket_id, ai_provider, status, 
+                prompt, complexity_score,
+                created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+            RETURNING id`,
+            [
+                executionId,
+                ticketId,
+                provider,
+                'QUEUED',
+                prompt,
+                6 // Medium complexity
+            ]
+        );
+        log(`✅ Execution record created: ${executionId}`);
     }
 
     const correlationId = uuidv4();
     const messageId = uuidv4();
-    const executionId = uuidv4();
-    const repositoryUrl = REPOSITORY_URL || process.env.GITHUB_DEFAULT_REPOSITORY;
-
-    log(`📝 Creating execution record...`);
-    log(`   Correlation ID: ${correlationId}`);
-    log(`   Execution ID: ${executionId}`);
-    log(`   Ticket ID: ${TICKET_ID}`);
-    log(`   Provider: ${PROVIDER}`);
-    log(`   Repository: ${repositoryUrl}`);
-    log(`   Prompt: ${PROMPT.substring(0, 60)}...`);
-
-    // 1. Create ticket record first (required for foreign key)
-    await client.query(
-        `INSERT INTO tickets (
-            id, clickup_task_id, project_id, title, description, 
-            acceptance_criteria, ticket_quality_score, status,
-            created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-        ON CONFLICT (clickup_task_id) DO NOTHING`,
-        [
-            TICKET_ID,
-            TICKET_ID,
-            PROJECT_ID,
-            `Test Ticket: ${PROMPT.substring(0, 50)}...`,
-            PROMPT,
-            'Execution completes successfully',
-            80, // Good quality score
-            'QUEUED'
-        ]
-    );
-
-    log(`✅ Ticket record created: ${TICKET_ID}`);
-
-    // 2. Create execution record in database
-    const result = await client.query(
-        `INSERT INTO executions (
-            id, ticket_id, ai_provider, status, 
-            prompt, complexity_score,
-            created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-        RETURNING id`,
-        [
-            executionId,
-            TICKET_ID,
-            PROVIDER,
-            'QUEUED',
-            PROMPT,
-            6 // Medium complexity
-        ]
-    );
-
-    log(`✅ Execution record created: ${result.rows[0].id}`);
 
     // 2. Build RabbitMQ message
     const message = {
@@ -171,13 +218,13 @@ async function publishTestMessage(client) {
         timestamp: new Date().toISOString(),
         correlationId,
         payload: {
-            ticketId: TICKET_ID,
+            ticketId: ticketId,
             executionId,
-            aiProvider: PROVIDER,
+            aiProvider: provider,
             priority: 3, // Medium priority
-            prompt: PROMPT,
+            prompt: prompt,
             repositoryUrl,
-            projectId: PROJECT_ID,
+            projectId: projectId,
             allowFallback: true
         }
     };

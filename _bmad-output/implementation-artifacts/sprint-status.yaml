@@ -1012,6 +1012,46 @@ development_status:
     code_review_fixes: "6 HIGH, 4 MEDIUM (all remediated)"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED - UI implementation complete with all code review fixes applied. Created ProjectsTable with monitoring toggle, ClickUpImportModal with provider selection & hierarchy browser, React Query hooks (useClickUpHierarchy, useImportProject), ProjectsSyncPage, and shadcn UI components (Table, Switch, Badge, Dialog). Added routing and tests. CODE REVIEW FIXES: (H2) Fixed React Fragment key warning, (H3/H4) Improved error handling with typed API responses extracting actual error messages, (H6) Enhanced test coverage 5→9 comprehensive test cases (API integration, error handling, loading states), (M1) Changed provider default from 'CLICKUP' to 'Unknown'. Build passing for story files."
 
+  16-3-clickup-multi-organization-support:
+    status: done
+    priority: high
+    effort: "1.5 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/19-3-clickup-multi-organization-support.md"
+    created_at: "2026-01-28T19:45:00Z"
+    notes: "Moved from Epic 19. ✅ CODE REVIEW COMPLETED & APPROVED. Fixed Critical Issue AC#2 (backend now fetches full hierarchy by default) and created missing frontend types. Frontend/Backend tests passing. Multi-org support fully implemented."
+    developer: "Antigravity (via Amelia Dev Agent)"
+    started_at: '2026-01-28T19:48:00Z'
+    completed_at: '2026-01-28T20:40:00Z'
+    test_results: "✅ Backend tests passing, ✅ Frontend component tests passing"
+
+  16-4-project-management-enhancements:
+    status: done
+    developer: "Antigravity"
+    started_at: "2026-01-28"
+    priority: high
+    effort: "3 days"
+    story_points: 8
+    story_file: "_bmad-output/implementation-artifacts/19-4-project-management-enhancements.md"
+    created_at: "2026-01-28T21:24:00Z"
+    approved_at: "2026-01-28T21:41:00Z"
+    notes: "Moved from Epic 19. Story approved and ready for development. Addresses missing project management features: GitHub repository assignment, project deletion with safety checks, active/inactive status management, and ClickUp project sync. Includes both backend API enhancements and frontend UI components."
+    based_on: "Story 4-9"
+    blocks: []
+    test_results: "✅ Frontend tests passing, ✅ Backend tests passing"
+
+  16-5-ai-decision-logging-module:
+    status: ready-for-dev
+    developer: "Antigravity"
+    priority: medium
+    effort: "1 day"
+    story_points: 3
+    story_file: "_bmad-output/implementation-artifacts/19-5-ai-decision-logging-module.md"
+    created_at: "2026-01-28T23:30:00Z"
+    notes: "Moved from Epic 19. Follow-up to Story 19-4 to implement dedicated AI decision logging service."
+    based_on: "Story 19-4"
+    blocks: []
+
   epic-17: in-progress
   epic-17-name: "Authentication & Access Control"
   epic-17-phase: "Critical Security"
@@ -1234,83 +1274,66 @@ development_status:
   epic-18-retrospective: done
 
   epic-19: ready-for-dev
-  epic-19-name: "Claude Code CLI Integration"
-  epic-19-priority: high
+  epic-19-name: "Claude Code CLI Integration (Node-PTY)"
+  epic-19-priority: critical
   epic-19-phase: "Refactor"
   epic-19-dependencies: "None"
-  epic-19-notes: "Refactor Claude Code provider to use CLI natively, removing manual context handling. See: planning-artifacts/epics.md"
-  19-1-implement-claude-code-cli-provider:
+  epic-19-notes: "Refactor Claude Code provider to use Node-PTY for robust terminal emulation, removing manual context handling and cli-spawn limitations."
+  19-OLD-1-implement-claude-code-cli-provider:
+    status: deprecated
+    notes: "Superseded by 19-1 (Node-PTY implementation). Original cli-spawn approach CLI."
+  19-OLD-2-remove-legacy-context-management-code:
     status: done
-    priority: high
+    notes: "Completed legacy cleanup. partially relevant."
+  
+  19-1-implement-node-pty-layout-service:
+    status: done
+    priority: critical
     effort: "1 day"
-    story_points: 3
-    story_file: "_bmad-output/implementation-artifacts/19-1-implement-claude-code-cli-provider.md"
-    completed_at: "2026-01-27T18:00:00Z"
-    code_review_date: "2026-01-27T18:05:00Z"
-    code_review_fixes: "1 CRITICAL, 2 MEDIUM issues fixed"
-    notes: "✅ CODE REVIEW COMPLETED & FIXED - ClaudeCodeProvider implemented using cli-spawn architecture. CRITICAL FIX: Enabled output logging. MEDIUM FIXES: Documented missing metrics and interface gaps. Status updated to done."
-  19-2-remove-legacy-context-management-code:
-    status: done
-    completed_at: "2026-01-27T23:30:00Z"
-    notes: "✅ CODE REVIEW APPROVED. Refactored ClaudeCodePromptBuilder to remove legacy context injection (AC#1, #2). Optimized PromptGeneratorService to skip expensive context fetching for Claude Code (AC#4). Updated ClaudeCodeProvider to simplified prompt construction (AC#5). Verified with unit tests, ensuring no regression for Cursor (AC#3)."
-
-
-  19-3-clickup-multi-organization-support:
-    status: done
-    priority: high
-    effort: "1.5 days"
     story_points: 5
-    story_file: "_bmad-output/implementation-artifacts/19-3-clickup-multi-organization-support.md"
-    created_at: "2026-01-28T19:45:00Z"
-    notes: "✅ CODE REVIEW COMPLETED & APPROVED. Fixed Critical Issue AC#2 (backend now fetches full hierarchy by default) and created missing frontend types. Frontend/Backend tests passing. Multi-org support fully implemented."
-    developer: "Antigravity (via Amelia Dev Agent)"
-    started_at: '2026-01-28T19:48:00Z'
-    completed_at: '2026-01-28T20:40:00Z'
-    test_results: "✅ Backend tests passing, ✅ Frontend component tests passing"
-
-  19-4-project-management-enhancements:
-    status: done
-    developer: "Antigravity"
-    started_at: "2026-01-28"
-    priority: high
-    effort: "3 days"
-    story_points: 8
-    story_file: "_bmad-output/implementation-artifacts/19-4-project-management-enhancements.md"
-    created_at: "2026-01-28T21:24:00Z"
-    approved_at: "2026-01-28T21:41:00Z"
-    notes: "Story approved and ready for development. Addresses missing project management features: GitHub repository assignment, project deletion with safety checks, active/inactive status management, and ClickUp project sync. Includes both backend API enhancements and frontend UI components."
-    based_on: "Story 4-9"
-    blocks: []
-    test_results: "✅ Frontend tests passing, ✅ Backend tests passing"
-
-  19-5-ai-decision-logging-module:
+    notes: "✅ CODE REVIEW APPROVED - PtyExecutionService implemented wrapping node-pty. Features: TTY spawning, real-time stdout/stderr streaming, stdin writing, resizing, killing. Unit tests passing. Code Review: Fixed Git tracking issues (staged 5 missing files), updated story File List. Ready for Claude Code Provider integration."
+  
+  19-2-implement-claude-code-provider-strategy:
     status: ready-for-dev
-    developer: "Antigravity"
-    priority: medium
+    priority: critical
+    effort: "1 day"
+    story_points: 5
+    notes: "Implement ClaudeCodeProvider using PtyExecutionService. Pass ticket description as prompt. Rely on agentic context gathering."
+  
+  19-3-autonomous-workspace-management:
+    status: ready-for-dev
+    priority: high
     effort: "1 day"
     story_points: 3
-    story_file: "_bmad-output/implementation-artifacts/19-5-ai-decision-logging-module.md"
-    created_at: "2026-01-28T23:30:00Z"
-    notes: "Follow-up to Story 19-4 to implement dedicated AI decision logging service."
-    based_on: "Story 19-4"
-    blocks: []
+    notes: "Agent manages its own CWD and file navigation. Cloning/setup handled by PTY environment."
 
   epic-19-retrospective: optional
 
   epic-20: in-progress
-  20-1-provider-agnostic-ai-intake:
+  epic-20-name: "AI Task Pickup Reliability"
+  20-OLD-1-provider-agnostic-ai-intake:
     status: in-progress
-    story_file: "_bmad-output/implementation-artifacts/20-1-provider-agnostic-ai-intake.md"
-    created_at: "2026-01-29T12:00:00Z"
-    started_at: "2026-01-29T01:22:09Z"
-    notes: "Generalizing intake mechanism for future providers (Asana/Jira) and fixing manual sync trigger."
+    notes: "Refactoring into 20.1/20.2"
   
-  20-2-stale-execution-recovery:
+  20-1-implement-robust-webhook-handler:
     status: ready-for-dev
-    story_file: "_bmad-output/implementation-artifacts/20-2-stale-execution-recovery.md"
-    created_at: "2026-01-29T02:08:00Z"
+    priority: critical
+    effort: "1 day"
+    notes: "Idempotent webhook processing, signature validation, immediate 200 OK."
+  
+  20-2-unified-intake-status-check:
+    status: ready-for-dev
     priority: high
     effort: "1 day"
-    story_points: 5
-    notes: "Implements recovery mechanism for stuck executions after server restarts. Detects stale QUEUED/IN_PROGRESS executions and republishes to intake queue. Critical for production resilience."
-    depends_on: ["20-1-provider-agnostic-ai-intake"]
+    notes: "Centralized logic for 'Ready for AI' status shared by Webhook and Sync."
+
+  20-3-prevent-duplicate-executions:
+    status: ready-for-dev
+    priority: high
+    effort: "0.5 days"
+    notes: "Check Execution DB before starting new jobs. Allow retry only if failed/completed."
+
+  epic-21: done
+  epic-21-name: "AI Orchestrator Core (MVP)"
+  epic-21-notes: "Marked DONE as duplicate/aggregate of completed Epics 2 and 4. (Routing, Branching, PRs already implemented)."
+

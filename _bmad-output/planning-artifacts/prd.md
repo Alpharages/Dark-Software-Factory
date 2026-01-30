@@ -34,6 +34,7 @@ This transformation addresses three fundamental business drivers identified thro
 **Complexity Level:** HIGH (Organizational transformation + AI orchestration + Multi-system integration)
 
 **Domain Context:**
+
 - Existing software house with 30 employees, 15 projects, Agile workflow
 - AetherFlow platform already provides 80% of required infrastructure
 - Need 20% new build: AI Dev Tool Orchestrator to connect components
@@ -45,6 +46,7 @@ This transformation addresses three fundamental business drivers identified thro
 **"Infrastructure 80% ready + Hybrid Orchestration Model + Ticket Quality as Moat"**
 
 Unlike competitors starting from scratch or attempting pure AI replacement, Dark Software Factory:
+
 - Leverages existing AetherFlow platform (BMAD agents, ClickUp/GitHub integrations)
 - Only needs AI Dev Tool Orchestrator (20% build) to complete pipeline
 - Focuses on ticket quality as the bottleneck (not AI capability)
@@ -57,6 +59,7 @@ Unlike competitors starting from scratch or attempting pure AI replacement, Dark
 **Brainstorming Session:** `/docs/brainstorming-session-results-2025-11-18.md`
 
 **Key Insights from Supporting Materials:**
+
 - 8 Priority 1 risks identified and mitigated
 - Model validated through Pre-mortem, Devil's Advocate, Six Thinking Hats
 - Root cause analysis revealed growth (not cost) as primary driver
@@ -69,18 +72,21 @@ Unlike competitors starting from scratch or attempting pure AI replacement, Dark
 ### Critical Success Tests (From Five Whys Root Motivations)
 
 **1. Growth Test: Breaking the Hiring Constraint**
+
 - **Primary Metric:** Project volume increases from 15 → 50+ within 18-21 months
 - **Leading Indicator:** Project onboarding time drops from months → 48 hours
 - **Validation:** Can accept 3-5 new projects simultaneously without resource delays
 - **Failure Signal:** Still constrained by hiring availability; turning away opportunities
 
 **2. Freedom Test: Reducing Operational Burden**
+
 - **Primary Metric:** BMad's operational time drops 50%+ (from 20-25 hrs/week → <10 hrs/week)
 - **Leading Indicator:** Weekly time spent on hiring, supervision, code review
 - **Validation:** Focus shifts from tactical firefighting to strategic growth
 - **Failure Signal:** AI requires MORE oversight than developers; increased burnout
 
 **3. Survival Test: Industry Leadership Position**
+
 - **Primary Metric:** Recognized as AI transformation pioneer (3+ speaking engagements, 2+ case studies published)
 - **Leading Indicator:** Competitor adoption of similar models, inbound consulting interest
 - **Validation:** Thought leadership establishes competitive moat
@@ -89,6 +95,7 @@ Unlike competitors starting from scratch or attempting pure AI replacement, Dark
 ### Phase-Specific Success Criteria
 
 **Phase 1: Validation (Months 1-3)**
+
 - ✅ AI Orchestrator MVP functional and stable
 - ✅ Pilot project completed successfully (1 project, 10-20 tickets)
 - ✅ PM capacity validated: 1 PM handles 10+ AI projects
@@ -98,6 +105,7 @@ Unlike competitors starting from scratch or attempting pure AI replacement, Dark
 - ✅ Client acceptance: Pilot client NPS >7/10
 
 **Phase 2: Scale (Months 4-9)**
+
 - ✅ Successfully scaled to 20 projects
 - ✅ 5-7 PMs hired and performing well (not burned out)
 - ✅ Gross margins >40%
@@ -106,6 +114,7 @@ Unlike competitors starting from scratch or attempting pure AI replacement, Dark
 - ✅ Quality maintained at scale
 
 **Phase 3: Transform (Months 10-21)**
+
 - ✅ 50+ projects operational
 - ✅ Workforce transformation complete (12-15 orchestration roles)
 - ✅ Gross margins 50%+
@@ -133,12 +142,14 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 8. **Execution Metrics** - Time/cost/quality measurement per project
 
 **Pilot Project Execution:**
+
 - 1 small project (10-20 tickets) run end-to-end
 - Complete PM-created ticket → AI code → deploy flow
 - Measure actual time, cost, quality vs. baseline
 - Document learnings and iterate
 
 **Organizational:**
+
 - Hire 2 exceptional PMs
 - Maintain all 30 existing employees (no workforce changes in Phase 1)
 - Pilot runs parallel to normal operations
@@ -154,6 +165,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 7. **Client Communication Templates** - Standardized transparency about AI use
 
 **Organizational:**
+
 - Hire 3-5 additional PMs (total 5-7)
 - Scale to 20 projects
 - Begin developer reskilling program
@@ -170,6 +182,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 7. **Industry Thought Leadership** - Case studies, frameworks, speaking engagements
 
 **Organizational:**
+
 - Complete workforce transformation to 12-15 orchestrators
 - 50+ concurrent projects
 - Transition bonuses for displaced employees
@@ -178,6 +191,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 ### Explicitly Out of Scope
 
 **Never in Scope:**
+
 - Full "lights-out" with zero human oversight
 - AI handling client communication or requirements gathering
 - Premium pricing model (maintain competitive pricing)
@@ -186,6 +200,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 - Productization/marketplace in Phase 1-3
 
 **Deferred to Post-Phase 3:**
+
 - Platform productization (selling to other software houses)
 - AI worker marketplace (monetizing excess capacity)
 - Cross-industry expansion beyond software services
@@ -198,6 +213,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 ### Enterprise Software Development Context
 
 **Industry Characteristics:**
+
 - Client relationships and trust are paramount
 - Quality and reliability non-negotiable (reputation risk)
 - Tribal knowledge critical for complex projects
@@ -207,30 +223,35 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 **Critical Domain Constraints:**
 
 **1. Client Trust & Transparency**
+
 - **Requirement:** Proactive disclosure of AI use in development
 - **Constraint:** Enterprise clients may reject AI-generated code for compliance
 - **Mitigation:** Opt-in/opt-out policy, human-led option for sensitive projects
 - **Impact on Design:** Client segmentation, tiered service model
 
 **2. Code Quality & Liability**
+
 - **Requirement:** Zero tolerance for catastrophic bugs in production
 - **Constraint:** Insurance/liability for AI-generated code unclear
 - **Mitigation:** Multi-layer review, human QA gates, gradual rollout to low-risk projects first
 - **Impact on Design:** Quality gates, monitoring, insurance requirements
 
 **3. Tribal Knowledge Management**
+
 - **Requirement:** AI must access client history, domain expertise, business context
 - **Constraint:** Knowledge currently in developers' heads
 - **Mitigation:** Knowledge capture sprint before workforce reduction, searchable repository
 - **Impact on Design:** Knowledge base system, ticket context requirements
 
 **4. Workforce Transition Ethics**
+
 - **Requirement:** Minimize harm to employees during transformation
 - **Constraint:** Mass layoffs damage industry reputation and recruiting
 - **Mitigation:** 18-24 month gradual transition, reskilling programs, bonuses, voluntary approach
 - **Impact on Design:** Phased rollout, hybrid model, transition support
 
 **5. First-Mover Risk**
+
 - **Requirement:** Validate model before full commitment
 - **Constraint:** No industry precedent to learn from - all mistakes are ours
 - **Mitigation:** Systematic GO/NO-GO gates, pilot validation, data-driven decisions
@@ -400,6 +421,21 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 - **FR83:** System can prioritize fix tickets by severity and impact
 - **FR84:** System can attempt autonomous bug fixes for simple issues (Phase 3)
 
+**Claude Code Integration (Detailed):**
+
+- **FR137:** Claude Code provider MUST use the `claude` CLI tool directly for execution via node-pty.
+- **FR138:** Claude Code provider MUST accept a task description and acceptance criteria as a "ticket" input.
+- **FR139:** Claude Code provider MUST NOT manually construct context files or prompts; it should rely on Claude Code's agentic capabilities.
+- **FR140:** Claude Code provider MUST allow the agent to manage its own workspace (cloning, file navigation) without external pre-loading of context.
+- **FR141:** Remove legacy/junk code related to manual context loading and complex prompt building.
+
+**Task Intake Reliability:**
+
+- **FR142:** System must support re-triggering AI intake for existing tickets when status matches actionable state.
+- **FR143:** System must trigger AI intake when ClickUp tasks are synced manually from the UI.
+- **FR144:** System must trigger AI intake when ClickUp tasks are updated via webhook to an actionable status.
+- **FR145:** System must prevent duplicate AI executions for the same task state.
+
 **Cost Tracking & Optimization:**
 
 - **FR85:** System can track AI API usage (calls, tokens, costs) per project
@@ -507,6 +543,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 **Total FRs:** 136 (63 MVP Phase 1, 38 Growth Phase 2, 35 Vision Phase 3)
 
 **Capability Coverage:**
+
 - ✅ PM orchestration and ticket management (23 FRs)
 - ✅ TL architecture validation (10 FRs)
 - ✅ Lead QA quality gates (10 FRs)
@@ -641,6 +678,11 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 - **NFR-I9:** CI/CD pipeline triggers must be provider-agnostic (GitHub Actions, Jenkins, etc.)
 - **NFR-I10:** Monitoring tools must integrate via standard APIs (Datadog, Prometheus, etc.)
 
+**CLI Integration:**
+
+- **NFR-I11:** Integration must use the locally installed `claude` CLI available in the environment.
+- **NFR-I12:** Integration must maintain the existing `AIProvider` interface for compatibility with the Orchestrator.
+
 **Rationale:** Integration complexity is high (5+ external systems). Poor integration creates operational burden and negates AI efficiency gains.
 
 ---
@@ -751,6 +793,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 **Total NFRs:** 69 across 8 categories
 
 **Critical NFRs for Phase 1 Success:**
+
 - Performance: Sub-hour delivery pipeline (NFR-P6)
 - Security: Complete audit trail (NFR-S5, NFR-S6)
 - Scalability: Support 20 projects without changes (NFR-SC1)
@@ -759,6 +802,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 - UX: PM productivity and burnout prevention (NFR-UX6, NFR-UX7, NFR-UX8)
 
 **Risk Mitigation Mapping:**
+
 - R1 (PM Burnout): NFR-UX6-11, NFR-O8
 - R2 (AI Hallucination): NFR-S9, NFR-R4-6
 - R3 (Cost Explosion): NFR-P8, NFR-O7, NFR-R7
@@ -766,6 +810,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 - R7 (TL Bottleneck): NFR-UX2-5
 
 **Phase Dependencies:**
+
 - Phase 1: All NFRs except multi-provider (NFR-I6) and advanced scaling (NFR-SC2)
 - Phase 2: Add multi-provider, knowledge base integration
 - Phase 3: Add client portal UX, predictive analytics observability
@@ -783,7 +828,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 ✅ Domain considerations documented (Enterprise software context)  
 ✅ 136 Functional Requirements defined (complete capability inventory)  
 ✅ 69 Non-Functional Requirements specified (quality attributes)  
-✅ Risk mitigation mapped to requirements  
+✅ Risk mitigation mapped to requirements
 
 **What This PRD Enables:**
 
@@ -796,18 +841,21 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 **Key Requirements Highlights:**
 
 **MVP Phase 1 (Months 1-3):**
+
 - 63 Functional Requirements focusing on AI Orchestrator core + pilot project
 - 8 Core Orchestrator capabilities (webhook, routing, QA, GitHub, CI/CD, monitoring, cost tracking, self-healing)
 - 5 Human orchestration roles (PM, TL, QA, Manager) with dashboards
 - GO/NO-GO gate with 7 validation criteria
 
 **Growth Phase 2 (Months 4-9):**
+
 - 38 additional Functional Requirements for scaling and enhancement
 - Multi-layer AI review, PM ticket assistance, knowledge base, advanced optimization
 - Scale from pilot → 20 projects with 5-7 PMs
 - Gross margin >40% target
 
 **Vision Phase 3 (Months 10-21):**
+
 - 35 additional Functional Requirements for full transformation
 - Client portal, predictive analytics, advanced self-healing, tiered services
 - Scale to 50+ projects with 12-15 orchestrators
@@ -832,18 +880,21 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 **Value Delivery to Stakeholders:**
 
 **For Business (BMad/Leadership):**
+
 - Growth: 15 → 50+ projects (3-4x revenue increase)
 - Freedom: 50%+ reduction in operational management time
 - Margins: 30-40% current → 50%+ target through efficiency
 - Survival: Industry leadership position established
 
 **For Clients:**
+
 - Speed: Days → hours delivery for standard projects
 - Quality: Multi-layer AI review + human gates
 - Availability: 24/7 AI execution with human touchpoints during business hours
 - Transparency: Clear visibility into AI vs. human involvement
 
 **For Team Members:**
+
 - PMs: Transform from task managers to strategic orchestrators with 10-15x leverage
 - TLs: Focus on architecture patterns vs. tactical code review
 - QA: Strategic quality oversight vs. exhaustive manual testing
@@ -852,6 +903,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 **Risk-Adjusted Value:**
 
 This PRD incorporates learnings from comprehensive risk analysis (Pre-mortem, Devil's Advocate, Risk Matrix, SWOT):
+
 - 8 Priority 1 risks identified with specific mitigations mapped to requirements
 - NFRs directly address highest-impact risks (PM burnout, AI hallucination, cost explosion)
 - Phased validation approach ensures assumptions tested before full commitment
@@ -860,6 +912,7 @@ This PRD incorporates learnings from comprehensive risk analysis (Pre-mortem, De
 **Success Measurement:**
 
 The PRD enables tracking against 3 fundamental success tests:
+
 1. **Growth Test:** Project volume and onboarding speed metrics (FR96-99, NFR-O5-8)
 2. **Freedom Test:** Operational time tracking and PM workload monitoring (FR15-19, NFR-O8, NFR-UX8)
 3. **Survival Test:** Industry recognition and competitive positioning (qualitative, supported by thought leadership capabilities in Phase 3)
@@ -884,12 +937,14 @@ The PRD enables tracking against 3 fundamental success tests:
 ## Next Steps
 
 **Immediate (This Week):**
+
 1. **Stakeholder Review:** BMad reviews and approves this PRD
 2. **UX Design Kickoff:** Share PRD with UX designer to begin interface design (45+ screens/components)
 3. **Architecture Planning:** Schedule technical architecture session with TL team
 4. **Pilot Project Selection:** Identify 3-5 candidate pilot projects for Phase 1 validation
 
 **Short Term (Next 2 Weeks):**
+
 1. **UX Workflow:** Run `create-ux-design` workflow to design PM/TL/QA/Manager dashboards and interfaces
 2. **Architecture Workflow:** Run `create-architecture` workflow to design orchestrator technical architecture
 3. **Epic Breakdown:** Run `create-epics-and-stories` workflow after UX+Architecture complete (richer context)
@@ -906,6 +961,7 @@ The PRD enables tracking against 3 fundamental success tests:
 ```
 
 **Why UX First:**
+
 - 45+ FRs require interface design
 - UX decisions inform architecture (real-time requirements, data models, API contracts)
 - PMs, TLs, QA, Managers are primary users - their experience determines adoption success
@@ -916,5 +972,5 @@ The PRD enables tracking against 3 fundamental success tests:
 _This PRD provides the comprehensive requirements foundation for Dark Software Factory transformation. All 136 functional capabilities and 69 non-functional requirements are defined and ready for design, architecture, and implementation._
 
 **Version History:**
-- v1.0 (2025-11-20): Initial complete PRD created from Product Brief and Brainstorming Session insights
 
+- v1.0 (2025-11-20): Initial complete PRD created from Product Brief and Brainstorming Session insights

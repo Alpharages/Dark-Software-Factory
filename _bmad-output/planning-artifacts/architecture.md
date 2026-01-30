@@ -47,26 +47,27 @@ npx @nestjs/cli new ai-dev-orchestrator --package-manager npm
 
 ## Decision Summary Table
 
-| Category              | Decision                            | Version         | Rationale                                                                           | Affects FRs              | Provided By    |
-| --------------------- | ----------------------------------- | --------------- | ----------------------------------------------------------------------------------- | ------------------------ | -------------- |
-| **Foundation**        | Separate NestJS Microservice        | 10.x            | Clean separation from AetherFlow, enterprise structure, protects 80% infrastructure | All 136 FRs              | User Decision  |
-| **Language**          | TypeScript (Strict Mode)            | 5.x             | Type safety critical for multi-system integration, consistency with AetherFlow      | All FRs                  | NestJS Starter |
-| **Database**          | Separate PostgreSQL                 | 16.x            | Service independence, data encapsulation, scalable                                  | FR56-95 (System)         | User Decision  |
-| **ORM**               | Prisma                              | 5.x             | Type-safe queries, migrations, excellent DX                                         | FR56-95 (System)         | Recommended    |
-| **Message Queue**     | RabbitMQ                            | 3.13.x          | Robust message broker, reliable async communication, retry logic                    | FR60-78, Jobs            | User Decision  |
-| **Real-time**         | Socket.IO                           | 4.x             | Dashboard real-time updates, matches AetherFlow pattern                             | FR96-115 (Dashboards)    | Recommended    |
-| **HTTP Client**       | Axios                               | 1.x             | AI provider API calls, GitHub, ClickUp integration                                  | FR60-78 (Integration)    | Recommended    |
-| **Logging**           | Winston                             | 3.x             | Structured JSON logging, audit trail                                                | NFR-O1-4 (Observability) | Recommended    |
-| **Monitoring**        | Prometheus + Grafana                | Latest          | Metrics exposure, dashboard visualization                                           | NFR-O5-11 (Monitoring)   | Recommended    |
-| **Error Tracking**    | Sentry                              | Latest          | Production error monitoring, alerting                                               | NFR-R4-7 (Reliability)   | Recommended    |
-| **Testing**           | Jest + Supertest                    | NestJS built-in | Test coverage >80% requirement                                                      | NFR-M1 (Maintainability) | NestJS Starter |
-| **Authentication**    | Separate Auth Service (JWT)         | Custom          | Service independence, dedicated auth management                                     | NFR-S1-2 (Security)      | User Decision  |
-| **Config Management** | @nestjs/config + dotenv             | NestJS built-in | Environment-based configuration                                                     | NFR-M4 (Maintainability) | NestJS Starter |
-| **Validation**        | class-validator + class-transformer | NestJS built-in | Request validation, DTO transformation                                              | NFR-S4 (Security)        | NestJS Starter |
-| **API Documentation** | Swagger/OpenAPI                     | @nestjs/swagger | Internal API documentation for AetherFlow integration                               | Integration              | Recommended    |
-| **Deployment**        | Docker + Docker Compose             | Latest          | Containerization, runs alongside AetherFlow                                         | NFR-M7 (Operations)      | Recommended    |
-| **Code Style**        | ESLint + Prettier                   | NestJS built-in | Code consistency across AI-generated code                                           | NFR-M2 (Maintainability) | NestJS Starter |
-| **API Versioning**    | Centralized URI Versioning (v1)     | 1.0.0           | Scalable, clear separation of versions, standardized across all controllers         | Integration              | Story 18.1     |
+| Category              | Decision                            | Version         | Rationale                                                                              | Affects FRs              | Provided By           |
+| --------------------- | ----------------------------------- | --------------- | -------------------------------------------------------------------------------------- | ------------------------ | --------------------- |
+| **Foundation**        | Separate NestJS Microservice        | 10.x            | Clean separation from AetherFlow, enterprise structure, protects 80% infrastructure    | All 136 FRs              | User Decision         |
+| **Language**          | TypeScript (Strict Mode)            | 5.x             | Type safety critical for multi-system integration, consistency with AetherFlow         | All FRs                  | NestJS Starter        |
+| **Database**          | Separate PostgreSQL                 | 16.x            | Service independence, data encapsulation, scalable                                     | FR56-95 (System)         | User Decision         |
+| **ORM**               | Prisma                              | 5.x             | Type-safe queries, migrations, excellent DX                                            | FR56-95 (System)         | Recommended           |
+| **Message Queue**     | RabbitMQ                            | 3.13.x          | Robust message broker, reliable async communication, retry logic                       | FR60-78, Jobs            | User Decision         |
+| **Real-time**         | Socket.IO                           | 4.x             | Dashboard real-time updates, matches AetherFlow pattern                                | FR96-115 (Dashboards)    | Recommended           |
+| **HTTP Client**       | Axios                               | 1.x             | AI provider API calls, GitHub, ClickUp integration                                     | FR60-78 (Integration)    | Recommended           |
+| **Logging**           | Winston                             | 3.x             | Structured JSON logging, audit trail                                                   | NFR-O1-4 (Observability) | Recommended           |
+| **Monitoring**        | Prometheus + Grafana                | Latest          | Metrics exposure, dashboard visualization                                              | NFR-O5-11 (Monitoring)   | Recommended           |
+| **Error Tracking**    | Sentry                              | Latest          | Production error monitoring, alerting                                                  | NFR-R4-7 (Reliability)   | Recommended           |
+| **Testing**           | Jest + Supertest                    | NestJS built-in | Test coverage >80% requirement                                                         | NFR-M1 (Maintainability) | NestJS Starter        |
+| **Authentication**    | Separate Auth Service (JWT)         | Custom          | Service independence, dedicated auth management                                        | NFR-S1-2 (Security)      | User Decision         |
+| **Config Management** | @nestjs/config + dotenv             | NestJS built-in | Environment-based configuration                                                        | NFR-M4 (Maintainability) | NestJS Starter        |
+| **Validation**        | class-validator + class-transformer | NestJS built-in | Request validation, DTO transformation                                                 | NFR-S4 (Security)        | NestJS Starter        |
+| **API Documentation** | Swagger/OpenAPI                     | @nestjs/swagger | Internal API documentation for AetherFlow integration                                  | Integration              | Recommended           |
+| **Deployment**        | Docker + Docker Compose             | Latest          | Containerization, runs alongside AetherFlow                                            | NFR-M7 (Operations)      | Recommended           |
+| **Code Style**        | ESLint + Prettier                   | NestJS built-in | Code consistency across AI-generated code                                              | NFR-M2 (Maintainability) | NestJS Starter        |
+| **API Versioning**    | Centralized URI Versioning (v1)     | 1.0.0           | Scalable, clear separation of versions, standardized across all controllers            | Integration              | Story 18.1            |
+| **CLI Execution**     | node-pty                            | 1.1.x           | Robust terminal emulation for capturing progress bars and handling interactive prompts | FR60-65 (System)         | Architecture Decision |
 
 **Key Architectural Decisions:**
 

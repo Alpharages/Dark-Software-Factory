@@ -9,6 +9,7 @@ import { AIRoutingService } from './ai-routing.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
 import { AIRoutingConsumer } from './ai-routing.consumer';
+import { PtyExecutionService } from './services/pty-execution.service';
 // Story 2.4: Prompt generation imports
 import { PromptGeneratorService } from './prompt-generator.service';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
@@ -57,6 +58,7 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
     ComplexityScorerService,
     ProviderHealthService,
     AIRoutingConsumer,
+    PtyExecutionService,
 
     // Story 2.4: Prompt generation services
     PromptGeneratorService,
@@ -240,6 +242,7 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
     AIRoutingService,
     ComplexityScorerService,
     ProviderHealthService,
+    PtyExecutionService,
     // Story 2.4: Prompt generation exports
     PromptGeneratorService,
     CursorPromptBuilder,

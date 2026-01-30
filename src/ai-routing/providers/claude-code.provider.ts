@@ -37,7 +37,7 @@ export class ClaudeCodeProvider
 
   readonly provider = AIProvider.CLAUDE_CODE;
   readonly maxConcurrent: number = 20;
-  readonly defaultTimeoutMs: number = 120_000; // 2 minutes
+  readonly defaultTimeoutMs: number = 300_000; // 5 minutes
 
   /** Active executions tracking */
   private readonly activeExecutions: Map<string, ChildProcess> = new Map();
@@ -77,9 +77,10 @@ export class ClaudeCodeProvider
     this.apiKey = this.config.get<string>('anthropic.apiKey');
     this.baseURL = this.config.get<string>('anthropic.baseURL');
     this.model = this.config.get<string>('anthropic.model') || 'claude-sonnet-4-20250514';
-    this.timeoutMs = this.config.get<number>('anthropic.timeoutMs') || 120_000;
+    this.timeoutMs = this.config.get<number>('anthropic.timeoutMs') || 300_000;
 
     // Check if configuration exists - either API key or Base URL (for self-hosted/Ollama)
+
     if (!this.apiKey && !this.baseURL) {
       this.logger.warn('Claude provider not configured - Missing ANTHROPIC_API_KEY or BASE_URL');
       this.isConfigured = false;
@@ -172,13 +173,16 @@ export class ClaudeCodeProvider
 
       // 5. Spawn Claude CLI
       // Command: claude --model <model> "<prompt>"
-      // Note: passing prompt as argument. Ensure it's safe (node spawn handles escaping args).
-      // Alternatively, we could pipe it to stdin if the CLI supports it, but story example used args.
-      // "spawn('claude', ['--model', 'qwen3-coder', userPrompt], ...)"
+      const args = [
+        '--model',
+        this.model,
+        // '--print', // Removed: We want file generation, not just printed output
+        '--dangerously-skip-permissions',
+        '--no-session-persistence',
+        cliPrompt,
+      ];
 
-      const args = ['--model', this.model, cliPrompt];
-
-      this.logger.debug(`Spawning claude with args length: ${args.length} in ${workspacePath}`);
+      this.logger.debug(`Spawning claude with args: ${JSON.stringify(args)} in ${workspacePath}`);
 
       const child = spawn('claude', args, {
         cwd: workspacePath,
@@ -189,21 +193,27 @@ export class ClaudeCodeProvider
       this.activeExecutions.set(executionId, child);
 
       // 6. Handle Process Execution
-      await this.monitorProcess(child, executionId, timeout);
+      const { stdout, stderr } = await this.monitorProcess(child, executionId, timeout);
 
       // 7. Extract changes
       const { diff, filesChanged } = await this.workspace.extractChanges(executionId);
 
-      // 8. Calculate confidence (simplified since we don't track tool calls directly unless we parse stdout)
+      // 8. Calculate confidence (simplified)
       const confidenceScore = filesChanged.length > 0 ? 0.8 : 0.0;
 
       // 9. Check results
       if (filesChanged.length === 0) {
         this.circuitBreaker.recordFailure();
+        // Log the output to help debugging
+        this.logger.warn(
+          `[${correlationId}] No changes generated. Output preview:\nSTDOUT: ${stdout.substring(0, 500)}\nSTDERR: ${stderr.substring(0, 500)}`,
+        );
+
         return this.createFailedResult(startTime, workspacePath, {
           code: AIErrorCode.NO_CHANGES,
           message: 'Claude CLI completed but no changes were generated',
           isRetryable: true,
+          rawOutput: `STDOUT: ${stdout}\nSTDERR: ${stderr}`,
         });
       }
 
@@ -254,8 +264,9 @@ export class ClaudeCodeProvider
     child: ChildProcess,
     executionId: string,
     timeoutMs: number,
-  ): Promise<void> {
+  ): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
+      let stdoutData = '';
       let stderrData = '';
       let timedOut = false;
 
@@ -269,6 +280,7 @@ export class ClaudeCodeProvider
       if (child.stdout) {
         child.stdout.on('data', (data) => {
           const text = data.toString();
+          stdoutData += text;
           // Stream to logger
           this.logger.debug(`[Claude CLI stdout] ${text.substring(0, 100)}...`);
         });
@@ -293,7 +305,7 @@ export class ClaudeCodeProvider
         if (!timedOut) {
           clearTimeout(timer);
           if (code === 0) {
-            resolve();
+            resolve({ stdout: stdoutData, stderr: stderrData });
           } else {
             const errorMsg = `Claude CLI exited with code ${code}. Stderr: ${stderrData.substring(0, 500)}`;
             reject(new Error(errorMsg));

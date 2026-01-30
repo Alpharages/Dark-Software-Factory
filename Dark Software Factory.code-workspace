@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "../dsf-dasbhoard"
+		},
+		{
+			"path": "../automaker"
 		}
 	],
 	"settings": {}

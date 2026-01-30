@@ -91,6 +91,7 @@ services:
       CURSOR_API_KEY: ${CURSOR_API_KEY:-}
       WINDSURF_API_KEY: ${WINDSURF_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
 
       # GitHub (optional for development)
       GITHUB_APP_ID: ${GITHUB_APP_ID:-}
