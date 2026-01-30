@@ -141,6 +141,10 @@ services:
           memory: 2G
         reservations:
           memory: 512M
+    # TTY support for node-pty (Epic 19)
+    tty: true
+    stdin_open: true
+
     # Log rotation (prevents unbounded log growth)
     logging:
       driver: "json-file"

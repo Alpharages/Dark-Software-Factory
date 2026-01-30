@@ -11,8 +11,8 @@ FROM node:22-alpine AS dependencies
 
 WORKDIR /app
 
-# Install build tools for native modules
-RUN apk add --no-cache python3 make g++
+# Install build tools for native modules (node-pty requires python3, make, g++)
+RUN apk add --no-cache python3 make g++ libgcc libstdc++
 
 # Enable pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -51,6 +51,9 @@ RUN pnpm run build
 
 # ---- Production Stage ----
 FROM node:22-alpine AS production
+
+# Install runtime dependencies for node-pty
+RUN apk add --no-cache libgcc libstdc++
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

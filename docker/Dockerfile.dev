@@ -10,8 +10,8 @@ FROM node:22-alpine AS development
 # Set working directory
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++ git
+# Install build dependencies for native modules (node-pty support)
+RUN apk add --no-cache python3 make g++ git libgcc libstdc++ bash
 
 # Install pnpm (project uses pnpm)
 RUN corepack enable && corepack prepare pnpm@latest --activate
