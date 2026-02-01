@@ -151,6 +151,7 @@ export default () => {
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
       timeoutMs: parseInt(process.env.ANTHROPIC_TIMEOUT_MS || '120000', 10),
+      claudeCliPath: process.env.CLAUDE_CLI_PATH || 'claude',
       // Reserved for future provider-specific workspace isolation (currently uses shared WorkspaceService)
       workspacesRoot: process.env.CLAUDE_WORKSPACES_ROOT || '/tmp/claude-workspaces',
     },

@@ -28,7 +28,7 @@ import {
 } from '../interfaces';
 import { WorkspaceService } from './workspace.service';
 import { CircuitBreaker, CircuitState } from './circuit-breaker';
-import { PtyExecutionService } from '../services/pty-execution.service';
+import { PtyExecutionService, PtySpawnError } from '../services/pty-execution.service';
 
 @Injectable()
 export class ClaudeCodeProvider
@@ -52,6 +52,7 @@ export class ClaudeCodeProvider
   private isConfigured: boolean = false;
   private apiKey: string | undefined;
   private baseURL: string | undefined;
+  private claudeCliPath: string = 'claude'; // Configurable path to Claude CLI executable
 
   constructor(
     private readonly config: ConfigService,
@@ -80,6 +81,7 @@ export class ClaudeCodeProvider
     this.baseURL = this.config.get<string>('anthropic.baseURL');
     this.model = this.config.get<string>('anthropic.model') || 'claude-sonnet-4-20250514';
     this.timeoutMs = this.config.get<number>('anthropic.timeoutMs') || 300_000;
+    this.claudeCliPath = this.config.get<string>('anthropic.claudeCliPath') || 'claude';
 
     // Check if configuration exists - either API key or Base URL (for self-hosted/Ollama)
 
@@ -92,7 +94,8 @@ export class ClaudeCodeProvider
     this.isConfigured = true;
     this.logger.log(
       `Claude Code CLI Provider initialized: model=${this.model}, ` +
-        `timeout=${this.timeoutMs}ms, baseURL=${this.baseURL || 'default'}`,
+        `timeout=${this.timeoutMs}ms, baseURL=${this.baseURL || 'default'}, ` +
+        `cliPath=${this.claudeCliPath}`,
     );
   }
 
@@ -164,7 +167,7 @@ export class ClaudeCodeProvider
 
       this.logger.debug(`Spawning claude with args: ${JSON.stringify(args)} in ${workspacePath}`);
 
-      const { pid, output$, exit$ } = this.ptyService.spawn('claude', args, {
+      const { pid, output$, exit$ } = this.ptyService.spawn(this.claudeCliPath, args, {
         cwd: workspacePath,
         env: env,
         name: `claude-${executionId}`,
@@ -172,13 +175,44 @@ export class ClaudeCodeProvider
         rows: 40,
       });
 
+      // Check if spawn failed immediately (pid === -1 indicates pre-spawn validation failure)
+      if (pid === -1) {
+        this.logger.error(`[${correlationId}] Failed to spawn Claude CLI - command not found`);
+        return this.createFailedResult(startTime, workspacePath, {
+          code: AIErrorCode.CLI_NOT_FOUND,
+          message:
+            "'claude' CLI not found in PATH. Please install Claude Code CLI: " +
+            'https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview',
+          isRetryable: false,
+        });
+      }
+
       this.activeExecutions.set(executionId, pid);
 
       // 6. Monitor Execution
-      const completionPromise = lastValueFrom(exit$); // Wait for exit
+      let exitPromise: Promise<{ exitCode: number; signal?: number }>;
+      try {
+        exitPromise = lastValueFrom(exit$);
+      } catch (err) {
+        // Handle case where exit$ immediately errors
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`[${correlationId}] PTY exit observable error: ${errorMsg}`);
+
+        if (err instanceof PtySpawnError) {
+          return this.createFailedResult(startTime, workspacePath, {
+            code: AIErrorCode.CLI_NOT_FOUND,
+            message: err.message,
+            isRetryable: false,
+          });
+        }
+
+        throw err;
+      }
 
       // Monitor output in real-time
       const outputChunks: string[] = [];
+      let spawnError: Error | undefined;
+
       output$.subscribe({
         next: (chunk) => {
           outputChunks.push(chunk);
@@ -188,18 +222,52 @@ export class ClaudeCodeProvider
             this.logger.debug(`[${executionId}] PTY: ${chunk.trim()}`);
           }
         },
-        error: (err) => this.logger.error(`[${executionId}] PTY Error: ${err}`),
+        error: (err: Error) => {
+          spawnError = err;
+          this.logger.error(`[${executionId}] PTY Error: ${err}`);
+        },
       });
 
-      // Timeout handling is implicit if pty service doesn't have it, but we should handle it here too
+      // Timeout handling
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error(`Execution timed out after ${timeout}ms`)), timeout);
       });
 
       // Wait for completion or timeout
-      const { exitCode } = (await Promise.race([completionPromise, timeoutPromise])) as {
-        exitCode: number;
-      };
+      let exitResult: { exitCode: number; signal?: number };
+      try {
+        exitResult = (await Promise.race([exitPromise, timeoutPromise])) as {
+          exitCode: number;
+          signal?: number;
+        };
+      } catch (raceError) {
+        // Check if there was a spawn error captured from output$
+        if (spawnError) {
+          if (spawnError instanceof PtySpawnError) {
+            return this.createFailedResult(startTime, workspacePath, {
+              code: AIErrorCode.CLI_NOT_FOUND,
+              message: spawnError.message,
+              isRetryable: false,
+            });
+          }
+          throw spawnError;
+        }
+        throw raceError;
+      }
+
+      // Check if there was a spawn error even if exit succeeded
+      if (spawnError) {
+        if (spawnError instanceof PtySpawnError) {
+          return this.createFailedResult(startTime, workspacePath, {
+            code: AIErrorCode.CLI_NOT_FOUND,
+            message: spawnError.message,
+            isRetryable: false,
+          });
+        }
+        throw spawnError;
+      }
+
+      const { exitCode } = exitResult;
       const fullOutput = outputChunks.join('');
 
       if (exitCode !== 0) {

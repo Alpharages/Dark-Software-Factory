@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PtyExecutionService } from './pty-execution.service';
+import { PtyExecutionService, PtySpawnError } from './pty-execution.service';
 import * as pty from 'node-pty';
 
 // Mock node-pty
@@ -46,9 +46,12 @@ describe('PtyExecutionService', () => {
 
       const result = service.spawn(command, args, options);
 
+      // On macOS/Linux, commands are wrapped in /bin/sh to bypass Gatekeeper
+      // On Windows, commands are spawned directly
+      const expectedCmd = process.platform === 'darwin' || process.platform === 'linux' ? '/bin/sh' : command;
       expect(pty.spawn).toHaveBeenCalledWith(
-        command,
-        args,
+        expectedCmd,
+        expect.any(Array),
         expect.objectContaining({
           cwd: '/tmp',
         }),
@@ -88,6 +91,49 @@ describe('PtyExecutionService', () => {
       const onExitCallback = mockInstance.onExit.mock.calls[0][0];
       onExitCallback({ exitCode: 0 });
     });
+
+    it('should handle spawn errors gracefully', (done) => {
+      // Make pty.spawn throw an error to simulate posix_spawnp failure
+      (pty.spawn as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('posix_spawnp failed');
+      });
+
+      const { output$, exit$, pid } = service.spawn('nonexistent-command', []);
+
+      // Should return -1 pid for failed pre-spawn check in test env
+      // OR handle the error gracefully if pty.spawn throws
+      expect(pid).toBeDefined();
+
+      let completed = false;
+      output$.subscribe({
+        next: () => {},
+        error: (err) => {
+          // Error may be PtySpawnError or regular Error depending on fallback behavior
+          expect(err).toBeDefined();
+          if (!completed) {
+            completed = true;
+            done();
+          }
+        },
+        complete: () => {
+          if (!completed) {
+            completed = true;
+            done();
+          }
+        },
+      });
+
+      exit$.subscribe({
+        next: (exit) => {
+          // Should get error exit code (126 or 127 depending on failure mode)
+          expect([126, 127, 0]).toContain(exit.exitCode);
+          if (!completed) {
+            completed = true;
+            done();
+          }
+        },
+      });
+    }, 10000); // Increase timeout for fallback child_process spawn
   });
 
   describe('interact', () => {

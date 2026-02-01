@@ -102,6 +102,14 @@ FR72-78: Epic 21 - GitHub/CI Deployment
 FR79-84: Future Epic - Production Monitoring/Self Healing
 FR137-141: Epic 19 - Claude Code CLI
 FR142-145: Epic 20 - Task Intake Reliability
+FR-C1: Epic 22 - Core sandbox execution logic
+FR-C2: Epic 22 - Docker socket integration
+FR-C3: Epic 22 - Workspace bind-mounting
+FR-C4: Epic 23 - Optimization via Git Mirroring
+FR-C5: Epic 22 - Agent Image usage
+FR-C6: Epic 23 - Cleanup and lifecycle management
+FR-C7: Epic 22 - Log streaming integration
+FR-C8: Epic 23 - Resource limits enforcing
 
 ## Epic List
 
@@ -277,3 +285,102 @@ So that I can review the code and merge it.
 **And** It MUST create a Pull Request on GitHub
 **And** The PR body MUST link to the ClickUp task
 **And** It MUST add the "AI-Generated" label.
+
+## Epic 22: Docker-Controlled Execution Engine
+
+**User Value:** As an operator, I want the system to execute AI tasks inside isolated containers so that the host server remains clean and secure.
+**Goal:** Transform the Orchestrator into a "Docker Controller" that can spawn, monitor, and stream logs from sibling containers using the DooD pattern.
+**FRs covered:** FR-C1, FR-C2, FR-C3, FR-C5, FR-C7
+
+### Story 22.1: Docker Client Integration
+
+As a Developer,
+I want to integrate `dockerode` into the NestJS Orchestrator,
+So that I can programmically control the host Docker daemon.
+
+**Acceptance Criteria:**
+**Given** the Orchestrator Service is running
+**When** the `DockerService` is initialized
+**Then** it should successfully connect to `/var/run/docker.sock`
+**And** it should be able to list running containers (proving connection)
+**And** it should fail gracefully if the socket is missing
+
+### Story 22.2: Base Agent Image Management
+
+As a System Admin,
+I want a standardized `dsf-agent` Docker image defined and buildable,
+So that every AI task runs in a consistent environment with all tools pre-installed.
+
+**Acceptance Criteria:**
+**Given** the `docker/agent` directory
+**When** I run `docker build`
+**Then** it should create an image containing Node.js, Python, Git, and generic CLI tools
+**And** the image should act as the base for all future executions
+
+### Story 22.3: Sandbox Workspace Mounting
+
+As the Orchestrator,
+I want to create a host directory and bind-mount it into the container at `/workspace`,
+So that file changes made by the AI persist after the container dies.
+
+**Acceptance Criteria:**
+**Given** a new task request
+**When** spawning a container
+**Then** a `tmp` directory on the host must be created
+**And** it must be mounted with Read/Write permissions to `/workspace` inside the container
+**And** the container must have the correct User ID map to write to it
+
+### Story 22.4: Container Execution & Log Streaming
+
+As an Operator,
+I want to see the real-time logs of the agent running inside the container,
+So that I can debug issues and track progress.
+
+**Acceptance Criteria:**
+**Given** a running sandbox container
+**When** the agent prints to `stdout` or `stderr`
+**Then** the Orchestrator must capture these logs streams
+**And** forward them to the existing `ExecutionTrackerService`
+
+## Epic 23: Intelligent Sandbox Lifecycle & Optimization
+
+**User Value:** As an operator, I want efficient and safe execution, where workspaces are cleaned up automatically and cloning is instant.
+**Goal:** Implement advanced sandbox features including local git mirroring for speed, auto-cleanup for hygiene, and resource limits for safety.
+**FRs covered:** FR-C4, FR-C6, FR-C8
+
+### Story 23.1: Local Git Mirror Service
+
+As a Performance Engineer,
+I want the system to maintain a local "bare" cache of the target repository,
+So that creating a new workspace takes milliseconds instead of seconds/minutes.
+
+**Acceptance Criteria:**
+**Given** a frequent repository
+**When** a new task starts
+**Then** the system should check for a local mirror
+**And** if present, `git clone` from the mirror to the workspace
+**And** if missing, fetch from GitHub and create the mirror first
+
+### Story 23.2: Automated Container Cleanup
+
+As an Operator,
+I want containers and volumes to be deleted automatically after execution,
+So that the host server disk never fills up.
+
+**Acceptance Criteria:**
+**Given** a completed task (success or failure)
+**When** the execution finishes
+**Then** the specific Docker container must be removed
+**And** the temporary workspace folder on the host must be deleted (unless debug mode is on)
+
+### Story 23.3: Resource Limit Enforcement
+
+As a Security Engineer,
+I want to strictly limit the CPU and RAM of each sandbox,
+So that one runaway agent cannot crash the entire Host Orchestrator.
+
+**Acceptance Criteria:**
+**Given** a container configuration
+**When** spawning the container
+**Then** `HostConfig` must include memory limits (e.g. 512MB)
+**And** CPU quotas must be applied

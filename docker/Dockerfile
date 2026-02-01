@@ -52,12 +52,20 @@ RUN pnpm run build
 # ---- Production Stage ----
 FROM node:22-alpine AS production
 
-# Install runtime dependencies for node-pty
-RUN apk add --no-cache libgcc libstdc++
+# Install runtime dependencies for node-pty and Claude CLI
+RUN apk add --no-cache libgcc libstdc++ curl bash
+
+# Install Claude Code CLI (Epic 19)
+# Claude CLI is installed to /root/.local/bin/claude
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    ln -sf /root/.local/bin/claude /usr/local/bin/claude
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001 -G nodejs
+    adduser -S nestjs -u 1001 -G nodejs && \
+    mkdir -p /home/nestjs/.local/bin && \
+    cp /root/.local/bin/claude /home/nestjs/.local/bin/claude && \
+    chown -R nestjs:nodejs /home/nestjs/.local
 
 WORKDIR /app
 
@@ -75,10 +83,14 @@ COPY package.json ./
 RUN npx prisma generate
 
 # Set ownership to non-root user
-RUN chown -R nestjs:nodejs /app
+RUN chown -R nestjs:nodejs /app /home/nestjs
 
 # Switch to non-root user
 USER nestjs
+
+# Ensure Claude CLI is in PATH (installed to user's home directory)
+ENV CLAUDE_CLI_PATH=/home/nestjs/.local/bin/claude
+ENV PATH="/home/nestjs/.local/bin:${PATH}"
 
 # Expose application port
 EXPOSE 3000

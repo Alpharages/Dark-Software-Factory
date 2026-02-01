@@ -89,9 +89,12 @@ services:
 
       # AI Providers (optional for development)
       CURSOR_API_KEY: ${CURSOR_API_KEY:-}
+      CURSOR_CLI_PATH: ${CURSOR_CLI_PATH:-/root/.local/bin/cursor-agent}
       WINDSURF_API_KEY: ${WINDSURF_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      # Claude CLI Path - defaults to container installation location
+      CLAUDE_CLI_PATH: ${CLAUDE_CLI_PATH:-/root/.local/bin/claude}
 
       # GitHub (optional for development)
       GITHUB_APP_ID: ${GITHUB_APP_ID:-}
