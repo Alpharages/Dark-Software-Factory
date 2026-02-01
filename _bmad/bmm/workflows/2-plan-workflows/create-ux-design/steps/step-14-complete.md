@@ -10,6 +10,7 @@
 - 📋 FINALIZE document and update workflow status
 - 💬 FOCUS on completion, validation, and next steps
 - 🎯 UPDATE workflow status files with completion information
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ## EXECUTION PROTOCOLS:
 
@@ -21,6 +22,7 @@
 ## TERMINATION STEP PROTOCOLS:
 
 - This is a FINAL step - workflow completion required
+- 📖 Update output file frontmatter, adding this step to the end of the list of stepsCompleted to indicate all is finished..
 - Output completion summary and next step guidance
 - Update the main workflow status file with finalized document
 - Suggest potential next workflow steps for the user
@@ -64,8 +66,8 @@ I've successfully collaborated with you to create a comprehensive UX design spec
 
 **Supporting Visual Assets:**
 
-- Color themes visualizer: `{output_folder}/ux-color-themes.html`
-- Design directions mockups: `{output_folder}/ux-design-directions.html`
+- Color themes visualizer: `{planning_artifacts}/ux-color-themes.html`
+- Design directions mockups: `{planning_artifacts}/ux-design-directions.html`
 
 This specification is now ready to guide visual design, implementation, and development."
 
@@ -80,70 +82,11 @@ Update the main workflow status file:
 
 ### 3. Suggest Next Steps
 
-Provide guidance on logical next workflows:
-
-**Typical Next Workflows:**
-
-**Immediate Next Steps:**
-
-1. **Wireframe Generation** - Create detailed wireframes based on UX specification
-2. **Interactive Prototype** - Build clickable prototypes for user testing
-3. **Solution Architecture** - Technical architecture design with UX context
-4. **Figma Design** - High-fidelity visual design implementation
-
-**Visual Design Workflows:**
-
-- Wireframe Generation → Interactive Prototype → Figma Design
-- Component Showcase → AI Frontend Prompt → Design System Implementation
-
-**Development Workflows:**
-
-- Solution Architecture → Epic Creation → Development Sprints
-
-**What would be most valuable to tackle next?**
-
-### 4. Document Quality Check
-
-Perform final validation of the UX design:
-
-**Completeness Check:**
-
-- Does the specification clearly communicate the design vision?
-- Are user journeys thoroughly documented?
-- Are all critical components specified?
-- Are responsive and accessibility requirements comprehensive?
-- Is there clear guidance for implementation?
-
-**Consistency Check:**
-
-- Do all sections align with the emotional goals?
-- Is design system integration clearly defined?
-- Are patterns consistent across all user flows?
-- Does visual direction match established foundation?
+UX Design complete. Read fully and follow: `_bmad/core/tasks/bmad-help.md` with argument `Create UX`.
 
 ### 5. Final Completion Confirmation
 
-Confirm completion with user:
-"**Your UX Design Specification for {{project_name}} is now complete and ready for implementation!**
-
-**The specification contains everything needed to:**
-
-- Guide visual designers in creating the final interfaces
-- Inform developers of all UX requirements and patterns
-- Ensure consistency across all user interactions
-- Maintain accessibility and responsive design standards
-- Provide a foundation for user testing and iteration
-
-**Ready to continue with:**
-
-- Wireframe generation for detailed layouts?
-- Interactive prototype for user testing?
-- Solution architecture for technical planning?
-- Visual design implementation?
-
-**Or would you like to review the complete specification first?**
-
-[UX Design Workflow Complete]"
+Congratulate the user on the completion you both completed together of the UX.
 
 ## SUCCESS METRICS:
 
@@ -222,5 +165,5 @@ This UX design workflow is now complete. The specification serves as the foundat
 **Core Deliverables:**
 
 - ✅ UX Design Specification: `{planning_artifacts}/ux-design-specification.md`
-- ✅ Color Themes Visualizer: `{output_folder}/ux-color-themes.html`
-- ✅ Design Directions: `{output_folder}/ux-design-directions.html`
+- ✅ Color Themes Visualizer: `{planning_artifacts}/ux-color-themes.html`
+- ✅ Design Directions: `{planning_artifacts}/ux-design-directions.html`

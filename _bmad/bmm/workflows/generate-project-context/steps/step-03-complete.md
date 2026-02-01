@@ -8,6 +8,7 @@
 - 💬 FOCUS on finalizing a lean, LLM-optimized project context
 - 🎯 ENSURE all critical rules are captured and actionable
 - ⚠️ ABSOLUTELY NO TIME ESTIMATES - AI development speed has fundamentally changed
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ## EXECUTION PROTOCOLS:
 
@@ -191,7 +192,15 @@ project_name: '{{project_name}}'
 user_name: '{{user_name}}'
 date: '{{date}}'
 sections_completed:
-  ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'quality_rules', 'workflow_rules', 'anti_patterns']
+  [
+    'technology_stack',
+    'language_rules',
+    'framework_rules',
+    'testing_rules',
+    'quality_rules',
+    'workflow_rules',
+    'anti_patterns',
+  ]
 status: 'complete'
 rule_count: { { total_rules } }
 optimized_for_llm: true

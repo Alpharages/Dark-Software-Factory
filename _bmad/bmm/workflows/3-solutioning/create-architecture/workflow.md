@@ -33,6 +33,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 - `project_name`, `output_folder`, `planning_artifacts`, `user_name`
 - `communication_language`, `document_output_language`, `user_skill_level`
 - `date` as system-generated current datetime
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Paths
 
@@ -44,6 +45,6 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 ## EXECUTION
 
-Load and execute `steps/step-01-init.md` to begin the workflow.
+Read fully and follow: `steps/step-01-init.md` to begin the workflow.
 
 **Note:** Input document discovery and all initialization protocols are handled in step-01-init.md.
