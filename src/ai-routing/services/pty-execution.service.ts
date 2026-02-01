@@ -103,9 +103,9 @@ export class PtyExecutionService implements OnModuleDestroy {
     const shellCommands = ['bash', 'sh', 'zsh', 'fish', 'powershell.exe', 'cmd.exe'];
     const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
     const exists = this.commandExists(cmd);
-    
+
     this.logger.debug(`Spawn check: cmd=${cmd}, isTestEnv=${isTestEnv}, exists=${exists}`);
-    
+
     if (!isTestEnv && !shellCommands.includes(cmd) && !exists) {
       this.logger.error(`Command not found: ${cmd}. PATH=${process.env.PATH}`);
       // Return a mock result that immediately errors
@@ -128,30 +128,33 @@ export class PtyExecutionService implements OnModuleDestroy {
 
     // Resolve symlinks to real executable path (fixes node-pty symlink issues)
     const resolvedCmd = this.resolveCommandPath(cmd);
-    
+
     // On macOS, Gatekeeper blocks direct spawning of unsigned executables like Claude CLI.
     // Solution: Always spawn through /bin/sh (like automaker does), which is a trusted system binary.
     // The shell then executes the target command as a child process, bypassing Gatekeeper.
     const platform = os.platform();
     const useShellWrapper = platform === 'darwin' || platform === 'linux';
-    
+
     let spawnCmd: string;
     let spawnArgs: string[];
-    
+
     if (useShellWrapper) {
       // Use shell wrapper to bypass macOS Gatekeeper (matching automaker pattern)
       spawnCmd = '/bin/sh';
-      const commandStr = args.length > 0 
-        ? `${resolvedCmd} ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(' ')}`
-        : resolvedCmd;
+      const commandStr =
+        args.length > 0
+          ? `${resolvedCmd} ${args.map((a) => `"${a.replace(/"/g, '\\"')}"`).join(' ')}`
+          : resolvedCmd;
       spawnArgs = ['-c', commandStr];
     } else {
       // Windows - spawn directly
       spawnCmd = resolvedCmd;
       spawnArgs = args;
     }
-    
-    this.logger.debug(`Spawning: platform=${platform}, cmd=${spawnCmd}, args=${JSON.stringify(spawnArgs)}, useShellWrapper=${useShellWrapper}`);
+
+    this.logger.debug(
+      `Spawning: platform=${platform}, cmd=${spawnCmd}, args=${JSON.stringify(spawnArgs)}, useShellWrapper=${useShellWrapper}`,
+    );
 
     try {
       const ptyProcess = pty.spawn(spawnCmd, spawnArgs, {
@@ -284,7 +287,7 @@ export class PtyExecutionService implements OnModuleDestroy {
       };
     } catch (error) {
       this.logger.error(`Failed to spawn child process: ${error}`);
-      
+
       setImmediate(() => {
         outputSubject.error(error);
         exitSubject.next({ exitCode: 126, signal: undefined });

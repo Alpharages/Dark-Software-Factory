@@ -48,7 +48,8 @@ describe('PtyExecutionService', () => {
 
       // On macOS/Linux, commands are wrapped in /bin/sh to bypass Gatekeeper
       // On Windows, commands are spawned directly
-      const expectedCmd = process.platform === 'darwin' || process.platform === 'linux' ? '/bin/sh' : command;
+      const expectedCmd =
+        process.platform === 'darwin' || process.platform === 'linux' ? '/bin/sh' : command;
       expect(pty.spawn).toHaveBeenCalledWith(
         expectedCmd,
         expect.any(Array),
