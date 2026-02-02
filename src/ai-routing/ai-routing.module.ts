@@ -29,14 +29,15 @@ import { FallbackStrategyService } from './fallback-strategy.service';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { ExecutionModule } from '@/execution/execution.module';
-import { FileLocksModule } from '../file-locks/file-locks.module';
-import { GitHubModule } from '../github/github.module';
-import { StorageModule } from '../storage/storage.module';
-import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
+import { FileLocksModule } from '@/file-locks/file-locks.module';
+import { GitHubModule } from '@/github/github.module';
+import { StorageModule } from '@/storage/storage.module';
+import { GitMirrorModule } from '@/git-mirror';
+import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
 import { AdrParserService } from './adr-parser.service';
-import { ArchitectureReviewModule } from '../architecture-review/architecture-review.module';
-import { EventBusModule } from '../common/event-bus.module';
-import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
+import { ArchitectureReviewModule } from '@/architecture-review/architecture-review.module';
+import { EventBusModule } from '@/common/event-bus.module';
+import { CostTrackingModule } from '@/cost-tracking/cost-tracking.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
     FileLocksModule,
     GitHubModule,
     forwardRef(() => StorageModule),
+    forwardRef(() => GitMirrorModule),
     AIDecisionLoggerModule,
     ArchitectureReviewModule,
     EventBusModule,

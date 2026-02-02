@@ -10,6 +10,7 @@ import { GitOperationsService } from './git-operations.service';
 import * as fs from 'fs/promises';
 import { PrismaService } from '@/database/prisma.service';
 import { StorageManagerService } from '../../storage/storage-manager.service';
+import { GitMirrorService } from '../../git-mirror/git-mirror.service';
 
 // Mock fs/promises
 jest.mock('fs/promises');
@@ -17,6 +18,7 @@ jest.mock('fs/promises');
 describe('WorkspaceService', () => {
   let service: WorkspaceService;
   let gitService: jest.Mocked<GitOperationsService>;
+  let mockGitMirrorService: jest.Mocked<GitMirrorService>;
   let mockActiveGauge: { set: jest.Mock };
   let mockOperationsCounter: { inc: jest.Mock };
 
@@ -208,6 +210,13 @@ describe('WorkspaceService', () => {
         { provide: GitOperationsService, useValue: mockGitService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: StorageManagerService, useValue: mockStorageManagerService },
+        {
+          provide: GitMirrorService,
+          useValue: {
+            getOrCreateMirror: jest.fn(),
+            cloneFromMirror: jest.fn(),
+          },
+        },
         { provide: 'PROM_METRIC_CURSOR_WORKSPACES_ACTIVE', useValue: mockActiveGauge },
         {
           provide: 'PROM_METRIC_CURSOR_WORKSPACE_OPERATIONS_TOTAL',
@@ -218,6 +227,7 @@ describe('WorkspaceService', () => {
 
     service = module.get<WorkspaceService>(WorkspaceService);
     gitService = module.get(GitOperationsService);
+    mockGitMirrorService = module.get(GitMirrorService) as jest.Mocked<GitMirrorService>;
 
     // Initialize the service
     await service.onModuleInit();
@@ -230,8 +240,23 @@ describe('WorkspaceService', () => {
   });
 
   describe('createWorkspace', () => {
-    it('should create workspace successfully', async () => {
-      gitService.clone.mockResolvedValue();
+    beforeEach(() => {
+      // Reset mocks before each test
+      jest.clearAllMocks();
+    });
+
+    it('should create workspace successfully using mirror', async () => {
+      // Mock mirror service success
+      mockGitMirrorService.getOrCreateMirror.mockResolvedValue({
+        owner: 'test',
+        repo: 'repo',
+        mirrorPath: '/tmp/mirrors/test/repo.git',
+        sizeBytes: 1000000,
+        lastUpdated: new Date(),
+        lastUsed: new Date(),
+        cloneCount: 0,
+      });
+      mockGitMirrorService.cloneFromMirror.mockResolvedValue(undefined);
       gitService.configureUser.mockResolvedValue();
       gitService.checkoutBranch.mockResolvedValue();
 
@@ -248,7 +273,10 @@ describe('WorkspaceService', () => {
       expect(workspace.executionId).toBe('exec-123');
       expect(workspace.branchName).toBe('feature/ticket-456');
 
-      expect(gitService.clone).toHaveBeenCalled();
+      // Mirror service should be used instead of direct clone
+      expect(mockGitMirrorService.getOrCreateMirror).toHaveBeenCalled();
+      expect(mockGitMirrorService.cloneFromMirror).toHaveBeenCalled();
+      expect(gitService.clone).not.toHaveBeenCalled();
       expect(gitService.configureUser).toHaveBeenCalledWith(
         expect.any(String),
         'Dark Factory',
@@ -263,6 +291,25 @@ describe('WorkspaceService', () => {
         operation: 'create',
         status: 'success',
       });
+    });
+
+    it('should fallback to direct clone when mirror fails', async () => {
+      // Mock mirror service failure
+      mockGitMirrorService.getOrCreateMirror.mockRejectedValue(new Error('Mirror unavailable'));
+      gitService.clone.mockResolvedValue();
+      gitService.configureUser.mockResolvedValue();
+      gitService.checkoutBranch.mockResolvedValue();
+
+      const workspace = await service.createWorkspace(
+        'exec-123',
+        '456',
+        'https://github.com/test/repo.git',
+        'main',
+      );
+
+      expect(workspace.status).toBe('READY');
+      // Should fallback to direct clone
+      expect(gitService.clone).toHaveBeenCalled();
     });
 
     it('should fail when max concurrent workspaces reached', async () => {
@@ -289,6 +336,8 @@ describe('WorkspaceService', () => {
     });
 
     it('should cleanup on clone failure', async () => {
+      // Mirror fails, then direct clone fails
+      mockGitMirrorService.getOrCreateMirror.mockRejectedValue(new Error('Mirror unavailable'));
       gitService.clone.mockRejectedValue(new Error('Clone failed'));
 
       await expect(

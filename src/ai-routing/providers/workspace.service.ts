@@ -25,6 +25,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { IWorkspaceInfo, AIErrorCode, IAIExecutionError } from '../interfaces';
 import { GitOperationsService } from './git-operations.service';
+import { GitMirrorService } from '../../git-mirror/git-mirror.service';
 import { safeMkdir, safeReaddir, safeStat } from '../../common/utils/safe-fs.util';
 import { PrismaService } from '../../database/prisma.service';
 import { WorkspaceStatus } from '@/prisma/client';
@@ -51,6 +52,8 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => StorageManagerService))
     private readonly storageManager: StorageManagerService,
+    @Inject(forwardRef(() => GitMirrorService))
+    private readonly gitMirrorService: GitMirrorService,
     @InjectMetric('cursor_workspaces_active')
     private readonly activeGauge: Gauge<string>,
     @InjectMetric('cursor_workspace_operations_total')
@@ -227,7 +230,30 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       // 2. Clone repository only if URL is provided
       if (trimmedRepositoryUrl) {
         this.logger.log(`[${executionId}] Cloning repository`);
-        await this.git.clone(trimmedRepositoryUrl, workspacePath, { depth: 1 });
+
+        // AC#1: Try mirror-based clone first (if enabled)
+        const gitMirroringEnabled = this.config.get<boolean>('ENABLE_GIT_MIRRORING', true);
+        let clonedFromMirror = false;
+
+        if (gitMirroringEnabled) {
+          try {
+            const mirror = await this.gitMirrorService.getOrCreateMirror(trimmedRepositoryUrl);
+            await this.gitMirrorService.cloneFromMirror(mirror.mirrorPath, workspacePath);
+            clonedFromMirror = true;
+            this.logger.log(`[${executionId}] Cloned from local mirror: ${mirror.mirrorPath}`);
+          } catch (mirrorError: unknown) {
+            const errorMsg =
+              mirrorError instanceof Error ? mirrorError.message : String(mirrorError);
+            this.logger.warn(
+              `[${executionId}] Mirror clone failed, falling back to direct clone: ${errorMsg}`,
+            );
+          }
+        }
+
+        // Fallback to direct clone if mirror failed or disabled
+        if (!clonedFromMirror) {
+          await this.git.clone(trimmedRepositoryUrl, workspacePath, { depth: 1 });
+        }
 
         // 3. Configure git user for commits
         await this.git.configureUser(workspacePath, this.gitUserName, this.gitUserEmail);

@@ -48,6 +48,7 @@ import { ProjectModule } from './projects/project.module';
 import { DependenciesModule } from './dependencies/dependencies.module';
 import { FileLocksModule } from './file-locks/file-locks.module';
 import { StorageModule } from './storage/storage.module';
+import { GitMirrorModule } from './git-mirror/git-mirror.module';
 import { DockerModule } from './docker/docker.module'; // Story 22.1
 
 // Story 15.2
@@ -126,6 +127,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     DependenciesModule, // Story 12.1: Circular Dependency Detection
     FileLocksModule, // Story 12.3: File Lock Manager
     StorageModule, // Story 14.3: Storage Manager Service
+    GitMirrorModule, // Story 23.1: Local Git Mirror Service
 
     // Story 15.2: System Settings
     SystemConfigModule,

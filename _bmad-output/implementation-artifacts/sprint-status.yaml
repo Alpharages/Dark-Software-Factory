@@ -1374,9 +1374,13 @@ development_status:
     notes: "APPROVED. Implemented Docker container execution log streaming. Extended DockerService with runContainer(), execInContainer(), attachContainer(), resizeExec(). Extended PtyExecutionService with spawnInContainer() matching existing spawn() interface. Extended ExecutionGateway with execution-log events, log throttling, subscription management. Integrated ExecutionTracker with streamExecutionLogs() for piping container output to gateway. Added Prometheus metrics: container_log_bytes_total, container_exec_duration_seconds. Added environment validation for ENABLE_CONTAINER_EXECUTION, DOCKER_CONTAINER_TIMEOUT_MS, LOG_STREAM_BUFFER_SIZE, LOG_STREAM_THROTTLE_MS. All tests passing."
     story_file: "_bmad-output/implementation-artifacts/22-4-container-execution-log-streaming.md"
 
-  epic-23: backlog
+  epic-23: in_progress
   epic-23-name: "Intelligent Sandbox Lifecycle & Optimization"
-  23-1-local-git-mirror-service: backlog
+  23-1-local-git-mirror-service:
+    status: done
+    developer: "Antigravity"
+    notes: "Code review completed. Fixed: config key mismatch (HIGH), missing metric updates (MEDIUM), GitHubAuthService integration (MEDIUM). All 32 tests passing. Optional Prisma schema task remains."
+    story_file: "_bmad-output/implementation-artifacts/23-1-local-git-mirror-service.md"
   23-2-automated-container-cleanup: backlog
   23-3-resource-limit-enforcement: backlog
 

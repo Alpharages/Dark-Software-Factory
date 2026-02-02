@@ -275,6 +275,38 @@ export const envValidationSchema = Joi.object({
     .default(100)
     .description('Throttle interval for WebSocket log emits in milliseconds'),
 
+  // Story 23.1: Local Git Mirror Service Configuration
+  GIT_MIRROR_BASE_PATH: Joi.string()
+    .default('/tmp/dsf/git-mirrors')
+    .description('Root directory for all git mirrors'),
+  GIT_MIRROR_TTL_HOURS: Joi.number()
+    .integer()
+    .min(1)
+    .max(168)
+    .default(24)
+    .description('Hours before mirror considered stale (default: 24h)'),
+  GIT_MIRROR_MAX_SIZE_GB: Joi.number()
+    .integer()
+    .min(1)
+    .max(500)
+    .default(50)
+    .description('Max total size for all mirrors in GB (default: 50GB)'),
+  GIT_MIRROR_MIN_FREE_SPACE_GB: Joi.number()
+    .integer()
+    .min(1)
+    .max(100)
+    .default(10)
+    .description('Min free space before triggering eviction in GB (default: 10GB)'),
+  GIT_MIRROR_CLEANUP_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(60000)
+    .max(86400000)
+    .default(3600000)
+    .description('Cleanup job interval in milliseconds (default: 1 hour)'),
+  ENABLE_GIT_MIRRORING: Joi.boolean()
+    .default(true)
+    .description('Feature flag to enable git mirroring (default: true)'),
+
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
   OPENAI_API_KEY: Joi.string()
