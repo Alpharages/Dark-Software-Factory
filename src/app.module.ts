@@ -48,6 +48,7 @@ import { ProjectModule } from './projects/project.module';
 import { DependenciesModule } from './dependencies/dependencies.module';
 import { FileLocksModule } from './file-locks/file-locks.module';
 import { StorageModule } from './storage/storage.module';
+import { DockerModule } from './docker/docker.module'; // Story 22.1
 
 // Story 15.2
 import { SystemConfigModule } from './system-settings/system-config.module';
@@ -84,6 +85,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Infrastructure
     DatabaseModule,
     RabbitMQModule,
+    DockerModule, // Story 22.1: Docker Client Integration
 
     // Authentication
     AuthModule,

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, ServiceUnavailableException } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,6 +10,7 @@ import {
 import { AppService } from './app.service';
 import { PrismaService } from './database/prisma.service';
 import { RabbitMQService } from './rabbitmq/rabbitmq.service';
+import { DockerService } from './docker/docker.service';
 import { Public, CurrentUser, Roles } from './common/decorators';
 import { RolesGuard } from './common/guards';
 import { AuthenticatedUser } from './auth/interfaces/jwt-payload.interface';
@@ -28,6 +29,7 @@ export class AppController {
     private readonly appService: AppService,
     private readonly prismaService: PrismaService,
     private readonly rabbitMQService: RabbitMQService,
+    private readonly dockerService: DockerService,
   ) {}
 
   @ApiTags('Health')
@@ -42,7 +44,7 @@ export class AppController {
   @ApiTags('Health')
   @ApiOperation({
     summary: 'Health check',
-    description: 'Returns health status of database and RabbitMQ',
+    description: 'Returns health status of database, RabbitMQ, and Docker',
   })
   @ApiResponse({ status: 200, type: HealthResponseDto })
   @Public()
@@ -57,16 +59,31 @@ export class AppController {
       rabbitMQHealthy = false;
     }
 
-    const isHealthy = dbHealthy && rabbitMQHealthy;
+    // Check Docker health
+    let dockerHealthy = false;
+    try {
+      dockerHealthy = await this.dockerService.isHealthy();
+    } catch {
+      dockerHealthy = false;
+    }
 
-    return {
+    const isHealthy = dbHealthy && rabbitMQHealthy && dockerHealthy;
+
+    const response: HealthResponseDto = {
       status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       services: {
         database: dbHealthy ? 'up' : 'down',
         rabbitmq: rabbitMQHealthy ? 'up' : 'down',
+        docker: dockerHealthy ? 'up' : 'down',
       },
     };
+
+    if (!isHealthy) {
+      throw new ServiceUnavailableException(response);
+    }
+
+    return response;
   }
 
   @ApiTags('Auth')

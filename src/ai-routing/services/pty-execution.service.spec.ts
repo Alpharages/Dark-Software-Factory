@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PtyExecutionService, PtySpawnError } from './pty-execution.service';
+import { PtyExecutionService } from './pty-execution.service';
 import * as pty from 'node-pty';
 
 // Mock node-pty

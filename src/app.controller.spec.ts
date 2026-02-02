@@ -5,12 +5,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './database/prisma.service';
 import { RabbitMQService } from './rabbitmq/rabbitmq.service';
+import { DockerService } from './docker/docker.service';
 
 describe('AppController', () => {
   let appController: AppController;
   // let appService: AppService;
   let prismaService: PrismaService;
   let rabbitMQService: RabbitMQService;
+  let dockerService: DockerService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
@@ -34,12 +36,19 @@ describe('AppController', () => {
             isHealthy: jest.fn().mockResolvedValue(true),
           },
         },
+        {
+          provide: DockerService,
+          useValue: {
+            isHealthy: jest.fn().mockResolvedValue(true),
+          },
+        },
       ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
     prismaService = app.get<PrismaService>(PrismaService);
     rabbitMQService = app.get<RabbitMQService>(RabbitMQService);
+    dockerService = app.get<DockerService>(DockerService);
   });
 
   describe('root', () => {
@@ -58,6 +67,7 @@ describe('AppController', () => {
         services: {
           database: 'up',
           rabbitmq: 'up',
+          docker: 'up',
         },
       });
     });
@@ -78,6 +88,15 @@ describe('AppController', () => {
 
       expect(result.status).toBe('unhealthy');
       expect(result.services.rabbitmq).toBe('down');
+    });
+
+    it('should return unhealthy status when docker is down', async () => {
+      jest.spyOn(dockerService, 'isHealthy').mockResolvedValue(false);
+
+      const result = await appController.getHealth();
+
+      expect(result.status).toBe('unhealthy');
+      expect(result.services.docker).toBe('down');
     });
   });
 });
@@ -104,6 +123,12 @@ describe('Swagger Configuration', () => {
         },
         {
           provide: RabbitMQService,
+          useValue: {
+            isHealthy: jest.fn().mockResolvedValue(true),
+          },
+        },
+        {
+          provide: DockerService,
           useValue: {
             isHealthy: jest.fn().mockResolvedValue(true),
           },

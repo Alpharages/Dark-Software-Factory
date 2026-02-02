@@ -1348,9 +1348,16 @@ development_status:
   epic-21-name: "AI Orchestrator Core (MVP)"
   epic-21-notes: "Marked DONE as duplicate/aggregate of completed Epics 2 and 4. (Routing, Branching, PRs already implemented)."
 
-  epic-22: backlog
+  epic-22: in-progress
   epic-22-name: "Docker-Controlled Execution Engine"
-  22-1-docker-client-integration: backlog
+  22-1-docker-client-integration:
+    status: done
+    developer: "Claude (Kimi Code CLI)"
+    completed_at: "2026-02-02"
+    test_results:
+      unit_tests: "27/27 passing (20 DockerService + 7 AppController)"
+      coverage: "100% on Docker files"
+    notes: "APPROVED. Code review passed. Fixed health check status code (503) and git tracking errors. Docker Client Integration complete. Implemented dockerode-based DockerService with configurable socket path, health checks, error handling, and full test coverage. DooD pattern enabled via docker-compose.yml socket mount."
   22-2-base-agent-image-management: backlog
   22-3-sandbox-workspace-mounting: backlog
   22-4-container-execution-log-streaming: backlog

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import * as pty from 'node-pty';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn } from 'child_process';
 import { Observable, Subject } from 'rxjs';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -39,6 +39,7 @@ export class PtyExecutionService implements OnModuleDestroy {
     // If command is an absolute path, check if file exists and is executable
     if (path.isAbsolute(command)) {
       try {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         const stats = fs.statSync(command);
         return stats.isFile();
       } catch {
@@ -55,6 +56,7 @@ export class PtyExecutionService implements OnModuleDestroy {
       for (const ext of extensions) {
         const fullPath = path.join(dir, command + ext);
         try {
+          // eslint-disable-next-line security/detect-non-literal-fs-filename
           const stats = fs.statSync(fullPath);
           if (stats.isFile()) {
             return true;
@@ -74,6 +76,7 @@ export class PtyExecutionService implements OnModuleDestroy {
     if (path.isAbsolute(command)) {
       try {
         // Resolve symlinks to the actual executable
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         const realPath = fs.realpathSync(command);
         this.logger.debug(`Resolved ${command} -> ${realPath}`);
         return realPath;
@@ -273,11 +276,11 @@ export class PtyExecutionService implements OnModuleDestroy {
       });
 
       // Store a reference (using a wrapper to match PTY interface for kill)
-      const processWrapper = {
+      /*const processWrapper = {
         kill: (signal?: string) => {
           child.kill(signal as NodeJS.Signals);
         },
-      };
+      };*/
       // Note: We don't add to this.processes since child_process doesn't have a pid property that's compatible
 
       return {
