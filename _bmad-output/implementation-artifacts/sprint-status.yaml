@@ -1359,7 +1359,9 @@ development_status:
       coverage: "100% on Docker files"
     notes: "APPROVED. Code review passed. Fixed health check status code (503) and git tracking errors. Docker Client Integration complete. Implemented dockerode-based DockerService with configurable socket path, health checks, error handling, and full test coverage. DooD pattern enabled via docker-compose.yml socket mount."
   22-2-base-agent-image-management:
-    status: ready-for-dev
+    status: done
+    developer: "Antigravity"
+    notes: "APPROVED. Code review passed. FIXED: (M) Untracked Dockerfile added, (M) Missing python alias symlinked, (L) Docker image size optimized with --no-install-recommends. Implemented Dockerfile.base with Node.js 20-slim, system dependencies (git, python3, make, g++, curl), and non-root 'agent' user configuration."
     story_file: "_bmad-output/implementation-artifacts/22-2-base-agent-image-management.md"
   22-3-sandbox-workspace-mounting: backlog
   22-4-container-execution-log-streaming: backlog

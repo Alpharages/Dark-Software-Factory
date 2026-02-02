@@ -1,0 +1,30 @@
+FROM node:20-slim
+
+# Install essential system tools for node-pty and agent operations
+# git: for cloning repositories
+# python3, make, g++: for compiling native modules (like node-pty)
+# curl: for health checks and downloads
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    python3 \
+    make \
+    g++ \
+    curl \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && rm -rf /var/lib/apt/lists/*
+
+# Remove default 'node' user (UID 1000) to allow creating 'agent' with UID 1000
+RUN userdel -r node || true
+
+# Create a non-root user 'agent'
+RUN useradd -m -u 1000 agent
+
+# Set up workspace
+WORKDIR /home/agent/workspace
+RUN chown agent:agent /home/agent/workspace
+
+# Switch to non-root user
+USER agent
+
+# Verify installation (fail build if tools are missing)
+RUN node -v && npm -v && python3 --version && git --version
