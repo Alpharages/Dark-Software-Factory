@@ -30,6 +30,9 @@ describe('ExecutionRepository', () => {
     routing_reason: null,
     fallback_used: false,
     original_provider: null,
+    // Story 23.2: Container cleanup tracking
+    container_id: null,
+    debug_mode: false,
   };
 
   beforeEach(async () => {

@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DockerService } from '@/docker/docker.service';
 import { WorkspaceService } from '@/docker/workspace.service';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
 
 export interface SpawnOptions {
@@ -86,6 +87,7 @@ export class PtyExecutionService implements OnModuleDestroy {
     private readonly configService?: ConfigService,
     private readonly dockerService?: DockerService,
     private readonly workspaceService?: WorkspaceService,
+    private readonly executionTracker?: ExecutionTrackerService,
   ) {
     // Load configuration if available
     if (configService) {
@@ -344,6 +346,16 @@ export class PtyExecutionService implements OnModuleDestroy {
     });
 
     this.logger.log(`[${executionId}] Container started: ${container.id}`);
+
+    // Story 23.2: Store container ID for cleanup tracking
+    if (this.executionTracker) {
+      try {
+        await this.executionTracker.assignContainer(executionId, container.id);
+      } catch (error) {
+        this.logger.warn(`[${executionId}] Failed to assign container ID: ${error}`);
+        // Non-fatal: continue execution even if assignment fails
+      }
+    }
 
     // Generate pseudo-PID (container executions use negative numbers to avoid collision with local PTY PIDs)
     this.executionCounter++;

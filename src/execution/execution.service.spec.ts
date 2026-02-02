@@ -52,6 +52,9 @@ describe('ExecutionService', () => {
     // Story 13.2: Cost Optimization
     selected_model: null,
     task_type: null,
+    // Story 23.2: Container cleanup tracking
+    container_id: null,
+    debug_mode: false,
   };
 
   const mockTransition: IStateTransition = {

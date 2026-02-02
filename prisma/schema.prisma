@@ -204,6 +204,10 @@ model Execution {
   // Story 7.7: Task type for AI capability tracking
   task_type TaskType? // Type of task being executed for pattern detection
 
+  // Story 23.2: Container cleanup tracking
+  container_id String? // Docker container ID assigned to execution
+  debug_mode   Boolean  @default(false) // Preserve workspace for debugging
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 

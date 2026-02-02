@@ -28,6 +28,9 @@ describe('RetryHandlerService', () => {
     created_at: new Date(),
     updated_at: new Date(),
     ticket: { id: 'ticket-456' },
+    // Story 23.2: Container cleanup tracking
+    container_id: null,
+    debug_mode: false,
   };
 
   beforeEach(async () => {

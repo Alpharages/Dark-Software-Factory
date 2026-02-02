@@ -1,9 +1,11 @@
 import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ExecutionStatus, Execution } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Observable, Subscription } from 'rxjs';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
+import { CleanupService } from '@/cleanup/cleanup.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
 import { ExecutionGateway, LogLevel } from './gateways/execution.gateway';
@@ -42,6 +44,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly repository: ExecutionRepository,
     private readonly stateMachine: ExecutionStateMachine,
     private readonly publisher: RabbitMQPublisherService,
+    private readonly configService: ConfigService,
     @InjectMetric('dsf_execution_total')
     private readonly executionCounter: Counter<string>,
     @InjectMetric('dsf_execution_duration_seconds')
@@ -56,6 +59,8 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly containerExecDurationHistogram: Histogram<string>,
     @Optional()
     private readonly executionGateway?: ExecutionGateway,
+    @Optional()
+    private readonly cleanupService?: CleanupService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -182,65 +187,70 @@ export class ExecutionTrackerService implements OnModuleInit {
       'AI execution completed successfully',
     );
 
-    // Update with completion data
-    await this.repository.updateStatus(executionId, ExecutionStatus.COMPLETED, {
-      codeOutput,
-      filesChanged,
-      confidenceScore,
-    });
+    try {
+      // Update with completion data
+      await this.repository.updateStatus(executionId, ExecutionStatus.COMPLETED, {
+        codeOutput,
+        filesChanged,
+        confidenceScore,
+      });
 
-    // Calculate duration
-    const durationMs = execution.started_at ? Date.now() - execution.started_at.getTime() : 0;
-    const durationSec = durationMs / 1000;
+      // Calculate duration
+      const durationMs = execution.started_at ? Date.now() - execution.started_at.getTime() : 0;
+      const durationSec = durationMs / 1000;
 
-    // Log audit
-    await this.repository.createAuditLog({
-      entityType: 'execution',
-      entityId: executionId,
-      action: 'completed',
-      actorType: 'system',
-      actorId: null,
-      beforeState: { status: execution.status },
-      afterState: {
+      // Log audit
+      await this.repository.createAuditLog({
+        entityType: 'execution',
+        entityId: executionId,
+        action: 'completed',
+        actorType: 'system',
+        actorId: null,
+        beforeState: { status: execution.status },
+        afterState: {
+          status: ExecutionStatus.COMPLETED,
+          confidenceScore,
+          filesChanged,
+          durationSeconds: durationSec,
+        },
+        createdAt: new Date(),
+      });
+
+      // Update ticket status
+      await this.repository.updateTicketStatus(execution.ticket_id, 'COMPLETED');
+
+      // Emit event
+      await this.emitExecutionEvent({
+        eventType: 'EXECUTION_COMPLETED',
+        correlationId,
+        executionId,
+        ticketId: execution.ticket_id,
+        provider: execution.ai_provider,
         status: ExecutionStatus.COMPLETED,
-        confidenceScore,
-        filesChanged,
-        durationSeconds: durationSec,
-      },
-      createdAt: new Date(),
-    });
+        timestamp: new Date().toISOString(),
+        payload: {
+          confidenceScore,
+          filesChanged,
+          durationSeconds: durationSec,
+        },
+      });
 
-    // Update ticket status
-    await this.repository.updateTicketStatus(execution.ticket_id, 'COMPLETED');
+      // Track metrics
+      this.executionCounter.inc({ provider: execution.ai_provider, status: 'completed' });
+      this.durationHistogram.observe(
+        { provider: execution.ai_provider, status: 'completed' },
+        durationSec,
+      );
+      await this.updateStatusGauges();
 
-    // Emit event
-    await this.emitExecutionEvent({
-      eventType: 'EXECUTION_COMPLETED',
-      correlationId,
-      executionId,
-      ticketId: execution.ticket_id,
-      provider: execution.ai_provider,
-      status: ExecutionStatus.COMPLETED,
-      timestamp: new Date().toISOString(),
-      payload: {
-        confidenceScore,
-        filesChanged,
-        durationSeconds: durationSec,
-      },
-    });
-
-    // Track metrics
-    this.executionCounter.inc({ provider: execution.ai_provider, status: 'completed' });
-    this.durationHistogram.observe(
-      { provider: execution.ai_provider, status: 'completed' },
-      durationSec,
-    );
-    await this.updateStatusGauges();
-
-    this.logger.log(
-      `[${correlationId}] Execution ${executionId} completed in ${durationSec.toFixed(2)}s ` +
-        `(confidence: ${confidenceScore}, files: ${filesChanged.length})`,
-    );
+      this.logger.log(
+        `[${correlationId}] Execution ${executionId} completed in ${durationSec.toFixed(2)}s ` +
+          `(confidence: ${confidenceScore}, files: ${filesChanged.length})`,
+      );
+    } finally {
+      // Story 23.2: Trigger cleanup after execution completion
+      await this.triggerCleanup(executionId, { force: false });
+    }
 
     return transition;
   }
@@ -262,65 +272,70 @@ export class ExecutionTrackerService implements OnModuleInit {
       errorMessage,
     );
 
-    await this.repository.updateStatus(executionId, ExecutionStatus.FAILED, {
-      errorMessage,
-    });
+    try {
+      await this.repository.updateStatus(executionId, ExecutionStatus.FAILED, {
+        errorMessage,
+      });
 
-    // Log audit
-    await this.repository.createAuditLog({
-      entityType: 'execution',
-      entityId: executionId,
-      action: 'failed',
-      actorType: 'system',
-      actorId: null,
-      beforeState: { status: execution.status },
-      afterState: {
+      // Log audit
+      await this.repository.createAuditLog({
+        entityType: 'execution',
+        entityId: executionId,
+        action: 'failed',
+        actorType: 'system',
+        actorId: null,
+        beforeState: { status: execution.status },
+        afterState: {
+          status: ExecutionStatus.FAILED,
+          errorMessage,
+          errorCode,
+          isRetryable,
+        },
+        createdAt: new Date(),
+      });
+
+      // Update ticket status
+      await this.repository.updateTicketStatus(execution.ticket_id, 'FAILED');
+
+      // Emit event
+      await this.emitExecutionEvent({
+        eventType: 'EXECUTION_FAILED',
+        correlationId,
+        executionId,
+        ticketId: execution.ticket_id,
+        provider: execution.ai_provider,
         status: ExecutionStatus.FAILED,
-        errorMessage,
-        errorCode,
-        isRetryable,
-      },
-      createdAt: new Date(),
-    });
+        timestamp: new Date().toISOString(),
+        payload: {
+          errorMessage,
+          errorCode,
+          isRetryable,
+          retryCount: execution.retry_count,
+          maxRetries: execution.max_retries,
+        },
+      });
 
-    // Update ticket status
-    await this.repository.updateTicketStatus(execution.ticket_id, 'FAILED');
+      // Track metrics
+      this.executionCounter.inc({ provider: execution.ai_provider, status: 'failed' });
+      await this.updateStatusGauges();
 
-    // Emit event
-    await this.emitExecutionEvent({
-      eventType: 'EXECUTION_FAILED',
-      correlationId,
-      executionId,
-      ticketId: execution.ticket_id,
-      provider: execution.ai_provider,
-      status: ExecutionStatus.FAILED,
-      timestamp: new Date().toISOString(),
-      payload: {
-        errorMessage,
-        errorCode,
-        isRetryable,
-        retryCount: execution.retry_count,
-        maxRetries: execution.max_retries,
-      },
-    });
-
-    // Track metrics
-    this.executionCounter.inc({ provider: execution.ai_provider, status: 'failed' });
-    await this.updateStatusGauges();
-
-    // Auto-retry if eligible
-    if (isRetryable) {
-      const retryInfo = await this.repository.canRetry(executionId);
-      if (retryInfo.canRetry) {
-        this.logger.log(
-          `[${correlationId}] Scheduling retry ${retryInfo.retryCount + 1}/${retryInfo.maxRetries}`,
-        );
-        await this.scheduleRetry(executionId, correlationId);
-      } else {
-        this.logger.warn(
-          `[${correlationId}] Max retries (${retryInfo.maxRetries}) exceeded for ${executionId}`,
-        );
+      // Auto-retry if eligible
+      if (isRetryable) {
+        const retryInfo = await this.repository.canRetry(executionId);
+        if (retryInfo.canRetry) {
+          this.logger.log(
+            `[${correlationId}] Scheduling retry ${retryInfo.retryCount + 1}/${retryInfo.maxRetries}`,
+          );
+          await this.scheduleRetry(executionId, correlationId);
+        } else {
+          this.logger.warn(
+            `[${correlationId}] Max retries (${retryInfo.maxRetries}) exceeded for ${executionId}`,
+          );
+        }
       }
+    } finally {
+      // Story 23.2: Trigger cleanup after execution failure
+      await this.triggerCleanup(executionId, { force: false });
     }
 
     return transition;
@@ -347,64 +362,69 @@ export class ExecutionTrackerService implements OnModuleInit {
       errorMessage,
     );
 
-    await this.repository.updateStatus(executionId, ExecutionStatus.TIMEOUT, {
-      errorMessage,
-    });
+    try {
+      await this.repository.updateStatus(executionId, ExecutionStatus.TIMEOUT, {
+        errorMessage,
+      });
 
-    // Log audit
-    await this.repository.createAuditLog({
-      entityType: 'execution',
-      entityId: executionId,
-      action: 'failed',
-      actorType: 'system',
-      actorId: null,
-      beforeState: { status: execution.status },
-      afterState: {
+      // Log audit
+      await this.repository.createAuditLog({
+        entityType: 'execution',
+        entityId: executionId,
+        action: 'failed',
+        actorType: 'system',
+        actorId: null,
+        beforeState: { status: execution.status },
+        afterState: {
+          status: ExecutionStatus.TIMEOUT,
+          errorMessage,
+          timeoutSeconds,
+        },
+        createdAt: new Date(),
+      });
+
+      // Update ticket status
+      await this.repository.updateTicketStatus(execution.ticket_id, 'TIMEOUT');
+
+      // Emit event
+      await this.emitExecutionEvent({
+        eventType: 'EXECUTION_FAILED',
+        correlationId,
+        executionId,
+        ticketId: execution.ticket_id,
+        provider: execution.ai_provider,
         status: ExecutionStatus.TIMEOUT,
-        errorMessage,
+        timestamp: new Date().toISOString(),
+        payload: {
+          errorMessage,
+          timeoutSeconds,
+          lastKnownProgress,
+        },
+      });
+
+      // Track metrics
+      this.executionCounter.inc({ provider: execution.ai_provider, status: 'timeout' });
+      this.durationHistogram.observe(
+        { provider: execution.ai_provider, status: 'timeout' },
         timeoutSeconds,
-      },
-      createdAt: new Date(),
-    });
-
-    // Update ticket status
-    await this.repository.updateTicketStatus(execution.ticket_id, 'TIMEOUT');
-
-    // Emit event
-    await this.emitExecutionEvent({
-      eventType: 'EXECUTION_FAILED',
-      correlationId,
-      executionId,
-      ticketId: execution.ticket_id,
-      provider: execution.ai_provider,
-      status: ExecutionStatus.TIMEOUT,
-      timestamp: new Date().toISOString(),
-      payload: {
-        errorMessage,
-        timeoutSeconds,
-        lastKnownProgress,
-      },
-    });
-
-    // Track metrics
-    this.executionCounter.inc({ provider: execution.ai_provider, status: 'timeout' });
-    this.durationHistogram.observe(
-      { provider: execution.ai_provider, status: 'timeout' },
-      timeoutSeconds,
-    );
-    await this.updateStatusGauges();
-
-    // Auto-retry if eligible (TIMEOUT is retryable)
-    const retryInfo = await this.repository.canRetry(executionId);
-    if (retryInfo.canRetry) {
-      this.logger.log(
-        `[${correlationId}] Scheduling retry after timeout ${retryInfo.retryCount + 1}/${retryInfo.maxRetries}`,
       );
-      await this.scheduleRetry(executionId, correlationId);
-    } else {
-      this.logger.warn(
-        `[${correlationId}] Max retries (${retryInfo.maxRetries}) exceeded for timed out execution ${executionId}`,
-      );
+      await this.updateStatusGauges();
+
+      // Auto-retry if eligible (TIMEOUT is retryable)
+      const retryInfo = await this.repository.canRetry(executionId);
+      if (retryInfo.canRetry) {
+        this.logger.log(
+          `[${correlationId}] Scheduling retry after timeout ${retryInfo.retryCount + 1}/${retryInfo.maxRetries}`,
+        );
+        await this.scheduleRetry(executionId, correlationId);
+      } else {
+        this.logger.warn(
+          `[${correlationId}] Max retries (${retryInfo.maxRetries}) exceeded for timed out execution ${executionId}`,
+        );
+      }
+    } finally {
+      // Story 23.2: Trigger cleanup after timeout with force=true
+      await this.triggerCleanup(executionId, { force: true });
     }
 
     return transition;
@@ -427,12 +447,51 @@ export class ExecutionTrackerService implements OnModuleInit {
       reason,
     );
 
-    await this.applyTransition(execution, transition, correlationId);
+    try {
+      await this.applyTransition(execution, transition, correlationId);
 
-    this.executionCounter.inc({ provider: execution.ai_provider, status: 'cancelled' });
-    await this.updateStatusGauges();
+      this.executionCounter.inc({ provider: execution.ai_provider, status: 'cancelled' });
+      await this.updateStatusGauges();
+    } finally {
+      // Story 23.2: Trigger cleanup after cancellation with force=true
+      await this.triggerCleanup(executionId, { force: true });
+    }
 
     return transition;
+  }
+
+  /**
+   * Trigger cleanup for execution (Story 23.2)
+   * Private helper to invoke CleanupService after execution completion
+   */
+  private async triggerCleanup(executionId: string, options: { force: boolean }): Promise<void> {
+    // Check if auto-cleanup is enabled
+    if (!this.configService.get<boolean>('ENABLE_AUTO_CLEANUP', true)) {
+      this.logger.debug(`[${executionId}] Auto-cleanup disabled, skipping`);
+      return;
+    }
+
+    // Skip if CleanupService not available (optional dependency)
+    if (!this.cleanupService) {
+      this.logger.debug(`[${executionId}] CleanupService not available, skipping`);
+      return;
+    }
+
+    try {
+      const execution = await this.getExecution(executionId);
+      if (!execution) {
+        this.logger.warn(`[${executionId}] Execution not found for cleanup`);
+        return;
+      }
+
+      await this.cleanupService.cleanupAfterExecution(executionId, {
+        preserveWorkspace: execution.debug_mode,
+        forceContainerRemove: options.force,
+      });
+    } catch (error) {
+      this.logger.error(`[${executionId}] Cleanup failed:`, error);
+      // Don't throw - cleanup failure shouldn't fail execution
+    }
   }
 
   /**
@@ -491,6 +550,15 @@ export class ExecutionTrackerService implements OnModuleInit {
    */
   async getExecutionsForTicket(ticketId: string): Promise<Execution[]> {
     return this.repository.findByTicketId(ticketId);
+  }
+
+  /**
+   * Assign container to execution (Story 23.2)
+   * Stores container ID for later cleanup
+   */
+  async assignContainer(executionId: string, containerId: string): Promise<void> {
+    await this.repository.update(executionId, { container_id: containerId });
+    this.logger.log(`[${executionId}] Container ${containerId} assigned`);
   }
 
   /**

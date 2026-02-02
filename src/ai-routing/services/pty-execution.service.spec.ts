@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PtyExecutionService } from './pty-execution.service';
 import { DockerService } from '@/docker/docker.service';
 import { WorkspaceService } from '@/docker/workspace.service';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import * as pty from 'node-pty';
 
 // Mock node-pty
@@ -24,6 +25,11 @@ const mockDockerService = {
 // Mock WorkspaceService
 const mockWorkspaceService = {
   createWorkspace: jest.fn(),
+};
+
+// Mock ExecutionTrackerService
+const mockExecutionTrackerService = {
+  assignContainer: jest.fn().mockResolvedValue(undefined),
 };
 
 // Mock ConfigService
@@ -61,6 +67,7 @@ describe('PtyExecutionService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: DockerService, useValue: mockDockerService },
         { provide: WorkspaceService, useValue: mockWorkspaceService },
+        { provide: ExecutionTrackerService, useValue: mockExecutionTrackerService },
       ],
     }).compile();
 

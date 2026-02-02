@@ -3203,6 +3203,8 @@ export const ExecutionScalarFieldEnum = {
   circular_dep_detected: 'circular_dep_detected',
   selected_model: 'selected_model',
   task_type: 'task_type',
+  container_id: 'container_id',
+  debug_mode: 'debug_mode',
   created_at: 'created_at',
   updated_at: 'updated_at',
 } as const;

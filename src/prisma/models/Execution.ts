@@ -65,6 +65,8 @@ export type ExecutionMinAggregateOutputType = {
   circular_dep_detected: boolean | null;
   selected_model: string | null;
   task_type: $Enums.TaskType | null;
+  container_id: string | null;
+  debug_mode: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -95,6 +97,8 @@ export type ExecutionMaxAggregateOutputType = {
   circular_dep_detected: boolean | null;
   selected_model: string | null;
   task_type: $Enums.TaskType | null;
+  container_id: string | null;
+  debug_mode: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
@@ -128,6 +132,8 @@ export type ExecutionCountAggregateOutputType = {
   circular_dep_detected: number;
   selected_model: number;
   task_type: number;
+  container_id: number;
+  debug_mode: number;
   created_at: number;
   updated_at: number;
   _all: number;
@@ -173,6 +179,8 @@ export type ExecutionMinAggregateInputType = {
   circular_dep_detected?: true;
   selected_model?: true;
   task_type?: true;
+  container_id?: true;
+  debug_mode?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -203,6 +211,8 @@ export type ExecutionMaxAggregateInputType = {
   circular_dep_detected?: true;
   selected_model?: true;
   task_type?: true;
+  container_id?: true;
+  debug_mode?: true;
   created_at?: true;
   updated_at?: true;
 };
@@ -236,6 +246,8 @@ export type ExecutionCountAggregateInputType = {
   circular_dep_detected?: true;
   selected_model?: true;
   task_type?: true;
+  container_id?: true;
+  debug_mode?: true;
   created_at?: true;
   updated_at?: true;
   _all?: true;
@@ -359,6 +371,8 @@ export type ExecutionGroupByOutputType = {
   circular_dep_detected: boolean;
   selected_model: string | null;
   task_type: $Enums.TaskType | null;
+  container_id: string | null;
+  debug_mode: boolean;
   created_at: Date;
   updated_at: Date;
   _count: ExecutionCountAggregateOutputType | null;
@@ -412,6 +426,8 @@ export type ExecutionWhereInput = {
   circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
   selected_model?: Prisma.StringNullableFilter<'Execution'> | string | null;
   task_type?: Prisma.EnumTaskTypeNullableFilter<'Execution'> | $Enums.TaskType | null;
+  container_id?: Prisma.StringNullableFilter<'Execution'> | string | null;
+  debug_mode?: Prisma.BoolFilter<'Execution'> | boolean;
   created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
@@ -460,6 +476,8 @@ export type ExecutionOrderByWithRelationInput = {
   circular_dep_detected?: Prisma.SortOrder;
   selected_model?: Prisma.SortOrderInput | Prisma.SortOrder;
   task_type?: Prisma.SortOrderInput | Prisma.SortOrder;
+  container_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  debug_mode?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   ticket?: Prisma.TicketOrderByWithRelationInput;
@@ -506,6 +524,8 @@ export type ExecutionWhereUniqueInput = Prisma.AtLeast<
     circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
     selected_model?: Prisma.StringNullableFilter<'Execution'> | string | null;
     task_type?: Prisma.EnumTaskTypeNullableFilter<'Execution'> | $Enums.TaskType | null;
+    container_id?: Prisma.StringNullableFilter<'Execution'> | string | null;
+    debug_mode?: Prisma.BoolFilter<'Execution'> | boolean;
     created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
     ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
@@ -556,6 +576,8 @@ export type ExecutionOrderByWithAggregationInput = {
   circular_dep_detected?: Prisma.SortOrder;
   selected_model?: Prisma.SortOrderInput | Prisma.SortOrder;
   task_type?: Prisma.SortOrderInput | Prisma.SortOrder;
+  container_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  debug_mode?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   _count?: Prisma.ExecutionCountOrderByAggregateInput;
@@ -611,6 +633,8 @@ export type ExecutionScalarWhereWithAggregatesInput = {
   circular_dep_detected?: Prisma.BoolWithAggregatesFilter<'Execution'> | boolean;
   selected_model?: Prisma.StringNullableWithAggregatesFilter<'Execution'> | string | null;
   task_type?: Prisma.EnumTaskTypeNullableWithAggregatesFilter<'Execution'> | $Enums.TaskType | null;
+  container_id?: Prisma.StringNullableWithAggregatesFilter<'Execution'> | string | null;
+  debug_mode?: Prisma.BoolWithAggregatesFilter<'Execution'> | boolean;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'Execution'> | Date | string;
 };
@@ -643,6 +667,8 @@ export type ExecutionCreateInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -685,6 +711,8 @@ export type ExecutionUncheckedCreateInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -728,6 +756,8 @@ export type ExecutionUpdateInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -773,6 +803,8 @@ export type ExecutionUncheckedUpdateInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -814,6 +846,8 @@ export type ExecutionCreateManyInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
 };
@@ -849,6 +883,8 @@ export type ExecutionUpdateManyMutationInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -885,6 +921,8 @@ export type ExecutionUncheckedUpdateManyInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -928,6 +966,8 @@ export type ExecutionCountOrderByAggregateInput = {
   circular_dep_detected?: Prisma.SortOrder;
   selected_model?: Prisma.SortOrder;
   task_type?: Prisma.SortOrder;
+  container_id?: Prisma.SortOrder;
+  debug_mode?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -965,6 +1005,8 @@ export type ExecutionMaxOrderByAggregateInput = {
   circular_dep_detected?: Prisma.SortOrder;
   selected_model?: Prisma.SortOrder;
   task_type?: Prisma.SortOrder;
+  container_id?: Prisma.SortOrder;
+  debug_mode?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -995,6 +1037,8 @@ export type ExecutionMinOrderByAggregateInput = {
   circular_dep_detected?: Prisma.SortOrder;
   selected_model?: Prisma.SortOrder;
   task_type?: Prisma.SortOrder;
+  container_id?: Prisma.SortOrder;
+  debug_mode?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
 };
@@ -1380,6 +1424,8 @@ export type ExecutionCreateWithoutTicketInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutExecutionInput;
@@ -1420,6 +1466,8 @@ export type ExecutionUncheckedCreateWithoutTicketInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -1505,6 +1553,8 @@ export type ExecutionScalarWhereInput = {
   circular_dep_detected?: Prisma.BoolFilter<'Execution'> | boolean;
   selected_model?: Prisma.StringNullableFilter<'Execution'> | string | null;
   task_type?: Prisma.EnumTaskTypeNullableFilter<'Execution'> | $Enums.TaskType | null;
+  container_id?: Prisma.StringNullableFilter<'Execution'> | string | null;
+  debug_mode?: Prisma.BoolFilter<'Execution'> | boolean;
   created_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Execution'> | Date | string;
 };
@@ -1537,6 +1587,8 @@ export type ExecutionCreateWithoutQa_resultInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -1578,6 +1630,8 @@ export type ExecutionUncheckedCreateWithoutQa_resultInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   approvalRecords?: Prisma.ApprovalRecordUncheckedCreateNestedManyWithoutExecutionInput;
@@ -1648,6 +1702,8 @@ export type ExecutionUpdateWithoutQa_resultInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -1692,6 +1748,8 @@ export type ExecutionUncheckedUpdateWithoutQa_resultInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   approvalRecords?: Prisma.ApprovalRecordUncheckedUpdateManyWithoutExecutionNestedInput;
@@ -1731,6 +1789,8 @@ export type ExecutionCreateWithoutAiDecisionLogsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -1772,6 +1832,8 @@ export type ExecutionUncheckedCreateWithoutAiDecisionLogsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -1842,6 +1904,8 @@ export type ExecutionUpdateWithoutAiDecisionLogsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -1886,6 +1950,8 @@ export type ExecutionUncheckedUpdateWithoutAiDecisionLogsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -1925,6 +1991,8 @@ export type ExecutionCreateWithoutFileLocksInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -1966,6 +2034,8 @@ export type ExecutionUncheckedCreateWithoutFileLocksInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2036,6 +2106,8 @@ export type ExecutionUpdateWithoutFileLocksInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2080,6 +2152,8 @@ export type ExecutionUncheckedUpdateWithoutFileLocksInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2119,6 +2193,8 @@ export type ExecutionCreateWithoutFileLockQueueEntriesInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -2160,6 +2236,8 @@ export type ExecutionUncheckedCreateWithoutFileLockQueueEntriesInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2230,6 +2308,8 @@ export type ExecutionUpdateWithoutFileLockQueueEntriesInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2274,6 +2354,8 @@ export type ExecutionUncheckedUpdateWithoutFileLockQueueEntriesInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2313,6 +2395,8 @@ export type ExecutionCreateWithoutAiCostLogsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -2354,6 +2438,8 @@ export type ExecutionUncheckedCreateWithoutAiCostLogsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2424,6 +2510,8 @@ export type ExecutionUpdateWithoutAiCostLogsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2468,6 +2556,8 @@ export type ExecutionUncheckedUpdateWithoutAiCostLogsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2507,6 +2597,8 @@ export type ExecutionCreateWithoutArchiveInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -2548,6 +2640,8 @@ export type ExecutionUncheckedCreateWithoutArchiveInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2618,6 +2712,8 @@ export type ExecutionUpdateWithoutArchiveInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2662,6 +2758,8 @@ export type ExecutionUncheckedUpdateWithoutArchiveInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2701,6 +2799,8 @@ export type ExecutionCreateWithoutApprovalRecordsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -2742,6 +2842,8 @@ export type ExecutionUncheckedCreateWithoutApprovalRecordsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -2812,6 +2914,8 @@ export type ExecutionUpdateWithoutApprovalRecordsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -2856,6 +2960,8 @@ export type ExecutionUncheckedUpdateWithoutApprovalRecordsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -2895,6 +3001,8 @@ export type ExecutionCreateWithoutAdrsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   ticket: Prisma.TicketCreateNestedOneWithoutExecutionsInput;
@@ -2936,6 +3044,8 @@ export type ExecutionUncheckedCreateWithoutAdrsInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
   qa_result?: Prisma.QAResultUncheckedCreateNestedOneWithoutExecutionInput;
@@ -3006,6 +3116,8 @@ export type ExecutionUpdateWithoutAdrsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ticket?: Prisma.TicketUpdateOneRequiredWithoutExecutionsNestedInput;
@@ -3050,6 +3162,8 @@ export type ExecutionUncheckedUpdateWithoutAdrsInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -3089,6 +3203,8 @@ export type ExecutionCreateManyTicketInput = {
   circular_dep_detected?: boolean;
   selected_model?: string | null;
   task_type?: $Enums.TaskType | null;
+  container_id?: string | null;
+  debug_mode?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
 };
@@ -3124,6 +3240,8 @@ export type ExecutionUpdateWithoutTicketInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUpdateOneWithoutExecutionNestedInput;
@@ -3167,6 +3285,8 @@ export type ExecutionUncheckedUpdateWithoutTicketInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   qa_result?: Prisma.QAResultUncheckedUpdateOneWithoutExecutionNestedInput;
@@ -3210,6 +3330,8 @@ export type ExecutionUncheckedUpdateManyWithoutTicketInput = {
   circular_dep_detected?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   selected_model?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   task_type?: Prisma.NullableEnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType | null;
+  container_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  debug_mode?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -3336,6 +3458,8 @@ export type ExecutionSelect<
     circular_dep_detected?: boolean;
     selected_model?: boolean;
     task_type?: boolean;
+    container_id?: boolean;
+    debug_mode?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -3384,6 +3508,8 @@ export type ExecutionSelectCreateManyAndReturn<
     circular_dep_detected?: boolean;
     selected_model?: boolean;
     task_type?: boolean;
+    container_id?: boolean;
+    debug_mode?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -3423,6 +3549,8 @@ export type ExecutionSelectUpdateManyAndReturn<
     circular_dep_detected?: boolean;
     selected_model?: boolean;
     task_type?: boolean;
+    container_id?: boolean;
+    debug_mode?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
     ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
@@ -3459,6 +3587,8 @@ export type ExecutionSelectScalar = {
   circular_dep_detected?: boolean;
   selected_model?: boolean;
   task_type?: boolean;
+  container_id?: boolean;
+  debug_mode?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
 };
@@ -3494,6 +3624,8 @@ export type ExecutionOmit<
   | 'circular_dep_detected'
   | 'selected_model'
   | 'task_type'
+  | 'container_id'
+  | 'debug_mode'
   | 'created_at'
   | 'updated_at',
   ExtArgs['result']['execution']
@@ -3568,6 +3700,8 @@ export type $ExecutionPayload<
       circular_dep_detected: boolean;
       selected_model: string | null;
       task_type: $Enums.TaskType | null;
+      container_id: string | null;
+      debug_mode: boolean;
       created_at: Date;
       updated_at: Date;
     },
@@ -4268,6 +4402,8 @@ export interface ExecutionFieldRefs {
   readonly circular_dep_detected: Prisma.FieldRef<'Execution', 'Boolean'>;
   readonly selected_model: Prisma.FieldRef<'Execution', 'String'>;
   readonly task_type: Prisma.FieldRef<'Execution', 'TaskType'>;
+  readonly container_id: Prisma.FieldRef<'Execution', 'String'>;
+  readonly debug_mode: Prisma.FieldRef<'Execution', 'Boolean'>;
   readonly created_at: Prisma.FieldRef<'Execution', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'Execution', 'DateTime'>;
 }

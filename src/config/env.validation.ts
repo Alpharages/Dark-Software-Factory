@@ -307,6 +307,29 @@ export const envValidationSchema = Joi.object({
     .default(true)
     .description('Feature flag to enable git mirroring (default: true)'),
 
+  // Story 23.2: Automated Container Cleanup Configuration
+  ENABLE_AUTO_CLEANUP: Joi.boolean()
+    .default(true)
+    .description('Master switch for automatic container and workspace cleanup'),
+  CLEANUP_DEBUG_MODE_DEFAULT: Joi.boolean()
+    .default(false)
+    .description('Global default for debug mode (preserves workspaces)'),
+  CLEANUP_TIMEOUT_MS: Joi.number()
+    .integer()
+    .min(5000)
+    .max(120000)
+    .default(30000)
+    .description('Max time allowed for cleanup operation (default: 30s)'),
+  CLEANUP_RETRY_ATTEMPTS: Joi.number()
+    .integer()
+    .min(0)
+    .max(5)
+    .default(3)
+    .description('Number of retry attempts for failed cleanups'),
+  CLEANUP_SCHEDULE_CRON: Joi.string()
+    .default('0 */5 * * * *')
+    .description('Background cleanup frequency (default: every 5 minutes)'),
+
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
   OPENAI_API_KEY: Joi.string()

@@ -114,6 +114,18 @@ export class ExecutionRepository {
   }
 
   /**
+   * Update execution with partial data (Story 23.2)
+   * Used for container assignment and other field updates
+   */
+  async update(id: string, data: Prisma.ExecutionUpdateInput): Promise<Execution> {
+    const execution = await this.prisma.execution.update({
+      where: { id },
+      data,
+    });
+    return execution;
+  }
+
+  /**
    * Increment retry count and reset to QUEUED
    */
   async incrementRetryAndRequeue(id: string): Promise<Execution> {

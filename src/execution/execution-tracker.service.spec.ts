@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
@@ -44,6 +45,9 @@ describe('ExecutionTrackerService', () => {
     // Story 13.2: Cost Optimization
     selected_model: null,
     task_type: null,
+    // Story 23.2: Container cleanup tracking
+    container_id: null,
+    debug_mode: false,
   };
 
   const mockMetricCounter = {
@@ -97,20 +101,35 @@ describe('ExecutionTrackerService', () => {
           },
         },
         {
-          provide: 'PROM_METRIC_EXECUTION_TOTAL',
+          provide: 'PROM_METRIC_DSF_EXECUTION_TOTAL',
           useValue: mockMetricCounter,
         },
         {
-          provide: 'PROM_METRIC_EXECUTION_DURATION_SECONDS',
+          provide: 'PROM_METRIC_DSF_EXECUTION_DURATION_SECONDS',
           useValue: mockMetricHistogram,
         },
         {
-          provide: 'PROM_METRIC_EXECUTION_STATUS_GAUGE',
+          provide: 'PROM_METRIC_DSF_EXECUTION_STATUS_GAUGE',
           useValue: mockMetricGauge,
         },
         {
-          provide: 'PROM_METRIC_EXECUTION_RETRY_TOTAL',
+          provide: 'PROM_METRIC_DSF_EXECUTION_RETRY_TOTAL',
           useValue: mockMetricCounter,
+        },
+        // Story 23.2: Cleanup dependencies
+        {
+          provide: 'PROM_METRIC_DSF_CONTAINER_LOG_BYTES_TOTAL',
+          useValue: mockMetricCounter,
+        },
+        {
+          provide: 'PROM_METRIC_DSF_CONTAINER_EXEC_DURATION_SECONDS',
+          useValue: mockMetricHistogram,
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue(true),
+          },
         },
       ],
     }).compile();
