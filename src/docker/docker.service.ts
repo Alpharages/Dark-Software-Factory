@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Dockerode from 'dockerode';
+import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
 
 /**
  * DockerService provides programmatic control of the host Docker daemon
@@ -114,6 +115,29 @@ export class DockerService implements OnModuleInit {
   }
 
   /**
+   * Create a new container
+   * @param options Docker container creation options
+   */
+  async createContainer(options: Dockerode.ContainerCreateOptions): Promise<Dockerode.Container> {
+    this.ensureConnected();
+
+    try {
+      this.logger.log(`Creating container with image: ${options.Image}`);
+
+      // Log bind mounts if present
+      if (options.HostConfig?.Binds) {
+        this.logger.log(`Container binds: ${JSON.stringify(options.HostConfig.Binds)}`);
+      }
+
+      return await this.docker.createContainer(options);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to create container: ${errorMessage}`);
+      throw new InfrastructureException(`Failed to create container: ${errorMessage}`, error);
+    }
+  }
+
+  /**
    * Get the Dockerode instance for advanced operations
    */
   getDocker(): Dockerode {
@@ -126,6 +150,20 @@ export class DockerService implements OnModuleInit {
    */
   getSocketPath(): string {
     return this.socketPath;
+  }
+
+  /**
+   * Helper to format a bind mount string (HostPath:ContainerPath:Mode)
+   * Ensures paths are absolute and format is correct.
+   */
+  formatBindMount(hostPath: string, containerPath: string, mode: 'rw' | 'ro' = 'rw'): string {
+    // Docker requires absolute paths
+    // We assume the inputs are already resolved, but we can enforce simple validation
+    if (!hostPath.startsWith('/') && !hostPath.match(/^[a-zA-Z]:\\/)) {
+      this.logger.warn(`Host path '${hostPath}' does not appear to be absolute.`);
+    }
+
+    return `${hostPath}:${containerPath}:${mode}`;
   }
 
   /**

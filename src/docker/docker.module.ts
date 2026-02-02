@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DockerService } from './docker.service';
+import { WorkspaceService } from './workspace.service';
 
 /**
  * DockerModule provides Docker daemon integration via dockerode.
@@ -11,7 +12,7 @@ import { DockerService } from './docker.service';
  */
 @Module({
   imports: [ConfigModule],
-  providers: [DockerService],
-  exports: [DockerService],
+  providers: [DockerService, WorkspaceService],
+  exports: [DockerService, WorkspaceService],
 })
 export class DockerModule {}

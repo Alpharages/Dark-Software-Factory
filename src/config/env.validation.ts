@@ -1,4 +1,5 @@
 import * as Joi from 'joi';
+import * as path from 'path';
 
 /**
  * Joi validation schema for environment variables
@@ -251,6 +252,11 @@ export const envValidationSchema = Joi.object({
     .max(600000)
     .default(300000)
     .description('Baseline capture window duration (1-10 min)'),
+
+  // Story 22.3: Sandbox Workspace Configuration
+  SANDBOX_WORKSPACES_ROOT: Joi.string()
+    .default(path.join(process.cwd(), 'workspaces'))
+    .description('Root directory for sandbox workspaces'),
 
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis

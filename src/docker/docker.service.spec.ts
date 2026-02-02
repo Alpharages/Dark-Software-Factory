@@ -1,15 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { DockerService } from './docker.service';
+import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
 
 // Mock dockerode
 const mockPing = jest.fn();
 const mockListContainers = jest.fn();
 
+const mockCreateContainer = jest.fn();
+
 jest.mock('dockerode', () => {
   return jest.fn().mockImplementation(() => ({
     ping: mockPing,
     listContainers: mockListContainers,
+    createContainer: mockCreateContainer,
   }));
 });
 
@@ -25,7 +30,9 @@ describe('DockerService', () => {
     // Reset mocks
     jest.clearAllMocks();
     mockPing.mockReset();
+    mockPing.mockReset();
     mockListContainers.mockReset();
+    mockCreateContainer.mockReset();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -268,6 +275,62 @@ describe('DockerService', () => {
       const defaultService = new DockerService(configService);
 
       expect(defaultService.getSocketPath()).toBe('/var/run/docker.sock');
+    });
+  });
+  describe('createContainer', () => {
+    it('should create container with bind mounts', async () => {
+      mockConfigService.get.mockReturnValue('/var/run/docker.sock');
+      mockPing.mockResolvedValue(true);
+      await service.onModuleInit();
+
+      const mockContainer = { id: 'container-1' };
+      mockCreateContainer.mockResolvedValue(mockContainer);
+
+      const options = {
+        Image: 'node:20',
+        HostConfig: {
+          Binds: ['/host/path:/container/path:rw'],
+        },
+      };
+
+      const result = await service.createContainer(options);
+
+      expect(result).toBe(mockContainer);
+      expect(mockCreateContainer).toHaveBeenCalledWith(options);
+    });
+
+    it('should throw InfrastructureException on failure', async () => {
+      mockConfigService.get.mockReturnValue('/var/run/docker.sock');
+      mockPing.mockResolvedValue(true);
+      await service.onModuleInit();
+
+      mockCreateContainer.mockRejectedValue(new Error('Docker create failed'));
+
+      await expect(service.createContainer({})).rejects.toThrow(InfrastructureException);
+    });
+  });
+
+  describe('formatBindMount', () => {
+    it('should format linux paths correctly', () => {
+      const result = service.formatBindMount('/host', '/container', 'rw');
+      expect(result).toBe('/host:/container:rw');
+    });
+
+    it('should default mode to rw', () => {
+      const result = service.formatBindMount('/host', '/container');
+      expect(result).toBe('/host:/container:rw');
+    });
+
+    it('should warn if path is not absolute', () => {
+      // Create a spy on logger warn
+      const loggerSpy = jest.spyOn((service as any).logger, 'warn').mockImplementation();
+
+      const result = service.formatBindMount('./relative', '/container');
+
+      expect(result).toBe('./relative:/container:rw');
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining('does not appear to be absolute'),
+      );
     });
   });
 });
