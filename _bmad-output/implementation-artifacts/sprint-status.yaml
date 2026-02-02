@@ -1368,7 +1368,11 @@ development_status:
     developer: "Antigravity"
     notes: "APPROVED. Code review passed. FIXED: (M) Added formatBindMount helper to DockerService to prevent string formatting errors. Implemented Sandbox Workspace Mounting with secure directory creation (0o777), permission checks, and Docker bind configuration. Unit tests passing."
     story_file: "_bmad-output/implementation-artifacts/22-3-sandbox-workspace-mounting.md"
-  22-4-container-execution-log-streaming: backlog
+  22-4-container-execution-log-streaming:
+    status: done
+    developer: "Antigravity"
+    notes: "APPROVED. Implemented Docker container execution log streaming. Extended DockerService with runContainer(), execInContainer(), attachContainer(), resizeExec(). Extended PtyExecutionService with spawnInContainer() matching existing spawn() interface. Extended ExecutionGateway with execution-log events, log throttling, subscription management. Integrated ExecutionTracker with streamExecutionLogs() for piping container output to gateway. Added Prometheus metrics: container_log_bytes_total, container_exec_duration_seconds. Added environment validation for ENABLE_CONTAINER_EXECUTION, DOCKER_CONTAINER_TIMEOUT_MS, LOG_STREAM_BUFFER_SIZE, LOG_STREAM_THROTTLE_MS. All tests passing."
+    story_file: "_bmad-output/implementation-artifacts/22-4-container-execution-log-streaming.md"
 
   epic-23: backlog
   epic-23-name: "Intelligent Sandbox Lifecycle & Optimization"

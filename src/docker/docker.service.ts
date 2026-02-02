@@ -1,7 +1,76 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Dockerode from 'dockerode';
+import * as path from 'path';
 import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
+
+export interface ContainerStreamOptions {
+  /** Container ID to attach to */
+  containerId: string;
+  /** Stream stdout */
+  stdout?: boolean;
+  /** Stream stderr */
+  stderr?: boolean;
+  /** Stream stdin */
+  stdin?: boolean;
+  /** TTY mode - if true, stream is raw (no multiplexing) */
+  tty?: boolean;
+}
+
+export interface ExecInContainerOptions {
+  /** Container ID to execute in */
+  containerId: string;
+  /** Command to execute */
+  command: string[];
+  /** Attach stdout */
+  attachStdout?: boolean;
+  /** Attach stderr */
+  attachStderr?: boolean;
+  /** Attach stdin */
+  attachStdin?: boolean;
+  /** TTY mode */
+  tty?: boolean;
+  /** Environment variables */
+  env?: string[];
+  /** Working directory inside container */
+  workingDir?: string;
+}
+
+export interface RunContainerOptions {
+  /** Docker image to use */
+  image: string;
+  /** Command to run */
+  command?: string[];
+  /** Bind mounts */
+  binds?: string[];
+  /** Environment variables */
+  env?: Record<string, string>;
+  /** Working directory inside container */
+  workingDir?: string;
+  /** User to run as (e.g., 'agent' or '1000') */
+  user?: string;
+  /** TTY mode - should be true for interactive CLI tools */
+  tty?: boolean;
+  /** Auto-remove container on exit */
+  autoRemove?: boolean;
+  /** Container name */
+  name?: string;
+  /** Network mode */
+  networkMode?: string;
+  /** Memory limit in bytes */
+  memoryLimit?: number;
+  /** CPU limit (percentage of single CPU, e.g., 1.5 = 1.5 CPUs) */
+  cpuLimit?: number;
+}
+
+export interface ContainerExecResult {
+  /** Exec instance ID */
+  execId: string;
+  /** Stream for I/O */
+  stream: NodeJS.ReadWriteStream;
+  /** Resize function (only valid if tty is true) */
+  resize?: (w: number, h: number) => Promise<void>;
+}
 
 /**
  * DockerService provides programmatic control of the host Docker daemon
@@ -138,6 +207,330 @@ export class DockerService implements OnModuleInit {
   }
 
   /**
+   * Start a container
+   * @param containerId Container ID or instance
+   */
+  async startContainer(containerId: string | Dockerode.Container): Promise<void> {
+    this.ensureConnected();
+
+    const container =
+      typeof containerId === 'string' ? this.docker.getContainer(containerId) : containerId;
+
+    try {
+      this.logger.debug(
+        `Starting container: ${typeof containerId === 'string' ? containerId : 'instance'}`,
+      );
+      await container.start();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to start container: ${errorMessage}`);
+      throw new InfrastructureException(`Failed to start container: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * Attach to a container's streams
+   * @param options Container stream options
+   * @returns Duplex stream for I/O
+   */
+  async attachContainer(options: ContainerStreamOptions): Promise<NodeJS.ReadWriteStream> {
+    this.ensureConnected();
+
+    const { containerId, stdout = true, stderr = true, stdin = true, tty = false } = options;
+
+    try {
+      this.logger.debug(`Attaching to container: ${containerId} (tty=${tty})`);
+
+      const container = this.docker.getContainer(containerId);
+      const stream = await container.attach({
+        stream: true,
+        stdout,
+        stderr,
+        stdin,
+      });
+
+      return stream as NodeJS.ReadWriteStream;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to attach to container: ${errorMessage}`);
+      throw new InfrastructureException(`Failed to attach to container: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * Ensure image exists locally, pull if needed
+   * @param imageName Docker image name
+   */
+  private async ensureImage(imageName: string): Promise<void> {
+    try {
+      await this.docker.getImage(imageName).inspect();
+      this.logger.debug(`Image ${imageName} exists locally`);
+    } catch {
+      this.logger.log(`Image ${imageName} not found locally, pulling...`);
+      try {
+        const stream = await this.docker.pull(imageName);
+        // Wait for pull to complete
+        await new Promise<void>((resolve, reject) => {
+          this.docker.modem.followProgress(stream, (err: Error | null) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+        this.logger.log(`Successfully pulled image ${imageName}`);
+      } catch (pullError) {
+        const errorMessage = pullError instanceof Error ? pullError.message : String(pullError);
+        this.logger.error(`Failed to pull image ${imageName}: ${errorMessage}`);
+        throw new InfrastructureException(
+          `Failed to pull image ${imageName}: ${errorMessage}. ` +
+            'Ensure the image exists and Docker daemon has internet access.',
+          pullError,
+        );
+      }
+    }
+  }
+
+  /**
+   * Run a new container (create + start + attach in one flow)
+   * @param options Container run options
+   * @returns Object with container instance and stream
+   */
+  async runContainer(options: RunContainerOptions): Promise<{
+    container: Dockerode.Container;
+    stream: NodeJS.ReadWriteStream;
+  }> {
+    this.ensureConnected();
+
+    const {
+      image,
+      command,
+      binds = [],
+      env = {},
+      workingDir = '/home/agent/workspace',
+      user = 'agent',
+      tty = true,
+      autoRemove = true,
+      name,
+      networkMode,
+      memoryLimit,
+      cpuLimit,
+    } = options;
+
+    try {
+      // Ensure image exists before creating container
+      await this.ensureImage(image);
+
+      this.logger.log(`Running container with image: ${image}`);
+
+      // Convert env record to array format
+      const envArray = Object.entries(env).map(([key, value]) => `${key}=${value}`);
+
+      // Build HostConfig
+      const hostConfig: Dockerode.HostConfig = {
+        Binds: binds,
+        AutoRemove: autoRemove,
+      };
+
+      if (networkMode) {
+        hostConfig.NetworkMode = networkMode;
+      }
+
+      if (memoryLimit) {
+        hostConfig.Memory = memoryLimit;
+      }
+
+      if (cpuLimit) {
+        hostConfig.CpuQuota = Math.round(cpuLimit * 100000);
+        hostConfig.CpuPeriod = 100000;
+      }
+
+      const createOptions: Dockerode.ContainerCreateOptions = {
+        Image: image,
+        Cmd: command,
+        Env: envArray,
+        WorkingDir: workingDir,
+        User: user,
+        Tty: tty,
+        OpenStdin: true, // Required for PTY
+        AttachStdout: true,
+        AttachStderr: true,
+        AttachStdin: true,
+        HostConfig: hostConfig,
+      };
+
+      if (name) {
+        createOptions.name = name;
+      }
+
+      // Create and start container
+      const container = await this.createContainer(createOptions);
+      await this.startContainer(container);
+
+      // Attach to streams
+      const stream = await this.attachContainer({
+        containerId: container.id,
+        stdout: true,
+        stderr: true,
+        stdin: true,
+        tty,
+      });
+
+      return { container, stream };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to run container: ${errorMessage}`);
+      throw new InfrastructureException(`Failed to run container: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * Execute a command in a running container
+   * @param options Execution options
+   * @returns Exec result with stream and resize function
+   */
+  async execInContainer(options: ExecInContainerOptions): Promise<ContainerExecResult> {
+    this.ensureConnected();
+
+    const {
+      containerId,
+      command,
+      attachStdout = true,
+      attachStderr = true,
+      attachStdin = true,
+      tty = true,
+      env = [],
+      workingDir,
+    } = options;
+
+    try {
+      this.logger.debug(`Executing command in container ${containerId}: ${command.join(' ')}`);
+
+      const container = this.docker.getContainer(containerId);
+
+      const execOptions: Dockerode.ExecCreateOptions = {
+        Cmd: command,
+        AttachStdout: attachStdout,
+        AttachStderr: attachStderr,
+        AttachStdin: attachStdin,
+        Tty: tty,
+        Env: env,
+      };
+
+      if (workingDir) {
+        execOptions.WorkingDir = workingDir;
+      }
+
+      const exec = await container.exec(execOptions);
+
+      // Start the exec instance
+      const stream = await exec.start({
+        hijack: true,
+        stdin: attachStdin,
+      });
+
+      // Return resize function if TTY is enabled
+      const resize = tty
+        ? async (w: number, h: number): Promise<void> => {
+            try {
+              await exec.resize({ w, h });
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              this.logger.error(`Failed to resize exec: ${errorMessage}`);
+              throw new InfrastructureException(`Failed to resize exec: ${errorMessage}`, error);
+            }
+          }
+        : undefined;
+
+      return {
+        execId: exec.id,
+        stream: stream as NodeJS.ReadWriteStream,
+        resize,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to exec in container: ${errorMessage}`);
+      throw new InfrastructureException(`Failed to exec in container: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * Resize an exec instance (for TTY resizing)
+   * @param execId Exec instance ID
+   * @param w Width (columns)
+   * @param h Height (rows)
+   */
+  async resizeExec(execId: string, w: number, h: number): Promise<void> {
+    this.ensureConnected();
+
+    try {
+      const exec = this.docker.getExec(execId);
+      await exec.resize({ w, h });
+      this.logger.debug(`Resized exec ${execId} to ${w}x${h}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to resize exec: ${errorMessage}`);
+      throw new InfrastructureException(`Failed to resize exec: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * Wait for a container to finish and get exit code
+   * @param containerId Container ID
+   * @returns Exit code
+   */
+  async waitForContainer(containerId: string): Promise<{ StatusCode: number }> {
+    this.ensureConnected();
+
+    try {
+      const container = this.docker.getContainer(containerId);
+      return await container.wait();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to wait for container: ${errorMessage}`);
+      throw new InfrastructureException(`Failed to wait for container: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * Kill a running container
+   * @param containerId Container ID
+   * @param signal Signal to send (default: SIGKILL)
+   */
+  async killContainer(containerId: string, signal?: string): Promise<void> {
+    this.ensureConnected();
+
+    try {
+      const container = this.docker.getContainer(containerId);
+      await container.kill({ signal });
+      this.logger.debug(`Killed container ${containerId} with signal ${signal || 'SIGKILL'}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Container might already be stopped - log but don't throw
+      this.logger.warn(`Failed to kill container ${containerId}: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Remove a container
+   * @param containerId Container ID
+   * @param force Force removal even if running
+   */
+  async removeContainer(containerId: string, force = false): Promise<void> {
+    this.ensureConnected();
+
+    try {
+      const container = this.docker.getContainer(containerId);
+      await container.remove({ force });
+      this.logger.debug(`Removed container ${containerId} (force=${force})`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to remove container ${containerId}: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Get the Dockerode instance for advanced operations
    */
   getDocker(): Dockerode {
@@ -155,15 +548,21 @@ export class DockerService implements OnModuleInit {
   /**
    * Helper to format a bind mount string (HostPath:ContainerPath:Mode)
    * Ensures paths are absolute and format is correct.
+   * Supports both Unix and Windows paths.
    */
   formatBindMount(hostPath: string, containerPath: string, mode: 'rw' | 'ro' = 'rw'): string {
-    // Docker requires absolute paths
-    // We assume the inputs are already resolved, but we can enforce simple validation
-    if (!hostPath.startsWith('/') && !hostPath.match(/^[a-zA-Z]:\\/)) {
+    // Check if path is absolute (cross-platform)
+    const isWindows = process.platform === 'win32';
+    const pathModule = isWindows ? path.win32 : path.posix;
+
+    if (!pathModule.isAbsolute(hostPath)) {
       this.logger.warn(`Host path '${hostPath}' does not appear to be absolute.`);
     }
 
-    return `${hostPath}:${containerPath}:${mode}`;
+    // Normalize path separators for Windows (convert \ to / for Docker)
+    const normalizedHostPath = isWindows ? hostPath.replace(/\\/g, '/') : hostPath;
+
+    return `${normalizedHostPath}:${containerPath}:${mode}`;
   }
 
   /**

@@ -152,6 +152,14 @@ export const AETHERFLOW_METRICS = {
   TICKET_CREATION_FAILURES_TOTAL: `${METRICS_CONSTANTS.PREFIX}conversation_ticket_creation_failures_total`,
 } as const;
 
+// Story 22.4: Container Execution Log Streaming Metrics
+export const CONTAINER_METRICS = {
+  LOG_BYTES_TOTAL: `${METRICS_CONSTANTS.PREFIX}container_log_bytes_total`,
+  EXEC_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}container_exec_duration_seconds`,
+  STREAM_ERRORS_TOTAL: `${METRICS_CONSTANTS.PREFIX}container_stream_errors_total`,
+  LOG_SUBSCRIPTIONS_ACTIVE: `${METRICS_CONSTANTS.PREFIX}execution_log_subscriptions_active`,
+} as const;
+
 // System Metrics
 export const SYSTEM_METRICS = {
   MEMORY_USAGE: `${METRICS_CONSTANTS.PREFIX}memory_usage_bytes`,

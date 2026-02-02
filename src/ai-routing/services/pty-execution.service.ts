@@ -1,10 +1,14 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as pty from 'node-pty';
 import { spawn } from 'child_process';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, share } from 'rxjs';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DockerService } from '@/docker/docker.service';
+import { WorkspaceService } from '@/docker/workspace.service';
+import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
 
 export interface SpawnOptions {
   name?: string;
@@ -12,6 +16,34 @@ export interface SpawnOptions {
   rows?: number;
   cwd?: string;
   env?: { [key: string]: string };
+}
+
+export interface ContainerSpawnOptions extends SpawnOptions {
+  executionId: string;
+  ticketId?: string;
+}
+
+export interface ContainerSpawnResult {
+  /** Container ID (not OS PID) */
+  pid: number;
+  /** stdout/stderr combined stream */
+  output$: Observable<string>;
+  /** Exit code observable */
+  exit$: Observable<{ exitCode: number; signal?: number }>;
+  /** Resize function for TTY */
+  resize: (cols: number, rows: number) => Promise<void>;
+  /** Write to stdin */
+  write: (data: string) => void;
+  /** Kill the container */
+  kill: (signal?: string) => void;
+  /** Container ID */
+  containerId: string;
+}
+
+export interface LocalSpawnResult {
+  pid: number;
+  output$: Observable<string>;
+  exit$: Observable<{ exitCode: number; signal?: number }>;
 }
 
 export class PtySpawnError extends Error {
@@ -25,12 +57,45 @@ export class PtySpawnError extends Error {
   }
 }
 
+/**
+ * Tracks active container executions for cleanup
+ */
+interface ContainerExecution {
+  containerId: string;
+  outputSubject: Subject<string>;
+  exitSubject: Subject<{ exitCode: number; signal?: number }>;
+  stream: NodeJS.ReadWriteStream | null;
+  timeoutTimer?: NodeJS.Timeout;
+}
+
 @Injectable()
 export class PtyExecutionService implements OnModuleDestroy {
   private readonly logger = new Logger(PtyExecutionService.name);
   private processes = new Map<number, pty.IPty>();
+  private containerExecutions = new Map<string, ContainerExecution>();
+  private executionCounter = 0;
 
-  constructor() {}
+  // Feature flag
+  private containerExecutionEnabled = false;
+  private containerTimeoutMs = 300000; // 5 minutes default
+
+  // Track completed executions to prevent race conditions
+  private completedExecutions = new Set<string>();
+
+  constructor(
+    private readonly configService?: ConfigService,
+    private readonly dockerService?: DockerService,
+    private readonly workspaceService?: WorkspaceService,
+  ) {
+    // Load configuration if available
+    if (configService) {
+      this.containerExecutionEnabled = configService.get<boolean>(
+        'ENABLE_CONTAINER_EXECUTION',
+        false,
+      );
+      this.containerTimeoutMs = configService.get<number>('DOCKER_CONTAINER_TIMEOUT_MS', 300000);
+    }
+  }
 
   /**
    * Check if a command exists in the system PATH
@@ -88,15 +153,11 @@ export class PtyExecutionService implements OnModuleDestroy {
     return command;
   }
 
-  spawn(
-    command: string,
-    args: string[] = [],
-    options: SpawnOptions = {},
-  ): {
-    pid: number;
-    output$: Observable<string>;
-    exit$: Observable<{ exitCode: number; signal?: number }>;
-  } {
+  /**
+   * Spawn a process locally using PTY
+   * Falls back to child_process if PTY fails (macOS Gatekeeper)
+   */
+  spawn(command: string, args: string[] = [], options: SpawnOptions = {}): LocalSpawnResult {
     const defaultShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const cmd = command || defaultShell;
 
@@ -228,6 +289,271 @@ export class PtyExecutionService implements OnModuleDestroy {
   }
 
   /**
+   * Spawn a command in a Docker container
+   * AC 1, 2, 4, 6: Container execution with streaming, TTY resize, exit code capture
+   *
+   * @param command Command to run
+   * @param args Command arguments
+   * @param options Container spawn options (must include executionId)
+   * @returns ContainerSpawnResult with stream, resize, write, kill functions
+   */
+  async spawnInContainer(
+    command: string,
+    args: string[] = [],
+    options: ContainerSpawnOptions,
+  ): Promise<ContainerSpawnResult> {
+    const { executionId, cols: _cols = 80, rows: _rows = 30 } = options;
+
+    this.logger.log(`[${executionId}] Spawning in container: ${command} ${args.join(' ')}`);
+
+    // Validate dependencies
+    if (!this.dockerService) {
+      throw new InfrastructureException('DockerService is required for container execution');
+    }
+
+    if (!this.workspaceService) {
+      throw new InfrastructureException('WorkspaceService is required for container execution');
+    }
+
+    // Ensure Docker is connected
+    if (!this.dockerService.isConnected()) {
+      throw new InfrastructureException('Docker is not connected');
+    }
+
+    // Create workspace
+    const workspacePath = await this.workspaceService.createWorkspace(executionId);
+    this.logger.debug(`[${executionId}] Workspace created at: ${workspacePath}`);
+
+    // Build full command
+    const fullCommand = [command, ...args];
+
+    // Run container with dsf-agent-base image
+    const { container, stream } = await this.dockerService.runContainer({
+      image: 'dsf-agent-base',
+      command: fullCommand,
+      binds: [`${workspacePath}:/home/agent/workspace:rw`],
+      workingDir: '/home/agent/workspace',
+      user: 'agent',
+      tty: true,
+      autoRemove: true,
+      env: {
+        ...process.env,
+        ...options.env,
+        NODE_ENV: process.env.NODE_ENV || 'development',
+      },
+    });
+
+    this.logger.log(`[${executionId}] Container started: ${container.id}`);
+
+    // Generate pseudo-PID (container executions use negative numbers to avoid collision with local PTY PIDs)
+    this.executionCounter++;
+    const pseudoPid = -this.executionCounter;
+
+    // Create subjects for streaming
+    const outputSubject = new Subject<string>();
+    const exitSubject = new Subject<{ exitCode: number; signal?: number }>();
+
+    // Store execution state
+    const execution: ContainerExecution = {
+      containerId: container.id,
+      outputSubject,
+      exitSubject,
+      stream,
+    };
+    this.containerExecutions.set(executionId, execution);
+
+    // Set up timeout
+    const timeoutTimer = setTimeout(() => {
+      this.logger.warn(
+        `[${executionId}] Container execution timed out after ${this.containerTimeoutMs}ms`,
+      );
+      this.killContainerExecution(executionId, 'SIGKILL');
+      exitSubject.next({ exitCode: 124, signal: undefined }); // 124 = timeout
+      exitSubject.complete();
+      outputSubject.complete();
+    }, this.containerTimeoutMs);
+
+    execution.timeoutTimer = timeoutTimer;
+
+    // Handle stream data
+    stream.on('data', (data: Buffer) => {
+      outputSubject.next(data.toString());
+    });
+
+    // Handle stream end (container exit)
+    stream.on('end', async () => {
+      // Guard against race conditions - only process once
+      if (this.completedExecutions.has(executionId)) {
+        return;
+      }
+      this.completedExecutions.add(executionId);
+
+      this.logger.debug(`[${executionId}] Container stream ended`);
+      clearTimeout(timeoutTimer);
+
+      try {
+        // Wait for container to get exit code
+        const waitResult = await this.dockerService!.waitForContainer(container.id);
+        const exitCode = waitResult.StatusCode;
+
+        this.logger.log(`[${executionId}] Container exited with code ${exitCode}`);
+        exitSubject.next({ exitCode, signal: undefined });
+      } catch (error) {
+        this.logger.error(`[${executionId}] Error waiting for container: ${error}`);
+        exitSubject.next({ exitCode: 1, signal: undefined });
+      }
+
+      if (!exitSubject.closed) {
+        exitSubject.complete();
+      }
+      if (!outputSubject.closed) {
+        outputSubject.complete();
+      }
+      this.cleanupContainerExecution(executionId);
+    });
+
+    // Handle stream errors
+    stream.on('error', (error: Error) => {
+      // Guard against race conditions - only process once
+      if (this.completedExecutions.has(executionId)) {
+        return;
+      }
+      this.completedExecutions.add(executionId);
+
+      this.logger.error(`[${executionId}] Container stream error: ${error.message}`);
+      clearTimeout(timeoutTimer);
+      outputSubject.error(error);
+      exitSubject.next({ exitCode: 1, signal: undefined });
+      exitSubject.complete();
+      this.cleanupContainerExecution(executionId);
+    });
+
+    // Return result interface
+    return {
+      pid: pseudoPid,
+      containerId: container.id,
+      output$: outputSubject.asObservable().pipe(share()),
+      exit$: exitSubject.asObservable().pipe(share()),
+      resize: async (resizeCols: number, resizeRows: number): Promise<void> => {
+        try {
+          // Note: Docker exec resize requires an exec instance, not container
+          // For TTY resize during container run, we need to use the container's resize API
+          const docker = this.dockerService!.getDocker();
+          const containerInstance = docker.getContainer(container.id);
+
+          // Only resize if container is running and TTY was enabled
+          const containerInfo = await containerInstance.inspect();
+          if (!containerInfo.State.Running) {
+            this.logger.debug(`[${executionId}] Cannot resize - container not running`);
+            return;
+          }
+          if (!containerInfo.Config.Tty) {
+            this.logger.debug(
+              `[${executionId}] Cannot resize - container was not created with TTY`,
+            );
+            return;
+          }
+
+          await containerInstance.resize({ h: resizeRows, w: resizeCols });
+          this.logger.debug(`[${executionId}] Resized container to ${resizeCols}x${resizeRows}`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          // Log as debug rather than warn - resize failures are often benign
+          // (e.g., container already exited, non-TTY container)
+          this.logger.debug(`[${executionId}] Resize skipped: ${errorMessage}`);
+        }
+      },
+      write: (data: string): void => {
+        const writeStream = stream as { destroyed?: boolean } | null;
+        if (writeStream && !writeStream.destroyed) {
+          stream.write(data);
+        }
+      },
+      kill: (signal?: string): void => {
+        this.killContainerExecution(executionId, signal);
+      },
+    };
+  }
+
+  /**
+   * Check if container execution is enabled
+   */
+  isContainerExecutionEnabled(): boolean {
+    return this.containerExecutionEnabled;
+  }
+
+  /**
+   * Enable or disable container execution
+   */
+  setContainerExecutionEnabled(enabled: boolean): void {
+    this.containerExecutionEnabled = enabled;
+    this.logger.log(`Container execution ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Kill a container execution
+   */
+  private killContainerExecution(executionId: string, signal?: string): void {
+    const execution = this.containerExecutions.get(executionId);
+    if (!execution) {
+      this.logger.warn(`[${executionId}] No active container execution to kill`);
+      return;
+    }
+
+    this.logger.log(
+      `[${executionId}] Killing container ${execution.containerId} with signal ${signal || 'SIGKILL'}`,
+    );
+
+    // Clear timeout
+    if (execution.timeoutTimer) {
+      clearTimeout(execution.timeoutTimer);
+    }
+
+    // Kill container
+    this.dockerService?.killContainer(execution.containerId, signal || 'SIGKILL');
+
+    // Destroy stream
+    const stream = execution.stream as { destroyed?: boolean; destroy?: () => void } | null;
+    if (stream && !stream.destroyed) {
+      stream.destroy?.();
+    }
+
+    // Complete subjects
+    if (!execution.exitSubject.closed) {
+      execution.exitSubject.next({ exitCode: 137, signal: 9 }); // 137 = SIGKILL
+      execution.exitSubject.complete();
+    }
+    if (!execution.outputSubject.closed) {
+      execution.outputSubject.complete();
+    }
+
+    this.containerExecutions.delete(executionId);
+  }
+
+  /**
+   * Clean up container execution state
+   */
+  private cleanupContainerExecution(executionId: string): void {
+    const execution = this.containerExecutions.get(executionId);
+    if (!execution) return;
+
+    // Clear timeout
+    if (execution.timeoutTimer) {
+      clearTimeout(execution.timeoutTimer);
+    }
+
+    // Destroy stream if still open
+    const stream = execution.stream as { destroyed?: boolean; destroy?: () => void } | null;
+    if (stream && !stream.destroyed) {
+      stream.destroy?.();
+    }
+
+    this.containerExecutions.delete(executionId);
+    this.completedExecutions.delete(executionId);
+    this.logger.debug(`[${executionId}] Container execution cleaned up`);
+  }
+
+  /**
    * Fallback spawn using child_process (no PTY)
    * Used when node-pty fails on macOS due to Gatekeeper/security restrictions
    */
@@ -235,11 +561,7 @@ export class PtyExecutionService implements OnModuleDestroy {
     command: string,
     args: string[],
     options: SpawnOptions,
-  ): {
-    pid: number;
-    output$: Observable<string>;
-    exit$: Observable<{ exitCode: number; signal?: number }>;
-  } {
+  ): LocalSpawnResult {
     const outputSubject = new Subject<string>();
     const exitSubject = new Subject<{ exitCode: number; signal?: number }>();
 
@@ -330,7 +652,9 @@ export class PtyExecutionService implements OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    this.logger.log('Cleaning up PTY processes...');
+    this.logger.log('Cleaning up PTY processes and container executions...');
+
+    // Kill local PTY processes
     for (const [pid, ptyProcess] of this.processes) {
       try {
         this.logger.debug(`Killing PTY process ${pid}`);
@@ -340,5 +664,16 @@ export class PtyExecutionService implements OnModuleDestroy {
       }
     }
     this.processes.clear();
+
+    // Clean up container executions
+    for (const [executionId, _execution] of this.containerExecutions) {
+      try {
+        this.logger.debug(`Cleaning up container execution ${executionId}`);
+        this.killContainerExecution(executionId, 'SIGKILL');
+      } catch (err) {
+        this.logger.error(`Failed to cleanup container execution ${executionId}`, err);
+      }
+    }
+    this.containerExecutions.clear();
   }
 }

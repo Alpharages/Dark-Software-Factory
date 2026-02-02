@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { PtyExecutionService } from './pty-execution.service';
+import { DockerService } from '@/docker/docker.service';
+import { WorkspaceService } from '@/docker/workspace.service';
 import * as pty from 'node-pty';
 
 // Mock node-pty
@@ -8,6 +11,25 @@ jest.mock('node-pty', () => {
     spawn: jest.fn(),
   };
 });
+
+// Mock DockerService
+const mockDockerService = {
+  isConnected: jest.fn(),
+  runContainer: jest.fn(),
+  killContainer: jest.fn(),
+  waitForContainer: jest.fn(),
+  getDocker: jest.fn(),
+};
+
+// Mock WorkspaceService
+const mockWorkspaceService = {
+  createWorkspace: jest.fn(),
+};
+
+// Mock ConfigService
+const mockConfigService = {
+  get: jest.fn(),
+};
 
 describe('PtyExecutionService', () => {
   let service: PtyExecutionService;
@@ -27,8 +49,19 @@ describe('PtyExecutionService', () => {
       };
     });
 
+    mockConfigService.get.mockImplementation((key: string, defaultValue: unknown) => {
+      if (key === 'ENABLE_CONTAINER_EXECUTION') return false;
+      if (key === 'DOCKER_CONTAINER_TIMEOUT_MS') return 300000;
+      return defaultValue;
+    });
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PtyExecutionService],
+      providers: [
+        PtyExecutionService,
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: DockerService, useValue: mockDockerService },
+        { provide: WorkspaceService, useValue: mockWorkspaceService },
+      ],
     }).compile();
 
     service = module.get<PtyExecutionService>(PtyExecutionService);
@@ -175,6 +208,211 @@ describe('PtyExecutionService', () => {
 
       expect(mockInstance1.kill).toHaveBeenCalled();
       expect(mockInstance2.kill).toHaveBeenCalled();
+    });
+  });
+
+  describe('container execution', () => {
+    it('should check if container execution is enabled', () => {
+      expect(service.isContainerExecutionEnabled()).toBe(false);
+
+      service.setContainerExecutionEnabled(true);
+      expect(service.isContainerExecutionEnabled()).toBe(true);
+    });
+
+    it('should throw error when spawning in container without DockerService', async () => {
+      const serviceWithoutDocker = new PtyExecutionService(
+        mockConfigService as unknown as ConfigService,
+        undefined,
+        mockWorkspaceService as unknown as WorkspaceService,
+      );
+
+      await expect(
+        serviceWithoutDocker.spawnInContainer('echo', ['hello'], { executionId: 'exec-123' }),
+      ).rejects.toThrow('DockerService is required for container execution');
+    });
+
+    it('should throw error when spawning in container without WorkspaceService', async () => {
+      const serviceWithoutWorkspace = new PtyExecutionService(
+        mockConfigService as unknown as ConfigService,
+        mockDockerService as unknown as DockerService,
+        undefined,
+      );
+
+      await expect(
+        serviceWithoutWorkspace.spawnInContainer('echo', ['hello'], { executionId: 'exec-123' }),
+      ).rejects.toThrow('WorkspaceService is required for container execution');
+    });
+
+    it('should throw error when Docker is not connected', async () => {
+      mockDockerService.isConnected.mockReturnValue(false);
+
+      await expect(
+        service.spawnInContainer('echo', ['hello'], { executionId: 'exec-123' }),
+      ).rejects.toThrow('Docker is not connected');
+    });
+
+    it('should successfully spawn in container when Docker is connected', async () => {
+      const executionId = 'exec-123';
+      const workspacePath = '/tmp/workspaces/exec-123';
+      const containerId = 'container-abc123';
+
+      mockDockerService.isConnected.mockReturnValue(true);
+      mockWorkspaceService.createWorkspace.mockResolvedValue(workspacePath);
+
+      // Create a mock stream
+      const mockStream = {
+        on: jest.fn(),
+        write: jest.fn(),
+        destroy: jest.fn(),
+        destroyed: false,
+      };
+
+      mockDockerService.runContainer.mockResolvedValue({
+        container: { id: containerId },
+        stream: mockStream,
+      });
+
+      mockDockerService.waitForContainer.mockResolvedValue({ StatusCode: 0 });
+
+      // Mock getDocker for resize
+      const mockContainerInstance = {
+        resize: jest.fn().mockResolvedValue(undefined),
+        inspect: jest.fn().mockResolvedValue({
+          State: { Running: true },
+          Config: { Tty: true },
+        }),
+      };
+      mockDockerService.getDocker.mockReturnValue({
+        getContainer: jest.fn().mockReturnValue(mockContainerInstance),
+      });
+
+      const result = await service.spawnInContainer('echo', ['hello'], {
+        executionId,
+        cols: 120,
+        rows: 40,
+      });
+
+      // Verify result structure
+      expect(result.pid).toBeLessThan(0); // Container executions use negative pseudo-PIDs
+      expect(result.containerId).toBe(containerId);
+      expect(result.output$).toBeDefined();
+      expect(result.exit$).toBeDefined();
+      expect(typeof result.resize).toBe('function');
+      expect(typeof result.write).toBe('function');
+      expect(typeof result.kill).toBe('function');
+
+      // Verify Docker service calls
+      expect(mockWorkspaceService.createWorkspace).toHaveBeenCalledWith(executionId);
+      expect(mockDockerService.runContainer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'dsf-agent-base',
+          command: ['echo', 'hello'],
+          binds: [`${workspacePath}:/home/agent/workspace:rw`],
+          workingDir: '/home/agent/workspace',
+          user: 'agent',
+          tty: true,
+          autoRemove: true,
+        }),
+      );
+
+      // Test resize functionality
+      await result.resize(100, 50);
+      expect(mockContainerInstance.resize).toHaveBeenCalledWith({ h: 50, w: 100 });
+
+      // Test write functionality
+      result.write('test input');
+      expect(mockStream.write).toHaveBeenCalledWith('test input');
+
+      // Test kill functionality
+      result.kill('SIGTERM');
+      expect(mockDockerService.killContainer).toHaveBeenCalledWith(containerId, 'SIGTERM');
+    });
+
+    it('should handle container stream data events', async () => {
+      const executionId = 'exec-456';
+      const workspacePath = '/tmp/workspaces/exec-456';
+      const containerId = 'container-def456';
+
+      mockDockerService.isConnected.mockReturnValue(true);
+      mockWorkspaceService.createWorkspace.mockResolvedValue(workspacePath);
+
+      // Create a mock stream that captures event handlers
+      type EventHandler = (data: Buffer | Error) => void;
+      const eventHandlers: Record<string, EventHandler[]> = {};
+      const mockStream = {
+        on: jest.fn((event: string, handler: EventHandler) => {
+          if (!eventHandlers[event]) eventHandlers[event] = [];
+          eventHandlers[event].push(handler);
+        }),
+        write: jest.fn(),
+        destroy: jest.fn(),
+        destroyed: false,
+      };
+
+      mockDockerService.runContainer.mockResolvedValue({
+        container: { id: containerId },
+        stream: mockStream,
+      });
+
+      mockDockerService.waitForContainer.mockResolvedValue({ StatusCode: 0 });
+
+      const result = await service.spawnInContainer('echo', ['hello'], { executionId });
+
+      // Collect output
+      const outputs: string[] = [];
+      result.output$.subscribe((data) => outputs.push(data));
+
+      // Simulate stream data
+      const dataHandler = eventHandlers['data']?.[0];
+      expect(dataHandler).toBeDefined();
+      dataHandler(Buffer.from('Hello from container'));
+
+      expect(outputs).toContain('Hello from container');
+
+      // Test is complete - don't wait for exit to avoid timeout
+    }, 10000);
+
+    it('should handle container stream errors', async () => {
+      const executionId = 'exec-789';
+      const workspacePath = '/tmp/workspaces/exec-789';
+      const containerId = 'container-ghi789';
+
+      mockDockerService.isConnected.mockReturnValue(true);
+      mockWorkspaceService.createWorkspace.mockResolvedValue(workspacePath);
+
+      type EventHandler = (data: Buffer | Error) => void;
+      const eventHandlers: Record<string, EventHandler[]> = {};
+      const mockStream = {
+        on: jest.fn((event: string, handler: EventHandler) => {
+          if (!eventHandlers[event]) eventHandlers[event] = [];
+          eventHandlers[event].push(handler);
+        }),
+        write: jest.fn(),
+        destroy: jest.fn(),
+        destroyed: false,
+      };
+
+      mockDockerService.runContainer.mockResolvedValue({
+        container: { id: containerId },
+        stream: mockStream,
+      });
+
+      const result = await service.spawnInContainer('echo', ['hello'], { executionId });
+
+      // Subscribe to output to trigger error handling
+      let errorReceived = false;
+      result.output$.subscribe({
+        error: () => {
+          errorReceived = true;
+        },
+      });
+
+      // Simulate stream error
+      const errorHandler = eventHandlers['error']?.[0];
+      expect(errorHandler).toBeDefined();
+      errorHandler(new Error('Docker stream error'));
+
+      expect(errorReceived).toBe(true);
     });
   });
 });

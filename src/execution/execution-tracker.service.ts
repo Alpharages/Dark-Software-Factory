@@ -1,10 +1,12 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { ExecutionStatus, Execution } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Observable, Subscription } from 'rxjs';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
+import { ExecutionGateway, LogLevel } from './gateways/execution.gateway';
 import {
   IStartExecutionInput,
   IExecutionCompletion,
@@ -33,18 +35,27 @@ export class ExecutionTrackerService implements OnModuleInit {
   /** Queue for status change events */
   private readonly STATUS_QUEUE = 'execution-status-queue';
 
+  /** Track active log subscriptions to prevent memory leaks */
+  private activeLogSubscriptions = new Map<string, Subscription>();
+
   constructor(
     private readonly repository: ExecutionRepository,
     private readonly stateMachine: ExecutionStateMachine,
     private readonly publisher: RabbitMQPublisherService,
-    @InjectMetric('execution_total')
+    @InjectMetric('dsf_execution_total')
     private readonly executionCounter: Counter<string>,
-    @InjectMetric('execution_duration_seconds')
+    @InjectMetric('dsf_execution_duration_seconds')
     private readonly durationHistogram: Histogram<string>,
-    @InjectMetric('execution_status_gauge')
+    @InjectMetric('dsf_execution_status_gauge')
     private readonly statusGauge: Gauge<string>,
-    @InjectMetric('execution_retry_total')
+    @InjectMetric('dsf_execution_retry_total')
     private readonly retryCounter: Counter<string>,
+    @InjectMetric('dsf_container_log_bytes_total')
+    private readonly containerLogBytesCounter: Counter<string>,
+    @InjectMetric('dsf_container_exec_duration_seconds')
+    private readonly containerExecDurationHistogram: Histogram<string>,
+    @Optional()
+    private readonly executionGateway?: ExecutionGateway,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -584,5 +595,151 @@ export class ExecutionTrackerService implements OnModuleInit {
    */
   async updateStatus(executionId: string, status: ExecutionStatus): Promise<Execution> {
     return this.repository.updateStatus(executionId, status);
+  }
+
+  /**
+   * Stream execution logs from container output to WebSocket gateway
+   * AC 1, 3, 5: Pipe container output to ExecutionGateway for real-time streaming
+   *
+   * @param executionId Execution ID
+   * @param ticketId Ticket ID
+   * @param output$ Observable stream of output data
+   * @param source 'stdout' or 'stderr'
+   * @returns Subscription that can be unsubscribed to stop streaming
+   */
+  streamExecutionLogs(
+    executionId: string,
+    ticketId: string,
+    output$: Observable<string>,
+    source: 'stdout' | 'stderr' = 'stdout',
+  ): { unsubscribe: () => void } {
+    // Clean up any existing subscription for this execution
+    this.cleanupExecutionLogs(executionId);
+
+    // If no gateway is available, just track bytes for metrics
+    if (!this.executionGateway) {
+      this.logger.warn(
+        `ExecutionGateway not available, logs will not be streamed for ${executionId}`,
+      );
+
+      const subscription = output$.subscribe({
+        next: (data) => {
+          // Track bytes even if not streaming
+          this.containerLogBytesCounter.inc(
+            { execution_id: executionId, source },
+            Buffer.byteLength(data, 'utf8'),
+          );
+        },
+        error: (err) => {
+          this.logger.error(`[${executionId}] Container output stream error: ${err.message}`);
+        },
+        complete: () => {
+          this.activeLogSubscriptions.delete(executionId);
+        },
+      });
+
+      this.activeLogSubscriptions.set(executionId, subscription);
+
+      return {
+        unsubscribe: () => {
+          subscription.unsubscribe();
+          this.activeLogSubscriptions.delete(executionId);
+        },
+      };
+    }
+
+    // Track start time for duration metric
+    const startTime = Date.now();
+
+    const subscription = output$.subscribe({
+      next: (data) => {
+        // Track bytes
+        const byteLength = Buffer.byteLength(data, 'utf8');
+        this.containerLogBytesCounter.inc({ execution_id: executionId, source }, byteLength);
+
+        // Emit log via gateway
+        this.executionGateway?.emitLog(executionId, ticketId, data, source);
+      },
+      error: (err: Error) => {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        this.logger.error(`[${executionId}] Container output stream error: ${errorMessage}`);
+
+        // Emit error log via gateway
+        this.executionGateway?.emitErrorLog(
+          executionId,
+          ticketId,
+          `Stream error: ${errorMessage}`,
+          'stderr',
+        );
+
+        // Track duration
+        const durationSec = (Date.now() - startTime) / 1000;
+        this.containerExecDurationHistogram.observe(
+          { execution_id: executionId, status: 'error' },
+          durationSec,
+        );
+
+        // Clean up subscription tracking
+        this.activeLogSubscriptions.delete(executionId);
+      },
+      complete: () => {
+        this.logger.debug(`[${executionId}] Container output stream completed`);
+
+        // Track duration
+        const durationSec = (Date.now() - startTime) / 1000;
+        this.containerExecDurationHistogram.observe(
+          { execution_id: executionId, status: 'complete' },
+          durationSec,
+        );
+
+        // Clean up subscription tracking
+        this.activeLogSubscriptions.delete(executionId);
+      },
+    });
+
+    this.activeLogSubscriptions.set(executionId, subscription);
+
+    return {
+      unsubscribe: () => {
+        subscription.unsubscribe();
+        this.activeLogSubscriptions.delete(executionId);
+      },
+    };
+  }
+
+  /**
+   * Clean up execution log subscription for a specific execution
+   * Prevents memory leaks by ensuring subscriptions are properly disposed
+   */
+  cleanupExecutionLogs(executionId: string): void {
+    const subscription = this.activeLogSubscriptions.get(executionId);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.activeLogSubscriptions.delete(executionId);
+      this.logger.debug(`[${executionId}] Cleaned up log subscription`);
+    }
+  }
+
+  /**
+   * Emit a log message immediately (bypasses throttling)
+   * Use for important status messages
+   */
+  emitImmediateLog(
+    executionId: string,
+    ticketId: string,
+    message: string,
+    level: LogLevel = LogLevel.INFO,
+    source: 'stdout' | 'stderr' = 'stdout',
+  ): void {
+    if (this.executionGateway) {
+      this.executionGateway.emitLog(executionId, ticketId, message, source, level);
+    }
+  }
+
+  /**
+   * Check if there are active log subscribers for an execution
+   */
+  hasLogSubscribers(executionId: string): boolean {
+    return this.executionGateway?.hasLogSubscribers(executionId) ?? false;
   }
 }

@@ -258,6 +258,23 @@ export const envValidationSchema = Joi.object({
     .default(path.join(process.cwd(), 'workspaces'))
     .description('Root directory for sandbox workspaces'),
 
+  // Story 22.4: Container Execution Log Streaming Configuration
+  ENABLE_CONTAINER_EXECUTION: Joi.boolean()
+    .default(false)
+    .description('Feature flag to enable container execution mode'),
+  DOCKER_CONTAINER_TIMEOUT_MS: Joi.number()
+    .integer()
+    .min(60000)
+    .max(600000)
+    .default(300000)
+    .description('Max container execution time in milliseconds (default: 5min)'),
+  LOG_STREAM_THROTTLE_MS: Joi.number()
+    .integer()
+    .min(50)
+    .max(1000)
+    .default(100)
+    .description('Throttle interval for WebSocket log emits in milliseconds'),
+
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
   OPENAI_API_KEY: Joi.string()

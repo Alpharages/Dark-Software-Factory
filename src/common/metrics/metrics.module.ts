@@ -27,6 +27,7 @@ import {
   GITHUB_METRICS,
   UX_METRICS,
   AETHERFLOW_METRICS,
+  CONTAINER_METRICS,
   METRICS_CONSTANTS,
   LABELS,
 } from './metrics.constants';
@@ -456,6 +457,29 @@ import {
       name: AETHERFLOW_METRICS.TICKET_CREATION_FAILURES_TOTAL,
       help: 'Total failures creating tickets from conversations',
       labelNames: [LABELS.ERROR_TYPE],
+    }),
+
+    // Story 22.4: Container Execution Log Streaming Metrics
+    makeCounterProvider({
+      name: CONTAINER_METRICS.LOG_BYTES_TOTAL,
+      help: 'Total bytes streamed from containers',
+      labelNames: ['execution_id', 'source'],
+    }),
+    makeHistogramProvider({
+      name: CONTAINER_METRICS.EXEC_DURATION_SECONDS,
+      help: 'Container execution duration in seconds',
+      labelNames: ['execution_id', 'status'],
+      buckets: [1, 5, 10, 30, 60, 120, 300, 600],
+    }),
+    makeCounterProvider({
+      name: CONTAINER_METRICS.STREAM_ERRORS_TOTAL,
+      help: 'Total container stream errors',
+      labelNames: ['execution_id', 'error_type'],
+    }),
+    makeGaugeProvider({
+      name: CONTAINER_METRICS.LOG_SUBSCRIPTIONS_ACTIVE,
+      help: 'Active log subscriptions for executions',
+      labelNames: ['execution_id'],
     }),
   ],
   exports: [MetricsService],
