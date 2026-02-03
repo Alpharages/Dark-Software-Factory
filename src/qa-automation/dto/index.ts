@@ -13,3 +13,5 @@ export * from './security-result.dto';
 export * from './quality-gate.dto';
 export * from './qa-results.dto';
 export * from './qa-queue-message.dto';
+export * from './qa-sampling-config.dto';
+export * from './qa-review-queue.dto';

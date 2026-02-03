@@ -213,6 +213,8 @@ model Execution {
 
   // Story 3.6: QA Results relation
   qa_result QAResult?
+  // Story 8.1: QA Review Queue relation
+  qa_review_queue QaReviewQueue?
 
   // Story 5.3: Approval relation
   approvalRecords ApprovalRecord[]
@@ -987,6 +989,61 @@ enum RiskLevel {
   LOW
   MEDIUM
   HIGH
+}
+
+// ============================================
+// STORY 8.1: QA REVIEW QUEUE & SAMPLING CONFIGURATION
+// ============================================
+
+enum QaReviewStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum SamplingStrategy {
+  PERCENTAGE
+  RISK_BASED
+  RANDOM
+}
+
+model QaSamplingConfig {
+  id                 String   @id @default(uuid())
+  percentage         Decimal  @default(20.0) @db.Decimal(5, 2) // 0-100
+  risk_based_enabled Boolean  @default(true)
+  risk_rules         Json     // { file_count: {...}, complexity: {...}, ai_provider: {...} }
+  random_seed        String?  // For reproducible testing
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  @@map("qa_sampling_config")
+}
+
+model QaReviewQueue {
+  id                String           @id @default(uuid())
+  ticket_id         String           // ClickUp ID
+  execution_id      String           @unique
+  execution         Execution        @relation(fields: [execution_id], references: [id])
+  project_id        String?          // For filtering
+  pr_id             String?          // GitHub PR reference
+  pr_url            String?          // GitHub PR URL
+  status            QaReviewStatus   @default(PENDING)
+  risk_level        RiskLevel
+  risk_factors      Json             // ["high_complexity", "high_file_count"]
+  sampling_strategy SamplingStrategy
+  reviewed_by       String?          // User ID
+  reviewed_at       DateTime?
+  review_notes      String?          @db.Text
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+
+  @@index([status, created_at]) // Queue queries
+  @@index([risk_level, created_at]) // Risk-based sorting
+  @@index([project_id, status]) // Project filtering
+  @@index([execution_id]) // Join with Execution
+  @@index([reviewed_by, reviewed_at]) // Reviewer metrics
+  @@map("qa_review_queue")
 }
 
 // ============================================

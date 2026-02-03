@@ -1070,6 +1070,59 @@ export type EnumRiskLevelNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel>;
 };
 
+export type EnumQaReviewStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.QaReviewStatus | Prisma.EnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  in?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumQaReviewStatusFilter<$PrismaModel> | $Enums.QaReviewStatus;
+};
+
+export type EnumRiskLevelFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel>;
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumRiskLevelFilter<$PrismaModel> | $Enums.RiskLevel;
+};
+
+export type EnumSamplingStrategyFilter<$PrismaModel = never> = {
+  equals?: $Enums.SamplingStrategy | Prisma.EnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  in?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumSamplingStrategyFilter<$PrismaModel> | $Enums.SamplingStrategy;
+};
+
+export type EnumQaReviewStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.QaReviewStatus | Prisma.EnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  in?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumQaReviewStatusWithAggregatesFilter<$PrismaModel> | $Enums.QaReviewStatus;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumQaReviewStatusFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumQaReviewStatusFilter<$PrismaModel>;
+};
+
+export type EnumRiskLevelWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel>;
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumRiskLevelWithAggregatesFilter<$PrismaModel> | $Enums.RiskLevel;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumRiskLevelFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumRiskLevelFilter<$PrismaModel>;
+};
+
+export type EnumSamplingStrategyWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SamplingStrategy | Prisma.EnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  in?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  not?:
+    | Prisma.NestedEnumSamplingStrategyWithAggregatesFilter<$PrismaModel>
+    | $Enums.SamplingStrategy;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumSamplingStrategyFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumSamplingStrategyFilter<$PrismaModel>;
+};
+
 export type EnumTaskTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.TaskType | Prisma.EnumTaskTypeFieldRefInput<$PrismaModel>;
   in?: $Enums.TaskType[] | Prisma.ListEnumTaskTypeFieldRefInput<$PrismaModel>;
@@ -2081,6 +2134,59 @@ export type NestedEnumRiskLevelNullableWithAggregatesFilter<$PrismaModel = never
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>;
   _min?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel>;
   _max?: Prisma.NestedEnumRiskLevelNullableFilter<$PrismaModel>;
+};
+
+export type NestedEnumQaReviewStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.QaReviewStatus | Prisma.EnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  in?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumQaReviewStatusFilter<$PrismaModel> | $Enums.QaReviewStatus;
+};
+
+export type NestedEnumRiskLevelFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel>;
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumRiskLevelFilter<$PrismaModel> | $Enums.RiskLevel;
+};
+
+export type NestedEnumSamplingStrategyFilter<$PrismaModel = never> = {
+  equals?: $Enums.SamplingStrategy | Prisma.EnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  in?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumSamplingStrategyFilter<$PrismaModel> | $Enums.SamplingStrategy;
+};
+
+export type NestedEnumQaReviewStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.QaReviewStatus | Prisma.EnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  in?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.QaReviewStatus[] | Prisma.ListEnumQaReviewStatusFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumQaReviewStatusWithAggregatesFilter<$PrismaModel> | $Enums.QaReviewStatus;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumQaReviewStatusFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumQaReviewStatusFilter<$PrismaModel>;
+};
+
+export type NestedEnumRiskLevelWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RiskLevel | Prisma.EnumRiskLevelFieldRefInput<$PrismaModel>;
+  in?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.RiskLevel[] | Prisma.ListEnumRiskLevelFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumRiskLevelWithAggregatesFilter<$PrismaModel> | $Enums.RiskLevel;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumRiskLevelFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumRiskLevelFilter<$PrismaModel>;
+};
+
+export type NestedEnumSamplingStrategyWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SamplingStrategy | Prisma.EnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  in?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.SamplingStrategy[] | Prisma.ListEnumSamplingStrategyFieldRefInput<$PrismaModel>;
+  not?:
+    | Prisma.NestedEnumSamplingStrategyWithAggregatesFilter<$PrismaModel>
+    | $Enums.SamplingStrategy;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumSamplingStrategyFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumSamplingStrategyFilter<$PrismaModel>;
 };
 
 export type NestedEnumTaskTypeFilter<$PrismaModel = never> = {

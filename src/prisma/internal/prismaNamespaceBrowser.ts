@@ -78,6 +78,8 @@ export const ModelName = {
   SystemConfig: 'SystemConfig',
   Adr: 'Adr',
   AdrAlert: 'AdrAlert',
+  QaSamplingConfig: 'QaSamplingConfig',
+  QaReviewQueue: 'QaReviewQueue',
   ArchitectureConstraint: 'ArchitectureConstraint',
   AiCapability: 'AiCapability',
   AiTaskPattern: 'AiTaskPattern',
@@ -603,6 +605,40 @@ export const AdrAlertScalarFieldEnum = {
 
 export type AdrAlertScalarFieldEnum =
   (typeof AdrAlertScalarFieldEnum)[keyof typeof AdrAlertScalarFieldEnum];
+
+export const QaSamplingConfigScalarFieldEnum = {
+  id: 'id',
+  percentage: 'percentage',
+  risk_based_enabled: 'risk_based_enabled',
+  risk_rules: 'risk_rules',
+  random_seed: 'random_seed',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type QaSamplingConfigScalarFieldEnum =
+  (typeof QaSamplingConfigScalarFieldEnum)[keyof typeof QaSamplingConfigScalarFieldEnum];
+
+export const QaReviewQueueScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  project_id: 'project_id',
+  pr_id: 'pr_id',
+  pr_url: 'pr_url',
+  status: 'status',
+  risk_level: 'risk_level',
+  risk_factors: 'risk_factors',
+  sampling_strategy: 'sampling_strategy',
+  reviewed_by: 'reviewed_by',
+  reviewed_at: 'reviewed_at',
+  review_notes: 'review_notes',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type QaReviewQueueScalarFieldEnum =
+  (typeof QaReviewQueueScalarFieldEnum)[keyof typeof QaReviewQueueScalarFieldEnum];
 
 export const ArchitectureConstraintScalarFieldEnum = {
   id: 'id',

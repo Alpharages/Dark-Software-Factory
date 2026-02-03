@@ -405,6 +405,8 @@ export const ModelName = {
   SystemConfig: 'SystemConfig',
   Adr: 'Adr',
   AdrAlert: 'AdrAlert',
+  QaSamplingConfig: 'QaSamplingConfig',
+  QaReviewQueue: 'QaReviewQueue',
   ArchitectureConstraint: 'ArchitectureConstraint',
   AiCapability: 'AiCapability',
   AiTaskPattern: 'AiTaskPattern',
@@ -460,6 +462,8 @@ export type TypeMap<
       | 'systemConfig'
       | 'adr'
       | 'adrAlert'
+      | 'qaSamplingConfig'
+      | 'qaReviewQueue'
       | 'architectureConstraint'
       | 'aiCapability'
       | 'aiTaskPattern'
@@ -2716,6 +2720,158 @@ export type TypeMap<
         };
       };
     };
+    QaSamplingConfig: {
+      payload: Prisma.$QaSamplingConfigPayload<ExtArgs>;
+      fields: Prisma.QaSamplingConfigFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.QaSamplingConfigFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.QaSamplingConfigFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>;
+        };
+        findFirst: {
+          args: Prisma.QaSamplingConfigFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.QaSamplingConfigFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>;
+        };
+        findMany: {
+          args: Prisma.QaSamplingConfigFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>[];
+        };
+        create: {
+          args: Prisma.QaSamplingConfigCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>;
+        };
+        createMany: {
+          args: Prisma.QaSamplingConfigCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.QaSamplingConfigCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>[];
+        };
+        delete: {
+          args: Prisma.QaSamplingConfigDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>;
+        };
+        update: {
+          args: Prisma.QaSamplingConfigUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>;
+        };
+        deleteMany: {
+          args: Prisma.QaSamplingConfigDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.QaSamplingConfigUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.QaSamplingConfigUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>[];
+        };
+        upsert: {
+          args: Prisma.QaSamplingConfigUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaSamplingConfigPayload>;
+        };
+        aggregate: {
+          args: Prisma.QaSamplingConfigAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQaSamplingConfig>;
+        };
+        groupBy: {
+          args: Prisma.QaSamplingConfigGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.QaSamplingConfigGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.QaSamplingConfigCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.QaSamplingConfigCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    QaReviewQueue: {
+      payload: Prisma.$QaReviewQueuePayload<ExtArgs>;
+      fields: Prisma.QaReviewQueueFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.QaReviewQueueFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.QaReviewQueueFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>;
+        };
+        findFirst: {
+          args: Prisma.QaReviewQueueFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.QaReviewQueueFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>;
+        };
+        findMany: {
+          args: Prisma.QaReviewQueueFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>[];
+        };
+        create: {
+          args: Prisma.QaReviewQueueCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>;
+        };
+        createMany: {
+          args: Prisma.QaReviewQueueCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.QaReviewQueueCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>[];
+        };
+        delete: {
+          args: Prisma.QaReviewQueueDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>;
+        };
+        update: {
+          args: Prisma.QaReviewQueueUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>;
+        };
+        deleteMany: {
+          args: Prisma.QaReviewQueueDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.QaReviewQueueUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.QaReviewQueueUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>[];
+        };
+        upsert: {
+          args: Prisma.QaReviewQueueUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QaReviewQueuePayload>;
+        };
+        aggregate: {
+          args: Prisma.QaReviewQueueAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQaReviewQueue>;
+        };
+        groupBy: {
+          args: Prisma.QaReviewQueueGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.QaReviewQueueGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.QaReviewQueueCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.QaReviewQueueCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
     ArchitectureConstraint: {
       payload: Prisma.$ArchitectureConstraintPayload<ExtArgs>;
       fields: Prisma.ArchitectureConstraintFieldRefs;
@@ -3638,6 +3794,40 @@ export const AdrAlertScalarFieldEnum = {
 export type AdrAlertScalarFieldEnum =
   (typeof AdrAlertScalarFieldEnum)[keyof typeof AdrAlertScalarFieldEnum];
 
+export const QaSamplingConfigScalarFieldEnum = {
+  id: 'id',
+  percentage: 'percentage',
+  risk_based_enabled: 'risk_based_enabled',
+  risk_rules: 'risk_rules',
+  random_seed: 'random_seed',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type QaSamplingConfigScalarFieldEnum =
+  (typeof QaSamplingConfigScalarFieldEnum)[keyof typeof QaSamplingConfigScalarFieldEnum];
+
+export const QaReviewQueueScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  project_id: 'project_id',
+  pr_id: 'pr_id',
+  pr_url: 'pr_url',
+  status: 'status',
+  risk_level: 'risk_level',
+  risk_factors: 'risk_factors',
+  sampling_strategy: 'sampling_strategy',
+  reviewed_by: 'reviewed_by',
+  reviewed_at: 'reviewed_at',
+  review_notes: 'review_notes',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type QaReviewQueueScalarFieldEnum =
+  (typeof QaReviewQueueScalarFieldEnum)[keyof typeof QaReviewQueueScalarFieldEnum];
+
 export const ArchitectureConstraintScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
@@ -4162,6 +4352,38 @@ export type ListEnumRiskLevelFieldRefInput<$PrismaModel> = FieldRefInputType<
 >;
 
 /**
+ * Reference to a field of type 'QaReviewStatus'
+ */
+export type EnumQaReviewStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'QaReviewStatus'
+>;
+
+/**
+ * Reference to a field of type 'QaReviewStatus[]'
+ */
+export type ListEnumQaReviewStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'QaReviewStatus[]'
+>;
+
+/**
+ * Reference to a field of type 'SamplingStrategy'
+ */
+export type EnumSamplingStrategyFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'SamplingStrategy'
+>;
+
+/**
+ * Reference to a field of type 'SamplingStrategy[]'
+ */
+export type ListEnumSamplingStrategyFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'SamplingStrategy[]'
+>;
+
+/**
  * Reference to a field of type 'InvitationStatus'
  */
 export type EnumInvitationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
@@ -4310,6 +4532,8 @@ export type GlobalOmitConfig = {
   systemConfig?: Prisma.SystemConfigOmit;
   adr?: Prisma.AdrOmit;
   adrAlert?: Prisma.AdrAlertOmit;
+  qaSamplingConfig?: Prisma.QaSamplingConfigOmit;
+  qaReviewQueue?: Prisma.QaReviewQueueOmit;
   architectureConstraint?: Prisma.ArchitectureConstraintOmit;
   aiCapability?: Prisma.AiCapabilityOmit;
   aiTaskPattern?: Prisma.AiTaskPatternOmit;

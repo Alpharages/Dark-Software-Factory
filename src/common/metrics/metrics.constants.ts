@@ -86,6 +86,13 @@ export const QA_METRICS = {
   // Story 13.4: QA Self-Healing Integration metrics
   SELF_HEALING_TRIGGERED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_self_healing_triggered_total`,
   ORCHESTRATOR_SELF_HEALING_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}qa_orchestrator_self_healing_duration_seconds`,
+  // Story 8.1: QA Review Queue & Sampling Configuration metrics
+  REVIEW_QUEUE_DEPTH: `${METRICS_CONSTANTS.PREFIX}qa_review_queue_depth`,
+  REVIEW_SAMPLING_RATE: `${METRICS_CONSTANTS.PREFIX}qa_review_sampling_rate`,
+  REVIEW_TICKETS_SAMPLED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_review_tickets_sampled_total`,
+  REVIEW_TICKETS_BY_RISK_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_review_tickets_by_risk_total`,
+  REVIEW_QUEUE_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}qa_review_queue_duration_seconds`,
+  REVIEW_DECISIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_review_decisions_total`,
 } as const;
 
 // GitHub Metrics

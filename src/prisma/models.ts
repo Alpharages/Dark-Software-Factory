@@ -37,6 +37,8 @@ export type * from './models/Report';
 export type * from './models/SystemConfig';
 export type * from './models/Adr';
 export type * from './models/AdrAlert';
+export type * from './models/QaSamplingConfig';
+export type * from './models/QaReviewQueue';
 export type * from './models/ArchitectureConstraint';
 export type * from './models/AiCapability';
 export type * from './models/AiTaskPattern';

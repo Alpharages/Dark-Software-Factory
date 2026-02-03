@@ -191,6 +191,16 @@ export type Adr = Prisma.AdrModel;
  */
 export type AdrAlert = Prisma.AdrAlertModel;
 /**
+ * Model QaSamplingConfig
+ *
+ */
+export type QaSamplingConfig = Prisma.QaSamplingConfigModel;
+/**
+ * Model QaReviewQueue
+ *
+ */
+export type QaReviewQueue = Prisma.QaReviewQueueModel;
+/**
  * Model ArchitectureConstraint
  *
  */

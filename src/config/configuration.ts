@@ -247,6 +247,24 @@ export default () => {
       },
     },
 
+    // Story 8.1: QA Review Queue & Sampling Configuration
+    // FR34: Lead QA can view a sample queue of AI-generated code
+    // FR35: Lead QA can configure sampling strategy
+    qaReview: {
+      sampling: {
+        defaultPercentage: parseInt(process.env.QA_REVIEW_SAMPLING_PERCENTAGE || '20', 10),
+        riskBasedEnabled: process.env.QA_REVIEW_RISK_BASED_ENABLED !== 'false',
+        minPercentage: parseInt(process.env.QA_REVIEW_MIN_PERCENTAGE || '0', 10),
+        maxPercentage: parseInt(process.env.QA_REVIEW_MAX_PERCENTAGE || '100', 10),
+      },
+      queue: {
+        defaultPageSize: parseInt(process.env.QA_REVIEW_QUEUE_PAGE_SIZE || '20', 10),
+        maxPageSize: parseInt(process.env.QA_REVIEW_QUEUE_MAX_PAGE_SIZE || '100', 10),
+        maxRetries: parseInt(process.env.QA_REVIEW_QUEUE_MAX_RETRIES || '3', 10),
+        dlqRoutingKey: process.env.QA_REVIEW_QUEUE_DLQ_KEY || 'qa.execution.completed.dlq',
+      },
+    },
+
     // Story 3.5: Quality Gate Configuration
     // FR70: System blocks deployment if quality gates fail
     qualityGate: {

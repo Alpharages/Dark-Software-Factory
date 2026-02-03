@@ -32,6 +32,26 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.4: Self-Healing Integration
 import { ExecutionModule } from '../execution/execution.module';
 
+// Story 8.1: QA Review Queue & Sampling Configuration
+import { QaSamplingConfigService } from './services/qa-sampling-config.service';
+import {
+  QaSamplingService,
+  PercentageSamplingStrategy,
+  RiskBasedSamplingStrategy,
+  CompositeSamplingStrategy,
+  RiskScoringService,
+} from './services/qa-sampling.service';
+import { QaReviewQueueService } from './services/qa-review-queue.service';
+import { QaReviewMetricsService } from './services/qa-review-metrics.service';
+import {
+  QaSamplingConfigController,
+  QaReviewQueueController,
+} from './controllers/qa-review.controller';
+import {
+  QaReviewQueueConsumer,
+  QaReviewQueueLegacyConsumer,
+} from './consumers/qa-review-queue.consumer';
+
 @Module({
   imports: [
     DatabaseModule,
@@ -46,7 +66,13 @@ import { ExecutionModule } from '../execution/execution.module';
     // Story 13.4: Self-Healing Integration
     forwardRef(() => ExecutionModule), // Provides SelfHealingOrchestratorService
   ],
-  controllers: [QaResultsController, QualityGateController],
+  controllers: [
+    QaResultsController,
+    QualityGateController,
+    // Story 8.1: QA Review Queue & Sampling Controllers
+    QaSamplingConfigController,
+    QaReviewQueueController,
+  ],
   providers: [
     // Story 3.10 - AI QA Orchestrator (replaces custom services)
     AiQaOrchestrator,
@@ -132,6 +158,54 @@ import { ExecutionModule } from '../execution/execution.module';
 
     // Story 3.8 - QA Metrics & Prometheus Integration
     QaMetricsService,
+
+    // Story 8.1 - QA Review Queue & Sampling Configuration
+    // Sampling Strategy Services
+    QaSamplingConfigService,
+    RiskScoringService,
+    PercentageSamplingStrategy,
+    RiskBasedSamplingStrategy,
+    CompositeSamplingStrategy,
+    QaSamplingService,
+    // Queue Management Service
+    QaReviewQueueService,
+    // Metrics Service
+    QaReviewMetricsService,
+    // RabbitMQ Consumers
+    QaReviewQueueConsumer,
+    QaReviewQueueLegacyConsumer,
+    // Story 8.1 - Prometheus Metrics for QA Review Queue
+    makeGaugeProvider({
+      name: QA_METRICS.REVIEW_QUEUE_DEPTH,
+      help: 'Current QA review queue size by status',
+      labelNames: ['status'],
+    }),
+    makeGaugeProvider({
+      name: QA_METRICS.REVIEW_SAMPLING_RATE,
+      help: 'Configured sampling percentage',
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.REVIEW_TICKETS_SAMPLED_TOTAL,
+      help: 'Total tickets sampled by strategy',
+      labelNames: ['strategy', 'risk_level'],
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.REVIEW_TICKETS_BY_RISK_TOTAL,
+      help: 'Total tickets sampled by risk level',
+      labelNames: ['risk_level'],
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.REVIEW_QUEUE_DURATION_SECONDS,
+      help: 'Time from queue entry to review decision',
+      labelNames: ['risk_level'],
+      buckets: [60, 300, 600, 1800, 3600, 7200, 14400], // 1min to 4 hours
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.REVIEW_DECISIONS_TOTAL,
+      help: 'Review decisions by outcome',
+      labelNames: ['decision'],
+    }),
+
     // Note: Other QUEUE_METRICS are registered in AppMetricsModule (Story 1.8)
   ],
   exports: [
@@ -142,6 +216,13 @@ import { ExecutionModule } from '../execution/execution.module';
     QaCheckPublisher, // Story 3.7
     QaCheckConsumer, // Story 3.7
     QaMetricsService, // Story 3.8
+    // Story 8.1 - Export services for use by other modules
+    QaSamplingConfigService,
+    QaSamplingService,
+    RiskScoringService,
+    QaReviewQueueService,
+    QaReviewMetricsService,
+    QaReviewQueueConsumer,
   ],
 })
 export class QaAutomationModule {}

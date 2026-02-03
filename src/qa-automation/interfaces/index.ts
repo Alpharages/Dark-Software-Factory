@@ -12,3 +12,4 @@ export * from './security-scanner.interface';
 export * from './quality-gate.interface';
 export * from './qa-results.interface';
 export * from './qa-queue.interface';
+export * from './qa-sampling.interface';

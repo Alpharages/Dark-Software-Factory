@@ -601,7 +601,14 @@ development_status:
   epic-8: backlog
   epic-8-dependencies-v3: "Epic 3 (QA Automation), Epic 13 (AI Self-Healing)"
   epic-8-notes: "Lead QA manual review workflow. CLEAR SEPARATION: Epic 8 = manual review by Lead QA, Epic 13 = automated AI self-healing. Lead QA reviews QA results + AI self-heal attempts before production approval. See v3-epic-impact-analysis.md."
-  8-1-qa-review-queue-sampling-configuration: backlog
+  8-1-qa-review-queue-sampling-configuration:
+    status: done
+    priority: high
+    effort: "2 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/8-1-qa-review-queue-sampling-configuration.md"
+    code_review_date: "2026-02-03"
+    notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Fixed retry logic with actual RabbitMQ publish, implemented real metrics aggregation, corrected risk multiplier calculation per AC#2, fixed Gauge metric type. All ACs met."
   8-2-qa-code-review-interface:
     status: backlog
     delegation_opportunity: "IDENTIFIED 2025-12-07 - ENHANCEMENT"

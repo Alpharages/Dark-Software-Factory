@@ -218,6 +218,23 @@ export const RiskLevel = {
 
 export type RiskLevel = (typeof RiskLevel)[keyof typeof RiskLevel];
 
+export const QaReviewStatus = {
+  PENDING: 'PENDING',
+  IN_REVIEW: 'IN_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export type QaReviewStatus = (typeof QaReviewStatus)[keyof typeof QaReviewStatus];
+
+export const SamplingStrategy = {
+  PERCENTAGE: 'PERCENTAGE',
+  RISK_BASED: 'RISK_BASED',
+  RANDOM: 'RANDOM',
+} as const;
+
+export type SamplingStrategy = (typeof SamplingStrategy)[keyof typeof SamplingStrategy];
+
 export const InvitationStatus = {
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
