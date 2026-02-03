@@ -132,6 +132,11 @@ export type WorkspaceArchive = Prisma.WorkspaceArchiveModel;
  */
 export type ApprovalRecord = Prisma.ApprovalRecordModel;
 /**
+ * Model ProductionApproval
+ *
+ */
+export type ProductionApproval = Prisma.ProductionApprovalModel;
+/**
  * Model User
  *
  */

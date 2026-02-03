@@ -398,6 +398,7 @@ export const ModelName = {
   TicketDependency: 'TicketDependency',
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
+  ProductionApproval: 'ProductionApproval',
   User: 'User',
   UtilizationHistory: 'UtilizationHistory',
   ClientConversation: 'ClientConversation',
@@ -455,6 +456,7 @@ export type TypeMap<
       | 'ticketDependency'
       | 'workspaceArchive'
       | 'approvalRecord'
+      | 'productionApproval'
       | 'user'
       | 'utilizationHistory'
       | 'clientConversation'
@@ -2196,6 +2198,82 @@ export type TypeMap<
         };
       };
     };
+    ProductionApproval: {
+      payload: Prisma.$ProductionApprovalPayload<ExtArgs>;
+      fields: Prisma.ProductionApprovalFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.ProductionApprovalFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.ProductionApprovalFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>;
+        };
+        findFirst: {
+          args: Prisma.ProductionApprovalFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.ProductionApprovalFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>;
+        };
+        findMany: {
+          args: Prisma.ProductionApprovalFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>[];
+        };
+        create: {
+          args: Prisma.ProductionApprovalCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>;
+        };
+        createMany: {
+          args: Prisma.ProductionApprovalCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.ProductionApprovalCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>[];
+        };
+        delete: {
+          args: Prisma.ProductionApprovalDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>;
+        };
+        update: {
+          args: Prisma.ProductionApprovalUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>;
+        };
+        deleteMany: {
+          args: Prisma.ProductionApprovalDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.ProductionApprovalUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.ProductionApprovalUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>[];
+        };
+        upsert: {
+          args: Prisma.ProductionApprovalUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionApprovalPayload>;
+        };
+        aggregate: {
+          args: Prisma.ProductionApprovalAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProductionApproval>;
+        };
+        groupBy: {
+          args: Prisma.ProductionApprovalGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.ProductionApprovalGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.ProductionApprovalCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.ProductionApprovalCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
     User: {
       payload: Prisma.$UserPayload<ExtArgs>;
       fields: Prisma.UserFieldRefs;
@@ -3672,6 +3750,18 @@ export const ApprovalRecordScalarFieldEnum = {
 export type ApprovalRecordScalarFieldEnum =
   (typeof ApprovalRecordScalarFieldEnum)[keyof typeof ApprovalRecordScalarFieldEnum];
 
+export const ProductionApprovalScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  approver_id: 'approver_id',
+  decision: 'decision',
+  override_reason: 'override_reason',
+  created_at: 'created_at',
+} as const;
+
+export type ProductionApprovalScalarFieldEnum =
+  (typeof ProductionApprovalScalarFieldEnum)[keyof typeof ProductionApprovalScalarFieldEnum];
+
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -4525,6 +4615,7 @@ export type GlobalOmitConfig = {
   ticketDependency?: Prisma.TicketDependencyOmit;
   workspaceArchive?: Prisma.WorkspaceArchiveOmit;
   approvalRecord?: Prisma.ApprovalRecordOmit;
+  productionApproval?: Prisma.ProductionApprovalOmit;
   user?: Prisma.UserOmit;
   utilizationHistory?: Prisma.UtilizationHistoryOmit;
   clientConversation?: Prisma.ClientConversationOmit;

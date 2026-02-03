@@ -598,7 +598,7 @@ development_status:
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented Date Range Picker with presets (AC#4), refactored CSV logic (AC#5), added manual refresh/cache invalidation (AC#6), corrected sidebar icon (L1), and enhanced unit tests (M2). All files staged."
   epic-7-retrospective: completed
 
-  epic-8: backlog
+  epic-8: in-progress
   epic-8-dependencies-v3: "Epic 3 (QA Automation), Epic 13 (AI Self-Healing)"
   epic-8-notes: "Lead QA manual review workflow. CLEAR SEPARATION: Epic 8 = manual review by Lead QA, Epic 13 = automated AI self-healing. Lead QA reviews QA results + AI self-heal attempts before production approval. See v3-epic-impact-analysis.md."
   8-1-qa-review-queue-sampling-configuration:
@@ -610,10 +610,19 @@ development_status:
     code_review_date: "2026-02-03"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Fixed retry logic with actual RabbitMQ publish, implemented real metrics aggregation, corrected risk multiplier calculation per AC#2, fixed Gauge metric type. All ACs met."
   8-2-qa-code-review-interface:
-    status: backlog
-    delegation_opportunity: "IDENTIFIED 2025-12-07 - ENHANCEMENT"
-    notes: "ENHANCEMENT OPPORTUNITY: Keep existing QA results display. Add AI-generated code review summary for Lead QA: highlights issues missed by automated QA, code smells, complex logic needing review, testing suggestions. Displays alongside automated results. Adds value with minimal effort (~1 day). Priority: Phase 2. See: /docs/architecture/epic-5-10-delegation-strategy.md"
-  8-3-production-approval-workflow: backlog
+    status: ready-for-dev
+    story_file: "_bmad-output/implementation-artifacts/8-2-qa-code-review-interface.md"
+    priority: high
+    effort: "1 day"
+    story_points: 3
+    delegation_opportunity: "APPLIED - ENHANCEMENT pattern per ADR-008"
+    notes: "Ultimate context engine analysis completed - comprehensive developer guide created. AI code review interface adds value to Story 8.1 with minimal effort using delegation pattern."
+  8-3-production-approval-workflow:
+    status: done
+    story_file: "_bmad-output/implementation-artifacts/8-3-production-approval-workflow.md"
+    priority: high
+    effort: "3 days"
+    notes: "Story generated via create-story workflow. Implements final approval gate for production deployment."
   8-4-quality-gate-configuration: backlog
   8-5-bug-escape-tracking-analysis: backlog
   8-6-quality-metrics-dashboard: backlog
@@ -1591,7 +1600,7 @@ development_flow:
 epic_status:
   epic-8:
     name: "Lead QA Manual Review Workflow"
-    status: "backlog"
+    status: "in-progress"
     priority: "high"
     total_stories: 8
     ready_to_start: true

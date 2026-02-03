@@ -71,6 +71,7 @@ export const ModelName = {
   TicketDependency: 'TicketDependency',
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
+  ProductionApproval: 'ProductionApproval',
   User: 'User',
   UtilizationHistory: 'UtilizationHistory',
   ClientConversation: 'ClientConversation',
@@ -483,6 +484,18 @@ export const ApprovalRecordScalarFieldEnum = {
 
 export type ApprovalRecordScalarFieldEnum =
   (typeof ApprovalRecordScalarFieldEnum)[keyof typeof ApprovalRecordScalarFieldEnum];
+
+export const ProductionApprovalScalarFieldEnum = {
+  id: 'id',
+  ticket_id: 'ticket_id',
+  approver_id: 'approver_id',
+  decision: 'decision',
+  override_reason: 'override_reason',
+  created_at: 'created_at',
+} as const;
+
+export type ProductionApprovalScalarFieldEnum =
+  (typeof ProductionApprovalScalarFieldEnum)[keyof typeof ProductionApprovalScalarFieldEnum];
 
 export const UserScalarFieldEnum = {
   id: 'id',

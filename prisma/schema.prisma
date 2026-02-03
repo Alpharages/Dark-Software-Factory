@@ -73,6 +73,7 @@ model Ticket {
   conversation      ClientConversation? @relation("ConversationTickets", fields: [conversation_id], references: [id]) // Story 5.5
   conversation_id   String? // Story 5.5: Optional link to conversation
   adrs              Adr[] // One-to-many: Architecture Decision Records (Story 7.1)
+  production_approvals ProductionApproval[] // Story 8.3: One-to-many relation for approvals
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -768,6 +769,24 @@ enum ApprovalDecision {
   REJECT
   REWORK
   ESCALATE
+}
+
+// ============================================
+// STORY 8.3: PRODUCTION APPROVAL
+// ============================================
+
+model ProductionApproval {
+  id              String           @id @default(uuid())
+  ticket_id       String
+  ticket          Ticket           @relation(fields: [ticket_id], references: [id])
+  approver_id     String // ID of the user (Lead QA/PM)
+  decision        ApprovalDecision // Re-using existing enum
+  override_reason String?          @db.Text
+  created_at      DateTime         @default(now())
+
+  @@index([ticket_id])
+  @@index([approver_id])
+  @@map("production_approvals")
 }
 
 // ============================================

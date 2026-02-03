@@ -31,6 +31,7 @@ import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.4: Self-Healing Integration
 import { ExecutionModule } from '../execution/execution.module';
+import { ProductionApprovalModule } from './production-approval/production-approval.module';
 
 // Story 8.1: QA Review Queue & Sampling Configuration
 import { QaSamplingConfigService } from './services/qa-sampling-config.service';
@@ -65,6 +66,8 @@ import {
     AIDecisionLoggerModule,
     // Story 13.4: Self-Healing Integration
     forwardRef(() => ExecutionModule), // Provides SelfHealingOrchestratorService
+    // Story 8.3: Production Approval
+    ProductionApprovalModule,
   ],
   controllers: [
     QaResultsController,
