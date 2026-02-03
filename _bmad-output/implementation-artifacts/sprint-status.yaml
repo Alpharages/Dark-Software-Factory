@@ -1323,8 +1323,8 @@ development_status:
   epic-20: in-progress
   epic-20-name: "AI Task Pickup Reliability"
   20-OLD-1-provider-agnostic-ai-intake:
-    status: in-progress
-    notes: "Refactoring into 20.1/20.2"
+    status: done
+    notes: "COMPLETED via split stories 20.1, 20.2, 20.3. Provider-agnostic ITaskEvent interface implemented, TicketIntakeService refactored, ProjectService sync publishes ITaskEvent to queue, WebhookConsumer maps to ITaskEvent, idempotency checks in place. 180 tests passing."
   
   20-1-implement-robust-webhook-handler:
     status: done
