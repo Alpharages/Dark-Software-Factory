@@ -421,5 +421,100 @@ describe('PtyExecutionService', () => {
 
       expect(errorReceived).toBe(true);
     });
+
+    // Story 23.3: Resource Limit Enforcement Tests
+    describe('resource profile selection', () => {
+      it('should select small profile for complexity <= 3', () => {
+        expect(PtyExecutionService.selectResourceProfile(0)).toBe('small');
+        expect(PtyExecutionService.selectResourceProfile(1)).toBe('small');
+        expect(PtyExecutionService.selectResourceProfile(3)).toBe('small');
+      });
+
+      it('should select medium profile for complexity 4-7', () => {
+        expect(PtyExecutionService.selectResourceProfile(4)).toBe('medium');
+        expect(PtyExecutionService.selectResourceProfile(5)).toBe('medium');
+        expect(PtyExecutionService.selectResourceProfile(7)).toBe('medium');
+      });
+
+      it('should select large profile for complexity > 7', () => {
+        expect(PtyExecutionService.selectResourceProfile(8)).toBe('large');
+        expect(PtyExecutionService.selectResourceProfile(10)).toBe('large');
+        expect(PtyExecutionService.selectResourceProfile(15)).toBe('large');
+      });
+    });
+
+    it('should pass resource profile to runContainer', async () => {
+      const executionId = 'exec-resource';
+      const workspacePath = '/tmp/workspaces/exec-resource';
+      const containerId = 'container-resource';
+
+      mockDockerService.isConnected.mockReturnValue(true);
+      mockWorkspaceService.createWorkspace.mockResolvedValue(workspacePath);
+
+      const mockStream = {
+        on: jest.fn(),
+        write: jest.fn(),
+        destroy: jest.fn(),
+        destroyed: false,
+      };
+
+      mockDockerService.runContainer.mockResolvedValue({
+        container: { id: containerId },
+        stream: mockStream,
+      });
+
+      mockDockerService.waitForContainer.mockResolvedValue({ StatusCode: 0 });
+
+      await service.spawnInContainer('echo', ['hello'], {
+        executionId,
+        resourceProfile: 'large',
+        memoryLimit: 1073741824, // 1GB in bytes
+        cpuLimit: 2, // 2 CPUs
+      });
+
+      // Verify resource limits are passed to runContainer
+      expect(mockDockerService.runContainer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          image: 'dsf-agent-base',
+          resourceProfile: 'large',
+          memoryLimit: 1073741824,
+          cpuLimit: 2,
+        }),
+      );
+    });
+
+    it('should spawn with automatic profile selection', async () => {
+      const executionId = 'exec-profile';
+      const workspacePath = '/tmp/workspaces/exec-profile';
+      const containerId = 'container-profile';
+
+      mockDockerService.isConnected.mockReturnValue(true);
+      mockWorkspaceService.createWorkspace.mockResolvedValue(workspacePath);
+
+      const mockStream = {
+        on: jest.fn(),
+        write: jest.fn(),
+        destroy: jest.fn(),
+        destroyed: false,
+      };
+
+      mockDockerService.runContainer.mockResolvedValue({
+        container: { id: containerId },
+        stream: mockStream,
+      });
+
+      mockDockerService.waitForContainer.mockResolvedValue({ StatusCode: 0 });
+
+      await service.spawnWithProfile('echo', ['hello'], 8, {
+        executionId,
+      });
+
+      // Complexity 8 should select 'large' profile
+      expect(mockDockerService.runContainer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceProfile: 'large',
+        }),
+      );
+    });
   });
 });

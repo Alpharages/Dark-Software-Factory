@@ -10,6 +10,7 @@ import { DockerService } from '@/docker/docker.service';
 import { WorkspaceService } from '@/docker/workspace.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
+import { ResourceProfile } from '@/docker/interfaces/resource-profile.interface';
 
 export interface SpawnOptions {
   name?: string;
@@ -22,6 +23,12 @@ export interface SpawnOptions {
 export interface ContainerSpawnOptions extends SpawnOptions {
   executionId: string;
   ticketId?: string;
+  /** Resource profile for container execution (Story 23.3) */
+  resourceProfile?: ResourceProfile;
+  /** Explicit memory limit in bytes (overrides profile) */
+  memoryLimit?: number;
+  /** Explicit CPU limit (percentage of single core, overrides profile) */
+  cpuLimit?: number;
 }
 
 export interface ContainerSpawnResult {
@@ -330,6 +337,7 @@ export class PtyExecutionService implements OnModuleDestroy {
     const fullCommand = [command, ...args];
 
     // Run container with dsf-agent-base image
+    // Story 23.3: Pass resource limits to container
     const { container, stream } = await this.dockerService.runContainer({
       image: 'dsf-agent-base',
       command: fullCommand,
@@ -343,6 +351,9 @@ export class PtyExecutionService implements OnModuleDestroy {
         ...options.env,
         NODE_ENV: process.env.NODE_ENV || 'development',
       },
+      resourceProfile: options.resourceProfile,
+      memoryLimit: options.memoryLimit,
+      cpuLimit: options.cpuLimit,
     });
 
     this.logger.log(`[${executionId}] Container started: ${container.id}`);
@@ -661,6 +672,48 @@ export class PtyExecutionService implements OnModuleDestroy {
       ptyProcess.kill(signal);
       this.processes.delete(pid);
     }
+  }
+
+  /**
+   * Determine resource profile based on execution complexity
+   * Story 23.3: Resource Limit Enforcement
+   * @param complexityScore Complexity score (0-10+)
+   * @returns ResourceProfile ('small', 'medium', or 'large')
+   */
+  static selectResourceProfile(complexityScore: number): ResourceProfile {
+    if (complexityScore <= 3) {
+      return 'small';
+    } else if (complexityScore <= 7) {
+      return 'medium';
+    } else {
+      return 'large';
+    }
+  }
+
+  /**
+   * Spawn a container with automatic resource profile selection
+   * Story 23.3: Resource Limit Enforcement
+   * @param command Command to run
+   * @param args Command arguments
+   * @param complexityScore Complexity score for resource profile selection
+   * @param options Container spawn options
+   * @returns ContainerSpawnResult
+   */
+  async spawnWithProfile(
+    command: string,
+    args: string[],
+    complexityScore: number,
+    options: Omit<ContainerSpawnOptions, 'resourceProfile'>,
+  ): Promise<ContainerSpawnResult> {
+    const resourceProfile = PtyExecutionService.selectResourceProfile(complexityScore);
+    this.logger.log(
+      `[${options.executionId}] Selected resource profile: ${resourceProfile} (complexity: ${complexityScore})`,
+    );
+
+    return this.spawnInContainer(command, args, {
+      ...options,
+      resourceProfile,
+    });
   }
 
   onModuleDestroy() {

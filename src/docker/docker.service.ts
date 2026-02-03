@@ -1,8 +1,16 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import type { Gauge, Counter } from 'prom-client';
 import Dockerode from 'dockerode';
 import * as path from 'path';
 import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
+import {
+  ResourceProfile,
+  getResourceProfile,
+  mbToBytes,
+  cpuPercentToQuota,
+} from './interfaces/resource-profile.interface';
 
 export interface ContainerStreamOptions {
   /** Container ID to attach to */
@@ -57,10 +65,12 @@ export interface RunContainerOptions {
   name?: string;
   /** Network mode */
   networkMode?: string;
-  /** Memory limit in bytes */
+  /** Memory limit in bytes (overrides profile and config) */
   memoryLimit?: number;
-  /** CPU limit (percentage of single CPU, e.g., 1.5 = 1.5 CPUs) */
+  /** CPU limit (percentage of single CPU, e.g., 1.5 = 1.5 CPUs) - overrides profile and config */
   cpuLimit?: number;
+  /** Resource profile to use (small/medium/large/custom) - uses config defaults if not specified */
+  resourceProfile?: ResourceProfile;
 }
 
 export interface ContainerExecResult {
@@ -83,7 +93,19 @@ export class DockerService implements OnModuleInit {
   private connected = false;
   private socketPath: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectMetric('sandbox_container_memory_limit_bytes')
+    private readonly memoryLimitGauge: Gauge<string>,
+    @InjectMetric('sandbox_container_cpu_limit_percent')
+    private readonly cpuLimitGauge: Gauge<string>,
+    @InjectMetric('sandbox_container_oom_events_total')
+    private readonly oomCounter: Counter<string>,
+    @InjectMetric('sandbox_container_cpu_throttled_seconds_total')
+    private readonly cpuThrottledCounter: Counter<string>,
+    @InjectMetric('sandbox_container_memory_usage_bytes')
+    private readonly memoryUsageGauge: Gauge<string>,
+  ) {
     this.socketPath = this.configService.get<string>('DOCKER_SOCKET_PATH', '/var/run/docker.sock');
   }
 
@@ -294,6 +316,7 @@ export class DockerService implements OnModuleInit {
 
   /**
    * Run a new container (create + start + attach in one flow)
+   * Story 23.3: Resource Limit Enforcement - integrated config-based limits
    * @param options Container run options
    * @returns Object with container instance and stream
    */
@@ -314,8 +337,9 @@ export class DockerService implements OnModuleInit {
       autoRemove = true,
       name,
       networkMode,
-      memoryLimit,
-      cpuLimit,
+      memoryLimit: explicitMemoryLimit,
+      cpuLimit: explicitCpuLimit,
+      resourceProfile,
     } = options;
 
     try {
@@ -337,13 +361,22 @@ export class DockerService implements OnModuleInit {
         hostConfig.NetworkMode = networkMode;
       }
 
-      if (memoryLimit) {
-        hostConfig.Memory = memoryLimit;
+      // Story 23.3: Apply resource limits from config, profile, or explicit values
+      const resourceLimits = this.buildResourceLimits({
+        explicitMemoryLimit,
+        explicitCpuLimit,
+        resourceProfile,
+      });
+
+      if (resourceLimits.memoryBytes > 0) {
+        hostConfig.Memory = resourceLimits.memoryBytes;
+        hostConfig.MemorySwap = resourceLimits.swapBytes;
+        hostConfig.OomKillDisable = resourceLimits.oomKillDisable;
       }
 
-      if (cpuLimit) {
-        hostConfig.CpuQuota = Math.round(cpuLimit * 100000);
-        hostConfig.CpuPeriod = 100000;
+      if (resourceLimits.cpuQuota > 0) {
+        hostConfig.CpuQuota = resourceLimits.cpuQuota;
+        hostConfig.CpuPeriod = resourceLimits.cpuPeriod;
       }
 
       const createOptions: Dockerode.ContainerCreateOptions = {
@@ -362,6 +395,22 @@ export class DockerService implements OnModuleInit {
 
       if (name) {
         createOptions.name = name;
+      }
+
+      // Log resource limits for auditability (Story 23.3 AC)
+      if (resourceLimits.memoryBytes > 0 || resourceLimits.cpuQuota > 0) {
+        this.logger.log(
+          `Container ${name || '(unnamed)'} resource limits - Memory: ${resourceLimits.memoryBytes} bytes, ` +
+            `CPU Quota: ${resourceLimits.cpuQuota}, Period: ${resourceLimits.cpuPeriod}`,
+        );
+
+        // Record metrics
+        const profileLabel = options.resourceProfile || 'config_default';
+        this.memoryLimitGauge.set({ profile: profileLabel }, resourceLimits.memoryBytes);
+        this.cpuLimitGauge.set(
+          { profile: profileLabel },
+          Math.round((resourceLimits.cpuQuota / resourceLimits.cpuPeriod) * 100),
+        );
       }
 
       // Create and start container
@@ -383,6 +432,77 @@ export class DockerService implements OnModuleInit {
       this.logger.error(`Failed to run container: ${errorMessage}`);
       throw new InfrastructureException(`Failed to run container: ${errorMessage}`, error);
     }
+  }
+
+  /**
+   * Build resource limits from configuration, profile, or explicit values
+   * Story 23.3: Resource Limit Enforcement
+   */
+  private buildResourceLimits(options: {
+    explicitMemoryLimit?: number;
+    explicitCpuLimit?: number;
+    resourceProfile?: ResourceProfile;
+  }): {
+    memoryBytes: number;
+    swapBytes: number;
+    cpuQuota: number;
+    cpuPeriod: number;
+    oomKillDisable: boolean;
+  } {
+    // Check if resource limits are enabled
+    const limitsEnabled = this.configService.get<boolean>('sandbox.resourceLimits.enabled', true);
+
+    if (!limitsEnabled) {
+      this.logger.debug('Resource limits disabled via configuration');
+      return {
+        memoryBytes: 0,
+        swapBytes: 0,
+        cpuQuota: 0,
+        cpuPeriod: 100000,
+        oomKillDisable: false,
+      };
+    }
+
+    let memoryMB: number;
+    let cpuPercent: number;
+    let swapMB: number;
+
+    // Priority 1: Explicit values override everything
+    if (options.explicitMemoryLimit && options.explicitMemoryLimit > 0) {
+      memoryMB = Math.round(options.explicitMemoryLimit / (1024 * 1024));
+      cpuPercent = options.explicitCpuLimit ? Math.round(options.explicitCpuLimit * 100) : 100;
+      swapMB = memoryMB; // Match memory by default for explicit limits
+      this.logger.debug('Using explicit resource limits');
+    }
+    // Priority 2: Resource profile (if specified and not 'custom')
+    else if (options.resourceProfile && options.resourceProfile !== 'custom') {
+      const profile = getResourceProfile(options.resourceProfile);
+      memoryMB = profile.memoryLimitMB;
+      cpuPercent = profile.cpuLimitPercent;
+      swapMB = profile.swapLimitMB;
+      this.logger.debug(`Using resource profile: ${options.resourceProfile}`);
+    }
+    // Priority 3: Config defaults
+    else {
+      memoryMB = this.configService.get<number>('sandbox.resourceLimits.defaultMemoryLimitMB', 512);
+      cpuPercent = this.configService.get<number>(
+        'sandbox.resourceLimits.defaultCpuLimitPercent',
+        100,
+      );
+      swapMB = this.configService.get<number>('sandbox.resourceLimits.defaultSwapLimitMB', 512);
+      this.logger.debug('Using config default resource limits');
+    }
+
+    // Convert to Docker API format
+    const { cpuQuota, cpuPeriod } = cpuPercentToQuota(cpuPercent);
+
+    return {
+      memoryBytes: mbToBytes(memoryMB),
+      swapBytes: mbToBytes(swapMB),
+      cpuQuota,
+      cpuPeriod,
+      oomKillDisable: false, // Allow OOM killer (security > availability)
+    };
   }
 
   /**
@@ -563,6 +683,66 @@ export class DockerService implements OnModuleInit {
     const normalizedHostPath = isWindows ? hostPath.replace(/\\/g, '/') : hostPath;
 
     return `${normalizedHostPath}:${containerPath}:${mode}`;
+  }
+
+  /**
+   * Record an OOM event for a container
+   * Story 23.3: Resource Limit Enforcement
+   * @param executionId Execution ID for labeling
+   */
+  recordOomEvent(executionId: string): void {
+    this.oomCounter.inc({ execution_id: executionId });
+    this.logger.warn(`[${executionId}] Container OOM event recorded`);
+  }
+
+  /**
+   * Record CPU throttled time for a container
+   * Story 23.3: Resource Limit Enforcement
+   * @param executionId Execution ID for labeling
+   * @param seconds Number of seconds CPU was throttled
+   */
+  recordCpuThrottled(executionId: string, seconds: number): void {
+    this.cpuThrottledCounter.inc({ execution_id: executionId }, seconds);
+  }
+
+  /**
+   * Update memory usage gauge for a container
+   * Story 23.3: Resource Limit Enforcement
+   * @param executionId Execution ID for labeling
+   * @param bytes Memory usage in bytes
+   */
+  updateMemoryUsage(executionId: string, bytes: number): void {
+    this.memoryUsageGauge.set({ execution_id: executionId }, bytes);
+  }
+
+  /**
+   * Inspect container and update resource metrics
+   * Story 23.3: Resource Limit Enforcement
+   * @param containerId Container ID to inspect
+   * @param executionId Execution ID for labeling
+   */
+  async updateResourceMetrics(containerId: string, executionId: string): Promise<void> {
+    try {
+      const container = this.docker.getContainer(containerId);
+      const stats = await container.stats({ stream: false });
+
+      // Update memory usage
+      if (stats.memory_stats?.usage) {
+        this.updateMemoryUsage(executionId, stats.memory_stats.usage);
+      }
+
+      // Check for CPU throttling
+      if (stats.cpu_stats?.throttling_data?.throttled_time) {
+        const throttledNanos = stats.cpu_stats.throttling_data.throttled_time;
+        const throttledSeconds = throttledNanos / 1e9;
+        if (throttledSeconds > 0) {
+          this.recordCpuThrottled(executionId, throttledSeconds);
+        }
+      }
+    } catch (error) {
+      // Silently ignore - metrics are best-effort
+      this.logger.debug(`Failed to update resource metrics for ${executionId}: ${error}`);
+    }
   }
 
   /**

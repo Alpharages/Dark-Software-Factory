@@ -1386,5 +1386,9 @@ development_status:
     developer: "Antigravity"
     notes: "Code review completed with fixes. All ACs met: container removal after execution, workspace cleanup with debug mode support, force kill for timeout/cancel, Prometheus metrics (5/5), background cleanup job every 5 minutes. Fixed: test bug, missing container assignment in pty-execution.service.ts, added orphaned resources gauge, wired up timeout config. 34 tests passing (18 cleanup + 16 pty-execution)."
     story_file: "_bmad-output/implementation-artifacts/23-2-automated-container-cleanup.md"
-  23-3-resource-limit-enforcement: backlog
+  23-3-resource-limit-enforcement:
+    status: done
+    developer: "Antigravity"
+    notes: "Code review completed. All ACs met: Resource limit configuration added (env.validation.ts, configuration.ts), DockerService integration with config-based limits and profiles, Prometheus metrics (5/5), PTY Execution Service integration with resourceProfile support, comprehensive unit tests. Lint: clean. Tests: 46 passing."
+    story_file: "_bmad-output/implementation-artifacts/23-3-resource-limit-enforcement.md"
 

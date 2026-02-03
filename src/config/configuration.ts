@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 /**
  * Type-safe configuration object
  * Loaded from environment variables with validation
@@ -273,6 +275,19 @@ export default () => {
       rabbitmqManagementUser: process.env.RABBITMQ_MANAGEMENT_USER || 'guest',
       rabbitmqManagementPassword: process.env.RABBITMQ_MANAGEMENT_PASSWORD || 'guest',
       prometheusUrl: process.env.PROMETHEUS_URL || 'http://localhost:9090',
+    },
+
+    // Story 23.3: Sandbox Resource Limit Configuration
+    sandbox: {
+      resourceLimits: {
+        enabled: process.env.SANDBOX_ENABLE_RESOURCE_LIMITS !== 'false',
+        defaultMemoryLimitMB: parseInt(process.env.SANDBOX_MEMORY_LIMIT_MB || '512', 10),
+        defaultCpuLimitPercent: parseInt(process.env.SANDBOX_CPU_LIMIT_PERCENT || '100', 10),
+        defaultSwapLimitMB: parseInt(process.env.SANDBOX_MEMORY_SWAP_LIMIT_MB || '512', 10),
+      },
+      workspacesRoot: process.env.SANDBOX_WORKSPACES_ROOT || path.join(process.cwd(), 'workspaces'),
+      containerTimeoutMs: parseInt(process.env.DOCKER_CONTAINER_TIMEOUT_MS || '300000', 10),
+      containerExecutionEnabled: process.env.ENABLE_CONTAINER_EXECUTION === 'true',
     },
   };
 };
