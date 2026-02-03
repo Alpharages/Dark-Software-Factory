@@ -1375,7 +1375,7 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/22-4-container-execution-log-streaming.md"
   epic-22-retrospective: done
 
-  epic-23: in_progress
+  epic-23: done
   epic-23-name: "Intelligent Sandbox Lifecycle & Optimization"
   23-1-local-git-mirror-service:
     status: done
@@ -1392,4 +1392,5 @@ development_status:
     developer: "Antigravity"
     notes: "Code review completed. All ACs met: Resource limit configuration added (env.validation.ts, configuration.ts), DockerService integration with config-based limits and profiles, Prometheus metrics (5/5), PTY Execution Service integration with resourceProfile support, comprehensive unit tests. Lint: clean. Tests: 46 passing."
     story_file: "_bmad-output/implementation-artifacts/23-3-resource-limit-enforcement.md"
+  epic-23-retrospective: done
 
