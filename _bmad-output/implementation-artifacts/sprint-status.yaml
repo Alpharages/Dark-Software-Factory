@@ -1041,7 +1041,7 @@ development_status:
     test_results: "✅ Frontend tests passing, ✅ Backend tests passing"
 
   16-5-ai-decision-logging-module:
-    status: ready-for-dev
+    status: done
     developer: "Antigravity"
     priority: medium
     effort: "1 day"
@@ -1445,7 +1445,9 @@ priority_sequence:
         reason: "Quick win - already ready-for-dev. Follow-up to Story 16-4. Medium effort (1 day)."
         estimated_effort: "1 day"
         story_points: 3
-        status: "ready-for-dev"
+        status: "done"
+        completed_date: "2026-02-03"
+        notes: "All code review issues fixed. 8 issues resolved including critical audit log ordering, silent failure handling, and confidence validation."
       
       - id: "8-1"
         story: "qa-review-queue-sampling-configuration"

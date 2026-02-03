@@ -230,6 +230,52 @@ describe('AIDecisionLoggerService', () => {
       });
     });
 
+    // Fix: Issue #6 - Test confidence value validation
+    it('should clamp confidence value below 0 to 0', async () => {
+      prisma.aIDecisionLog.create.mockResolvedValue(mockAIDecisionLog);
+
+      await service.logDecision({
+        ...validDecisionInput,
+        confidence: -0.5, // Invalid: below range
+      });
+
+      expect(prisma.aIDecisionLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          confidence: 0, // Clamped to minimum
+        }),
+      });
+    });
+
+    it('should clamp confidence value above 1 to 1', async () => {
+      prisma.aIDecisionLog.create.mockResolvedValue(mockAIDecisionLog);
+
+      await service.logDecision({
+        ...validDecisionInput,
+        confidence: 1.5, // Invalid: above range
+      });
+
+      expect(prisma.aIDecisionLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          confidence: 1, // Clamped to maximum
+        }),
+      });
+    });
+
+    it('should handle NaN confidence value gracefully', async () => {
+      prisma.aIDecisionLog.create.mockResolvedValue(mockAIDecisionLog);
+
+      await service.logDecision({
+        ...validDecisionInput,
+        confidence: NaN, // Invalid: NaN
+      });
+
+      expect(prisma.aIDecisionLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          confidence: 0, // Falls back to 0
+        }),
+      });
+    });
+
     it('should handle optional executionId parameter', async () => {
       prisma.aIDecisionLog.create.mockResolvedValue(mockAIDecisionLog);
 

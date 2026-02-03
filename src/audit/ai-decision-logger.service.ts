@@ -8,12 +8,28 @@ import { AIDecisionLog, Prisma } from '@/prisma/client';
 @Injectable()
 export class AIDecisionLoggerService {
   private readonly logger = new Logger(AIDecisionLoggerService.name);
+  // Fix: Issue #5 - Cache confidence threshold to avoid env var reads on every call
+  private readonly confidenceThreshold: number;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly sentry: SentryService,
     private readonly metrics: MetricsService,
-  ) {}
+  ) {
+    // Parse once at initialization
+    const envThreshold = process.env.AI_CONFIDENCE_THRESHOLD;
+    this.confidenceThreshold = envThreshold ? parseFloat(envThreshold) : 0.5;
+
+    // Validate the cached value
+    if (
+      isNaN(this.confidenceThreshold) ||
+      this.confidenceThreshold < 0 ||
+      this.confidenceThreshold > 1
+    ) {
+      this.logger.warn(`Invalid AI_CONFIDENCE_THRESHOLD: "${envThreshold}". Using default 0.5`);
+      this.confidenceThreshold = 0.5;
+    }
+  }
 
   /**
    * Log an AI decision with full audit trail
@@ -30,6 +46,17 @@ export class AIDecisionLoggerService {
     outputData: Record<string, unknown>;
     confidence: number; // 0-1 range
   }): Promise<AIDecisionLog | null> {
+    // Fix: Issue #6 - Validate confidence value is within valid range
+    if (data.confidence < 0 || data.confidence > 1 || isNaN(data.confidence)) {
+      this.logger.error(`Invalid confidence value: ${data.confidence}. Must be between 0 and 1.`, {
+        agentName: data.agentName,
+        action: data.action,
+        ticketId: data.ticketId,
+      });
+      // Clamp to valid range rather than failing entirely
+      data.confidence = Math.max(0, Math.min(1, data.confidence || 0));
+    }
+
     try {
       // 1. Create database entry
       const log = await this.prisma.aIDecisionLog.create({
@@ -330,11 +357,11 @@ export class AIDecisionLoggerService {
   }
 
   /**
-   * Get confidence threshold from environment
+   * Get the cached confidence threshold
    * @private
    * @returns Configured threshold value
    */
   private getConfidenceThreshold(): number {
-    return parseFloat(process.env.AI_CONFIDENCE_THRESHOLD || '0.5');
+    return this.confidenceThreshold;
   }
 }

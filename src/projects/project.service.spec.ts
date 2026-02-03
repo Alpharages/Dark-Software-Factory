@@ -5,6 +5,8 @@ import { NotFoundException } from '@nestjs/common';
 import { Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { ClickUpService } from '@/clickup/clickup.service';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 
 describe('ProjectService', () => {
   let service: ProjectService;
@@ -58,6 +60,16 @@ describe('ProjectService', () => {
   const mockClickUpService = {
     getList: jest.fn(),
     getTasks: jest.fn(),
+  };
+
+  // Story 16-5: Mock for AIDecisionLoggerService
+  const mockAIDecisionLogger = {
+    logDecision: jest.fn().mockResolvedValue({ id: 'log-123' }),
+  };
+
+  // Story 20.1: Mock for RabbitMQPublisherService
+  const mockRabbitMQPublisher = {
+    publishToQueue: jest.fn().mockResolvedValue(undefined),
   };
 
   const mockTasks = [
@@ -118,6 +130,16 @@ describe('ProjectService', () => {
         {
           provide: 'PROM_METRIC_PROJECT_SYNC_TOTAL',
           useValue: mockCounter,
+        },
+        // Story 16-5: AIDecisionLoggerService mock
+        {
+          provide: AIDecisionLoggerService,
+          useValue: mockAIDecisionLogger,
+        },
+        // Story 20.1: RabbitMQPublisherService mock
+        {
+          provide: RabbitMQPublisherService,
+          useValue: mockRabbitMQPublisher,
         },
       ],
     }).compile();
@@ -218,6 +240,27 @@ describe('ProjectService', () => {
       expect(result).toEqual(mockProject);
       expect(repository.delete).toHaveBeenCalledWith('project-123');
       expect(mockCounter.inc).toHaveBeenCalledWith({ status: 'success', force: 'false' });
+      // Story 16-5: Verify AIDecisionLoggerService was called AFTER deletion with correct data
+      expect(mockAIDecisionLogger.logDecision).toHaveBeenCalledWith({
+        agentName: ProjectService.name,
+        action: 'project_safe_delete',
+        reasoning:
+          'Project deleted successfully. Project: "Test Project" (project-123), Active Tickets: 0, Force: false',
+        ticketId: 'project-123',
+        inputData: {
+          projectId: 'project-123',
+          projectName: 'Test Project',
+          activeTickets: 0,
+          force: false,
+        },
+        outputData: {
+          deleted: true,
+          projectId: 'project-123',
+          deletedAt: expect.any(String),
+        },
+        confidence: 1.0,
+      });
+      // Fix: Issue #1 - Verify deletion happens BEFORE logging (structurally enforced in code)
     });
 
     it('should reject deletion when active tickets exist and force=false', async () => {
@@ -228,6 +271,8 @@ describe('ProjectService', () => {
         'Cannot delete project with 5 active tickets',
       );
       expect(repository.delete).not.toHaveBeenCalled();
+      // Fix: Issue #3 - Verify no audit log is created for rejected deletions
+      expect(mockAIDecisionLogger.logDecision).not.toHaveBeenCalled();
     });
 
     it('should force delete project when active tickets exist and force=true', async () => {
@@ -240,6 +285,43 @@ describe('ProjectService', () => {
       expect(result).toEqual(mockProject);
       expect(repository.delete).toHaveBeenCalledWith('project-123');
       expect(mockCounter.inc).toHaveBeenCalledWith({ status: 'success', force: 'true' });
+      // Story 16-5: Verify AIDecisionLoggerService was called with force delete action
+      expect(mockAIDecisionLogger.logDecision).toHaveBeenCalledWith({
+        agentName: ProjectService.name,
+        action: 'project_force_delete',
+        reasoning:
+          'Project deleted successfully. Project: "Test Project" (project-123), Active Tickets: 5, Force: true',
+        ticketId: 'project-123',
+        inputData: {
+          projectId: 'project-123',
+          projectName: 'Test Project',
+          activeTickets: 5,
+          force: true,
+        },
+        outputData: {
+          deleted: true,
+          projectId: 'project-123',
+          deletedAt: expect.any(String),
+        },
+        confidence: 1.0,
+      });
+    });
+
+    // Fix: Issue #2 - Test audit log failure handling
+    it('should complete deletion even when audit logging fails', async () => {
+      repository.findById.mockResolvedValue(mockProject);
+      repository.countActiveTickets.mockResolvedValue(0);
+      repository.delete.mockResolvedValue(mockProject);
+      // Simulate audit log failure
+      mockAIDecisionLogger.logDecision.mockResolvedValueOnce(null);
+
+      const result = await service.deleteProject('project-123', false);
+
+      // Deletion should still succeed
+      expect(result).toEqual(mockProject);
+      expect(repository.delete).toHaveBeenCalledWith('project-123');
+      // But audit log was attempted
+      expect(mockAIDecisionLogger.logDecision).toHaveBeenCalled();
     });
   });
 

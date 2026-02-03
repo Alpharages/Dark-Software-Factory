@@ -22,8 +22,8 @@ import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service'
 import { QUEUE_NAMES } from '@/rabbitmq/rabbitmq.config';
 import { mapClickUpToTaskEvent, isActionableStatus, TaskTriggerSource } from '@/ticket-intake/dto';
 import { IRawTaskEvent } from '@/ticket-intake/interfaces/ticket-intake.interface';
-// TODO: Uncomment when ai-decision-logging module is implemented (AC#2)
-// import { AIDecisionLoggerService } from '@/ai-decision-logging/ai-decision-logger.service';
+// Story 16-5: AI Decision Logging Module
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 
 @Injectable()
 export class ProjectService {
@@ -44,8 +44,8 @@ export class ProjectService {
     private readonly clickupService: ClickUpService,
     // Story 20.1: Inject RabbitMQ for provider-agnostic event publishing
     private readonly rabbitMQPublisher: RabbitMQPublisherService,
-    // TODO: Inject AIDecisionLoggerService when module is implemented (AC#2)
-    // private readonly aiDecisionLogger: AIDecisionLoggerService,
+    // Story 16-5: Inject AIDecisionLoggerService for audit logging
+    private readonly aiDecisionLogger: AIDecisionLoggerService,
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
@@ -244,14 +244,41 @@ export class ProjectService {
         );
       }
 
-      // Log AI decision for deletion (AC#2)
-      // TODO: Use AIDecisionLoggerService when module is implemented
-      this.logger.log(
-        `Project deletion decision - Operation: ${force ? 'force_delete' : 'safe_delete'}, ` +
-          `Project: "${project.name}" (${id}), Active Tickets: ${activeTickets}, Force: ${force}`,
-      );
-
+      // Perform deletion FIRST, then log the successful outcome (Fix: Issue #1 - Lying Audit Log)
       const deletedProject = await this.repository.delete(id);
+
+      // Story 16-5: Use AIDecisionLoggerService for structured audit logging
+      // Log AFTER successful deletion to ensure audit accuracy
+      const logResult = await this.aiDecisionLogger.logDecision({
+        agentName: ProjectService.name,
+        action: force ? 'project_force_delete' : 'project_safe_delete',
+        reasoning:
+          `Project deleted successfully. Project: "${project.name}" (${id}), ` +
+          `Active Tickets: ${activeTickets}, Force: ${force}`,
+        ticketId: id, // Using project ID as ticket ID for project-level operations (entity reference)
+        inputData: {
+          projectId: id,
+          projectName: project.name,
+          activeTickets,
+          force,
+        },
+        outputData: {
+          deleted: true,
+          projectId: id,
+          deletedAt: new Date().toISOString(),
+        },
+        confidence: 1.0, // Human-initiated action has 100% confidence
+      });
+
+      // Fix: Issue #2 - Alert on audit log failure (graceful degradation with monitoring)
+      if (!logResult) {
+        this.logger.error(
+          `CRITICAL: Failed to create audit log for project deletion. ` +
+            `Project: "${project.name}" (${id}) was deleted but audit trail is incomplete.`,
+        );
+        // Continue with operation - audit failure should not block business operation
+        // But we log the error for ops team to investigate
+      }
       this.operationsCounter.inc({ operation: 'delete', status: 'success' });
       this.deletionCounter.inc({ status: 'success', force: String(force) });
       return deletedProject;

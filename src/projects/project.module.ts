@@ -6,9 +6,10 @@ import { DatabaseModule } from '../database/database.module';
 import { makeCounterProvider, makeGaugeProvider } from '@willsoto/nestjs-prometheus';
 
 import { ClickUpModule } from '@/clickup/clickup.module';
+import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
 
 @Module({
-  imports: [DatabaseModule, forwardRef(() => ClickUpModule)],
+  imports: [DatabaseModule, forwardRef(() => ClickUpModule), AIDecisionLoggerModule],
   controllers: [ProjectController],
   providers: [
     ProjectService,
