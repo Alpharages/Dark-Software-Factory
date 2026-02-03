@@ -1348,7 +1348,7 @@ development_status:
   epic-21-name: "AI Orchestrator Core (MVP)"
   epic-21-notes: "Marked DONE as duplicate/aggregate of completed Epics 2 and 4. (Routing, Branching, PRs already implemented)."
 
-  epic-22: in-progress
+  epic-22: done
   epic-22-name: "Docker-Controlled Execution Engine"
   22-1-docker-client-integration:
     status: done
@@ -1373,6 +1373,7 @@ development_status:
     developer: "Antigravity"
     notes: "APPROVED. Implemented Docker container execution log streaming. Extended DockerService with runContainer(), execInContainer(), attachContainer(), resizeExec(). Extended PtyExecutionService with spawnInContainer() matching existing spawn() interface. Extended ExecutionGateway with execution-log events, log throttling, subscription management. Integrated ExecutionTracker with streamExecutionLogs() for piping container output to gateway. Added Prometheus metrics: container_log_bytes_total, container_exec_duration_seconds. Added environment validation for ENABLE_CONTAINER_EXECUTION, DOCKER_CONTAINER_TIMEOUT_MS, LOG_STREAM_BUFFER_SIZE, LOG_STREAM_THROTTLE_MS. All tests passing."
     story_file: "_bmad-output/implementation-artifacts/22-4-container-execution-log-streaming.md"
+  epic-22-retrospective: done
 
   epic-23: in_progress
   epic-23-name: "Intelligent Sandbox Lifecycle & Optimization"
