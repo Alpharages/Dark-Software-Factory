@@ -59,12 +59,15 @@ export const SAMPLE_FAILING_QA_RESULT = {
   },
 };
 
+import { QualityGateConfigService } from './quality-gate-config/quality-gate-config.service';
+
 @Injectable()
 export class QualityGatesService {
   private readonly logger = new Logger(QualityGatesService.name);
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly qualityGateConfigService: QualityGateConfigService,
     @InjectMetric(QA_METRICS.QUALITY_GATE_EVALUATIONS_TOTAL)
     private readonly evaluationsCounter: Counter<string>,
     @InjectMetric(QA_METRICS.QUALITY_GATE_DURATION)
@@ -143,59 +146,30 @@ export class QualityGatesService {
   }
 
   /**
-   * Load quality gate configuration - per-project or global default
+   * Load quality gate configuration
    */
   async loadConfig(projectId: string): Promise<IQualityGateConfig> {
-    // TODO: In future, load from database per project
-    // For now, use environment-based configuration
-
-    const thresholds: IQualityThresholds = {
-      minTestPassRate: this.configService.get<number>(
-        'qualityGate.minTestPassRate',
-        DEFAULT_THRESHOLDS.minTestPassRate,
-      ),
-      minCoverage: this.configService.get<number>(
-        'qualityGate.minCoverage',
-        DEFAULT_THRESHOLDS.minCoverage,
-      ),
-      maxLintingErrors: this.configService.get<number>(
-        'qualityGate.maxLintingErrors',
-        DEFAULT_THRESHOLDS.maxLintingErrors,
-      ),
-      maxLintingWarnings: this.configService.get<number>(
-        'qualityGate.maxLintingWarnings',
-        DEFAULT_THRESHOLDS.maxLintingWarnings,
-      ),
-      blockOnCriticalSecurity: this.configService.get<boolean>(
-        'qualityGate.blockOnCriticalSecurity',
-        DEFAULT_THRESHOLDS.blockOnCriticalSecurity,
-      ),
-      blockOnHighSecurity: this.configService.get<boolean>(
-        'qualityGate.blockOnHighSecurity',
-        DEFAULT_THRESHOLDS.blockOnHighSecurity,
-      ),
-      maxComplexity: this.configService.get<number>(
-        'qualityGate.maxComplexity',
-        DEFAULT_THRESHOLDS.maxComplexity,
-      ),
-      targetCoverage: this.configService.get<number>(
-        'qualityGate.targetCoverage',
-        DEFAULT_THRESHOLDS.targetCoverage,
-      ),
-    };
-
-    return {
-      projectId,
-      thresholds,
-      enabledCategories: [
-        QualityCategory.LINTING,
-        QualityCategory.TESTING,
-        QualityCategory.COVERAGE,
-        QualityCategory.SECURITY,
-      ],
-      allowOverride: this.configService.get<boolean>('qualityGate.allowOverride', false),
-      overrideRequiresApproval: true,
-    };
+    try {
+      return await this.qualityGateConfigService.getEffectiveConfig(projectId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to load config for project ${projectId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      // Failsafe return defaults
+      return {
+        projectId: null,
+        thresholds: DEFAULT_THRESHOLDS,
+        enabledCategories: [
+          QualityCategory.LINTING,
+          QualityCategory.TESTING,
+          QualityCategory.COVERAGE,
+          QualityCategory.SECURITY,
+        ],
+        allowOverride: false,
+        overrideRequiresApproval: true,
+      };
+    }
   }
 
   /**

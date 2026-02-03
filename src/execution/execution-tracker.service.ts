@@ -5,7 +5,6 @@ import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Observable, Subscription } from 'rxjs';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
-import { CleanupService } from '@/cleanup/cleanup.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
 import { ExecutionGateway, LogLevel } from './gateways/execution.gateway';
@@ -59,8 +58,6 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly containerExecDurationHistogram: Histogram<string>,
     @Optional()
     private readonly executionGateway?: ExecutionGateway,
-    @Optional()
-    private readonly cleanupService?: CleanupService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -247,9 +244,9 @@ export class ExecutionTrackerService implements OnModuleInit {
         `[${correlationId}] Execution ${executionId} completed in ${durationSec.toFixed(2)}s ` +
           `(confidence: ${confidenceScore}, files: ${filesChanged.length})`,
       );
-    } finally {
-      // Story 23.2: Trigger cleanup after execution completion
-      await this.triggerCleanup(executionId, { force: false });
+    } catch (e) {
+      this.logger.error(`[${correlationId}] Error in completeExecution:`, e);
+      throw e;
     }
 
     return transition;
@@ -333,9 +330,9 @@ export class ExecutionTrackerService implements OnModuleInit {
           );
         }
       }
-    } finally {
-      // Story 23.2: Trigger cleanup after execution failure
-      await this.triggerCleanup(executionId, { force: false });
+    } catch (e) {
+      this.logger.error(`[${correlationId}] Error in failExecution:`, e);
+      throw e;
     }
 
     return transition;
@@ -422,9 +419,9 @@ export class ExecutionTrackerService implements OnModuleInit {
           `[${correlationId}] Max retries (${retryInfo.maxRetries}) exceeded for timed out execution ${executionId}`,
         );
       }
-    } finally {
-      // Story 23.2: Trigger cleanup after timeout with force=true
-      await this.triggerCleanup(executionId, { force: true });
+    } catch (e) {
+      this.logger.error(`[${correlationId}] Error in timeoutExecution:`, e);
+      throw e;
     }
 
     return transition;
@@ -452,46 +449,12 @@ export class ExecutionTrackerService implements OnModuleInit {
 
       this.executionCounter.inc({ provider: execution.ai_provider, status: 'cancelled' });
       await this.updateStatusGauges();
-    } finally {
-      // Story 23.2: Trigger cleanup after cancellation with force=true
-      await this.triggerCleanup(executionId, { force: true });
+    } catch (e) {
+      this.logger.error(`[${correlationId}] Error in cancelExecution:`, e);
+      throw e;
     }
 
     return transition;
-  }
-
-  /**
-   * Trigger cleanup for execution (Story 23.2)
-   * Private helper to invoke CleanupService after execution completion
-   */
-  private async triggerCleanup(executionId: string, options: { force: boolean }): Promise<void> {
-    // Check if auto-cleanup is enabled
-    if (!this.configService.get<boolean>('ENABLE_AUTO_CLEANUP', true)) {
-      this.logger.debug(`[${executionId}] Auto-cleanup disabled, skipping`);
-      return;
-    }
-
-    // Skip if CleanupService not available (optional dependency)
-    if (!this.cleanupService) {
-      this.logger.debug(`[${executionId}] CleanupService not available, skipping`);
-      return;
-    }
-
-    try {
-      const execution = await this.getExecution(executionId);
-      if (!execution) {
-        this.logger.warn(`[${executionId}] Execution not found for cleanup`);
-        return;
-      }
-
-      await this.cleanupService.cleanupAfterExecution(executionId, {
-        preserveWorkspace: execution.debug_mode,
-        forceContainerRemove: options.force,
-      });
-    } catch (error) {
-      this.logger.error(`[${executionId}] Cleanup failed:`, error);
-      // Don't throw - cleanup failure shouldn't fail execution
-    }
   }
 
   /**

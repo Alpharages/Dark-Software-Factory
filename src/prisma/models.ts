@@ -47,4 +47,6 @@ export type * from './models/AiCapability';
 export type * from './models/AiTaskPattern';
 export type * from './models/UserInvitation';
 export type * from './models/RefreshToken';
+export type * from './models/QualityGateConfig';
+export type * from './models/QualityGateConfigHistory';
 export type * from './commonInputTypes';

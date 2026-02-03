@@ -28,7 +28,6 @@ import { ProviderFactoryService } from './provider-factory.service';
 import { FallbackStrategyService } from './fallback-strategy.service';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
-import { ExecutionModule } from '@/execution/execution.module';
 import { FileLocksModule } from '@/file-locks/file-locks.module';
 import { GitHubModule } from '@/github/github.module';
 import { StorageModule } from '@/storage/storage.module';
@@ -44,7 +43,6 @@ import { CostTrackingModule } from '@/cost-tracking/cost-tracking.module';
     ConfigModule,
     DatabaseModule,
     RabbitMQModule,
-    forwardRef(() => ExecutionModule),
     FileLocksModule,
     GitHubModule,
     forwardRef(() => StorageModule),

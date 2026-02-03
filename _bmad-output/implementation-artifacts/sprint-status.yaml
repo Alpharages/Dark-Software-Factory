@@ -624,12 +624,12 @@ development_status:
     effort: "3 days"
     notes: "Story generated via create-story workflow. Implements final approval gate for production deployment."
   8-4-quality-gate-configuration:
-    status: ready-for-dev
+    status: done
     priority: high
     effort: "3 days"
     story_points: 5
     story_file: "_bmad-output/implementation-artifacts/8-4-quality-gate-configuration.md"
-    notes: "VALIDATED & IMPROVED: Fixed maxComplexity default (20), added enabledCategories, aligned RBAC with Story 8.1 (Role.QA), added config versioning, JSON snapshot pattern for history, clone endpoint, migration task for env vars. Cross-referenced Story 3.5 interfaces/DTOs for reuse."
+    notes: "RE-IMPLEMENTED & FIXED. Restored core service logic, models, and controller. FIXED review findings: (1) Correct RBAC (ADMIN/QA only), (2) Implemented Impact Preview, (3) Implemented Bulk Cloning, (4) Fixed merge strategy (AC#3), (5) Integrated Audit Trail (AIDecisionLogger), (6) Renamed endpoints to /defaults. Verified with clean lint."
   8-5-bug-escape-tracking-analysis:
     status: ready-for-dev
     priority: high

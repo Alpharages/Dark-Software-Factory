@@ -26,7 +26,6 @@ import { ApprovalController } from './controllers/approval.controller';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module';
-import { QaAutomationModule } from '../qa-automation/qa-automation.module';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.3: AI Cost Tracking & Optimization
@@ -61,7 +60,6 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
     DatabaseModule,
     RabbitMQModule,
     forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer & AIExecutionConsumer
-    forwardRef(() => QaAutomationModule), // Story 3.7: For QaCheckPublisher
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
     // Story 13.3: AI Cost Tracking & Optimization
@@ -105,23 +103,23 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
 
     // Prometheus metrics
     makeCounterProvider({
-      name: 'execution_total',
+      name: AI_METRICS.EXECUTIONS_TOTAL,
       help: 'Total execution count by provider and status',
       labelNames: ['provider', 'status'],
     }),
     makeHistogramProvider({
-      name: 'execution_duration_seconds',
+      name: AI_METRICS.EXECUTION_DURATION,
       help: 'Execution duration in seconds',
       labelNames: ['provider', 'status'],
       buckets: [10, 30, 60, 120, 300, 600, 900, 1800],
     }),
     makeGaugeProvider({
-      name: 'execution_status_gauge',
+      name: 'dsf_execution_status_gauge', // Should ideally be in constants too
       help: 'Current execution count by status',
       labelNames: ['provider', 'status'],
     }),
     makeCounterProvider({
-      name: 'execution_retry_total',
+      name: 'dsf_execution_retry_total', // Should ideally be in constants too
       help: 'Total execution retry count',
       labelNames: ['provider'],
     }),
@@ -156,14 +154,25 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
       help: 'Currently active retries awaiting execution',
     }),
 
+    makeCounterProvider({
+      name: CONTAINER_METRICS.LOG_BYTES_TOTAL,
+      help: 'Total bytes of container logs streamed',
+      labelNames: ['execution_id', 'source'],
+    }),
+    makeHistogramProvider({
+      name: CONTAINER_METRICS.EXEC_DURATION_SECONDS,
+      help: 'Duration of container execution steps',
+      labelNames: ['execution_id', 'status'],
+      buckets: [1, 5, 10, 30, 60, 120, 300],
+    }),
     // Self-Healing Metrics (Story 13.3.1)
     makeCounterProvider({
-      name: 'ai_self_healing_attempts_total',
+      name: AI_METRICS.SELF_HEALING_ATTEMPTS_TOTAL,
       help: 'Total self-healing attempts by outcome',
       labelNames: ['ticket_id', 'outcome'], // outcome: success, escalated, max_attempts
     }),
     makeGaugeProvider({
-      name: 'ai_self_healing_progress',
+      name: AI_METRICS.SELF_HEALING_PROGRESS,
       help: 'Self-healing progress percentage (error reduction)',
       labelNames: ['ticket_id'],
     }),

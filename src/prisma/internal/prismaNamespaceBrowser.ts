@@ -88,6 +88,8 @@ export const ModelName = {
   AiTaskPattern: 'AiTaskPattern',
   UserInvitation: 'UserInvitation',
   RefreshToken: 'RefreshToken',
+  QualityGateConfig: 'QualityGateConfig',
+  QualityGateConfigHistory: 'QualityGateConfigHistory',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -766,6 +768,44 @@ export const RefreshTokenScalarFieldEnum = {
 
 export type RefreshTokenScalarFieldEnum =
   (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum];
+
+export const QualityGateConfigScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  minTestPassRate: 'minTestPassRate',
+  minCoverage: 'minCoverage',
+  maxLintingErrors: 'maxLintingErrors',
+  maxLintingWarnings: 'maxLintingWarnings',
+  blockOnCriticalSecurity: 'blockOnCriticalSecurity',
+  blockOnHighSecurity: 'blockOnHighSecurity',
+  maxComplexity: 'maxComplexity',
+  targetCoverage: 'targetCoverage',
+  enabledCategories: 'enabledCategories',
+  allowOverride: 'allowOverride',
+  overrideRequiresApproval: 'overrideRequiresApproval',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  createdById: 'createdById',
+  updatedById: 'updatedById',
+} as const;
+
+export type QualityGateConfigScalarFieldEnum =
+  (typeof QualityGateConfigScalarFieldEnum)[keyof typeof QualityGateConfigScalarFieldEnum];
+
+export const QualityGateConfigHistoryScalarFieldEnum = {
+  id: 'id',
+  configId: 'configId',
+  projectId: 'projectId',
+  snapshot: 'snapshot',
+  version: 'version',
+  changedById: 'changedById',
+  changedAt: 'changedAt',
+  changeReason: 'changeReason',
+} as const;
+
+export type QualityGateConfigHistoryScalarFieldEnum =
+  (typeof QualityGateConfigHistoryScalarFieldEnum)[keyof typeof QualityGateConfigHistoryScalarFieldEnum];
 
 export const SortOrder = {
   asc: 'asc',

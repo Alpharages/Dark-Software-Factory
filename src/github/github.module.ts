@@ -86,6 +86,8 @@ import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-pro
   ],
   exports: [
     GitHubService,
+    GitHubAuthService,
+    GitHubClientService,
     GitHubBranchService,
     GitHubCommitOrchestrator,
     GitHubPROrchestrator,

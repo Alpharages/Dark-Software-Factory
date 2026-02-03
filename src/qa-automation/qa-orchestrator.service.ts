@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { SentryService } from '../common/sentry/sentry.service';
@@ -74,6 +74,7 @@ export class QaOrchestratorService {
     private readonly qualityGatesService: QualityGatesService,
     // Story 3.10: AiQaOrchestrator replaces deleted services
     private readonly aiQaOrchestrator: AiQaOrchestrator,
+    @Inject(forwardRef(() => WorkspaceService))
     private readonly workspaceService: WorkspaceService, // For getting workspace paths
     // Story 3.10: Temporarily commented - will be replaced with AiQaOrchestrator
     // private readonly linterService: LinterService,
@@ -84,9 +85,9 @@ export class QaOrchestratorService {
     private readonly qaMetrics: QaMetricsService, // Story 3.8: Use facade instead of direct injection
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
-    // Story 13.4: Self-Healing Integration
+    @Inject(forwardRef(() => SelfHealingOrchestratorService))
     private readonly selfHealingOrchestrator: SelfHealingOrchestratorService,
-    // Story 5.3: Execution Status Tracking
+    @Inject(forwardRef(() => ExecutionTrackerService))
     private readonly executionTracker: ExecutionTrackerService,
   ) {}
 

@@ -1,7 +1,7 @@
 # Story 8.4: Quality Gate Configuration
 
 **Epic:** 8 - Lead QA Manual Review Workflow  
-**Status:** ready-for-dev  
+**Status:** done  
 **Priority:** High  
 **Estimation:** 3 days  
 **Story Points:** 5
@@ -620,6 +620,7 @@ src/
    ```
 
 6. **Migration from Environment Config:**
+
    ```typescript
    async seedGlobalDefaultsFromEnv(userId: string): Promise<QualityGateConfig> {
      const existing = await this.getGlobalConfig().catch(() => null);

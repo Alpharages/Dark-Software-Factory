@@ -313,6 +313,10 @@ export type ProjectWhereInput = {
   > | null;
   conversations?: Prisma.ClientConversationListRelationFilter;
   reports?: Prisma.ReportListRelationFilter;
+  quality_gate_config?: Prisma.XOR<
+    Prisma.QualityGateConfigNullableScalarRelationFilter,
+    Prisma.QualityGateConfigWhereInput
+  > | null;
 };
 
 export type ProjectOrderByWithRelationInput = {
@@ -337,6 +341,7 @@ export type ProjectOrderByWithRelationInput = {
   coverage_config?: Prisma.ProjectCoverageConfigOrderByWithRelationInput;
   conversations?: Prisma.ClientConversationOrderByRelationAggregateInput;
   reports?: Prisma.ReportOrderByRelationAggregateInput;
+  quality_gate_config?: Prisma.QualityGateConfigOrderByWithRelationInput;
 };
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<
@@ -377,6 +382,10 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
     > | null;
     conversations?: Prisma.ClientConversationListRelationFilter;
     reports?: Prisma.ReportListRelationFilter;
+    quality_gate_config?: Prisma.XOR<
+      Prisma.QualityGateConfigNullableScalarRelationFilter,
+      Prisma.QualityGateConfigWhereInput
+    > | null;
   },
   'id' | 'clickup_list_id'
 >;
@@ -459,6 +468,7 @@ export type ProjectCreateInput = {
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateInput = {
@@ -483,6 +493,7 @@ export type ProjectUncheckedCreateInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectUpdateInput = {
@@ -513,6 +524,7 @@ export type ProjectUpdateInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateInput = {
@@ -543,6 +555,7 @@ export type ProjectUncheckedUpdateInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectCreateManyInput = {
@@ -680,6 +693,11 @@ export type ProjectSumOrderByAggregateInput = {
 export type ProjectScalarRelationFilter = {
   is?: Prisma.ProjectWhereInput;
   isNot?: Prisma.ProjectWhereInput;
+};
+
+export type ProjectNullableScalarRelationFilter = {
+  is?: Prisma.ProjectWhereInput | null;
+  isNot?: Prisma.ProjectWhereInput | null;
 };
 
 export type StringFieldUpdateOperationsInput = {
@@ -844,6 +862,34 @@ export type ProjectUpdateOneRequiredWithoutReportsNestedInput = {
   >;
 };
 
+export type ProjectCreateNestedOneWithoutQuality_gate_configInput = {
+  create?: Prisma.XOR<
+    Prisma.ProjectCreateWithoutQuality_gate_configInput,
+    Prisma.ProjectUncheckedCreateWithoutQuality_gate_configInput
+  >;
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutQuality_gate_configInput;
+  connect?: Prisma.ProjectWhereUniqueInput;
+};
+
+export type ProjectUpdateOneWithoutQuality_gate_configNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.ProjectCreateWithoutQuality_gate_configInput,
+    Prisma.ProjectUncheckedCreateWithoutQuality_gate_configInput
+  >;
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutQuality_gate_configInput;
+  upsert?: Prisma.ProjectUpsertWithoutQuality_gate_configInput;
+  disconnect?: Prisma.ProjectWhereInput | boolean;
+  delete?: Prisma.ProjectWhereInput | boolean;
+  connect?: Prisma.ProjectWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.ProjectUpdateToOneWithWhereWithoutQuality_gate_configInput,
+      Prisma.ProjectUpdateWithoutQuality_gate_configInput
+    >,
+    Prisma.ProjectUncheckedUpdateWithoutQuality_gate_configInput
+  >;
+};
+
 export type ProjectCreateWithoutTicketsInput = {
   id?: string;
   name: string;
@@ -865,6 +911,7 @@ export type ProjectCreateWithoutTicketsInput = {
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutTicketsInput = {
@@ -888,6 +935,7 @@ export type ProjectUncheckedCreateWithoutTicketsInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutTicketsInput = {
@@ -945,6 +993,7 @@ export type ProjectUpdateWithoutTicketsInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutTicketsInput = {
@@ -974,6 +1023,7 @@ export type ProjectUncheckedUpdateWithoutTicketsInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutCoverage_baselineInput = {
@@ -997,6 +1047,7 @@ export type ProjectCreateWithoutCoverage_baselineInput = {
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
@@ -1020,6 +1071,7 @@ export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutCoverage_baselineInput = {
@@ -1077,6 +1129,7 @@ export type ProjectUpdateWithoutCoverage_baselineInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
@@ -1106,6 +1159,7 @@ export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutCoverage_configInput = {
@@ -1129,6 +1183,7 @@ export type ProjectCreateWithoutCoverage_configInput = {
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutCoverage_configInput = {
@@ -1152,6 +1207,7 @@ export type ProjectUncheckedCreateWithoutCoverage_configInput = {
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutCoverage_configInput = {
@@ -1209,6 +1265,7 @@ export type ProjectUpdateWithoutCoverage_configInput = {
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
@@ -1238,6 +1295,7 @@ export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutConversationsInput = {
@@ -1261,6 +1319,7 @@ export type ProjectCreateWithoutConversationsInput = {
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
   reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutConversationsInput = {
@@ -1284,6 +1343,7 @@ export type ProjectUncheckedCreateWithoutConversationsInput = {
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutConversationsInput = {
@@ -1341,6 +1401,7 @@ export type ProjectUpdateWithoutConversationsInput = {
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
   reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutConversationsInput = {
@@ -1370,6 +1431,7 @@ export type ProjectUncheckedUpdateWithoutConversationsInput = {
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
   reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutReportsInput = {
@@ -1393,6 +1455,7 @@ export type ProjectCreateWithoutReportsInput = {
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutReportsInput = {
@@ -1416,6 +1479,7 @@ export type ProjectUncheckedCreateWithoutReportsInput = {
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutReportsInput = {
@@ -1473,6 +1537,7 @@ export type ProjectUpdateWithoutReportsInput = {
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutReportsInput = {
@@ -1502,6 +1567,143 @@ export type ProjectUncheckedUpdateWithoutReportsInput = {
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
+  quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
+};
+
+export type ProjectCreateWithoutQuality_gate_configInput = {
+  id?: string;
+  name: string;
+  client_name?: string;
+  provider?: $Enums.ProjectProvider;
+  clickup_list_id?: string | null;
+  monitor_tasks?: boolean;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  github_repository_url: string;
+  pm_id: string;
+  status?: string;
+  default_branch?: string;
+  budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
+  coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
+  coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
+  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+};
+
+export type ProjectUncheckedCreateWithoutQuality_gate_configInput = {
+  id?: string;
+  name: string;
+  client_name?: string;
+  provider?: $Enums.ProjectProvider;
+  clickup_list_id?: string | null;
+  monitor_tasks?: boolean;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  github_repository_url: string;
+  pm_id: string;
+  status?: string;
+  default_branch?: string;
+  budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
+  is_active?: boolean;
+  deactivated_at?: Date | string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
+  coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
+  coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
+  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+};
+
+export type ProjectCreateOrConnectWithoutQuality_gate_configInput = {
+  where: Prisma.ProjectWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ProjectCreateWithoutQuality_gate_configInput,
+    Prisma.ProjectUncheckedCreateWithoutQuality_gate_configInput
+  >;
+};
+
+export type ProjectUpsertWithoutQuality_gate_configInput = {
+  update: Prisma.XOR<
+    Prisma.ProjectUpdateWithoutQuality_gate_configInput,
+    Prisma.ProjectUncheckedUpdateWithoutQuality_gate_configInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ProjectCreateWithoutQuality_gate_configInput,
+    Prisma.ProjectUncheckedCreateWithoutQuality_gate_configInput
+  >;
+  where?: Prisma.ProjectWhereInput;
+};
+
+export type ProjectUpdateToOneWithWhereWithoutQuality_gate_configInput = {
+  where?: Prisma.ProjectWhereInput;
+  data: Prisma.XOR<
+    Prisma.ProjectUpdateWithoutQuality_gate_configInput,
+    Prisma.ProjectUncheckedUpdateWithoutQuality_gate_configInput
+  >;
+};
+
+export type ProjectUpdateWithoutQuality_gate_configInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
+  budget_usd?:
+    | Prisma.NullableDecimalFieldUpdateOperationsInput
+    | runtime.Decimal
+    | runtime.DecimalJsLike
+    | number
+    | string
+    | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
+  coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
+  coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
+  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+};
+
+export type ProjectUncheckedUpdateWithoutQuality_gate_configInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  name?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
+  budget_usd?:
+    | Prisma.NullableDecimalFieldUpdateOperationsInput
+    | runtime.Decimal
+    | runtime.DecimalJsLike
+    | number
+    | string
+    | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
+  coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
+  coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
+  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 /**
@@ -1586,6 +1788,7 @@ export type ProjectSelect<
     coverage_config?: boolean | Prisma.Project$coverage_configArgs<ExtArgs>;
     conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>;
     reports?: boolean | Prisma.Project$reportsArgs<ExtArgs>;
+    quality_gate_config?: boolean | Prisma.Project$quality_gate_configArgs<ExtArgs>;
     _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['project']
@@ -1687,6 +1890,7 @@ export type ProjectInclude<
   coverage_config?: boolean | Prisma.Project$coverage_configArgs<ExtArgs>;
   conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>;
   reports?: boolean | Prisma.Project$reportsArgs<ExtArgs>;
+  quality_gate_config?: boolean | Prisma.Project$quality_gate_configArgs<ExtArgs>;
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type ProjectIncludeCreateManyAndReturn<
@@ -1706,6 +1910,7 @@ export type $ProjectPayload<
     coverage_config: Prisma.$ProjectCoverageConfigPayload<ExtArgs> | null;
     conversations: Prisma.$ClientConversationPayload<ExtArgs>[];
     reports: Prisma.$ReportPayload<ExtArgs>[];
+    quality_gate_config: Prisma.$QualityGateConfigPayload<ExtArgs> | null;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -2299,6 +2504,19 @@ export interface Prisma__ProjectClient<
       >
     | Null
   >;
+  quality_gate_config<T extends Prisma.Project$quality_gate_configArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Project$quality_gate_configArgs<ExtArgs>>,
+  ): Prisma.Prisma__QualityGateConfigClient<
+    runtime.Types.Result.GetResult<
+      Prisma.$QualityGateConfigPayload<ExtArgs>,
+      T,
+      'findUniqueOrThrow',
+      GlobalOmitOptions
+    > | null,
+    null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2880,6 +3098,27 @@ export type Project$reportsArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.ReportScalarFieldEnum | Prisma.ReportScalarFieldEnum[];
+};
+
+/**
+ * Project.quality_gate_config
+ */
+export type Project$quality_gate_configArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the QualityGateConfig
+   */
+  select?: Prisma.QualityGateConfigSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the QualityGateConfig
+   */
+  omit?: Prisma.QualityGateConfigOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QualityGateConfigInclude<ExtArgs> | null;
+  where?: Prisma.QualityGateConfigWhereInput;
 };
 
 /**

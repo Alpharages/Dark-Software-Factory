@@ -266,6 +266,9 @@ export type UserWhereInput = {
   conversations?: Prisma.ClientConversationListRelationFilter;
   invitations?: Prisma.UserInvitationListRelationFilter;
   refreshTokens?: Prisma.RefreshTokenListRelationFilter;
+  quality_gate_configs_created?: Prisma.QualityGateConfigListRelationFilter;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigListRelationFilter;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryListRelationFilter;
 };
 
 export type UserOrderByWithRelationInput = {
@@ -286,6 +289,9 @@ export type UserOrderByWithRelationInput = {
   conversations?: Prisma.ClientConversationOrderByRelationAggregateInput;
   invitations?: Prisma.UserInvitationOrderByRelationAggregateInput;
   refreshTokens?: Prisma.RefreshTokenOrderByRelationAggregateInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigOrderByRelationAggregateInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigOrderByRelationAggregateInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryOrderByRelationAggregateInput;
 };
 
 export type UserWhereUniqueInput = Prisma.AtLeast<
@@ -310,6 +316,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<
     conversations?: Prisma.ClientConversationListRelationFilter;
     invitations?: Prisma.UserInvitationListRelationFilter;
     refreshTokens?: Prisma.RefreshTokenListRelationFilter;
+    quality_gate_configs_created?: Prisma.QualityGateConfigListRelationFilter;
+    quality_gate_configs_updated?: Prisma.QualityGateConfigListRelationFilter;
+    quality_gate_history?: Prisma.QualityGateConfigHistoryListRelationFilter;
   },
   'id' | 'email'
 >;
@@ -367,6 +376,9 @@ export type UserCreateInput = {
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUncheckedCreateInput = {
@@ -386,6 +398,9 @@ export type UserUncheckedCreateInput = {
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUpdateInput = {
@@ -405,6 +420,9 @@ export type UserUpdateInput = {
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateInput = {
@@ -424,6 +442,9 @@ export type UserUncheckedUpdateInput = {
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserCreateManyInput = {
@@ -755,6 +776,84 @@ export type UserUpdateOneRequiredWithoutRefreshTokensNestedInput = {
   >;
 };
 
+export type UserCreateNestedOneWithoutQuality_gate_configs_createdInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_createdInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_createdInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutQuality_gate_configs_createdInput;
+  connect?: Prisma.UserWhereUniqueInput;
+};
+
+export type UserCreateNestedOneWithoutQuality_gate_configs_updatedInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_updatedInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_updatedInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutQuality_gate_configs_updatedInput;
+  connect?: Prisma.UserWhereUniqueInput;
+};
+
+export type UserUpdateOneRequiredWithoutQuality_gate_configs_createdNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_createdInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_createdInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutQuality_gate_configs_createdInput;
+  upsert?: Prisma.UserUpsertWithoutQuality_gate_configs_createdInput;
+  connect?: Prisma.UserWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.UserUpdateToOneWithWhereWithoutQuality_gate_configs_createdInput,
+      Prisma.UserUpdateWithoutQuality_gate_configs_createdInput
+    >,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_configs_createdInput
+  >;
+};
+
+export type UserUpdateOneRequiredWithoutQuality_gate_configs_updatedNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_updatedInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_updatedInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutQuality_gate_configs_updatedInput;
+  upsert?: Prisma.UserUpsertWithoutQuality_gate_configs_updatedInput;
+  connect?: Prisma.UserWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.UserUpdateToOneWithWhereWithoutQuality_gate_configs_updatedInput,
+      Prisma.UserUpdateWithoutQuality_gate_configs_updatedInput
+    >,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_configs_updatedInput
+  >;
+};
+
+export type UserCreateNestedOneWithoutQuality_gate_historyInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_historyInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_historyInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutQuality_gate_historyInput;
+  connect?: Prisma.UserWhereUniqueInput;
+};
+
+export type UserUpdateOneRequiredWithoutQuality_gate_historyNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_historyInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_historyInput
+  >;
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutQuality_gate_historyInput;
+  upsert?: Prisma.UserUpsertWithoutQuality_gate_historyInput;
+  connect?: Prisma.UserWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.UserUpdateToOneWithWhereWithoutQuality_gate_historyInput,
+      Prisma.UserUpdateWithoutQuality_gate_historyInput
+    >,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_historyInput
+  >;
+};
+
 export type UserCreateWithoutTeam_membersInput = {
   id: string;
   email: string;
@@ -771,6 +870,9 @@ export type UserCreateWithoutTeam_membersInput = {
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUncheckedCreateWithoutTeam_membersInput = {
@@ -789,6 +891,9 @@ export type UserUncheckedCreateWithoutTeam_membersInput = {
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserCreateOrConnectWithoutTeam_membersInput = {
@@ -815,6 +920,9 @@ export type UserCreateWithoutManagerInput = {
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUncheckedCreateWithoutManagerInput = {
@@ -833,6 +941,9 @@ export type UserUncheckedCreateWithoutManagerInput = {
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserCreateOrConnectWithoutManagerInput = {
@@ -884,6 +995,9 @@ export type UserUpdateWithoutTeam_membersInput = {
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutTeam_membersInput = {
@@ -902,6 +1016,9 @@ export type UserUncheckedUpdateWithoutTeam_membersInput = {
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUpsertWithWhereUniqueWithoutManagerInput = {
@@ -965,6 +1082,9 @@ export type UserCreateWithoutUtilization_historyInput = {
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUncheckedCreateWithoutUtilization_historyInput = {
@@ -983,6 +1103,9 @@ export type UserUncheckedCreateWithoutUtilization_historyInput = {
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserCreateOrConnectWithoutUtilization_historyInput = {
@@ -1029,6 +1152,9 @@ export type UserUpdateWithoutUtilization_historyInput = {
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutUtilization_historyInput = {
@@ -1047,6 +1173,9 @@ export type UserUncheckedUpdateWithoutUtilization_historyInput = {
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserCreateWithoutConversationsInput = {
@@ -1065,6 +1194,9 @@ export type UserCreateWithoutConversationsInput = {
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUncheckedCreateWithoutConversationsInput = {
@@ -1083,6 +1215,9 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserCreateOrConnectWithoutConversationsInput = {
@@ -1129,6 +1264,9 @@ export type UserUpdateWithoutConversationsInput = {
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutConversationsInput = {
@@ -1147,6 +1285,9 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserCreateWithoutInvitationsInput = {
@@ -1165,6 +1306,9 @@ export type UserCreateWithoutInvitationsInput = {
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUncheckedCreateWithoutInvitationsInput = {
@@ -1183,6 +1327,9 @@ export type UserUncheckedCreateWithoutInvitationsInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserCreateOrConnectWithoutInvitationsInput = {
@@ -1229,6 +1376,9 @@ export type UserUpdateWithoutInvitationsInput = {
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutInvitationsInput = {
@@ -1247,6 +1397,9 @@ export type UserUncheckedUpdateWithoutInvitationsInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserCreateWithoutRefreshTokensInput = {
@@ -1265,6 +1418,9 @@ export type UserCreateWithoutRefreshTokensInput = {
   utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserUncheckedCreateWithoutRefreshTokensInput = {
@@ -1283,6 +1439,9 @@ export type UserUncheckedCreateWithoutRefreshTokensInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
   invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
 };
 
 export type UserCreateOrConnectWithoutRefreshTokensInput = {
@@ -1329,6 +1488,9 @@ export type UserUpdateWithoutRefreshTokensInput = {
   utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutRefreshTokensInput = {
@@ -1347,6 +1509,345 @@ export type UserUncheckedUpdateWithoutRefreshTokensInput = {
   utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
+};
+
+export type UserCreateWithoutQuality_gate_configs_createdInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
+  team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
+};
+
+export type UserUncheckedCreateWithoutQuality_gate_configs_createdInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  managed_by_id?: string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
+};
+
+export type UserCreateOrConnectWithoutQuality_gate_configs_createdInput = {
+  where: Prisma.UserWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_createdInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_createdInput
+  >;
+};
+
+export type UserCreateWithoutQuality_gate_configs_updatedInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
+  team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutChangedByInput;
+};
+
+export type UserUncheckedCreateWithoutQuality_gate_configs_updatedInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  managed_by_id?: string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedCreateNestedManyWithoutChangedByInput;
+};
+
+export type UserCreateOrConnectWithoutQuality_gate_configs_updatedInput = {
+  where: Prisma.UserWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_updatedInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_updatedInput
+  >;
+};
+
+export type UserUpsertWithoutQuality_gate_configs_createdInput = {
+  update: Prisma.XOR<
+    Prisma.UserUpdateWithoutQuality_gate_configs_createdInput,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_configs_createdInput
+  >;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_createdInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_createdInput
+  >;
+  where?: Prisma.UserWhereInput;
+};
+
+export type UserUpdateToOneWithWhereWithoutQuality_gate_configs_createdInput = {
+  where?: Prisma.UserWhereInput;
+  data: Prisma.XOR<
+    Prisma.UserUpdateWithoutQuality_gate_configs_createdInput,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_configs_createdInput
+  >;
+};
+
+export type UserUpdateWithoutQuality_gate_configs_createdInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
+  team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
+};
+
+export type UserUncheckedUpdateWithoutQuality_gate_configs_createdInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
+};
+
+export type UserUpsertWithoutQuality_gate_configs_updatedInput = {
+  update: Prisma.XOR<
+    Prisma.UserUpdateWithoutQuality_gate_configs_updatedInput,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_configs_updatedInput
+  >;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_configs_updatedInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_configs_updatedInput
+  >;
+  where?: Prisma.UserWhereInput;
+};
+
+export type UserUpdateToOneWithWhereWithoutQuality_gate_configs_updatedInput = {
+  where?: Prisma.UserWhereInput;
+  data: Prisma.XOR<
+    Prisma.UserUpdateWithoutQuality_gate_configs_updatedInput,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_configs_updatedInput
+  >;
+};
+
+export type UserUpdateWithoutQuality_gate_configs_updatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
+  team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
+};
+
+export type UserUncheckedUpdateWithoutQuality_gate_configs_updatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
+};
+
+export type UserCreateWithoutQuality_gate_historyInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  manager?: Prisma.UserCreateNestedOneWithoutTeam_membersInput;
+  team_members?: Prisma.UserCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigCreateNestedManyWithoutUpdatedByInput;
+};
+
+export type UserUncheckedCreateWithoutQuality_gate_historyInput = {
+  id: string;
+  email: string;
+  full_name: string;
+  password_hash: string;
+  role?: string;
+  is_active?: boolean;
+  last_login_at?: Date | string | null;
+  managed_by_id?: string | null;
+  max_tickets?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  team_members?: Prisma.UserUncheckedCreateNestedManyWithoutManagerInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedCreateNestedManyWithoutPmInput;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutPmInput;
+  invitations?: Prisma.UserInvitationUncheckedCreateNestedManyWithoutInvited_byInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutCreatedByInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedCreateNestedManyWithoutUpdatedByInput;
+};
+
+export type UserCreateOrConnectWithoutQuality_gate_historyInput = {
+  where: Prisma.UserWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_historyInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_historyInput
+  >;
+};
+
+export type UserUpsertWithoutQuality_gate_historyInput = {
+  update: Prisma.XOR<
+    Prisma.UserUpdateWithoutQuality_gate_historyInput,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_historyInput
+  >;
+  create: Prisma.XOR<
+    Prisma.UserCreateWithoutQuality_gate_historyInput,
+    Prisma.UserUncheckedCreateWithoutQuality_gate_historyInput
+  >;
+  where?: Prisma.UserWhereInput;
+};
+
+export type UserUpdateToOneWithWhereWithoutQuality_gate_historyInput = {
+  where?: Prisma.UserWhereInput;
+  data: Prisma.XOR<
+    Prisma.UserUpdateWithoutQuality_gate_historyInput,
+    Prisma.UserUncheckedUpdateWithoutQuality_gate_historyInput
+  >;
+};
+
+export type UserUpdateWithoutQuality_gate_historyInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  manager?: Prisma.UserUpdateOneWithoutTeam_membersNestedInput;
+  team_members?: Prisma.UserUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+};
+
+export type UserUncheckedUpdateWithoutQuality_gate_historyInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  email?: Prisma.StringFieldUpdateOperationsInput | string;
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string;
+  role?: Prisma.StringFieldUpdateOperationsInput | string;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  last_login_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  managed_by_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  max_tickets?: Prisma.IntFieldUpdateOperationsInput | number;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  team_members?: Prisma.UserUncheckedUpdateManyWithoutManagerNestedInput;
+  utilization_history?: Prisma.UtilizationHistoryUncheckedUpdateManyWithoutPmNestedInput;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
+  invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
 };
 
 export type UserCreateManyManagerInput = {
@@ -1378,6 +1879,9 @@ export type UserUpdateWithoutManagerInput = {
   conversations?: Prisma.ClientConversationUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateWithoutManagerInput = {
@@ -1396,6 +1900,9 @@ export type UserUncheckedUpdateWithoutManagerInput = {
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutPmNestedInput;
   invitations?: Prisma.UserInvitationUncheckedUpdateManyWithoutInvited_byNestedInput;
   refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput;
+  quality_gate_configs_created?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutCreatedByNestedInput;
+  quality_gate_configs_updated?: Prisma.QualityGateConfigUncheckedUpdateManyWithoutUpdatedByNestedInput;
+  quality_gate_history?: Prisma.QualityGateConfigHistoryUncheckedUpdateManyWithoutChangedByNestedInput;
 };
 
 export type UserUncheckedUpdateManyWithoutManagerInput = {
@@ -1421,6 +1928,9 @@ export type UserCountOutputType = {
   conversations: number;
   invitations: number;
   refreshTokens: number;
+  quality_gate_configs_created: number;
+  quality_gate_configs_updated: number;
+  quality_gate_history: number;
 };
 
 export type UserCountOutputTypeSelect<
@@ -1431,6 +1941,9 @@ export type UserCountOutputTypeSelect<
   conversations?: boolean | UserCountOutputTypeCountConversationsArgs;
   invitations?: boolean | UserCountOutputTypeCountInvitationsArgs;
   refreshTokens?: boolean | UserCountOutputTypeCountRefreshTokensArgs;
+  quality_gate_configs_created?: boolean | UserCountOutputTypeCountQuality_gate_configs_createdArgs;
+  quality_gate_configs_updated?: boolean | UserCountOutputTypeCountQuality_gate_configs_updatedArgs;
+  quality_gate_history?: boolean | UserCountOutputTypeCountQuality_gate_historyArgs;
 };
 
 /**
@@ -1490,6 +2003,33 @@ export type UserCountOutputTypeCountRefreshTokensArgs<
   where?: Prisma.RefreshTokenWhereInput;
 };
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountQuality_gate_configs_createdArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.QualityGateConfigWhereInput;
+};
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountQuality_gate_configs_updatedArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.QualityGateConfigWhereInput;
+};
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountQuality_gate_historyArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.QualityGateConfigHistoryWhereInput;
+};
+
 export type UserSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetSelect<
@@ -1511,6 +2051,9 @@ export type UserSelect<
     conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>;
     invitations?: boolean | Prisma.User$invitationsArgs<ExtArgs>;
     refreshTokens?: boolean | Prisma.User$refreshTokensArgs<ExtArgs>;
+    quality_gate_configs_created?: boolean | Prisma.User$quality_gate_configs_createdArgs<ExtArgs>;
+    quality_gate_configs_updated?: boolean | Prisma.User$quality_gate_configs_updatedArgs<ExtArgs>;
+    quality_gate_history?: boolean | Prisma.User$quality_gate_historyArgs<ExtArgs>;
     _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['user']
@@ -1595,6 +2138,9 @@ export type UserInclude<
   conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>;
   invitations?: boolean | Prisma.User$invitationsArgs<ExtArgs>;
   refreshTokens?: boolean | Prisma.User$refreshTokensArgs<ExtArgs>;
+  quality_gate_configs_created?: boolean | Prisma.User$quality_gate_configs_createdArgs<ExtArgs>;
+  quality_gate_configs_updated?: boolean | Prisma.User$quality_gate_configs_updatedArgs<ExtArgs>;
+  quality_gate_history?: boolean | Prisma.User$quality_gate_historyArgs<ExtArgs>;
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type UserIncludeCreateManyAndReturn<
@@ -1619,6 +2165,9 @@ export type $UserPayload<
     conversations: Prisma.$ClientConversationPayload<ExtArgs>[];
     invitations: Prisma.$UserInvitationPayload<ExtArgs>[];
     refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[];
+    quality_gate_configs_created: Prisma.$QualityGateConfigPayload<ExtArgs>[];
+    quality_gate_configs_updated: Prisma.$QualityGateConfigPayload<ExtArgs>[];
+    quality_gate_history: Prisma.$QualityGateConfigHistoryPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -2200,6 +2749,43 @@ export interface Prisma__UserClient<
   ): Prisma.PrismaPromise<
     | runtime.Types.Result.GetResult<
         Prisma.$RefreshTokenPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  quality_gate_configs_created<
+    T extends Prisma.User$quality_gate_configs_createdArgs<ExtArgs> = {},
+  >(
+    args?: Prisma.Subset<T, Prisma.User$quality_gate_configs_createdArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$QualityGateConfigPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  quality_gate_configs_updated<
+    T extends Prisma.User$quality_gate_configs_updatedArgs<ExtArgs> = {},
+  >(
+    args?: Prisma.Subset<T, Prisma.User$quality_gate_configs_updatedArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$QualityGateConfigPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  quality_gate_history<T extends Prisma.User$quality_gate_historyArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.User$quality_gate_historyArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$QualityGateConfigHistoryPayload<ExtArgs>,
         T,
         'findMany',
         GlobalOmitOptions
@@ -2827,6 +3413,92 @@ export type User$refreshTokensArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.RefreshTokenScalarFieldEnum | Prisma.RefreshTokenScalarFieldEnum[];
+};
+
+/**
+ * User.quality_gate_configs_created
+ */
+export type User$quality_gate_configs_createdArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the QualityGateConfig
+   */
+  select?: Prisma.QualityGateConfigSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the QualityGateConfig
+   */
+  omit?: Prisma.QualityGateConfigOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QualityGateConfigInclude<ExtArgs> | null;
+  where?: Prisma.QualityGateConfigWhereInput;
+  orderBy?:
+    | Prisma.QualityGateConfigOrderByWithRelationInput
+    | Prisma.QualityGateConfigOrderByWithRelationInput[];
+  cursor?: Prisma.QualityGateConfigWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.QualityGateConfigScalarFieldEnum | Prisma.QualityGateConfigScalarFieldEnum[];
+};
+
+/**
+ * User.quality_gate_configs_updated
+ */
+export type User$quality_gate_configs_updatedArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the QualityGateConfig
+   */
+  select?: Prisma.QualityGateConfigSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the QualityGateConfig
+   */
+  omit?: Prisma.QualityGateConfigOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QualityGateConfigInclude<ExtArgs> | null;
+  where?: Prisma.QualityGateConfigWhereInput;
+  orderBy?:
+    | Prisma.QualityGateConfigOrderByWithRelationInput
+    | Prisma.QualityGateConfigOrderByWithRelationInput[];
+  cursor?: Prisma.QualityGateConfigWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.QualityGateConfigScalarFieldEnum | Prisma.QualityGateConfigScalarFieldEnum[];
+};
+
+/**
+ * User.quality_gate_history
+ */
+export type User$quality_gate_historyArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the QualityGateConfigHistory
+   */
+  select?: Prisma.QualityGateConfigHistorySelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the QualityGateConfigHistory
+   */
+  omit?: Prisma.QualityGateConfigHistoryOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QualityGateConfigHistoryInclude<ExtArgs> | null;
+  where?: Prisma.QualityGateConfigHistoryWhereInput;
+  orderBy?:
+    | Prisma.QualityGateConfigHistoryOrderByWithRelationInput
+    | Prisma.QualityGateConfigHistoryOrderByWithRelationInput[];
+  cursor?: Prisma.QualityGateConfigHistoryWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?:
+    | Prisma.QualityGateConfigHistoryScalarFieldEnum
+    | Prisma.QualityGateConfigHistoryScalarFieldEnum[];
 };
 
 /**

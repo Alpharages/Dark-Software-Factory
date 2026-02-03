@@ -1,4 +1,11 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 // AIProvider type comes from IAIExecutionPayload interface
 import type { ConsumeMessage, Channel } from 'amqplib';
@@ -76,6 +83,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly rabbitmq: RabbitMQService,
     private readonly executionTracker: ExecutionTrackerService,
+    @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestrator: OrchestratorService,
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,

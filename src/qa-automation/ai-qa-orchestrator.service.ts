@@ -8,7 +8,7 @@
  * Pattern: DSF orchestrates WHEN → AI executes + parses → DSF stores + decides
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { ErrorCategory } from '@/common/sentry/sentry.constants';
 import { OrchestratorService } from '@/ai-routing/orchestrator.service';
@@ -36,6 +36,7 @@ export class AiQaOrchestrator {
   private readonly logger = new Logger(AiQaOrchestrator.name);
 
   constructor(
+    @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService: OrchestratorService, // Story 2.8
     private readonly qaMetrics: QaMetricsService, // Story 3.8
     private readonly sentry: SentryService, // Story 1.9

@@ -4,6 +4,7 @@ import { QualityGatesService, SAMPLE_QA_RESULT } from './quality-gates.service';
 import { QualityCategory, QualityGateStatus } from './interfaces/quality-gate.interface';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { QA_METRICS } from '../common/metrics/metrics.constants';
+import { QualityGateConfigService } from './quality-gate-config/quality-gate-config.service';
 
 describe('QualityGatesService', () => {
   let service: QualityGatesService;
@@ -33,6 +34,32 @@ describe('QualityGatesService', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: QualityGateConfigService,
+          useValue: {
+            getEffectiveConfig: jest.fn().mockResolvedValue({
+              projectId: 'proj-123',
+              thresholds: {
+                minTestPassRate: 100,
+                minCoverage: 80,
+                targetCoverage: 90,
+                maxLintingErrors: 0,
+                maxLintingWarnings: 10,
+                blockOnCriticalSecurity: true,
+                blockOnHighSecurity: true,
+                maxComplexity: 20,
+              },
+              enabledCategories: [
+                QualityCategory.LINTING,
+                QualityCategory.TESTING,
+                QualityCategory.COVERAGE,
+                QualityCategory.SECURITY,
+              ],
+              allowOverride: false,
+              overrideRequiresApproval: true,
+            }),
+          },
         },
         {
           provide: getToken(QA_METRICS.QUALITY_GATE_EVALUATIONS_TOTAL),

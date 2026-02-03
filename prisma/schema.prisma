@@ -43,6 +43,7 @@ model Project {
   coverage_config   ProjectCoverageConfig?
   conversations     ClientConversation[] // Story 5.5
   reports           Report[] // Story 5.6
+  quality_gate_config QualityGateConfig?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -891,6 +892,11 @@ model User {
   conversations       ClientConversation[] @relation("PMConversations") // Story 5.5
   invitations         UserInvitation[]     @relation("InvitedBy") // Story 17-1: Invitations sent by this user
   refreshTokens       RefreshToken[]       // Story 17-3: User's refresh tokens
+  
+  // Quality Gate Relations
+  quality_gate_configs_created QualityGateConfig[] @relation("QualityGateConfigCreatedBy")
+  quality_gate_configs_updated QualityGateConfig[] @relation("QualityGateConfigUpdatedBy")
+  quality_gate_history         QualityGateConfigHistory[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -1246,4 +1252,70 @@ model RefreshToken {
   @@index([token_id])
   @@index([user_id, is_revoked]) // Query active tokens for a user
   @@map("refresh_tokens")
+}
+
+// ============================================
+// STORY 8.4: QUALITY GATE CONFIGURATION
+// ============================================
+
+model QualityGateConfig {
+  id                    String   @id @default(uuid())
+  projectId             String?  @unique // null = global default
+  project               Project? @relation(fields: [projectId], references: [id])
+
+  // Thresholds (align with Story 3.5 DEFAULT_THRESHOLDS)
+  minTestPassRate       Int      @default(100) // percentage
+  minCoverage           Int      @default(80)  // percentage
+  maxLintingErrors      Int      @default(0)
+  maxLintingWarnings    Int      @default(10)
+  blockOnCriticalSecurity Boolean @default(true)
+  blockOnHighSecurity   Boolean  @default(true)
+  maxComplexity         Int      @default(20)  // Aligned with Story 3.5
+  targetCoverage        Int      @default(90)  // percentage
+
+  // Category enablement (from Story 3.5 IQualityGateConfig)
+  enabledCategories     Json     @default("[\"LINTING\",\"TESTING\",\"COVERAGE\",\"SECURITY\"]") // Stored as array of strings
+
+  // Override settings (from Story 3.5 IQualityGateConfig)
+  allowOverride         Boolean  @default(false)
+  overrideRequiresApproval Boolean @default(true)
+
+  // Versioning for rollback
+  version               Int      @default(1)
+
+  // Metadata
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdById           String
+  createdBy             User     @relation("QualityGateConfigCreatedBy", fields: [createdById], references: [id])
+  updatedById           String
+  updatedBy             User     @relation("QualityGateConfigUpdatedBy", fields: [updatedById], references: [id])
+
+  // Relations
+  history               QualityGateConfigHistory[]
+
+  @@index([projectId])
+  @@map("quality_gate_configs")
+}
+
+model QualityGateConfigHistory {
+  id          String   @id @default(uuid())
+  configId    String
+  config      QualityGateConfig @relation(fields: [configId], references: [id])
+  projectId   String?
+
+  // Full configuration snapshot as JSON
+  snapshot    Json     // Contains all threshold values, enabledCategories, etc.
+  version     Int      // Version number at time of change
+
+  // Change metadata
+  changedById String
+  changedBy   User     @relation(fields: [changedById], references: [id])
+  changedAt   DateTime @default(now())
+  changeReason String?
+
+  @@index([configId])
+  @@index([projectId])
+  @@index([changedAt])
+  @@map("quality_gate_config_history")
 }

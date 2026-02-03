@@ -216,3 +216,13 @@ export type UserInvitation = Prisma.UserInvitationModel;
  *
  */
 export type RefreshToken = Prisma.RefreshTokenModel;
+/**
+ * Model QualityGateConfig
+ *
+ */
+export type QualityGateConfig = Prisma.QualityGateConfigModel;
+/**
+ * Model QualityGateConfigHistory
+ *
+ */
+export type QualityGateConfigHistory = Prisma.QualityGateConfigHistoryModel;

@@ -415,6 +415,8 @@ export const ModelName = {
   AiTaskPattern: 'AiTaskPattern',
   UserInvitation: 'UserInvitation',
   RefreshToken: 'RefreshToken',
+  QualityGateConfig: 'QualityGateConfig',
+  QualityGateConfigHistory: 'QualityGateConfigHistory',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -474,7 +476,9 @@ export type TypeMap<
       | 'aiCapability'
       | 'aiTaskPattern'
       | 'userInvitation'
-      | 'refreshToken';
+      | 'refreshToken'
+      | 'qualityGateConfig'
+      | 'qualityGateConfigHistory';
     txIsolationLevel: TransactionIsolationLevel;
   };
   model: {
@@ -3486,6 +3490,158 @@ export type TypeMap<
         };
       };
     };
+    QualityGateConfig: {
+      payload: Prisma.$QualityGateConfigPayload<ExtArgs>;
+      fields: Prisma.QualityGateConfigFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.QualityGateConfigFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.QualityGateConfigFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>;
+        };
+        findFirst: {
+          args: Prisma.QualityGateConfigFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.QualityGateConfigFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>;
+        };
+        findMany: {
+          args: Prisma.QualityGateConfigFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>[];
+        };
+        create: {
+          args: Prisma.QualityGateConfigCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>;
+        };
+        createMany: {
+          args: Prisma.QualityGateConfigCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.QualityGateConfigCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>[];
+        };
+        delete: {
+          args: Prisma.QualityGateConfigDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>;
+        };
+        update: {
+          args: Prisma.QualityGateConfigUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>;
+        };
+        deleteMany: {
+          args: Prisma.QualityGateConfigDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.QualityGateConfigUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.QualityGateConfigUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>[];
+        };
+        upsert: {
+          args: Prisma.QualityGateConfigUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigPayload>;
+        };
+        aggregate: {
+          args: Prisma.QualityGateConfigAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQualityGateConfig>;
+        };
+        groupBy: {
+          args: Prisma.QualityGateConfigGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.QualityGateConfigGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.QualityGateConfigCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.QualityGateConfigCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    QualityGateConfigHistory: {
+      payload: Prisma.$QualityGateConfigHistoryPayload<ExtArgs>;
+      fields: Prisma.QualityGateConfigHistoryFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.QualityGateConfigHistoryFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.QualityGateConfigHistoryFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>;
+        };
+        findFirst: {
+          args: Prisma.QualityGateConfigHistoryFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.QualityGateConfigHistoryFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>;
+        };
+        findMany: {
+          args: Prisma.QualityGateConfigHistoryFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>[];
+        };
+        create: {
+          args: Prisma.QualityGateConfigHistoryCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>;
+        };
+        createMany: {
+          args: Prisma.QualityGateConfigHistoryCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.QualityGateConfigHistoryCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>[];
+        };
+        delete: {
+          args: Prisma.QualityGateConfigHistoryDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>;
+        };
+        update: {
+          args: Prisma.QualityGateConfigHistoryUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>;
+        };
+        deleteMany: {
+          args: Prisma.QualityGateConfigHistoryDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.QualityGateConfigHistoryUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.QualityGateConfigHistoryUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>[];
+        };
+        upsert: {
+          args: Prisma.QualityGateConfigHistoryUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityGateConfigHistoryPayload>;
+        };
+        aggregate: {
+          args: Prisma.QualityGateConfigHistoryAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQualityGateConfigHistory>;
+        };
+        groupBy: {
+          args: Prisma.QualityGateConfigHistoryGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.QualityGateConfigHistoryGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.QualityGateConfigHistoryCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.QualityGateConfigHistoryCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
   };
 } & {
   other: {
@@ -4186,6 +4342,44 @@ export const RefreshTokenScalarFieldEnum = {
 export type RefreshTokenScalarFieldEnum =
   (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum];
 
+export const QualityGateConfigScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  minTestPassRate: 'minTestPassRate',
+  minCoverage: 'minCoverage',
+  maxLintingErrors: 'maxLintingErrors',
+  maxLintingWarnings: 'maxLintingWarnings',
+  blockOnCriticalSecurity: 'blockOnCriticalSecurity',
+  blockOnHighSecurity: 'blockOnHighSecurity',
+  maxComplexity: 'maxComplexity',
+  targetCoverage: 'targetCoverage',
+  enabledCategories: 'enabledCategories',
+  allowOverride: 'allowOverride',
+  overrideRequiresApproval: 'overrideRequiresApproval',
+  version: 'version',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  createdById: 'createdById',
+  updatedById: 'updatedById',
+} as const;
+
+export type QualityGateConfigScalarFieldEnum =
+  (typeof QualityGateConfigScalarFieldEnum)[keyof typeof QualityGateConfigScalarFieldEnum];
+
+export const QualityGateConfigHistoryScalarFieldEnum = {
+  id: 'id',
+  configId: 'configId',
+  projectId: 'projectId',
+  snapshot: 'snapshot',
+  version: 'version',
+  changedById: 'changedById',
+  changedAt: 'changedAt',
+  changeReason: 'changeReason',
+} as const;
+
+export type QualityGateConfigHistoryScalarFieldEnum =
+  (typeof QualityGateConfigHistoryScalarFieldEnum)[keyof typeof QualityGateConfigHistoryScalarFieldEnum];
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc',
@@ -4831,6 +5025,8 @@ export type GlobalOmitConfig = {
   aiTaskPattern?: Prisma.AiTaskPatternOmit;
   userInvitation?: Prisma.UserInvitationOmit;
   refreshToken?: Prisma.RefreshTokenOmit;
+  qualityGateConfig?: Prisma.QualityGateConfigOmit;
+  qualityGateConfigHistory?: Prisma.QualityGateConfigHistoryOmit;
 };
 
 /* Types for Logging */

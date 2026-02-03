@@ -12,6 +12,7 @@ import { AiRoutingModule } from '@/ai-routing/ai-routing.module';
 import { LoggerModule } from '@/common/logger/logger.module';
 import { CleanupService } from './cleanup.service';
 import { CleanupSchedulerService } from './cleanup-scheduler.service';
+import { ExecutionCleanupListener } from './listeners/execution-cleanup.listener';
 
 /**
  * Prometheus metric providers for cleanup operations
@@ -59,7 +60,12 @@ const cleanupMetricProviders = [
     ExecutionModule,
     AiRoutingModule,
   ],
-  providers: [CleanupService, CleanupSchedulerService, ...cleanupMetricProviders],
+  providers: [
+    CleanupService,
+    CleanupSchedulerService,
+    ExecutionCleanupListener,
+    ...cleanupMetricProviders,
+  ],
   exports: [CleanupService],
 })
 export class CleanupModule {}
