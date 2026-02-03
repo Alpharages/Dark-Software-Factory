@@ -9,9 +9,10 @@ import { WebhooksController } from './webhooks.controller';
 import { GitHubWebhooksController } from './github-webhooks.controller';
 import { WebhooksService } from './webhooks.service';
 import { WebhookSignatureGuard, GitHubWebhookSignatureGuard } from './guards';
+import { WebhookDeduplicationService, ActionableStatusService } from './services';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
-import { AppMetricsModule, WEBHOOK_METRICS, LABELS } from '@/common/metrics';
+import { AppMetricsModule, WEBHOOK_METRICS, QUEUE_METRICS, LABELS } from '@/common/metrics';
 import { FileLocksModule } from '@/file-locks/file-locks.module';
 
 /**
@@ -42,6 +43,9 @@ import { FileLocksModule } from '@/file-locks/file-locks.module';
     WebhooksService,
     WebhookSignatureGuard,
     GitHubWebhookSignatureGuard,
+    // Story 20.1: Webhook reliability services
+    WebhookDeduplicationService,
+    ActionableStatusService,
     // Webhook Metrics (Story 2.1 - NFR-O5)
     // Note: These metrics are also registered in AppMetricsModule, but @willsoto/nestjs-prometheus
     // requires providers to be in the same module where @InjectMetric is used
@@ -71,7 +75,24 @@ import { FileLocksModule } from '@/file-locks/file-locks.module';
       help: 'Total number of duplicate webhooks detected',
       labelNames: ['event_type'],
     }),
+    // Story 20.1: Dead letter queue metric
+    makeCounterProvider({
+      name: QUEUE_METRICS.DEAD_LETTER_COUNT,
+      help: 'Total number of messages sent to dead letter queue',
+      labelNames: ['queue', 'reason'],
+    }),
+    // Story 20.1: Status filtering metrics
+    makeCounterProvider({
+      name: WEBHOOK_METRICS.FILTERED_TOTAL,
+      help: 'Total number of webhooks filtered by status',
+      labelNames: ['status', 'reason'],
+    }),
+    makeCounterProvider({
+      name: WEBHOOK_METRICS.ACTIONABLE_TOTAL,
+      help: 'Total number of actionable webhooks queued',
+      labelNames: ['internal_status'],
+    }),
   ],
-  exports: [WebhooksService],
+  exports: [WebhooksService, WebhookDeduplicationService, ActionableStatusService],
 })
 export class WebhooksModule {}

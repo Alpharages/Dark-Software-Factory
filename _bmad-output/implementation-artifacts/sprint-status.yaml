@@ -1327,10 +1327,10 @@ development_status:
     notes: "Refactoring into 20.1/20.2"
   
   20-1-implement-robust-webhook-handler:
-    status: ready-for-dev
+    status: done
     priority: critical
     effort: "1 day"
-    notes: "Idempotent webhook processing, signature validation, immediate 200 OK."
+    notes: "DONE: Redis deduplication, status-based filtering, DLQ, ITaskEvent normalization. 71 tests passing. Code review completed - 2 HIGH, 4 MEDIUM, 3 LOW issues fixed."
   
   20-2-unified-intake-status-check:
     status: ready-for-dev

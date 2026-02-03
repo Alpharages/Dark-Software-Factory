@@ -7,6 +7,8 @@ import {
   HttpStatus,
   Logger,
   Get,
+  BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { WebhooksService } from './webhooks.service';
@@ -14,7 +16,23 @@ import { WebhookSignatureGuard } from './guards';
 import { ClickUpWebhookDto, WebhookResponseDto } from './dto';
 import { Public } from '../common/decorators';
 import { CorrelationId } from '../common/decorators/correlation-id.decorator';
-import { IClickUpWebhookPayload } from './interfaces';
+import { IClickUpWebhookPayload, IClickUpTask, IClickUpHistoryItem } from './interfaces';
+
+/**
+ * Maps validated ClickUpWebhookDto to IClickUpWebhookPayload interface
+ *
+ * Note: DTO validation via class-validator ensures the data structure is valid.
+ * The cast is safe because validation has already occurred.
+ */
+function mapDtoToPayload(dto: ClickUpWebhookDto): IClickUpWebhookPayload {
+  return {
+    webhook_id: dto.webhook_id,
+    event: dto.event,
+    task_id: dto.task_id,
+    task: dto.task as IClickUpTask | undefined,
+    history_items: dto.history_items as IClickUpHistoryItem[] | undefined,
+  };
+}
 
 /**
  * ClickUp Webhook Controller
@@ -58,11 +76,13 @@ export class WebhooksController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Webhook acknowledged',
+    description: 'Webhook acknowledged and queued for processing',
     type: WebhookResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'Invalid webhook payload' })
   @ApiResponse({ status: 401, description: 'Invalid or missing signature' })
   @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async handleClickUpWebhook(
     @Body() payload: ClickUpWebhookDto,
     @CorrelationId() correlationId: string,
@@ -72,29 +92,30 @@ export class WebhooksController {
     );
 
     try {
-      // Process the webhook
+      // Process the webhook with type-safe mapping
       const response = await this.webhooksService.processWebhook(
-        payload as unknown as IClickUpWebhookPayload,
+        mapDtoToPayload(payload),
         correlationId,
       );
 
       return response;
-    } catch (_error) {
+    } catch (error) {
       this.logger.error(
-        `[${correlationId}] Error processing webhook: ${(_error as Error).message}`,
-        (_error as Error).stack,
+        `[${correlationId}] Error processing webhook: ${(error as Error).message}`,
+        (error as Error).stack,
       );
 
-      // Still return 200 to prevent ClickUp retries on processing errors
-      // Log the error for investigation
-      const response = new WebhookResponseDto();
-      response.success = true;
-      response.message = 'Webhook received but processing failed';
-      response.correlationId = correlationId;
-      response.willProcess = false;
-      response.timestamp = new Date().toISOString();
+      // Categorize errors for appropriate HTTP responses
+      const err = error as Error;
 
-      return response;
+      // Validation errors -> 400 Bad Request
+      if (err.name === 'ValidationError' || err.message.includes('validation')) {
+        throw new BadRequestException(`Invalid webhook payload: ${err.message}`);
+      }
+
+      // System errors -> 500 Internal Server Error
+      // Let NestJS handle this as a 500
+      throw new InternalServerErrorException(`Webhook processing failed: ${err.message}`);
     }
   }
 
