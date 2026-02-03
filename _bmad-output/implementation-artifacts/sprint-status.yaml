@@ -1394,3 +1394,221 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/23-3-resource-limit-enforcement.md"
   epic-23-retrospective: done
 
+
+# ===================================================================
+# PRIORITY SEQUENCE - BACKLOG DEVELOPMENT ORDER
+# Updated: 2026-02-03
+# ===================================================================
+
+priority_sequence:
+  last_updated: "2026-02-03T17:32:31+05:00"
+  updated_by: "Code Review"
+  
+  critical_p0:
+    description: "CRITICAL - Must develop first. Blocks core AI task pickup reliability."
+    stories:
+      - id: "20-1"
+        story: "implement-robust-webhook-handler"
+        epic: "epic-20"
+        name: "Robust Webhook Handler"
+        reason: "Idempotent webhook processing, signature validation, immediate 200 OK. Foundation for reliable AI task intake."
+        estimated_effort: "1 day"
+        story_points: 5
+      
+      - id: "20-3"
+        story: "prevent-duplicate-executions"
+        epic: "epic-20"
+        name: "Prevent Duplicate Executions"
+        reason: "Check Execution DB before starting new jobs. Prevents system corruption and resource waste."
+        estimated_effort: "0.5 days"
+        story_points: 3
+      
+      - id: "20-2"
+        story: "unified-intake-status-check"
+        epic: "epic-20"
+        name: "Unified Intake Status Check"
+        reason: "Centralized 'Ready for AI' status logic shared by Webhook and Sync. Required for consistency."
+        estimated_effort: "1 day"
+        story_points: 5
+
+  high_p1:
+    description: "HIGH PRIORITY - After Epic 20 complete"
+    stories:
+      - id: "16-5"
+        story: "ai-decision-logging-module"
+        epic: "epic-16"
+        name: "AI Decision Logging Module"
+        reason: "Quick win - already ready-for-dev. Follow-up to Story 16-4. Medium effort (1 day)."
+        estimated_effort: "1 day"
+        story_points: 3
+        status: "ready-for-dev"
+      
+      - id: "8-1"
+        story: "qa-review-queue-sampling-configuration"
+        epic: "epic-8"
+        name: "QA Review Queue & Sampling Configuration"
+        reason: "Unblocks Epic 15 (Production Rollout). Foundation for Lead QA manual review workflow."
+        estimated_effort: "2 days"
+        story_points: 5
+        status: "backlog"
+      
+      - id: "8-3"
+        story: "production-approval-workflow"
+        epic: "epic-8"
+        name: "Production Approval Workflow"
+        reason: "Required for production deployment approval process."
+        estimated_effort: "2 days"
+        story_points: 5
+        status: "backlog"
+
+  medium_p2:
+    description: "MEDIUM PRIORITY - After Epic 8 started"
+    stories:
+      - id: "9-U-3"
+        story: "automatic-fix-ticket-creation"
+        epic: "epic-9-U"
+        name: "Automatic Fix Ticket Creation"
+        reason: "Auto-create ClickUp tickets for production errors. Link to error logs, assign based on component ownership."
+        estimated_effort: "2 days"
+        story_points: 5
+        status: "backlog"
+      
+      - id: "9-U-4"
+        story: "error-context-extraction-linking"
+        epic: "epic-9-U"
+        name: "Error Context Extraction & Linking"
+        reason: "Extract stack traces, user context, deployment info. Enhanced by Epic 11.2 audit logs."
+        estimated_effort: "2 days"
+        story_points: 3
+        status: "backlog"
+        v3_enhancement: "Epic 11.2 (Audit Logger) provides commit history and deployment context"
+      
+      - id: "10-U-1"
+        story: "socket-io-real-time-infrastructure"
+        epic: "epic-10-U"
+        name: "Socket.IO Real-time Infrastructure"
+        reason: "Unblocks Epic 15. Foundation for real-time streaming to frontend clients."
+        estimated_effort: "3 days"
+        story_points: 8
+        status: "backlog"
+      
+      - id: "8-UI"
+        story: "lead-qa-review-dashboard"
+        epic: "epic-8"
+        name: "UI: Lead QA Review Dashboard"
+        reason: "UI Gateway for Epic 8. Defined during Epic 7 Retrospective."
+        priority: "high"
+        status: "backlog"
+
+  lower_p3:
+    description: "LOWER PRIORITY / DEPENDENT on previous completion"
+    stories:
+      - id: "10-U-2"
+        story: "execution-progress-streaming"
+        epic: "epic-10-U"
+        name: "Execution Progress Streaming"
+        reason: "Stream execution progress updates to frontend. Uses Epic 14.5 real-time APIs."
+        estimated_effort: "2 days"
+        story_points: 5
+        status: "backlog"
+        dependencies: ["10-U-1"]
+      
+      - id: "9-U-5"
+        story: "production-error-dashboard"
+        epic: "epic-9-U"
+        name: "Production Error Dashboard"
+        reason: "Ops team dashboard for production errors. Real-time alerts. Uses Epic 14.5 observability APIs."
+        estimated_effort: "2 days"
+        story_points: 5
+        status: "backlog"
+        v3_enhancement: "Epic 14.5 provides real-time observability APIs"
+      
+      - id: "15-4"
+        story: "production-rollout-plan"
+        epic: "epic-15"
+        name: "Production Rollout Plan"
+        reason: "Staging deploy. 10% canary. Gradual to 100% over 1 week. Rollback procedures."
+        estimated_effort: "1 day"
+        story_points: 3
+        status: "backlog"
+        blocker: "Pending Epics 8, 9, 10 completion"
+      
+      - id: "15-5"
+        story: "e2e-testing-validation"
+        epic: "epic-15"
+        name: "E2E Testing & Validation"
+        reason: "E2E test full v3 flow. Load test 100 concurrent tickets. Validate circular deps, file locks, metrics."
+        estimated_effort: "2 days"
+        story_points: 5
+        status: "backlog"
+
+# ===================================================================
+# DEPENDENCY CHAIN VISUALIZATION
+# ===================================================================
+
+development_flow:
+  phase_1:
+    name: "AI Reliability Foundation"
+    epic: "epic-20"
+    stories: ["20-1", "20-3", "20-2"]
+    unblock_next: true
+  
+  phase_2:
+    name: "Quick Win + QA Foundation"
+    stories: ["16-5", "8-1", "8-3"]
+    depends_on: "phase_1"
+  
+  phase_3:
+    name: "Error Handling & Real-time Infrastructure"
+    epics: ["epic-9-U", "epic-10-U"]
+    depends_on: "phase_2"
+  
+  phase_4:
+    name: "Production Rollout"
+    epic: "epic-15"
+    stories: ["15-4", "15-5"]
+    depends_on: "phase_3"
+    blocked_by: "Backlog Epics 8, 9, 10"
+
+# ===================================================================
+# EPIC STATUS SUMMARY
+# ===================================================================
+
+epic_status:
+  epic-8:
+    name: "Lead QA Manual Review Workflow"
+    status: "backlog"
+    priority: "high"
+    total_stories: 8
+    ready_to_start: true
+    notes: "CLEAR SEPARATION: Epic 8 = manual review by Lead QA, Epic 13 = automated AI self-healing"
+  
+  epic-9-U:
+    name: "Error Classification & Handling (Updated)"
+    status: "in-progress"
+    priority: "medium"
+    total_stories: 4
+    notes: "AI classifies error severity. Pattern recognition task. From original Epic 9."
+  
+  epic-10-U:
+    name: "Real-time Notifications & Controls (Updated)"
+    status: "backlog"
+    priority: "medium"
+    total_stories: 7
+    dependencies: ["Epic 11", "Epic 13", "Epic 14"]
+    notes: "Reduced from 10→7 stories. Backend observability APIs moved to Epic 14."
+  
+  epic-15:
+    name: "v3 Configuration & Production Rollout"
+    status: "blocked"
+    blocker: "Pending backlog epics (Epics 8, 9, 10)"
+    priority: "medium"
+    notes: "BLOCKED until backlog epics completed."
+  
+  epic-20:
+    name: "AI Task Pickup Reliability"
+    status: "in-progress"
+    priority: "critical"
+    total_stories: 3
+    ready_stories: 3
+    notes: "Refactoring into 20.1/20.2/20.3. All stories ready-for-dev."
