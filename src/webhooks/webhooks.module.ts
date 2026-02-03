@@ -12,6 +12,8 @@ import { WebhookSignatureGuard, GitHubWebhookSignatureGuard } from './guards';
 import { WebhookDeduplicationService, ActionableStatusService } from './services';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
+// Story 20.2: Import TicketIntakeModule for StatusEvaluationService
+import { TicketIntakeModule } from '@/ticket-intake/ticket-intake.module';
 import { AppMetricsModule, WEBHOOK_METRICS, QUEUE_METRICS, LABELS } from '@/common/metrics';
 import { FileLocksModule } from '@/file-locks/file-locks.module';
 
@@ -34,6 +36,8 @@ import { FileLocksModule } from '@/file-locks/file-locks.module';
     ConfigModule, // Required for WebhookSignatureGuard (CLICKUP_WEBHOOK_SECRET)
     DatabaseModule, // For audit logging
     RabbitMQModule, // For queue publishing
+    // Story 20.2: Import TicketIntakeModule for unified StatusEvaluationService
+    TicketIntakeModule,
     PrometheusModule, // Required for @InjectMetric decorator
     AppMetricsModule, // For Prometheus metrics
     FileLocksModule, // Story 12.3: Release locks on PR merge

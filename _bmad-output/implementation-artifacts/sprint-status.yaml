@@ -1333,10 +1333,12 @@ development_status:
     notes: "DONE: Redis deduplication, status-based filtering, DLQ, ITaskEvent normalization. 71 tests passing. Code review completed - 2 HIGH, 4 MEDIUM, 3 LOW issues fixed."
   
   20-2-unified-intake-status-check:
-    status: ready-for-dev
+    status: done
+    developer: "Kimi Code CLI"
+    completed_at: "2026-02-03"
     priority: high
     effort: "1 day"
-    notes: "Centralized logic for 'Ready for AI' status shared by Webhook and Sync."
+    notes: "DONE: Created StatusEvaluationService in ticket-intake module. Both Webhook and Sync paths now use centralized status evaluation. ActionableStatusService refactored as facade. 83 tests for StatusEvaluationService, 315+ total tests passing, no regressions. Code review completed - documentation updated, VALIDATED status documented as internal-only."
 
   20-3-prevent-duplicate-executions:
     status: done

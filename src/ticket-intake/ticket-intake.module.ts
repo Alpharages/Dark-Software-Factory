@@ -6,6 +6,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
 import { memoryStorage } from 'multer';
 import { TicketIntakeService } from './ticket-intake.service';
+// Story 20.2: Unified Status Evaluation Service
+import { StatusEvaluationService } from './services/status-evaluation.service';
 import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
 import { TicketQualityController } from './ticket-quality.controller';
@@ -87,6 +89,8 @@ const METRICS = {
   providers: [
     // Services
     TicketIntakeService,
+    // Story 20.2: Unified status evaluation service
+    StatusEvaluationService,
     TicketValidatorService,
     TicketQualityService,
     // Consumer
@@ -135,6 +139,8 @@ const METRICS = {
     TicketIntakeService,
     TicketValidatorService,
     TicketQualityService,
+    // Story 20.2: Unified status evaluation service (shared with webhooks)
+    StatusEvaluationService,
     ContextExtractionService, // Story 2.12
     ContextCacheService, // Story 2.12
   ],
