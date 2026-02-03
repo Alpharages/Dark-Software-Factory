@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { ExecutionStatus, Execution } from '@/prisma/client';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionStateMachine } from './state-machine';
@@ -41,11 +41,25 @@ export class ExecutionService {
   /**
    * Start a new AI execution
    *
+   * Task 20-3: Prevent duplicate executions
+   * - Checks for active executions before starting new ones
+   *
    * @param dto - Execution start parameters
    * @returns Created execution record
+   * @throws ConflictException if there's an active execution for the ticket
    */
   async startExecution(dto: StartExecutionDto): Promise<ExecutionResponseDto> {
     this.logger.log(`[${dto.correlationId}] Starting execution for ticket ${dto.ticketId}`);
+
+    // Task 20-3: Check for duplicate active executions before starting
+    const { hasDuplicate, existingExecution } = await this.checkDuplicateExecution(dto.ticketId);
+    if (hasDuplicate && existingExecution) {
+      throw new ConflictException(
+        `Cannot start new execution for ticket ${dto.ticketId}: ` +
+          `existing execution ${existingExecution.id} is currently ${existingExecution.status}. ` +
+          `Only one active execution per ticket is allowed.`,
+      );
+    }
 
     const input: IStartExecutionInput = {
       correlationId: dto.correlationId,
@@ -408,5 +422,77 @@ export class ExecutionService {
     } else {
       this.logger.warn(`No resumable execution found for ticket ${ticketId}`);
     }
+  }
+
+  /**
+   * Check for duplicate active executions for a ticket
+   * Task 20-3: Prevent duplicate executions - Check Execution DB before starting new jobs
+   *
+   * Uses optimized query that only fetches active executions from database.
+   *
+   * @param ticketId - Ticket ID to check
+   * @returns Object with hasDuplicate flag and existing execution info if found
+   */
+  async checkDuplicateExecution(ticketId: string): Promise<{
+    hasDuplicate: boolean;
+    existingExecution: ExecutionResponseDto | null;
+  }> {
+    // Use optimized query that only fetches active executions
+    const activeExecution = await this.tracker.findActiveExecution(ticketId);
+
+    if (activeExecution) {
+      this.logger.warn(
+        `Duplicate execution prevented for ticket ${ticketId}: existing ${activeExecution.id} is ${activeExecution.status}`,
+      );
+      return {
+        hasDuplicate: true,
+        existingExecution: this.toResponseDto(activeExecution),
+      };
+    }
+
+    return { hasDuplicate: false, existingExecution: null };
+  }
+
+  /**
+   * Check if a new execution can be started for a ticket
+   * Only allows new execution if previous is in terminal state or explicitly forcing
+   *
+   * @param ticketId - Ticket ID to check
+   * @param force - Whether to force new execution even if recently completed (bypasses warnings)
+   * @returns true if execution can start
+   * @throws ConflictException if there's an active execution
+   */
+  async canStartExecution(ticketId: string, force = false): Promise<boolean> {
+    const { hasDuplicate, existingExecution } = await this.checkDuplicateExecution(ticketId);
+
+    if (hasDuplicate && existingExecution) {
+      throw new ConflictException(
+        `Cannot start new execution for ticket ${ticketId}: ` +
+          `existing execution ${existingExecution.id} is currently ${existingExecution.status}. ` +
+          `Only one active execution per ticket is allowed.`,
+      );
+    }
+
+    // If not forcing, check for recent completed executions to prevent accidental duplicates
+    if (!force) {
+      const executions = await this.tracker.getExecutionsForTicket(ticketId);
+      const recentCompleted = executions.find(
+        (e) =>
+          e.status === ExecutionStatus.COMPLETED &&
+          e.completed_at &&
+          Date.now() - e.completed_at.getTime() < 5 * 60 * 1000, // 5 minutes
+      );
+
+      if (recentCompleted) {
+        this.logger.warn(
+          `Ticket ${ticketId} was recently completed (${recentCompleted.id}). ` +
+            `Use force=true to bypass this warning.`,
+        );
+        // Return false to indicate execution should not proceed without force flag
+        return false;
+      }
+    }
+
+    return true;
   }
 }

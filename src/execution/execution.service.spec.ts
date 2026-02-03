@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException } from '@nestjs/common';
 import { ExecutionService } from './execution.service';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionStateMachine, InvalidStateTransitionError } from './state-machine';
@@ -80,6 +81,8 @@ describe('ExecutionService', () => {
             cancelExecution: jest.fn(),
             getExecution: jest.fn(),
             getExecutionsForTicket: jest.fn(),
+            hasActiveExecution: jest.fn(),
+            findActiveExecution: jest.fn(),
           },
         },
         {
@@ -138,6 +141,7 @@ describe('ExecutionService', () => {
         } as PromptMetadataSnapshotDto,
       };
 
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue(null);
       jest.spyOn(trackerService, 'startExecution').mockResolvedValue(mockExecution);
 
       const result = await service.startExecution(dto);
@@ -152,6 +156,32 @@ describe('ExecutionService', () => {
           status: ExecutionStatus.QUEUED,
         }),
       );
+    });
+
+    it('should throw ConflictException when active execution exists (Task 20-3)', async () => {
+      const dto: StartExecutionDto = {
+        correlationId: 'corr-123',
+        ticketId: 'ticket-123',
+        clickupTaskId: 'cu-123',
+        provider: AIProvider.CURSOR_HEADLESS,
+        prompt: 'test prompt',
+        complexityScore: 50,
+        promptMetadata: {
+          promptLength: 100,
+          estimatedTokens: 200,
+          templateVersion: '1.0.0',
+          generatedAt: new Date().toISOString(),
+        } as PromptMetadataSnapshotDto,
+      };
+
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue({
+        ...mockExecution,
+        id: 'existing-exec',
+        status: ExecutionStatus.IN_PROGRESS,
+      });
+
+      await expect(service.startExecution(dto)).rejects.toThrow(ConflictException);
+      expect(trackerService.startExecution).not.toHaveBeenCalled();
     });
   });
 
@@ -323,6 +353,112 @@ describe('ExecutionService', () => {
       jest.spyOn(stateMachine, 'isTerminal').mockReturnValue(true);
 
       const result = service.isTerminal(ExecutionStatus.COMPLETED);
+
+      expect(result).toBe(true);
+    });
+  });
+
+  // Task 20-3: Duplicate execution prevention tests
+  describe('checkDuplicateExecution', () => {
+    it('should return no duplicate when no active execution exists', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue(null);
+
+      const result = await service.checkDuplicateExecution('ticket-123');
+
+      expect(result.hasDuplicate).toBe(false);
+      expect(result.existingExecution).toBeNull();
+    });
+
+    it('should detect duplicate when execution is QUEUED', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.QUEUED,
+      });
+
+      const result = await service.checkDuplicateExecution('ticket-123');
+
+      expect(result.hasDuplicate).toBe(true);
+      expect(result.existingExecution).toBeDefined();
+    });
+
+    it('should detect duplicate when execution is IN_PROGRESS', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+      });
+
+      const result = await service.checkDuplicateExecution('ticket-123');
+
+      expect(result.hasDuplicate).toBe(true);
+    });
+
+    it('should detect duplicate when execution is AWAITING_APPROVAL', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.AWAITING_APPROVAL,
+      });
+
+      const result = await service.checkDuplicateExecution('ticket-123');
+
+      expect(result.hasDuplicate).toBe(true);
+    });
+  });
+
+  describe('canStartExecution', () => {
+    it('should return true when no active executions', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue(null);
+      jest.spyOn(trackerService, 'getExecutionsForTicket').mockResolvedValue([]);
+
+      const result = await service.canStartExecution('ticket-123');
+
+      expect(result).toBe(true);
+    });
+
+    it('should throw ConflictException when active execution exists', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+      });
+
+      await expect(service.canStartExecution('ticket-123')).rejects.toThrow(ConflictException);
+    });
+
+    it('should include execution details in error message', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue({
+        ...mockExecution,
+        id: 'existing-exec-456',
+        status: ExecutionStatus.QUEUED,
+      });
+
+      await expect(service.canStartExecution('ticket-123')).rejects.toThrow('existing-exec-456');
+    });
+
+    it('should return false when recent completion exists without force flag', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue(null);
+      jest.spyOn(trackerService, 'getExecutionsForTicket').mockResolvedValue([
+        {
+          ...mockExecution,
+          status: ExecutionStatus.COMPLETED,
+          completed_at: new Date(), // Just completed
+        },
+      ]);
+
+      const result = await service.canStartExecution('ticket-123');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when recent completion exists with force flag', async () => {
+      jest.spyOn(trackerService, 'findActiveExecution').mockResolvedValue(null);
+      jest.spyOn(trackerService, 'getExecutionsForTicket').mockResolvedValue([
+        {
+          ...mockExecution,
+          status: ExecutionStatus.COMPLETED,
+          completed_at: new Date(),
+        },
+      ]);
+
+      const result = await service.canStartExecution('ticket-123', true);
 
       expect(result).toBe(true);
     });

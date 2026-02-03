@@ -553,6 +553,22 @@ export class ExecutionTrackerService implements OnModuleInit {
   }
 
   /**
+   * Check if ticket has any active executions (Task 20-3)
+   * More efficient than getExecutionsForTicket() when only checking existence
+   */
+  async hasActiveExecution(ticketId: string): Promise<boolean> {
+    return this.repository.hasActiveExecution(ticketId);
+  }
+
+  /**
+   * Find active execution for a ticket (Task 20-3)
+   * Returns the most recent active execution or null
+   */
+  async findActiveExecution(ticketId: string): Promise<Execution | null> {
+    return this.repository.findActiveExecutionByTicketId(ticketId);
+  }
+
+  /**
    * Assign container to execution (Story 23.2)
    * Stores container ID for later cleanup
    */

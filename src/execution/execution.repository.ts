@@ -181,6 +181,47 @@ export class ExecutionRepository {
   }
 
   /**
+   * Find active (non-terminal) execution for a ticket
+   * Returns the most recent active execution or null if none exists
+   */
+  async findActiveExecutionByTicketId(ticketId: string): Promise<Execution | null> {
+    const activeStatuses: ExecutionStatus[] = [
+      ExecutionStatus.QUEUED,
+      ExecutionStatus.IN_PROGRESS,
+      ExecutionStatus.AWAITING_APPROVAL,
+    ];
+
+    const execution = await this.prisma.execution.findFirst({
+      where: {
+        ticket_id: ticketId,
+        status: { in: activeStatuses },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return execution;
+  }
+
+  /**
+   * Check if ticket has any active executions
+   */
+  async hasActiveExecution(ticketId: string): Promise<boolean> {
+    const count = await this.prisma.execution.count({
+      where: {
+        ticket_id: ticketId,
+        status: {
+          in: [
+            ExecutionStatus.QUEUED,
+            ExecutionStatus.IN_PROGRESS,
+            ExecutionStatus.AWAITING_APPROVAL,
+          ],
+        },
+      },
+    });
+    return count > 0;
+  }
+
+  /**
    * Get active execution count per provider
    */
   async getActiveCountByProvider(): Promise<Record<AIProvider, number>> {

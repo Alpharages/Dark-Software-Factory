@@ -57,6 +57,14 @@ export class AIExecutionPayloadDto {
   @IsOptional()
   @IsBoolean()
   allowFallback?: boolean;
+
+  /**
+   * Force new execution even if there's an active one (for retries)
+   * Task 20-3: Prevent duplicate executions
+   */
+  @IsOptional()
+  @IsBoolean()
+  force?: boolean;
 }
 
 /**
@@ -114,6 +122,14 @@ export class PublishExecutionDto {
   @IsOptional()
   @IsBoolean()
   allowFallback?: boolean;
+
+  /**
+   * Force new execution even if there's an active one (for retries)
+   * Task 20-3: Prevent duplicate executions
+   */
+  @IsOptional()
+  @IsBoolean()
+  force?: boolean;
 }
 
 /**

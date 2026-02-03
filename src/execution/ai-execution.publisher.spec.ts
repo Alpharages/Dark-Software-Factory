@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AIProvider } from '@/prisma/client';
+import { ConflictException } from '@nestjs/common';
+import { AIProvider, ExecutionStatus } from '@/prisma/client';
 import { AIExecutionPublisher } from './ai-execution.publisher';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
@@ -31,6 +32,7 @@ describe('AIExecutionPublisher', () => {
     const mockExecutionTracker = {
       startExecution: jest.fn().mockResolvedValue(mockExecution),
       failExecution: jest.fn().mockResolvedValue({}), // For rollback on publish failure
+      findActiveExecution: jest.fn().mockResolvedValue(null), // Task 20-3: No active executions by default
     };
 
     const mockRabbitMQPublisher = {
@@ -152,6 +154,91 @@ describe('AIExecutionPublisher', () => {
       const callArg = executionTracker.startExecution.mock.calls[0][0];
       // Complexity = (6 - priority) * 2 = (6-1) * 2 = 10
       expect(callArg.complexityScore).toBe(10);
+    });
+
+    // Task 20-3: Duplicate execution prevention tests
+    describe('duplicate prevention', () => {
+      it('should throw ConflictException when active execution exists (QUEUED)', async () => {
+        executionTracker.findActiveExecution = jest.fn().mockResolvedValue({
+          id: 'existing-exec',
+          ticket_id: validDto.ticketId,
+          status: ExecutionStatus.QUEUED,
+          created_at: new Date(),
+        });
+
+        await expect(publisher.publishExecution(validDto)).rejects.toThrow(ConflictException);
+        expect(executionTracker.startExecution).not.toHaveBeenCalled();
+      });
+
+      it('should throw ConflictException when active execution exists (IN_PROGRESS)', async () => {
+        executionTracker.findActiveExecution = jest.fn().mockResolvedValue({
+          id: 'existing-exec',
+          ticket_id: validDto.ticketId,
+          status: ExecutionStatus.IN_PROGRESS,
+          created_at: new Date(),
+        });
+
+        await expect(publisher.publishExecution(validDto)).rejects.toThrow(ConflictException);
+        expect(executionTracker.startExecution).not.toHaveBeenCalled();
+      });
+
+      it('should throw ConflictException when active execution exists (AWAITING_APPROVAL)', async () => {
+        executionTracker.findActiveExecution = jest.fn().mockResolvedValue({
+          id: 'existing-exec',
+          ticket_id: validDto.ticketId,
+          status: ExecutionStatus.AWAITING_APPROVAL,
+          created_at: new Date(),
+        });
+
+        await expect(publisher.publishExecution(validDto)).rejects.toThrow(ConflictException);
+        expect(executionTracker.startExecution).not.toHaveBeenCalled();
+      });
+
+      it('should allow new execution when previous is COMPLETED', async () => {
+        // No active execution (findActiveExecution returns null)
+        executionTracker.findActiveExecution = jest.fn().mockResolvedValue(null);
+
+        const result = await publisher.publishExecution(validDto);
+
+        expect(result.executionId).toBe('exec-123');
+        expect(executionTracker.startExecution).toHaveBeenCalled();
+      });
+
+      it('should allow new execution when previous is FAILED', async () => {
+        // No active execution (findActiveExecution returns null)
+        executionTracker.findActiveExecution = jest.fn().mockResolvedValue(null);
+
+        const result = await publisher.publishExecution(validDto);
+
+        expect(result.executionId).toBe('exec-123');
+        expect(executionTracker.startExecution).toHaveBeenCalled();
+      });
+
+      it('should allow new execution when force=true even with active execution', async () => {
+        executionTracker.findActiveExecution = jest.fn().mockResolvedValue({
+          id: 'existing-exec',
+          ticket_id: validDto.ticketId,
+          status: ExecutionStatus.QUEUED,
+          created_at: new Date(),
+        });
+
+        const dtoWithForce = { ...validDto, force: true };
+        const result = await publisher.publishExecution(dtoWithForce);
+
+        expect(result.executionId).toBe('exec-123');
+        expect(executionTracker.startExecution).toHaveBeenCalled();
+      });
+
+      it('should include existing execution info in error message', async () => {
+        executionTracker.findActiveExecution = jest.fn().mockResolvedValue({
+          id: 'existing-exec-123',
+          ticket_id: validDto.ticketId,
+          status: ExecutionStatus.IN_PROGRESS,
+          created_at: new Date(),
+        });
+
+        await expect(publisher.publishExecution(validDto)).rejects.toThrow('existing-exec-123');
+      });
     });
   });
 

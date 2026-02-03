@@ -1339,10 +1339,12 @@ development_status:
     notes: "Centralized logic for 'Ready for AI' status shared by Webhook and Sync."
 
   20-3-prevent-duplicate-executions:
-    status: ready-for-dev
+    status: done
+    developer: "Claude (Kimi Code CLI)"
+    completed_at: "2026-02-03"
     priority: high
     effort: "0.5 days"
-    notes: "Check Execution DB before starting new jobs. Allow retry only if failed/completed."
+    notes: "DONE: Duplicate execution prevention implemented. Checks Execution DB before starting new jobs. Prevents new executions when active ones exist (QUEUED, IN_PROGRESS, AWAITING_APPROVAL). Allows retry only if failed/completed or when force=true flag is set. 12 new tests passing."
 
   epic-21: done
   epic-21-name: "AI Orchestrator Core (MVP)"

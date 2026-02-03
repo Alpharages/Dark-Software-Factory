@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { AIProvider, Execution } from '@/prisma/client';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -42,9 +42,14 @@ export class AIExecutionPublisher {
   /**
    * Publish an AI execution task to the queue
    *
+   * Task 20-3: Prevent duplicate executions
+   * - Checks for active executions before starting new ones
+   * - Allows retry only if failed/completed or force=true
+   *
    * @param dto - Execution publish request
    * @param correlationId - Optional correlation ID (auto-generated if not provided)
    * @returns Created execution ID
+   * @throws ConflictException if there's an active execution for the ticket
    */
   async publishExecution(
     dto: PublishExecutionDto,
@@ -58,6 +63,29 @@ export class AIExecutionPublisher {
     const priority = dto.priority || 3; // Default medium priority
 
     try {
+      // Task 20-3: Check for duplicate active executions before starting
+      // Uses optimized query that only fetches active executions (not all executions)
+      if (!dto.force) {
+        const activeExecution = await this.executionTracker.findActiveExecution(dto.ticketId);
+
+        if (activeExecution) {
+          this.logger.warn(
+            `[${corrId}] Duplicate execution prevented for ticket ${dto.ticketId}: ` +
+              `existing execution ${activeExecution.id} is ${activeExecution.status}`,
+          );
+          throw new ConflictException(
+            `Cannot start new execution for ticket ${dto.ticketId}: ` +
+              `existing execution ${activeExecution.id} is currently ${activeExecution.status}. ` +
+              `Only one active execution per ticket is allowed. ` +
+              `Use force=true to override (for retries).`,
+          );
+        }
+      } else {
+        this.logger.log(
+          `[${corrId}] Force flag set - skipping duplicate check for ticket ${dto.ticketId}`,
+        );
+      }
+
       // 1. Create execution record in database via ExecutionTrackerService
       const executionInput: IStartExecutionInput = {
         correlationId: corrId,

@@ -46,8 +46,10 @@ describe('ExecutionRepository', () => {
               create: jest.fn(),
               findUnique: jest.fn(),
               findMany: jest.fn(),
+              findFirst: jest.fn(),
               update: jest.fn(),
               groupBy: jest.fn(),
+              count: jest.fn(),
             },
             ticket: {
               update: jest.fn(),
@@ -436,6 +438,86 @@ describe('ExecutionRepository', () => {
       await repository.updateTicketStatus('ticket-123', 'UNKNOWN_STATUS');
 
       expect(prisma.ticket.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // Task 20-3: Duplicate execution prevention tests
+  describe('findActiveExecutionByTicketId', () => {
+    it('should return active execution for ticket', async () => {
+      (prisma.execution.findFirst as jest.Mock).mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+      });
+
+      const result = await repository.findActiveExecutionByTicketId('ticket-123');
+
+      expect(result).toBeDefined();
+      expect(result?.status).toBe(ExecutionStatus.IN_PROGRESS);
+      expect(prisma.execution.findFirst).toHaveBeenCalledWith({
+        where: {
+          ticket_id: 'ticket-123',
+          status: {
+            in: [
+              ExecutionStatus.QUEUED,
+              ExecutionStatus.IN_PROGRESS,
+              ExecutionStatus.AWAITING_APPROVAL,
+            ],
+          },
+        },
+        orderBy: { created_at: 'desc' },
+      });
+    });
+
+    it('should return null if no active execution', async () => {
+      (prisma.execution.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await repository.findActiveExecutionByTicketId('ticket-123');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return most recent active execution', async () => {
+      const recentExecution = {
+        ...mockExecution,
+        id: 'exec-recent',
+        status: ExecutionStatus.QUEUED,
+        created_at: new Date(Date.now() - 1000),
+      };
+      (prisma.execution.findFirst as jest.Mock).mockResolvedValue(recentExecution);
+
+      const result = await repository.findActiveExecutionByTicketId('ticket-123');
+
+      expect(result?.id).toBe('exec-recent');
+    });
+  });
+
+  describe('hasActiveExecution', () => {
+    it('should return true when active execution exists', async () => {
+      (prisma.execution.count as jest.Mock).mockResolvedValue(1);
+
+      const result = await repository.hasActiveExecution('ticket-123');
+
+      expect(result).toBe(true);
+      expect(prisma.execution.count).toHaveBeenCalledWith({
+        where: {
+          ticket_id: 'ticket-123',
+          status: {
+            in: [
+              ExecutionStatus.QUEUED,
+              ExecutionStatus.IN_PROGRESS,
+              ExecutionStatus.AWAITING_APPROVAL,
+            ],
+          },
+        },
+      });
+    });
+
+    it('should return false when no active execution', async () => {
+      (prisma.execution.count as jest.Mock).mockResolvedValue(0);
+
+      const result = await repository.hasActiveExecution('ticket-123');
+
+      expect(result).toBe(false);
     });
   });
 });
