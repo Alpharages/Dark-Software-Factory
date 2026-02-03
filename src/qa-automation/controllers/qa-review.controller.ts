@@ -18,6 +18,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Patch,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -42,6 +44,9 @@ import {
   QueueDetailsResponseDto,
   QueueDepthResponseDto,
 } from '../dto/qa-review-queue.dto';
+import { AiCodeReviewService } from '../services/ai-code-review.service'; // Story 8.2
+import { AiCodeReviewResponseDto } from '../dto/ai-code-review.dto';
+import { UpdateFindingStatusDto } from '../dto/update-finding-status.dto';
 
 /**
  * Sampling Configuration Controller
@@ -140,6 +145,7 @@ export class QaReviewQueueController {
   constructor(
     private readonly queueService: QaReviewQueueService,
     private readonly metricsService: QaReviewMetricsService,
+    private readonly aiReviewService: AiCodeReviewService, // Story 8.2
   ) {}
 
   @Get()
@@ -332,6 +338,50 @@ export class QaReviewQueueController {
   ): Promise<QueueItemDto> {
     const item = await this.queueService.unclaimTicket(id, dto.reviewerId);
     return this.mapToQueueItemDto(item);
+  }
+
+  @Get(':id/ai-review')
+  @Roles(Role.QA, Role.PM, Role.TL, Role.MANAGER, Role.ADMIN)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @ApiOperation({ summary: 'Get AI Code Review' })
+  @ApiResponse({
+    status: 200,
+    description: 'AI Code Review results',
+    type: AiCodeReviewResponseDto,
+  })
+  async getAiReview(@Param('id') id: string): Promise<AiCodeReviewResponseDto> {
+    return this.aiReviewService.generateReview(id, false); // false = not forced, use cache
+  }
+
+  @Post(':id/regenerate')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.QA, Role.ADMIN)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Force regenerate AI Code Review' })
+  @ApiResponse({
+    status: 200,
+    description: 'Regenerated AI Code Review',
+    type: AiCodeReviewResponseDto,
+  })
+  async regenerateReview(@Param('id') id: string): Promise<AiCodeReviewResponseDto> {
+    return this.aiReviewService.generateReview(id, true); // true = forced
+  }
+
+  @Patch(':id/findings/:findingId')
+  @Roles(Role.QA, Role.ADMIN)
+  @Throttle({ default: { limit: 50, ttl: 60000 } })
+  @ApiOperation({ summary: 'Update finding status' })
+  @ApiResponse({
+    status: 200,
+    description: 'Finding status updated',
+  })
+  async updateFindingStatus(
+    @Param('id') id: string,
+    @Param('findingId') findingId: string,
+    @Body() dto: UpdateFindingStatusDto,
+    @Req() req: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ): Promise<void> {
+    await this.aiReviewService.updateFindingStatus(findingId, dto, req.user?.id || 'system');
   }
 
   /**

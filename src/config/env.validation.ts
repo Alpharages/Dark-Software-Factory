@@ -72,6 +72,10 @@ export const envValidationSchema = Joi.object({
     .default(3600)
     .description('AI response cache TTL in seconds (default: 1 hour)'),
 
+  // Story 8.2: AI Code Review Interface
+  AI_REVIEW_RATE_LIMIT_PER_MINUTE: Joi.number().integer().min(1).max(60).default(10),
+  AI_REVIEW_MAX_DIFF_LINES: Joi.number().integer().min(100).max(5000).default(1000),
+
   // GitHub Integration (REQUIRED)
   GITHUB_TOKEN: Joi.string()
     .pattern(/^(ghp_|ghs_|github_pat_)/)

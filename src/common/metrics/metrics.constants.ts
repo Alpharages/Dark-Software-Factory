@@ -93,6 +93,14 @@ export const QA_METRICS = {
   REVIEW_TICKETS_BY_RISK_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_review_tickets_by_risk_total`,
   REVIEW_QUEUE_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}qa_review_queue_duration_seconds`,
   REVIEW_DECISIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_review_decisions_total`,
+
+  // Story 8.2: AI Code Review Interface metrics
+  AI_REVIEW_GENERATION_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_generation_total`,
+  AI_REVIEW_GENERATION_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_generation_duration_seconds`,
+  AI_REVIEW_FINDINGS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_findings_total`,
+  AI_REVIEW_FINDING_STATUS_UPDATES: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_finding_status_updates_total`,
+  AI_REVIEW_CACHE_HITS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_cache_hits_total`,
+  AI_REVIEW_COST_USD: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_cost_usd`,
 } as const;
 
 // GitHub Metrics

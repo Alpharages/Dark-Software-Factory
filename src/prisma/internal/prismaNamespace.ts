@@ -399,6 +399,8 @@ export const ModelName = {
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
   ProductionApproval: 'ProductionApproval',
+  AiCodeReview: 'AiCodeReview',
+  AiCodeReviewFinding: 'AiCodeReviewFinding',
   User: 'User',
   UtilizationHistory: 'UtilizationHistory',
   ClientConversation: 'ClientConversation',
@@ -457,6 +459,8 @@ export type TypeMap<
       | 'workspaceArchive'
       | 'approvalRecord'
       | 'productionApproval'
+      | 'aiCodeReview'
+      | 'aiCodeReviewFinding'
       | 'user'
       | 'utilizationHistory'
       | 'clientConversation'
@@ -2274,6 +2278,158 @@ export type TypeMap<
         };
       };
     };
+    AiCodeReview: {
+      payload: Prisma.$AiCodeReviewPayload<ExtArgs>;
+      fields: Prisma.AiCodeReviewFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.AiCodeReviewFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.AiCodeReviewFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>;
+        };
+        findFirst: {
+          args: Prisma.AiCodeReviewFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.AiCodeReviewFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>;
+        };
+        findMany: {
+          args: Prisma.AiCodeReviewFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>[];
+        };
+        create: {
+          args: Prisma.AiCodeReviewCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>;
+        };
+        createMany: {
+          args: Prisma.AiCodeReviewCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.AiCodeReviewCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>[];
+        };
+        delete: {
+          args: Prisma.AiCodeReviewDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>;
+        };
+        update: {
+          args: Prisma.AiCodeReviewUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>;
+        };
+        deleteMany: {
+          args: Prisma.AiCodeReviewDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.AiCodeReviewUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.AiCodeReviewUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>[];
+        };
+        upsert: {
+          args: Prisma.AiCodeReviewUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewPayload>;
+        };
+        aggregate: {
+          args: Prisma.AiCodeReviewAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiCodeReview>;
+        };
+        groupBy: {
+          args: Prisma.AiCodeReviewGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AiCodeReviewGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.AiCodeReviewCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.AiCodeReviewCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    AiCodeReviewFinding: {
+      payload: Prisma.$AiCodeReviewFindingPayload<ExtArgs>;
+      fields: Prisma.AiCodeReviewFindingFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.AiCodeReviewFindingFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.AiCodeReviewFindingFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>;
+        };
+        findFirst: {
+          args: Prisma.AiCodeReviewFindingFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.AiCodeReviewFindingFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>;
+        };
+        findMany: {
+          args: Prisma.AiCodeReviewFindingFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>[];
+        };
+        create: {
+          args: Prisma.AiCodeReviewFindingCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>;
+        };
+        createMany: {
+          args: Prisma.AiCodeReviewFindingCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.AiCodeReviewFindingCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>[];
+        };
+        delete: {
+          args: Prisma.AiCodeReviewFindingDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>;
+        };
+        update: {
+          args: Prisma.AiCodeReviewFindingUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>;
+        };
+        deleteMany: {
+          args: Prisma.AiCodeReviewFindingDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.AiCodeReviewFindingUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.AiCodeReviewFindingUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>[];
+        };
+        upsert: {
+          args: Prisma.AiCodeReviewFindingUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiCodeReviewFindingPayload>;
+        };
+        aggregate: {
+          args: Prisma.AiCodeReviewFindingAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiCodeReviewFinding>;
+        };
+        groupBy: {
+          args: Prisma.AiCodeReviewFindingGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AiCodeReviewFindingGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.AiCodeReviewFindingCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.AiCodeReviewFindingCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
     User: {
       payload: Prisma.$UserPayload<ExtArgs>;
       fields: Prisma.UserFieldRefs;
@@ -3762,6 +3918,49 @@ export const ProductionApprovalScalarFieldEnum = {
 export type ProductionApprovalScalarFieldEnum =
   (typeof ProductionApprovalScalarFieldEnum)[keyof typeof ProductionApprovalScalarFieldEnum];
 
+export const AiCodeReviewScalarFieldEnum = {
+  id: 'id',
+  queue_item_id: 'queue_item_id',
+  review_version: 'review_version',
+  generated_at: 'generated_at',
+  ai_model: 'ai_model',
+  confidence_score: 'confidence_score',
+  overall_assessment: 'overall_assessment',
+  summary: 'summary',
+  findings: 'findings',
+  generation_duration_ms: 'generation_duration_ms',
+  token_usage: 'token_usage',
+  cost_usd: 'cost_usd',
+  cache_key: 'cache_key',
+  expires_at: 'expires_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type AiCodeReviewScalarFieldEnum =
+  (typeof AiCodeReviewScalarFieldEnum)[keyof typeof AiCodeReviewScalarFieldEnum];
+
+export const AiCodeReviewFindingScalarFieldEnum = {
+  id: 'id',
+  ai_review_id: 'ai_review_id',
+  finding_key: 'finding_key',
+  finding_type: 'finding_type',
+  severity: 'severity',
+  file_path: 'file_path',
+  line_number: 'line_number',
+  description: 'description',
+  suggestion: 'suggestion',
+  status: 'status',
+  reviewed_by: 'reviewed_by',
+  reviewed_at: 'reviewed_at',
+  review_notes: 'review_notes',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type AiCodeReviewFindingScalarFieldEnum =
+  (typeof AiCodeReviewFindingScalarFieldEnum)[keyof typeof AiCodeReviewFindingScalarFieldEnum];
+
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -4616,6 +4815,8 @@ export type GlobalOmitConfig = {
   workspaceArchive?: Prisma.WorkspaceArchiveOmit;
   approvalRecord?: Prisma.ApprovalRecordOmit;
   productionApproval?: Prisma.ProductionApprovalOmit;
+  aiCodeReview?: Prisma.AiCodeReviewOmit;
+  aiCodeReviewFinding?: Prisma.AiCodeReviewFindingOmit;
   user?: Prisma.UserOmit;
   utilizationHistory?: Prisma.UtilizationHistoryOmit;
   clientConversation?: Prisma.ClientConversationOmit;

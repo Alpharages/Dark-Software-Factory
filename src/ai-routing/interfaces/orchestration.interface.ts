@@ -192,4 +192,9 @@ export interface ITaskResult {
   durationMs: number;
   tokensUsed?: number;
   error?: string;
+  metadata?: {
+    cost?: number;
+    model?: string;
+    provider?: string;
+  };
 }

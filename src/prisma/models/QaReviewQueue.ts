@@ -260,6 +260,7 @@ export type QaReviewQueueWhereInput = {
   created_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
   execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
+  ai_code_reviews?: Prisma.AiCodeReviewListRelationFilter;
 };
 
 export type QaReviewQueueOrderByWithRelationInput = {
@@ -279,6 +280,7 @@ export type QaReviewQueueOrderByWithRelationInput = {
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   execution?: Prisma.ExecutionOrderByWithRelationInput;
+  ai_code_reviews?: Prisma.AiCodeReviewOrderByRelationAggregateInput;
 };
 
 export type QaReviewQueueWhereUniqueInput = Prisma.AtLeast<
@@ -304,6 +306,7 @@ export type QaReviewQueueWhereUniqueInput = Prisma.AtLeast<
     created_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
     execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
+    ai_code_reviews?: Prisma.AiCodeReviewListRelationFilter;
   },
   'id' | 'execution_id'
 >;
@@ -372,6 +375,7 @@ export type QaReviewQueueCreateInput = {
   created_at?: Date | string;
   updated_at?: Date | string;
   execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
+  ai_code_reviews?: Prisma.AiCodeReviewCreateNestedManyWithoutQueue_itemInput;
 };
 
 export type QaReviewQueueUncheckedCreateInput = {
@@ -390,6 +394,7 @@ export type QaReviewQueueUncheckedCreateInput = {
   review_notes?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewUncheckedCreateNestedManyWithoutQueue_itemInput;
 };
 
 export type QaReviewQueueUpdateInput = {
@@ -410,6 +415,7 @@ export type QaReviewQueueUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
+  ai_code_reviews?: Prisma.AiCodeReviewUpdateManyWithoutQueue_itemNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateInput = {
@@ -430,6 +436,7 @@ export type QaReviewQueueUncheckedUpdateInput = {
   review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewUncheckedUpdateManyWithoutQueue_itemNestedInput;
 };
 
 export type QaReviewQueueCreateManyInput = {
@@ -492,6 +499,11 @@ export type QaReviewQueueUncheckedUpdateManyInput = {
 export type QaReviewQueueNullableScalarRelationFilter = {
   is?: Prisma.QaReviewQueueWhereInput | null;
   isNot?: Prisma.QaReviewQueueWhereInput | null;
+};
+
+export type QaReviewQueueScalarRelationFilter = {
+  is?: Prisma.QaReviewQueueWhereInput;
+  isNot?: Prisma.QaReviewQueueWhereInput;
 };
 
 export type QaReviewQueueCountOrderByAggregateInput = {
@@ -602,6 +614,32 @@ export type QaReviewQueueUncheckedUpdateOneWithoutExecutionNestedInput = {
   >;
 };
 
+export type QaReviewQueueCreateNestedOneWithoutAi_code_reviewsInput = {
+  create?: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutAi_code_reviewsInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput
+  >;
+  connectOrCreate?: Prisma.QaReviewQueueCreateOrConnectWithoutAi_code_reviewsInput;
+  connect?: Prisma.QaReviewQueueWhereUniqueInput;
+};
+
+export type QaReviewQueueUpdateOneRequiredWithoutAi_code_reviewsNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutAi_code_reviewsInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput
+  >;
+  connectOrCreate?: Prisma.QaReviewQueueCreateOrConnectWithoutAi_code_reviewsInput;
+  upsert?: Prisma.QaReviewQueueUpsertWithoutAi_code_reviewsInput;
+  connect?: Prisma.QaReviewQueueWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.QaReviewQueueUpdateToOneWithWhereWithoutAi_code_reviewsInput,
+      Prisma.QaReviewQueueUpdateWithoutAi_code_reviewsInput
+    >,
+    Prisma.QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput
+  >;
+};
+
 export type EnumQaReviewStatusFieldUpdateOperationsInput = {
   set?: $Enums.QaReviewStatus;
 };
@@ -629,6 +667,7 @@ export type QaReviewQueueCreateWithoutExecutionInput = {
   review_notes?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewCreateNestedManyWithoutQueue_itemInput;
 };
 
 export type QaReviewQueueUncheckedCreateWithoutExecutionInput = {
@@ -646,6 +685,7 @@ export type QaReviewQueueUncheckedCreateWithoutExecutionInput = {
   review_notes?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewUncheckedCreateNestedManyWithoutQueue_itemInput;
 };
 
 export type QaReviewQueueCreateOrConnectWithoutExecutionInput = {
@@ -693,6 +733,7 @@ export type QaReviewQueueUpdateWithoutExecutionInput = {
   review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewUpdateManyWithoutQueue_itemNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateWithoutExecutionInput = {
@@ -712,6 +753,146 @@ export type QaReviewQueueUncheckedUpdateWithoutExecutionInput = {
   review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewUncheckedUpdateManyWithoutQueue_itemNestedInput;
+};
+
+export type QaReviewQueueCreateWithoutAi_code_reviewsInput = {
+  id?: string;
+  ticket_id: string;
+  project_id?: string | null;
+  pr_id?: string | null;
+  pr_url?: string | null;
+  status?: $Enums.QaReviewStatus;
+  risk_level: $Enums.RiskLevel;
+  risk_factors: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy: $Enums.SamplingStrategy;
+  reviewed_by?: string | null;
+  reviewed_at?: Date | string | null;
+  review_notes?: string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
+};
+
+export type QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput = {
+  id?: string;
+  ticket_id: string;
+  execution_id: string;
+  project_id?: string | null;
+  pr_id?: string | null;
+  pr_url?: string | null;
+  status?: $Enums.QaReviewStatus;
+  risk_level: $Enums.RiskLevel;
+  risk_factors: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy: $Enums.SamplingStrategy;
+  reviewed_by?: string | null;
+  reviewed_at?: Date | string | null;
+  review_notes?: string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+};
+
+export type QaReviewQueueCreateOrConnectWithoutAi_code_reviewsInput = {
+  where: Prisma.QaReviewQueueWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutAi_code_reviewsInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput
+  >;
+};
+
+export type QaReviewQueueUpsertWithoutAi_code_reviewsInput = {
+  update: Prisma.XOR<
+    Prisma.QaReviewQueueUpdateWithoutAi_code_reviewsInput,
+    Prisma.QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput
+  >;
+  create: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutAi_code_reviewsInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput
+  >;
+  where?: Prisma.QaReviewQueueWhereInput;
+};
+
+export type QaReviewQueueUpdateToOneWithWhereWithoutAi_code_reviewsInput = {
+  where?: Prisma.QaReviewQueueWhereInput;
+  data: Prisma.XOR<
+    Prisma.QaReviewQueueUpdateWithoutAi_code_reviewsInput,
+    Prisma.QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput
+  >;
+};
+
+export type QaReviewQueueUpdateWithoutAi_code_reviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  status?: Prisma.EnumQaReviewStatusFieldUpdateOperationsInput | $Enums.QaReviewStatus;
+  risk_level?: Prisma.EnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel;
+  risk_factors?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy?:
+    | Prisma.EnumSamplingStrategyFieldUpdateOperationsInput
+    | $Enums.SamplingStrategy;
+  reviewed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
+};
+
+export type QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  execution_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  status?: Prisma.EnumQaReviewStatusFieldUpdateOperationsInput | $Enums.QaReviewStatus;
+  risk_level?: Prisma.EnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel;
+  risk_factors?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy?:
+    | Prisma.EnumSamplingStrategyFieldUpdateOperationsInput
+    | $Enums.SamplingStrategy;
+  reviewed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+/**
+ * Count Type QaReviewQueueCountOutputType
+ */
+
+export type QaReviewQueueCountOutputType = {
+  ai_code_reviews: number;
+};
+
+export type QaReviewQueueCountOutputTypeSelect<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  ai_code_reviews?: boolean | QaReviewQueueCountOutputTypeCountAi_code_reviewsArgs;
+};
+
+/**
+ * QaReviewQueueCountOutputType without action
+ */
+export type QaReviewQueueCountOutputTypeDefaultArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the QaReviewQueueCountOutputType
+   */
+  select?: Prisma.QaReviewQueueCountOutputTypeSelect<ExtArgs> | null;
+};
+
+/**
+ * QaReviewQueueCountOutputType without action
+ */
+export type QaReviewQueueCountOutputTypeCountAi_code_reviewsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.AiCodeReviewWhereInput;
 };
 
 export type QaReviewQueueSelect<
@@ -734,6 +915,8 @@ export type QaReviewQueueSelect<
     created_at?: boolean;
     updated_at?: boolean;
     execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
+    ai_code_reviews?: boolean | Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>;
+    _count?: boolean | Prisma.QaReviewQueueCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qaReviewQueue']
 >;
@@ -828,6 +1011,8 @@ export type QaReviewQueueInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
+  ai_code_reviews?: boolean | Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>;
+  _count?: boolean | Prisma.QaReviewQueueCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type QaReviewQueueIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
@@ -846,6 +1031,7 @@ export type $QaReviewQueuePayload<
   name: 'QaReviewQueue';
   objects: {
     execution: Prisma.$ExecutionPayload<ExtArgs>;
+    ai_code_reviews: Prisma.$AiCodeReviewPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1417,6 +1603,17 @@ export interface Prisma__QaReviewQueueClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  ai_code_reviews<T extends Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$AiCodeReviewPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1895,6 +2092,34 @@ export type QaReviewQueueDeleteManyArgs<
    * Limit how many QaReviewQueues to delete.
    */
   limit?: number;
+};
+
+/**
+ * QaReviewQueue.ai_code_reviews
+ */
+export type QaReviewQueue$ai_code_reviewsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the AiCodeReview
+   */
+  select?: Prisma.AiCodeReviewSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the AiCodeReview
+   */
+  omit?: Prisma.AiCodeReviewOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AiCodeReviewInclude<ExtArgs> | null;
+  where?: Prisma.AiCodeReviewWhereInput;
+  orderBy?:
+    | Prisma.AiCodeReviewOrderByWithRelationInput
+    | Prisma.AiCodeReviewOrderByWithRelationInput[];
+  cursor?: Prisma.AiCodeReviewWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.AiCodeReviewScalarFieldEnum | Prisma.AiCodeReviewScalarFieldEnum[];
 };
 
 /**

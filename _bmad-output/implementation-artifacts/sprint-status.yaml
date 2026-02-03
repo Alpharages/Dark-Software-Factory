@@ -610,26 +610,47 @@ development_status:
     code_review_date: "2026-02-03"
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Fixed retry logic with actual RabbitMQ publish, implemented real metrics aggregation, corrected risk multiplier calculation per AC#2, fixed Gauge metric type. All ACs met."
   8-2-qa-code-review-interface:
-    status: ready-for-dev
+    status: review
     story_file: "_bmad-output/implementation-artifacts/8-2-qa-code-review-interface.md"
     priority: high
     effort: "1 day"
     story_points: 3
     delegation_opportunity: "APPLIED - ENHANCEMENT pattern per ADR-008"
-    notes: "Ultimate context engine analysis completed - comprehensive developer guide created. AI code review interface adds value to Story 8.1 with minimal effort using delegation pattern."
+    notes: "Implementation complete. AI Review Service, API Endpoints, Metrics, and Audit Logging integrated. All tasks verified."
   8-3-production-approval-workflow:
     status: done
     story_file: "_bmad-output/implementation-artifacts/8-3-production-approval-workflow.md"
     priority: high
     effort: "3 days"
     notes: "Story generated via create-story workflow. Implements final approval gate for production deployment."
-  8-4-quality-gate-configuration: backlog
-  8-5-bug-escape-tracking-analysis: backlog
-  8-6-quality-metrics-dashboard: backlog
+  8-4-quality-gate-configuration:
+    status: ready-for-dev
+    priority: high
+    effort: "3 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/8-4-quality-gate-configuration.md"
+    notes: "VALIDATED & IMPROVED: Fixed maxComplexity default (20), added enabledCategories, aligned RBAC with Story 8.1 (Role.QA), added config versioning, JSON snapshot pattern for history, clone endpoint, migration task for env vars. Cross-referenced Story 3.5 interfaces/DTOs for reuse."
+  8-5-bug-escape-tracking-analysis:
+    status: ready-for-dev
+    priority: high
+    effort: "3 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/8-5-bug-escape-tracking-analysis.md"
+    notes: "Story generated via create-story workflow. Implements bug escape tracking and quality trend analysis for Lead QA dashboard."
+  8-6-quality-metrics-dashboard:
+    status: ready-for-dev
+    priority: high
+    effort: "3 days"
+    story_points: 5
+    story_file: "_bmad-output/implementation-artifacts/8-6-quality-metrics-dashboard.md"
+    notes: "Story generated via create-story workflow. Implements comprehensive quality metrics dashboard for Lead QA with bug rates, test coverage, deployment success tracking, and AI provider comparison."
   8-7-quality-trends-anomaly-detection:
-    status: backlog
-    delegation_opportunity: "IDENTIFIED 2025-12-07 - HIGH IMPACT"
-    notes: "DELEGATION OPPORTUNITY ⭐ HIGH IMPACT: AI analyzes quality metrics trends, detects anomalies with statistical reasoning. Identifies sudden drops, trend declines, spikes with possible causes and recommended actions. Eliminates complex statistical algorithm implementation. Effort reduction: ~70% (1 week → 2 days). Priority: Phase 2 (Quality enhancement). See: /docs/architecture/epic-5-10-delegation-strategy.md"
+    status: ready-for-dev
+    priority: high
+    effort: "2 days"
+    story_points: 3
+    story_file: "_bmad-output/implementation-artifacts/8-7-quality-trends-anomaly-detection.md"
+    notes: "Story generated via create-story workflow. Implements AI-powered anomaly detection for quality metrics with statistical analysis and intelligent recommendations. Leverages AI delegation for ~70% effort reduction."
   8-8-quality-review-metrics-qa-workload: backlog
   8-UI-lead-qa-review-dashboard:
     status: backlog

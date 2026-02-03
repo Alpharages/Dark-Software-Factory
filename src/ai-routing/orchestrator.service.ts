@@ -381,6 +381,11 @@ export class OrchestratorService {
         success: true,
         output: result.response,
         durationMs,
+        metadata: {
+          cost: this.estimateCost(selection.primary, durationMs),
+          model: selection.primary, // IAIExecutionResult might not have model, use provider name
+          provider: selection.primary,
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);

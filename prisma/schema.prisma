@@ -794,6 +794,85 @@ model ProductionApproval {
 // ============================================
 
 // User model for PM/Manager profiles
+
+// ============================================
+// AI CODE REVIEW (Story 8.2)
+// ============================================
+
+model AiCodeReview {
+  id                String   @id @default(uuid())
+  queue_item_id     String
+  queue_item        QaReviewQueue @relation(fields: [queue_item_id], references: [id])
+  review_version    Int      @default(1) // For re-reviews (AC#5)
+
+  // AI Generation Metadata
+  generated_at      DateTime @default(now())
+  ai_model          String   // "claude-sonnet-4-20250514"
+  confidence_score  Decimal  @db.Decimal(3, 2)
+  overall_assessment String // "LOW_RISK|MODERATE_RISK|HIGH_RISK"
+  summary           String   @db.Text
+
+  // Findings (stored as JSON for flexibility)
+  findings          Json     // Structured findings object
+
+  // Cost and Performance
+  generation_duration_ms Int
+  token_usage       Json?    // { input: number, output: number }
+  cost_usd          Decimal? @db.Decimal(10, 6)
+
+  // Cache Control
+  cache_key         String?  @unique
+  expires_at        DateTime?
+
+  // Relationships
+  finding_statuses  AiCodeReviewFinding[]
+
+  // Audit
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@unique([queue_item_id, review_version]) // Allow multiple versions
+  @@index([queue_item_id])
+  @@index([generated_at])
+  @@index([cache_key])
+  @@map("ai_code_reviews")
+}
+
+model AiCodeReviewFinding {
+  id                String   @id @default(uuid())
+  ai_review_id      String
+  ai_review         AiCodeReview @relation(fields: [ai_review_id], references: [id], onDelete: Cascade)
+
+  // Finding Identification
+  finding_key       String   // Hash of file+line+description for deduplication
+  finding_type      String   // missed_issue, code_smell, complex_logic, testing_gap, security_note
+  severity          String   // HIGH, MEDIUM, LOW
+  file_path         String?
+  line_number       Int?
+  description       String   @db.Text
+  suggestion        String?  @db.Text
+
+  // Review Status (AC#5)
+  status            String   @default("PENDING") // PENDING, ACKNOWLEDGED, FIXED, DISPUTED
+  reviewed_by       String?
+  reviewed_at       DateTime?
+  review_notes      String?  @db.Text
+
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@index([ai_review_id])
+  @@index([status])
+  @@index([finding_key])
+  @@map("ai_code_review_findings")
+}
+
+
+// ============================================
+// STORY 5.4: WORKLOAD MANAGEMENT & CAPACITY PLANNING
+// ============================================
+
+// User model for PM/Manager profiles
 model User {
   id            String  @id // External Auth 'sub' claim (UUID)
   email         String  @unique
@@ -1054,6 +1133,10 @@ model QaReviewQueue {
   reviewed_by       String?          // User ID
   reviewed_at       DateTime?
   review_notes      String?          @db.Text
+  
+  // Relations
+  ai_code_reviews   AiCodeReview[]
+
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
 

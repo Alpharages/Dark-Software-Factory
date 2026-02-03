@@ -137,6 +137,16 @@ export type ApprovalRecord = Prisma.ApprovalRecordModel;
  */
 export type ProductionApproval = Prisma.ProductionApprovalModel;
 /**
+ * Model AiCodeReview
+ *
+ */
+export type AiCodeReview = Prisma.AiCodeReviewModel;
+/**
+ * Model AiCodeReviewFinding
+ *
+ */
+export type AiCodeReviewFinding = Prisma.AiCodeReviewFindingModel;
+/**
  * Model User
  *
  */

@@ -31,6 +31,8 @@ export type * from './models/TicketDependency';
 export type * from './models/WorkspaceArchive';
 export type * from './models/ApprovalRecord';
 export type * from './models/ProductionApproval';
+export type * from './models/AiCodeReview';
+export type * from './models/AiCodeReviewFinding';
 export type * from './models/User';
 export type * from './models/UtilizationHistory';
 export type * from './models/ClientConversation';

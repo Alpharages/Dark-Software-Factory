@@ -1,10 +1,12 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   makeCounterProvider,
   makeHistogramProvider,
   makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from '../database/database.module';
 import { SentryModule } from '../common/sentry/sentry.module';
 import { LoggerModule } from '../common/logger/logger.module';
@@ -44,6 +46,7 @@ import {
 } from './services/qa-sampling.service';
 import { QaReviewQueueService } from './services/qa-review-queue.service';
 import { QaReviewMetricsService } from './services/qa-review-metrics.service';
+import { AiCodeReviewService } from './services/ai-code-review.service'; // Story 8.2
 import {
   QaSamplingConfigController,
   QaReviewQueueController,
@@ -67,7 +70,28 @@ import {
     // Story 13.4: Self-Healing Integration
     forwardRef(() => ExecutionModule), // Provides SelfHealingOrchestratorService
     // Story 8.3: Production Approval
+    // Story 8.3: Production Approval
     ProductionApprovalModule,
+    CacheModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        ttl: config.get('AI_REVIEW_CACHE_TTL', 3600), // 1 hour
+        max: config.get('AI_REVIEW_CACHE_MAX', 100), // Max 100 cached reviews
+      }),
+      inject: [ConfigService],
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: 60000, // 1 minute
+            limit: config.get('AI_REVIEW_RATE_LIMIT', 10), // 10 per minute
+          },
+        ],
+      }),
+      inject: [ConfigService],
+    }),
   ],
   controllers: [
     QaResultsController,
@@ -209,6 +233,28 @@ import {
       labelNames: ['decision'],
     }),
 
+    // Story 8.2: AI Code Review Service & Metrics
+    AiCodeReviewService,
+    makeCounterProvider({
+      name: QA_METRICS.AI_REVIEW_GENERATION_TOTAL,
+      help: 'Total AI reviews generated',
+      labelNames: ['risk_level'],
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.AI_REVIEW_GENERATION_DURATION,
+      help: 'AI review generation duration',
+      buckets: [5, 10, 30, 60, 120, 300], // seconds
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.AI_REVIEW_FINDINGS_TOTAL,
+      help: 'Total findings identified by AI',
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.AI_REVIEW_FINDING_STATUS_UPDATES,
+      help: 'Total finding status updates',
+      labelNames: ['status'],
+    }),
+
     // Note: Other QUEUE_METRICS are registered in AppMetricsModule (Story 1.8)
   ],
   exports: [
@@ -226,6 +272,7 @@ import {
     QaReviewQueueService,
     QaReviewMetricsService,
     QaReviewQueueConsumer,
+    AiCodeReviewService, // Story 8.2
   ],
 })
 export class QaAutomationModule {}

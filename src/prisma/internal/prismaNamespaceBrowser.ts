@@ -72,6 +72,8 @@ export const ModelName = {
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
   ProductionApproval: 'ProductionApproval',
+  AiCodeReview: 'AiCodeReview',
+  AiCodeReviewFinding: 'AiCodeReviewFinding',
   User: 'User',
   UtilizationHistory: 'UtilizationHistory',
   ClientConversation: 'ClientConversation',
@@ -496,6 +498,49 @@ export const ProductionApprovalScalarFieldEnum = {
 
 export type ProductionApprovalScalarFieldEnum =
   (typeof ProductionApprovalScalarFieldEnum)[keyof typeof ProductionApprovalScalarFieldEnum];
+
+export const AiCodeReviewScalarFieldEnum = {
+  id: 'id',
+  queue_item_id: 'queue_item_id',
+  review_version: 'review_version',
+  generated_at: 'generated_at',
+  ai_model: 'ai_model',
+  confidence_score: 'confidence_score',
+  overall_assessment: 'overall_assessment',
+  summary: 'summary',
+  findings: 'findings',
+  generation_duration_ms: 'generation_duration_ms',
+  token_usage: 'token_usage',
+  cost_usd: 'cost_usd',
+  cache_key: 'cache_key',
+  expires_at: 'expires_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type AiCodeReviewScalarFieldEnum =
+  (typeof AiCodeReviewScalarFieldEnum)[keyof typeof AiCodeReviewScalarFieldEnum];
+
+export const AiCodeReviewFindingScalarFieldEnum = {
+  id: 'id',
+  ai_review_id: 'ai_review_id',
+  finding_key: 'finding_key',
+  finding_type: 'finding_type',
+  severity: 'severity',
+  file_path: 'file_path',
+  line_number: 'line_number',
+  description: 'description',
+  suggestion: 'suggestion',
+  status: 'status',
+  reviewed_by: 'reviewed_by',
+  reviewed_at: 'reviewed_at',
+  review_notes: 'review_notes',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type AiCodeReviewFindingScalarFieldEnum =
+  (typeof AiCodeReviewFindingScalarFieldEnum)[keyof typeof AiCodeReviewFindingScalarFieldEnum];
 
 export const UserScalarFieldEnum = {
   id: 'id',
