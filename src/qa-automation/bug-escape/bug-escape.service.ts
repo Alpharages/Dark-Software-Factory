@@ -305,4 +305,20 @@ export class BugEscapeService {
       // escape_rate: ...
     }));
   }
+
+  async getEscapesByCategory(projectId?: string): Promise<{ category: string; count: number }[]> {
+    const groups = await this.prisma.bugEscape.groupBy({
+      by: ['escape_category'],
+      where: {
+        ...(projectId ? { project_id: projectId } : {}),
+        detected_at: { gte: new Date(new Date().setMonth(new Date().getMonth() - 1)) }, // Last 30 days default
+      },
+      _count: { escape_category: true },
+    });
+
+    return groups.map((g) => ({
+      category: g.escape_category,
+      count: g._count.escape_category,
+    }));
+  }
 }

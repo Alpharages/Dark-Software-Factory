@@ -18,6 +18,8 @@ import { PrismaService } from '../database/prisma.service';
 import { LoggerService } from '../common/logger/logger.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { QA_METRICS } from '../common/metrics/metrics.constants';
+import { EventBusService } from '../common/event-bus.service';
+import { QaResultCompletedEvent } from '../qa-automation/events/qa-result-completed.event';
 import {
   IQaResultCreate,
   IQaResultUpdate,
@@ -50,6 +52,7 @@ export class QaResultsService {
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
     private readonly sentry: SentryService,
+    private readonly eventBus: EventBusService,
     @InjectMetric(QA_METRICS.QA_RESULTS_QUERIES_TOTAL)
     private readonly queriesCounter: Counter<string>,
     @InjectMetric(QA_METRICS.QA_RESULTS_QUERY_DURATION)
@@ -232,6 +235,30 @@ export class QaResultsService {
       data: { overall_passed: passed },
     });
     this.logger.debug(`Updated overall status for execution ${executionId}: ${passed}`);
+
+    // Fetch execution details to emit rich event
+    try {
+      const result = await this.findByExecutionId(executionId);
+      if (result.execution) {
+        this.eventBus.emit(
+          'qa.result.completed',
+          new QaResultCompletedEvent(
+            executionId,
+            result.execution.ticket_id,
+            result.execution.ticket?.project_id || 'unknown',
+            passed,
+            {
+              lintingPassed: result.linting_passed,
+              testsPassed: result.tests_passed,
+              coverage: result.test_coverage || 0,
+              codeReviewPassed: result.code_review_passed,
+            },
+          ),
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Failed to emit qa.result.completed event: ${(error as Error).message}`);
+    }
   }
 
   /**

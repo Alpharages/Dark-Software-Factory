@@ -16,10 +16,13 @@ export interface ServerToClientEvents {
   'project-updated': (data: Record<string, unknown>) => void;
   'summary-updated': (data: Record<string, unknown>) => void;
   'ticket-updated': (data: Record<string, unknown>) => void;
+  'quality-update': (data: Record<string, unknown>) => void;
+  'quality-alert': (data: Record<string, unknown>) => void;
 }
 
 export interface ClientToServerEvents {
   'subscribe-to-projects': (projectIds: string[]) => void;
+  'subscribe-to-quality-updates': (projectIds: string[]) => void;
 }
 
 @WebSocketGateway({
@@ -75,5 +78,19 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
   handleSubscribe(@ConnectedSocket() client: Socket, @MessageBody() projectIds: string[]) {
     projectIds.forEach((id) => client.join(`project_${id}`));
     return { status: 'ok', joined: projectIds };
+  }
+
+  @SubscribeMessage('subscribe-to-quality-updates')
+  handleSubscribeQuality(@ConnectedSocket() client: Socket, @MessageBody() projectIds: string[]) {
+    projectIds.forEach((id) => client.join(`quality_${id}`));
+    return { status: 'ok', joined: projectIds };
+  }
+
+  broadcastQualityUpdate(projectId: string, data: Record<string, unknown>) {
+    // Emit to specific project room
+    this.server.to(`quality_${projectId}`).emit('quality-update', data);
+
+    // Also emit to global quality room if needed, or PMs
+    // For now, assuming PMs subscribe to projects they care about
   }
 }

@@ -8,6 +8,7 @@ export type EventPayload = {
   'adr.reviewed': import('../architecture-review/events/adr-reviewed.event').AdrReviewedEvent;
   'adr.escalated': import('../architecture-review/events/adr-escalated.event').AdrEscalatedEvent;
   'execution.completed': import('../execution/events/execution-completed.event').ExecutionCompletedEvent;
+  'qa.result.completed': import('../qa-automation/events/qa-result-completed.event').QaResultCompletedEvent;
 };
 
 @Injectable()
