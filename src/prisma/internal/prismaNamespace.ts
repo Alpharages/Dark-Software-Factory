@@ -4166,6 +4166,9 @@ export const ProductionErrorScalarFieldEnum = {
   deployment_id: 'deployment_id',
   affected_users: 'affected_users',
   occurrence_count: 'occurrence_count',
+  acknowledged_at: 'acknowledged_at',
+  acknowledged_by: 'acknowledged_by',
+  resolved_at: 'resolved_at',
 } as const;
 
 export type ProductionErrorScalarFieldEnum =

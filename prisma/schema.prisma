@@ -224,6 +224,11 @@ model ProductionError {
   affected_users     Int           @default(1) @map("affected_users")
   occurrence_count   Int           @default(1) @map("occurrence_count")
 
+  // Dashboard fields (Story 9-U-5)
+  acknowledged_at    DateTime?     @map("acknowledged_at")
+  acknowledged_by    String?       @map("acknowledged_by")
+  resolved_at        DateTime?     @map("resolved_at")
+
   // Relations
   bug_escape         BugEscape?
   deployment         Deployment?   @relation(fields: [deployment_id], references: [id])
@@ -231,6 +236,8 @@ model ProductionError {
 
   @@index([application, severity, resolved])
   @@index([deployment_id])
+  @@index([acknowledged_at])
+  @@index([resolved_at])
   @@map("production_errors")
 }
 
