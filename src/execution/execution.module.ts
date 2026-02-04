@@ -21,6 +21,7 @@ import { AIExecutionPublisher } from './ai-execution.publisher';
 import { AIExecutionConsumer } from './ai-execution.consumer';
 import { SelfHealingOrchestratorService } from './self-healing-orchestrator.service';
 import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider';
+import { AI_METRICS, CONTAINER_METRICS } from '../common/metrics/metrics.constants';
 import { ApprovalService } from './services/approval.service';
 import { ApprovalController } from './controllers/approval.controller';
 import { DatabaseModule } from '../database/database.module';
