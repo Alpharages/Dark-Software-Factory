@@ -57,6 +57,7 @@ export const ModelName = {
   Deployment: 'Deployment',
   CostRecord: 'CostRecord',
   ProductionError: 'ProductionError',
+  ProductionErrorCommit: 'ProductionErrorCommit',
   Metric: 'Metric',
   AuditLog: 'AuditLog',
   ContextDocument: 'ContextDocument',
@@ -281,10 +282,31 @@ export const ProductionErrorScalarFieldEnum = {
   resolved: 'resolved',
   occurred_at: 'occurred_at',
   created_at: 'created_at',
+  parsed_stack_trace: 'parsed_stack_trace',
+  user_context: 'user_context',
+  deployment_id: 'deployment_id',
+  affected_users: 'affected_users',
+  occurrence_count: 'occurrence_count',
 } as const;
 
 export type ProductionErrorScalarFieldEnum =
   (typeof ProductionErrorScalarFieldEnum)[keyof typeof ProductionErrorScalarFieldEnum];
+
+export const ProductionErrorCommitScalarFieldEnum = {
+  id: 'id',
+  production_error_id: 'production_error_id',
+  commit_sha: 'commit_sha',
+  commit_message: 'commit_message',
+  author: 'author',
+  committed_at: 'committed_at',
+  file_path: 'file_path',
+  relevance_score: 'relevance_score',
+  github_url: 'github_url',
+  created_at: 'created_at',
+} as const;
+
+export type ProductionErrorCommitScalarFieldEnum =
+  (typeof ProductionErrorCommitScalarFieldEnum)[keyof typeof ProductionErrorCommitScalarFieldEnum];
 
 export const MetricScalarFieldEnum = {
   id: 'id',

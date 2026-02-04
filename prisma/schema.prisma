@@ -180,6 +180,9 @@ model Deployment {
   workflow_id    String?
   github_push    GitHubPush       @relation(fields: [github_push_id], references: [id])
 
+  // Story 9-U-4: Related production errors
+  production_errors ProductionError[]
+
   @@index([github_push_id])
   @@index([status, environment])
   @@map("deployments")
@@ -202,21 +205,53 @@ model CostRecord {
 }
 
 model ProductionError {
-  id             String        @id @default(uuid())
-  application    String
-  error_type     String
-  error_message  String
-  stack_trace    String?
-  severity       ErrorSeverity
-  fix_ticket_id  String?
-  fix_ticket_url String?
-  resolved       Boolean       @default(false)
-  occurred_at    DateTime
-  created_at     DateTime      @default(now())
-  bug_escape     BugEscape?
+  id                 String        @id @default(uuid())
+  application        String
+  error_type         String
+  error_message      String
+  stack_trace        String?
+  severity           ErrorSeverity
+  fix_ticket_id      String?
+  fix_ticket_url     String?
+  resolved           Boolean       @default(false)
+  occurred_at        DateTime
+  created_at         DateTime      @default(now())
+
+  // Context extraction fields (Story 9-U-4)
+  parsed_stack_trace Json?         @map("parsed_stack_trace")
+  user_context       Json?         @map("user_context")
+  deployment_id      String?       @map("deployment_id")
+  affected_users     Int           @default(1) @map("affected_users")
+  occurrence_count   Int           @default(1) @map("occurrence_count")
+
+  // Relations
+  bug_escape         BugEscape?
+  deployment         Deployment?   @relation(fields: [deployment_id], references: [id])
+  related_commits    ProductionErrorCommit[]
 
   @@index([application, severity, resolved])
+  @@index([deployment_id])
   @@map("production_errors")
+}
+
+// Story 9-U-4: Linked commits for production errors
+model ProductionErrorCommit {
+  id                  String   @id @default(uuid())
+  production_error_id String
+  commit_sha          String
+  commit_message      String
+  author              String
+  committed_at        DateTime
+  file_path           String
+  relevance_score     Float
+  github_url          String
+  created_at          DateTime @default(now())
+
+  production_error ProductionError @relation(fields: [production_error_id], references: [id])
+
+  @@index([production_error_id])
+  @@index([commit_sha])
+  @@map("production_error_commits")
 }
 
 model Metric {

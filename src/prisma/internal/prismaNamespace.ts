@@ -384,6 +384,7 @@ export const ModelName = {
   Deployment: 'Deployment',
   CostRecord: 'CostRecord',
   ProductionError: 'ProductionError',
+  ProductionErrorCommit: 'ProductionErrorCommit',
   Metric: 'Metric',
   AuditLog: 'AuditLog',
   ContextDocument: 'ContextDocument',
@@ -449,6 +450,7 @@ export type TypeMap<
       | 'deployment'
       | 'costRecord'
       | 'productionError'
+      | 'productionErrorCommit'
       | 'metric'
       | 'auditLog'
       | 'contextDocument'
@@ -1154,6 +1156,82 @@ export type TypeMap<
           args: Prisma.ProductionErrorCountArgs<ExtArgs>;
           result:
             | runtime.Types.Utils.Optional<Prisma.ProductionErrorCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    ProductionErrorCommit: {
+      payload: Prisma.$ProductionErrorCommitPayload<ExtArgs>;
+      fields: Prisma.ProductionErrorCommitFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.ProductionErrorCommitFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.ProductionErrorCommitFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>;
+        };
+        findFirst: {
+          args: Prisma.ProductionErrorCommitFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.ProductionErrorCommitFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>;
+        };
+        findMany: {
+          args: Prisma.ProductionErrorCommitFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>[];
+        };
+        create: {
+          args: Prisma.ProductionErrorCommitCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>;
+        };
+        createMany: {
+          args: Prisma.ProductionErrorCommitCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.ProductionErrorCommitCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>[];
+        };
+        delete: {
+          args: Prisma.ProductionErrorCommitDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>;
+        };
+        update: {
+          args: Prisma.ProductionErrorCommitUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>;
+        };
+        deleteMany: {
+          args: Prisma.ProductionErrorCommitDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.ProductionErrorCommitUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.ProductionErrorCommitUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>[];
+        };
+        upsert: {
+          args: Prisma.ProductionErrorCommitUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductionErrorCommitPayload>;
+        };
+        aggregate: {
+          args: Prisma.ProductionErrorCommitAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProductionErrorCommit>;
+        };
+        groupBy: {
+          args: Prisma.ProductionErrorCommitGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.ProductionErrorCommitGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.ProductionErrorCommitCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.ProductionErrorCommitCountAggregateOutputType>
             | number;
         };
       };
@@ -4083,10 +4161,31 @@ export const ProductionErrorScalarFieldEnum = {
   resolved: 'resolved',
   occurred_at: 'occurred_at',
   created_at: 'created_at',
+  parsed_stack_trace: 'parsed_stack_trace',
+  user_context: 'user_context',
+  deployment_id: 'deployment_id',
+  affected_users: 'affected_users',
+  occurrence_count: 'occurrence_count',
 } as const;
 
 export type ProductionErrorScalarFieldEnum =
   (typeof ProductionErrorScalarFieldEnum)[keyof typeof ProductionErrorScalarFieldEnum];
+
+export const ProductionErrorCommitScalarFieldEnum = {
+  id: 'id',
+  production_error_id: 'production_error_id',
+  commit_sha: 'commit_sha',
+  commit_message: 'commit_message',
+  author: 'author',
+  committed_at: 'committed_at',
+  file_path: 'file_path',
+  relevance_score: 'relevance_score',
+  github_url: 'github_url',
+  created_at: 'created_at',
+} as const;
+
+export type ProductionErrorCommitScalarFieldEnum =
+  (typeof ProductionErrorCommitScalarFieldEnum)[keyof typeof ProductionErrorCommitScalarFieldEnum];
 
 export const MetricScalarFieldEnum = {
   id: 'id',
@@ -5302,6 +5401,7 @@ export type GlobalOmitConfig = {
   deployment?: Prisma.DeploymentOmit;
   costRecord?: Prisma.CostRecordOmit;
   productionError?: Prisma.ProductionErrorOmit;
+  productionErrorCommit?: Prisma.ProductionErrorCommitOmit;
   metric?: Prisma.MetricOmit;
   auditLog?: Prisma.AuditLogOmit;
   contextDocument?: Prisma.ContextDocumentOmit;

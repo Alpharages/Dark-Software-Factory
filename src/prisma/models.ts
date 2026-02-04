@@ -16,6 +16,7 @@ export type * from './models/GitHubPush';
 export type * from './models/Deployment';
 export type * from './models/CostRecord';
 export type * from './models/ProductionError';
+export type * from './models/ProductionErrorCommit';
 export type * from './models/Metric';
 export type * from './models/AuditLog';
 export type * from './models/ContextDocument';

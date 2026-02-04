@@ -20,8 +20,20 @@ export type ProductionErrorModel =
 
 export type AggregateProductionError = {
   _count: ProductionErrorCountAggregateOutputType | null;
+  _avg: ProductionErrorAvgAggregateOutputType | null;
+  _sum: ProductionErrorSumAggregateOutputType | null;
   _min: ProductionErrorMinAggregateOutputType | null;
   _max: ProductionErrorMaxAggregateOutputType | null;
+};
+
+export type ProductionErrorAvgAggregateOutputType = {
+  affected_users: number | null;
+  occurrence_count: number | null;
+};
+
+export type ProductionErrorSumAggregateOutputType = {
+  affected_users: number | null;
+  occurrence_count: number | null;
 };
 
 export type ProductionErrorMinAggregateOutputType = {
@@ -36,6 +48,9 @@ export type ProductionErrorMinAggregateOutputType = {
   resolved: boolean | null;
   occurred_at: Date | null;
   created_at: Date | null;
+  deployment_id: string | null;
+  affected_users: number | null;
+  occurrence_count: number | null;
 };
 
 export type ProductionErrorMaxAggregateOutputType = {
@@ -50,6 +65,9 @@ export type ProductionErrorMaxAggregateOutputType = {
   resolved: boolean | null;
   occurred_at: Date | null;
   created_at: Date | null;
+  deployment_id: string | null;
+  affected_users: number | null;
+  occurrence_count: number | null;
 };
 
 export type ProductionErrorCountAggregateOutputType = {
@@ -64,7 +82,22 @@ export type ProductionErrorCountAggregateOutputType = {
   resolved: number;
   occurred_at: number;
   created_at: number;
+  parsed_stack_trace: number;
+  user_context: number;
+  deployment_id: number;
+  affected_users: number;
+  occurrence_count: number;
   _all: number;
+};
+
+export type ProductionErrorAvgAggregateInputType = {
+  affected_users?: true;
+  occurrence_count?: true;
+};
+
+export type ProductionErrorSumAggregateInputType = {
+  affected_users?: true;
+  occurrence_count?: true;
 };
 
 export type ProductionErrorMinAggregateInputType = {
@@ -79,6 +112,9 @@ export type ProductionErrorMinAggregateInputType = {
   resolved?: true;
   occurred_at?: true;
   created_at?: true;
+  deployment_id?: true;
+  affected_users?: true;
+  occurrence_count?: true;
 };
 
 export type ProductionErrorMaxAggregateInputType = {
@@ -93,6 +129,9 @@ export type ProductionErrorMaxAggregateInputType = {
   resolved?: true;
   occurred_at?: true;
   created_at?: true;
+  deployment_id?: true;
+  affected_users?: true;
+  occurrence_count?: true;
 };
 
 export type ProductionErrorCountAggregateInputType = {
@@ -107,6 +146,11 @@ export type ProductionErrorCountAggregateInputType = {
   resolved?: true;
   occurred_at?: true;
   created_at?: true;
+  parsed_stack_trace?: true;
+  user_context?: true;
+  deployment_id?: true;
+  affected_users?: true;
+  occurrence_count?: true;
   _all?: true;
 };
 
@@ -152,6 +196,18 @@ export type ProductionErrorAggregateArgs<
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    *
+   * Select which fields to average
+   **/
+  _avg?: ProductionErrorAvgAggregateInputType;
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   *
+   * Select which fields to sum
+   **/
+  _sum?: ProductionErrorSumAggregateInputType;
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   *
    * Select which fields to find the minimum value
    **/
   _min?: ProductionErrorMinAggregateInputType;
@@ -183,6 +239,8 @@ export type ProductionErrorGroupByArgs<
   take?: number;
   skip?: number;
   _count?: ProductionErrorCountAggregateInputType | true;
+  _avg?: ProductionErrorAvgAggregateInputType;
+  _sum?: ProductionErrorSumAggregateInputType;
   _min?: ProductionErrorMinAggregateInputType;
   _max?: ProductionErrorMaxAggregateInputType;
 };
@@ -199,7 +257,14 @@ export type ProductionErrorGroupByOutputType = {
   resolved: boolean;
   occurred_at: Date;
   created_at: Date;
+  parsed_stack_trace: runtime.JsonValue | null;
+  user_context: runtime.JsonValue | null;
+  deployment_id: string | null;
+  affected_users: number;
+  occurrence_count: number;
   _count: ProductionErrorCountAggregateOutputType | null;
+  _avg: ProductionErrorAvgAggregateOutputType | null;
+  _sum: ProductionErrorSumAggregateOutputType | null;
   _min: ProductionErrorMinAggregateOutputType | null;
   _max: ProductionErrorMaxAggregateOutputType | null;
 };
@@ -231,10 +296,20 @@ export type ProductionErrorWhereInput = {
   resolved?: Prisma.BoolFilter<'ProductionError'> | boolean;
   occurred_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
   created_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
+  parsed_stack_trace?: Prisma.JsonNullableFilter<'ProductionError'>;
+  user_context?: Prisma.JsonNullableFilter<'ProductionError'>;
+  deployment_id?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+  affected_users?: Prisma.IntFilter<'ProductionError'> | number;
+  occurrence_count?: Prisma.IntFilter<'ProductionError'> | number;
   bug_escape?: Prisma.XOR<
     Prisma.BugEscapeNullableScalarRelationFilter,
     Prisma.BugEscapeWhereInput
   > | null;
+  deployment?: Prisma.XOR<
+    Prisma.DeploymentNullableScalarRelationFilter,
+    Prisma.DeploymentWhereInput
+  > | null;
+  related_commits?: Prisma.ProductionErrorCommitListRelationFilter;
 };
 
 export type ProductionErrorOrderByWithRelationInput = {
@@ -249,7 +324,14 @@ export type ProductionErrorOrderByWithRelationInput = {
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
+  parsed_stack_trace?: Prisma.SortOrderInput | Prisma.SortOrder;
+  user_context?: Prisma.SortOrderInput | Prisma.SortOrder;
+  deployment_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  affected_users?: Prisma.SortOrder;
+  occurrence_count?: Prisma.SortOrder;
   bug_escape?: Prisma.BugEscapeOrderByWithRelationInput;
+  deployment?: Prisma.DeploymentOrderByWithRelationInput;
+  related_commits?: Prisma.ProductionErrorCommitOrderByRelationAggregateInput;
 };
 
 export type ProductionErrorWhereUniqueInput = Prisma.AtLeast<
@@ -268,10 +350,20 @@ export type ProductionErrorWhereUniqueInput = Prisma.AtLeast<
     resolved?: Prisma.BoolFilter<'ProductionError'> | boolean;
     occurred_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
     created_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
+    parsed_stack_trace?: Prisma.JsonNullableFilter<'ProductionError'>;
+    user_context?: Prisma.JsonNullableFilter<'ProductionError'>;
+    deployment_id?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+    affected_users?: Prisma.IntFilter<'ProductionError'> | number;
+    occurrence_count?: Prisma.IntFilter<'ProductionError'> | number;
     bug_escape?: Prisma.XOR<
       Prisma.BugEscapeNullableScalarRelationFilter,
       Prisma.BugEscapeWhereInput
     > | null;
+    deployment?: Prisma.XOR<
+      Prisma.DeploymentNullableScalarRelationFilter,
+      Prisma.DeploymentWhereInput
+    > | null;
+    related_commits?: Prisma.ProductionErrorCommitListRelationFilter;
   },
   'id'
 >;
@@ -288,9 +380,16 @@ export type ProductionErrorOrderByWithAggregationInput = {
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
+  parsed_stack_trace?: Prisma.SortOrderInput | Prisma.SortOrder;
+  user_context?: Prisma.SortOrderInput | Prisma.SortOrder;
+  deployment_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  affected_users?: Prisma.SortOrder;
+  occurrence_count?: Prisma.SortOrder;
   _count?: Prisma.ProductionErrorCountOrderByAggregateInput;
+  _avg?: Prisma.ProductionErrorAvgOrderByAggregateInput;
   _max?: Prisma.ProductionErrorMaxOrderByAggregateInput;
   _min?: Prisma.ProductionErrorMinOrderByAggregateInput;
+  _sum?: Prisma.ProductionErrorSumOrderByAggregateInput;
 };
 
 export type ProductionErrorScalarWhereWithAggregatesInput = {
@@ -312,6 +411,11 @@ export type ProductionErrorScalarWhereWithAggregatesInput = {
   resolved?: Prisma.BoolWithAggregatesFilter<'ProductionError'> | boolean;
   occurred_at?: Prisma.DateTimeWithAggregatesFilter<'ProductionError'> | Date | string;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'ProductionError'> | Date | string;
+  parsed_stack_trace?: Prisma.JsonNullableWithAggregatesFilter<'ProductionError'>;
+  user_context?: Prisma.JsonNullableWithAggregatesFilter<'ProductionError'>;
+  deployment_id?: Prisma.StringNullableWithAggregatesFilter<'ProductionError'> | string | null;
+  affected_users?: Prisma.IntWithAggregatesFilter<'ProductionError'> | number;
+  occurrence_count?: Prisma.IntWithAggregatesFilter<'ProductionError'> | number;
 };
 
 export type ProductionErrorCreateInput = {
@@ -326,7 +430,13 @@ export type ProductionErrorCreateInput = {
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: number;
+  occurrence_count?: number;
   bug_escape?: Prisma.BugEscapeCreateNestedOneWithoutProduction_errorInput;
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutProduction_errorsInput;
+  related_commits?: Prisma.ProductionErrorCommitCreateNestedManyWithoutProduction_errorInput;
 };
 
 export type ProductionErrorUncheckedCreateInput = {
@@ -341,7 +451,13 @@ export type ProductionErrorUncheckedCreateInput = {
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: string | null;
+  affected_users?: number;
+  occurrence_count?: number;
   bug_escape?: Prisma.BugEscapeUncheckedCreateNestedOneWithoutProduction_errorInput;
+  related_commits?: Prisma.ProductionErrorCommitUncheckedCreateNestedManyWithoutProduction_errorInput;
 };
 
 export type ProductionErrorUpdateInput = {
@@ -356,7 +472,13 @@ export type ProductionErrorUpdateInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
   bug_escape?: Prisma.BugEscapeUpdateOneWithoutProduction_errorNestedInput;
+  deployment?: Prisma.DeploymentUpdateOneWithoutProduction_errorsNestedInput;
+  related_commits?: Prisma.ProductionErrorCommitUpdateManyWithoutProduction_errorNestedInput;
 };
 
 export type ProductionErrorUncheckedUpdateInput = {
@@ -371,7 +493,13 @@ export type ProductionErrorUncheckedUpdateInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
   bug_escape?: Prisma.BugEscapeUncheckedUpdateOneWithoutProduction_errorNestedInput;
+  related_commits?: Prisma.ProductionErrorCommitUncheckedUpdateManyWithoutProduction_errorNestedInput;
 };
 
 export type ProductionErrorCreateManyInput = {
@@ -386,6 +514,11 @@ export type ProductionErrorCreateManyInput = {
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: string | null;
+  affected_users?: number;
+  occurrence_count?: number;
 };
 
 export type ProductionErrorUpdateManyMutationInput = {
@@ -400,6 +533,10 @@ export type ProductionErrorUpdateManyMutationInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
 };
 
 export type ProductionErrorUncheckedUpdateManyInput = {
@@ -414,6 +551,21 @@ export type ProductionErrorUncheckedUpdateManyInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+};
+
+export type ProductionErrorListRelationFilter = {
+  every?: Prisma.ProductionErrorWhereInput;
+  some?: Prisma.ProductionErrorWhereInput;
+  none?: Prisma.ProductionErrorWhereInput;
+};
+
+export type ProductionErrorOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder;
 };
 
 export type ProductionErrorCountOrderByAggregateInput = {
@@ -428,6 +580,16 @@ export type ProductionErrorCountOrderByAggregateInput = {
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
+  parsed_stack_trace?: Prisma.SortOrder;
+  user_context?: Prisma.SortOrder;
+  deployment_id?: Prisma.SortOrder;
+  affected_users?: Prisma.SortOrder;
+  occurrence_count?: Prisma.SortOrder;
+};
+
+export type ProductionErrorAvgOrderByAggregateInput = {
+  affected_users?: Prisma.SortOrder;
+  occurrence_count?: Prisma.SortOrder;
 };
 
 export type ProductionErrorMaxOrderByAggregateInput = {
@@ -442,6 +604,9 @@ export type ProductionErrorMaxOrderByAggregateInput = {
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
+  deployment_id?: Prisma.SortOrder;
+  affected_users?: Prisma.SortOrder;
+  occurrence_count?: Prisma.SortOrder;
 };
 
 export type ProductionErrorMinOrderByAggregateInput = {
@@ -456,6 +621,14 @@ export type ProductionErrorMinOrderByAggregateInput = {
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
+  deployment_id?: Prisma.SortOrder;
+  affected_users?: Prisma.SortOrder;
+  occurrence_count?: Prisma.SortOrder;
+};
+
+export type ProductionErrorSumOrderByAggregateInput = {
+  affected_users?: Prisma.SortOrder;
+  occurrence_count?: Prisma.SortOrder;
 };
 
 export type ProductionErrorScalarRelationFilter = {
@@ -463,8 +636,120 @@ export type ProductionErrorScalarRelationFilter = {
   isNot?: Prisma.ProductionErrorWhereInput;
 };
 
+export type ProductionErrorCreateNestedManyWithoutDeploymentInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.ProductionErrorCreateWithoutDeploymentInput,
+        Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput
+      >
+    | Prisma.ProductionErrorCreateWithoutDeploymentInput[]
+    | Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput[];
+  connectOrCreate?:
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput[];
+  createMany?: Prisma.ProductionErrorCreateManyDeploymentInputEnvelope;
+  connect?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+};
+
+export type ProductionErrorUncheckedCreateNestedManyWithoutDeploymentInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.ProductionErrorCreateWithoutDeploymentInput,
+        Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput
+      >
+    | Prisma.ProductionErrorCreateWithoutDeploymentInput[]
+    | Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput[];
+  connectOrCreate?:
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput[];
+  createMany?: Prisma.ProductionErrorCreateManyDeploymentInputEnvelope;
+  connect?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+};
+
+export type ProductionErrorUpdateManyWithoutDeploymentNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.ProductionErrorCreateWithoutDeploymentInput,
+        Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput
+      >
+    | Prisma.ProductionErrorCreateWithoutDeploymentInput[]
+    | Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput[];
+  connectOrCreate?:
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput[];
+  upsert?:
+    | Prisma.ProductionErrorUpsertWithWhereUniqueWithoutDeploymentInput
+    | Prisma.ProductionErrorUpsertWithWhereUniqueWithoutDeploymentInput[];
+  createMany?: Prisma.ProductionErrorCreateManyDeploymentInputEnvelope;
+  set?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  disconnect?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  delete?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  connect?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  update?:
+    | Prisma.ProductionErrorUpdateWithWhereUniqueWithoutDeploymentInput
+    | Prisma.ProductionErrorUpdateWithWhereUniqueWithoutDeploymentInput[];
+  updateMany?:
+    | Prisma.ProductionErrorUpdateManyWithWhereWithoutDeploymentInput
+    | Prisma.ProductionErrorUpdateManyWithWhereWithoutDeploymentInput[];
+  deleteMany?: Prisma.ProductionErrorScalarWhereInput | Prisma.ProductionErrorScalarWhereInput[];
+};
+
+export type ProductionErrorUncheckedUpdateManyWithoutDeploymentNestedInput = {
+  create?:
+    | Prisma.XOR<
+        Prisma.ProductionErrorCreateWithoutDeploymentInput,
+        Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput
+      >
+    | Prisma.ProductionErrorCreateWithoutDeploymentInput[]
+    | Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput[];
+  connectOrCreate?:
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput
+    | Prisma.ProductionErrorCreateOrConnectWithoutDeploymentInput[];
+  upsert?:
+    | Prisma.ProductionErrorUpsertWithWhereUniqueWithoutDeploymentInput
+    | Prisma.ProductionErrorUpsertWithWhereUniqueWithoutDeploymentInput[];
+  createMany?: Prisma.ProductionErrorCreateManyDeploymentInputEnvelope;
+  set?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  disconnect?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  delete?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  connect?: Prisma.ProductionErrorWhereUniqueInput | Prisma.ProductionErrorWhereUniqueInput[];
+  update?:
+    | Prisma.ProductionErrorUpdateWithWhereUniqueWithoutDeploymentInput
+    | Prisma.ProductionErrorUpdateWithWhereUniqueWithoutDeploymentInput[];
+  updateMany?:
+    | Prisma.ProductionErrorUpdateManyWithWhereWithoutDeploymentInput
+    | Prisma.ProductionErrorUpdateManyWithWhereWithoutDeploymentInput[];
+  deleteMany?: Prisma.ProductionErrorScalarWhereInput | Prisma.ProductionErrorScalarWhereInput[];
+};
+
 export type EnumErrorSeverityFieldUpdateOperationsInput = {
   set?: $Enums.ErrorSeverity;
+};
+
+export type ProductionErrorCreateNestedOneWithoutRelated_commitsInput = {
+  create?: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutRelated_commitsInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutRelated_commitsInput
+  >;
+  connectOrCreate?: Prisma.ProductionErrorCreateOrConnectWithoutRelated_commitsInput;
+  connect?: Prisma.ProductionErrorWhereUniqueInput;
+};
+
+export type ProductionErrorUpdateOneRequiredWithoutRelated_commitsNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutRelated_commitsInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutRelated_commitsInput
+  >;
+  connectOrCreate?: Prisma.ProductionErrorCreateOrConnectWithoutRelated_commitsInput;
+  upsert?: Prisma.ProductionErrorUpsertWithoutRelated_commitsInput;
+  connect?: Prisma.ProductionErrorWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.ProductionErrorUpdateToOneWithWhereWithoutRelated_commitsInput,
+      Prisma.ProductionErrorUpdateWithoutRelated_commitsInput
+    >,
+    Prisma.ProductionErrorUncheckedUpdateWithoutRelated_commitsInput
+  >;
 };
 
 export type ProductionErrorCreateNestedOneWithoutBug_escapeInput = {
@@ -493,6 +778,219 @@ export type ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput = {
   >;
 };
 
+export type ProductionErrorCreateWithoutDeploymentInput = {
+  id?: string;
+  application: string;
+  error_type: string;
+  error_message: string;
+  stack_trace?: string | null;
+  severity: $Enums.ErrorSeverity;
+  fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
+  resolved?: boolean;
+  occurred_at: Date | string;
+  created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: number;
+  occurrence_count?: number;
+  bug_escape?: Prisma.BugEscapeCreateNestedOneWithoutProduction_errorInput;
+  related_commits?: Prisma.ProductionErrorCommitCreateNestedManyWithoutProduction_errorInput;
+};
+
+export type ProductionErrorUncheckedCreateWithoutDeploymentInput = {
+  id?: string;
+  application: string;
+  error_type: string;
+  error_message: string;
+  stack_trace?: string | null;
+  severity: $Enums.ErrorSeverity;
+  fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
+  resolved?: boolean;
+  occurred_at: Date | string;
+  created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: number;
+  occurrence_count?: number;
+  bug_escape?: Prisma.BugEscapeUncheckedCreateNestedOneWithoutProduction_errorInput;
+  related_commits?: Prisma.ProductionErrorCommitUncheckedCreateNestedManyWithoutProduction_errorInput;
+};
+
+export type ProductionErrorCreateOrConnectWithoutDeploymentInput = {
+  where: Prisma.ProductionErrorWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutDeploymentInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput
+  >;
+};
+
+export type ProductionErrorCreateManyDeploymentInputEnvelope = {
+  data:
+    | Prisma.ProductionErrorCreateManyDeploymentInput
+    | Prisma.ProductionErrorCreateManyDeploymentInput[];
+  skipDuplicates?: boolean;
+};
+
+export type ProductionErrorUpsertWithWhereUniqueWithoutDeploymentInput = {
+  where: Prisma.ProductionErrorWhereUniqueInput;
+  update: Prisma.XOR<
+    Prisma.ProductionErrorUpdateWithoutDeploymentInput,
+    Prisma.ProductionErrorUncheckedUpdateWithoutDeploymentInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutDeploymentInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutDeploymentInput
+  >;
+};
+
+export type ProductionErrorUpdateWithWhereUniqueWithoutDeploymentInput = {
+  where: Prisma.ProductionErrorWhereUniqueInput;
+  data: Prisma.XOR<
+    Prisma.ProductionErrorUpdateWithoutDeploymentInput,
+    Prisma.ProductionErrorUncheckedUpdateWithoutDeploymentInput
+  >;
+};
+
+export type ProductionErrorUpdateManyWithWhereWithoutDeploymentInput = {
+  where: Prisma.ProductionErrorScalarWhereInput;
+  data: Prisma.XOR<
+    Prisma.ProductionErrorUpdateManyMutationInput,
+    Prisma.ProductionErrorUncheckedUpdateManyWithoutDeploymentInput
+  >;
+};
+
+export type ProductionErrorScalarWhereInput = {
+  AND?: Prisma.ProductionErrorScalarWhereInput | Prisma.ProductionErrorScalarWhereInput[];
+  OR?: Prisma.ProductionErrorScalarWhereInput[];
+  NOT?: Prisma.ProductionErrorScalarWhereInput | Prisma.ProductionErrorScalarWhereInput[];
+  id?: Prisma.StringFilter<'ProductionError'> | string;
+  application?: Prisma.StringFilter<'ProductionError'> | string;
+  error_type?: Prisma.StringFilter<'ProductionError'> | string;
+  error_message?: Prisma.StringFilter<'ProductionError'> | string;
+  stack_trace?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+  severity?: Prisma.EnumErrorSeverityFilter<'ProductionError'> | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+  fix_ticket_url?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+  resolved?: Prisma.BoolFilter<'ProductionError'> | boolean;
+  occurred_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
+  created_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
+  parsed_stack_trace?: Prisma.JsonNullableFilter<'ProductionError'>;
+  user_context?: Prisma.JsonNullableFilter<'ProductionError'>;
+  deployment_id?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+  affected_users?: Prisma.IntFilter<'ProductionError'> | number;
+  occurrence_count?: Prisma.IntFilter<'ProductionError'> | number;
+};
+
+export type ProductionErrorCreateWithoutRelated_commitsInput = {
+  id?: string;
+  application: string;
+  error_type: string;
+  error_message: string;
+  stack_trace?: string | null;
+  severity: $Enums.ErrorSeverity;
+  fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
+  resolved?: boolean;
+  occurred_at: Date | string;
+  created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: number;
+  occurrence_count?: number;
+  bug_escape?: Prisma.BugEscapeCreateNestedOneWithoutProduction_errorInput;
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutProduction_errorsInput;
+};
+
+export type ProductionErrorUncheckedCreateWithoutRelated_commitsInput = {
+  id?: string;
+  application: string;
+  error_type: string;
+  error_message: string;
+  stack_trace?: string | null;
+  severity: $Enums.ErrorSeverity;
+  fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
+  resolved?: boolean;
+  occurred_at: Date | string;
+  created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: string | null;
+  affected_users?: number;
+  occurrence_count?: number;
+  bug_escape?: Prisma.BugEscapeUncheckedCreateNestedOneWithoutProduction_errorInput;
+};
+
+export type ProductionErrorCreateOrConnectWithoutRelated_commitsInput = {
+  where: Prisma.ProductionErrorWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutRelated_commitsInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutRelated_commitsInput
+  >;
+};
+
+export type ProductionErrorUpsertWithoutRelated_commitsInput = {
+  update: Prisma.XOR<
+    Prisma.ProductionErrorUpdateWithoutRelated_commitsInput,
+    Prisma.ProductionErrorUncheckedUpdateWithoutRelated_commitsInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutRelated_commitsInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutRelated_commitsInput
+  >;
+  where?: Prisma.ProductionErrorWhereInput;
+};
+
+export type ProductionErrorUpdateToOneWithWhereWithoutRelated_commitsInput = {
+  where?: Prisma.ProductionErrorWhereInput;
+  data: Prisma.XOR<
+    Prisma.ProductionErrorUpdateWithoutRelated_commitsInput,
+    Prisma.ProductionErrorUncheckedUpdateWithoutRelated_commitsInput
+  >;
+};
+
+export type ProductionErrorUpdateWithoutRelated_commitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  application?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_type?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_message?: Prisma.StringFieldUpdateOperationsInput | string;
+  stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  bug_escape?: Prisma.BugEscapeUpdateOneWithoutProduction_errorNestedInput;
+  deployment?: Prisma.DeploymentUpdateOneWithoutProduction_errorsNestedInput;
+};
+
+export type ProductionErrorUncheckedUpdateWithoutRelated_commitsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  application?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_type?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_message?: Prisma.StringFieldUpdateOperationsInput | string;
+  stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  bug_escape?: Prisma.BugEscapeUncheckedUpdateOneWithoutProduction_errorNestedInput;
+};
+
 export type ProductionErrorCreateWithoutBug_escapeInput = {
   id?: string;
   application: string;
@@ -505,6 +1003,12 @@ export type ProductionErrorCreateWithoutBug_escapeInput = {
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: number;
+  occurrence_count?: number;
+  deployment?: Prisma.DeploymentCreateNestedOneWithoutProduction_errorsInput;
+  related_commits?: Prisma.ProductionErrorCommitCreateNestedManyWithoutProduction_errorInput;
 };
 
 export type ProductionErrorUncheckedCreateWithoutBug_escapeInput = {
@@ -519,6 +1023,12 @@ export type ProductionErrorUncheckedCreateWithoutBug_escapeInput = {
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: string | null;
+  affected_users?: number;
+  occurrence_count?: number;
+  related_commits?: Prisma.ProductionErrorCommitUncheckedCreateNestedManyWithoutProduction_errorInput;
 };
 
 export type ProductionErrorCreateOrConnectWithoutBug_escapeInput = {
@@ -561,6 +1071,12 @@ export type ProductionErrorUpdateWithoutBug_escapeInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  deployment?: Prisma.DeploymentUpdateOneWithoutProduction_errorsNestedInput;
+  related_commits?: Prisma.ProductionErrorCommitUpdateManyWithoutProduction_errorNestedInput;
 };
 
 export type ProductionErrorUncheckedUpdateWithoutBug_escapeInput = {
@@ -575,6 +1091,123 @@ export type ProductionErrorUncheckedUpdateWithoutBug_escapeInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deployment_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  related_commits?: Prisma.ProductionErrorCommitUncheckedUpdateManyWithoutProduction_errorNestedInput;
+};
+
+export type ProductionErrorCreateManyDeploymentInput = {
+  id?: string;
+  application: string;
+  error_type: string;
+  error_message: string;
+  stack_trace?: string | null;
+  severity: $Enums.ErrorSeverity;
+  fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
+  resolved?: boolean;
+  occurred_at: Date | string;
+  created_at?: Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: number;
+  occurrence_count?: number;
+};
+
+export type ProductionErrorUpdateWithoutDeploymentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  application?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_type?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_message?: Prisma.StringFieldUpdateOperationsInput | string;
+  stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  bug_escape?: Prisma.BugEscapeUpdateOneWithoutProduction_errorNestedInput;
+  related_commits?: Prisma.ProductionErrorCommitUpdateManyWithoutProduction_errorNestedInput;
+};
+
+export type ProductionErrorUncheckedUpdateWithoutDeploymentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  application?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_type?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_message?: Prisma.StringFieldUpdateOperationsInput | string;
+  stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+  bug_escape?: Prisma.BugEscapeUncheckedUpdateOneWithoutProduction_errorNestedInput;
+  related_commits?: Prisma.ProductionErrorCommitUncheckedUpdateManyWithoutProduction_errorNestedInput;
+};
+
+export type ProductionErrorUncheckedUpdateManyWithoutDeploymentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  application?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_type?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_message?: Prisma.StringFieldUpdateOperationsInput | string;
+  stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  parsed_stack_trace?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  user_context?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  affected_users?: Prisma.IntFieldUpdateOperationsInput | number;
+  occurrence_count?: Prisma.IntFieldUpdateOperationsInput | number;
+};
+
+/**
+ * Count Type ProductionErrorCountOutputType
+ */
+
+export type ProductionErrorCountOutputType = {
+  related_commits: number;
+};
+
+export type ProductionErrorCountOutputTypeSelect<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  related_commits?: boolean | ProductionErrorCountOutputTypeCountRelated_commitsArgs;
+};
+
+/**
+ * ProductionErrorCountOutputType without action
+ */
+export type ProductionErrorCountOutputTypeDefaultArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the ProductionErrorCountOutputType
+   */
+  select?: Prisma.ProductionErrorCountOutputTypeSelect<ExtArgs> | null;
+};
+
+/**
+ * ProductionErrorCountOutputType without action
+ */
+export type ProductionErrorCountOutputTypeCountRelated_commitsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.ProductionErrorCommitWhereInput;
 };
 
 export type ProductionErrorSelect<
@@ -592,7 +1225,15 @@ export type ProductionErrorSelect<
     resolved?: boolean;
     occurred_at?: boolean;
     created_at?: boolean;
+    parsed_stack_trace?: boolean;
+    user_context?: boolean;
+    deployment_id?: boolean;
+    affected_users?: boolean;
+    occurrence_count?: boolean;
     bug_escape?: boolean | Prisma.ProductionError$bug_escapeArgs<ExtArgs>;
+    deployment?: boolean | Prisma.ProductionError$deploymentArgs<ExtArgs>;
+    related_commits?: boolean | Prisma.ProductionError$related_commitsArgs<ExtArgs>;
+    _count?: boolean | Prisma.ProductionErrorCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['productionError']
 >;
@@ -612,6 +1253,12 @@ export type ProductionErrorSelectCreateManyAndReturn<
     resolved?: boolean;
     occurred_at?: boolean;
     created_at?: boolean;
+    parsed_stack_trace?: boolean;
+    user_context?: boolean;
+    deployment_id?: boolean;
+    affected_users?: boolean;
+    occurrence_count?: boolean;
+    deployment?: boolean | Prisma.ProductionError$deploymentArgs<ExtArgs>;
   },
   ExtArgs['result']['productionError']
 >;
@@ -631,6 +1278,12 @@ export type ProductionErrorSelectUpdateManyAndReturn<
     resolved?: boolean;
     occurred_at?: boolean;
     created_at?: boolean;
+    parsed_stack_trace?: boolean;
+    user_context?: boolean;
+    deployment_id?: boolean;
+    affected_users?: boolean;
+    occurrence_count?: boolean;
+    deployment?: boolean | Prisma.ProductionError$deploymentArgs<ExtArgs>;
   },
   ExtArgs['result']['productionError']
 >;
@@ -647,6 +1300,11 @@ export type ProductionErrorSelectScalar = {
   resolved?: boolean;
   occurred_at?: boolean;
   created_at?: boolean;
+  parsed_stack_trace?: boolean;
+  user_context?: boolean;
+  deployment_id?: boolean;
+  affected_users?: boolean;
+  occurrence_count?: boolean;
 };
 
 export type ProductionErrorOmit<
@@ -662,20 +1320,32 @@ export type ProductionErrorOmit<
   | 'fix_ticket_url'
   | 'resolved'
   | 'occurred_at'
-  | 'created_at',
+  | 'created_at'
+  | 'parsed_stack_trace'
+  | 'user_context'
+  | 'deployment_id'
+  | 'affected_users'
+  | 'occurrence_count',
   ExtArgs['result']['productionError']
 >;
 export type ProductionErrorInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   bug_escape?: boolean | Prisma.ProductionError$bug_escapeArgs<ExtArgs>;
+  deployment?: boolean | Prisma.ProductionError$deploymentArgs<ExtArgs>;
+  related_commits?: boolean | Prisma.ProductionError$related_commitsArgs<ExtArgs>;
+  _count?: boolean | Prisma.ProductionErrorCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type ProductionErrorIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
-> = {};
+> = {
+  deployment?: boolean | Prisma.ProductionError$deploymentArgs<ExtArgs>;
+};
 export type ProductionErrorIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
-> = {};
+> = {
+  deployment?: boolean | Prisma.ProductionError$deploymentArgs<ExtArgs>;
+};
 
 export type $ProductionErrorPayload<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
@@ -683,6 +1353,8 @@ export type $ProductionErrorPayload<
   name: 'ProductionError';
   objects: {
     bug_escape: Prisma.$BugEscapePayload<ExtArgs> | null;
+    deployment: Prisma.$DeploymentPayload<ExtArgs> | null;
+    related_commits: Prisma.$ProductionErrorCommitPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -697,6 +1369,11 @@ export type $ProductionErrorPayload<
       resolved: boolean;
       occurred_at: Date;
       created_at: Date;
+      parsed_stack_trace: runtime.JsonValue | null;
+      user_context: runtime.JsonValue | null;
+      deployment_id: string | null;
+      affected_users: number;
+      occurrence_count: number;
     },
     ExtArgs['result']['productionError']
   >;
@@ -1251,6 +1928,30 @@ export interface Prisma__ProductionErrorClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  deployment<T extends Prisma.ProductionError$deploymentArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.ProductionError$deploymentArgs<ExtArgs>>,
+  ): Prisma.Prisma__DeploymentClient<
+    runtime.Types.Result.GetResult<
+      Prisma.$DeploymentPayload<ExtArgs>,
+      T,
+      'findUniqueOrThrow',
+      GlobalOmitOptions
+    > | null,
+    null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
+  related_commits<T extends Prisma.ProductionError$related_commitsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.ProductionError$related_commitsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$ProductionErrorCommitPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1293,6 +1994,11 @@ export interface ProductionErrorFieldRefs {
   readonly resolved: Prisma.FieldRef<'ProductionError', 'Boolean'>;
   readonly occurred_at: Prisma.FieldRef<'ProductionError', 'DateTime'>;
   readonly created_at: Prisma.FieldRef<'ProductionError', 'DateTime'>;
+  readonly parsed_stack_trace: Prisma.FieldRef<'ProductionError', 'Json'>;
+  readonly user_context: Prisma.FieldRef<'ProductionError', 'Json'>;
+  readonly deployment_id: Prisma.FieldRef<'ProductionError', 'String'>;
+  readonly affected_users: Prisma.FieldRef<'ProductionError', 'Int'>;
+  readonly occurrence_count: Prisma.FieldRef<'ProductionError', 'Int'>;
 }
 
 // Custom InputTypes
@@ -1563,6 +2269,10 @@ export type ProductionErrorCreateManyAndReturnArgs<
    */
   data: Prisma.ProductionErrorCreateManyInput | Prisma.ProductionErrorCreateManyInput[];
   skipDuplicates?: boolean;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorIncludeCreateManyAndReturn<ExtArgs> | null;
 };
 
 /**
@@ -1645,6 +2355,10 @@ export type ProductionErrorUpdateManyAndReturnArgs<
    * Limit how many ProductionErrors to update.
    */
   limit?: number;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorIncludeUpdateManyAndReturn<ExtArgs> | null;
 };
 
 /**
@@ -1738,6 +2452,57 @@ export type ProductionError$bug_escapeArgs<
    */
   include?: Prisma.BugEscapeInclude<ExtArgs> | null;
   where?: Prisma.BugEscapeWhereInput;
+};
+
+/**
+ * ProductionError.deployment
+ */
+export type ProductionError$deploymentArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the Deployment
+   */
+  select?: Prisma.DeploymentSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the Deployment
+   */
+  omit?: Prisma.DeploymentOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeploymentInclude<ExtArgs> | null;
+  where?: Prisma.DeploymentWhereInput;
+};
+
+/**
+ * ProductionError.related_commits
+ */
+export type ProductionError$related_commitsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the ProductionErrorCommit
+   */
+  select?: Prisma.ProductionErrorCommitSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the ProductionErrorCommit
+   */
+  omit?: Prisma.ProductionErrorCommitOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorCommitInclude<ExtArgs> | null;
+  where?: Prisma.ProductionErrorCommitWhereInput;
+  orderBy?:
+    | Prisma.ProductionErrorCommitOrderByWithRelationInput
+    | Prisma.ProductionErrorCommitOrderByWithRelationInput[];
+  cursor?: Prisma.ProductionErrorCommitWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?:
+    | Prisma.ProductionErrorCommitScalarFieldEnum
+    | Prisma.ProductionErrorCommitScalarFieldEnum[];
 };
 
 /**

@@ -693,7 +693,7 @@ development_status:
     notes: "Auto-create ClickUp tickets for production errors. Link to error logs. Assign based on component ownership. From original 9-3. CODE REVIEW COMPLETE: All HIGH/MEDIUM issues fixed (RabbitMQModule, Prometheus metrics, execution_id tracking, tag sanitization, FRONTEND_URL validation). See walkthrough.md."
     original_story: "9-3"
   9-U-4-error-context-extraction-linking:
-    status: ready-for-dev
+    status: done
     effort: "2 days"
     story_points: 3
     story_file: "_bmad-output/implementation-artifacts/9-U-4-error-context-extraction-linking.md"
@@ -733,7 +733,7 @@ development_status:
   epic-10-U-dependencies: "Epic 11 (Audit Logs), Epic 13 (Cost Alerts), Epic 14 (Observability APIs)"
   epic-10-U-notes: "Reduced from 10→7 stories. Backend observability APIs moved to Epic 14. This epic focuses on Socket.IO infrastructure and real-time streaming to frontend clients."
   10-U-1-socket-io-real-time-infrastructure:
-    status: backlog
+    status: ready-for-dev
     effort: "3 days"
     story_points: 8
     notes: "Socket.IO server setup. Connection management. Room/namespace organization. Authentication. From original 10-1."

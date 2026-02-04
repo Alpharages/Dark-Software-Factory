@@ -7,10 +7,21 @@ import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { FixTicketService } from './fix-ticket.service';
 import { FixTicketConsumer } from './fix-ticket.consumer';
 import { FixTicketMetrics } from './fix-ticket.metrics';
+import { ErrorContextService } from './error-context.service';
+import { ErrorContextConsumer } from './error-context.consumer';
+import { ProductionMonitoringController } from './production-monitoring.controller';
 
 @Module({
   imports: [DatabaseModule, ClickUpModule, SystemConfigModule, SentryModule, RabbitMQModule],
-  providers: [FixTicketService, FixTicketConsumer, FixTicketMetrics],
-  exports: [FixTicketService],
+  controllers: [ProductionMonitoringController],
+  providers: [
+    FixTicketService,
+    FixTicketConsumer,
+    FixTicketMetrics,
+    // Story 9-U-4: Error Context Extraction
+    ErrorContextService,
+    ErrorContextConsumer,
+  ],
+  exports: [FixTicketService, ErrorContextService],
 })
 export class ProductionMonitoringModule {}

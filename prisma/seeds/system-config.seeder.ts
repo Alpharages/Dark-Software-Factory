@@ -24,6 +24,22 @@ export async function seedSystemConfig(prisma: PrismaClient) {
       value: 'http://localhost:3001',
       description: 'URL of the DSF Frontend for deep linking',
     },
+    // Story 9-U-4: Error Context Extraction & Linking
+    {
+      key: 'CONTEXT_EXTRACTION_ENABLED',
+      value: 'true',
+      description: 'Enable automatic error context extraction (stack traces, commits, deployments)',
+    },
+    {
+      key: 'DEPLOYMENT_LOOKUP_WINDOW_MINUTES',
+      value: '60',
+      description: 'Time window in minutes to look for related deployments around error occurrence',
+    },
+    {
+      key: 'COMMIT_HISTORY_DAYS',
+      value: '7',
+      description: 'Number of days to look back in git history for related commits',
+    },
   ];
 
   for (const config of configs) {

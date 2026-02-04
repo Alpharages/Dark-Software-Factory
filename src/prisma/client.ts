@@ -86,6 +86,11 @@ export type CostRecord = Prisma.CostRecordModel;
  */
 export type ProductionError = Prisma.ProductionErrorModel;
 /**
+ * Model ProductionErrorCommit
+ *
+ */
+export type ProductionErrorCommit = Prisma.ProductionErrorCommitModel;
+/**
  * Model Metric
  *
  */

@@ -229,6 +229,7 @@ export type DeploymentWhereInput = {
   error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
   workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
   github_push?: Prisma.XOR<Prisma.GitHubPushScalarRelationFilter, Prisma.GitHubPushWhereInput>;
+  production_errors?: Prisma.ProductionErrorListRelationFilter;
 };
 
 export type DeploymentOrderByWithRelationInput = {
@@ -244,6 +245,7 @@ export type DeploymentOrderByWithRelationInput = {
   error_message?: Prisma.SortOrderInput | Prisma.SortOrder;
   workflow_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   github_push?: Prisma.GitHubPushOrderByWithRelationInput;
+  production_errors?: Prisma.ProductionErrorOrderByRelationAggregateInput;
 };
 
 export type DeploymentWhereUniqueInput = Prisma.AtLeast<
@@ -263,6 +265,7 @@ export type DeploymentWhereUniqueInput = Prisma.AtLeast<
     error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
     workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
     github_push?: Prisma.XOR<Prisma.GitHubPushScalarRelationFilter, Prisma.GitHubPushWhereInput>;
+    production_errors?: Prisma.ProductionErrorListRelationFilter;
   },
   'id'
 >;
@@ -317,6 +320,7 @@ export type DeploymentCreateInput = {
   error_message?: string | null;
   workflow_id?: string | null;
   github_push: Prisma.GitHubPushCreateNestedOneWithoutDeploymentsInput;
+  production_errors?: Prisma.ProductionErrorCreateNestedManyWithoutDeploymentInput;
 };
 
 export type DeploymentUncheckedCreateInput = {
@@ -331,6 +335,7 @@ export type DeploymentUncheckedCreateInput = {
   updated_at?: Date | string;
   error_message?: string | null;
   workflow_id?: string | null;
+  production_errors?: Prisma.ProductionErrorUncheckedCreateNestedManyWithoutDeploymentInput;
 };
 
 export type DeploymentUpdateInput = {
@@ -345,6 +350,7 @@ export type DeploymentUpdateInput = {
   error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   github_push?: Prisma.GitHubPushUpdateOneRequiredWithoutDeploymentsNestedInput;
+  production_errors?: Prisma.ProductionErrorUpdateManyWithoutDeploymentNestedInput;
 };
 
 export type DeploymentUncheckedUpdateInput = {
@@ -359,6 +365,7 @@ export type DeploymentUncheckedUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  production_errors?: Prisma.ProductionErrorUncheckedUpdateManyWithoutDeploymentNestedInput;
 };
 
 export type DeploymentCreateManyInput = {
@@ -454,6 +461,11 @@ export type DeploymentMinOrderByAggregateInput = {
   workflow_id?: Prisma.SortOrder;
 };
 
+export type DeploymentNullableScalarRelationFilter = {
+  is?: Prisma.DeploymentWhereInput | null;
+  isNot?: Prisma.DeploymentWhereInput | null;
+};
+
 export type DeploymentCreateNestedManyWithoutGithub_pushInput = {
   create?:
     | Prisma.XOR<
@@ -544,6 +556,34 @@ export type EnumDeploymentStatusFieldUpdateOperationsInput = {
   set?: $Enums.DeploymentStatus;
 };
 
+export type DeploymentCreateNestedOneWithoutProduction_errorsInput = {
+  create?: Prisma.XOR<
+    Prisma.DeploymentCreateWithoutProduction_errorsInput,
+    Prisma.DeploymentUncheckedCreateWithoutProduction_errorsInput
+  >;
+  connectOrCreate?: Prisma.DeploymentCreateOrConnectWithoutProduction_errorsInput;
+  connect?: Prisma.DeploymentWhereUniqueInput;
+};
+
+export type DeploymentUpdateOneWithoutProduction_errorsNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.DeploymentCreateWithoutProduction_errorsInput,
+    Prisma.DeploymentUncheckedCreateWithoutProduction_errorsInput
+  >;
+  connectOrCreate?: Prisma.DeploymentCreateOrConnectWithoutProduction_errorsInput;
+  upsert?: Prisma.DeploymentUpsertWithoutProduction_errorsInput;
+  disconnect?: Prisma.DeploymentWhereInput | boolean;
+  delete?: Prisma.DeploymentWhereInput | boolean;
+  connect?: Prisma.DeploymentWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.DeploymentUpdateToOneWithWhereWithoutProduction_errorsInput,
+      Prisma.DeploymentUpdateWithoutProduction_errorsInput
+    >,
+    Prisma.DeploymentUncheckedUpdateWithoutProduction_errorsInput
+  >;
+};
+
 export type DeploymentCreateWithoutGithub_pushInput = {
   id?: string;
   environment: string;
@@ -555,6 +595,7 @@ export type DeploymentCreateWithoutGithub_pushInput = {
   updated_at?: Date | string;
   error_message?: string | null;
   workflow_id?: string | null;
+  production_errors?: Prisma.ProductionErrorCreateNestedManyWithoutDeploymentInput;
 };
 
 export type DeploymentUncheckedCreateWithoutGithub_pushInput = {
@@ -568,6 +609,7 @@ export type DeploymentUncheckedCreateWithoutGithub_pushInput = {
   updated_at?: Date | string;
   error_message?: string | null;
   workflow_id?: string | null;
+  production_errors?: Prisma.ProductionErrorUncheckedCreateNestedManyWithoutDeploymentInput;
 };
 
 export type DeploymentCreateOrConnectWithoutGithub_pushInput = {
@@ -628,6 +670,90 @@ export type DeploymentScalarWhereInput = {
   workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
 };
 
+export type DeploymentCreateWithoutProduction_errorsInput = {
+  id?: string;
+  environment: string;
+  cicd_provider: string;
+  build_id?: string | null;
+  status?: $Enums.DeploymentStatus;
+  deployed_at?: Date | string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
+  github_push: Prisma.GitHubPushCreateNestedOneWithoutDeploymentsInput;
+};
+
+export type DeploymentUncheckedCreateWithoutProduction_errorsInput = {
+  id?: string;
+  github_push_id: string;
+  environment: string;
+  cicd_provider: string;
+  build_id?: string | null;
+  status?: $Enums.DeploymentStatus;
+  deployed_at?: Date | string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
+};
+
+export type DeploymentCreateOrConnectWithoutProduction_errorsInput = {
+  where: Prisma.DeploymentWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.DeploymentCreateWithoutProduction_errorsInput,
+    Prisma.DeploymentUncheckedCreateWithoutProduction_errorsInput
+  >;
+};
+
+export type DeploymentUpsertWithoutProduction_errorsInput = {
+  update: Prisma.XOR<
+    Prisma.DeploymentUpdateWithoutProduction_errorsInput,
+    Prisma.DeploymentUncheckedUpdateWithoutProduction_errorsInput
+  >;
+  create: Prisma.XOR<
+    Prisma.DeploymentCreateWithoutProduction_errorsInput,
+    Prisma.DeploymentUncheckedCreateWithoutProduction_errorsInput
+  >;
+  where?: Prisma.DeploymentWhereInput;
+};
+
+export type DeploymentUpdateToOneWithWhereWithoutProduction_errorsInput = {
+  where?: Prisma.DeploymentWhereInput;
+  data: Prisma.XOR<
+    Prisma.DeploymentUpdateWithoutProduction_errorsInput,
+    Prisma.DeploymentUncheckedUpdateWithoutProduction_errorsInput
+  >;
+};
+
+export type DeploymentUpdateWithoutProduction_errorsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  environment?: Prisma.StringFieldUpdateOperationsInput | string;
+  cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
+  build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
+  deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  github_push?: Prisma.GitHubPushUpdateOneRequiredWithoutDeploymentsNestedInput;
+};
+
+export type DeploymentUncheckedUpdateWithoutProduction_errorsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  github_push_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  environment?: Prisma.StringFieldUpdateOperationsInput | string;
+  cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
+  build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
+  deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+};
+
 export type DeploymentCreateManyGithub_pushInput = {
   id?: string;
   environment: string;
@@ -652,6 +778,7 @@ export type DeploymentUpdateWithoutGithub_pushInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  production_errors?: Prisma.ProductionErrorUpdateManyWithoutDeploymentNestedInput;
 };
 
 export type DeploymentUncheckedUpdateWithoutGithub_pushInput = {
@@ -665,6 +792,7 @@ export type DeploymentUncheckedUpdateWithoutGithub_pushInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  production_errors?: Prisma.ProductionErrorUncheckedUpdateManyWithoutDeploymentNestedInput;
 };
 
 export type DeploymentUncheckedUpdateManyWithoutGithub_pushInput = {
@@ -678,6 +806,41 @@ export type DeploymentUncheckedUpdateManyWithoutGithub_pushInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+};
+
+/**
+ * Count Type DeploymentCountOutputType
+ */
+
+export type DeploymentCountOutputType = {
+  production_errors: number;
+};
+
+export type DeploymentCountOutputTypeSelect<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  production_errors?: boolean | DeploymentCountOutputTypeCountProduction_errorsArgs;
+};
+
+/**
+ * DeploymentCountOutputType without action
+ */
+export type DeploymentCountOutputTypeDefaultArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the DeploymentCountOutputType
+   */
+  select?: Prisma.DeploymentCountOutputTypeSelect<ExtArgs> | null;
+};
+
+/**
+ * DeploymentCountOutputType without action
+ */
+export type DeploymentCountOutputTypeCountProduction_errorsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.ProductionErrorWhereInput;
 };
 
 export type DeploymentSelect<
@@ -696,6 +859,8 @@ export type DeploymentSelect<
     error_message?: boolean;
     workflow_id?: boolean;
     github_push?: boolean | Prisma.GitHubPushDefaultArgs<ExtArgs>;
+    production_errors?: boolean | Prisma.Deployment$production_errorsArgs<ExtArgs>;
+    _count?: boolean | Prisma.DeploymentCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['deployment']
 >;
@@ -774,6 +939,8 @@ export type DeploymentInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   github_push?: boolean | Prisma.GitHubPushDefaultArgs<ExtArgs>;
+  production_errors?: boolean | Prisma.Deployment$production_errorsArgs<ExtArgs>;
+  _count?: boolean | Prisma.DeploymentCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type DeploymentIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
@@ -792,6 +959,7 @@ export type $DeploymentPayload<
   name: 'Deployment';
   objects: {
     github_push: Prisma.$GitHubPushPayload<ExtArgs>;
+    production_errors: Prisma.$ProductionErrorPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1358,6 +1526,17 @@ export interface Prisma__DeploymentClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  production_errors<T extends Prisma.Deployment$production_errorsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Deployment$production_errorsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$ProductionErrorPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1826,6 +2005,34 @@ export type DeploymentDeleteManyArgs<
    * Limit how many Deployments to delete.
    */
   limit?: number;
+};
+
+/**
+ * Deployment.production_errors
+ */
+export type Deployment$production_errorsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the ProductionError
+   */
+  select?: Prisma.ProductionErrorSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the ProductionError
+   */
+  omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
+  where?: Prisma.ProductionErrorWhereInput;
+  orderBy?:
+    | Prisma.ProductionErrorOrderByWithRelationInput
+    | Prisma.ProductionErrorOrderByWithRelationInput[];
+  cursor?: Prisma.ProductionErrorWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.ProductionErrorScalarFieldEnum | Prisma.ProductionErrorScalarFieldEnum[];
 };
 
 /**
