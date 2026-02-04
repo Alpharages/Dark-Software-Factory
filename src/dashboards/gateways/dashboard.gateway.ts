@@ -19,6 +19,7 @@ export interface ServerToClientEvents {
   'quality-update': (data: Record<string, unknown>) => void;
   'quality-alert': (data: Record<string, unknown>) => void;
   'quality-anomaly-detected': (data: Record<string, unknown>) => void;
+  'qa-workload-alert': (data: Record<string, unknown>) => void;
 }
 
 export interface ClientToServerEvents {

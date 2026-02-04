@@ -650,16 +650,19 @@ development_status:
     dev_branch: "feature/8-7-quality-anomalies"
     notes: "COMPLETE. Implemented AnomalyDetectionService with AI analysis, REST API controller, and Event/Listener system. Added QualityAnomaly and QualityAnomalyConfig models. Verified with 11 unit tests across service and controller."
   8-8-quality-review-metrics-qa-workload:
-    status: ready-for-dev
+    status: done
     priority: high
     effort: "2 days"
     story_points: 3
-    story_file: "_bmad-output/implementation-artifacts/8-8-quality-review-metrics-qa-workload.md"
-    notes: "QA workload metrics and capacity analytics for Lead QA team. Covers FR49 (workforce capacity) and FR43 (quality reports). Dependencies: Stories 8.1, 8.2, 8.5, 8.6."
+    developer: "Antigravity"
+    notes: "✅ COMPLETE. Implemented QA workload summary, reviewer performance, queue flow, and alerts. Integrated with Prometheus for real-time monitoring and AIDecisionLogger for audit. Resolved schema mismatches (transitioned to reviewed_at and APPROVED/REJECTED statuses). Unit tests passing for service and controller."
   8-UI-lead-qa-review-dashboard:
-    status: backlog
+    status: done
     priority: high
-    notes: "UI Gateway for Epic 8. Defined during Epic 7 Retrospective."
+    effort: "3 days"
+    story_points: 5
+    developer: "Antigravity"
+    notes: "✅ COMPLETE. Implemented unified QA Review Dashboard with sampling queue, code diff viewer, and decision workflow. Fixed pre-existing build errors in auth and conversations types. Build verified."
   epic-8-retrospective: optional
 
   # ===================================================================

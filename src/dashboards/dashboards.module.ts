@@ -14,6 +14,8 @@ import { PmDashboardService } from './services/pm-dashboard.service';
 import { WorkloadController } from './controllers/workload.controller';
 import { WorkloadService } from './services/workload.service';
 import { WorkloadSchedulerService } from './services/workload-scheduler.service';
+import { QaWorkloadController } from './qa-workload.controller';
+import { QaWorkloadService } from './services/qa-workload.service';
 import { DashboardGateway } from './gateways/dashboard.gateway';
 import { QualityDashboardListener } from './listeners/quality-dashboard.listener';
 import { EmailModule } from '@/common/email/email.module';
@@ -57,6 +59,7 @@ import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
     PmDashboardController,
     WorkloadController,
     QaDashboardController,
+    QaWorkloadController,
     AnomalyDetectionController,
   ],
   providers: [
@@ -108,6 +111,27 @@ import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
       help: 'Number of failed snapshots in last job',
     }),
 
+    // QA Workload Metrics (Story 8.8)
+    makeCounterProvider({
+      name: 'qa_workload_api_calls_total',
+      help: 'Total QA workload API calls by endpoint',
+      labelNames: ['endpoint'],
+    }),
+    makeGaugeProvider({
+      name: 'qa_workload_queue_depth',
+      help: 'Current depth of the QA review queue',
+    }),
+    makeHistogramProvider({
+      name: 'qa_workload_review_duration_seconds',
+      help: 'Duration of QA reviews in seconds',
+      buckets: [60, 300, 900, 1800, 3600, 7200, 14400, 28800], // 1m to 8h
+    }),
+    makeCounterProvider({
+      name: 'qa_workload_alerts_total',
+      help: 'Total QA workload alerts triggered by type and severity',
+      labelNames: ['type', 'severity'],
+    }),
+
     // Quality Dashboard Metrics (Story 8.6)
     makeCounterProvider({
       name: 'quality_dashboard_api_calls_total',
@@ -134,6 +158,7 @@ import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
     DashboardGateway,
     QualityDashboardService,
     QualityDashboardListener,
+    QaWorkloadService,
     AnomalyDetectionService,
     AnomalyNotificationListener,
   ],
