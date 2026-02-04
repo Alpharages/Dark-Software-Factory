@@ -418,6 +418,8 @@ export const ModelName = {
   RefreshToken: 'RefreshToken',
   QualityGateConfig: 'QualityGateConfig',
   QualityGateConfigHistory: 'QualityGateConfigHistory',
+  QualityAnomaly: 'QualityAnomaly',
+  QualityAnomalyConfig: 'QualityAnomalyConfig',
 } as const;
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -480,7 +482,9 @@ export type TypeMap<
       | 'userInvitation'
       | 'refreshToken'
       | 'qualityGateConfig'
-      | 'qualityGateConfigHistory';
+      | 'qualityGateConfigHistory'
+      | 'qualityAnomaly'
+      | 'qualityAnomalyConfig';
     txIsolationLevel: TransactionIsolationLevel;
   };
   model: {
@@ -3718,6 +3722,158 @@ export type TypeMap<
         };
       };
     };
+    QualityAnomaly: {
+      payload: Prisma.$QualityAnomalyPayload<ExtArgs>;
+      fields: Prisma.QualityAnomalyFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.QualityAnomalyFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.QualityAnomalyFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>;
+        };
+        findFirst: {
+          args: Prisma.QualityAnomalyFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.QualityAnomalyFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>;
+        };
+        findMany: {
+          args: Prisma.QualityAnomalyFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>[];
+        };
+        create: {
+          args: Prisma.QualityAnomalyCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>;
+        };
+        createMany: {
+          args: Prisma.QualityAnomalyCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.QualityAnomalyCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>[];
+        };
+        delete: {
+          args: Prisma.QualityAnomalyDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>;
+        };
+        update: {
+          args: Prisma.QualityAnomalyUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>;
+        };
+        deleteMany: {
+          args: Prisma.QualityAnomalyDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.QualityAnomalyUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.QualityAnomalyUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>[];
+        };
+        upsert: {
+          args: Prisma.QualityAnomalyUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyPayload>;
+        };
+        aggregate: {
+          args: Prisma.QualityAnomalyAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQualityAnomaly>;
+        };
+        groupBy: {
+          args: Prisma.QualityAnomalyGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.QualityAnomalyGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.QualityAnomalyCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.QualityAnomalyCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
+    QualityAnomalyConfig: {
+      payload: Prisma.$QualityAnomalyConfigPayload<ExtArgs>;
+      fields: Prisma.QualityAnomalyConfigFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.QualityAnomalyConfigFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.QualityAnomalyConfigFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>;
+        };
+        findFirst: {
+          args: Prisma.QualityAnomalyConfigFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.QualityAnomalyConfigFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>;
+        };
+        findMany: {
+          args: Prisma.QualityAnomalyConfigFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>[];
+        };
+        create: {
+          args: Prisma.QualityAnomalyConfigCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>;
+        };
+        createMany: {
+          args: Prisma.QualityAnomalyConfigCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.QualityAnomalyConfigCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>[];
+        };
+        delete: {
+          args: Prisma.QualityAnomalyConfigDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>;
+        };
+        update: {
+          args: Prisma.QualityAnomalyConfigUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>;
+        };
+        deleteMany: {
+          args: Prisma.QualityAnomalyConfigDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.QualityAnomalyConfigUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.QualityAnomalyConfigUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>[];
+        };
+        upsert: {
+          args: Prisma.QualityAnomalyConfigUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QualityAnomalyConfigPayload>;
+        };
+        aggregate: {
+          args: Prisma.QualityAnomalyConfigAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQualityAnomalyConfig>;
+        };
+        groupBy: {
+          args: Prisma.QualityAnomalyConfigGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.QualityAnomalyConfigGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.QualityAnomalyConfigCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.QualityAnomalyConfigCountAggregateOutputType>
+            | number;
+        };
+      };
+    };
   };
 } & {
   other: {
@@ -3760,20 +3916,20 @@ export type TransactionIsolationLevel =
 export const ProjectScalarFieldEnum = {
   id: 'id',
   name: 'name',
-  client_name: 'client_name',
-  provider: 'provider',
   clickup_list_id: 'clickup_list_id',
-  monitor_tasks: 'monitor_tasks',
-  sync_config: 'sync_config',
   github_repository_url: 'github_repository_url',
-  pm_id: 'pm_id',
-  status: 'status',
   default_branch: 'default_branch',
   budget_usd: 'budget_usd',
-  is_active: 'is_active',
-  deactivated_at: 'deactivated_at',
   created_at: 'created_at',
   updated_at: 'updated_at',
+  pm_id: 'pm_id',
+  status: 'status',
+  client_name: 'client_name',
+  monitor_tasks: 'monitor_tasks',
+  provider: 'provider',
+  sync_config: 'sync_config',
+  deactivated_at: 'deactivated_at',
+  is_active: 'is_active',
 } as const;
 
 export type ProjectScalarFieldEnum =
@@ -3788,9 +3944,9 @@ export const TicketScalarFieldEnum = {
   acceptance_criteria: 'acceptance_criteria',
   ticket_quality_score: 'ticket_quality_score',
   status: 'status',
-  conversation_id: 'conversation_id',
   created_at: 'created_at',
   updated_at: 'updated_at',
+  conversation_id: 'conversation_id',
 } as const;
 
 export type TicketScalarFieldEnum =
@@ -3811,24 +3967,24 @@ export const ExecutionScalarFieldEnum = {
   files_changed: 'files_changed',
   retry_count: 'retry_count',
   max_retries: 'max_retries',
-  complexity_score: 'complexity_score',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
   complexity_breakdown: 'complexity_breakdown',
-  routing_reason: 'routing_reason',
+  complexity_score: 'complexity_score',
+  error_context: 'error_context',
   fallback_used: 'fallback_used',
   original_provider: 'original_provider',
-  error_context: 'error_context',
+  routing_reason: 'routing_reason',
   scheduled_retry_at: 'scheduled_retry_at',
   base_branch: 'base_branch',
   branch_selection_log: 'branch_selection_log',
+  circular_dep_detected: 'circular_dep_detected',
   file_modifications: 'file_modifications',
   risk_level: 'risk_level',
-  circular_dep_detected: 'circular_dep_detected',
   selected_model: 'selected_model',
   task_type: 'task_type',
   container_id: 'container_id',
   debug_mode: 'debug_mode',
-  created_at: 'created_at',
-  updated_at: 'updated_at',
 } as const;
 
 export type ExecutionScalarFieldEnum =
@@ -3890,12 +4046,12 @@ export const DeploymentScalarFieldEnum = {
   environment: 'environment',
   cicd_provider: 'cicd_provider',
   build_id: 'build_id',
-  workflow_id: 'workflow_id',
   status: 'status',
   deployed_at: 'deployed_at',
-  error_message: 'error_message',
   created_at: 'created_at',
   updated_at: 'updated_at',
+  error_message: 'error_message',
+  workflow_id: 'workflow_id',
 } as const;
 
 export type DeploymentScalarFieldEnum =
@@ -4217,15 +4373,15 @@ export type AiCodeReviewFindingScalarFieldEnum =
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  full_name: 'full_name',
-  password_hash: 'password_hash',
   role: 'role',
-  is_active: 'is_active',
-  last_login_at: 'last_login_at',
   managed_by_id: 'managed_by_id',
   max_tickets: 'max_tickets',
   created_at: 'created_at',
   updated_at: 'updated_at',
+  full_name: 'full_name',
+  is_active: 'is_active',
+  last_login_at: 'last_login_at',
+  password_hash: 'password_hash',
 } as const;
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum];
@@ -4256,9 +4412,9 @@ export const ClientConversationScalarFieldEnum = {
   audio_file_url: 'audio_file_url',
   status: 'status',
   processing_cost: 'processing_cost',
-  clickup_task_ids: 'clickup_task_ids',
   created_at: 'created_at',
   updated_at: 'updated_at',
+  clickup_task_ids: 'clickup_task_ids',
 } as const;
 
 export type ClientConversationScalarFieldEnum =
@@ -4308,20 +4464,20 @@ export const AdrScalarFieldEnum = {
   alternatives: 'alternatives',
   ai_confidence: 'ai_confidence',
   risk_level: 'risk_level',
-  risk_factors: 'risk_factors',
-  escalation_reason: 'escalation_reason',
-  escalation_questions: 'escalation_questions',
-  trade_offs: 'trade_offs',
-  tl_guidance: 'tl_guidance',
-  delegate_to: 'delegate_to',
-  guidance_provided_at: 'guidance_provided_at',
-  escalation_duration_seconds: 'escalation_duration_seconds',
-  resolving_execution_id: 'resolving_execution_id',
-  reviewed_at: 'reviewed_at',
-  review_duration_seconds: 'review_duration_seconds',
-  rejection_reason: 'rejection_reason',
   created_at: 'created_at',
   updated_at: 'updated_at',
+  risk_factors: 'risk_factors',
+  delegate_to: 'delegate_to',
+  escalation_questions: 'escalation_questions',
+  escalation_reason: 'escalation_reason',
+  guidance_provided_at: 'guidance_provided_at',
+  tl_guidance: 'tl_guidance',
+  trade_offs: 'trade_offs',
+  rejection_reason: 'rejection_reason',
+  resolving_execution_id: 'resolving_execution_id',
+  review_duration_seconds: 'review_duration_seconds',
+  reviewed_at: 'reviewed_at',
+  escalation_duration_seconds: 'escalation_duration_seconds',
 } as const;
 
 export type AdrScalarFieldEnum = (typeof AdrScalarFieldEnum)[keyof typeof AdrScalarFieldEnum];
@@ -4477,6 +4633,44 @@ export const QualityGateConfigHistoryScalarFieldEnum = {
 export type QualityGateConfigHistoryScalarFieldEnum =
   (typeof QualityGateConfigHistoryScalarFieldEnum)[keyof typeof QualityGateConfigHistoryScalarFieldEnum];
 
+export const QualityAnomalyScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  metric: 'metric',
+  severity: 'severity',
+  project_id: 'project_id',
+  detected_at: 'detected_at',
+  current_value: 'current_value',
+  previous_value: 'previous_value',
+  expected_min: 'expected_min',
+  expected_max: 'expected_max',
+  change_percent: 'change_percent',
+  ai_analysis: 'ai_analysis',
+  status: 'status',
+  resolved_at: 'resolved_at',
+  resolved_by: 'resolved_by',
+  resolution_notes: 'resolution_notes',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+} as const;
+
+export type QualityAnomalyScalarFieldEnum =
+  (typeof QualityAnomalyScalarFieldEnum)[keyof typeof QualityAnomalyScalarFieldEnum];
+
+export const QualityAnomalyConfigScalarFieldEnum = {
+  id: 'id',
+  project_id: 'project_id',
+  thresholds: 'thresholds',
+  notifications_enabled: 'notifications_enabled',
+  slack_channels: 'slack_channels',
+  email_recipients: 'email_recipients',
+  updated_at: 'updated_at',
+  updated_by: 'updated_by',
+} as const;
+
+export type QualityAnomalyConfigScalarFieldEnum =
+  (typeof QualityAnomalyConfigScalarFieldEnum)[keyof typeof QualityAnomalyConfigScalarFieldEnum];
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc',
@@ -4535,37 +4729,6 @@ export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
 export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>;
 
 /**
- * Reference to a field of type 'ProjectProvider'
- */
-export type EnumProjectProviderFieldRefInput<$PrismaModel> = FieldRefInputType<
-  $PrismaModel,
-  'ProjectProvider'
->;
-
-/**
- * Reference to a field of type 'ProjectProvider[]'
- */
-export type ListEnumProjectProviderFieldRefInput<$PrismaModel> = FieldRefInputType<
-  $PrismaModel,
-  'ProjectProvider[]'
->;
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>;
-
-/**
- * Reference to a field of type 'Json'
- */
-export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>;
-
-/**
- * Reference to a field of type 'QueryMode'
- */
-export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>;
-
-/**
  * Reference to a field of type 'Decimal'
  */
 export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>;
@@ -4584,6 +4747,37 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>;
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>;
+
+/**
+ * Reference to a field of type 'ProjectProvider'
+ */
+export type EnumProjectProviderFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'ProjectProvider'
+>;
+
+/**
+ * Reference to a field of type 'ProjectProvider[]'
+ */
+export type ListEnumProjectProviderFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'ProjectProvider[]'
+>;
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>;
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>;
 
 /**
  * Reference to a field of type 'Int'
@@ -5141,6 +5335,8 @@ export type GlobalOmitConfig = {
   refreshToken?: Prisma.RefreshTokenOmit;
   qualityGateConfig?: Prisma.QualityGateConfigOmit;
   qualityGateConfigHistory?: Prisma.QualityGateConfigHistoryOmit;
+  qualityAnomaly?: Prisma.QualityAnomalyOmit;
+  qualityAnomalyConfig?: Prisma.QualityAnomalyConfigOmit;
 };
 
 /* Types for Logging */

@@ -13,7 +13,7 @@ import type * as Prisma from '../internal/prismaNamespace';
 
 /**
  * Model ClientConversation
- *
+ * This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
  */
 export type ClientConversationModel =
   runtime.Types.Result.DefaultSelection<Prisma.$ClientConversationPayload>;
@@ -79,9 +79,9 @@ export type ClientConversationCountAggregateOutputType = {
   audio_file_url: number;
   status: number;
   processing_cost: number;
-  clickup_task_ids: number;
   created_at: number;
   updated_at: number;
+  clickup_task_ids: number;
   _all: number;
 };
 
@@ -138,9 +138,9 @@ export type ClientConversationCountAggregateInputType = {
   audio_file_url?: true;
   status?: true;
   processing_cost?: true;
-  clickup_task_ids?: true;
   created_at?: true;
   updated_at?: true;
+  clickup_task_ids?: true;
   _all?: true;
 };
 
@@ -248,9 +248,9 @@ export type ClientConversationGroupByOutputType = {
   audio_file_url: string | null;
   status: string;
   processing_cost: number | null;
-  clickup_task_ids: runtime.JsonValue | null;
   created_at: Date;
   updated_at: Date;
+  clickup_task_ids: runtime.JsonValue | null;
   _count: ClientConversationCountAggregateOutputType | null;
   _avg: ClientConversationAvgAggregateOutputType | null;
   _sum: ClientConversationSumAggregateOutputType | null;
@@ -287,11 +287,11 @@ export type ClientConversationWhereInput = {
   audio_file_url?: Prisma.StringNullableFilter<'ClientConversation'> | string | null;
   status?: Prisma.StringFilter<'ClientConversation'> | string;
   processing_cost?: Prisma.FloatNullableFilter<'ClientConversation'> | number | null;
-  clickup_task_ids?: Prisma.JsonNullableFilter<'ClientConversation'>;
   created_at?: Prisma.DateTimeFilter<'ClientConversation'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'ClientConversation'> | Date | string;
-  project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>;
+  clickup_task_ids?: Prisma.JsonNullableFilter<'ClientConversation'>;
   pm?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+  project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>;
   linked_tickets?: Prisma.TicketListRelationFilter;
 };
 
@@ -308,11 +308,11 @@ export type ClientConversationOrderByWithRelationInput = {
   audio_file_url?: Prisma.SortOrderInput | Prisma.SortOrder;
   status?: Prisma.SortOrder;
   processing_cost?: Prisma.SortOrderInput | Prisma.SortOrder;
-  clickup_task_ids?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
-  project?: Prisma.ProjectOrderByWithRelationInput;
+  clickup_task_ids?: Prisma.SortOrderInput | Prisma.SortOrder;
   pm?: Prisma.UserOrderByWithRelationInput;
+  project?: Prisma.ProjectOrderByWithRelationInput;
   linked_tickets?: Prisma.TicketOrderByRelationAggregateInput;
 };
 
@@ -333,11 +333,11 @@ export type ClientConversationWhereUniqueInput = Prisma.AtLeast<
     audio_file_url?: Prisma.StringNullableFilter<'ClientConversation'> | string | null;
     status?: Prisma.StringFilter<'ClientConversation'> | string;
     processing_cost?: Prisma.FloatNullableFilter<'ClientConversation'> | number | null;
-    clickup_task_ids?: Prisma.JsonNullableFilter<'ClientConversation'>;
     created_at?: Prisma.DateTimeFilter<'ClientConversation'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'ClientConversation'> | Date | string;
-    project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>;
+    clickup_task_ids?: Prisma.JsonNullableFilter<'ClientConversation'>;
     pm?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+    project?: Prisma.XOR<Prisma.ProjectScalarRelationFilter, Prisma.ProjectWhereInput>;
     linked_tickets?: Prisma.TicketListRelationFilter;
   },
   'id'
@@ -356,9 +356,9 @@ export type ClientConversationOrderByWithAggregationInput = {
   audio_file_url?: Prisma.SortOrderInput | Prisma.SortOrder;
   status?: Prisma.SortOrder;
   processing_cost?: Prisma.SortOrderInput | Prisma.SortOrder;
-  clickup_task_ids?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  clickup_task_ids?: Prisma.SortOrderInput | Prisma.SortOrder;
   _count?: Prisma.ClientConversationCountOrderByAggregateInput;
   _avg?: Prisma.ClientConversationAvgOrderByAggregateInput;
   _max?: Prisma.ClientConversationMaxOrderByAggregateInput;
@@ -386,9 +386,9 @@ export type ClientConversationScalarWhereWithAggregatesInput = {
   audio_file_url?: Prisma.StringNullableWithAggregatesFilter<'ClientConversation'> | string | null;
   status?: Prisma.StringWithAggregatesFilter<'ClientConversation'> | string;
   processing_cost?: Prisma.FloatNullableWithAggregatesFilter<'ClientConversation'> | number | null;
-  clickup_task_ids?: Prisma.JsonNullableWithAggregatesFilter<'ClientConversation'>;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'ClientConversation'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'ClientConversation'> | Date | string;
+  clickup_task_ids?: Prisma.JsonNullableWithAggregatesFilter<'ClientConversation'>;
 };
 
 export type ClientConversationCreateInput = {
@@ -402,11 +402,11 @@ export type ClientConversationCreateInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
-  project: Prisma.ProjectCreateNestedOneWithoutConversationsInput;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   pm: Prisma.UserCreateNestedOneWithoutConversationsInput;
+  project: Prisma.ProjectCreateNestedOneWithoutConversationsInput;
   linked_tickets?: Prisma.TicketCreateNestedManyWithoutConversationInput;
 };
 
@@ -423,9 +423,9 @@ export type ClientConversationUncheckedCreateInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   linked_tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutConversationInput;
 };
 
@@ -440,11 +440,11 @@ export type ClientConversationUpdateInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  project?: Prisma.ProjectUpdateOneRequiredWithoutConversationsNestedInput;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   pm?: Prisma.UserUpdateOneRequiredWithoutConversationsNestedInput;
+  project?: Prisma.ProjectUpdateOneRequiredWithoutConversationsNestedInput;
   linked_tickets?: Prisma.TicketUpdateManyWithoutConversationNestedInput;
 };
 
@@ -461,9 +461,9 @@ export type ClientConversationUncheckedUpdateInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   linked_tickets?: Prisma.TicketUncheckedUpdateManyWithoutConversationNestedInput;
 };
 
@@ -480,9 +480,9 @@ export type ClientConversationCreateManyInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationUpdateManyMutationInput = {
@@ -496,9 +496,9 @@ export type ClientConversationUpdateManyMutationInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationUncheckedUpdateManyInput = {
@@ -514,9 +514,9 @@ export type ClientConversationUncheckedUpdateManyInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationListRelationFilter = {
@@ -565,9 +565,9 @@ export type ClientConversationCountOrderByAggregateInput = {
   audio_file_url?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   processing_cost?: Prisma.SortOrder;
-  clickup_task_ids?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  clickup_task_ids?: Prisma.SortOrder;
 };
 
 export type ClientConversationAvgOrderByAggregateInput = {
@@ -846,9 +846,9 @@ export type ClientConversationCreateWithoutProjectInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   pm: Prisma.UserCreateNestedOneWithoutConversationsInput;
   linked_tickets?: Prisma.TicketCreateNestedManyWithoutConversationInput;
 };
@@ -865,9 +865,9 @@ export type ClientConversationUncheckedCreateWithoutProjectInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   linked_tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutConversationInput;
 };
 
@@ -930,9 +930,9 @@ export type ClientConversationScalarWhereInput = {
   audio_file_url?: Prisma.StringNullableFilter<'ClientConversation'> | string | null;
   status?: Prisma.StringFilter<'ClientConversation'> | string;
   processing_cost?: Prisma.FloatNullableFilter<'ClientConversation'> | number | null;
-  clickup_task_ids?: Prisma.JsonNullableFilter<'ClientConversation'>;
   created_at?: Prisma.DateTimeFilter<'ClientConversation'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'ClientConversation'> | Date | string;
+  clickup_task_ids?: Prisma.JsonNullableFilter<'ClientConversation'>;
 };
 
 export type ClientConversationCreateWithoutLinked_ticketsInput = {
@@ -946,11 +946,11 @@ export type ClientConversationCreateWithoutLinked_ticketsInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
-  project: Prisma.ProjectCreateNestedOneWithoutConversationsInput;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   pm: Prisma.UserCreateNestedOneWithoutConversationsInput;
+  project: Prisma.ProjectCreateNestedOneWithoutConversationsInput;
 };
 
 export type ClientConversationUncheckedCreateWithoutLinked_ticketsInput = {
@@ -966,9 +966,9 @@ export type ClientConversationUncheckedCreateWithoutLinked_ticketsInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationCreateOrConnectWithoutLinked_ticketsInput = {
@@ -1010,11 +1010,11 @@ export type ClientConversationUpdateWithoutLinked_ticketsInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  project?: Prisma.ProjectUpdateOneRequiredWithoutConversationsNestedInput;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   pm?: Prisma.UserUpdateOneRequiredWithoutConversationsNestedInput;
+  project?: Prisma.ProjectUpdateOneRequiredWithoutConversationsNestedInput;
 };
 
 export type ClientConversationUncheckedUpdateWithoutLinked_ticketsInput = {
@@ -1030,9 +1030,9 @@ export type ClientConversationUncheckedUpdateWithoutLinked_ticketsInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationCreateWithoutPmInput = {
@@ -1046,9 +1046,9 @@ export type ClientConversationCreateWithoutPmInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   project: Prisma.ProjectCreateNestedOneWithoutConversationsInput;
   linked_tickets?: Prisma.TicketCreateNestedManyWithoutConversationInput;
 };
@@ -1065,9 +1065,9 @@ export type ClientConversationUncheckedCreateWithoutPmInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   linked_tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutConversationInput;
 };
 
@@ -1124,9 +1124,9 @@ export type ClientConversationCreateManyProjectInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationUpdateWithoutProjectInput = {
@@ -1140,9 +1140,9 @@ export type ClientConversationUpdateWithoutProjectInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   pm?: Prisma.UserUpdateOneRequiredWithoutConversationsNestedInput;
   linked_tickets?: Prisma.TicketUpdateManyWithoutConversationNestedInput;
 };
@@ -1159,9 +1159,9 @@ export type ClientConversationUncheckedUpdateWithoutProjectInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   linked_tickets?: Prisma.TicketUncheckedUpdateManyWithoutConversationNestedInput;
 };
 
@@ -1177,9 +1177,9 @@ export type ClientConversationUncheckedUpdateManyWithoutProjectInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationCreateManyPmInput = {
@@ -1194,9 +1194,9 @@ export type ClientConversationCreateManyPmInput = {
   audio_file_url?: string | null;
   status?: string;
   processing_cost?: number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Date | string;
   updated_at?: Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 export type ClientConversationUpdateWithoutPmInput = {
@@ -1210,9 +1210,9 @@ export type ClientConversationUpdateWithoutPmInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   project?: Prisma.ProjectUpdateOneRequiredWithoutConversationsNestedInput;
   linked_tickets?: Prisma.TicketUpdateManyWithoutConversationNestedInput;
 };
@@ -1229,9 +1229,9 @@ export type ClientConversationUncheckedUpdateWithoutPmInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   linked_tickets?: Prisma.TicketUncheckedUpdateManyWithoutConversationNestedInput;
 };
 
@@ -1247,9 +1247,9 @@ export type ClientConversationUncheckedUpdateManyWithoutPmInput = {
   audio_file_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.StringFieldUpdateOperationsInput | string;
   processing_cost?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
-  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  clickup_task_ids?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
 };
 
 /**
@@ -1303,11 +1303,11 @@ export type ClientConversationSelect<
     audio_file_url?: boolean;
     status?: boolean;
     processing_cost?: boolean;
-    clickup_task_ids?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
-    project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
+    clickup_task_ids?: boolean;
     pm?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
     linked_tickets?: boolean | Prisma.ClientConversation$linked_ticketsArgs<ExtArgs>;
     _count?: boolean | Prisma.ClientConversationCountOutputTypeDefaultArgs<ExtArgs>;
   },
@@ -1330,11 +1330,11 @@ export type ClientConversationSelectCreateManyAndReturn<
     audio_file_url?: boolean;
     status?: boolean;
     processing_cost?: boolean;
-    clickup_task_ids?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
-    project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
+    clickup_task_ids?: boolean;
     pm?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['clientConversation']
 >;
@@ -1355,11 +1355,11 @@ export type ClientConversationSelectUpdateManyAndReturn<
     audio_file_url?: boolean;
     status?: boolean;
     processing_cost?: boolean;
-    clickup_task_ids?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
-    project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
+    clickup_task_ids?: boolean;
     pm?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['clientConversation']
 >;
@@ -1377,9 +1377,9 @@ export type ClientConversationSelectScalar = {
   audio_file_url?: boolean;
   status?: boolean;
   processing_cost?: boolean;
-  clickup_task_ids?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
+  clickup_task_ids?: boolean;
 };
 
 export type ClientConversationOmit<
@@ -1397,30 +1397,30 @@ export type ClientConversationOmit<
   | 'audio_file_url'
   | 'status'
   | 'processing_cost'
-  | 'clickup_task_ids'
   | 'created_at'
-  | 'updated_at',
+  | 'updated_at'
+  | 'clickup_task_ids',
   ExtArgs['result']['clientConversation']
 >;
 export type ClientConversationInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
   pm?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
   linked_tickets?: boolean | Prisma.ClientConversation$linked_ticketsArgs<ExtArgs>;
   _count?: boolean | Prisma.ClientConversationCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type ClientConversationIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
   pm?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
 };
 export type ClientConversationIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
   pm?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>;
 };
 
 export type $ClientConversationPayload<
@@ -1428,8 +1428,8 @@ export type $ClientConversationPayload<
 > = {
   name: 'ClientConversation';
   objects: {
-    project: Prisma.$ProjectPayload<ExtArgs>;
     pm: Prisma.$UserPayload<ExtArgs>;
+    project: Prisma.$ProjectPayload<ExtArgs>;
     linked_tickets: Prisma.$TicketPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
@@ -1446,9 +1446,9 @@ export type $ClientConversationPayload<
       audio_file_url: string | null;
       status: string;
       processing_cost: number | null;
-      clickup_task_ids: runtime.JsonValue | null;
       created_at: Date;
       updated_at: Date;
+      clickup_task_ids: runtime.JsonValue | null;
     },
     ExtArgs['result']['clientConversation']
   >;
@@ -1990,11 +1990,11 @@ export interface Prisma__ClientConversationClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
-  project<T extends Prisma.ProjectDefaultArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.ProjectDefaultArgs<ExtArgs>>,
-  ): Prisma.Prisma__ProjectClient<
+  pm<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__UserClient<
     | runtime.Types.Result.GetResult<
-        Prisma.$ProjectPayload<ExtArgs>,
+        Prisma.$UserPayload<ExtArgs>,
         T,
         'findUniqueOrThrow',
         GlobalOmitOptions
@@ -2004,11 +2004,11 @@ export interface Prisma__ClientConversationClient<
     ExtArgs,
     GlobalOmitOptions
   >;
-  pm<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>,
-  ): Prisma.Prisma__UserClient<
+  project<T extends Prisma.ProjectDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.ProjectDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__ProjectClient<
     | runtime.Types.Result.GetResult<
-        Prisma.$UserPayload<ExtArgs>,
+        Prisma.$ProjectPayload<ExtArgs>,
         T,
         'findUniqueOrThrow',
         GlobalOmitOptions
@@ -2072,9 +2072,9 @@ export interface ClientConversationFieldRefs {
   readonly audio_file_url: Prisma.FieldRef<'ClientConversation', 'String'>;
   readonly status: Prisma.FieldRef<'ClientConversation', 'String'>;
   readonly processing_cost: Prisma.FieldRef<'ClientConversation', 'Float'>;
-  readonly clickup_task_ids: Prisma.FieldRef<'ClientConversation', 'Json'>;
   readonly created_at: Prisma.FieldRef<'ClientConversation', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'ClientConversation', 'DateTime'>;
+  readonly clickup_task_ids: Prisma.FieldRef<'ClientConversation', 'Json'>;
 }
 
 // Custom InputTypes

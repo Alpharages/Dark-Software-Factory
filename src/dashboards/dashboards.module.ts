@@ -16,6 +16,7 @@ import { WorkloadService } from './services/workload.service';
 import { WorkloadSchedulerService } from './services/workload-scheduler.service';
 import { DashboardGateway } from './gateways/dashboard.gateway';
 import { QualityDashboardListener } from './listeners/quality-dashboard.listener';
+import { EmailModule } from '@/common/email/email.module';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { AppMetricsModule } from '@/common/metrics';
@@ -24,6 +25,11 @@ import { BugEscapeModule } from '@/qa-automation/bug-escape/bug-escape.module';
 import { QualityGateConfigModule } from '@/qa-automation/quality-gate-config/quality-gate-config.module';
 import { QaDashboardController } from './qa-dashboard.controller';
 import { QualityDashboardService } from './services/quality-dashboard.service';
+import { AnomalyDetectionService } from './services/anomaly-detection.service';
+import { AnomalyDetectionController } from './anomaly-detection.controller';
+import { AnomalyNotificationListener } from './listeners/anomaly-notification.listener';
+import { ConversationsModule } from '@/conversations/conversations.module';
+import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
 
 @Module({
   imports: [
@@ -34,6 +40,9 @@ import { QualityDashboardService } from './services/quality-dashboard.service';
     BugEscapeModule,
     QualityGateConfigModule,
     DecisionDashboardModule,
+    ConversationsModule,
+    AIDecisionLoggerModule,
+    EmailModule,
     CacheModule.register({
       ttl: 300, // 5 minutes
       max: 100, // Maximum items in cache
@@ -48,6 +57,7 @@ import { QualityDashboardService } from './services/quality-dashboard.service';
     PmDashboardController,
     WorkloadController,
     QaDashboardController,
+    AnomalyDetectionController,
   ],
   providers: [
     // Workload Metrics (Story 5.4)
@@ -124,6 +134,8 @@ import { QualityDashboardService } from './services/quality-dashboard.service';
     DashboardGateway,
     QualityDashboardService,
     QualityDashboardListener,
+    AnomalyDetectionService,
+    AnomalyNotificationListener,
   ],
   exports: [
     ObservabilityDashboardService,
@@ -131,6 +143,7 @@ import { QualityDashboardService } from './services/quality-dashboard.service';
     WorkloadService,
     DashboardGateway,
     QualityDashboardService,
+    AnomalyDetectionService,
   ],
 })
 export class DashboardsModule {}

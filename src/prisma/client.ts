@@ -187,7 +187,7 @@ export type User = Prisma.UserModel;
 export type UtilizationHistory = Prisma.UtilizationHistoryModel;
 /**
  * Model ClientConversation
- *
+ * This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
  */
 export type ClientConversation = Prisma.ClientConversationModel;
 /**
@@ -255,3 +255,13 @@ export type QualityGateConfig = Prisma.QualityGateConfigModel;
  *
  */
 export type QualityGateConfigHistory = Prisma.QualityGateConfigHistoryModel;
+/**
+ * Model QualityAnomaly
+ *
+ */
+export type QualityAnomaly = Prisma.QualityAnomalyModel;
+/**
+ * Model QualityAnomalyConfig
+ *
+ */
+export type QualityAnomalyConfig = Prisma.QualityAnomalyConfigModel;

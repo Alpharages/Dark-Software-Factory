@@ -258,8 +258,8 @@ export type QAResultWhereInput = {
   overall_passed?: Prisma.BoolFilter<'QAResult'> | boolean;
   created_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
-  execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
   bug_escapes?: Prisma.BugEscapeListRelationFilter;
+  execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
 };
 
 export type QAResultOrderByWithRelationInput = {
@@ -275,8 +275,8 @@ export type QAResultOrderByWithRelationInput = {
   overall_passed?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
-  execution?: Prisma.ExecutionOrderByWithRelationInput;
   bug_escapes?: Prisma.BugEscapeOrderByRelationAggregateInput;
+  execution?: Prisma.ExecutionOrderByWithRelationInput;
 };
 
 export type QAResultWhereUniqueInput = Prisma.AtLeast<
@@ -296,8 +296,8 @@ export type QAResultWhereUniqueInput = Prisma.AtLeast<
     overall_passed?: Prisma.BoolFilter<'QAResult'> | boolean;
     created_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
-    execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
     bug_escapes?: Prisma.BugEscapeListRelationFilter;
+    execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
   },
   'id' | 'execution_id'
 >;
@@ -356,8 +356,8 @@ export type QAResultCreateInput = {
   overall_passed?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
-  execution: Prisma.ExecutionCreateNestedOneWithoutQa_resultInput;
   bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_resultInput;
+  execution: Prisma.ExecutionCreateNestedOneWithoutQa_resultInput;
 };
 
 export type QAResultUncheckedCreateInput = {
@@ -388,8 +388,8 @@ export type QAResultUpdateInput = {
   overall_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_resultNestedInput;
   bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_resultNestedInput;
+  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_resultNestedInput;
 };
 
 export type QAResultUncheckedUpdateInput = {
@@ -815,8 +815,8 @@ export type QAResultSelect<
     overall_passed?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
-    execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
     bug_escapes?: boolean | Prisma.QAResult$bug_escapesArgs<ExtArgs>;
+    execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
     _count?: boolean | Prisma.QAResultCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qAResult']
@@ -899,8 +899,8 @@ export type QAResultOmit<
 export type QAResultInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
   bug_escapes?: boolean | Prisma.QAResult$bug_escapesArgs<ExtArgs>;
+  execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
   _count?: boolean | Prisma.QAResultCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type QAResultIncludeCreateManyAndReturn<
@@ -919,8 +919,8 @@ export type $QAResultPayload<
 > = {
   name: 'QAResult';
   objects: {
-    execution: Prisma.$ExecutionPayload<ExtArgs>;
     bug_escapes: Prisma.$BugEscapePayload<ExtArgs>[];
+    execution: Prisma.$ExecutionPayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1471,6 +1471,17 @@ export interface Prisma__QAResultClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
+  bug_escapes<T extends Prisma.QAResult$bug_escapesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.QAResult$bug_escapesArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$BugEscapePayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   execution<T extends Prisma.ExecutionDefaultArgs<ExtArgs> = {}>(
     args?: Prisma.Subset<T, Prisma.ExecutionDefaultArgs<ExtArgs>>,
   ): Prisma.Prisma__ExecutionClient<
@@ -1484,17 +1495,6 @@ export interface Prisma__QAResultClient<
     Null,
     ExtArgs,
     GlobalOmitOptions
-  >;
-  bug_escapes<T extends Prisma.QAResult$bug_escapesArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.QAResult$bug_escapesArgs<ExtArgs>>,
-  ): Prisma.PrismaPromise<
-    | runtime.Types.Result.GetResult<
-        Prisma.$BugEscapePayload<ExtArgs>,
-        T,
-        'findMany',
-        GlobalOmitOptions
-      >
-    | Null
   >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.

@@ -36,56 +36,56 @@ export type ProjectSumAggregateOutputType = {
 export type ProjectMinAggregateOutputType = {
   id: string | null;
   name: string | null;
-  client_name: string | null;
-  provider: $Enums.ProjectProvider | null;
   clickup_list_id: string | null;
-  monitor_tasks: boolean | null;
   github_repository_url: string | null;
-  pm_id: string | null;
-  status: string | null;
   default_branch: string | null;
   budget_usd: runtime.Decimal | null;
-  is_active: boolean | null;
-  deactivated_at: Date | null;
   created_at: Date | null;
   updated_at: Date | null;
+  pm_id: string | null;
+  status: string | null;
+  client_name: string | null;
+  monitor_tasks: boolean | null;
+  provider: $Enums.ProjectProvider | null;
+  deactivated_at: Date | null;
+  is_active: boolean | null;
 };
 
 export type ProjectMaxAggregateOutputType = {
   id: string | null;
   name: string | null;
-  client_name: string | null;
-  provider: $Enums.ProjectProvider | null;
   clickup_list_id: string | null;
-  monitor_tasks: boolean | null;
   github_repository_url: string | null;
-  pm_id: string | null;
-  status: string | null;
   default_branch: string | null;
   budget_usd: runtime.Decimal | null;
-  is_active: boolean | null;
-  deactivated_at: Date | null;
   created_at: Date | null;
   updated_at: Date | null;
+  pm_id: string | null;
+  status: string | null;
+  client_name: string | null;
+  monitor_tasks: boolean | null;
+  provider: $Enums.ProjectProvider | null;
+  deactivated_at: Date | null;
+  is_active: boolean | null;
 };
 
 export type ProjectCountAggregateOutputType = {
   id: number;
   name: number;
-  client_name: number;
-  provider: number;
   clickup_list_id: number;
-  monitor_tasks: number;
-  sync_config: number;
   github_repository_url: number;
-  pm_id: number;
-  status: number;
   default_branch: number;
   budget_usd: number;
-  is_active: number;
-  deactivated_at: number;
   created_at: number;
   updated_at: number;
+  pm_id: number;
+  status: number;
+  client_name: number;
+  monitor_tasks: number;
+  provider: number;
+  sync_config: number;
+  deactivated_at: number;
+  is_active: number;
   _all: number;
 };
 
@@ -100,56 +100,56 @@ export type ProjectSumAggregateInputType = {
 export type ProjectMinAggregateInputType = {
   id?: true;
   name?: true;
-  client_name?: true;
-  provider?: true;
   clickup_list_id?: true;
-  monitor_tasks?: true;
   github_repository_url?: true;
-  pm_id?: true;
-  status?: true;
   default_branch?: true;
   budget_usd?: true;
-  is_active?: true;
-  deactivated_at?: true;
   created_at?: true;
   updated_at?: true;
+  pm_id?: true;
+  status?: true;
+  client_name?: true;
+  monitor_tasks?: true;
+  provider?: true;
+  deactivated_at?: true;
+  is_active?: true;
 };
 
 export type ProjectMaxAggregateInputType = {
   id?: true;
   name?: true;
-  client_name?: true;
-  provider?: true;
   clickup_list_id?: true;
-  monitor_tasks?: true;
   github_repository_url?: true;
-  pm_id?: true;
-  status?: true;
   default_branch?: true;
   budget_usd?: true;
-  is_active?: true;
-  deactivated_at?: true;
   created_at?: true;
   updated_at?: true;
+  pm_id?: true;
+  status?: true;
+  client_name?: true;
+  monitor_tasks?: true;
+  provider?: true;
+  deactivated_at?: true;
+  is_active?: true;
 };
 
 export type ProjectCountAggregateInputType = {
   id?: true;
   name?: true;
-  client_name?: true;
-  provider?: true;
   clickup_list_id?: true;
-  monitor_tasks?: true;
-  sync_config?: true;
   github_repository_url?: true;
-  pm_id?: true;
-  status?: true;
   default_branch?: true;
   budget_usd?: true;
-  is_active?: true;
-  deactivated_at?: true;
   created_at?: true;
   updated_at?: true;
+  pm_id?: true;
+  status?: true;
+  client_name?: true;
+  monitor_tasks?: true;
+  provider?: true;
+  sync_config?: true;
+  deactivated_at?: true;
+  is_active?: true;
   _all?: true;
 };
 
@@ -243,20 +243,20 @@ export type ProjectGroupByArgs<
 export type ProjectGroupByOutputType = {
   id: string;
   name: string;
-  client_name: string;
-  provider: $Enums.ProjectProvider;
   clickup_list_id: string | null;
-  monitor_tasks: boolean;
-  sync_config: runtime.JsonValue | null;
   github_repository_url: string;
-  pm_id: string;
-  status: string;
   default_branch: string;
   budget_usd: runtime.Decimal | null;
-  is_active: boolean;
-  deactivated_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  pm_id: string;
+  status: string;
+  client_name: string;
+  monitor_tasks: boolean;
+  provider: $Enums.ProjectProvider;
+  sync_config: runtime.JsonValue | null;
+  deactivated_at: Date | null;
+  is_active: boolean;
   _count: ProjectCountAggregateOutputType | null;
   _avg: ProjectAvgAggregateOutputType | null;
   _sum: ProjectSumAggregateOutputType | null;
@@ -282,14 +282,8 @@ export type ProjectWhereInput = {
   NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[];
   id?: Prisma.StringFilter<'Project'> | string;
   name?: Prisma.StringFilter<'Project'> | string;
-  client_name?: Prisma.StringFilter<'Project'> | string;
-  provider?: Prisma.EnumProjectProviderFilter<'Project'> | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.StringNullableFilter<'Project'> | string | null;
-  monitor_tasks?: Prisma.BoolFilter<'Project'> | boolean;
-  sync_config?: Prisma.JsonNullableFilter<'Project'>;
   github_repository_url?: Prisma.StringFilter<'Project'> | string;
-  pm_id?: Prisma.StringFilter<'Project'> | string;
-  status?: Prisma.StringFilter<'Project'> | string;
   default_branch?: Prisma.StringFilter<'Project'> | string;
   budget_usd?:
     | Prisma.DecimalNullableFilter<'Project'>
@@ -298,11 +292,17 @@ export type ProjectWhereInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFilter<'Project'> | boolean;
-  deactivated_at?: Prisma.DateTimeNullableFilter<'Project'> | Date | string | null;
   created_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
-  tickets?: Prisma.TicketListRelationFilter;
+  pm_id?: Prisma.StringFilter<'Project'> | string;
+  status?: Prisma.StringFilter<'Project'> | string;
+  client_name?: Prisma.StringFilter<'Project'> | string;
+  monitor_tasks?: Prisma.BoolFilter<'Project'> | boolean;
+  provider?: Prisma.EnumProjectProviderFilter<'Project'> | $Enums.ProjectProvider;
+  sync_config?: Prisma.JsonNullableFilter<'Project'>;
+  deactivated_at?: Prisma.DateTimeNullableFilter<'Project'> | Date | string | null;
+  is_active?: Prisma.BoolFilter<'Project'> | boolean;
+  conversations?: Prisma.ClientConversationListRelationFilter;
   coverage_baseline?: Prisma.XOR<
     Prisma.CoverageBaselineNullableScalarRelationFilter,
     Prisma.CoverageBaselineWhereInput
@@ -311,37 +311,37 @@ export type ProjectWhereInput = {
     Prisma.ProjectCoverageConfigNullableScalarRelationFilter,
     Prisma.ProjectCoverageConfigWhereInput
   > | null;
-  conversations?: Prisma.ClientConversationListRelationFilter;
-  reports?: Prisma.ReportListRelationFilter;
   quality_gate_config?: Prisma.XOR<
     Prisma.QualityGateConfigNullableScalarRelationFilter,
     Prisma.QualityGateConfigWhereInput
   > | null;
+  reports?: Prisma.ReportListRelationFilter;
+  tickets?: Prisma.TicketListRelationFilter;
 };
 
 export type ProjectOrderByWithRelationInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
-  client_name?: Prisma.SortOrder;
-  provider?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrderInput | Prisma.SortOrder;
-  monitor_tasks?: Prisma.SortOrder;
-  sync_config?: Prisma.SortOrderInput | Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
-  pm_id?: Prisma.SortOrder;
-  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrderInput | Prisma.SortOrder;
-  is_active?: Prisma.SortOrder;
-  deactivated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
-  tickets?: Prisma.TicketOrderByRelationAggregateInput;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
+  monitor_tasks?: Prisma.SortOrder;
+  provider?: Prisma.SortOrder;
+  sync_config?: Prisma.SortOrderInput | Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
+  conversations?: Prisma.ClientConversationOrderByRelationAggregateInput;
   coverage_baseline?: Prisma.CoverageBaselineOrderByWithRelationInput;
   coverage_config?: Prisma.ProjectCoverageConfigOrderByWithRelationInput;
-  conversations?: Prisma.ClientConversationOrderByRelationAggregateInput;
-  reports?: Prisma.ReportOrderByRelationAggregateInput;
   quality_gate_config?: Prisma.QualityGateConfigOrderByWithRelationInput;
+  reports?: Prisma.ReportOrderByRelationAggregateInput;
+  tickets?: Prisma.TicketOrderByRelationAggregateInput;
 };
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<
@@ -352,13 +352,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
     OR?: Prisma.ProjectWhereInput[];
     NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[];
     name?: Prisma.StringFilter<'Project'> | string;
-    client_name?: Prisma.StringFilter<'Project'> | string;
-    provider?: Prisma.EnumProjectProviderFilter<'Project'> | $Enums.ProjectProvider;
-    monitor_tasks?: Prisma.BoolFilter<'Project'> | boolean;
-    sync_config?: Prisma.JsonNullableFilter<'Project'>;
     github_repository_url?: Prisma.StringFilter<'Project'> | string;
-    pm_id?: Prisma.StringFilter<'Project'> | string;
-    status?: Prisma.StringFilter<'Project'> | string;
     default_branch?: Prisma.StringFilter<'Project'> | string;
     budget_usd?:
       | Prisma.DecimalNullableFilter<'Project'>
@@ -367,11 +361,17 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
       | number
       | string
       | null;
-    is_active?: Prisma.BoolFilter<'Project'> | boolean;
-    deactivated_at?: Prisma.DateTimeNullableFilter<'Project'> | Date | string | null;
     created_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'Project'> | Date | string;
-    tickets?: Prisma.TicketListRelationFilter;
+    pm_id?: Prisma.StringFilter<'Project'> | string;
+    status?: Prisma.StringFilter<'Project'> | string;
+    client_name?: Prisma.StringFilter<'Project'> | string;
+    monitor_tasks?: Prisma.BoolFilter<'Project'> | boolean;
+    provider?: Prisma.EnumProjectProviderFilter<'Project'> | $Enums.ProjectProvider;
+    sync_config?: Prisma.JsonNullableFilter<'Project'>;
+    deactivated_at?: Prisma.DateTimeNullableFilter<'Project'> | Date | string | null;
+    is_active?: Prisma.BoolFilter<'Project'> | boolean;
+    conversations?: Prisma.ClientConversationListRelationFilter;
     coverage_baseline?: Prisma.XOR<
       Prisma.CoverageBaselineNullableScalarRelationFilter,
       Prisma.CoverageBaselineWhereInput
@@ -380,12 +380,12 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
       Prisma.ProjectCoverageConfigNullableScalarRelationFilter,
       Prisma.ProjectCoverageConfigWhereInput
     > | null;
-    conversations?: Prisma.ClientConversationListRelationFilter;
-    reports?: Prisma.ReportListRelationFilter;
     quality_gate_config?: Prisma.XOR<
       Prisma.QualityGateConfigNullableScalarRelationFilter,
       Prisma.QualityGateConfigWhereInput
     > | null;
+    reports?: Prisma.ReportListRelationFilter;
+    tickets?: Prisma.TicketListRelationFilter;
   },
   'id' | 'clickup_list_id'
 >;
@@ -393,20 +393,20 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<
 export type ProjectOrderByWithAggregationInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
-  client_name?: Prisma.SortOrder;
-  provider?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrderInput | Prisma.SortOrder;
-  monitor_tasks?: Prisma.SortOrder;
-  sync_config?: Prisma.SortOrderInput | Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
-  pm_id?: Prisma.SortOrder;
-  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrderInput | Prisma.SortOrder;
-  is_active?: Prisma.SortOrder;
-  deactivated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
+  monitor_tasks?: Prisma.SortOrder;
+  provider?: Prisma.SortOrder;
+  sync_config?: Prisma.SortOrderInput | Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
   _count?: Prisma.ProjectCountOrderByAggregateInput;
   _avg?: Prisma.ProjectAvgOrderByAggregateInput;
   _max?: Prisma.ProjectMaxOrderByAggregateInput;
@@ -424,14 +424,8 @@ export type ProjectScalarWhereWithAggregatesInput = {
     | Prisma.ProjectScalarWhereWithAggregatesInput[];
   id?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   name?: Prisma.StringWithAggregatesFilter<'Project'> | string;
-  client_name?: Prisma.StringWithAggregatesFilter<'Project'> | string;
-  provider?: Prisma.EnumProjectProviderWithAggregatesFilter<'Project'> | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.StringNullableWithAggregatesFilter<'Project'> | string | null;
-  monitor_tasks?: Prisma.BoolWithAggregatesFilter<'Project'> | boolean;
-  sync_config?: Prisma.JsonNullableWithAggregatesFilter<'Project'>;
   github_repository_url?: Prisma.StringWithAggregatesFilter<'Project'> | string;
-  pm_id?: Prisma.StringWithAggregatesFilter<'Project'> | string;
-  status?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   default_branch?: Prisma.StringWithAggregatesFilter<'Project'> | string;
   budget_usd?:
     | Prisma.DecimalNullableWithAggregatesFilter<'Project'>
@@ -440,73 +434,73 @@ export type ProjectScalarWhereWithAggregatesInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolWithAggregatesFilter<'Project'> | boolean;
-  deactivated_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Project'> | Date | string | null;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'Project'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'Project'> | Date | string;
+  pm_id?: Prisma.StringWithAggregatesFilter<'Project'> | string;
+  status?: Prisma.StringWithAggregatesFilter<'Project'> | string;
+  client_name?: Prisma.StringWithAggregatesFilter<'Project'> | string;
+  monitor_tasks?: Prisma.BoolWithAggregatesFilter<'Project'> | boolean;
+  provider?: Prisma.EnumProjectProviderWithAggregatesFilter<'Project'> | $Enums.ProjectProvider;
+  sync_config?: Prisma.JsonNullableWithAggregatesFilter<'Project'>;
+  deactivated_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Project'> | Date | string | null;
+  is_active?: Prisma.BoolWithAggregatesFilter<'Project'> | boolean;
 };
 
 export type ProjectCreateInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -515,29 +509,29 @@ export type ProjectUpdateInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -546,48 +540,48 @@ export type ProjectUncheckedUpdateInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectCreateManyInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
 };
 
 export type ProjectUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -596,23 +590,23 @@ export type ProjectUpdateManyMutationInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
 };
 
 export type ProjectUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -621,29 +615,35 @@ export type ProjectUncheckedUpdateManyInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
 };
 
 export type ProjectCountOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
-  client_name?: Prisma.SortOrder;
-  provider?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
-  monitor_tasks?: Prisma.SortOrder;
-  sync_config?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
-  pm_id?: Prisma.SortOrder;
-  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
-  is_active?: Prisma.SortOrder;
-  deactivated_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
+  monitor_tasks?: Prisma.SortOrder;
+  provider?: Prisma.SortOrder;
+  sync_config?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
 };
 
 export type ProjectAvgOrderByAggregateInput = {
@@ -653,37 +653,37 @@ export type ProjectAvgOrderByAggregateInput = {
 export type ProjectMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
-  client_name?: Prisma.SortOrder;
-  provider?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
-  monitor_tasks?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
-  pm_id?: Prisma.SortOrder;
-  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
-  is_active?: Prisma.SortOrder;
-  deactivated_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
+  monitor_tasks?: Prisma.SortOrder;
+  provider?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
 };
 
 export type ProjectMinOrderByAggregateInput = {
   id?: Prisma.SortOrder;
   name?: Prisma.SortOrder;
-  client_name?: Prisma.SortOrder;
-  provider?: Prisma.SortOrder;
   clickup_list_id?: Prisma.SortOrder;
-  monitor_tasks?: Prisma.SortOrder;
   github_repository_url?: Prisma.SortOrder;
-  pm_id?: Prisma.SortOrder;
-  status?: Prisma.SortOrder;
   default_branch?: Prisma.SortOrder;
   budget_usd?: Prisma.SortOrder;
-  is_active?: Prisma.SortOrder;
-  deactivated_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  pm_id?: Prisma.SortOrder;
+  status?: Prisma.SortOrder;
+  client_name?: Prisma.SortOrder;
+  monitor_tasks?: Prisma.SortOrder;
+  provider?: Prisma.SortOrder;
+  deactivated_at?: Prisma.SortOrder;
+  is_active?: Prisma.SortOrder;
 };
 
 export type ProjectSumOrderByAggregateInput = {
@@ -704,16 +704,8 @@ export type StringFieldUpdateOperationsInput = {
   set?: string;
 };
 
-export type EnumProjectProviderFieldUpdateOperationsInput = {
-  set?: $Enums.ProjectProvider;
-};
-
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null;
-};
-
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean;
 };
 
 export type NullableDecimalFieldUpdateOperationsInput = {
@@ -724,12 +716,20 @@ export type NullableDecimalFieldUpdateOperationsInput = {
   divide?: runtime.Decimal | runtime.DecimalJsLike | number | string;
 };
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null;
-};
-
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string;
+};
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean;
+};
+
+export type EnumProjectProviderFieldUpdateOperationsInput = {
+  set?: $Enums.ProjectProvider;
+};
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null;
 };
 
 export type ProjectCreateNestedOneWithoutTicketsInput = {
@@ -893,49 +893,49 @@ export type ProjectUpdateOneWithoutQuality_gate_configNestedInput = {
 export type ProjectCreateWithoutTicketsInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutTicketsInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutTicketsInput = {
@@ -969,14 +969,8 @@ export type ProjectUpdateToOneWithWhereWithoutTicketsInput = {
 export type ProjectUpdateWithoutTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -985,28 +979,28 @@ export type ProjectUpdateWithoutTicketsInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1015,63 +1009,69 @@ export type ProjectUncheckedUpdateWithoutTicketsInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutCoverage_baselineInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
-  coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutCoverage_baselineInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
-  coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutCoverage_baselineInput = {
@@ -1105,14 +1105,8 @@ export type ProjectUpdateToOneWithWhereWithoutCoverage_baselineInput = {
 export type ProjectUpdateWithoutCoverage_baselineInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1121,28 +1115,28 @@ export type ProjectUpdateWithoutCoverage_baselineInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
-  coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1151,63 +1145,69 @@ export type ProjectUncheckedUpdateWithoutCoverage_baselineInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
-  coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutCoverage_configInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
-  coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
   conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutCoverage_configInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
-  coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
   conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
-  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutCoverage_configInput = {
@@ -1241,14 +1241,8 @@ export type ProjectUpdateToOneWithWhereWithoutCoverage_configInput = {
 export type ProjectUpdateWithoutCoverage_configInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1257,28 +1251,28 @@ export type ProjectUpdateWithoutCoverage_configInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
-  coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1287,63 +1281,69 @@ export type ProjectUncheckedUpdateWithoutCoverage_configInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
-  coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
-  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutConversationsInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
-  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutConversationsInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
-  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
+  reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutConversationsInput = {
@@ -1377,14 +1377,8 @@ export type ProjectUpdateToOneWithWhereWithoutConversationsInput = {
 export type ProjectUpdateWithoutConversationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1393,28 +1387,28 @@ export type ProjectUpdateWithoutConversationsInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
-  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutConversationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1423,63 +1417,69 @@ export type ProjectUncheckedUpdateWithoutConversationsInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
-  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutReportsInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigCreateNestedOneWithoutProjectInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutReportsInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedCreateNestedOneWithoutProjectInput;
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutReportsInput = {
@@ -1513,14 +1513,8 @@ export type ProjectUpdateToOneWithWhereWithoutReportsInput = {
 export type ProjectUpdateWithoutReportsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1529,28 +1523,28 @@ export type ProjectUpdateWithoutReportsInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUpdateOneWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutReportsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1559,63 +1553,69 @@ export type ProjectUncheckedUpdateWithoutReportsInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   quality_gate_config?: Prisma.QualityGateConfigUncheckedUpdateOneWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectCreateWithoutQuality_gate_configInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectUncheckedCreateWithoutQuality_gate_configInput = {
   id?: string;
   name: string;
-  client_name?: string;
-  provider?: $Enums.ProjectProvider;
   clickup_list_id?: string | null;
-  monitor_tasks?: boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url: string;
-  pm_id: string;
-  status?: string;
   default_branch?: string;
   budget_usd?: runtime.Decimal | runtime.DecimalJsLike | number | string | null;
-  is_active?: boolean;
-  deactivated_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
+  pm_id: string;
+  status?: string;
+  client_name?: string;
+  monitor_tasks?: boolean;
+  provider?: $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Date | string | null;
+  is_active?: boolean;
+  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedCreateNestedOneWithoutProjectInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedCreateNestedOneWithoutProjectInput;
-  conversations?: Prisma.ClientConversationUncheckedCreateNestedManyWithoutProjectInput;
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutProjectInput;
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutProjectInput;
 };
 
 export type ProjectCreateOrConnectWithoutQuality_gate_configInput = {
@@ -1649,14 +1649,8 @@ export type ProjectUpdateToOneWithWhereWithoutQuality_gate_configInput = {
 export type ProjectUpdateWithoutQuality_gate_configInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1665,28 +1659,28 @@ export type ProjectUpdateWithoutQuality_gate_configInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUpdateManyWithoutProjectNestedInput;
 };
 
 export type ProjectUncheckedUpdateWithoutQuality_gate_configInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   name?: Prisma.StringFieldUpdateOperationsInput | string;
-  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
-  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
   clickup_list_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
   github_repository_url?: Prisma.StringFieldUpdateOperationsInput | string;
-  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
-  status?: Prisma.StringFieldUpdateOperationsInput | string;
   default_branch?: Prisma.StringFieldUpdateOperationsInput | string;
   budget_usd?:
     | Prisma.NullableDecimalFieldUpdateOperationsInput
@@ -1695,15 +1689,21 @@ export type ProjectUncheckedUpdateWithoutQuality_gate_configInput = {
     | number
     | string
     | null;
-  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
-  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
+  pm_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  status?: Prisma.StringFieldUpdateOperationsInput | string;
+  client_name?: Prisma.StringFieldUpdateOperationsInput | string;
+  monitor_tasks?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  provider?: Prisma.EnumProjectProviderFieldUpdateOperationsInput | $Enums.ProjectProvider;
+  sync_config?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  deactivated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   coverage_baseline?: Prisma.CoverageBaselineUncheckedUpdateOneWithoutProjectNestedInput;
   coverage_config?: Prisma.ProjectCoverageConfigUncheckedUpdateOneWithoutProjectNestedInput;
-  conversations?: Prisma.ClientConversationUncheckedUpdateManyWithoutProjectNestedInput;
   reports?: Prisma.ReportUncheckedUpdateManyWithoutProjectNestedInput;
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutProjectNestedInput;
 };
 
 /**
@@ -1711,17 +1711,17 @@ export type ProjectUncheckedUpdateWithoutQuality_gate_configInput = {
  */
 
 export type ProjectCountOutputType = {
-  tickets: number;
   conversations: number;
   reports: number;
+  tickets: number;
 };
 
 export type ProjectCountOutputTypeSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  tickets?: boolean | ProjectCountOutputTypeCountTicketsArgs;
   conversations?: boolean | ProjectCountOutputTypeCountConversationsArgs;
   reports?: boolean | ProjectCountOutputTypeCountReportsArgs;
+  tickets?: boolean | ProjectCountOutputTypeCountTicketsArgs;
 };
 
 /**
@@ -1734,15 +1734,6 @@ export type ProjectCountOutputTypeDefaultArgs<
    * Select specific fields to fetch from the ProjectCountOutputType
    */
   select?: Prisma.ProjectCountOutputTypeSelect<ExtArgs> | null;
-};
-
-/**
- * ProjectCountOutputType without action
- */
-export type ProjectCountOutputTypeCountTicketsArgs<
-  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
-> = {
-  where?: Prisma.TicketWhereInput;
 };
 
 /**
@@ -1763,32 +1754,41 @@ export type ProjectCountOutputTypeCountReportsArgs<
   where?: Prisma.ReportWhereInput;
 };
 
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountTicketsArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.TicketWhereInput;
+};
+
 export type ProjectSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetSelect<
   {
     id?: boolean;
     name?: boolean;
-    client_name?: boolean;
-    provider?: boolean;
     clickup_list_id?: boolean;
-    monitor_tasks?: boolean;
-    sync_config?: boolean;
     github_repository_url?: boolean;
-    pm_id?: boolean;
-    status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
-    is_active?: boolean;
-    deactivated_at?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
-    tickets?: boolean | Prisma.Project$ticketsArgs<ExtArgs>;
+    pm_id?: boolean;
+    status?: boolean;
+    client_name?: boolean;
+    monitor_tasks?: boolean;
+    provider?: boolean;
+    sync_config?: boolean;
+    deactivated_at?: boolean;
+    is_active?: boolean;
+    conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>;
     coverage_baseline?: boolean | Prisma.Project$coverage_baselineArgs<ExtArgs>;
     coverage_config?: boolean | Prisma.Project$coverage_configArgs<ExtArgs>;
-    conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>;
-    reports?: boolean | Prisma.Project$reportsArgs<ExtArgs>;
     quality_gate_config?: boolean | Prisma.Project$quality_gate_configArgs<ExtArgs>;
+    reports?: boolean | Prisma.Project$reportsArgs<ExtArgs>;
+    tickets?: boolean | Prisma.Project$ticketsArgs<ExtArgs>;
     _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['project']
@@ -1800,20 +1800,20 @@ export type ProjectSelectCreateManyAndReturn<
   {
     id?: boolean;
     name?: boolean;
-    client_name?: boolean;
-    provider?: boolean;
     clickup_list_id?: boolean;
-    monitor_tasks?: boolean;
-    sync_config?: boolean;
     github_repository_url?: boolean;
-    pm_id?: boolean;
-    status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
-    is_active?: boolean;
-    deactivated_at?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    pm_id?: boolean;
+    status?: boolean;
+    client_name?: boolean;
+    monitor_tasks?: boolean;
+    provider?: boolean;
+    sync_config?: boolean;
+    deactivated_at?: boolean;
+    is_active?: boolean;
   },
   ExtArgs['result']['project']
 >;
@@ -1824,20 +1824,20 @@ export type ProjectSelectUpdateManyAndReturn<
   {
     id?: boolean;
     name?: boolean;
-    client_name?: boolean;
-    provider?: boolean;
     clickup_list_id?: boolean;
-    monitor_tasks?: boolean;
-    sync_config?: boolean;
     github_repository_url?: boolean;
-    pm_id?: boolean;
-    status?: boolean;
     default_branch?: boolean;
     budget_usd?: boolean;
-    is_active?: boolean;
-    deactivated_at?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    pm_id?: boolean;
+    status?: boolean;
+    client_name?: boolean;
+    monitor_tasks?: boolean;
+    provider?: boolean;
+    sync_config?: boolean;
+    deactivated_at?: boolean;
+    is_active?: boolean;
   },
   ExtArgs['result']['project']
 >;
@@ -1845,20 +1845,20 @@ export type ProjectSelectUpdateManyAndReturn<
 export type ProjectSelectScalar = {
   id?: boolean;
   name?: boolean;
-  client_name?: boolean;
-  provider?: boolean;
   clickup_list_id?: boolean;
-  monitor_tasks?: boolean;
-  sync_config?: boolean;
   github_repository_url?: boolean;
-  pm_id?: boolean;
-  status?: boolean;
   default_branch?: boolean;
   budget_usd?: boolean;
-  is_active?: boolean;
-  deactivated_at?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
+  pm_id?: boolean;
+  status?: boolean;
+  client_name?: boolean;
+  monitor_tasks?: boolean;
+  provider?: boolean;
+  sync_config?: boolean;
+  deactivated_at?: boolean;
+  is_active?: boolean;
 };
 
 export type ProjectOmit<
@@ -1866,31 +1866,31 @@ export type ProjectOmit<
 > = runtime.Types.Extensions.GetOmit<
   | 'id'
   | 'name'
-  | 'client_name'
-  | 'provider'
   | 'clickup_list_id'
-  | 'monitor_tasks'
-  | 'sync_config'
   | 'github_repository_url'
-  | 'pm_id'
-  | 'status'
   | 'default_branch'
   | 'budget_usd'
-  | 'is_active'
-  | 'deactivated_at'
   | 'created_at'
-  | 'updated_at',
+  | 'updated_at'
+  | 'pm_id'
+  | 'status'
+  | 'client_name'
+  | 'monitor_tasks'
+  | 'provider'
+  | 'sync_config'
+  | 'deactivated_at'
+  | 'is_active',
   ExtArgs['result']['project']
 >;
 export type ProjectInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  tickets?: boolean | Prisma.Project$ticketsArgs<ExtArgs>;
+  conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>;
   coverage_baseline?: boolean | Prisma.Project$coverage_baselineArgs<ExtArgs>;
   coverage_config?: boolean | Prisma.Project$coverage_configArgs<ExtArgs>;
-  conversations?: boolean | Prisma.Project$conversationsArgs<ExtArgs>;
-  reports?: boolean | Prisma.Project$reportsArgs<ExtArgs>;
   quality_gate_config?: boolean | Prisma.Project$quality_gate_configArgs<ExtArgs>;
+  reports?: boolean | Prisma.Project$reportsArgs<ExtArgs>;
+  tickets?: boolean | Prisma.Project$ticketsArgs<ExtArgs>;
   _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type ProjectIncludeCreateManyAndReturn<
@@ -1905,31 +1905,31 @@ export type $ProjectPayload<
 > = {
   name: 'Project';
   objects: {
-    tickets: Prisma.$TicketPayload<ExtArgs>[];
+    conversations: Prisma.$ClientConversationPayload<ExtArgs>[];
     coverage_baseline: Prisma.$CoverageBaselinePayload<ExtArgs> | null;
     coverage_config: Prisma.$ProjectCoverageConfigPayload<ExtArgs> | null;
-    conversations: Prisma.$ClientConversationPayload<ExtArgs>[];
-    reports: Prisma.$ReportPayload<ExtArgs>[];
     quality_gate_config: Prisma.$QualityGateConfigPayload<ExtArgs> | null;
+    reports: Prisma.$ReportPayload<ExtArgs>[];
+    tickets: Prisma.$TicketPayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
       id: string;
       name: string;
-      client_name: string;
-      provider: $Enums.ProjectProvider;
       clickup_list_id: string | null;
-      monitor_tasks: boolean;
-      sync_config: runtime.JsonValue | null;
       github_repository_url: string;
-      pm_id: string;
-      status: string;
       default_branch: string;
       budget_usd: runtime.Decimal | null;
-      is_active: boolean;
-      deactivated_at: Date | null;
       created_at: Date;
       updated_at: Date;
+      pm_id: string;
+      status: string;
+      client_name: string;
+      monitor_tasks: boolean;
+      provider: $Enums.ProjectProvider;
+      sync_config: runtime.JsonValue | null;
+      deactivated_at: Date | null;
+      is_active: boolean;
     },
     ExtArgs['result']['project']
   >;
@@ -2445,11 +2445,11 @@ export interface Prisma__ProjectClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
-  tickets<T extends Prisma.Project$ticketsArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.Project$ticketsArgs<ExtArgs>>,
+  conversations<T extends Prisma.Project$conversationsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Project$conversationsArgs<ExtArgs>>,
   ): Prisma.PrismaPromise<
     | runtime.Types.Result.GetResult<
-        Prisma.$TicketPayload<ExtArgs>,
+        Prisma.$ClientConversationPayload<ExtArgs>,
         T,
         'findMany',
         GlobalOmitOptions
@@ -2482,28 +2482,6 @@ export interface Prisma__ProjectClient<
     ExtArgs,
     GlobalOmitOptions
   >;
-  conversations<T extends Prisma.Project$conversationsArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.Project$conversationsArgs<ExtArgs>>,
-  ): Prisma.PrismaPromise<
-    | runtime.Types.Result.GetResult<
-        Prisma.$ClientConversationPayload<ExtArgs>,
-        T,
-        'findMany',
-        GlobalOmitOptions
-      >
-    | Null
-  >;
-  reports<T extends Prisma.Project$reportsArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.Project$reportsArgs<ExtArgs>>,
-  ): Prisma.PrismaPromise<
-    | runtime.Types.Result.GetResult<
-        Prisma.$ReportPayload<ExtArgs>,
-        T,
-        'findMany',
-        GlobalOmitOptions
-      >
-    | Null
-  >;
   quality_gate_config<T extends Prisma.Project$quality_gate_configArgs<ExtArgs> = {}>(
     args?: Prisma.Subset<T, Prisma.Project$quality_gate_configArgs<ExtArgs>>,
   ): Prisma.Prisma__QualityGateConfigClient<
@@ -2516,6 +2494,28 @@ export interface Prisma__ProjectClient<
     null,
     ExtArgs,
     GlobalOmitOptions
+  >;
+  reports<T extends Prisma.Project$reportsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Project$reportsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$ReportPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  tickets<T extends Prisma.Project$ticketsArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Project$ticketsArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$TicketPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
   >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2550,20 +2550,20 @@ export interface Prisma__ProjectClient<
 export interface ProjectFieldRefs {
   readonly id: Prisma.FieldRef<'Project', 'String'>;
   readonly name: Prisma.FieldRef<'Project', 'String'>;
-  readonly client_name: Prisma.FieldRef<'Project', 'String'>;
-  readonly provider: Prisma.FieldRef<'Project', 'ProjectProvider'>;
   readonly clickup_list_id: Prisma.FieldRef<'Project', 'String'>;
-  readonly monitor_tasks: Prisma.FieldRef<'Project', 'Boolean'>;
-  readonly sync_config: Prisma.FieldRef<'Project', 'Json'>;
   readonly github_repository_url: Prisma.FieldRef<'Project', 'String'>;
-  readonly pm_id: Prisma.FieldRef<'Project', 'String'>;
-  readonly status: Prisma.FieldRef<'Project', 'String'>;
   readonly default_branch: Prisma.FieldRef<'Project', 'String'>;
   readonly budget_usd: Prisma.FieldRef<'Project', 'Decimal'>;
-  readonly is_active: Prisma.FieldRef<'Project', 'Boolean'>;
-  readonly deactivated_at: Prisma.FieldRef<'Project', 'DateTime'>;
   readonly created_at: Prisma.FieldRef<'Project', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'Project', 'DateTime'>;
+  readonly pm_id: Prisma.FieldRef<'Project', 'String'>;
+  readonly status: Prisma.FieldRef<'Project', 'String'>;
+  readonly client_name: Prisma.FieldRef<'Project', 'String'>;
+  readonly monitor_tasks: Prisma.FieldRef<'Project', 'Boolean'>;
+  readonly provider: Prisma.FieldRef<'Project', 'ProjectProvider'>;
+  readonly sync_config: Prisma.FieldRef<'Project', 'Json'>;
+  readonly deactivated_at: Prisma.FieldRef<'Project', 'DateTime'>;
+  readonly is_active: Prisma.FieldRef<'Project', 'Boolean'>;
 }
 
 // Custom InputTypes
@@ -2979,29 +2979,31 @@ export type ProjectDeleteManyArgs<
 };
 
 /**
- * Project.tickets
+ * Project.conversations
  */
-export type Project$ticketsArgs<
+export type Project$conversationsArgs<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   /**
-   * Select specific fields to fetch from the Ticket
+   * Select specific fields to fetch from the ClientConversation
    */
-  select?: Prisma.TicketSelect<ExtArgs> | null;
+  select?: Prisma.ClientConversationSelect<ExtArgs> | null;
   /**
-   * Omit specific fields from the Ticket
+   * Omit specific fields from the ClientConversation
    */
-  omit?: Prisma.TicketOmit<ExtArgs> | null;
+  omit?: Prisma.ClientConversationOmit<ExtArgs> | null;
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.TicketInclude<ExtArgs> | null;
-  where?: Prisma.TicketWhereInput;
-  orderBy?: Prisma.TicketOrderByWithRelationInput | Prisma.TicketOrderByWithRelationInput[];
-  cursor?: Prisma.TicketWhereUniqueInput;
+  include?: Prisma.ClientConversationInclude<ExtArgs> | null;
+  where?: Prisma.ClientConversationWhereInput;
+  orderBy?:
+    | Prisma.ClientConversationOrderByWithRelationInput
+    | Prisma.ClientConversationOrderByWithRelationInput[];
+  cursor?: Prisma.ClientConversationWhereUniqueInput;
   take?: number;
   skip?: number;
-  distinct?: Prisma.TicketScalarFieldEnum | Prisma.TicketScalarFieldEnum[];
+  distinct?: Prisma.ClientConversationScalarFieldEnum | Prisma.ClientConversationScalarFieldEnum[];
 };
 
 /**
@@ -3047,31 +3049,24 @@ export type Project$coverage_configArgs<
 };
 
 /**
- * Project.conversations
+ * Project.quality_gate_config
  */
-export type Project$conversationsArgs<
+export type Project$quality_gate_configArgs<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   /**
-   * Select specific fields to fetch from the ClientConversation
+   * Select specific fields to fetch from the QualityGateConfig
    */
-  select?: Prisma.ClientConversationSelect<ExtArgs> | null;
+  select?: Prisma.QualityGateConfigSelect<ExtArgs> | null;
   /**
-   * Omit specific fields from the ClientConversation
+   * Omit specific fields from the QualityGateConfig
    */
-  omit?: Prisma.ClientConversationOmit<ExtArgs> | null;
+  omit?: Prisma.QualityGateConfigOmit<ExtArgs> | null;
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.ClientConversationInclude<ExtArgs> | null;
-  where?: Prisma.ClientConversationWhereInput;
-  orderBy?:
-    | Prisma.ClientConversationOrderByWithRelationInput
-    | Prisma.ClientConversationOrderByWithRelationInput[];
-  cursor?: Prisma.ClientConversationWhereUniqueInput;
-  take?: number;
-  skip?: number;
-  distinct?: Prisma.ClientConversationScalarFieldEnum | Prisma.ClientConversationScalarFieldEnum[];
+  include?: Prisma.QualityGateConfigInclude<ExtArgs> | null;
+  where?: Prisma.QualityGateConfigWhereInput;
 };
 
 /**
@@ -3101,24 +3096,29 @@ export type Project$reportsArgs<
 };
 
 /**
- * Project.quality_gate_config
+ * Project.tickets
  */
-export type Project$quality_gate_configArgs<
+export type Project$ticketsArgs<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   /**
-   * Select specific fields to fetch from the QualityGateConfig
+   * Select specific fields to fetch from the Ticket
    */
-  select?: Prisma.QualityGateConfigSelect<ExtArgs> | null;
+  select?: Prisma.TicketSelect<ExtArgs> | null;
   /**
-   * Omit specific fields from the QualityGateConfig
+   * Omit specific fields from the Ticket
    */
-  omit?: Prisma.QualityGateConfigOmit<ExtArgs> | null;
+  omit?: Prisma.TicketOmit<ExtArgs> | null;
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.QualityGateConfigInclude<ExtArgs> | null;
-  where?: Prisma.QualityGateConfigWhereInput;
+  include?: Prisma.TicketInclude<ExtArgs> | null;
+  where?: Prisma.TicketWhereInput;
+  orderBy?: Prisma.TicketOrderByWithRelationInput | Prisma.TicketOrderByWithRelationInput[];
+  cursor?: Prisma.TicketWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.TicketScalarFieldEnum | Prisma.TicketScalarFieldEnum[];
 };
 
 /**

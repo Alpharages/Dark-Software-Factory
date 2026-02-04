@@ -16,6 +16,6 @@ import { AIConversationProcessorService } from './ai-conversation-processor.serv
   imports: [ConfigModule, DatabaseModule, CostTrackingModule, AppMetricsModule, AetherFlowModule],
   controllers: [ConversationsController],
   providers: [ConversationsService, AIConversationProcessorService],
-  exports: [ConversationsService],
+  exports: [ConversationsService, AIConversationProcessorService],
 })
 export class ConversationsModule {}

@@ -298,15 +298,14 @@ export type BugEscapeWhereInput = {
   ai_provider?: Prisma.StringNullableFilter<'BugEscape'> | string | null;
   complexity_score?: Prisma.IntNullableFilter<'BugEscape'> | number | null;
   created_at?: Prisma.DateTimeFilter<'BugEscape'> | Date | string;
-  production_error?: Prisma.XOR<
-    Prisma.ProductionErrorScalarRelationFilter,
-    Prisma.ProductionErrorWhereInput
-  >;
-  ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
   execution?: Prisma.XOR<
     Prisma.ExecutionNullableScalarRelationFilter,
     Prisma.ExecutionWhereInput
   > | null;
+  production_error?: Prisma.XOR<
+    Prisma.ProductionErrorScalarRelationFilter,
+    Prisma.ProductionErrorWhereInput
+  >;
   qa_result?: Prisma.XOR<
     Prisma.QAResultNullableScalarRelationFilter,
     Prisma.QAResultWhereInput
@@ -315,6 +314,7 @@ export type BugEscapeWhereInput = {
     Prisma.QaReviewQueueNullableScalarRelationFilter,
     Prisma.QaReviewQueueWhereInput
   > | null;
+  ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
 };
 
 export type BugEscapeOrderByWithRelationInput = {
@@ -333,11 +333,11 @@ export type BugEscapeOrderByWithRelationInput = {
   ai_provider?: Prisma.SortOrderInput | Prisma.SortOrder;
   complexity_score?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
-  production_error?: Prisma.ProductionErrorOrderByWithRelationInput;
-  ticket?: Prisma.TicketOrderByWithRelationInput;
   execution?: Prisma.ExecutionOrderByWithRelationInput;
+  production_error?: Prisma.ProductionErrorOrderByWithRelationInput;
   qa_result?: Prisma.QAResultOrderByWithRelationInput;
   qa_review_queue?: Prisma.QaReviewQueueOrderByWithRelationInput;
+  ticket?: Prisma.TicketOrderByWithRelationInput;
 };
 
 export type BugEscapeWhereUniqueInput = Prisma.AtLeast<
@@ -360,15 +360,14 @@ export type BugEscapeWhereUniqueInput = Prisma.AtLeast<
     ai_provider?: Prisma.StringNullableFilter<'BugEscape'> | string | null;
     complexity_score?: Prisma.IntNullableFilter<'BugEscape'> | number | null;
     created_at?: Prisma.DateTimeFilter<'BugEscape'> | Date | string;
-    production_error?: Prisma.XOR<
-      Prisma.ProductionErrorScalarRelationFilter,
-      Prisma.ProductionErrorWhereInput
-    >;
-    ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
     execution?: Prisma.XOR<
       Prisma.ExecutionNullableScalarRelationFilter,
       Prisma.ExecutionWhereInput
     > | null;
+    production_error?: Prisma.XOR<
+      Prisma.ProductionErrorScalarRelationFilter,
+      Prisma.ProductionErrorWhereInput
+    >;
     qa_result?: Prisma.XOR<
       Prisma.QAResultNullableScalarRelationFilter,
       Prisma.QAResultWhereInput
@@ -377,6 +376,7 @@ export type BugEscapeWhereUniqueInput = Prisma.AtLeast<
       Prisma.QaReviewQueueNullableScalarRelationFilter,
       Prisma.QaReviewQueueWhereInput
     > | null;
+    ticket?: Prisma.XOR<Prisma.TicketScalarRelationFilter, Prisma.TicketWhereInput>;
   },
   'id' | 'production_error_id'
 >;
@@ -444,11 +444,11 @@ export type BugEscapeCreateInput = {
   ai_provider?: string | null;
   complexity_score?: number | null;
   created_at?: Date | string;
-  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
-  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
   execution?: Prisma.ExecutionCreateNestedOneWithoutBug_escapesInput;
+  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutBug_escapesInput;
   qa_review_queue?: Prisma.QaReviewQueueCreateNestedOneWithoutBug_escapesInput;
+  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
 };
 
 export type BugEscapeUncheckedCreateInput = {
@@ -480,11 +480,11 @@ export type BugEscapeUpdateInput = {
   ai_provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
-  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
   execution?: Prisma.ExecutionUpdateOneWithoutBug_escapesNestedInput;
+  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
   qa_result?: Prisma.QAResultUpdateOneWithoutBug_escapesNestedInput;
   qa_review_queue?: Prisma.QaReviewQueueUpdateOneWithoutBug_escapesNestedInput;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
 };
 
 export type BugEscapeUncheckedUpdateInput = {
@@ -1048,8 +1048,8 @@ export type BugEscapeCreateWithoutTicketInput = {
   ai_provider?: string | null;
   complexity_score?: number | null;
   created_at?: Date | string;
-  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
   execution?: Prisma.ExecutionCreateNestedOneWithoutBug_escapesInput;
+  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutBug_escapesInput;
   qa_review_queue?: Prisma.QaReviewQueueCreateNestedOneWithoutBug_escapesInput;
 };
@@ -1145,9 +1145,9 @@ export type BugEscapeCreateWithoutExecutionInput = {
   complexity_score?: number | null;
   created_at?: Date | string;
   production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
-  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutBug_escapesInput;
   qa_review_queue?: Prisma.QaReviewQueueCreateNestedOneWithoutBug_escapesInput;
+  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
 };
 
 export type BugEscapeUncheckedCreateWithoutExecutionInput = {
@@ -1219,10 +1219,10 @@ export type BugEscapeCreateWithoutQa_resultInput = {
   ai_provider?: string | null;
   complexity_score?: number | null;
   created_at?: Date | string;
-  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
-  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
   execution?: Prisma.ExecutionCreateNestedOneWithoutBug_escapesInput;
+  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
   qa_review_queue?: Prisma.QaReviewQueueCreateNestedOneWithoutBug_escapesInput;
+  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
 };
 
 export type BugEscapeUncheckedCreateWithoutQa_resultInput = {
@@ -1294,10 +1294,10 @@ export type BugEscapeCreateWithoutProduction_errorInput = {
   ai_provider?: string | null;
   complexity_score?: number | null;
   created_at?: Date | string;
-  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
   execution?: Prisma.ExecutionCreateNestedOneWithoutBug_escapesInput;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutBug_escapesInput;
   qa_review_queue?: Prisma.QaReviewQueueCreateNestedOneWithoutBug_escapesInput;
+  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
 };
 
 export type BugEscapeUncheckedCreateWithoutProduction_errorInput = {
@@ -1356,10 +1356,10 @@ export type BugEscapeUpdateWithoutProduction_errorInput = {
   ai_provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
   execution?: Prisma.ExecutionUpdateOneWithoutBug_escapesNestedInput;
   qa_result?: Prisma.QAResultUpdateOneWithoutBug_escapesNestedInput;
   qa_review_queue?: Prisma.QaReviewQueueUpdateOneWithoutBug_escapesNestedInput;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
 };
 
 export type BugEscapeUncheckedUpdateWithoutProduction_errorInput = {
@@ -1390,10 +1390,10 @@ export type BugEscapeCreateWithoutQa_review_queueInput = {
   ai_provider?: string | null;
   complexity_score?: number | null;
   created_at?: Date | string;
-  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
-  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
   execution?: Prisma.ExecutionCreateNestedOneWithoutBug_escapesInput;
+  production_error: Prisma.ProductionErrorCreateNestedOneWithoutBug_escapeInput;
   qa_result?: Prisma.QAResultCreateNestedOneWithoutBug_escapesInput;
+  ticket: Prisma.TicketCreateNestedOneWithoutBug_escapesInput;
 };
 
 export type BugEscapeUncheckedCreateWithoutQa_review_queueInput = {
@@ -1484,8 +1484,8 @@ export type BugEscapeUpdateWithoutTicketInput = {
   ai_provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
   execution?: Prisma.ExecutionUpdateOneWithoutBug_escapesNestedInput;
+  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
   qa_result?: Prisma.QAResultUpdateOneWithoutBug_escapesNestedInput;
   qa_review_queue?: Prisma.QaReviewQueueUpdateOneWithoutBug_escapesNestedInput;
 };
@@ -1553,9 +1553,9 @@ export type BugEscapeUpdateWithoutExecutionInput = {
   complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
-  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
   qa_result?: Prisma.QAResultUpdateOneWithoutBug_escapesNestedInput;
   qa_review_queue?: Prisma.QaReviewQueueUpdateOneWithoutBug_escapesNestedInput;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
 };
 
 export type BugEscapeUncheckedUpdateWithoutExecutionInput = {
@@ -1620,10 +1620,10 @@ export type BugEscapeUpdateWithoutQa_resultInput = {
   ai_provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
-  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
   execution?: Prisma.ExecutionUpdateOneWithoutBug_escapesNestedInput;
+  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
   qa_review_queue?: Prisma.QaReviewQueueUpdateOneWithoutBug_escapesNestedInput;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
 };
 
 export type BugEscapeUncheckedUpdateWithoutQa_resultInput = {
@@ -1688,10 +1688,10 @@ export type BugEscapeUpdateWithoutQa_review_queueInput = {
   ai_provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   complexity_score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
-  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
   execution?: Prisma.ExecutionUpdateOneWithoutBug_escapesNestedInput;
+  production_error?: Prisma.ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput;
   qa_result?: Prisma.QAResultUpdateOneWithoutBug_escapesNestedInput;
+  ticket?: Prisma.TicketUpdateOneRequiredWithoutBug_escapesNestedInput;
 };
 
 export type BugEscapeUncheckedUpdateWithoutQa_review_queueInput = {
@@ -1747,11 +1747,11 @@ export type BugEscapeSelect<
     ai_provider?: boolean;
     complexity_score?: boolean;
     created_at?: boolean;
-    production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
-    ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
     execution?: boolean | Prisma.BugEscape$executionArgs<ExtArgs>;
+    production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
     qa_result?: boolean | Prisma.BugEscape$qa_resultArgs<ExtArgs>;
     qa_review_queue?: boolean | Prisma.BugEscape$qa_review_queueArgs<ExtArgs>;
+    ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['bugEscape']
 >;
@@ -1775,11 +1775,11 @@ export type BugEscapeSelectCreateManyAndReturn<
     ai_provider?: boolean;
     complexity_score?: boolean;
     created_at?: boolean;
-    production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
-    ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
     execution?: boolean | Prisma.BugEscape$executionArgs<ExtArgs>;
+    production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
     qa_result?: boolean | Prisma.BugEscape$qa_resultArgs<ExtArgs>;
     qa_review_queue?: boolean | Prisma.BugEscape$qa_review_queueArgs<ExtArgs>;
+    ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['bugEscape']
 >;
@@ -1803,11 +1803,11 @@ export type BugEscapeSelectUpdateManyAndReturn<
     ai_provider?: boolean;
     complexity_score?: boolean;
     created_at?: boolean;
-    production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
-    ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
     execution?: boolean | Prisma.BugEscape$executionArgs<ExtArgs>;
+    production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
     qa_result?: boolean | Prisma.BugEscape$qa_resultArgs<ExtArgs>;
     qa_review_queue?: boolean | Prisma.BugEscape$qa_review_queueArgs<ExtArgs>;
+    ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['bugEscape']
 >;
@@ -1853,29 +1853,29 @@ export type BugEscapeOmit<
 export type BugEscapeInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
-  ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
   execution?: boolean | Prisma.BugEscape$executionArgs<ExtArgs>;
+  production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
   qa_result?: boolean | Prisma.BugEscape$qa_resultArgs<ExtArgs>;
   qa_review_queue?: boolean | Prisma.BugEscape$qa_review_queueArgs<ExtArgs>;
+  ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
 };
 export type BugEscapeIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
-  ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
   execution?: boolean | Prisma.BugEscape$executionArgs<ExtArgs>;
+  production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
   qa_result?: boolean | Prisma.BugEscape$qa_resultArgs<ExtArgs>;
   qa_review_queue?: boolean | Prisma.BugEscape$qa_review_queueArgs<ExtArgs>;
+  ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
 };
 export type BugEscapeIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
-  ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
   execution?: boolean | Prisma.BugEscape$executionArgs<ExtArgs>;
+  production_error?: boolean | Prisma.ProductionErrorDefaultArgs<ExtArgs>;
   qa_result?: boolean | Prisma.BugEscape$qa_resultArgs<ExtArgs>;
   qa_review_queue?: boolean | Prisma.BugEscape$qa_review_queueArgs<ExtArgs>;
+  ticket?: boolean | Prisma.TicketDefaultArgs<ExtArgs>;
 };
 
 export type $BugEscapePayload<
@@ -1883,11 +1883,11 @@ export type $BugEscapePayload<
 > = {
   name: 'BugEscape';
   objects: {
-    production_error: Prisma.$ProductionErrorPayload<ExtArgs>;
-    ticket: Prisma.$TicketPayload<ExtArgs>;
     execution: Prisma.$ExecutionPayload<ExtArgs> | null;
+    production_error: Prisma.$ProductionErrorPayload<ExtArgs>;
     qa_result: Prisma.$QAResultPayload<ExtArgs> | null;
     qa_review_queue: Prisma.$QaReviewQueuePayload<ExtArgs> | null;
+    ticket: Prisma.$TicketPayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -2444,6 +2444,19 @@ export interface Prisma__BugEscapeClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
+  execution<T extends Prisma.BugEscape$executionArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.BugEscape$executionArgs<ExtArgs>>,
+  ): Prisma.Prisma__ExecutionClient<
+    runtime.Types.Result.GetResult<
+      Prisma.$ExecutionPayload<ExtArgs>,
+      T,
+      'findUniqueOrThrow',
+      GlobalOmitOptions
+    > | null,
+    null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
   production_error<T extends Prisma.ProductionErrorDefaultArgs<ExtArgs> = {}>(
     args?: Prisma.Subset<T, Prisma.ProductionErrorDefaultArgs<ExtArgs>>,
   ): Prisma.Prisma__ProductionErrorClient<
@@ -2455,33 +2468,6 @@ export interface Prisma__BugEscapeClient<
       >
     | Null,
     Null,
-    ExtArgs,
-    GlobalOmitOptions
-  >;
-  ticket<T extends Prisma.TicketDefaultArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.TicketDefaultArgs<ExtArgs>>,
-  ): Prisma.Prisma__TicketClient<
-    | runtime.Types.Result.GetResult<
-        Prisma.$TicketPayload<ExtArgs>,
-        T,
-        'findUniqueOrThrow',
-        GlobalOmitOptions
-      >
-    | Null,
-    Null,
-    ExtArgs,
-    GlobalOmitOptions
-  >;
-  execution<T extends Prisma.BugEscape$executionArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.BugEscape$executionArgs<ExtArgs>>,
-  ): Prisma.Prisma__ExecutionClient<
-    runtime.Types.Result.GetResult<
-      Prisma.$ExecutionPayload<ExtArgs>,
-      T,
-      'findUniqueOrThrow',
-      GlobalOmitOptions
-    > | null,
-    null,
     ExtArgs,
     GlobalOmitOptions
   >;
@@ -2508,6 +2494,20 @@ export interface Prisma__BugEscapeClient<
       GlobalOmitOptions
     > | null,
     null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
+  ticket<T extends Prisma.TicketDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.TicketDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__TicketClient<
+    | runtime.Types.Result.GetResult<
+        Prisma.$TicketPayload<ExtArgs>,
+        T,
+        'findUniqueOrThrow',
+        GlobalOmitOptions
+      >
+    | Null,
+    Null,
     ExtArgs,
     GlobalOmitOptions
   >;

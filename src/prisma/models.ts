@@ -50,4 +50,6 @@ export type * from './models/UserInvitation';
 export type * from './models/RefreshToken';
 export type * from './models/QualityGateConfig';
 export type * from './models/QualityGateConfigHistory';
+export type * from './models/QualityAnomaly';
+export type * from './models/QualityAnomalyConfig';
 export type * from './commonInputTypes';

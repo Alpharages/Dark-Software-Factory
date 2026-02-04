@@ -259,9 +259,9 @@ export type QaReviewQueueWhereInput = {
   review_notes?: Prisma.StringNullableFilter<'QaReviewQueue'> | string | null;
   created_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
-  execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
   ai_code_reviews?: Prisma.AiCodeReviewListRelationFilter;
   bug_escapes?: Prisma.BugEscapeListRelationFilter;
+  execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
 };
 
 export type QaReviewQueueOrderByWithRelationInput = {
@@ -280,9 +280,9 @@ export type QaReviewQueueOrderByWithRelationInput = {
   review_notes?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
-  execution?: Prisma.ExecutionOrderByWithRelationInput;
   ai_code_reviews?: Prisma.AiCodeReviewOrderByRelationAggregateInput;
   bug_escapes?: Prisma.BugEscapeOrderByRelationAggregateInput;
+  execution?: Prisma.ExecutionOrderByWithRelationInput;
 };
 
 export type QaReviewQueueWhereUniqueInput = Prisma.AtLeast<
@@ -307,9 +307,9 @@ export type QaReviewQueueWhereUniqueInput = Prisma.AtLeast<
     review_notes?: Prisma.StringNullableFilter<'QaReviewQueue'> | string | null;
     created_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
-    execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
     ai_code_reviews?: Prisma.AiCodeReviewListRelationFilter;
     bug_escapes?: Prisma.BugEscapeListRelationFilter;
+    execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
   },
   'id' | 'execution_id'
 >;
@@ -377,9 +377,9 @@ export type QaReviewQueueCreateInput = {
   review_notes?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
   ai_code_reviews?: Prisma.AiCodeReviewCreateNestedManyWithoutQueue_itemInput;
   bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_review_queueInput;
+  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueUncheckedCreateInput = {
@@ -419,9 +419,9 @@ export type QaReviewQueueUpdateInput = {
   review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
   ai_code_reviews?: Prisma.AiCodeReviewUpdateManyWithoutQueue_itemNestedInput;
   bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_review_queueNestedInput;
+  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateInput = {
@@ -810,8 +810,8 @@ export type QaReviewQueueCreateWithoutBug_escapesInput = {
   review_notes?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
   ai_code_reviews?: Prisma.AiCodeReviewCreateNestedManyWithoutQueue_itemInput;
+  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueUncheckedCreateWithoutBug_escapesInput = {
@@ -878,8 +878,8 @@ export type QaReviewQueueUpdateWithoutBug_escapesInput = {
   review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
   ai_code_reviews?: Prisma.AiCodeReviewUpdateManyWithoutQueue_itemNestedInput;
+  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateWithoutBug_escapesInput = {
@@ -918,8 +918,8 @@ export type QaReviewQueueCreateWithoutAi_code_reviewsInput = {
   review_notes?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
   bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_review_queueInput;
+  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput = {
@@ -986,8 +986,8 @@ export type QaReviewQueueUpdateWithoutAi_code_reviewsInput = {
   review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
   bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_review_queueNestedInput;
+  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput = {
@@ -1076,9 +1076,9 @@ export type QaReviewQueueSelect<
     review_notes?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
-    execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
     ai_code_reviews?: boolean | Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>;
     bug_escapes?: boolean | Prisma.QaReviewQueue$bug_escapesArgs<ExtArgs>;
+    execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
     _count?: boolean | Prisma.QaReviewQueueCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qaReviewQueue']
@@ -1173,9 +1173,9 @@ export type QaReviewQueueOmit<
 export type QaReviewQueueInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
   ai_code_reviews?: boolean | Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>;
   bug_escapes?: boolean | Prisma.QaReviewQueue$bug_escapesArgs<ExtArgs>;
+  execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
   _count?: boolean | Prisma.QaReviewQueueCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type QaReviewQueueIncludeCreateManyAndReturn<
@@ -1194,9 +1194,9 @@ export type $QaReviewQueuePayload<
 > = {
   name: 'QaReviewQueue';
   objects: {
-    execution: Prisma.$ExecutionPayload<ExtArgs>;
     ai_code_reviews: Prisma.$AiCodeReviewPayload<ExtArgs>[];
     bug_escapes: Prisma.$BugEscapePayload<ExtArgs>[];
+    execution: Prisma.$ExecutionPayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1754,20 +1754,6 @@ export interface Prisma__QaReviewQueueClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
-  execution<T extends Prisma.ExecutionDefaultArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.ExecutionDefaultArgs<ExtArgs>>,
-  ): Prisma.Prisma__ExecutionClient<
-    | runtime.Types.Result.GetResult<
-        Prisma.$ExecutionPayload<ExtArgs>,
-        T,
-        'findUniqueOrThrow',
-        GlobalOmitOptions
-      >
-    | Null,
-    Null,
-    ExtArgs,
-    GlobalOmitOptions
-  >;
   ai_code_reviews<T extends Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs> = {}>(
     args?: Prisma.Subset<T, Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>>,
   ): Prisma.PrismaPromise<
@@ -1789,6 +1775,20 @@ export interface Prisma__QaReviewQueueClient<
         GlobalOmitOptions
       >
     | Null
+  >;
+  execution<T extends Prisma.ExecutionDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.ExecutionDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__ExecutionClient<
+    | runtime.Types.Result.GetResult<
+        Prisma.$ExecutionPayload<ExtArgs>,
+        T,
+        'findUniqueOrThrow',
+        GlobalOmitOptions
+      >
+    | Null,
+    Null,
+    ExtArgs,
+    GlobalOmitOptions
   >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.

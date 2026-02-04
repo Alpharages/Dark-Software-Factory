@@ -342,10 +342,10 @@ export type QualityGateConfigWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<'QualityGateConfig'> | Date | string;
   createdById?: Prisma.StringFilter<'QualityGateConfig'> | string;
   updatedById?: Prisma.StringFilter<'QualityGateConfig'> | string;
-  project?: Prisma.XOR<Prisma.ProjectNullableScalarRelationFilter, Prisma.ProjectWhereInput> | null;
-  createdBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
-  updatedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
   history?: Prisma.QualityGateConfigHistoryListRelationFilter;
+  createdBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+  project?: Prisma.XOR<Prisma.ProjectNullableScalarRelationFilter, Prisma.ProjectWhereInput> | null;
+  updatedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
 };
 
 export type QualityGateConfigOrderByWithRelationInput = {
@@ -367,10 +367,10 @@ export type QualityGateConfigOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder;
   createdById?: Prisma.SortOrder;
   updatedById?: Prisma.SortOrder;
-  project?: Prisma.ProjectOrderByWithRelationInput;
-  createdBy?: Prisma.UserOrderByWithRelationInput;
-  updatedBy?: Prisma.UserOrderByWithRelationInput;
   history?: Prisma.QualityGateConfigHistoryOrderByRelationAggregateInput;
+  createdBy?: Prisma.UserOrderByWithRelationInput;
+  project?: Prisma.ProjectOrderByWithRelationInput;
+  updatedBy?: Prisma.UserOrderByWithRelationInput;
 };
 
 export type QualityGateConfigWhereUniqueInput = Prisma.AtLeast<
@@ -396,13 +396,13 @@ export type QualityGateConfigWhereUniqueInput = Prisma.AtLeast<
     updatedAt?: Prisma.DateTimeFilter<'QualityGateConfig'> | Date | string;
     createdById?: Prisma.StringFilter<'QualityGateConfig'> | string;
     updatedById?: Prisma.StringFilter<'QualityGateConfig'> | string;
+    history?: Prisma.QualityGateConfigHistoryListRelationFilter;
+    createdBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     project?: Prisma.XOR<
       Prisma.ProjectNullableScalarRelationFilter,
       Prisma.ProjectWhereInput
     > | null;
-    createdBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     updatedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
-    history?: Prisma.QualityGateConfigHistoryListRelationFilter;
   },
   'id' | 'projectId'
 >;
@@ -477,10 +477,10 @@ export type QualityGateConfigCreateInput = {
   version?: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  project?: Prisma.ProjectCreateNestedOneWithoutQuality_gate_configInput;
-  createdBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_createdInput;
-  updatedBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_updatedInput;
   history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutConfigInput;
+  createdBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_createdInput;
+  project?: Prisma.ProjectCreateNestedOneWithoutQuality_gate_configInput;
+  updatedBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_updatedInput;
 };
 
 export type QualityGateConfigUncheckedCreateInput = {
@@ -521,10 +521,10 @@ export type QualityGateConfigUpdateInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  project?: Prisma.ProjectUpdateOneWithoutQuality_gate_configNestedInput;
-  createdBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_createdNestedInput;
-  updatedBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_updatedNestedInput;
   history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutConfigNestedInput;
+  createdBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_createdNestedInput;
+  project?: Prisma.ProjectUpdateOneWithoutQuality_gate_configNestedInput;
+  updatedBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_updatedNestedInput;
 };
 
 export type QualityGateConfigUncheckedUpdateInput = {
@@ -996,9 +996,9 @@ export type QualityGateConfigCreateWithoutProjectInput = {
   version?: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutConfigInput;
   createdBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_createdInput;
   updatedBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_updatedInput;
-  history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutConfigInput;
 };
 
 export type QualityGateConfigUncheckedCreateWithoutProjectInput = {
@@ -1066,9 +1066,9 @@ export type QualityGateConfigUpdateWithoutProjectInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutConfigNestedInput;
   createdBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_createdNestedInput;
   updatedBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_updatedNestedInput;
-  history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutConfigNestedInput;
 };
 
 export type QualityGateConfigUncheckedUpdateWithoutProjectInput = {
@@ -1108,9 +1108,9 @@ export type QualityGateConfigCreateWithoutCreatedByInput = {
   version?: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutConfigInput;
   project?: Prisma.ProjectCreateNestedOneWithoutQuality_gate_configInput;
   updatedBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_updatedInput;
-  history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutConfigInput;
 };
 
 export type QualityGateConfigUncheckedCreateWithoutCreatedByInput = {
@@ -1165,9 +1165,9 @@ export type QualityGateConfigCreateWithoutUpdatedByInput = {
   version?: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  project?: Prisma.ProjectCreateNestedOneWithoutQuality_gate_configInput;
-  createdBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_createdInput;
   history?: Prisma.QualityGateConfigHistoryCreateNestedManyWithoutConfigInput;
+  createdBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_createdInput;
+  project?: Prisma.ProjectCreateNestedOneWithoutQuality_gate_configInput;
 };
 
 export type QualityGateConfigUncheckedCreateWithoutUpdatedByInput = {
@@ -1302,8 +1302,8 @@ export type QualityGateConfigCreateWithoutHistoryInput = {
   version?: number;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  project?: Prisma.ProjectCreateNestedOneWithoutQuality_gate_configInput;
   createdBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_createdInput;
+  project?: Prisma.ProjectCreateNestedOneWithoutQuality_gate_configInput;
   updatedBy: Prisma.UserCreateNestedOneWithoutQuality_gate_configs_updatedInput;
 };
 
@@ -1372,8 +1372,8 @@ export type QualityGateConfigUpdateWithoutHistoryInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  project?: Prisma.ProjectUpdateOneWithoutQuality_gate_configNestedInput;
   createdBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_createdNestedInput;
+  project?: Prisma.ProjectUpdateOneWithoutQuality_gate_configNestedInput;
   updatedBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_updatedNestedInput;
 };
 
@@ -1454,9 +1454,9 @@ export type QualityGateConfigUpdateWithoutCreatedByInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutConfigNestedInput;
   project?: Prisma.ProjectUpdateOneWithoutQuality_gate_configNestedInput;
   updatedBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_updatedNestedInput;
-  history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutConfigNestedInput;
 };
 
 export type QualityGateConfigUncheckedUpdateWithoutCreatedByInput = {
@@ -1516,9 +1516,9 @@ export type QualityGateConfigUpdateWithoutUpdatedByInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number;
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  project?: Prisma.ProjectUpdateOneWithoutQuality_gate_configNestedInput;
-  createdBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_createdNestedInput;
   history?: Prisma.QualityGateConfigHistoryUpdateManyWithoutConfigNestedInput;
+  createdBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_configs_createdNestedInput;
+  project?: Prisma.ProjectUpdateOneWithoutQuality_gate_configNestedInput;
 };
 
 export type QualityGateConfigUncheckedUpdateWithoutUpdatedByInput = {
@@ -1619,10 +1619,10 @@ export type QualityGateConfigSelect<
     updatedAt?: boolean;
     createdById?: boolean;
     updatedById?: boolean;
-    project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
-    createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
-    updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     history?: boolean | Prisma.QualityGateConfig$historyArgs<ExtArgs>;
+    createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
+    updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
     _count?: boolean | Prisma.QualityGateConfigCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qualityGateConfig']
@@ -1650,8 +1650,8 @@ export type QualityGateConfigSelectCreateManyAndReturn<
     updatedAt?: boolean;
     createdById?: boolean;
     updatedById?: boolean;
-    project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
     createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
     updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qualityGateConfig']
@@ -1679,8 +1679,8 @@ export type QualityGateConfigSelectUpdateManyAndReturn<
     updatedAt?: boolean;
     createdById?: boolean;
     updatedById?: boolean;
-    project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
     createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
     updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qualityGateConfig']
@@ -1733,24 +1733,24 @@ export type QualityGateConfigOmit<
 export type QualityGateConfigInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
-  createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
-  updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
   history?: boolean | Prisma.QualityGateConfig$historyArgs<ExtArgs>;
+  createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
+  updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
   _count?: boolean | Prisma.QualityGateConfigCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type QualityGateConfigIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
   createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
   updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
 };
 export type QualityGateConfigIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
   createdBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  project?: boolean | Prisma.QualityGateConfig$projectArgs<ExtArgs>;
   updatedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
 };
 
@@ -1759,10 +1759,10 @@ export type $QualityGateConfigPayload<
 > = {
   name: 'QualityGateConfig';
   objects: {
-    project: Prisma.$ProjectPayload<ExtArgs> | null;
-    createdBy: Prisma.$UserPayload<ExtArgs>;
-    updatedBy: Prisma.$UserPayload<ExtArgs>;
     history: Prisma.$QualityGateConfigHistoryPayload<ExtArgs>[];
+    createdBy: Prisma.$UserPayload<ExtArgs>;
+    project: Prisma.$ProjectPayload<ExtArgs> | null;
+    updatedBy: Prisma.$UserPayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -2325,18 +2325,16 @@ export interface Prisma__QualityGateConfigClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
-  project<T extends Prisma.QualityGateConfig$projectArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.QualityGateConfig$projectArgs<ExtArgs>>,
-  ): Prisma.Prisma__ProjectClient<
-    runtime.Types.Result.GetResult<
-      Prisma.$ProjectPayload<ExtArgs>,
-      T,
-      'findUniqueOrThrow',
-      GlobalOmitOptions
-    > | null,
-    null,
-    ExtArgs,
-    GlobalOmitOptions
+  history<T extends Prisma.QualityGateConfig$historyArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.QualityGateConfig$historyArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$QualityGateConfigHistoryPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
   >;
   createdBy<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(
     args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>,
@@ -2349,6 +2347,19 @@ export interface Prisma__QualityGateConfigClient<
       >
     | Null,
     Null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
+  project<T extends Prisma.QualityGateConfig$projectArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.QualityGateConfig$projectArgs<ExtArgs>>,
+  ): Prisma.Prisma__ProjectClient<
+    runtime.Types.Result.GetResult<
+      Prisma.$ProjectPayload<ExtArgs>,
+      T,
+      'findUniqueOrThrow',
+      GlobalOmitOptions
+    > | null,
+    null,
     ExtArgs,
     GlobalOmitOptions
   >;
@@ -2365,17 +2376,6 @@ export interface Prisma__QualityGateConfigClient<
     Null,
     ExtArgs,
     GlobalOmitOptions
-  >;
-  history<T extends Prisma.QualityGateConfig$historyArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.QualityGateConfig$historyArgs<ExtArgs>>,
-  ): Prisma.PrismaPromise<
-    | runtime.Types.Result.GetResult<
-        Prisma.$QualityGateConfigHistoryPayload<ExtArgs>,
-        T,
-        'findMany',
-        GlobalOmitOptions
-      >
-    | Null
   >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2873,27 +2873,6 @@ export type QualityGateConfigDeleteManyArgs<
 };
 
 /**
- * QualityGateConfig.project
- */
-export type QualityGateConfig$projectArgs<
-  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
-> = {
-  /**
-   * Select specific fields to fetch from the Project
-   */
-  select?: Prisma.ProjectSelect<ExtArgs> | null;
-  /**
-   * Omit specific fields from the Project
-   */
-  omit?: Prisma.ProjectOmit<ExtArgs> | null;
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ProjectInclude<ExtArgs> | null;
-  where?: Prisma.ProjectWhereInput;
-};
-
-/**
  * QualityGateConfig.history
  */
 export type QualityGateConfig$historyArgs<
@@ -2921,6 +2900,27 @@ export type QualityGateConfig$historyArgs<
   distinct?:
     | Prisma.QualityGateConfigHistoryScalarFieldEnum
     | Prisma.QualityGateConfigHistoryScalarFieldEnum[];
+};
+
+/**
+ * QualityGateConfig.project
+ */
+export type QualityGateConfig$projectArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the Project
+   */
+  select?: Prisma.ProjectSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the Project
+   */
+  omit?: Prisma.ProjectOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null;
+  where?: Prisma.ProjectWhereInput;
 };
 
 /**

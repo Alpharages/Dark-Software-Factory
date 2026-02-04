@@ -242,11 +242,11 @@ export type QualityGateConfigHistoryWhereInput = {
   changedById?: Prisma.StringFilter<'QualityGateConfigHistory'> | string;
   changedAt?: Prisma.DateTimeFilter<'QualityGateConfigHistory'> | Date | string;
   changeReason?: Prisma.StringNullableFilter<'QualityGateConfigHistory'> | string | null;
+  changedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
   config?: Prisma.XOR<
     Prisma.QualityGateConfigScalarRelationFilter,
     Prisma.QualityGateConfigWhereInput
   >;
-  changedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
 };
 
 export type QualityGateConfigHistoryOrderByWithRelationInput = {
@@ -258,8 +258,8 @@ export type QualityGateConfigHistoryOrderByWithRelationInput = {
   changedById?: Prisma.SortOrder;
   changedAt?: Prisma.SortOrder;
   changeReason?: Prisma.SortOrderInput | Prisma.SortOrder;
-  config?: Prisma.QualityGateConfigOrderByWithRelationInput;
   changedBy?: Prisma.UserOrderByWithRelationInput;
+  config?: Prisma.QualityGateConfigOrderByWithRelationInput;
 };
 
 export type QualityGateConfigHistoryWhereUniqueInput = Prisma.AtLeast<
@@ -275,11 +275,11 @@ export type QualityGateConfigHistoryWhereUniqueInput = Prisma.AtLeast<
     changedById?: Prisma.StringFilter<'QualityGateConfigHistory'> | string;
     changedAt?: Prisma.DateTimeFilter<'QualityGateConfigHistory'> | Date | string;
     changeReason?: Prisma.StringNullableFilter<'QualityGateConfigHistory'> | string | null;
+    changedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
     config?: Prisma.XOR<
       Prisma.QualityGateConfigScalarRelationFilter,
       Prisma.QualityGateConfigWhereInput
     >;
-    changedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
   },
   'id'
 >;
@@ -328,8 +328,8 @@ export type QualityGateConfigHistoryCreateInput = {
   version: number;
   changedAt?: Date | string;
   changeReason?: string | null;
-  config: Prisma.QualityGateConfigCreateNestedOneWithoutHistoryInput;
   changedBy: Prisma.UserCreateNestedOneWithoutQuality_gate_historyInput;
+  config: Prisma.QualityGateConfigCreateNestedOneWithoutHistoryInput;
 };
 
 export type QualityGateConfigHistoryUncheckedCreateInput = {
@@ -350,8 +350,8 @@ export type QualityGateConfigHistoryUpdateInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number;
   changedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   changeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  config?: Prisma.QualityGateConfigUpdateOneRequiredWithoutHistoryNestedInput;
   changedBy?: Prisma.UserUpdateOneRequiredWithoutQuality_gate_historyNestedInput;
+  config?: Prisma.QualityGateConfigUpdateOneRequiredWithoutHistoryNestedInput;
 };
 
 export type QualityGateConfigHistoryUncheckedUpdateInput = {
@@ -901,8 +901,8 @@ export type QualityGateConfigHistorySelect<
     changedById?: boolean;
     changedAt?: boolean;
     changeReason?: boolean;
-    config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
     changedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qualityGateConfigHistory']
 >;
@@ -919,8 +919,8 @@ export type QualityGateConfigHistorySelectCreateManyAndReturn<
     changedById?: boolean;
     changedAt?: boolean;
     changeReason?: boolean;
-    config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
     changedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qualityGateConfigHistory']
 >;
@@ -937,8 +937,8 @@ export type QualityGateConfigHistorySelectUpdateManyAndReturn<
     changedById?: boolean;
     changedAt?: boolean;
     changeReason?: boolean;
-    config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
     changedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qualityGateConfigHistory']
 >;
@@ -970,20 +970,20 @@ export type QualityGateConfigHistoryOmit<
 export type QualityGateConfigHistoryInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
   changedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
 };
 export type QualityGateConfigHistoryIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
   changedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
 };
 export type QualityGateConfigHistoryIncludeUpdateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
   changedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+  config?: boolean | Prisma.QualityGateConfigDefaultArgs<ExtArgs>;
 };
 
 export type $QualityGateConfigHistoryPayload<
@@ -991,8 +991,8 @@ export type $QualityGateConfigHistoryPayload<
 > = {
   name: 'QualityGateConfigHistory';
   objects: {
-    config: Prisma.$QualityGateConfigPayload<ExtArgs>;
     changedBy: Prisma.$UserPayload<ExtArgs>;
+    config: Prisma.$QualityGateConfigPayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1546,11 +1546,11 @@ export interface Prisma__QualityGateConfigHistoryClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
-  config<T extends Prisma.QualityGateConfigDefaultArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.QualityGateConfigDefaultArgs<ExtArgs>>,
-  ): Prisma.Prisma__QualityGateConfigClient<
+  changedBy<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__UserClient<
     | runtime.Types.Result.GetResult<
-        Prisma.$QualityGateConfigPayload<ExtArgs>,
+        Prisma.$UserPayload<ExtArgs>,
         T,
         'findUniqueOrThrow',
         GlobalOmitOptions
@@ -1560,11 +1560,11 @@ export interface Prisma__QualityGateConfigHistoryClient<
     ExtArgs,
     GlobalOmitOptions
   >;
-  changedBy<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>,
-  ): Prisma.Prisma__UserClient<
+  config<T extends Prisma.QualityGateConfigDefaultArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.QualityGateConfigDefaultArgs<ExtArgs>>,
+  ): Prisma.Prisma__QualityGateConfigClient<
     | runtime.Types.Result.GetResult<
-        Prisma.$UserPayload<ExtArgs>,
+        Prisma.$QualityGateConfigPayload<ExtArgs>,
         T,
         'findUniqueOrThrow',
         GlobalOmitOptions

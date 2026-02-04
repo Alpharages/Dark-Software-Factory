@@ -27,14 +27,14 @@ export type AggregateAdr = {
 
 export type AdrAvgAggregateOutputType = {
   ai_confidence: number | null;
-  escalation_duration_seconds: number | null;
   review_duration_seconds: number | null;
+  escalation_duration_seconds: number | null;
 };
 
 export type AdrSumAggregateOutputType = {
   ai_confidence: number | null;
-  escalation_duration_seconds: number | null;
   review_duration_seconds: number | null;
+  escalation_duration_seconds: number | null;
 };
 
 export type AdrMinAggregateOutputType = {
@@ -49,17 +49,17 @@ export type AdrMinAggregateOutputType = {
   alternatives: string | null;
   ai_confidence: number | null;
   risk_level: $Enums.RiskLevel | null;
-  escalation_reason: string | null;
-  tl_guidance: string | null;
-  delegate_to: string | null;
-  guidance_provided_at: Date | null;
-  escalation_duration_seconds: number | null;
-  resolving_execution_id: string | null;
-  reviewed_at: Date | null;
-  review_duration_seconds: number | null;
-  rejection_reason: string | null;
   created_at: Date | null;
   updated_at: Date | null;
+  delegate_to: string | null;
+  escalation_reason: string | null;
+  guidance_provided_at: Date | null;
+  tl_guidance: string | null;
+  rejection_reason: string | null;
+  resolving_execution_id: string | null;
+  review_duration_seconds: number | null;
+  reviewed_at: Date | null;
+  escalation_duration_seconds: number | null;
 };
 
 export type AdrMaxAggregateOutputType = {
@@ -74,17 +74,17 @@ export type AdrMaxAggregateOutputType = {
   alternatives: string | null;
   ai_confidence: number | null;
   risk_level: $Enums.RiskLevel | null;
-  escalation_reason: string | null;
-  tl_guidance: string | null;
-  delegate_to: string | null;
-  guidance_provided_at: Date | null;
-  escalation_duration_seconds: number | null;
-  resolving_execution_id: string | null;
-  reviewed_at: Date | null;
-  review_duration_seconds: number | null;
-  rejection_reason: string | null;
   created_at: Date | null;
   updated_at: Date | null;
+  delegate_to: string | null;
+  escalation_reason: string | null;
+  guidance_provided_at: Date | null;
+  tl_guidance: string | null;
+  rejection_reason: string | null;
+  resolving_execution_id: string | null;
+  review_duration_seconds: number | null;
+  reviewed_at: Date | null;
+  escalation_duration_seconds: number | null;
 };
 
 export type AdrCountAggregateOutputType = {
@@ -99,33 +99,33 @@ export type AdrCountAggregateOutputType = {
   alternatives: number;
   ai_confidence: number;
   risk_level: number;
-  risk_factors: number;
-  escalation_reason: number;
-  escalation_questions: number;
-  trade_offs: number;
-  tl_guidance: number;
-  delegate_to: number;
-  guidance_provided_at: number;
-  escalation_duration_seconds: number;
-  resolving_execution_id: number;
-  reviewed_at: number;
-  review_duration_seconds: number;
-  rejection_reason: number;
   created_at: number;
   updated_at: number;
+  risk_factors: number;
+  delegate_to: number;
+  escalation_questions: number;
+  escalation_reason: number;
+  guidance_provided_at: number;
+  tl_guidance: number;
+  trade_offs: number;
+  rejection_reason: number;
+  resolving_execution_id: number;
+  review_duration_seconds: number;
+  reviewed_at: number;
+  escalation_duration_seconds: number;
   _all: number;
 };
 
 export type AdrAvgAggregateInputType = {
   ai_confidence?: true;
-  escalation_duration_seconds?: true;
   review_duration_seconds?: true;
+  escalation_duration_seconds?: true;
 };
 
 export type AdrSumAggregateInputType = {
   ai_confidence?: true;
-  escalation_duration_seconds?: true;
   review_duration_seconds?: true;
+  escalation_duration_seconds?: true;
 };
 
 export type AdrMinAggregateInputType = {
@@ -140,17 +140,17 @@ export type AdrMinAggregateInputType = {
   alternatives?: true;
   ai_confidence?: true;
   risk_level?: true;
-  escalation_reason?: true;
-  tl_guidance?: true;
-  delegate_to?: true;
-  guidance_provided_at?: true;
-  escalation_duration_seconds?: true;
-  resolving_execution_id?: true;
-  reviewed_at?: true;
-  review_duration_seconds?: true;
-  rejection_reason?: true;
   created_at?: true;
   updated_at?: true;
+  delegate_to?: true;
+  escalation_reason?: true;
+  guidance_provided_at?: true;
+  tl_guidance?: true;
+  rejection_reason?: true;
+  resolving_execution_id?: true;
+  review_duration_seconds?: true;
+  reviewed_at?: true;
+  escalation_duration_seconds?: true;
 };
 
 export type AdrMaxAggregateInputType = {
@@ -165,17 +165,17 @@ export type AdrMaxAggregateInputType = {
   alternatives?: true;
   ai_confidence?: true;
   risk_level?: true;
-  escalation_reason?: true;
-  tl_guidance?: true;
-  delegate_to?: true;
-  guidance_provided_at?: true;
-  escalation_duration_seconds?: true;
-  resolving_execution_id?: true;
-  reviewed_at?: true;
-  review_duration_seconds?: true;
-  rejection_reason?: true;
   created_at?: true;
   updated_at?: true;
+  delegate_to?: true;
+  escalation_reason?: true;
+  guidance_provided_at?: true;
+  tl_guidance?: true;
+  rejection_reason?: true;
+  resolving_execution_id?: true;
+  review_duration_seconds?: true;
+  reviewed_at?: true;
+  escalation_duration_seconds?: true;
 };
 
 export type AdrCountAggregateInputType = {
@@ -190,20 +190,20 @@ export type AdrCountAggregateInputType = {
   alternatives?: true;
   ai_confidence?: true;
   risk_level?: true;
-  risk_factors?: true;
-  escalation_reason?: true;
-  escalation_questions?: true;
-  trade_offs?: true;
-  tl_guidance?: true;
-  delegate_to?: true;
-  guidance_provided_at?: true;
-  escalation_duration_seconds?: true;
-  resolving_execution_id?: true;
-  reviewed_at?: true;
-  review_duration_seconds?: true;
-  rejection_reason?: true;
   created_at?: true;
   updated_at?: true;
+  risk_factors?: true;
+  delegate_to?: true;
+  escalation_questions?: true;
+  escalation_reason?: true;
+  guidance_provided_at?: true;
+  tl_guidance?: true;
+  trade_offs?: true;
+  rejection_reason?: true;
+  resolving_execution_id?: true;
+  review_duration_seconds?: true;
+  reviewed_at?: true;
+  escalation_duration_seconds?: true;
   _all?: true;
 };
 
@@ -306,20 +306,20 @@ export type AdrGroupByOutputType = {
   alternatives: string | null;
   ai_confidence: number | null;
   risk_level: $Enums.RiskLevel | null;
-  risk_factors: runtime.JsonValue | null;
-  escalation_reason: string | null;
-  escalation_questions: runtime.JsonValue | null;
-  trade_offs: runtime.JsonValue | null;
-  tl_guidance: string | null;
-  delegate_to: string | null;
-  guidance_provided_at: Date | null;
-  escalation_duration_seconds: number | null;
-  resolving_execution_id: string | null;
-  reviewed_at: Date | null;
-  review_duration_seconds: number | null;
-  rejection_reason: string | null;
   created_at: Date;
   updated_at: Date;
+  risk_factors: runtime.JsonValue | null;
+  delegate_to: string | null;
+  escalation_questions: runtime.JsonValue | null;
+  escalation_reason: string | null;
+  guidance_provided_at: Date | null;
+  tl_guidance: string | null;
+  trade_offs: runtime.JsonValue | null;
+  rejection_reason: string | null;
+  resolving_execution_id: string | null;
+  review_duration_seconds: number | null;
+  reviewed_at: Date | null;
+  escalation_duration_seconds: number | null;
   _count: AdrCountAggregateOutputType | null;
   _avg: AdrAvgAggregateOutputType | null;
   _sum: AdrSumAggregateOutputType | null;
@@ -354,20 +354,20 @@ export type AdrWhereInput = {
   alternatives?: Prisma.StringNullableFilter<'Adr'> | string | null;
   ai_confidence?: Prisma.FloatNullableFilter<'Adr'> | number | null;
   risk_level?: Prisma.EnumRiskLevelNullableFilter<'Adr'> | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.JsonNullableFilter<'Adr'>;
-  escalation_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  escalation_questions?: Prisma.JsonNullableFilter<'Adr'>;
-  trade_offs?: Prisma.JsonNullableFilter<'Adr'>;
-  tl_guidance?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  delegate_to?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  guidance_provided_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
-  escalation_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
-  resolving_execution_id?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  reviewed_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
-  review_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
-  rejection_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
   created_at?: Prisma.DateTimeFilter<'Adr'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Adr'> | Date | string;
+  risk_factors?: Prisma.JsonNullableFilter<'Adr'>;
+  delegate_to?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  escalation_questions?: Prisma.JsonNullableFilter<'Adr'>;
+  escalation_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  guidance_provided_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
+  tl_guidance?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  trade_offs?: Prisma.JsonNullableFilter<'Adr'>;
+  rejection_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  resolving_execution_id?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  review_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
+  reviewed_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
+  escalation_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
   execution?: Prisma.XOR<
     Prisma.ExecutionNullableScalarRelationFilter,
     Prisma.ExecutionWhereInput
@@ -387,20 +387,20 @@ export type AdrOrderByWithRelationInput = {
   alternatives?: Prisma.SortOrderInput | Prisma.SortOrder;
   ai_confidence?: Prisma.SortOrderInput | Prisma.SortOrder;
   risk_level?: Prisma.SortOrderInput | Prisma.SortOrder;
-  risk_factors?: Prisma.SortOrderInput | Prisma.SortOrder;
-  escalation_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
-  escalation_questions?: Prisma.SortOrderInput | Prisma.SortOrder;
-  trade_offs?: Prisma.SortOrderInput | Prisma.SortOrder;
-  tl_guidance?: Prisma.SortOrderInput | Prisma.SortOrder;
-  delegate_to?: Prisma.SortOrderInput | Prisma.SortOrder;
-  guidance_provided_at?: Prisma.SortOrderInput | Prisma.SortOrder;
-  escalation_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
-  resolving_execution_id?: Prisma.SortOrderInput | Prisma.SortOrder;
-  reviewed_at?: Prisma.SortOrderInput | Prisma.SortOrder;
-  review_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
-  rejection_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  risk_factors?: Prisma.SortOrderInput | Prisma.SortOrder;
+  delegate_to?: Prisma.SortOrderInput | Prisma.SortOrder;
+  escalation_questions?: Prisma.SortOrderInput | Prisma.SortOrder;
+  escalation_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
+  guidance_provided_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  tl_guidance?: Prisma.SortOrderInput | Prisma.SortOrder;
+  trade_offs?: Prisma.SortOrderInput | Prisma.SortOrder;
+  rejection_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
+  resolving_execution_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  review_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
+  reviewed_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  escalation_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
   execution?: Prisma.ExecutionOrderByWithRelationInput;
   ticket?: Prisma.TicketOrderByWithRelationInput;
 };
@@ -421,20 +421,20 @@ export type AdrWhereUniqueInput = Prisma.AtLeast<
     alternatives?: Prisma.StringNullableFilter<'Adr'> | string | null;
     ai_confidence?: Prisma.FloatNullableFilter<'Adr'> | number | null;
     risk_level?: Prisma.EnumRiskLevelNullableFilter<'Adr'> | $Enums.RiskLevel | null;
-    risk_factors?: Prisma.JsonNullableFilter<'Adr'>;
-    escalation_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
-    escalation_questions?: Prisma.JsonNullableFilter<'Adr'>;
-    trade_offs?: Prisma.JsonNullableFilter<'Adr'>;
-    tl_guidance?: Prisma.StringNullableFilter<'Adr'> | string | null;
-    delegate_to?: Prisma.StringNullableFilter<'Adr'> | string | null;
-    guidance_provided_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
-    escalation_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
-    resolving_execution_id?: Prisma.StringNullableFilter<'Adr'> | string | null;
-    reviewed_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
-    review_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
-    rejection_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
     created_at?: Prisma.DateTimeFilter<'Adr'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'Adr'> | Date | string;
+    risk_factors?: Prisma.JsonNullableFilter<'Adr'>;
+    delegate_to?: Prisma.StringNullableFilter<'Adr'> | string | null;
+    escalation_questions?: Prisma.JsonNullableFilter<'Adr'>;
+    escalation_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
+    guidance_provided_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
+    tl_guidance?: Prisma.StringNullableFilter<'Adr'> | string | null;
+    trade_offs?: Prisma.JsonNullableFilter<'Adr'>;
+    rejection_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
+    resolving_execution_id?: Prisma.StringNullableFilter<'Adr'> | string | null;
+    review_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
+    reviewed_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
+    escalation_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
     execution?: Prisma.XOR<
       Prisma.ExecutionNullableScalarRelationFilter,
       Prisma.ExecutionWhereInput
@@ -456,20 +456,20 @@ export type AdrOrderByWithAggregationInput = {
   alternatives?: Prisma.SortOrderInput | Prisma.SortOrder;
   ai_confidence?: Prisma.SortOrderInput | Prisma.SortOrder;
   risk_level?: Prisma.SortOrderInput | Prisma.SortOrder;
-  risk_factors?: Prisma.SortOrderInput | Prisma.SortOrder;
-  escalation_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
-  escalation_questions?: Prisma.SortOrderInput | Prisma.SortOrder;
-  trade_offs?: Prisma.SortOrderInput | Prisma.SortOrder;
-  tl_guidance?: Prisma.SortOrderInput | Prisma.SortOrder;
-  delegate_to?: Prisma.SortOrderInput | Prisma.SortOrder;
-  guidance_provided_at?: Prisma.SortOrderInput | Prisma.SortOrder;
-  escalation_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
-  resolving_execution_id?: Prisma.SortOrderInput | Prisma.SortOrder;
-  reviewed_at?: Prisma.SortOrderInput | Prisma.SortOrder;
-  review_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
-  rejection_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  risk_factors?: Prisma.SortOrderInput | Prisma.SortOrder;
+  delegate_to?: Prisma.SortOrderInput | Prisma.SortOrder;
+  escalation_questions?: Prisma.SortOrderInput | Prisma.SortOrder;
+  escalation_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
+  guidance_provided_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  tl_guidance?: Prisma.SortOrderInput | Prisma.SortOrder;
+  trade_offs?: Prisma.SortOrderInput | Prisma.SortOrder;
+  rejection_reason?: Prisma.SortOrderInput | Prisma.SortOrder;
+  resolving_execution_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  review_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
+  reviewed_at?: Prisma.SortOrderInput | Prisma.SortOrder;
+  escalation_duration_seconds?: Prisma.SortOrderInput | Prisma.SortOrder;
   _count?: Prisma.AdrCountOrderByAggregateInput;
   _avg?: Prisma.AdrAvgOrderByAggregateInput;
   _max?: Prisma.AdrMaxOrderByAggregateInput;
@@ -492,20 +492,20 @@ export type AdrScalarWhereWithAggregatesInput = {
   alternatives?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
   ai_confidence?: Prisma.FloatNullableWithAggregatesFilter<'Adr'> | number | null;
   risk_level?: Prisma.EnumRiskLevelNullableWithAggregatesFilter<'Adr'> | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.JsonNullableWithAggregatesFilter<'Adr'>;
-  escalation_reason?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
-  escalation_questions?: Prisma.JsonNullableWithAggregatesFilter<'Adr'>;
-  trade_offs?: Prisma.JsonNullableWithAggregatesFilter<'Adr'>;
-  tl_guidance?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
-  delegate_to?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
-  guidance_provided_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Adr'> | Date | string | null;
-  escalation_duration_seconds?: Prisma.IntNullableWithAggregatesFilter<'Adr'> | number | null;
-  resolving_execution_id?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
-  reviewed_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Adr'> | Date | string | null;
-  review_duration_seconds?: Prisma.IntNullableWithAggregatesFilter<'Adr'> | number | null;
-  rejection_reason?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'Adr'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'Adr'> | Date | string;
+  risk_factors?: Prisma.JsonNullableWithAggregatesFilter<'Adr'>;
+  delegate_to?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
+  escalation_questions?: Prisma.JsonNullableWithAggregatesFilter<'Adr'>;
+  escalation_reason?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
+  guidance_provided_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Adr'> | Date | string | null;
+  tl_guidance?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
+  trade_offs?: Prisma.JsonNullableWithAggregatesFilter<'Adr'>;
+  rejection_reason?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
+  resolving_execution_id?: Prisma.StringNullableWithAggregatesFilter<'Adr'> | string | null;
+  review_duration_seconds?: Prisma.IntNullableWithAggregatesFilter<'Adr'> | number | null;
+  reviewed_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Adr'> | Date | string | null;
+  escalation_duration_seconds?: Prisma.IntNullableWithAggregatesFilter<'Adr'> | number | null;
 };
 
 export type AdrCreateInput = {
@@ -518,20 +518,20 @@ export type AdrCreateInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
   execution?: Prisma.ExecutionCreateNestedOneWithoutAdrsInput;
   ticket?: Prisma.TicketCreateNestedOneWithoutAdrsInput;
 };
@@ -548,20 +548,20 @@ export type AdrUncheckedCreateInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
 };
 
 export type AdrUpdateInput = {
@@ -574,20 +574,20 @@ export type AdrUpdateInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   execution?: Prisma.ExecutionUpdateOneWithoutAdrsNestedInput;
   ticket?: Prisma.TicketUpdateOneWithoutAdrsNestedInput;
 };
@@ -604,20 +604,20 @@ export type AdrUncheckedUpdateInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
 };
 
 export type AdrCreateManyInput = {
@@ -632,20 +632,20 @@ export type AdrCreateManyInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
 };
 
 export type AdrUpdateManyMutationInput = {
@@ -658,20 +658,20 @@ export type AdrUpdateManyMutationInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
 };
 
 export type AdrUncheckedUpdateManyInput = {
@@ -686,20 +686,20 @@ export type AdrUncheckedUpdateManyInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
 };
 
 export type AdrListRelationFilter = {
@@ -724,26 +724,26 @@ export type AdrCountOrderByAggregateInput = {
   alternatives?: Prisma.SortOrder;
   ai_confidence?: Prisma.SortOrder;
   risk_level?: Prisma.SortOrder;
-  risk_factors?: Prisma.SortOrder;
-  escalation_reason?: Prisma.SortOrder;
-  escalation_questions?: Prisma.SortOrder;
-  trade_offs?: Prisma.SortOrder;
-  tl_guidance?: Prisma.SortOrder;
-  delegate_to?: Prisma.SortOrder;
-  guidance_provided_at?: Prisma.SortOrder;
-  escalation_duration_seconds?: Prisma.SortOrder;
-  resolving_execution_id?: Prisma.SortOrder;
-  reviewed_at?: Prisma.SortOrder;
-  review_duration_seconds?: Prisma.SortOrder;
-  rejection_reason?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  risk_factors?: Prisma.SortOrder;
+  delegate_to?: Prisma.SortOrder;
+  escalation_questions?: Prisma.SortOrder;
+  escalation_reason?: Prisma.SortOrder;
+  guidance_provided_at?: Prisma.SortOrder;
+  tl_guidance?: Prisma.SortOrder;
+  trade_offs?: Prisma.SortOrder;
+  rejection_reason?: Prisma.SortOrder;
+  resolving_execution_id?: Prisma.SortOrder;
+  review_duration_seconds?: Prisma.SortOrder;
+  reviewed_at?: Prisma.SortOrder;
+  escalation_duration_seconds?: Prisma.SortOrder;
 };
 
 export type AdrAvgOrderByAggregateInput = {
   ai_confidence?: Prisma.SortOrder;
-  escalation_duration_seconds?: Prisma.SortOrder;
   review_duration_seconds?: Prisma.SortOrder;
+  escalation_duration_seconds?: Prisma.SortOrder;
 };
 
 export type AdrMaxOrderByAggregateInput = {
@@ -758,17 +758,17 @@ export type AdrMaxOrderByAggregateInput = {
   alternatives?: Prisma.SortOrder;
   ai_confidence?: Prisma.SortOrder;
   risk_level?: Prisma.SortOrder;
-  escalation_reason?: Prisma.SortOrder;
-  tl_guidance?: Prisma.SortOrder;
-  delegate_to?: Prisma.SortOrder;
-  guidance_provided_at?: Prisma.SortOrder;
-  escalation_duration_seconds?: Prisma.SortOrder;
-  resolving_execution_id?: Prisma.SortOrder;
-  reviewed_at?: Prisma.SortOrder;
-  review_duration_seconds?: Prisma.SortOrder;
-  rejection_reason?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  delegate_to?: Prisma.SortOrder;
+  escalation_reason?: Prisma.SortOrder;
+  guidance_provided_at?: Prisma.SortOrder;
+  tl_guidance?: Prisma.SortOrder;
+  rejection_reason?: Prisma.SortOrder;
+  resolving_execution_id?: Prisma.SortOrder;
+  review_duration_seconds?: Prisma.SortOrder;
+  reviewed_at?: Prisma.SortOrder;
+  escalation_duration_seconds?: Prisma.SortOrder;
 };
 
 export type AdrMinOrderByAggregateInput = {
@@ -783,23 +783,23 @@ export type AdrMinOrderByAggregateInput = {
   alternatives?: Prisma.SortOrder;
   ai_confidence?: Prisma.SortOrder;
   risk_level?: Prisma.SortOrder;
-  escalation_reason?: Prisma.SortOrder;
-  tl_guidance?: Prisma.SortOrder;
-  delegate_to?: Prisma.SortOrder;
-  guidance_provided_at?: Prisma.SortOrder;
-  escalation_duration_seconds?: Prisma.SortOrder;
-  resolving_execution_id?: Prisma.SortOrder;
-  reviewed_at?: Prisma.SortOrder;
-  review_duration_seconds?: Prisma.SortOrder;
-  rejection_reason?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  delegate_to?: Prisma.SortOrder;
+  escalation_reason?: Prisma.SortOrder;
+  guidance_provided_at?: Prisma.SortOrder;
+  tl_guidance?: Prisma.SortOrder;
+  rejection_reason?: Prisma.SortOrder;
+  resolving_execution_id?: Prisma.SortOrder;
+  review_duration_seconds?: Prisma.SortOrder;
+  reviewed_at?: Prisma.SortOrder;
+  escalation_duration_seconds?: Prisma.SortOrder;
 };
 
 export type AdrSumOrderByAggregateInput = {
   ai_confidence?: Prisma.SortOrder;
-  escalation_duration_seconds?: Prisma.SortOrder;
   review_duration_seconds?: Prisma.SortOrder;
+  escalation_duration_seconds?: Prisma.SortOrder;
 };
 
 export type AdrCreateNestedManyWithoutTicketInput = {
@@ -980,20 +980,20 @@ export type AdrCreateWithoutTicketInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
   execution?: Prisma.ExecutionCreateNestedOneWithoutAdrsInput;
 };
 
@@ -1008,20 +1008,20 @@ export type AdrUncheckedCreateWithoutTicketInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
 };
 
 export type AdrCreateOrConnectWithoutTicketInput = {
@@ -1077,20 +1077,20 @@ export type AdrScalarWhereInput = {
   alternatives?: Prisma.StringNullableFilter<'Adr'> | string | null;
   ai_confidence?: Prisma.FloatNullableFilter<'Adr'> | number | null;
   risk_level?: Prisma.EnumRiskLevelNullableFilter<'Adr'> | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.JsonNullableFilter<'Adr'>;
-  escalation_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  escalation_questions?: Prisma.JsonNullableFilter<'Adr'>;
-  trade_offs?: Prisma.JsonNullableFilter<'Adr'>;
-  tl_guidance?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  delegate_to?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  guidance_provided_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
-  escalation_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
-  resolving_execution_id?: Prisma.StringNullableFilter<'Adr'> | string | null;
-  reviewed_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
-  review_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
-  rejection_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
   created_at?: Prisma.DateTimeFilter<'Adr'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Adr'> | Date | string;
+  risk_factors?: Prisma.JsonNullableFilter<'Adr'>;
+  delegate_to?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  escalation_questions?: Prisma.JsonNullableFilter<'Adr'>;
+  escalation_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  guidance_provided_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
+  tl_guidance?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  trade_offs?: Prisma.JsonNullableFilter<'Adr'>;
+  rejection_reason?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  resolving_execution_id?: Prisma.StringNullableFilter<'Adr'> | string | null;
+  review_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
+  reviewed_at?: Prisma.DateTimeNullableFilter<'Adr'> | Date | string | null;
+  escalation_duration_seconds?: Prisma.IntNullableFilter<'Adr'> | number | null;
 };
 
 export type AdrCreateWithoutExecutionInput = {
@@ -1103,20 +1103,20 @@ export type AdrCreateWithoutExecutionInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
   ticket?: Prisma.TicketCreateNestedOneWithoutAdrsInput;
 };
 
@@ -1131,20 +1131,20 @@ export type AdrUncheckedCreateWithoutExecutionInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
 };
 
 export type AdrCreateOrConnectWithoutExecutionInput = {
@@ -1199,20 +1199,20 @@ export type AdrCreateManyTicketInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
 };
 
 export type AdrUpdateWithoutTicketInput = {
@@ -1225,20 +1225,20 @@ export type AdrUpdateWithoutTicketInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   execution?: Prisma.ExecutionUpdateOneWithoutAdrsNestedInput;
 };
 
@@ -1253,20 +1253,20 @@ export type AdrUncheckedUpdateWithoutTicketInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
 };
 
 export type AdrUncheckedUpdateManyWithoutTicketInput = {
@@ -1280,20 +1280,20 @@ export type AdrUncheckedUpdateManyWithoutTicketInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
 };
 
 export type AdrCreateManyExecutionInput = {
@@ -1307,20 +1307,20 @@ export type AdrCreateManyExecutionInput = {
   alternatives?: string | null;
   ai_confidence?: number | null;
   risk_level?: $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: string | null;
-  delegate_to?: string | null;
-  guidance_provided_at?: Date | string | null;
-  escalation_duration_seconds?: number | null;
-  resolving_execution_id?: string | null;
-  reviewed_at?: Date | string | null;
-  review_duration_seconds?: number | null;
-  rejection_reason?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: string | null;
+  guidance_provided_at?: Date | string | null;
+  tl_guidance?: string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: string | null;
+  resolving_execution_id?: string | null;
+  review_duration_seconds?: number | null;
+  reviewed_at?: Date | string | null;
+  escalation_duration_seconds?: number | null;
 };
 
 export type AdrUpdateWithoutExecutionInput = {
@@ -1333,20 +1333,20 @@ export type AdrUpdateWithoutExecutionInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
   ticket?: Prisma.TicketUpdateOneWithoutAdrsNestedInput;
 };
 
@@ -1361,20 +1361,20 @@ export type AdrUncheckedUpdateWithoutExecutionInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
 };
 
 export type AdrUncheckedUpdateManyWithoutExecutionInput = {
@@ -1388,20 +1388,20 @@ export type AdrUncheckedUpdateManyWithoutExecutionInput = {
   alternatives?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   ai_confidence?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
   risk_level?: Prisma.NullableEnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel | null;
-  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
-  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
-  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  risk_factors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  delegate_to?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  escalation_questions?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  escalation_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  guidance_provided_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  tl_guidance?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  trade_offs?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  rejection_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolving_execution_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  review_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  escalation_duration_seconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null;
 };
 
 export type AdrSelect<
@@ -1419,20 +1419,20 @@ export type AdrSelect<
     alternatives?: boolean;
     ai_confidence?: boolean;
     risk_level?: boolean;
-    risk_factors?: boolean;
-    escalation_reason?: boolean;
-    escalation_questions?: boolean;
-    trade_offs?: boolean;
-    tl_guidance?: boolean;
-    delegate_to?: boolean;
-    guidance_provided_at?: boolean;
-    escalation_duration_seconds?: boolean;
-    resolving_execution_id?: boolean;
-    reviewed_at?: boolean;
-    review_duration_seconds?: boolean;
-    rejection_reason?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    risk_factors?: boolean;
+    delegate_to?: boolean;
+    escalation_questions?: boolean;
+    escalation_reason?: boolean;
+    guidance_provided_at?: boolean;
+    tl_guidance?: boolean;
+    trade_offs?: boolean;
+    rejection_reason?: boolean;
+    resolving_execution_id?: boolean;
+    review_duration_seconds?: boolean;
+    reviewed_at?: boolean;
+    escalation_duration_seconds?: boolean;
     execution?: boolean | Prisma.Adr$executionArgs<ExtArgs>;
     ticket?: boolean | Prisma.Adr$ticketArgs<ExtArgs>;
   },
@@ -1454,20 +1454,20 @@ export type AdrSelectCreateManyAndReturn<
     alternatives?: boolean;
     ai_confidence?: boolean;
     risk_level?: boolean;
-    risk_factors?: boolean;
-    escalation_reason?: boolean;
-    escalation_questions?: boolean;
-    trade_offs?: boolean;
-    tl_guidance?: boolean;
-    delegate_to?: boolean;
-    guidance_provided_at?: boolean;
-    escalation_duration_seconds?: boolean;
-    resolving_execution_id?: boolean;
-    reviewed_at?: boolean;
-    review_duration_seconds?: boolean;
-    rejection_reason?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    risk_factors?: boolean;
+    delegate_to?: boolean;
+    escalation_questions?: boolean;
+    escalation_reason?: boolean;
+    guidance_provided_at?: boolean;
+    tl_guidance?: boolean;
+    trade_offs?: boolean;
+    rejection_reason?: boolean;
+    resolving_execution_id?: boolean;
+    review_duration_seconds?: boolean;
+    reviewed_at?: boolean;
+    escalation_duration_seconds?: boolean;
     execution?: boolean | Prisma.Adr$executionArgs<ExtArgs>;
     ticket?: boolean | Prisma.Adr$ticketArgs<ExtArgs>;
   },
@@ -1489,20 +1489,20 @@ export type AdrSelectUpdateManyAndReturn<
     alternatives?: boolean;
     ai_confidence?: boolean;
     risk_level?: boolean;
-    risk_factors?: boolean;
-    escalation_reason?: boolean;
-    escalation_questions?: boolean;
-    trade_offs?: boolean;
-    tl_guidance?: boolean;
-    delegate_to?: boolean;
-    guidance_provided_at?: boolean;
-    escalation_duration_seconds?: boolean;
-    resolving_execution_id?: boolean;
-    reviewed_at?: boolean;
-    review_duration_seconds?: boolean;
-    rejection_reason?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    risk_factors?: boolean;
+    delegate_to?: boolean;
+    escalation_questions?: boolean;
+    escalation_reason?: boolean;
+    guidance_provided_at?: boolean;
+    tl_guidance?: boolean;
+    trade_offs?: boolean;
+    rejection_reason?: boolean;
+    resolving_execution_id?: boolean;
+    review_duration_seconds?: boolean;
+    reviewed_at?: boolean;
+    escalation_duration_seconds?: boolean;
     execution?: boolean | Prisma.Adr$executionArgs<ExtArgs>;
     ticket?: boolean | Prisma.Adr$ticketArgs<ExtArgs>;
   },
@@ -1521,20 +1521,20 @@ export type AdrSelectScalar = {
   alternatives?: boolean;
   ai_confidence?: boolean;
   risk_level?: boolean;
-  risk_factors?: boolean;
-  escalation_reason?: boolean;
-  escalation_questions?: boolean;
-  trade_offs?: boolean;
-  tl_guidance?: boolean;
-  delegate_to?: boolean;
-  guidance_provided_at?: boolean;
-  escalation_duration_seconds?: boolean;
-  resolving_execution_id?: boolean;
-  reviewed_at?: boolean;
-  review_duration_seconds?: boolean;
-  rejection_reason?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
+  risk_factors?: boolean;
+  delegate_to?: boolean;
+  escalation_questions?: boolean;
+  escalation_reason?: boolean;
+  guidance_provided_at?: boolean;
+  tl_guidance?: boolean;
+  trade_offs?: boolean;
+  rejection_reason?: boolean;
+  resolving_execution_id?: boolean;
+  review_duration_seconds?: boolean;
+  reviewed_at?: boolean;
+  escalation_duration_seconds?: boolean;
 };
 
 export type AdrOmit<
@@ -1551,20 +1551,20 @@ export type AdrOmit<
   | 'alternatives'
   | 'ai_confidence'
   | 'risk_level'
-  | 'risk_factors'
-  | 'escalation_reason'
-  | 'escalation_questions'
-  | 'trade_offs'
-  | 'tl_guidance'
-  | 'delegate_to'
-  | 'guidance_provided_at'
-  | 'escalation_duration_seconds'
-  | 'resolving_execution_id'
-  | 'reviewed_at'
-  | 'review_duration_seconds'
-  | 'rejection_reason'
   | 'created_at'
-  | 'updated_at',
+  | 'updated_at'
+  | 'risk_factors'
+  | 'delegate_to'
+  | 'escalation_questions'
+  | 'escalation_reason'
+  | 'guidance_provided_at'
+  | 'tl_guidance'
+  | 'trade_offs'
+  | 'rejection_reason'
+  | 'resolving_execution_id'
+  | 'review_duration_seconds'
+  | 'reviewed_at'
+  | 'escalation_duration_seconds',
   ExtArgs['result']['adr']
 >;
 export type AdrInclude<
@@ -1607,20 +1607,20 @@ export type $AdrPayload<
       alternatives: string | null;
       ai_confidence: number | null;
       risk_level: $Enums.RiskLevel | null;
-      risk_factors: runtime.JsonValue | null;
-      escalation_reason: string | null;
-      escalation_questions: runtime.JsonValue | null;
-      trade_offs: runtime.JsonValue | null;
-      tl_guidance: string | null;
-      delegate_to: string | null;
-      guidance_provided_at: Date | null;
-      escalation_duration_seconds: number | null;
-      resolving_execution_id: string | null;
-      reviewed_at: Date | null;
-      review_duration_seconds: number | null;
-      rejection_reason: string | null;
       created_at: Date;
       updated_at: Date;
+      risk_factors: runtime.JsonValue | null;
+      delegate_to: string | null;
+      escalation_questions: runtime.JsonValue | null;
+      escalation_reason: string | null;
+      guidance_provided_at: Date | null;
+      tl_guidance: string | null;
+      trade_offs: runtime.JsonValue | null;
+      rejection_reason: string | null;
+      resolving_execution_id: string | null;
+      review_duration_seconds: number | null;
+      reviewed_at: Date | null;
+      escalation_duration_seconds: number | null;
     },
     ExtArgs['result']['adr']
   >;
@@ -2199,20 +2199,20 @@ export interface AdrFieldRefs {
   readonly alternatives: Prisma.FieldRef<'Adr', 'String'>;
   readonly ai_confidence: Prisma.FieldRef<'Adr', 'Float'>;
   readonly risk_level: Prisma.FieldRef<'Adr', 'RiskLevel'>;
-  readonly risk_factors: Prisma.FieldRef<'Adr', 'Json'>;
-  readonly escalation_reason: Prisma.FieldRef<'Adr', 'String'>;
-  readonly escalation_questions: Prisma.FieldRef<'Adr', 'Json'>;
-  readonly trade_offs: Prisma.FieldRef<'Adr', 'Json'>;
-  readonly tl_guidance: Prisma.FieldRef<'Adr', 'String'>;
-  readonly delegate_to: Prisma.FieldRef<'Adr', 'String'>;
-  readonly guidance_provided_at: Prisma.FieldRef<'Adr', 'DateTime'>;
-  readonly escalation_duration_seconds: Prisma.FieldRef<'Adr', 'Int'>;
-  readonly resolving_execution_id: Prisma.FieldRef<'Adr', 'String'>;
-  readonly reviewed_at: Prisma.FieldRef<'Adr', 'DateTime'>;
-  readonly review_duration_seconds: Prisma.FieldRef<'Adr', 'Int'>;
-  readonly rejection_reason: Prisma.FieldRef<'Adr', 'String'>;
   readonly created_at: Prisma.FieldRef<'Adr', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'Adr', 'DateTime'>;
+  readonly risk_factors: Prisma.FieldRef<'Adr', 'Json'>;
+  readonly delegate_to: Prisma.FieldRef<'Adr', 'String'>;
+  readonly escalation_questions: Prisma.FieldRef<'Adr', 'Json'>;
+  readonly escalation_reason: Prisma.FieldRef<'Adr', 'String'>;
+  readonly guidance_provided_at: Prisma.FieldRef<'Adr', 'DateTime'>;
+  readonly tl_guidance: Prisma.FieldRef<'Adr', 'String'>;
+  readonly trade_offs: Prisma.FieldRef<'Adr', 'Json'>;
+  readonly rejection_reason: Prisma.FieldRef<'Adr', 'String'>;
+  readonly resolving_execution_id: Prisma.FieldRef<'Adr', 'String'>;
+  readonly review_duration_seconds: Prisma.FieldRef<'Adr', 'Int'>;
+  readonly reviewed_at: Prisma.FieldRef<'Adr', 'DateTime'>;
+  readonly escalation_duration_seconds: Prisma.FieldRef<'Adr', 'Int'>;
 }
 
 // Custom InputTypes

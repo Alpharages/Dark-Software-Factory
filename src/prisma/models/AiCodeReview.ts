@@ -319,8 +319,8 @@ export type AiCodeReviewWhereInput = {
   expires_at?: Prisma.DateTimeNullableFilter<'AiCodeReview'> | Date | string | null;
   created_at?: Prisma.DateTimeFilter<'AiCodeReview'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'AiCodeReview'> | Date | string;
-  queue_item?: Prisma.XOR<Prisma.QaReviewQueueScalarRelationFilter, Prisma.QaReviewQueueWhereInput>;
   finding_statuses?: Prisma.AiCodeReviewFindingListRelationFilter;
+  queue_item?: Prisma.XOR<Prisma.QaReviewQueueScalarRelationFilter, Prisma.QaReviewQueueWhereInput>;
 };
 
 export type AiCodeReviewOrderByWithRelationInput = {
@@ -340,8 +340,8 @@ export type AiCodeReviewOrderByWithRelationInput = {
   expires_at?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
-  queue_item?: Prisma.QaReviewQueueOrderByWithRelationInput;
   finding_statuses?: Prisma.AiCodeReviewFindingOrderByRelationAggregateInput;
+  queue_item?: Prisma.QaReviewQueueOrderByWithRelationInput;
 };
 
 export type AiCodeReviewWhereUniqueInput = Prisma.AtLeast<
@@ -377,11 +377,11 @@ export type AiCodeReviewWhereUniqueInput = Prisma.AtLeast<
     expires_at?: Prisma.DateTimeNullableFilter<'AiCodeReview'> | Date | string | null;
     created_at?: Prisma.DateTimeFilter<'AiCodeReview'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'AiCodeReview'> | Date | string;
+    finding_statuses?: Prisma.AiCodeReviewFindingListRelationFilter;
     queue_item?: Prisma.XOR<
       Prisma.QaReviewQueueScalarRelationFilter,
       Prisma.QaReviewQueueWhereInput
     >;
-    finding_statuses?: Prisma.AiCodeReviewFindingListRelationFilter;
   },
   'id' | 'cache_key' | 'queue_item_id_review_version'
 >;
@@ -463,8 +463,8 @@ export type AiCodeReviewCreateInput = {
   expires_at?: Date | string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
-  queue_item: Prisma.QaReviewQueueCreateNestedOneWithoutAi_code_reviewsInput;
   finding_statuses?: Prisma.AiCodeReviewFindingCreateNestedManyWithoutAi_reviewInput;
+  queue_item: Prisma.QaReviewQueueCreateNestedOneWithoutAi_code_reviewsInput;
 };
 
 export type AiCodeReviewUncheckedCreateInput = {
@@ -514,8 +514,8 @@ export type AiCodeReviewUpdateInput = {
   expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
-  queue_item?: Prisma.QaReviewQueueUpdateOneRequiredWithoutAi_code_reviewsNestedInput;
   finding_statuses?: Prisma.AiCodeReviewFindingUpdateManyWithoutAi_reviewNestedInput;
+  queue_item?: Prisma.QaReviewQueueUpdateOneRequiredWithoutAi_code_reviewsNestedInput;
 };
 
 export type AiCodeReviewUncheckedUpdateInput = {
@@ -1228,8 +1228,8 @@ export type AiCodeReviewSelect<
     expires_at?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
-    queue_item?: boolean | Prisma.QaReviewQueueDefaultArgs<ExtArgs>;
     finding_statuses?: boolean | Prisma.AiCodeReview$finding_statusesArgs<ExtArgs>;
+    queue_item?: boolean | Prisma.QaReviewQueueDefaultArgs<ExtArgs>;
     _count?: boolean | Prisma.AiCodeReviewCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['aiCodeReview']
@@ -1328,8 +1328,8 @@ export type AiCodeReviewOmit<
 export type AiCodeReviewInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
-  queue_item?: boolean | Prisma.QaReviewQueueDefaultArgs<ExtArgs>;
   finding_statuses?: boolean | Prisma.AiCodeReview$finding_statusesArgs<ExtArgs>;
+  queue_item?: boolean | Prisma.QaReviewQueueDefaultArgs<ExtArgs>;
   _count?: boolean | Prisma.AiCodeReviewCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type AiCodeReviewIncludeCreateManyAndReturn<
@@ -1348,8 +1348,8 @@ export type $AiCodeReviewPayload<
 > = {
   name: 'AiCodeReview';
   objects: {
-    queue_item: Prisma.$QaReviewQueuePayload<ExtArgs>;
     finding_statuses: Prisma.$AiCodeReviewFindingPayload<ExtArgs>[];
+    queue_item: Prisma.$QaReviewQueuePayload<ExtArgs>;
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1907,6 +1907,17 @@ export interface Prisma__AiCodeReviewClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
+  finding_statuses<T extends Prisma.AiCodeReview$finding_statusesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.AiCodeReview$finding_statusesArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$AiCodeReviewFindingPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   queue_item<T extends Prisma.QaReviewQueueDefaultArgs<ExtArgs> = {}>(
     args?: Prisma.Subset<T, Prisma.QaReviewQueueDefaultArgs<ExtArgs>>,
   ): Prisma.Prisma__QaReviewQueueClient<
@@ -1920,17 +1931,6 @@ export interface Prisma__AiCodeReviewClient<
     Null,
     ExtArgs,
     GlobalOmitOptions
-  >;
-  finding_statuses<T extends Prisma.AiCodeReview$finding_statusesArgs<ExtArgs> = {}>(
-    args?: Prisma.Subset<T, Prisma.AiCodeReview$finding_statusesArgs<ExtArgs>>,
-  ): Prisma.PrismaPromise<
-    | runtime.Types.Result.GetResult<
-        Prisma.$AiCodeReviewFindingPayload<ExtArgs>,
-        T,
-        'findMany',
-        GlobalOmitOptions
-      >
-    | Null
   >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.

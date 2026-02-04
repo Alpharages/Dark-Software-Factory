@@ -18,6 +18,7 @@ export interface ServerToClientEvents {
   'ticket-updated': (data: Record<string, unknown>) => void;
   'quality-update': (data: Record<string, unknown>) => void;
   'quality-alert': (data: Record<string, unknown>) => void;
+  'quality-anomaly-detected': (data: Record<string, unknown>) => void;
 }
 
 export interface ClientToServerEvents {

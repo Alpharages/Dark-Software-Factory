@@ -29,12 +29,12 @@ export type DeploymentMinAggregateOutputType = {
   environment: string | null;
   cicd_provider: string | null;
   build_id: string | null;
-  workflow_id: string | null;
   status: $Enums.DeploymentStatus | null;
   deployed_at: Date | null;
-  error_message: string | null;
   created_at: Date | null;
   updated_at: Date | null;
+  error_message: string | null;
+  workflow_id: string | null;
 };
 
 export type DeploymentMaxAggregateOutputType = {
@@ -43,12 +43,12 @@ export type DeploymentMaxAggregateOutputType = {
   environment: string | null;
   cicd_provider: string | null;
   build_id: string | null;
-  workflow_id: string | null;
   status: $Enums.DeploymentStatus | null;
   deployed_at: Date | null;
-  error_message: string | null;
   created_at: Date | null;
   updated_at: Date | null;
+  error_message: string | null;
+  workflow_id: string | null;
 };
 
 export type DeploymentCountAggregateOutputType = {
@@ -57,12 +57,12 @@ export type DeploymentCountAggregateOutputType = {
   environment: number;
   cicd_provider: number;
   build_id: number;
-  workflow_id: number;
   status: number;
   deployed_at: number;
-  error_message: number;
   created_at: number;
   updated_at: number;
+  error_message: number;
+  workflow_id: number;
   _all: number;
 };
 
@@ -72,12 +72,12 @@ export type DeploymentMinAggregateInputType = {
   environment?: true;
   cicd_provider?: true;
   build_id?: true;
-  workflow_id?: true;
   status?: true;
   deployed_at?: true;
-  error_message?: true;
   created_at?: true;
   updated_at?: true;
+  error_message?: true;
+  workflow_id?: true;
 };
 
 export type DeploymentMaxAggregateInputType = {
@@ -86,12 +86,12 @@ export type DeploymentMaxAggregateInputType = {
   environment?: true;
   cicd_provider?: true;
   build_id?: true;
-  workflow_id?: true;
   status?: true;
   deployed_at?: true;
-  error_message?: true;
   created_at?: true;
   updated_at?: true;
+  error_message?: true;
+  workflow_id?: true;
 };
 
 export type DeploymentCountAggregateInputType = {
@@ -100,12 +100,12 @@ export type DeploymentCountAggregateInputType = {
   environment?: true;
   cicd_provider?: true;
   build_id?: true;
-  workflow_id?: true;
   status?: true;
   deployed_at?: true;
-  error_message?: true;
   created_at?: true;
   updated_at?: true;
+  error_message?: true;
+  workflow_id?: true;
   _all?: true;
 };
 
@@ -190,12 +190,12 @@ export type DeploymentGroupByOutputType = {
   environment: string;
   cicd_provider: string;
   build_id: string | null;
-  workflow_id: string | null;
   status: $Enums.DeploymentStatus;
   deployed_at: Date | null;
-  error_message: string | null;
   created_at: Date;
   updated_at: Date;
+  error_message: string | null;
+  workflow_id: string | null;
   _count: DeploymentCountAggregateOutputType | null;
   _min: DeploymentMinAggregateOutputType | null;
   _max: DeploymentMaxAggregateOutputType | null;
@@ -222,12 +222,12 @@ export type DeploymentWhereInput = {
   environment?: Prisma.StringFilter<'Deployment'> | string;
   cicd_provider?: Prisma.StringFilter<'Deployment'> | string;
   build_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
-  workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
   status?: Prisma.EnumDeploymentStatusFilter<'Deployment'> | $Enums.DeploymentStatus;
   deployed_at?: Prisma.DateTimeNullableFilter<'Deployment'> | Date | string | null;
-  error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
   created_at?: Prisma.DateTimeFilter<'Deployment'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Deployment'> | Date | string;
+  error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
+  workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
   github_push?: Prisma.XOR<Prisma.GitHubPushScalarRelationFilter, Prisma.GitHubPushWhereInput>;
 };
 
@@ -237,12 +237,12 @@ export type DeploymentOrderByWithRelationInput = {
   environment?: Prisma.SortOrder;
   cicd_provider?: Prisma.SortOrder;
   build_id?: Prisma.SortOrderInput | Prisma.SortOrder;
-  workflow_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   status?: Prisma.SortOrder;
   deployed_at?: Prisma.SortOrderInput | Prisma.SortOrder;
-  error_message?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  error_message?: Prisma.SortOrderInput | Prisma.SortOrder;
+  workflow_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   github_push?: Prisma.GitHubPushOrderByWithRelationInput;
 };
 
@@ -256,12 +256,12 @@ export type DeploymentWhereUniqueInput = Prisma.AtLeast<
     environment?: Prisma.StringFilter<'Deployment'> | string;
     cicd_provider?: Prisma.StringFilter<'Deployment'> | string;
     build_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
-    workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
     status?: Prisma.EnumDeploymentStatusFilter<'Deployment'> | $Enums.DeploymentStatus;
     deployed_at?: Prisma.DateTimeNullableFilter<'Deployment'> | Date | string | null;
-    error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
     created_at?: Prisma.DateTimeFilter<'Deployment'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'Deployment'> | Date | string;
+    error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
+    workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
     github_push?: Prisma.XOR<Prisma.GitHubPushScalarRelationFilter, Prisma.GitHubPushWhereInput>;
   },
   'id'
@@ -273,12 +273,12 @@ export type DeploymentOrderByWithAggregationInput = {
   environment?: Prisma.SortOrder;
   cicd_provider?: Prisma.SortOrder;
   build_id?: Prisma.SortOrderInput | Prisma.SortOrder;
-  workflow_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   status?: Prisma.SortOrder;
   deployed_at?: Prisma.SortOrderInput | Prisma.SortOrder;
-  error_message?: Prisma.SortOrderInput | Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  error_message?: Prisma.SortOrderInput | Prisma.SortOrder;
+  workflow_id?: Prisma.SortOrderInput | Prisma.SortOrder;
   _count?: Prisma.DeploymentCountOrderByAggregateInput;
   _max?: Prisma.DeploymentMaxOrderByAggregateInput;
   _min?: Prisma.DeploymentMinOrderByAggregateInput;
@@ -297,12 +297,12 @@ export type DeploymentScalarWhereWithAggregatesInput = {
   environment?: Prisma.StringWithAggregatesFilter<'Deployment'> | string;
   cicd_provider?: Prisma.StringWithAggregatesFilter<'Deployment'> | string;
   build_id?: Prisma.StringNullableWithAggregatesFilter<'Deployment'> | string | null;
-  workflow_id?: Prisma.StringNullableWithAggregatesFilter<'Deployment'> | string | null;
   status?: Prisma.EnumDeploymentStatusWithAggregatesFilter<'Deployment'> | $Enums.DeploymentStatus;
   deployed_at?: Prisma.DateTimeNullableWithAggregatesFilter<'Deployment'> | Date | string | null;
-  error_message?: Prisma.StringNullableWithAggregatesFilter<'Deployment'> | string | null;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'Deployment'> | Date | string;
   updated_at?: Prisma.DateTimeWithAggregatesFilter<'Deployment'> | Date | string;
+  error_message?: Prisma.StringNullableWithAggregatesFilter<'Deployment'> | string | null;
+  workflow_id?: Prisma.StringNullableWithAggregatesFilter<'Deployment'> | string | null;
 };
 
 export type DeploymentCreateInput = {
@@ -310,12 +310,12 @@ export type DeploymentCreateInput = {
   environment: string;
   cicd_provider: string;
   build_id?: string | null;
-  workflow_id?: string | null;
   status?: $Enums.DeploymentStatus;
   deployed_at?: Date | string | null;
-  error_message?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
   github_push: Prisma.GitHubPushCreateNestedOneWithoutDeploymentsInput;
 };
 
@@ -325,12 +325,12 @@ export type DeploymentUncheckedCreateInput = {
   environment: string;
   cicd_provider: string;
   build_id?: string | null;
-  workflow_id?: string | null;
   status?: $Enums.DeploymentStatus;
   deployed_at?: Date | string | null;
-  error_message?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
 };
 
 export type DeploymentUpdateInput = {
@@ -338,12 +338,12 @@ export type DeploymentUpdateInput = {
   environment?: Prisma.StringFieldUpdateOperationsInput | string;
   cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
   build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
   deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   github_push?: Prisma.GitHubPushUpdateOneRequiredWithoutDeploymentsNestedInput;
 };
 
@@ -353,12 +353,12 @@ export type DeploymentUncheckedUpdateInput = {
   environment?: Prisma.StringFieldUpdateOperationsInput | string;
   cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
   build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
   deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type DeploymentCreateManyInput = {
@@ -367,12 +367,12 @@ export type DeploymentCreateManyInput = {
   environment: string;
   cicd_provider: string;
   build_id?: string | null;
-  workflow_id?: string | null;
   status?: $Enums.DeploymentStatus;
   deployed_at?: Date | string | null;
-  error_message?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
 };
 
 export type DeploymentUpdateManyMutationInput = {
@@ -380,12 +380,12 @@ export type DeploymentUpdateManyMutationInput = {
   environment?: Prisma.StringFieldUpdateOperationsInput | string;
   cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
   build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
   deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type DeploymentUncheckedUpdateManyInput = {
@@ -394,12 +394,12 @@ export type DeploymentUncheckedUpdateManyInput = {
   environment?: Prisma.StringFieldUpdateOperationsInput | string;
   cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
   build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
   deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type DeploymentListRelationFilter = {
@@ -418,12 +418,12 @@ export type DeploymentCountOrderByAggregateInput = {
   environment?: Prisma.SortOrder;
   cicd_provider?: Prisma.SortOrder;
   build_id?: Prisma.SortOrder;
-  workflow_id?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   deployed_at?: Prisma.SortOrder;
-  error_message?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  error_message?: Prisma.SortOrder;
+  workflow_id?: Prisma.SortOrder;
 };
 
 export type DeploymentMaxOrderByAggregateInput = {
@@ -432,12 +432,12 @@ export type DeploymentMaxOrderByAggregateInput = {
   environment?: Prisma.SortOrder;
   cicd_provider?: Prisma.SortOrder;
   build_id?: Prisma.SortOrder;
-  workflow_id?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   deployed_at?: Prisma.SortOrder;
-  error_message?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  error_message?: Prisma.SortOrder;
+  workflow_id?: Prisma.SortOrder;
 };
 
 export type DeploymentMinOrderByAggregateInput = {
@@ -446,12 +446,12 @@ export type DeploymentMinOrderByAggregateInput = {
   environment?: Prisma.SortOrder;
   cicd_provider?: Prisma.SortOrder;
   build_id?: Prisma.SortOrder;
-  workflow_id?: Prisma.SortOrder;
   status?: Prisma.SortOrder;
   deployed_at?: Prisma.SortOrder;
-  error_message?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
+  error_message?: Prisma.SortOrder;
+  workflow_id?: Prisma.SortOrder;
 };
 
 export type DeploymentCreateNestedManyWithoutGithub_pushInput = {
@@ -549,12 +549,12 @@ export type DeploymentCreateWithoutGithub_pushInput = {
   environment: string;
   cicd_provider: string;
   build_id?: string | null;
-  workflow_id?: string | null;
   status?: $Enums.DeploymentStatus;
   deployed_at?: Date | string | null;
-  error_message?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
 };
 
 export type DeploymentUncheckedCreateWithoutGithub_pushInput = {
@@ -562,12 +562,12 @@ export type DeploymentUncheckedCreateWithoutGithub_pushInput = {
   environment: string;
   cicd_provider: string;
   build_id?: string | null;
-  workflow_id?: string | null;
   status?: $Enums.DeploymentStatus;
   deployed_at?: Date | string | null;
-  error_message?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
 };
 
 export type DeploymentCreateOrConnectWithoutGithub_pushInput = {
@@ -620,12 +620,12 @@ export type DeploymentScalarWhereInput = {
   environment?: Prisma.StringFilter<'Deployment'> | string;
   cicd_provider?: Prisma.StringFilter<'Deployment'> | string;
   build_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
-  workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
   status?: Prisma.EnumDeploymentStatusFilter<'Deployment'> | $Enums.DeploymentStatus;
   deployed_at?: Prisma.DateTimeNullableFilter<'Deployment'> | Date | string | null;
-  error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
   created_at?: Prisma.DateTimeFilter<'Deployment'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'Deployment'> | Date | string;
+  error_message?: Prisma.StringNullableFilter<'Deployment'> | string | null;
+  workflow_id?: Prisma.StringNullableFilter<'Deployment'> | string | null;
 };
 
 export type DeploymentCreateManyGithub_pushInput = {
@@ -633,12 +633,12 @@ export type DeploymentCreateManyGithub_pushInput = {
   environment: string;
   cicd_provider: string;
   build_id?: string | null;
-  workflow_id?: string | null;
   status?: $Enums.DeploymentStatus;
   deployed_at?: Date | string | null;
-  error_message?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  error_message?: string | null;
+  workflow_id?: string | null;
 };
 
 export type DeploymentUpdateWithoutGithub_pushInput = {
@@ -646,12 +646,12 @@ export type DeploymentUpdateWithoutGithub_pushInput = {
   environment?: Prisma.StringFieldUpdateOperationsInput | string;
   cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
   build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
   deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type DeploymentUncheckedUpdateWithoutGithub_pushInput = {
@@ -659,12 +659,12 @@ export type DeploymentUncheckedUpdateWithoutGithub_pushInput = {
   environment?: Prisma.StringFieldUpdateOperationsInput | string;
   cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
   build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
   deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type DeploymentUncheckedUpdateManyWithoutGithub_pushInput = {
@@ -672,12 +672,12 @@ export type DeploymentUncheckedUpdateManyWithoutGithub_pushInput = {
   environment?: Prisma.StringFieldUpdateOperationsInput | string;
   cicd_provider?: Prisma.StringFieldUpdateOperationsInput | string;
   build_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
-  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   status?: Prisma.EnumDeploymentStatusFieldUpdateOperationsInput | $Enums.DeploymentStatus;
   deployed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
-  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  error_message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  workflow_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
 };
 
 export type DeploymentSelect<
@@ -689,12 +689,12 @@ export type DeploymentSelect<
     environment?: boolean;
     cicd_provider?: boolean;
     build_id?: boolean;
-    workflow_id?: boolean;
     status?: boolean;
     deployed_at?: boolean;
-    error_message?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    error_message?: boolean;
+    workflow_id?: boolean;
     github_push?: boolean | Prisma.GitHubPushDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['deployment']
@@ -709,12 +709,12 @@ export type DeploymentSelectCreateManyAndReturn<
     environment?: boolean;
     cicd_provider?: boolean;
     build_id?: boolean;
-    workflow_id?: boolean;
     status?: boolean;
     deployed_at?: boolean;
-    error_message?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    error_message?: boolean;
+    workflow_id?: boolean;
     github_push?: boolean | Prisma.GitHubPushDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['deployment']
@@ -729,12 +729,12 @@ export type DeploymentSelectUpdateManyAndReturn<
     environment?: boolean;
     cicd_provider?: boolean;
     build_id?: boolean;
-    workflow_id?: boolean;
     status?: boolean;
     deployed_at?: boolean;
-    error_message?: boolean;
     created_at?: boolean;
     updated_at?: boolean;
+    error_message?: boolean;
+    workflow_id?: boolean;
     github_push?: boolean | Prisma.GitHubPushDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['deployment']
@@ -746,12 +746,12 @@ export type DeploymentSelectScalar = {
   environment?: boolean;
   cicd_provider?: boolean;
   build_id?: boolean;
-  workflow_id?: boolean;
   status?: boolean;
   deployed_at?: boolean;
-  error_message?: boolean;
   created_at?: boolean;
   updated_at?: boolean;
+  error_message?: boolean;
+  workflow_id?: boolean;
 };
 
 export type DeploymentOmit<
@@ -762,12 +762,12 @@ export type DeploymentOmit<
   | 'environment'
   | 'cicd_provider'
   | 'build_id'
-  | 'workflow_id'
   | 'status'
   | 'deployed_at'
-  | 'error_message'
   | 'created_at'
-  | 'updated_at',
+  | 'updated_at'
+  | 'error_message'
+  | 'workflow_id',
   ExtArgs['result']['deployment']
 >;
 export type DeploymentInclude<
@@ -800,12 +800,12 @@ export type $DeploymentPayload<
       environment: string;
       cicd_provider: string;
       build_id: string | null;
-      workflow_id: string | null;
       status: $Enums.DeploymentStatus;
       deployed_at: Date | null;
-      error_message: string | null;
       created_at: Date;
       updated_at: Date;
+      error_message: string | null;
+      workflow_id: string | null;
     },
     ExtArgs['result']['deployment']
   >;
@@ -1394,12 +1394,12 @@ export interface DeploymentFieldRefs {
   readonly environment: Prisma.FieldRef<'Deployment', 'String'>;
   readonly cicd_provider: Prisma.FieldRef<'Deployment', 'String'>;
   readonly build_id: Prisma.FieldRef<'Deployment', 'String'>;
-  readonly workflow_id: Prisma.FieldRef<'Deployment', 'String'>;
   readonly status: Prisma.FieldRef<'Deployment', 'DeploymentStatus'>;
   readonly deployed_at: Prisma.FieldRef<'Deployment', 'DateTime'>;
-  readonly error_message: Prisma.FieldRef<'Deployment', 'String'>;
   readonly created_at: Prisma.FieldRef<'Deployment', 'DateTime'>;
   readonly updated_at: Prisma.FieldRef<'Deployment', 'DateTime'>;
+  readonly error_message: Prisma.FieldRef<'Deployment', 'String'>;
+  readonly workflow_id: Prisma.FieldRef<'Deployment', 'String'>;
 }
 
 // Custom InputTypes

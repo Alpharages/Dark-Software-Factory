@@ -645,13 +645,17 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/8-6-quality-metrics-dashboard.md"
     notes: "COMPLETE. Fixed all CRITICAL/HIGH code review issues: (C1) Created comprehensive unit tests (33 tests), (C2) Registered Prometheus metrics in module, (C3) Corrected API path to /api/v1/qa-dashboard, (C4) Integrated AIDecisionLogger for alerts, (H1) Updated file list, (H2) Added error handling. All DTO property names corrected. Zero lint/type errors. Tests ready (minor guard mocking needed for controller execution)."
   8-7-quality-trends-anomaly-detection:
+    status: done
+    developer: "Antigravity"
+    dev_branch: "feature/8-7-quality-anomalies"
+    notes: "COMPLETE. Implemented AnomalyDetectionService with AI analysis, REST API controller, and Event/Listener system. Added QualityAnomaly and QualityAnomalyConfig models. Verified with 11 unit tests across service and controller."
+  8-8-quality-review-metrics-qa-workload:
     status: ready-for-dev
     priority: high
     effort: "2 days"
     story_points: 3
-    story_file: "_bmad-output/implementation-artifacts/8-7-quality-trends-anomaly-detection.md"
-    notes: "Story generated via create-story workflow. Implements AI-powered anomaly detection for quality metrics with statistical analysis and intelligent recommendations. Leverages AI delegation for ~70% effort reduction."
-  8-8-quality-review-metrics-qa-workload: backlog
+    story_file: "_bmad-output/implementation-artifacts/8-8-quality-review-metrics-qa-workload.md"
+    notes: "QA workload metrics and capacity analytics for Lead QA team. Covers FR49 (workforce capacity) and FR43 (quality reports). Dependencies: Stories 8.1, 8.2, 8.5, 8.6."
   8-UI-lead-qa-review-dashboard:
     status: backlog
     priority: high

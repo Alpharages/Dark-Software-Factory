@@ -77,4 +77,21 @@ export class EmailService implements OnModuleInit {
       // We don't throw to avoid blocking the main flow
     }
   }
+
+  async sendEmail(options: { to: string; subject: string; body: string }) {
+    try {
+      await this.transporter.sendMail({
+        from: this.configService.get<string>('SMTP_FROM'),
+        to: options.to,
+        subject: options.subject,
+        html: options.body,
+      });
+
+      this.logger.log(`Email sent to ${options.to}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.stack : String(error);
+      this.logger.error(`Failed to send email to ${options.to}`, errorMessage);
+      throw error; // Re-throw for callers to handle
+    }
+  }
 }
