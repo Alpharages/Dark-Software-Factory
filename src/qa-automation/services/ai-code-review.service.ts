@@ -327,6 +327,24 @@ export class AiCodeReviewService {
       findings: model.findings as AiFindingsCollectionDto,
       generation_duration_ms: model.generation_duration_ms,
       cost_usd: Number(model.cost_usd),
+      review_time_estimate: this.calculateTimeEstimate(model.findings as AiFindingsCollectionDto),
     };
+  }
+
+  private calculateTimeEstimate(findings: AiFindingsCollectionDto): string {
+    // Estimate: 2 mins per finding, 1 min per complexity point (if available) - simplified
+    const totalFindings =
+      findings.missed_issues.length +
+      findings.code_smells.length +
+      findings.complex_logic.length +
+      findings.testing_gaps.length +
+      findings.security_notes.length;
+
+    // Base time: 5 mins
+    const minutes = 5 + totalFindings * 2;
+
+    // Cap at reasonable max for UI display (e.g. "60+ minutes")
+    if (minutes > 60) return '60+ minutes';
+    return `${minutes} minutes`;
   }
 }

@@ -269,52 +269,52 @@ export const AI_CODE_REVIEW_METRICS = {
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Database Schema for AI Code Reviews (AC: #4, #5, #6)
-  - [ ] 1.1 Add `AiCodeReview` model to `prisma/schema.prisma`
-  - [ ] 1.2 Add `AiCodeReviewFinding` model for individual finding status tracking
-  - [ ] 1.3 Add indexes for queue item lookups, caching, and finding status
-  - [ ] 1.4 Create Prisma migration
-  - [ ] 1.5 Generate Prisma client types
+- [x] Task 1: Database Schema for AI Code Reviews (AC: #4, #5, #6)
+  - [x] 1.1 Add `AiCodeReview` model to `prisma/schema.prisma`
+  - [x] 1.2 Add `AiCodeReviewFinding` model for individual finding status tracking
+  - [x] 1.3 Add indexes for queue item lookups, caching, and finding status
+  - [x] 1.4 Create Prisma migration
+  - [x] 1.5 Generate Prisma client types
 
-- [ ] Task 2: AI Code Review Service (AC: #4)
-  - [ ] 2.1 Create `AiCodeReviewService` with generateReview() method
-  - [ ] 2.2 Implement PR diff retrieval (via GitHub API - see Dev Notes)
-  - [ ] 2.3 Create code review prompt template (`src/qa-automation/templates/code-review-instruction.template.ts`)
-  - [ ] 2.4 Implement AI delegation via `OrchestratorService.executeTask()`
-  - [ ] 2.5 Add response parsing with Zod validation
-  - [ ] 2.6 Implement caching with 1-hour TTL and invalidation
-  - [ ] 2.7 Unit tests (>80% coverage)
+- [x] Task 2: AI Code Review Service (AC: #4)
+  - [x] 2.1 Create `AiCodeReviewService` with generateReview() method
+  - [x] 2.2 Implement PR diff retrieval (via GitHub API - see Dev Notes)
+  - [x] 2.3 Create code review prompt template (`src/qa-automation/templates/code-review-instruction.template.ts`)
+  - [x] 2.4 Implement AI delegation via `OrchestratorService.executeTask()`
+  - [x] 2.5 Add response parsing with Zod validation
+  - [x] 2.6 Implement caching with 1-hour TTL and invalidation
+  - [x] 2.7 Unit tests (>80% coverage)
 
-- [ ] Task 3: AI Code Review API (AC: #2, #3)
-  - [ ] 3.1 Extend `QaReviewController` with new endpoint `GET /api/v1/qa-review/queue/:id/ai-review`
-  - [ ] 3.2 Create `AiCodeReviewDto` with complete response structure
-  - [ ] 3.3 Implement lazy-loading pattern for AI review generation
-  - [ ] 3.4 Add rate limiting (10 requests/minute)
-  - [ ] 3.5 Add Swagger documentation with error response examples
-  - [ ] 3.6 Add RBAC guards (QA, ADMIN roles for generation; all roles for viewing)
-  - [ ] 3.7 Controller unit tests
+- [x] Task 3: AI Code Review API (AC: #2, #3)
+  - [x] 3.1 Extend `QaReviewController` with new endpoint `GET /api/v1/qa-review/queue/:id/ai-review`
+  - [x] 3.2 Create `AiCodeReviewDto` with complete response structure
+  - [x] 3.3 Implement lazy-loading pattern for AI review generation
+  - [x] 3.4 Add rate limiting (10 requests/minute)
+  - [x] 3.5 Add Swagger documentation with error response examples
+  - [x] 3.6 Add RBAC guards (QA, ADMIN roles for generation; all roles for viewing)
+  - [x] 3.7 Controller unit tests
 
-- [ ] Task 4: Finding Management API (AC: #5)
-  - [ ] 4.1 Create endpoint `PATCH /api/v1/qa-review/queue/:id/findings/:findingId`
-  - [ ] 4.2 Create `UpdateFindingStatusDto` with validation
-  - [ ] 4.3 Implement finding status persistence
-  - [ ] 4.4 Create endpoint `POST /api/v1/qa-review/queue/:id/regenerate` for re-review
-  - [ ] 4.5 Unit tests for finding management
+- [x] Task 4: Finding Management API (AC: #5)
+  - [x] 4.1 Create endpoint `PATCH /api/v1/qa-review/queue/:id/findings/:findingId`
+  - [x] 4.2 Create `UpdateFindingStatusDto` with validation
+  - [x] 4.3 Implement finding status persistence
+  - [x] 4.4 Create endpoint `POST /api/v1/qa-review/queue/:id/regenerate` for re-review
+  - [x] 4.5 Unit tests for finding management
 
-- [ ] Task 5: Metrics and Audit Integration (AC: #6)
-  - [ ] 5.1 Add `AI_CODE_REVIEW_METRICS` constants to `metrics.constants.ts`
-  - [ ] 5.2 Register Prometheus metrics in `QaReviewMetricsService`
-  - [ ] 5.3 Add metric recording points in `AiCodeReviewService`
-  - [ ] 5.4 Integrate `AIDecisionLoggerService` for audit trail
-  - [ ] 5.5 Create metrics service unit tests
+- [x] Task 5: Metrics and Audit Integration (AC: #6)
+  - [x] 5.1 Add `AI_CODE_REVIEW_METRICS` constants to `metrics.constants.ts`
+  - [x] 5.2 Register Prometheus metrics in `QaReviewMetricsService`
+  - [x] 5.3 Add metric recording points in `AiCodeReviewService`
+  - [x] 5.4 Integrate `AIDecisionLoggerService` for audit trail
+  - [x] 5.5 Create metrics service unit tests
 
-- [ ] Task 6: Module Wiring and Integration (AC: #1-#6)
-  - [ ] 6.1 Extend `QaAutomationModule` with `AiCodeReviewService`
-  - [ ] 6.2 Add `CacheModule.register()` configuration to module
-  - [ ] 6.3 Add `ThrottlerModule` configuration for rate limiting
-  - [ ] 6.4 Update module exports/imports
-  - [ ] 6.5 Add environment validation for AI review config
-  - [ ] 6.6 Integration tests
+- [x] Task 6: Module Wiring and Integration (AC: #1-#6)
+  - [x] 6.1 Extend `QaAutomationModule` with `AiCodeReviewService`
+  - [x] 6.2 Add `CacheModule.register()` configuration to module
+  - [x] 6.3 Add `ThrottlerModule` configuration for rate limiting
+  - [x] 6.4 Update module exports/imports
+  - [x] 6.5 Add environment validation for AI review config
+  - [x] 6.6 Integration tests
 
 ## Dev Notes
 

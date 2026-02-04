@@ -146,7 +146,13 @@ describe('AiCodeReviewService', () => {
       const cachedReview = {
         id: 'review-1',
         overall_assessment: 'LOW_RISK',
-        findings: { missed_issues: [] },
+        findings: {
+          missed_issues: [],
+          code_smells: [],
+          complex_logic: [],
+          testing_gaps: [],
+          security_notes: [],
+        },
         generated_at: new Date(),
         finding_statuses: [],
       };
@@ -186,7 +192,13 @@ describe('AiCodeReviewService', () => {
       prisma.aiCodeReview.create.mockResolvedValue({
         id: 'new-review',
         overall_assessment: 'LOW_RISK',
-        findings: { missed_issues: [], security_notes: [] },
+        findings: {
+          missed_issues: [],
+          code_smells: [],
+          complex_logic: [],
+          testing_gaps: [],
+          security_notes: [],
+        },
         generated_at: new Date(),
         finding_statuses: [],
         cost_usd: 0.1,
@@ -197,6 +209,8 @@ describe('AiCodeReviewService', () => {
       expect(orchestrator.executeTask).toHaveBeenCalled();
       expect(prisma.aiCodeReview.create).toHaveBeenCalled();
       expect(result.cost_usd).toBe(0.1);
+      expect(result.review_time_estimate).toBeDefined();
+      expect(result.review_time_estimate).toMatch(/\d+ minutes|60\+ minutes/);
     });
 
     it('should throw NotFoundException if queue item missing', async () => {

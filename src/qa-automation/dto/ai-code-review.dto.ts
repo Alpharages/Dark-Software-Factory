@@ -207,4 +207,9 @@ export class AiCodeReviewResponseDto {
   @ApiProperty({ required: false })
   @IsOptional()
   cost_usd?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  review_time_estimate?: string;
 }
