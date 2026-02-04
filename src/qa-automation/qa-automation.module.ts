@@ -58,6 +58,7 @@ import {
   QaReviewQueueConsumer,
   QaReviewQueueLegacyConsumer,
 } from './consumers/qa-review-queue.consumer';
+import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import {
     // Story 8.3: Production Approval
     ProductionApprovalModule,
     QualityGateConfigModule,
+    BugEscapeModule, // Story 8.5
     GitHubModule,
     CacheModule.registerAsync({
       imports: [ConfigModule],
@@ -259,6 +261,34 @@ import {
       help: 'Total finding status updates',
       labelNames: ['status'],
     }),
+    makeCounterProvider({
+      name: QA_METRICS.AI_REVIEW_FINDING_STATUS_UPDATES,
+      help: 'Total finding status updates',
+      labelNames: ['status'],
+    }),
+
+    // Story 8.5: Bug Escape Metrics
+    makeCounterProvider({
+      name: QA_METRICS.BUG_ESCAPES_TOTAL,
+      help: 'Total bug escapes detected',
+      labelNames: ['category', 'project_id', 'ai_provider'],
+    }),
+    makeGaugeProvider({
+      name: QA_METRICS.BUG_ESCAPE_RATE_PERCENT,
+      help: 'Global bug escape rate percentage',
+      labelNames: ['project_id'],
+    }),
+    makeCounterProvider({
+      name: QA_METRICS.BUG_ESCAPE_THRESHOLD_BREACHES_TOTAL,
+      help: 'Total times escape rate exceeded target',
+      labelNames: ['project_id'],
+    }),
+    makeHistogramProvider({
+      name: QA_METRICS.BUG_ESCAPE_RESOLUTION_TIME_HOURS,
+      help: 'Time to resolve bug escapes in hours',
+      buckets: [1, 4, 8, 24, 48, 72, 168], // 1h to 1 week
+    }),
+
     ExecutionCompletedListener,
 
     // Note: Other QUEUE_METRICS are registered in AppMetricsModule (Story 1.8)

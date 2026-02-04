@@ -181,6 +181,19 @@ export const ApprovalDecision = {
 
 export type ApprovalDecision = (typeof ApprovalDecision)[keyof typeof ApprovalDecision];
 
+export const EscapeCategory = {
+  LINTING_MISS: 'LINTING_MISS',
+  TEST_GAP: 'TEST_GAP',
+  COVERAGE_BLINDSPOT: 'COVERAGE_BLINDSPOT',
+  AI_GENERATION_ERROR: 'AI_GENERATION_ERROR',
+  REVIEW_FAILURE: 'REVIEW_FAILURE',
+  DEPENDENCY_ISSUE: 'DEPENDENCY_ISSUE',
+  ENVIRONMENT_DIFFERENCE: 'ENVIRONMENT_DIFFERENCE',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export type EscapeCategory = (typeof EscapeCategory)[keyof typeof EscapeCategory];
+
 export const ReportType = {
   SPRINT: 'SPRINT',
   CUSTOM: 'CUSTOM',

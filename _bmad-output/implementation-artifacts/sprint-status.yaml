@@ -631,12 +631,12 @@ development_status:
     story_file: "_bmad-output/implementation-artifacts/8-4-quality-gate-configuration.md"
     notes: "RE-IMPLEMENTED & FIXED. Restored core service logic, models, and controller. FIXED review findings: (1) Correct RBAC (ADMIN/QA only), (2) Implemented Impact Preview, (3) Implemented Bulk Cloning, (4) Fixed merge strategy (AC#3), (5) Integrated Audit Trail (AIDecisionLogger), (6) Renamed endpoints to /defaults. Verified with clean lint."
   8-5-bug-escape-tracking-analysis:
-    status: ready-for-dev
+    status: done
     priority: high
     effort: "3 days"
     story_points: 5
     story_file: "_bmad-output/implementation-artifacts/8-5-bug-escape-tracking-analysis.md"
-    notes: "Story generated via create-story workflow. Implements bug escape tracking and quality trend analysis for Lead QA dashboard."
+    notes: "Implemented BugEscapeService, Analyzer (classification logic), Consumer (RabbitMQ), and Metrics. Unit tests passing. Linting clean. Ready for review."
   8-6-quality-metrics-dashboard:
     status: ready-for-dev
     priority: high

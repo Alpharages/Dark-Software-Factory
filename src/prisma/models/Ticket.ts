@@ -271,6 +271,7 @@ export type TicketWhereInput = {
   > | null;
   adrs?: Prisma.AdrListRelationFilter;
   production_approvals?: Prisma.ProductionApprovalListRelationFilter;
+  bug_escapes?: Prisma.BugEscapeListRelationFilter;
 };
 
 export type TicketOrderByWithRelationInput = {
@@ -293,6 +294,7 @@ export type TicketOrderByWithRelationInput = {
   conversation?: Prisma.ClientConversationOrderByWithRelationInput;
   adrs?: Prisma.AdrOrderByRelationAggregateInput;
   production_approvals?: Prisma.ProductionApprovalOrderByRelationAggregateInput;
+  bug_escapes?: Prisma.BugEscapeOrderByRelationAggregateInput;
 };
 
 export type TicketWhereUniqueInput = Prisma.AtLeast<
@@ -322,6 +324,7 @@ export type TicketWhereUniqueInput = Prisma.AtLeast<
     > | null;
     adrs?: Prisma.AdrListRelationFilter;
     production_approvals?: Prisma.ProductionApprovalListRelationFilter;
+    bug_escapes?: Prisma.BugEscapeListRelationFilter;
   },
   'id' | 'clickup_task_id'
 >;
@@ -380,6 +383,7 @@ export type TicketCreateInput = {
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateInput = {
@@ -400,6 +404,7 @@ export type TicketUncheckedCreateInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUpdateInput = {
@@ -420,6 +425,7 @@ export type TicketUpdateInput = {
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateInput = {
@@ -440,6 +446,7 @@ export type TicketUncheckedUpdateInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketCreateManyInput = {
@@ -782,6 +789,32 @@ export type TicketUpdateOneRequiredWithoutProduction_approvalsNestedInput = {
   >;
 };
 
+export type TicketCreateNestedOneWithoutBug_escapesInput = {
+  create?: Prisma.XOR<
+    Prisma.TicketCreateWithoutBug_escapesInput,
+    Prisma.TicketUncheckedCreateWithoutBug_escapesInput
+  >;
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutBug_escapesInput;
+  connect?: Prisma.TicketWhereUniqueInput;
+};
+
+export type TicketUpdateOneRequiredWithoutBug_escapesNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.TicketCreateWithoutBug_escapesInput,
+    Prisma.TicketUncheckedCreateWithoutBug_escapesInput
+  >;
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutBug_escapesInput;
+  upsert?: Prisma.TicketUpsertWithoutBug_escapesInput;
+  connect?: Prisma.TicketWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.TicketUpdateToOneWithWhereWithoutBug_escapesInput,
+      Prisma.TicketUpdateWithoutBug_escapesInput
+    >,
+    Prisma.TicketUncheckedUpdateWithoutBug_escapesInput
+  >;
+};
+
 export type TicketCreateNestedManyWithoutConversationInput = {
   create?:
     | Prisma.XOR<
@@ -913,6 +946,7 @@ export type TicketCreateWithoutProjectInput = {
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutProjectInput = {
@@ -932,6 +966,7 @@ export type TicketUncheckedCreateWithoutProjectInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutProjectInput = {
@@ -1009,6 +1044,7 @@ export type TicketCreateWithoutExecutionsInput = {
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutExecutionsInput = {
@@ -1028,6 +1064,7 @@ export type TicketUncheckedCreateWithoutExecutionsInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutExecutionsInput = {
@@ -1075,6 +1112,7 @@ export type TicketUpdateWithoutExecutionsInput = {
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutExecutionsInput = {
@@ -1094,6 +1132,7 @@ export type TicketUncheckedUpdateWithoutExecutionsInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketCreateWithoutCost_recordsInput = {
@@ -1113,6 +1152,7 @@ export type TicketCreateWithoutCost_recordsInput = {
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutCost_recordsInput = {
@@ -1132,6 +1172,7 @@ export type TicketUncheckedCreateWithoutCost_recordsInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutCost_recordsInput = {
@@ -1179,6 +1220,7 @@ export type TicketUpdateWithoutCost_recordsInput = {
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutCost_recordsInput = {
@@ -1198,6 +1240,7 @@ export type TicketUncheckedUpdateWithoutCost_recordsInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketCreateWithoutContext_documentsInput = {
@@ -1217,6 +1260,7 @@ export type TicketCreateWithoutContext_documentsInput = {
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutContext_documentsInput = {
@@ -1236,6 +1280,7 @@ export type TicketUncheckedCreateWithoutContext_documentsInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutContext_documentsInput = {
@@ -1283,6 +1328,7 @@ export type TicketUpdateWithoutContext_documentsInput = {
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutContext_documentsInput = {
@@ -1302,6 +1348,7 @@ export type TicketUncheckedUpdateWithoutContext_documentsInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketCreateWithoutAi_cost_logsInput = {
@@ -1321,6 +1368,7 @@ export type TicketCreateWithoutAi_cost_logsInput = {
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutAi_cost_logsInput = {
@@ -1340,6 +1388,7 @@ export type TicketUncheckedCreateWithoutAi_cost_logsInput = {
   context_documents?: Prisma.ContextDocumentUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutAi_cost_logsInput = {
@@ -1387,6 +1436,7 @@ export type TicketUpdateWithoutAi_cost_logsInput = {
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutAi_cost_logsInput = {
@@ -1406,6 +1456,7 @@ export type TicketUncheckedUpdateWithoutAi_cost_logsInput = {
   context_documents?: Prisma.ContextDocumentUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketCreateWithoutProduction_approvalsInput = {
@@ -1425,6 +1476,7 @@ export type TicketCreateWithoutProduction_approvalsInput = {
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput;
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutProduction_approvalsInput = {
@@ -1444,6 +1496,7 @@ export type TicketUncheckedCreateWithoutProduction_approvalsInput = {
   context_documents?: Prisma.ContextDocumentUncheckedCreateNestedManyWithoutTicketInput;
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutProduction_approvalsInput = {
@@ -1491,6 +1544,7 @@ export type TicketUpdateWithoutProduction_approvalsInput = {
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput;
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutProduction_approvalsInput = {
@@ -1510,6 +1564,115 @@ export type TicketUncheckedUpdateWithoutProduction_approvalsInput = {
   context_documents?: Prisma.ContextDocumentUncheckedUpdateManyWithoutTicketNestedInput;
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
+};
+
+export type TicketCreateWithoutBug_escapesInput = {
+  id?: string;
+  clickup_task_id: string;
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  ticket_quality_score: number;
+  status?: $Enums.TicketStatus;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  project: Prisma.ProjectCreateNestedOneWithoutTicketsInput;
+  executions?: Prisma.ExecutionCreateNestedManyWithoutTicketInput;
+  cost_records?: Prisma.CostRecordCreateNestedManyWithoutTicketInput;
+  context_documents?: Prisma.ContextDocumentCreateNestedManyWithoutTicketInput;
+  ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput;
+  conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
+  adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
+  production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+};
+
+export type TicketUncheckedCreateWithoutBug_escapesInput = {
+  id?: string;
+  clickup_task_id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  ticket_quality_score: number;
+  status?: $Enums.TicketStatus;
+  conversation_id?: string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutTicketInput;
+  cost_records?: Prisma.CostRecordUncheckedCreateNestedManyWithoutTicketInput;
+  context_documents?: Prisma.ContextDocumentUncheckedCreateNestedManyWithoutTicketInput;
+  ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
+  production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+};
+
+export type TicketCreateOrConnectWithoutBug_escapesInput = {
+  where: Prisma.TicketWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.TicketCreateWithoutBug_escapesInput,
+    Prisma.TicketUncheckedCreateWithoutBug_escapesInput
+  >;
+};
+
+export type TicketUpsertWithoutBug_escapesInput = {
+  update: Prisma.XOR<
+    Prisma.TicketUpdateWithoutBug_escapesInput,
+    Prisma.TicketUncheckedUpdateWithoutBug_escapesInput
+  >;
+  create: Prisma.XOR<
+    Prisma.TicketCreateWithoutBug_escapesInput,
+    Prisma.TicketUncheckedCreateWithoutBug_escapesInput
+  >;
+  where?: Prisma.TicketWhereInput;
+};
+
+export type TicketUpdateToOneWithWhereWithoutBug_escapesInput = {
+  where?: Prisma.TicketWhereInput;
+  data: Prisma.XOR<
+    Prisma.TicketUpdateWithoutBug_escapesInput,
+    Prisma.TicketUncheckedUpdateWithoutBug_escapesInput
+  >;
+};
+
+export type TicketUpdateWithoutBug_escapesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_task_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  title?: Prisma.StringFieldUpdateOperationsInput | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
+  acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number;
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  project?: Prisma.ProjectUpdateOneRequiredWithoutTicketsNestedInput;
+  executions?: Prisma.ExecutionUpdateManyWithoutTicketNestedInput;
+  cost_records?: Prisma.CostRecordUpdateManyWithoutTicketNestedInput;
+  context_documents?: Prisma.ContextDocumentUpdateManyWithoutTicketNestedInput;
+  ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput;
+  conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
+  adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
+  production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+};
+
+export type TicketUncheckedUpdateWithoutBug_escapesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  clickup_task_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  project_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  title?: Prisma.StringFieldUpdateOperationsInput | string;
+  description?: Prisma.StringFieldUpdateOperationsInput | string;
+  acceptance_criteria?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_quality_score?: Prisma.IntFieldUpdateOperationsInput | number;
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus;
+  conversation_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutTicketNestedInput;
+  cost_records?: Prisma.CostRecordUncheckedUpdateManyWithoutTicketNestedInput;
+  context_documents?: Prisma.ContextDocumentUncheckedUpdateManyWithoutTicketNestedInput;
+  ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
+  production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketCreateWithoutConversationInput = {
@@ -1529,6 +1692,7 @@ export type TicketCreateWithoutConversationInput = {
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutConversationInput = {
@@ -1548,6 +1712,7 @@ export type TicketUncheckedCreateWithoutConversationInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutConversationInput = {
@@ -1608,6 +1773,7 @@ export type TicketCreateWithoutAdrsInput = {
   ai_cost_logs?: Prisma.AICostLogCreateNestedManyWithoutTicketInput;
   conversation?: Prisma.ClientConversationCreateNestedOneWithoutLinked_ticketsInput;
   production_approvals?: Prisma.ProductionApprovalCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketUncheckedCreateWithoutAdrsInput = {
@@ -1627,6 +1793,7 @@ export type TicketUncheckedCreateWithoutAdrsInput = {
   context_documents?: Prisma.ContextDocumentUncheckedCreateNestedManyWithoutTicketInput;
   ai_cost_logs?: Prisma.AICostLogUncheckedCreateNestedManyWithoutTicketInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedCreateNestedManyWithoutTicketInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutTicketInput;
 };
 
 export type TicketCreateOrConnectWithoutAdrsInput = {
@@ -1674,6 +1841,7 @@ export type TicketUpdateWithoutAdrsInput = {
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput;
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutAdrsInput = {
@@ -1693,6 +1861,7 @@ export type TicketUncheckedUpdateWithoutAdrsInput = {
   context_documents?: Prisma.ContextDocumentUncheckedUpdateManyWithoutTicketNestedInput;
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketCreateManyProjectInput = {
@@ -1725,6 +1894,7 @@ export type TicketUpdateWithoutProjectInput = {
   conversation?: Prisma.ClientConversationUpdateOneWithoutLinked_ticketsNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutProjectInput = {
@@ -1744,6 +1914,7 @@ export type TicketUncheckedUpdateWithoutProjectInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateManyWithoutProjectInput = {
@@ -1789,6 +1960,7 @@ export type TicketUpdateWithoutConversationInput = {
   ai_cost_logs?: Prisma.AICostLogUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateWithoutConversationInput = {
@@ -1808,6 +1980,7 @@ export type TicketUncheckedUpdateWithoutConversationInput = {
   ai_cost_logs?: Prisma.AICostLogUncheckedUpdateManyWithoutTicketNestedInput;
   adrs?: Prisma.AdrUncheckedUpdateManyWithoutTicketNestedInput;
   production_approvals?: Prisma.ProductionApprovalUncheckedUpdateManyWithoutTicketNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutTicketNestedInput;
 };
 
 export type TicketUncheckedUpdateManyWithoutConversationInput = {
@@ -1834,6 +2007,7 @@ export type TicketCountOutputType = {
   ai_cost_logs: number;
   adrs: number;
   production_approvals: number;
+  bug_escapes: number;
 };
 
 export type TicketCountOutputTypeSelect<
@@ -1845,6 +2019,7 @@ export type TicketCountOutputTypeSelect<
   ai_cost_logs?: boolean | TicketCountOutputTypeCountAi_cost_logsArgs;
   adrs?: boolean | TicketCountOutputTypeCountAdrsArgs;
   production_approvals?: boolean | TicketCountOutputTypeCountProduction_approvalsArgs;
+  bug_escapes?: boolean | TicketCountOutputTypeCountBug_escapesArgs;
 };
 
 /**
@@ -1913,6 +2088,15 @@ export type TicketCountOutputTypeCountProduction_approvalsArgs<
   where?: Prisma.ProductionApprovalWhereInput;
 };
 
+/**
+ * TicketCountOutputType without action
+ */
+export type TicketCountOutputTypeCountBug_escapesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.BugEscapeWhereInput;
+};
+
 export type TicketSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetSelect<
@@ -1936,6 +2120,7 @@ export type TicketSelect<
     conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>;
     adrs?: boolean | Prisma.Ticket$adrsArgs<ExtArgs>;
     production_approvals?: boolean | Prisma.Ticket$production_approvalsArgs<ExtArgs>;
+    bug_escapes?: boolean | Prisma.Ticket$bug_escapesArgs<ExtArgs>;
     _count?: boolean | Prisma.TicketCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['ticket']
@@ -2024,6 +2209,7 @@ export type TicketInclude<
   conversation?: boolean | Prisma.Ticket$conversationArgs<ExtArgs>;
   adrs?: boolean | Prisma.Ticket$adrsArgs<ExtArgs>;
   production_approvals?: boolean | Prisma.Ticket$production_approvalsArgs<ExtArgs>;
+  bug_escapes?: boolean | Prisma.Ticket$bug_escapesArgs<ExtArgs>;
   _count?: boolean | Prisma.TicketCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type TicketIncludeCreateManyAndReturn<
@@ -2052,6 +2238,7 @@ export type $TicketPayload<
     conversation: Prisma.$ClientConversationPayload<ExtArgs> | null;
     adrs: Prisma.$AdrPayload<ExtArgs>[];
     production_approvals: Prisma.$ProductionApprovalPayload<ExtArgs>[];
+    bug_escapes: Prisma.$BugEscapePayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -2658,6 +2845,17 @@ export interface Prisma__TicketClient<
   ): Prisma.PrismaPromise<
     | runtime.Types.Result.GetResult<
         Prisma.$ProductionApprovalPayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
+  bug_escapes<T extends Prisma.Ticket$bug_escapesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.Ticket$bug_escapesArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$BugEscapePayload<ExtArgs>,
         T,
         'findMany',
         GlobalOmitOptions
@@ -3307,6 +3505,32 @@ export type Ticket$production_approvalsArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.ProductionApprovalScalarFieldEnum | Prisma.ProductionApprovalScalarFieldEnum[];
+};
+
+/**
+ * Ticket.bug_escapes
+ */
+export type Ticket$bug_escapesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the BugEscape
+   */
+  select?: Prisma.BugEscapeSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the BugEscape
+   */
+  omit?: Prisma.BugEscapeOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BugEscapeInclude<ExtArgs> | null;
+  where?: Prisma.BugEscapeWhereInput;
+  orderBy?: Prisma.BugEscapeOrderByWithRelationInput | Prisma.BugEscapeOrderByWithRelationInput[];
+  cursor?: Prisma.BugEscapeWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.BugEscapeScalarFieldEnum | Prisma.BugEscapeScalarFieldEnum[];
 };
 
 /**

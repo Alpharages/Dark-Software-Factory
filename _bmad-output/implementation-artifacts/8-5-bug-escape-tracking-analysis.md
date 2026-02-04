@@ -1,7 +1,7 @@
 # Story 8.5: Bug Escape Tracking & Analysis
 
 **Epic:** 8 - Lead QA Manual Review Workflow  
-**Status:** ready-for-dev  
+**Status:** done  
 **Priority:** High  
 **Estimation:** 3 days  
 **Story Points:** 5

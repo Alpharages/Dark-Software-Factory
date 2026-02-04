@@ -259,6 +259,7 @@ export type QAResultWhereInput = {
   created_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
   updated_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
   execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
+  bug_escapes?: Prisma.BugEscapeListRelationFilter;
 };
 
 export type QAResultOrderByWithRelationInput = {
@@ -275,6 +276,7 @@ export type QAResultOrderByWithRelationInput = {
   created_at?: Prisma.SortOrder;
   updated_at?: Prisma.SortOrder;
   execution?: Prisma.ExecutionOrderByWithRelationInput;
+  bug_escapes?: Prisma.BugEscapeOrderByRelationAggregateInput;
 };
 
 export type QAResultWhereUniqueInput = Prisma.AtLeast<
@@ -295,6 +297,7 @@ export type QAResultWhereUniqueInput = Prisma.AtLeast<
     created_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
     updated_at?: Prisma.DateTimeFilter<'QAResult'> | Date | string;
     execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
+    bug_escapes?: Prisma.BugEscapeListRelationFilter;
   },
   'id' | 'execution_id'
 >;
@@ -354,6 +357,7 @@ export type QAResultCreateInput = {
   created_at?: Date | string;
   updated_at?: Date | string;
   execution: Prisma.ExecutionCreateNestedOneWithoutQa_resultInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_resultInput;
 };
 
 export type QAResultUncheckedCreateInput = {
@@ -369,6 +373,7 @@ export type QAResultUncheckedCreateInput = {
   overall_passed?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutQa_resultInput;
 };
 
 export type QAResultUpdateInput = {
@@ -384,6 +389,7 @@ export type QAResultUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_resultNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_resultNestedInput;
 };
 
 export type QAResultUncheckedUpdateInput = {
@@ -399,6 +405,7 @@ export type QAResultUncheckedUpdateInput = {
   overall_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutQa_resultNestedInput;
 };
 
 export type QAResultCreateManyInput = {
@@ -553,6 +560,34 @@ export type QAResultUncheckedUpdateOneWithoutExecutionNestedInput = {
   >;
 };
 
+export type QAResultCreateNestedOneWithoutBug_escapesInput = {
+  create?: Prisma.XOR<
+    Prisma.QAResultCreateWithoutBug_escapesInput,
+    Prisma.QAResultUncheckedCreateWithoutBug_escapesInput
+  >;
+  connectOrCreate?: Prisma.QAResultCreateOrConnectWithoutBug_escapesInput;
+  connect?: Prisma.QAResultWhereUniqueInput;
+};
+
+export type QAResultUpdateOneWithoutBug_escapesNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.QAResultCreateWithoutBug_escapesInput,
+    Prisma.QAResultUncheckedCreateWithoutBug_escapesInput
+  >;
+  connectOrCreate?: Prisma.QAResultCreateOrConnectWithoutBug_escapesInput;
+  upsert?: Prisma.QAResultUpsertWithoutBug_escapesInput;
+  disconnect?: Prisma.QAResultWhereInput | boolean;
+  delete?: Prisma.QAResultWhereInput | boolean;
+  connect?: Prisma.QAResultWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.QAResultUpdateToOneWithWhereWithoutBug_escapesInput,
+      Prisma.QAResultUpdateWithoutBug_escapesInput
+    >,
+    Prisma.QAResultUncheckedUpdateWithoutBug_escapesInput
+  >;
+};
+
 export type QAResultCreateWithoutExecutionInput = {
   id?: string;
   linting_passed?: boolean;
@@ -565,6 +600,7 @@ export type QAResultCreateWithoutExecutionInput = {
   overall_passed?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_resultInput;
 };
 
 export type QAResultUncheckedCreateWithoutExecutionInput = {
@@ -579,6 +615,7 @@ export type QAResultUncheckedCreateWithoutExecutionInput = {
   overall_passed?: boolean;
   created_at?: Date | string;
   updated_at?: Date | string;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutQa_resultInput;
 };
 
 export type QAResultCreateOrConnectWithoutExecutionInput = {
@@ -621,6 +658,7 @@ export type QAResultUpdateWithoutExecutionInput = {
   overall_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_resultNestedInput;
 };
 
 export type QAResultUncheckedUpdateWithoutExecutionInput = {
@@ -635,6 +673,130 @@ export type QAResultUncheckedUpdateWithoutExecutionInput = {
   overall_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutQa_resultNestedInput;
+};
+
+export type QAResultCreateWithoutBug_escapesInput = {
+  id?: string;
+  linting_passed?: boolean;
+  linting_errors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  tests_passed?: boolean;
+  test_results?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  test_coverage?: number | null;
+  code_review_passed?: boolean;
+  code_review_issues?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  overall_passed?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  execution: Prisma.ExecutionCreateNestedOneWithoutQa_resultInput;
+};
+
+export type QAResultUncheckedCreateWithoutBug_escapesInput = {
+  id?: string;
+  execution_id: string;
+  linting_passed?: boolean;
+  linting_errors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  tests_passed?: boolean;
+  test_results?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  test_coverage?: number | null;
+  code_review_passed?: boolean;
+  code_review_issues?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  overall_passed?: boolean;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+};
+
+export type QAResultCreateOrConnectWithoutBug_escapesInput = {
+  where: Prisma.QAResultWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.QAResultCreateWithoutBug_escapesInput,
+    Prisma.QAResultUncheckedCreateWithoutBug_escapesInput
+  >;
+};
+
+export type QAResultUpsertWithoutBug_escapesInput = {
+  update: Prisma.XOR<
+    Prisma.QAResultUpdateWithoutBug_escapesInput,
+    Prisma.QAResultUncheckedUpdateWithoutBug_escapesInput
+  >;
+  create: Prisma.XOR<
+    Prisma.QAResultCreateWithoutBug_escapesInput,
+    Prisma.QAResultUncheckedCreateWithoutBug_escapesInput
+  >;
+  where?: Prisma.QAResultWhereInput;
+};
+
+export type QAResultUpdateToOneWithWhereWithoutBug_escapesInput = {
+  where?: Prisma.QAResultWhereInput;
+  data: Prisma.XOR<
+    Prisma.QAResultUpdateWithoutBug_escapesInput,
+    Prisma.QAResultUncheckedUpdateWithoutBug_escapesInput
+  >;
+};
+
+export type QAResultUpdateWithoutBug_escapesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  linting_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  linting_errors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  tests_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  test_results?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  test_coverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  code_review_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  code_review_issues?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  overall_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_resultNestedInput;
+};
+
+export type QAResultUncheckedUpdateWithoutBug_escapesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  execution_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  linting_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  linting_errors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  tests_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  test_results?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  test_coverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null;
+  code_review_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  code_review_issues?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue;
+  overall_passed?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+/**
+ * Count Type QAResultCountOutputType
+ */
+
+export type QAResultCountOutputType = {
+  bug_escapes: number;
+};
+
+export type QAResultCountOutputTypeSelect<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  bug_escapes?: boolean | QAResultCountOutputTypeCountBug_escapesArgs;
+};
+
+/**
+ * QAResultCountOutputType without action
+ */
+export type QAResultCountOutputTypeDefaultArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the QAResultCountOutputType
+   */
+  select?: Prisma.QAResultCountOutputTypeSelect<ExtArgs> | null;
+};
+
+/**
+ * QAResultCountOutputType without action
+ */
+export type QAResultCountOutputTypeCountBug_escapesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.BugEscapeWhereInput;
 };
 
 export type QAResultSelect<
@@ -654,6 +816,8 @@ export type QAResultSelect<
     created_at?: boolean;
     updated_at?: boolean;
     execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
+    bug_escapes?: boolean | Prisma.QAResult$bug_escapesArgs<ExtArgs>;
+    _count?: boolean | Prisma.QAResultCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qAResult']
 >;
@@ -736,6 +900,8 @@ export type QAResultInclude<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
+  bug_escapes?: boolean | Prisma.QAResult$bug_escapesArgs<ExtArgs>;
+  _count?: boolean | Prisma.QAResultCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type QAResultIncludeCreateManyAndReturn<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
@@ -754,6 +920,7 @@ export type $QAResultPayload<
   name: 'QAResult';
   objects: {
     execution: Prisma.$ExecutionPayload<ExtArgs>;
+    bug_escapes: Prisma.$BugEscapePayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1318,6 +1485,17 @@ export interface Prisma__QAResultClient<
     ExtArgs,
     GlobalOmitOptions
   >;
+  bug_escapes<T extends Prisma.QAResult$bug_escapesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.QAResult$bug_escapesArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$BugEscapePayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1781,6 +1959,32 @@ export type QAResultDeleteManyArgs<
    * Limit how many QAResults to delete.
    */
   limit?: number;
+};
+
+/**
+ * QAResult.bug_escapes
+ */
+export type QAResult$bug_escapesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the BugEscape
+   */
+  select?: Prisma.BugEscapeSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the BugEscape
+   */
+  omit?: Prisma.BugEscapeOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BugEscapeInclude<ExtArgs> | null;
+  where?: Prisma.BugEscapeWhereInput;
+  orderBy?: Prisma.BugEscapeOrderByWithRelationInput | Prisma.BugEscapeOrderByWithRelationInput[];
+  cursor?: Prisma.BugEscapeWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.BugEscapeScalarFieldEnum | Prisma.BugEscapeScalarFieldEnum[];
 };
 
 /**

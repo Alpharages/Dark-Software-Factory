@@ -72,6 +72,7 @@ export const ModelName = {
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
   ProductionApproval: 'ProductionApproval',
+  BugEscape: 'BugEscape',
   AiCodeReview: 'AiCodeReview',
   AiCodeReviewFinding: 'AiCodeReviewFinding',
   User: 'User',
@@ -500,6 +501,27 @@ export const ProductionApprovalScalarFieldEnum = {
 
 export type ProductionApprovalScalarFieldEnum =
   (typeof ProductionApprovalScalarFieldEnum)[keyof typeof ProductionApprovalScalarFieldEnum];
+
+export const BugEscapeScalarFieldEnum = {
+  id: 'id',
+  production_error_id: 'production_error_id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  qa_result_id: 'qa_result_id',
+  qa_review_queue_id: 'qa_review_queue_id',
+  escape_category: 'escape_category',
+  severity_at_detection: 'severity_at_detection',
+  detected_at: 'detected_at',
+  resolved_at: 'resolved_at',
+  resolution_time_hours: 'resolution_time_hours',
+  project_id: 'project_id',
+  ai_provider: 'ai_provider',
+  complexity_score: 'complexity_score',
+  created_at: 'created_at',
+} as const;
+
+export type BugEscapeScalarFieldEnum =
+  (typeof BugEscapeScalarFieldEnum)[keyof typeof BugEscapeScalarFieldEnum];
 
 export const AiCodeReviewScalarFieldEnum = {
   id: 'id',

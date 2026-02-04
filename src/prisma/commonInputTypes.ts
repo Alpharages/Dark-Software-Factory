@@ -999,6 +999,23 @@ export type EnumApprovalDecisionWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumApprovalDecisionFilter<$PrismaModel>;
 };
 
+export type EnumEscapeCategoryFilter<$PrismaModel = never> = {
+  equals?: $Enums.EscapeCategory | Prisma.EnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  in?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumEscapeCategoryFilter<$PrismaModel> | $Enums.EscapeCategory;
+};
+
+export type EnumEscapeCategoryWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EscapeCategory | Prisma.EnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  in?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumEscapeCategoryWithAggregatesFilter<$PrismaModel> | $Enums.EscapeCategory;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumEscapeCategoryFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumEscapeCategoryFilter<$PrismaModel>;
+};
+
 export type EnumReportTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.ReportType | Prisma.EnumReportTypeFieldRefInput<$PrismaModel>;
   in?: $Enums.ReportType[] | Prisma.ListEnumReportTypeFieldRefInput<$PrismaModel>;
@@ -2063,6 +2080,23 @@ export type NestedEnumApprovalDecisionWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>;
   _min?: Prisma.NestedEnumApprovalDecisionFilter<$PrismaModel>;
   _max?: Prisma.NestedEnumApprovalDecisionFilter<$PrismaModel>;
+};
+
+export type NestedEnumEscapeCategoryFilter<$PrismaModel = never> = {
+  equals?: $Enums.EscapeCategory | Prisma.EnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  in?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumEscapeCategoryFilter<$PrismaModel> | $Enums.EscapeCategory;
+};
+
+export type NestedEnumEscapeCategoryWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EscapeCategory | Prisma.EnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  in?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  notIn?: $Enums.EscapeCategory[] | Prisma.ListEnumEscapeCategoryFieldRefInput<$PrismaModel>;
+  not?: Prisma.NestedEnumEscapeCategoryWithAggregatesFilter<$PrismaModel> | $Enums.EscapeCategory;
+  _count?: Prisma.NestedIntFilter<$PrismaModel>;
+  _min?: Prisma.NestedEnumEscapeCategoryFilter<$PrismaModel>;
+  _max?: Prisma.NestedEnumEscapeCategoryFilter<$PrismaModel>;
 };
 
 export type NestedEnumReportTypeFilter<$PrismaModel = never> = {

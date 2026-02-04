@@ -261,6 +261,7 @@ export type QaReviewQueueWhereInput = {
   updated_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
   execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
   ai_code_reviews?: Prisma.AiCodeReviewListRelationFilter;
+  bug_escapes?: Prisma.BugEscapeListRelationFilter;
 };
 
 export type QaReviewQueueOrderByWithRelationInput = {
@@ -281,6 +282,7 @@ export type QaReviewQueueOrderByWithRelationInput = {
   updated_at?: Prisma.SortOrder;
   execution?: Prisma.ExecutionOrderByWithRelationInput;
   ai_code_reviews?: Prisma.AiCodeReviewOrderByRelationAggregateInput;
+  bug_escapes?: Prisma.BugEscapeOrderByRelationAggregateInput;
 };
 
 export type QaReviewQueueWhereUniqueInput = Prisma.AtLeast<
@@ -307,6 +309,7 @@ export type QaReviewQueueWhereUniqueInput = Prisma.AtLeast<
     updated_at?: Prisma.DateTimeFilter<'QaReviewQueue'> | Date | string;
     execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>;
     ai_code_reviews?: Prisma.AiCodeReviewListRelationFilter;
+    bug_escapes?: Prisma.BugEscapeListRelationFilter;
   },
   'id' | 'execution_id'
 >;
@@ -376,6 +379,7 @@ export type QaReviewQueueCreateInput = {
   updated_at?: Date | string;
   execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
   ai_code_reviews?: Prisma.AiCodeReviewCreateNestedManyWithoutQueue_itemInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueUncheckedCreateInput = {
@@ -395,6 +399,7 @@ export type QaReviewQueueUncheckedCreateInput = {
   created_at?: Date | string;
   updated_at?: Date | string;
   ai_code_reviews?: Prisma.AiCodeReviewUncheckedCreateNestedManyWithoutQueue_itemInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueUpdateInput = {
@@ -416,6 +421,7 @@ export type QaReviewQueueUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
   ai_code_reviews?: Prisma.AiCodeReviewUpdateManyWithoutQueue_itemNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_review_queueNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateInput = {
@@ -437,6 +443,7 @@ export type QaReviewQueueUncheckedUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ai_code_reviews?: Prisma.AiCodeReviewUncheckedUpdateManyWithoutQueue_itemNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutQa_review_queueNestedInput;
 };
 
 export type QaReviewQueueCreateManyInput = {
@@ -614,6 +621,34 @@ export type QaReviewQueueUncheckedUpdateOneWithoutExecutionNestedInput = {
   >;
 };
 
+export type QaReviewQueueCreateNestedOneWithoutBug_escapesInput = {
+  create?: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutBug_escapesInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutBug_escapesInput
+  >;
+  connectOrCreate?: Prisma.QaReviewQueueCreateOrConnectWithoutBug_escapesInput;
+  connect?: Prisma.QaReviewQueueWhereUniqueInput;
+};
+
+export type QaReviewQueueUpdateOneWithoutBug_escapesNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutBug_escapesInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutBug_escapesInput
+  >;
+  connectOrCreate?: Prisma.QaReviewQueueCreateOrConnectWithoutBug_escapesInput;
+  upsert?: Prisma.QaReviewQueueUpsertWithoutBug_escapesInput;
+  disconnect?: Prisma.QaReviewQueueWhereInput | boolean;
+  delete?: Prisma.QaReviewQueueWhereInput | boolean;
+  connect?: Prisma.QaReviewQueueWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.QaReviewQueueUpdateToOneWithWhereWithoutBug_escapesInput,
+      Prisma.QaReviewQueueUpdateWithoutBug_escapesInput
+    >,
+    Prisma.QaReviewQueueUncheckedUpdateWithoutBug_escapesInput
+  >;
+};
+
 export type QaReviewQueueCreateNestedOneWithoutAi_code_reviewsInput = {
   create?: Prisma.XOR<
     Prisma.QaReviewQueueCreateWithoutAi_code_reviewsInput,
@@ -668,6 +703,7 @@ export type QaReviewQueueCreateWithoutExecutionInput = {
   created_at?: Date | string;
   updated_at?: Date | string;
   ai_code_reviews?: Prisma.AiCodeReviewCreateNestedManyWithoutQueue_itemInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueUncheckedCreateWithoutExecutionInput = {
@@ -686,6 +722,7 @@ export type QaReviewQueueUncheckedCreateWithoutExecutionInput = {
   created_at?: Date | string;
   updated_at?: Date | string;
   ai_code_reviews?: Prisma.AiCodeReviewUncheckedCreateNestedManyWithoutQueue_itemInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueCreateOrConnectWithoutExecutionInput = {
@@ -734,11 +771,121 @@ export type QaReviewQueueUpdateWithoutExecutionInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   ai_code_reviews?: Prisma.AiCodeReviewUpdateManyWithoutQueue_itemNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_review_queueNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateWithoutExecutionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string;
   ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  status?: Prisma.EnumQaReviewStatusFieldUpdateOperationsInput | $Enums.QaReviewStatus;
+  risk_level?: Prisma.EnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel;
+  risk_factors?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy?:
+    | Prisma.EnumSamplingStrategyFieldUpdateOperationsInput
+    | $Enums.SamplingStrategy;
+  reviewed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewUncheckedUpdateManyWithoutQueue_itemNestedInput;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutQa_review_queueNestedInput;
+};
+
+export type QaReviewQueueCreateWithoutBug_escapesInput = {
+  id?: string;
+  ticket_id: string;
+  project_id?: string | null;
+  pr_id?: string | null;
+  pr_url?: string | null;
+  status?: $Enums.QaReviewStatus;
+  risk_level: $Enums.RiskLevel;
+  risk_factors: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy: $Enums.SamplingStrategy;
+  reviewed_by?: string | null;
+  reviewed_at?: Date | string | null;
+  review_notes?: string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
+  ai_code_reviews?: Prisma.AiCodeReviewCreateNestedManyWithoutQueue_itemInput;
+};
+
+export type QaReviewQueueUncheckedCreateWithoutBug_escapesInput = {
+  id?: string;
+  ticket_id: string;
+  execution_id: string;
+  project_id?: string | null;
+  pr_id?: string | null;
+  pr_url?: string | null;
+  status?: $Enums.QaReviewStatus;
+  risk_level: $Enums.RiskLevel;
+  risk_factors: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy: $Enums.SamplingStrategy;
+  reviewed_by?: string | null;
+  reviewed_at?: Date | string | null;
+  review_notes?: string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  ai_code_reviews?: Prisma.AiCodeReviewUncheckedCreateNestedManyWithoutQueue_itemInput;
+};
+
+export type QaReviewQueueCreateOrConnectWithoutBug_escapesInput = {
+  where: Prisma.QaReviewQueueWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutBug_escapesInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutBug_escapesInput
+  >;
+};
+
+export type QaReviewQueueUpsertWithoutBug_escapesInput = {
+  update: Prisma.XOR<
+    Prisma.QaReviewQueueUpdateWithoutBug_escapesInput,
+    Prisma.QaReviewQueueUncheckedUpdateWithoutBug_escapesInput
+  >;
+  create: Prisma.XOR<
+    Prisma.QaReviewQueueCreateWithoutBug_escapesInput,
+    Prisma.QaReviewQueueUncheckedCreateWithoutBug_escapesInput
+  >;
+  where?: Prisma.QaReviewQueueWhereInput;
+};
+
+export type QaReviewQueueUpdateToOneWithWhereWithoutBug_escapesInput = {
+  where?: Prisma.QaReviewQueueWhereInput;
+  data: Prisma.XOR<
+    Prisma.QaReviewQueueUpdateWithoutBug_escapesInput,
+    Prisma.QaReviewQueueUncheckedUpdateWithoutBug_escapesInput
+  >;
+};
+
+export type QaReviewQueueUpdateWithoutBug_escapesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  pr_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  status?: Prisma.EnumQaReviewStatusFieldUpdateOperationsInput | $Enums.QaReviewStatus;
+  risk_level?: Prisma.EnumRiskLevelFieldUpdateOperationsInput | $Enums.RiskLevel;
+  risk_factors?: Prisma.JsonNullValueInput | runtime.InputJsonValue;
+  sampling_strategy?:
+    | Prisma.EnumSamplingStrategyFieldUpdateOperationsInput
+    | $Enums.SamplingStrategy;
+  reviewed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  reviewed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null;
+  review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
+  ai_code_reviews?: Prisma.AiCodeReviewUpdateManyWithoutQueue_itemNestedInput;
+};
+
+export type QaReviewQueueUncheckedUpdateWithoutBug_escapesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  ticket_id?: Prisma.StringFieldUpdateOperationsInput | string;
+  execution_id?: Prisma.StringFieldUpdateOperationsInput | string;
   project_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   pr_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   pr_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
@@ -772,6 +919,7 @@ export type QaReviewQueueCreateWithoutAi_code_reviewsInput = {
   created_at?: Date | string;
   updated_at?: Date | string;
   execution: Prisma.ExecutionCreateNestedOneWithoutQa_review_queueInput;
+  bug_escapes?: Prisma.BugEscapeCreateNestedManyWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput = {
@@ -790,6 +938,7 @@ export type QaReviewQueueUncheckedCreateWithoutAi_code_reviewsInput = {
   review_notes?: string | null;
   created_at?: Date | string;
   updated_at?: Date | string;
+  bug_escapes?: Prisma.BugEscapeUncheckedCreateNestedManyWithoutQa_review_queueInput;
 };
 
 export type QaReviewQueueCreateOrConnectWithoutAi_code_reviewsInput = {
@@ -838,6 +987,7 @@ export type QaReviewQueueUpdateWithoutAi_code_reviewsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   execution?: Prisma.ExecutionUpdateOneRequiredWithoutQa_review_queueNestedInput;
+  bug_escapes?: Prisma.BugEscapeUpdateManyWithoutQa_review_queueNestedInput;
 };
 
 export type QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput = {
@@ -858,6 +1008,7 @@ export type QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput = {
   review_notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  bug_escapes?: Prisma.BugEscapeUncheckedUpdateManyWithoutQa_review_queueNestedInput;
 };
 
 /**
@@ -866,12 +1017,14 @@ export type QaReviewQueueUncheckedUpdateWithoutAi_code_reviewsInput = {
 
 export type QaReviewQueueCountOutputType = {
   ai_code_reviews: number;
+  bug_escapes: number;
 };
 
 export type QaReviewQueueCountOutputTypeSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   ai_code_reviews?: boolean | QaReviewQueueCountOutputTypeCountAi_code_reviewsArgs;
+  bug_escapes?: boolean | QaReviewQueueCountOutputTypeCountBug_escapesArgs;
 };
 
 /**
@@ -895,6 +1048,15 @@ export type QaReviewQueueCountOutputTypeCountAi_code_reviewsArgs<
   where?: Prisma.AiCodeReviewWhereInput;
 };
 
+/**
+ * QaReviewQueueCountOutputType without action
+ */
+export type QaReviewQueueCountOutputTypeCountBug_escapesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  where?: Prisma.BugEscapeWhereInput;
+};
+
 export type QaReviewQueueSelect<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = runtime.Types.Extensions.GetSelect<
@@ -916,6 +1078,7 @@ export type QaReviewQueueSelect<
     updated_at?: boolean;
     execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
     ai_code_reviews?: boolean | Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>;
+    bug_escapes?: boolean | Prisma.QaReviewQueue$bug_escapesArgs<ExtArgs>;
     _count?: boolean | Prisma.QaReviewQueueCountOutputTypeDefaultArgs<ExtArgs>;
   },
   ExtArgs['result']['qaReviewQueue']
@@ -1012,6 +1175,7 @@ export type QaReviewQueueInclude<
 > = {
   execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>;
   ai_code_reviews?: boolean | Prisma.QaReviewQueue$ai_code_reviewsArgs<ExtArgs>;
+  bug_escapes?: boolean | Prisma.QaReviewQueue$bug_escapesArgs<ExtArgs>;
   _count?: boolean | Prisma.QaReviewQueueCountOutputTypeDefaultArgs<ExtArgs>;
 };
 export type QaReviewQueueIncludeCreateManyAndReturn<
@@ -1032,6 +1196,7 @@ export type $QaReviewQueuePayload<
   objects: {
     execution: Prisma.$ExecutionPayload<ExtArgs>;
     ai_code_reviews: Prisma.$AiCodeReviewPayload<ExtArgs>[];
+    bug_escapes: Prisma.$BugEscapePayload<ExtArgs>[];
   };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
@@ -1614,6 +1779,17 @@ export interface Prisma__QaReviewQueueClient<
       >
     | Null
   >;
+  bug_escapes<T extends Prisma.QaReviewQueue$bug_escapesArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.QaReviewQueue$bug_escapesArgs<ExtArgs>>,
+  ): Prisma.PrismaPromise<
+    | runtime.Types.Result.GetResult<
+        Prisma.$BugEscapePayload<ExtArgs>,
+        T,
+        'findMany',
+        GlobalOmitOptions
+      >
+    | Null
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2120,6 +2296,32 @@ export type QaReviewQueue$ai_code_reviewsArgs<
   take?: number;
   skip?: number;
   distinct?: Prisma.AiCodeReviewScalarFieldEnum | Prisma.AiCodeReviewScalarFieldEnum[];
+};
+
+/**
+ * QaReviewQueue.bug_escapes
+ */
+export type QaReviewQueue$bug_escapesArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the BugEscape
+   */
+  select?: Prisma.BugEscapeSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the BugEscape
+   */
+  omit?: Prisma.BugEscapeOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BugEscapeInclude<ExtArgs> | null;
+  where?: Prisma.BugEscapeWhereInput;
+  orderBy?: Prisma.BugEscapeOrderByWithRelationInput | Prisma.BugEscapeOrderByWithRelationInput[];
+  cursor?: Prisma.BugEscapeWhereUniqueInput;
+  take?: number;
+  skip?: number;
+  distinct?: Prisma.BugEscapeScalarFieldEnum | Prisma.BugEscapeScalarFieldEnum[];
 };
 
 /**

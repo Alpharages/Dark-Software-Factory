@@ -75,6 +75,7 @@ model Ticket {
   conversation_id   String? // Story 5.5: Optional link to conversation
   adrs              Adr[] // One-to-many: Architecture Decision Records (Story 7.1)
   production_approvals ProductionApproval[] // Story 8.3: One-to-many relation for approvals
+  bug_escapes       BugEscape[] // Story 8.5
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -228,6 +229,7 @@ model Execution {
   aiCostLogs           AICostLog[] // One-to-many: AI cost tracking
   archive              WorkspaceArchive? // One-to-one: Workspace archive metadata
   adrs                 Adr[] // One-to-many: Architecture Decision Records (Story 7.1)
+  bug_escapes          BugEscape[] // Story 8.5
 
   @@index([ticket_id, status])
   @@index([ai_provider, status])
@@ -276,6 +278,8 @@ model QAResult {
 
   // Relation to Execution model
   execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  bug_escapes BugEscape[] // Story 8.5
 
   @@index([overall_passed, created_at]) // For status + date filtering
   @@map("qa_results")
@@ -406,6 +410,8 @@ model ProductionError {
 
   fix_ticket_id String? // ClickUp task ID if auto-created
   resolved      Boolean @default(false)
+
+  bug_escape    BugEscape? // Story 8.5
 
   occurred_at DateTime
   created_at  DateTime @default(now())
@@ -796,8 +802,65 @@ model ProductionApproval {
 
 // User model for PM/Manager profiles
 
+
 // ============================================
-// AI CODE REVIEW (Story 8.2)
+// BUG ESCAPE TRACKING (Story 8.5)
+// ============================================
+
+model BugEscape {
+  id                      String   @id @default(uuid())
+
+  // Traceability links
+  production_error_id     String   @unique
+  production_error        ProductionError @relation(fields: [production_error_id], references: [id])
+
+  ticket_id               String
+  ticket                  Ticket   @relation(fields: [ticket_id], references: [id])
+
+  execution_id            String?
+  execution               Execution? @relation(fields: [execution_id], references: [id])
+
+  qa_result_id            String?
+  qa_result               QAResult? @relation(fields: [qa_result_id], references: [id])
+
+  qa_review_queue_id      String?  // Link to QaReviewQueue from Story 8.1
+  qa_review_queue         QaReviewQueue? @relation(fields: [qa_review_queue_id], references: [id])
+
+  // Classification
+  escape_category         EscapeCategory
+  severity_at_detection   ErrorSeverity
+
+  // Metrics
+  detected_at             DateTime
+  resolved_at             DateTime?
+  resolution_time_hours   Float?
+
+  // Metadata
+  project_id              String
+  ai_provider             String?  // cursor, claude, etc.
+  complexity_score        Int?
+
+  created_at              DateTime @default(now())
+
+  // Indexes for performance
+  @@index([project_id, detected_at])
+  @@index([detected_at])           // For time-series queries without project filter
+  @@index([escape_category])
+  @@index([ai_provider, detected_at])
+  @@map("bug_escapes")
+}
+
+enum EscapeCategory {
+  LINTING_MISS
+  TEST_GAP
+  COVERAGE_BLINDSPOT
+  AI_GENERATION_ERROR
+  REVIEW_FAILURE
+  DEPENDENCY_ISSUE
+  ENVIRONMENT_DIFFERENCE
+  UNKNOWN
+}
+
 // ============================================
 
 model AiCodeReview {
@@ -1142,6 +1205,7 @@ model QaReviewQueue {
   
   // Relations
   ai_code_reviews   AiCodeReview[]
+  bug_escapes       BugEscape[] // Story 8.5
 
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt

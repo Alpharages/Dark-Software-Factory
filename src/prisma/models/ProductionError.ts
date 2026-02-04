@@ -223,6 +223,10 @@ export type ProductionErrorWhereInput = {
   resolved?: Prisma.BoolFilter<'ProductionError'> | boolean;
   occurred_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
   created_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
+  bug_escape?: Prisma.XOR<
+    Prisma.BugEscapeNullableScalarRelationFilter,
+    Prisma.BugEscapeWhereInput
+  > | null;
 };
 
 export type ProductionErrorOrderByWithRelationInput = {
@@ -236,6 +240,7 @@ export type ProductionErrorOrderByWithRelationInput = {
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
+  bug_escape?: Prisma.BugEscapeOrderByWithRelationInput;
 };
 
 export type ProductionErrorWhereUniqueInput = Prisma.AtLeast<
@@ -253,6 +258,10 @@ export type ProductionErrorWhereUniqueInput = Prisma.AtLeast<
     resolved?: Prisma.BoolFilter<'ProductionError'> | boolean;
     occurred_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
     created_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
+    bug_escape?: Prisma.XOR<
+      Prisma.BugEscapeNullableScalarRelationFilter,
+      Prisma.BugEscapeWhereInput
+    > | null;
   },
   'id'
 >;
@@ -304,6 +313,7 @@ export type ProductionErrorCreateInput = {
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
+  bug_escape?: Prisma.BugEscapeCreateNestedOneWithoutProduction_errorInput;
 };
 
 export type ProductionErrorUncheckedCreateInput = {
@@ -317,6 +327,7 @@ export type ProductionErrorUncheckedCreateInput = {
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
+  bug_escape?: Prisma.BugEscapeUncheckedCreateNestedOneWithoutProduction_errorInput;
 };
 
 export type ProductionErrorUpdateInput = {
@@ -330,6 +341,7 @@ export type ProductionErrorUpdateInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  bug_escape?: Prisma.BugEscapeUpdateOneWithoutProduction_errorNestedInput;
 };
 
 export type ProductionErrorUncheckedUpdateInput = {
@@ -343,6 +355,7 @@ export type ProductionErrorUncheckedUpdateInput = {
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  bug_escape?: Prisma.BugEscapeUncheckedUpdateOneWithoutProduction_errorNestedInput;
 };
 
 export type ProductionErrorCreateManyInput = {
@@ -423,8 +436,119 @@ export type ProductionErrorMinOrderByAggregateInput = {
   created_at?: Prisma.SortOrder;
 };
 
+export type ProductionErrorScalarRelationFilter = {
+  is?: Prisma.ProductionErrorWhereInput;
+  isNot?: Prisma.ProductionErrorWhereInput;
+};
+
 export type EnumErrorSeverityFieldUpdateOperationsInput = {
   set?: $Enums.ErrorSeverity;
+};
+
+export type ProductionErrorCreateNestedOneWithoutBug_escapeInput = {
+  create?: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutBug_escapeInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutBug_escapeInput
+  >;
+  connectOrCreate?: Prisma.ProductionErrorCreateOrConnectWithoutBug_escapeInput;
+  connect?: Prisma.ProductionErrorWhereUniqueInput;
+};
+
+export type ProductionErrorUpdateOneRequiredWithoutBug_escapeNestedInput = {
+  create?: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutBug_escapeInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutBug_escapeInput
+  >;
+  connectOrCreate?: Prisma.ProductionErrorCreateOrConnectWithoutBug_escapeInput;
+  upsert?: Prisma.ProductionErrorUpsertWithoutBug_escapeInput;
+  connect?: Prisma.ProductionErrorWhereUniqueInput;
+  update?: Prisma.XOR<
+    Prisma.XOR<
+      Prisma.ProductionErrorUpdateToOneWithWhereWithoutBug_escapeInput,
+      Prisma.ProductionErrorUpdateWithoutBug_escapeInput
+    >,
+    Prisma.ProductionErrorUncheckedUpdateWithoutBug_escapeInput
+  >;
+};
+
+export type ProductionErrorCreateWithoutBug_escapeInput = {
+  id?: string;
+  application: string;
+  error_type: string;
+  error_message: string;
+  stack_trace?: string | null;
+  severity: $Enums.ErrorSeverity;
+  fix_ticket_id?: string | null;
+  resolved?: boolean;
+  occurred_at: Date | string;
+  created_at?: Date | string;
+};
+
+export type ProductionErrorUncheckedCreateWithoutBug_escapeInput = {
+  id?: string;
+  application: string;
+  error_type: string;
+  error_message: string;
+  stack_trace?: string | null;
+  severity: $Enums.ErrorSeverity;
+  fix_ticket_id?: string | null;
+  resolved?: boolean;
+  occurred_at: Date | string;
+  created_at?: Date | string;
+};
+
+export type ProductionErrorCreateOrConnectWithoutBug_escapeInput = {
+  where: Prisma.ProductionErrorWhereUniqueInput;
+  create: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutBug_escapeInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutBug_escapeInput
+  >;
+};
+
+export type ProductionErrorUpsertWithoutBug_escapeInput = {
+  update: Prisma.XOR<
+    Prisma.ProductionErrorUpdateWithoutBug_escapeInput,
+    Prisma.ProductionErrorUncheckedUpdateWithoutBug_escapeInput
+  >;
+  create: Prisma.XOR<
+    Prisma.ProductionErrorCreateWithoutBug_escapeInput,
+    Prisma.ProductionErrorUncheckedCreateWithoutBug_escapeInput
+  >;
+  where?: Prisma.ProductionErrorWhereInput;
+};
+
+export type ProductionErrorUpdateToOneWithWhereWithoutBug_escapeInput = {
+  where?: Prisma.ProductionErrorWhereInput;
+  data: Prisma.XOR<
+    Prisma.ProductionErrorUpdateWithoutBug_escapeInput,
+    Prisma.ProductionErrorUncheckedUpdateWithoutBug_escapeInput
+  >;
+};
+
+export type ProductionErrorUpdateWithoutBug_escapeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  application?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_type?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_message?: Prisma.StringFieldUpdateOperationsInput | string;
+  stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+
+export type ProductionErrorUncheckedUpdateWithoutBug_escapeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string;
+  application?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_type?: Prisma.StringFieldUpdateOperationsInput | string;
+  error_message?: Prisma.StringFieldUpdateOperationsInput | string;
+  stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
+  fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
+  occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
 
 export type ProductionErrorSelect<
@@ -441,6 +565,7 @@ export type ProductionErrorSelect<
     resolved?: boolean;
     occurred_at?: boolean;
     created_at?: boolean;
+    bug_escape?: boolean | Prisma.ProductionError$bug_escapeArgs<ExtArgs>;
   },
   ExtArgs['result']['productionError']
 >;
@@ -509,12 +634,25 @@ export type ProductionErrorOmit<
   | 'created_at',
   ExtArgs['result']['productionError']
 >;
+export type ProductionErrorInclude<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  bug_escape?: boolean | Prisma.ProductionError$bug_escapeArgs<ExtArgs>;
+};
+export type ProductionErrorIncludeCreateManyAndReturn<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {};
+export type ProductionErrorIncludeUpdateManyAndReturn<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {};
 
 export type $ProductionErrorPayload<
   ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
 > = {
   name: 'ProductionError';
-  objects: {};
+  objects: {
+    bug_escape: Prisma.$BugEscapePayload<ExtArgs> | null;
+  };
   scalars: runtime.Types.Extensions.GetPayloadResult<
     {
       id: string;
@@ -1068,6 +1206,19 @@ export interface Prisma__ProductionErrorClient<
   GlobalOmitOptions = {},
 > extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: 'PrismaPromise';
+  bug_escape<T extends Prisma.ProductionError$bug_escapeArgs<ExtArgs> = {}>(
+    args?: Prisma.Subset<T, Prisma.ProductionError$bug_escapeArgs<ExtArgs>>,
+  ): Prisma.Prisma__BugEscapeClient<
+    runtime.Types.Result.GetResult<
+      Prisma.$BugEscapePayload<ExtArgs>,
+      T,
+      'findUniqueOrThrow',
+      GlobalOmitOptions
+    > | null,
+    null,
+    ExtArgs,
+    GlobalOmitOptions
+  >;
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1127,6 +1278,10 @@ export type ProductionErrorFindUniqueArgs<
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
+  /**
    * Filter, which ProductionError to fetch.
    */
   where: Prisma.ProductionErrorWhereUniqueInput;
@@ -1147,6 +1302,10 @@ export type ProductionErrorFindUniqueOrThrowArgs<
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
+  /**
    * Filter, which ProductionError to fetch.
    */
   where: Prisma.ProductionErrorWhereUniqueInput;
@@ -1166,6 +1325,10 @@ export type ProductionErrorFindFirstArgs<
    * Omit specific fields from the ProductionError
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
   /**
    * Filter, which ProductionError to fetch.
    */
@@ -1219,6 +1382,10 @@ export type ProductionErrorFindFirstOrThrowArgs<
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
+  /**
    * Filter, which ProductionError to fetch.
    */
   where?: Prisma.ProductionErrorWhereInput;
@@ -1271,6 +1438,10 @@ export type ProductionErrorFindManyArgs<
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
+  /**
    * Filter, which ProductionErrors to fetch.
    */
   where?: Prisma.ProductionErrorWhereInput;
@@ -1317,6 +1488,10 @@ export type ProductionErrorCreateArgs<
    * Omit specific fields from the ProductionError
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
   /**
    * The data needed to create a ProductionError.
    */
@@ -1371,6 +1546,10 @@ export type ProductionErrorUpdateArgs<
    * Omit specific fields from the ProductionError
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
   /**
    * The data needed to update a ProductionError.
    */
@@ -1450,6 +1629,10 @@ export type ProductionErrorUpsertArgs<
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
+  /**
    * The filter to search for the ProductionError to update in case it exists.
    */
   where: Prisma.ProductionErrorWhereUniqueInput;
@@ -1478,6 +1661,10 @@ export type ProductionErrorDeleteArgs<
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
+  /**
    * Filter which ProductionError to delete.
    */
   where: Prisma.ProductionErrorWhereUniqueInput;
@@ -1500,6 +1687,27 @@ export type ProductionErrorDeleteManyArgs<
 };
 
 /**
+ * ProductionError.bug_escape
+ */
+export type ProductionError$bug_escapeArgs<
+  ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs,
+> = {
+  /**
+   * Select specific fields to fetch from the BugEscape
+   */
+  select?: Prisma.BugEscapeSelect<ExtArgs> | null;
+  /**
+   * Omit specific fields from the BugEscape
+   */
+  omit?: Prisma.BugEscapeOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BugEscapeInclude<ExtArgs> | null;
+  where?: Prisma.BugEscapeWhereInput;
+};
+
+/**
  * ProductionError without action
  */
 export type ProductionErrorDefaultArgs<
@@ -1513,4 +1721,8 @@ export type ProductionErrorDefaultArgs<
    * Omit specific fields from the ProductionError
    */
   omit?: Prisma.ProductionErrorOmit<ExtArgs> | null;
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProductionErrorInclude<ExtArgs> | null;
 };

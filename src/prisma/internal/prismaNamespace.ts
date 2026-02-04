@@ -399,6 +399,7 @@ export const ModelName = {
   WorkspaceArchive: 'WorkspaceArchive',
   ApprovalRecord: 'ApprovalRecord',
   ProductionApproval: 'ProductionApproval',
+  BugEscape: 'BugEscape',
   AiCodeReview: 'AiCodeReview',
   AiCodeReviewFinding: 'AiCodeReviewFinding',
   User: 'User',
@@ -461,6 +462,7 @@ export type TypeMap<
       | 'workspaceArchive'
       | 'approvalRecord'
       | 'productionApproval'
+      | 'bugEscape'
       | 'aiCodeReview'
       | 'aiCodeReviewFinding'
       | 'user'
@@ -2282,6 +2284,80 @@ export type TypeMap<
         };
       };
     };
+    BugEscape: {
+      payload: Prisma.$BugEscapePayload<ExtArgs>;
+      fields: Prisma.BugEscapeFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.BugEscapeFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.BugEscapeFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>;
+        };
+        findFirst: {
+          args: Prisma.BugEscapeFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.BugEscapeFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>;
+        };
+        findMany: {
+          args: Prisma.BugEscapeFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>[];
+        };
+        create: {
+          args: Prisma.BugEscapeCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>;
+        };
+        createMany: {
+          args: Prisma.BugEscapeCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.BugEscapeCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>[];
+        };
+        delete: {
+          args: Prisma.BugEscapeDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>;
+        };
+        update: {
+          args: Prisma.BugEscapeUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>;
+        };
+        deleteMany: {
+          args: Prisma.BugEscapeDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.BugEscapeUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.BugEscapeUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>[];
+        };
+        upsert: {
+          args: Prisma.BugEscapeUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BugEscapePayload>;
+        };
+        aggregate: {
+          args: Prisma.BugEscapeAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBugEscape>;
+        };
+        groupBy: {
+          args: Prisma.BugEscapeGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.BugEscapeGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.BugEscapeCountArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.BugEscapeCountAggregateOutputType> | number;
+        };
+      };
+    };
     AiCodeReview: {
       payload: Prisma.$AiCodeReviewPayload<ExtArgs>;
       fields: Prisma.AiCodeReviewFieldRefs;
@@ -4074,6 +4150,27 @@ export const ProductionApprovalScalarFieldEnum = {
 export type ProductionApprovalScalarFieldEnum =
   (typeof ProductionApprovalScalarFieldEnum)[keyof typeof ProductionApprovalScalarFieldEnum];
 
+export const BugEscapeScalarFieldEnum = {
+  id: 'id',
+  production_error_id: 'production_error_id',
+  ticket_id: 'ticket_id',
+  execution_id: 'execution_id',
+  qa_result_id: 'qa_result_id',
+  qa_review_queue_id: 'qa_review_queue_id',
+  escape_category: 'escape_category',
+  severity_at_detection: 'severity_at_detection',
+  detected_at: 'detected_at',
+  resolved_at: 'resolved_at',
+  resolution_time_hours: 'resolution_time_hours',
+  project_id: 'project_id',
+  ai_provider: 'ai_provider',
+  complexity_score: 'complexity_score',
+  created_at: 'created_at',
+} as const;
+
+export type BugEscapeScalarFieldEnum =
+  (typeof BugEscapeScalarFieldEnum)[keyof typeof BugEscapeScalarFieldEnum];
+
 export const AiCodeReviewScalarFieldEnum = {
   id: 'id',
   queue_item_id: 'queue_item_id',
@@ -4772,6 +4869,22 @@ export type ListEnumApprovalDecisionFieldRefInput<$PrismaModel> = FieldRefInputT
 >;
 
 /**
+ * Reference to a field of type 'EscapeCategory'
+ */
+export type EnumEscapeCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'EscapeCategory'
+>;
+
+/**
+ * Reference to a field of type 'EscapeCategory[]'
+ */
+export type ListEnumEscapeCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<
+  $PrismaModel,
+  'EscapeCategory[]'
+>;
+
+/**
  * Reference to a field of type 'Json[]'
  */
 export type ListJsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json[]'>;
@@ -5009,6 +5122,7 @@ export type GlobalOmitConfig = {
   workspaceArchive?: Prisma.WorkspaceArchiveOmit;
   approvalRecord?: Prisma.ApprovalRecordOmit;
   productionApproval?: Prisma.ProductionApprovalOmit;
+  bugEscape?: Prisma.BugEscapeOmit;
   aiCodeReview?: Prisma.AiCodeReviewOmit;
   aiCodeReviewFinding?: Prisma.AiCodeReviewFindingOmit;
   user?: Prisma.UserOmit;

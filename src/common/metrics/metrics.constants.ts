@@ -101,6 +101,12 @@ export const QA_METRICS = {
   AI_REVIEW_FINDING_STATUS_UPDATES: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_finding_status_updates_total`,
   AI_REVIEW_CACHE_HITS_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_cache_hits_total`,
   AI_REVIEW_COST_USD: `${METRICS_CONSTANTS.PREFIX}qa_ai_review_cost_usd`,
+
+  // Story 8.5: Bug Escape Metrics
+  BUG_ESCAPES_TOTAL: `${METRICS_CONSTANTS.PREFIX}bug_escapes_total`,
+  BUG_ESCAPE_RATE_PERCENT: `${METRICS_CONSTANTS.PREFIX}bug_escape_rate_percent`,
+  BUG_ESCAPE_THRESHOLD_BREACHES_TOTAL: `${METRICS_CONSTANTS.PREFIX}bug_escape_threshold_breaches_total`,
+  BUG_ESCAPE_RESOLUTION_TIME_HOURS: `${METRICS_CONSTANTS.PREFIX}bug_escape_resolution_time_hours`,
 } as const;
 
 // GitHub Metrics

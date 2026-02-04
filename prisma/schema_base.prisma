@@ -1,0 +1,1324 @@
+// Prisma Schema for AI Dev Tool Orchestrator
+// Architecture Reference: docs/architecture.md (Data Architecture section)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// PROJECTS (Story 4.9)
+// Maps ClickUp lists to GitHub repositories
+// ============================================
+
+enum ProjectProvider {
+  CLICKUP
+  JIRA
+  ASANA
+}
+
+model Project {
+  id                    String          @id @default(uuid())
+  name                  String
+  client_name           String          @default("Internal")
+  provider              ProjectProvider @default(CLICKUP) // NEW: Multi-provider support
+  clickup_list_id       String?         @unique // Legacy/Specific ID. Future: make optional or map to generic external_id
+  monitor_tasks         Boolean         @default(false) // NEW: Toggle sync
+  sync_config           Json? // NEW: Provider-specific settings
+  github_repository_url String
+  pm_id                 String // NEW: UUID of PM (matches external Auth 'sub' claim)
+  status                String   @default("active") // NEW: active|paused|completed
+  default_branch        String   @default("main")
+  budget_usd            Decimal? @default(100.00) @db.Decimal(10, 2)
+  is_active             Boolean  @default(true) // Story 19.4
+  deactivated_at        DateTime?
+
+  // Relationships
+  tickets           Ticket[]
+  coverage_baseline CoverageBaseline?
+  coverage_config   ProjectCoverageConfig?
+  conversations     ClientConversation[] // Story 5.5
+  reports           Report[] // Story 5.6
+  quality_gate_config QualityGateConfig?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("projects")
+}
+
+// ============================================
+// TICKET INTAKE
+// ============================================
+
+model Ticket {
+  id                   String       @id @default(uuid())
+  clickup_task_id      String       @unique
+  project_id           String
+  project              Project      @relation(fields: [project_id], references: [id])
+  title                String
+  description          String       @db.Text
+  acceptance_criteria  String       @db.Text
+  ticket_quality_score Int
+  status               TicketStatus @default(RECEIVED)
+
+  // Relationships
+  executions        Execution[]
+  cost_records      CostRecord[]
+  context_documents ContextDocument[] // Story 2.12: Attached context documents
+  ai_cost_logs      AICostLog[] // Story 13.1: AI cost tracking
+  conversation      ClientConversation? @relation("ConversationTickets", fields: [conversation_id], references: [id]) // Story 5.5
+  conversation_id   String? // Story 5.5: Optional link to conversation
+  adrs              Adr[] // One-to-many: Architecture Decision Records (Story 7.1)
+  production_approvals ProductionApproval[] // Story 8.3: One-to-many relation for approvals
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([project_id, status])
+  @@index([created_at])
+  @@index([clickup_task_id])
+  @@index([title])
+  @@map("tickets")
+}
+
+enum TicketStatus {
+  RECEIVED
+  VALIDATED
+  VALIDATION_FAILED
+  BLOCKED_CIRCULAR
+  WAITING
+  WAITING_FOR_LOCKS
+  QUEUED
+  AI_PROCESSING
+  QA_REVIEW
+  QA_FAILED
+  GITHUB_PUSH
+  DEPLOYING
+  DEPLOYED
+  MONITORING
+  AWAITING_APPROVAL
+  APPROVED
+  REJECTED
+  AWAITING_REWORK
+  FAILED
+  COMPLETED
+}
+
+// ============================================
+// V3 ENUMS (Epic 11)
+// ============================================
+
+enum FileLockStatus {
+  LOCKED
+  RELEASED
+}
+
+enum FileLockQueueStatus {
+  WAITING
+  ACQUIRED
+  CANCELLED
+}
+
+enum DependencyStatus {
+  WAITING
+  BLOCKED
+  RESOLVED
+  CANCELLED
+}
+
+enum ArchiveStatus {
+  PENDING
+  ARCHIVING
+  ARCHIVED
+  FAILED
+}
+
+enum PRRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Story 7.7: Task type classification for AI capability tracking
+enum TaskType {
+  CODE_GENERATION
+  TEST_GENERATION
+  REFACTORING
+  DOCUMENTATION
+  ARCHITECTURE_REVIEW
+  BUG_FIX
+}
+
+// ============================================
+// AI EXECUTION TRACKING
+// ============================================
+
+model Execution {
+  id        String @id @default(uuid())
+  ticket_id String
+  ticket    Ticket @relation(fields: [ticket_id], references: [id])
+
+  ai_provider      AIProvider
+  prompt           String          @db.Text
+  status           ExecutionStatus @default(QUEUED)
+  confidence_score Float?
+
+  started_at    DateTime?
+  completed_at  DateTime?
+  failed_at     DateTime?
+  error_message String?   @db.Text
+
+  // Generated code
+  code_output   String? @db.Text
+  files_changed Json? // Array of file paths
+
+  // Retry tracking
+  retry_count Int @default(0)
+  max_retries Int @default(3)
+
+  // Routing decision metadata (Story 2.3)
+  complexity_score     Int?
+  complexity_breakdown Json?
+  routing_reason       String?
+  fallback_used        Boolean     @default(false)
+  original_provider    AIProvider?
+
+  // Story 2.9: Retry Context
+  error_context      String?   @db.Text // JSON: previous retry errors
+  scheduled_retry_at DateTime? // Next scheduled retry time
+
+  // V3 FIELDS (Epic 11: Phase 1 Foundation)
+  base_branch           String? // Selected base branch for PR
+  branch_selection_log  String?      @db.Text // AI decision log for branch selection
+  file_modifications    Json? // Detailed file change metadata
+  risk_level            PRRiskLevel? // PR risk assessment
+  circular_dep_detected Boolean      @default(false) // Dependency cycle flag
+
+  // Story 13.2: Cost Optimization
+  selected_model String? // AI model selected by cost optimizer (e.g., "gpt-3.5-turbo", "claude-3.5-sonnet")
+
+  // Story 7.7: Task type for AI capability tracking
+  task_type TaskType? // Type of task being executed for pattern detection
+
+  // Story 23.2: Container cleanup tracking
+  container_id String? // Docker container ID assigned to execution
+  debug_mode   Boolean  @default(false) // Preserve workspace for debugging
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Story 3.6: QA Results relation
+  qa_result QAResult?
+  // Story 8.1: QA Review Queue relation
+  qa_review_queue QaReviewQueue?
+
+  // Story 5.3: Approval relation
+  approvalRecords ApprovalRecord[]
+
+  // V3 RELATIONS (Epic 11)
+  aiDecisionLogs       AIDecisionLog[] // One-to-many: AI decision audit trail
+  fileLocks            FileLock[] // One-to-many: File lock tracking
+  fileLockQueueEntries FileLockQueue[] // One-to-many: File lock acquisition queue (Story 12.3)
+  aiCostLogs           AICostLog[] // One-to-many: AI cost tracking
+  archive              WorkspaceArchive? // One-to-one: Workspace archive metadata
+  adrs                 Adr[] // One-to-many: Architecture Decision Records (Story 7.1)
+  bug_escapes          BugEscape[] // Story 8.5
+  @@index([ticket_id, status])
+  @@index([ai_provider, status])
+  @@index([scheduled_retry_at]) // Story 2.9: Index for retry queries
+  @@map("executions")
+}
+
+enum AIProvider {
+  CURSOR_HEADLESS // Primary: Full repo context, complex tasks
+  CLAUDE_CODE // Secondary: Faster, cheaper, simple tasks
+}
+
+enum ExecutionStatus {
+  QUEUED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  TIMEOUT
+  CANCELLED
+  AWAITING_APPROVAL
+}
+
+// ============================================
+// QA RESULTS (Story 3.6)
+// FR38: Lead QA can view automated QA results
+// ============================================
+
+model QAResult {
+  id           String @id @default(uuid())
+  execution_id String @unique // CRITICAL: Must be unique for upsert pattern
+
+  linting_passed Boolean @default(false)
+  linting_errors Json?
+
+  tests_passed  Boolean @default(false)
+  test_results  Json?
+  test_coverage Float?
+
+  code_review_passed Boolean @default(false)
+  code_review_issues Json?
+
+  overall_passed Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relation to Execution model
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  bug_escapes BugEscape[] // Story 8.5
+
+  @@map("qa_results")
+}
+
+// ============================================
+// GITHUB INTEGRATION
+// ============================================
+
+model GitHubInstallation {
+  id              String @id @default(uuid())
+  installation_id String @unique @map("installation_id") // ID from GitHub
+  account_login   String @map("account_login") // Org or User name
+  account_id      String @map("account_id") // GitHub Account ID
+  account_type    String @map("account_type") // User or Organization
+
+  access_token String?   @db.Text // Cached token
+  expires_at   DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([account_login])
+  @@map("github_installations")
+}
+
+model GitHubPush {
+  id           String @id @default(uuid())
+  execution_id String
+
+  repository  String
+  branch_name String
+  commit_sha  String?
+  pr_number   Int?
+  pr_url      String?
+
+  push_status   GitHubStatus @default(PENDING)
+  error_message String?      @db.Text
+
+  // Relationships
+  deployments Deployment[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("github_pushes")
+}
+
+enum GitHubStatus {
+  PENDING
+  BRANCH_CREATED
+  COMMITTED
+  PR_CREATED
+  MERGED
+  FAILED
+}
+
+// ============================================
+// DEPLOYMENT TRACKING
+// ============================================
+
+model Deployment {
+  id             String     @id @default(uuid())
+  github_push_id String
+  github_push    GitHubPush @relation(fields: [github_push_id], references: [id])
+
+  environment   String // dev, staging, production
+  cicd_provider String // github-actions, jenkins, etc.
+  build_id      String? // Provider-specific build/run ID
+  workflow_id   String? // GitHub Actions workflow ID (from API response)
+
+  status        DeploymentStatus @default(TRIGGERED)
+  deployed_at   DateTime?
+  error_message String?          @db.Text
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([github_push_id])
+  @@index([status, environment])
+  @@map("deployments")
+}
+
+enum DeploymentStatus {
+  TRIGGERED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+// ============================================
+// COST TRACKING
+// ============================================
+
+model CostRecord {
+  id        String @id @default(uuid())
+  ticket_id String
+  ticket    Ticket @relation(fields: [ticket_id], references: [id])
+
+  ai_provider    AIProvider
+  operation_type String // code_generation, review, etc.
+
+  tokens_used   Int?
+  api_calls     Int  @default(1)
+  cost_in_cents Int // Store as cents to avoid floating point
+
+  created_at DateTime @default(now())
+
+  @@index([ticket_id])
+  @@index([ai_provider, created_at])
+  @@map("cost_records")
+}
+
+// ============================================
+// PRODUCTION MONITORING
+// ============================================
+
+model ProductionError {
+  id String @id @default(uuid())
+
+  application   String
+  error_type    String
+  error_message String  @db.Text
+  stack_trace   String? @db.Text
+
+  severity ErrorSeverity
+
+  fix_ticket_id String? // ClickUp task ID if auto-created
+  resolved      Boolean @default(false)
+
+  bug_escape    BugEscape? // Story 8.5
+
+  occurred_at DateTime
+
+  @@index([application, severity, resolved])
+  @@map("production_errors")
+}
+
+enum ErrorSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ============================================
+// METRICS & ANALYTICS
+// ============================================
+
+model Metric {
+  id String @id @default(uuid())
+
+  metric_name String
+  metric_type String // counter, gauge, histogram
+  value       Float
+  labels      Json? // Key-value pairs for filtering
+
+  recorded_at DateTime @default(now())
+
+  @@index([metric_name, recorded_at])
+  @@map("metrics")
+}
+
+// ============================================
+// AUDIT TRAIL
+// ============================================
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  entity_type String // ticket, execution, deployment
+  entity_id   String
+  action      String // created, updated, status_changed
+
+  actor_type String // user, system
+  actor_id   String? // user ID if human, null if system
+
+  before_state Json?
+  after_state  Json?
+
+  created_at DateTime @default(now())
+
+  @@index([entity_type, entity_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
+
+// ============================================
+// CONTEXT DOCUMENTS (Story 2.12)
+// FR3: PMs can attach context documents
+// FR59: System extracts project context
+// ============================================
+
+model ContextDocument {
+  id        String @id @default(uuid())
+  ticket_id String
+  ticket    Ticket @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+
+  // Original file metadata
+  original_filename String
+  file_format       ContextFileFormat
+  file_size_bytes   Int
+  file_hash         String            @unique // SHA-256 for deduplication
+  storage_path      String // Path to stored file
+
+  // Extracted content
+  extracted_text    String           @db.Text
+  extraction_status ExtractionStatus @default(PENDING)
+  extraction_error  String?
+
+  // Metadata for AI context
+  document_title  String? // Extracted or provided title
+  document_type   String? // e.g., "spec", "requirements", "domain"
+  content_summary String? // AI-generated summary (future)
+
+  // Cache control
+  content_hash     String? // Hash of extracted content
+  cached_at        DateTime?
+  cache_expires_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([ticket_id])
+  @@index([file_hash])
+  @@index([extraction_status])
+  @@map("context_documents")
+}
+
+enum ContextFileFormat {
+  PDF
+  MARKDOWN
+  TEXT
+  DOCX
+}
+
+enum ExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// COVERAGE BASELINES (Story 3.3)
+// ============================================
+
+model CoverageBaseline {
+  id         String  @id @default(uuid())
+  project_id String  @unique
+  project    Project @relation(fields: [project_id], references: [id])
+  branch     String  @default("main")
+
+  lines      Float // Line coverage %
+  branches   Float // Branch coverage %
+  functions  Float // Function coverage %
+  statements Float // Statement coverage %
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([project_id, branch])
+  @@index([project_id])
+  @@map("coverage_baselines")
+}
+
+// ============================================
+// PROJECT COVERAGE CONFIG (Story 3.3)
+// Per-project threshold overrides
+// ============================================
+
+model ProjectCoverageConfig {
+  id          String  @id @default(uuid())
+  project_id  String  @unique
+  project     Project @relation(fields: [project_id], references: [id])
+  threshold   Float   @default(80) // Override global threshold
+  enforcement Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("project_coverage_configs")
+}
+
+// ============================================
+// WEBHOOK EVENTS (Idempotency)
+// Tracks processed webhooks to prevent duplicate processing
+// ============================================
+
+model WebhookEvent {
+  id           String   @id // webhook_id from ClickUp/GitHub
+  source       String // "clickup", "github"
+  event_type   String // Event type from provider
+  payload      Json // Full webhook payload for debugging
+  processed_at DateTime @default(now())
+
+  @@index([source, event_type, processed_at])
+  @@map("webhook_events")
+}
+
+// ============================================
+// WORKSPACE PERSISTENCE (Story 2.6)
+// Tracks workspace lifecycle across restarts
+// ============================================
+
+model Workspace {
+  id           String @id @default(uuid())
+  workspace_id String @unique // ticket-{ticketId}-{uuid}
+  execution_id String @unique
+  ticket_id    String
+
+  workspace_path String // Full path to workspace directory
+  repository_url String?
+  branch_name    String
+
+  status WorkspaceStatus @default(CREATING)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  cleaned_at DateTime? // When workspace was cleaned up
+
+  @@index([execution_id])
+  @@index([ticket_id])
+  @@index([status, created_at])
+  @@map("workspaces")
+}
+
+enum WorkspaceStatus {
+  CREATING
+  READY
+  IN_USE
+  FAILED
+  CLEANING
+  CLEANED
+}
+
+// ============================================
+// V3 MODELS (Epic 11: Phase 1 Foundation \u0026 Safety)
+// ============================================
+
+// AI DECISION LOG - Complete audit trail of AI decisions
+model AIDecisionLog {
+  id           String   @id @default(uuid())
+  timestamp    DateTime @default(now())
+  agent_name   String // AI agent that made the decision
+  action       String // Action taken (e.g., "branch_selection", "file_lock_request")
+  reasoning    String   @db.Text // AI's reasoning for the decision
+  ticket_id    String
+  execution_id String?
+  input_data   Json // Input context for decision
+  output_data  Json // Decision output/result
+  confidence   Float // Confidence score 0-1 (for low-confidence alerts)
+
+  // Relation to Execution (optional - intake decisions have no execution)
+  execution Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+
+  @@index([ticket_id, timestamp]) // Timeline queries by ticket
+  @@index([execution_id])
+  @@index([agent_name])
+  @@index([timestamp])
+  @@index([confidence, timestamp]) // Low-confidence query optimization
+  @@map("ai_decision_logs")
+}
+
+// FILE LOCK - Prevent concurrent modification conflicts
+model FileLock {
+  id           String         @id @default(uuid())
+  ticket_id    String
+  execution_id String
+  file_path    String // Relative path within repo
+  locked_at    DateTime       @default(now())
+  released_at  DateTime?
+  status       FileLockStatus @default(LOCKED)
+
+  // Relation to Execution
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@unique([ticket_id, file_path]) // One lock per file per ticket
+  @@index([execution_id])
+  @@index([status])
+  @@index([ticket_id])
+  @@map("file_locks")
+}
+
+// FILE LOCK QUEUE - FIFO ordering per file for lock acquisition fairness (Story 12.3)
+model FileLockQueue {
+  id           String              @id @default(uuid())
+  ticket_id    String
+  execution_id String
+  file_path    String // Relative path within repo
+  requested_at DateTime            @default(now())
+  acquired_at  DateTime?
+  status       FileLockQueueStatus @default(WAITING)
+
+  // Relation to Execution
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@unique([ticket_id, execution_id, file_path])
+  @@index([file_path, status, requested_at])
+  @@index([ticket_id])
+  @@index([execution_id])
+  @@map("file_lock_queue")
+}
+
+// AI COST LOG - Track AI invocation costs
+model AICostLog {
+  id           String   @id @default(uuid())
+  execution_id String?
+  ticket_id    String?
+  timestamp    DateTime @default(now())
+
+  ai_provider    AIProvider
+  model_name     String // e.g., "claude-3-5-sonnet", "gpt-4"
+  operation_type String // e.g., "code_generation", "review"
+
+  tokens_input  Int?
+  tokens_output Int?
+  tokens_total  Int?
+  cost_usd      Decimal @db.Decimal(10, 6) // Precise cost tracking
+
+  // Relation to Execution (optional - some costs may be pre-execution)
+  execution Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+  ticket    Ticket?    @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
+
+  @@index([execution_id])
+  @@index([ticket_id, timestamp])
+  @@index([ai_provider, timestamp])
+  @@map("ai_cost_logs")
+}
+
+// TICKET DEPENDENCY - Manage ticket dependencies with circular detection
+model TicketDependency {
+  id                String           @id @default(uuid())
+  ticket_id         String // Dependent ticket
+  depends_on        String // Blocking ticket ID
+  status            DependencyStatus @default(WAITING)
+  circular_detected Boolean          @default(false)
+  created_at        DateTime         @default(now())
+  resolved_at       DateTime?
+
+  // Story 12.2: ETA calculation fields
+  estimated_eta     DateTime? // Calculated ETA for resolution
+  eta_calculated_at DateTime? // Timestamp of last ETA calculation
+
+  @@unique([ticket_id, depends_on]) // Prevent duplicate dependency links
+  @@index([ticket_id])
+  @@index([depends_on])
+  @@index([status])
+  @@map("ticket_dependencies")
+}
+
+// WORKSPACE ARCHIVE - Storage management with compression tracking
+model WorkspaceArchive {
+  id              String        @id @default(uuid())
+  execution_id    String        @unique
+  workspace_path  String
+  archive_path    String? // S3/local path to archived workspace
+  size_bytes      BigInt
+  compressed_size BigInt?
+  status          ArchiveStatus @default(PENDING)
+  archived_at     DateTime?
+  error_message   String?       @db.Text
+
+  // Relation to Execution (one-to-one)
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([archived_at])
+  @@map("workspace_archives")
+}
+
+// ============================================
+// STORY 5.3: CODE APPROVAL
+// ============================================
+
+model ApprovalRecord {
+  id           String           @id @default(uuid())
+  execution_id String
+  pm_id        String // PM who made the decision
+  decision     ApprovalDecision
+  reasoning    String?          @db.Text
+  created_at   DateTime         @default(now())
+
+  execution Execution @relation(fields: [execution_id], references: [id], onDelete: Cascade)
+
+  @@index([execution_id])
+  @@map("approval_records")
+}
+
+enum ApprovalDecision {
+  APPROVE
+  REJECT
+  REWORK
+  ESCALATE
+}
+
+// ============================================
+// STORY 8.3: PRODUCTION APPROVAL
+// ============================================
+
+model ProductionApproval {
+  id              String           @id @default(uuid())
+  ticket_id       String
+  ticket          Ticket           @relation(fields: [ticket_id], references: [id])
+  approver_id     String // ID of the user (Lead QA/PM)
+  decision        ApprovalDecision // Re-using existing enum
+  override_reason String?          @db.Text
+  created_at      DateTime         @default(now())
+
+  @@index([ticket_id])
+  @@index([approver_id])
+  @@map("production_approvals")
+}
+
+// ============================================
+// STORY 5.4: WORKLOAD MANAGEMENT & CAPACITY PLANNING
+// ============================================
+
+// User model for PM/Manager profiles
+
+
+// ============================================
+// BUG ESCAPE TRACKING (Story 8.5)
+// ============================================
+
+model BugEscape {
+  id                String   @id @default(uuid())
+  queue_item_id     String
+  queue_item        QaReviewQueue @relation(fields: [queue_item_id], references: [id])
+  review_version    Int      @default(1) // For re-reviews (AC#5)
+
+  // AI Generation Metadata
+  generated_at      DateTime @default(now())
+  ai_model          String   // "claude-sonnet-4-20250514"
+  confidence_score  Decimal  @db.Decimal(3, 2)
+  overall_assessment String // "LOW_RISK|MODERATE_RISK|HIGH_RISK"
+  summary           String   @db.Text
+
+  // Findings (stored as JSON for flexibility)
+  findings          Json     // Structured findings object
+
+  // Cost and Performance
+  generation_duration_ms Int
+  token_usage       Json?    // { input: number, output: number }
+  cost_usd          Decimal? @db.Decimal(10, 6)
+
+  // Cache Control
+  cache_key         String?  @unique
+  expires_at        DateTime?
+
+  // Relationships
+  finding_statuses  AiCodeReviewFinding[]
+
+  // Audit
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@unique([queue_item_id, review_version]) // Allow multiple versions
+  @@index([queue_item_id])
+  @@index([generated_at])
+  @@index([cache_key])
+  @@map("ai_code_reviews")
+}
+
+model AiCodeReviewFinding {
+  id                String   @id @default(uuid())
+  ai_review_id      String
+  ai_review         AiCodeReview @relation(fields: [ai_review_id], references: [id], onDelete: Cascade)
+
+  // Finding Identification
+  finding_key       String   // Hash of file+line+description for deduplication
+  finding_type      String   // missed_issue, code_smell, complex_logic, testing_gap, security_note
+  severity          String   // HIGH, MEDIUM, LOW
+  file_path         String?
+  line_number       Int?
+  description       String   @db.Text
+  suggestion        String?  @db.Text
+
+  // Review Status (AC#5)
+  status            String   @default("PENDING") // PENDING, ACKNOWLEDGED, FIXED, DISPUTED
+  reviewed_by       String?
+  reviewed_at       DateTime?
+  review_notes      String?  @db.Text
+
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@index([ai_review_id])
+  @@index([status])
+  @@index([finding_key])
+  @@map("ai_code_review_findings")
+}
+
+
+// ============================================
+// STORY 5.4: WORKLOAD MANAGEMENT & CAPACITY PLANNING
+// ============================================
+
+// User model for PM/Manager profiles
+model User {
+  id            String  @id // External Auth 'sub' claim (UUID)
+  email         String  @unique
+  full_name     String // Story 17-1: Renamed from 'name'
+  password_hash String // Story 17-1: For local authentication
+  role          String  @default("PM") // PM, MANAGER, TL, QA, ADMIN
+  is_active     Boolean @default(true) // Story 17-1: Account status
+  last_login_at DateTime? // Story 17-1: Last successful login
+  managed_by_id String? // Manager link (null for top-level managers)
+  max_tickets   Int     @default(20) // PM capacity threshold
+
+  // Relationships
+  manager             User?                @relation("ManagerTeam", fields: [managed_by_id], references: [id])
+  team_members        User[]               @relation("ManagerTeam")
+  utilization_history UtilizationHistory[]
+  conversations       ClientConversation[] @relation("PMConversations") // Story 5.5
+  invitations         UserInvitation[]     @relation("InvitedBy") // Story 17-1: Invitations sent by this user
+  refreshTokens       RefreshToken[]       // Story 17-3: User's refresh tokens
+  
+  // Quality Gate Relations
+  quality_gate_configs_created QualityGateConfig[] @relation("QualityGateConfigCreatedBy")
+  quality_gate_configs_updated QualityGateConfig[] @relation("QualityGateConfigUpdatedBy")
+  quality_gate_history         QualityGateConfigHistory[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([managed_by_id])
+  @@index([role])
+  @@index([email]) // Story 17-1: Optimize login queries
+  @@map("users")
+}
+
+// UtilizationHistory for tracking PM workload trends
+model UtilizationHistory {
+  id            String   @id @default(uuid())
+  pm_id         String
+  pm            User     @relation(fields: [pm_id], references: [id], onDelete: Cascade)
+  snapshot_date DateTime @default(now()) @db.Date
+
+  active_tickets  Int // Total active tickets at snapshot time
+  max_tickets     Int // PM's capacity threshold at snapshot time
+  utilization_pct Float // Calculated: (active_tickets / max_tickets * 100)
+
+  created_at DateTime @default(now())
+
+  @@unique([pm_id, snapshot_date]) // One snapshot per PM per day
+  @@index([pm_id, snapshot_date]) // Query optimization for trends
+  @@index([snapshot_date]) // Query all PMs for a specific date
+  @@map("utilization_history")
+}
+
+// ============================================
+// STORY 5.5: CLIENT COMMUNICATION INTELLIGENCE
+// ============================================
+
+model ClientConversation {
+  id                String   @id @default(uuid())
+  project_id        String
+  pm_id             String
+  conversation_date DateTime
+  title             String
+  transcript        String   @db.Text
+  summary           String?  @db.Text
+  action_items      Json[] // Array of action items
+  sentiment         String? // positive|neutral|negative
+  audio_file_url    String?
+  status            String   @default("uploaded") // uploaded|transcribing|analyzing|completed|failed
+  processing_cost   Float? // USD cost for AI processing
+  clickup_task_ids  Json? // Story 5.5.1: Array of linked Click Up tasks [{id, name, url}]
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  project        Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  pm             User     @relation("PMConversations", fields: [pm_id], references: [id])
+  linked_tickets Ticket[] @relation("ConversationTickets")
+
+  @@index([project_id, conversation_date])
+  @@index([sentiment])
+  @@index([status])
+  @@map("client_conversations")
+}
+
+// ============================================
+// STORY 5.6: REPORTING & ANALYTICS GENERATION
+// ============================================
+
+model Report {
+  id         String   @id @default(uuid())
+  project_id String
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  type       ReportType   @default(SPRINT)
+  status     ReportStatus @default(PENDING)
+
+  title      String
+  date_start DateTime
+  date_end   DateTime
+
+  // Aggregated data for the report
+  raw_data Json?
+
+  // AI Generated content
+  summary   String? @db.Text
+  narrative String? @db.Text
+  insights  String? @db.Text
+
+  // Exported files
+  file_urls Json? // { pdf: "url", pptx: "url" }
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([project_id, date_start, date_end])
+  @@map("reports")
+}
+
+enum ReportType {
+  SPRINT
+  CUSTOM
+}
+
+enum ReportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+// ============================================
+// STORY 15.2: CONFIGURATION DASHBOARD
+// ============================================
+
+model SystemConfig {
+  key         String   @id
+  value       String   @db.Text
+  description String?
+  is_secret   Boolean  @default(false)
+  updated_by  String?  // User UUID (optional for system defaults)
+  updated_at  DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// ============================================
+// STORY 7.1: ARCHITECTURE DECISION RECORDS (ADR)
+// ============================================
+
+model Adr {
+  id             String   @id @default(uuid())
+  execution_id   String?
+  ticket_id      String?
+  
+  // ADR Core Fields (Michael Nygard template)
+  title          String // Short descriptive name (e.g., "Use Redis for Session Storage")
+  status         AdrStatus @default(PROPOSED)
+  context        String   @db.Text // Why this decision is needed
+  decision       String   @db.Text // What was chosen
+  consequences   String   @db.Text // Positive and negative impacts
+  alternatives   String?  @db.Text // Other options AI evaluated
+  
+  // AI Metadata
+  ai_confidence  Float? // AI confidence score (0-1)
+  risk_level     RiskLevel? // Calculated risk (HIGH/MEDIUM/LOW)
+  risk_factors   Json?      // Detailed risk analysis (scope, reversibility, etc.)
+  
+  // Story 7.6: Escalation Fields
+  escalation_reason     String?   // Categorized reason (LOW_CONFIDENCE, MISSING_CONTEXT, etc.)
+  escalation_questions  Json?     // Array of specific questions for TL
+  trade_offs            Json?     // {option1: {pros: [], cons: []}, ...}
+  tl_guidance           String?   @db.Text // TL's guidance response
+  delegate_to           String?   // User ID if delegated to architect
+  guidance_provided_at  DateTime? // When TL provided guidance
+  escalation_duration_seconds Int? // Time spent in escalation
+  resolving_execution_id String? // ID of execution that resolved the escalation
+  
+  // Story 7.8: Review Metrics
+  reviewed_at           DateTime? // When review decision was made
+  review_duration_seconds Int?    // Time from proposal to decision
+  rejection_reason      String?   // Feedback for rejections
+
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  
+  // Relations
+  execution Execution? @relation(fields: [execution_id], references: [id], onDelete: SetNull)
+  ticket    Ticket?    @relation(fields: [ticket_id], references: [id], onDelete: SetNull)
+  
+  @@index([execution_id])
+  @@index([ticket_id])
+  @@index([status])
+  @@map("adrs")
+}
+
+enum AdrStatus {
+  PROPOSED // Awaiting TL review
+  ACCEPTED
+  REJECTED
+  DEPRECATED
+  SUPERSEDED
+  ESCALATED      // Story 7.6: AI escalated due to low confidence
+  GUIDANCE_PROVIDED // Story 7.6: TL provided guidance
+  RESOLVED        // Story 7.6: Escalation resolved, new ADR created
+}
+
+// Story 7.8: Architecture Review Alerts
+model AdrAlert {
+  id           String   @id @default(uuid())
+  alert_type   String   // QUEUE_DEPTH, APPROVAL_RATE, DELAY
+  triggered_at DateTime @default(now())
+  metadata     Json?
+  
+  @@index([alert_type, triggered_at])
+  @@map("adr_alerts")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ============================================
+// STORY 8.1: QA REVIEW QUEUE & SAMPLING CONFIGURATION
+// ============================================
+
+enum QaReviewStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum SamplingStrategy {
+  PERCENTAGE
+  RISK_BASED
+  RANDOM
+}
+
+model QaSamplingConfig {
+  id                 String   @id @default(uuid())
+  percentage         Decimal  @default(20.0) @db.Decimal(5, 2) // 0-100
+  risk_based_enabled Boolean  @default(true)
+  risk_rules         Json     // { file_count: {...}, complexity: {...}, ai_provider: {...} }
+  random_seed        String?  // For reproducible testing
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  @@map("qa_sampling_config")
+}
+
+model QaReviewQueue {
+  id                String           @id @default(uuid())
+  ticket_id         String           // ClickUp ID
+  execution_id      String           @unique
+  execution         Execution        @relation(fields: [execution_id], references: [id])
+  project_id        String?          // For filtering
+  pr_id             String?          // GitHub PR reference
+  pr_url            String?          // GitHub PR URL
+  status            QaReviewStatus   @default(PENDING)
+  risk_level        RiskLevel
+  risk_factors      Json             // ["high_complexity", "high_file_count"]
+  sampling_strategy SamplingStrategy
+  reviewed_by       String?          // User ID
+  reviewed_at       DateTime?
+  review_notes      String?          @db.Text
+  
+  // Relations
+  ai_code_reviews   AiCodeReview[]
+  bug_escapes       BugEscape[] // Story 8.5
+
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  @@index([status, created_at]) // Queue queries
+  @@index([risk_level, created_at]) // Risk-based sorting
+  @@index([project_id, status]) // Project filtering
+  @@index([execution_id]) // Join with Execution
+  @@index([reviewed_by, reviewed_at]) // Reviewer metrics
+  @@map("qa_review_queue")
+}
+
+// ============================================
+// STORY 7.5: ARCHITECTURE CONSTRAINTS
+// ============================================
+
+model ArchitectureConstraint {
+  id        String   @id @default(uuid())
+  projectId String?  // Null = Global
+  scope     String   // GLOBAL, PROJECT
+  type      String   // ALLOWED_TECH, FORBIDDEN_TECH, PATTERN, STANDARD
+  rules     Json     // Flexible rule definition
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("architecture_constraints")
+}
+
+// ============================================
+// STORY 7.7: AI CAPABILITY MANAGEMENT
+// ============================================
+
+// Track AI capability metrics per task type
+model AiCapability {
+  id            String   @id @default(uuid())
+  task_type     TaskType @unique // One record per task type
+  success_count Int      @default(0)
+  failure_count Int      @default(0)
+  known_issues  String?  @db.Text // Description of recurring issues
+  workaround    String?  @db.Text // Manual steps TLs should follow
+  is_disabled   Boolean  @default(false) // Block AI from attempting if true
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("ai_capabilities")
+}
+
+// Detect and track failure patterns by task type
+model AiTaskPattern {
+  id                String   @id @default(uuid())
+  pattern_signature String   // Hash or description of pattern
+  task_type         TaskType
+  failure_rate      Float // Percentage (0-100)
+  detected_at       DateTime @default(now())
+  example_ids       Json // Array of execution IDs exhibiting this pattern
+  updated_at        DateTime @updatedAt
+
+  @@index([task_type, failure_rate])
+  @@map("ai_task_patterns")
+}
+
+// ============================================
+// STORY 17.1: USER INVITATION SYSTEM
+// ============================================
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model UserInvitation {
+  id             String           @id @default(uuid())
+  email          String
+  role           String // Role enum value as string
+  invite_token   String           @unique
+  invited_by_id  String
+  status         InvitationStatus @default(PENDING)
+  expires_at     DateTime
+  accepted_at    DateTime?
+  created_at     DateTime         @default(now())
+
+  // Relation to User who created the invitation
+  invited_by User @relation("InvitedBy", fields: [invited_by_id], references: [id])
+
+  @@index([email])
+  @@index([invite_token])
+  @@index([status])
+  @@index([email, status]) // Composite index for duplicate checking
+  @@map("user_invitations")
+}
+
+// ============================================
+// STORY 17.3: REFRESH TOKEN MANAGEMENT
+// ============================================
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token_id   String   @unique // From JWT jti claim for revocation
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  is_revoked Boolean  @default(false)
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@index([token_id])
+  @@index([user_id, is_revoked]) // Query active tokens for a user
+  @@map("refresh_tokens")
+}
+
+// ============================================
+// STORY 8.4: QUALITY GATE CONFIGURATION
+// ============================================
+
+model QualityGateConfig {
+  id                    String   @id @default(uuid())
+  projectId             String?  @unique // null = global default
+  project               Project? @relation(fields: [projectId], references: [id])
+
+  // Thresholds (align with Story 3.5 DEFAULT_THRESHOLDS)
+  minTestPassRate       Int      @default(100) // percentage
+  minCoverage           Int      @default(80)  // percentage
+  maxLintingErrors      Int      @default(0)
+  maxLintingWarnings    Int      @default(10)
+  blockOnCriticalSecurity Boolean @default(true)
+  blockOnHighSecurity   Boolean  @default(true)
+  maxComplexity         Int      @default(20)  // Aligned with Story 3.5
+  targetCoverage        Int      @default(90)  // percentage
+
+  // Category enablement (from Story 3.5 IQualityGateConfig)
+  enabledCategories     Json     @default("[\"LINTING\",\"TESTING\",\"COVERAGE\",\"SECURITY\"]") // Stored as array of strings
+
+  // Override settings (from Story 3.5 IQualityGateConfig)
+  allowOverride         Boolean  @default(false)
+  overrideRequiresApproval Boolean @default(true)
+
+  // Versioning for rollback
+  version               Int      @default(1)
+
+  // Metadata
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdById           String
+  createdBy             User     @relation("QualityGateConfigCreatedBy", fields: [createdById], references: [id])
+  updatedById           String
+  updatedBy             User     @relation("QualityGateConfigUpdatedBy", fields: [updatedById], references: [id])
+
+  // Relations
+  history               QualityGateConfigHistory[]
+
+  @@index([projectId])
+  @@map("quality_gate_configs")
+}
+
+model QualityGateConfigHistory {
+  id          String   @id @default(uuid())
+  configId    String
+  config      QualityGateConfig @relation(fields: [configId], references: [id])
+  projectId   String?
+
+  // Full configuration snapshot as JSON
+  snapshot    Json     // Contains all threshold values, enabledCategories, etc.
+  version     Int      // Version number at time of change
+
+  // Change metadata
+  changedById String
+  changedBy   User     @relation(fields: [changedById], references: [id])
+  changedAt   DateTime @default(now())
+  changeReason String?
+
+  @@index([configId])
+  @@index([projectId])
+  @@index([changedAt])
+  @@map("quality_gate_config_history")
+}

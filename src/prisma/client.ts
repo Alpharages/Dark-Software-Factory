@@ -161,6 +161,11 @@ export type ApprovalRecord = Prisma.ApprovalRecordModel;
  */
 export type ProductionApproval = Prisma.ProductionApprovalModel;
 /**
+ * Model BugEscape
+ *
+ */
+export type BugEscape = Prisma.BugEscapeModel;
+/**
  * Model AiCodeReview
  *
  */

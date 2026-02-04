@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { LoggerService } from '../common/logger/logger.service';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Counter, Gauge, Histogram } from 'prom-client';
+import { QA_METRICS } from '../common/metrics/metrics.constants';
 
 /**
  * QA Metrics Service - Convenience wrapper for QA automation module
@@ -14,6 +17,12 @@ export class QaMetricsService {
   constructor(
     private readonly metricsService: MetricsService,
     private readonly logger: LoggerService,
+    @InjectMetric(QA_METRICS.BUG_ESCAPES_TOTAL) public bugEscapesTotal: Counter<string>,
+    @InjectMetric(QA_METRICS.BUG_ESCAPE_RATE_PERCENT) public bugEscapeRatePercent: Gauge<string>,
+    @InjectMetric(QA_METRICS.BUG_ESCAPE_THRESHOLD_BREACHES_TOTAL)
+    public bugEscapeThresholdBreachesTotal: Counter<string>,
+    @InjectMetric(QA_METRICS.BUG_ESCAPE_RESOLUTION_TIME_HOURS)
+    public bugEscapeResolutionTimeHours: Histogram<string>,
   ) {}
 
   /**
@@ -198,6 +207,70 @@ export class QaMetricsService {
     } catch (_error) {
       this.logger.error(
         `Failed to record self-healing duration metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
+        'QaMetricsService',
+      );
+    }
+  }
+
+  /**
+   * Record Bug Escape
+   * Story 8.5
+   */
+  recordBugEscape(category: string, projectId: string, aiProvider?: string): void {
+    try {
+      this.bugEscapesTotal.labels(category, projectId, aiProvider || 'unknown').inc();
+    } catch (_error) {
+      this.logger.error(
+        `Failed to record bug escape metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
+        'QaMetricsService',
+      );
+    }
+  }
+
+  /**
+   * Update Bug Escape Rate
+   * Story 8.5
+   */
+  updateEscapeRate(projectId: string, rate: number): void {
+    try {
+      this.bugEscapeRatePercent.labels(projectId).set(rate);
+    } catch (_error) {
+      this.logger.error(
+        `Failed to update bug escape rate metric: ${(_error as Error).message}`,
+        (_error as Error).stack,
+        'QaMetricsService',
+      );
+    }
+  }
+
+  /**
+   * Record Escape Threshold Breach
+   * Story 8.5
+   */
+  recordEscapeThresholdBreach(projectId: string): void {
+    try {
+      this.bugEscapeThresholdBreachesTotal.labels(projectId).inc();
+    } catch (_error) {
+      this.logger.error(
+        `Failed to record bug escape threshold breach: ${(_error as Error).message}`,
+        (_error as Error).stack,
+        'QaMetricsService',
+      );
+    }
+  }
+
+  /**
+   * Record Resolution Time
+   * Story 8.5
+   */
+  recordResolutionTime(hours: number): void {
+    try {
+      this.bugEscapeResolutionTimeHours.observe(hours);
+    } catch (_error) {
+      this.logger.error(
+        `Failed to record bug escape resolution time: ${(_error as Error).message}`,
         (_error as Error).stack,
         'QaMetricsService',
       );
