@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { connect } from 'amqplib';
-import { QUEUE_NAMES, EXCHANGE_NAMES } from './rabbitmq.config';
+import { QUEUE_NAMES, EXCHANGE_NAMES, ROUTING_KEYS } from './rabbitmq.config';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
@@ -88,6 +88,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       QUEUE_NAMES.QA_CHECK,
       QUEUE_NAMES.DEPLOYMENT,
       QUEUE_NAMES.MONITORING,
+      QUEUE_NAMES.FIX_TICKET_CREATION,
     ];
 
     // Create wait queue for AI routing retries (Story 2.3 fix)
@@ -129,6 +130,18 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.channel.assertExchange(EXCHANGE_NAMES.ORCHESTRATOR_EVENTS, 'topic', {
       durable: true,
     });
+
+    // Create production events exchange
+    await this.channel.assertExchange(EXCHANGE_NAMES.PRODUCTION_EVENTS, 'topic', {
+      durable: true,
+    });
+
+    // Bind fix ticket creation queue to production events exchange
+    await this.channel.bindQueue(
+      QUEUE_NAMES.FIX_TICKET_CREATION,
+      EXCHANGE_NAMES.PRODUCTION_EVENTS,
+      ROUTING_KEYS.PRODUCTION_ERROR_STORED,
+    );
 
     this.logger.log('All queues and exchanges configured');
   }

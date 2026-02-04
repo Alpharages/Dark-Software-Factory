@@ -32,6 +32,7 @@ export type ProductionErrorMinAggregateOutputType = {
   stack_trace: string | null;
   severity: $Enums.ErrorSeverity | null;
   fix_ticket_id: string | null;
+  fix_ticket_url: string | null;
   resolved: boolean | null;
   occurred_at: Date | null;
   created_at: Date | null;
@@ -45,6 +46,7 @@ export type ProductionErrorMaxAggregateOutputType = {
   stack_trace: string | null;
   severity: $Enums.ErrorSeverity | null;
   fix_ticket_id: string | null;
+  fix_ticket_url: string | null;
   resolved: boolean | null;
   occurred_at: Date | null;
   created_at: Date | null;
@@ -58,6 +60,7 @@ export type ProductionErrorCountAggregateOutputType = {
   stack_trace: number;
   severity: number;
   fix_ticket_id: number;
+  fix_ticket_url: number;
   resolved: number;
   occurred_at: number;
   created_at: number;
@@ -72,6 +75,7 @@ export type ProductionErrorMinAggregateInputType = {
   stack_trace?: true;
   severity?: true;
   fix_ticket_id?: true;
+  fix_ticket_url?: true;
   resolved?: true;
   occurred_at?: true;
   created_at?: true;
@@ -85,6 +89,7 @@ export type ProductionErrorMaxAggregateInputType = {
   stack_trace?: true;
   severity?: true;
   fix_ticket_id?: true;
+  fix_ticket_url?: true;
   resolved?: true;
   occurred_at?: true;
   created_at?: true;
@@ -98,6 +103,7 @@ export type ProductionErrorCountAggregateInputType = {
   stack_trace?: true;
   severity?: true;
   fix_ticket_id?: true;
+  fix_ticket_url?: true;
   resolved?: true;
   occurred_at?: true;
   created_at?: true;
@@ -189,6 +195,7 @@ export type ProductionErrorGroupByOutputType = {
   stack_trace: string | null;
   severity: $Enums.ErrorSeverity;
   fix_ticket_id: string | null;
+  fix_ticket_url: string | null;
   resolved: boolean;
   occurred_at: Date;
   created_at: Date;
@@ -220,6 +227,7 @@ export type ProductionErrorWhereInput = {
   stack_trace?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
   severity?: Prisma.EnumErrorSeverityFilter<'ProductionError'> | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+  fix_ticket_url?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
   resolved?: Prisma.BoolFilter<'ProductionError'> | boolean;
   occurred_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
   created_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
@@ -237,6 +245,7 @@ export type ProductionErrorOrderByWithRelationInput = {
   stack_trace?: Prisma.SortOrderInput | Prisma.SortOrder;
   severity?: Prisma.SortOrder;
   fix_ticket_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  fix_ticket_url?: Prisma.SortOrderInput | Prisma.SortOrder;
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -255,6 +264,7 @@ export type ProductionErrorWhereUniqueInput = Prisma.AtLeast<
     stack_trace?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
     severity?: Prisma.EnumErrorSeverityFilter<'ProductionError'> | $Enums.ErrorSeverity;
     fix_ticket_id?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
+    fix_ticket_url?: Prisma.StringNullableFilter<'ProductionError'> | string | null;
     resolved?: Prisma.BoolFilter<'ProductionError'> | boolean;
     occurred_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
     created_at?: Prisma.DateTimeFilter<'ProductionError'> | Date | string;
@@ -274,6 +284,7 @@ export type ProductionErrorOrderByWithAggregationInput = {
   stack_trace?: Prisma.SortOrderInput | Prisma.SortOrder;
   severity?: Prisma.SortOrder;
   fix_ticket_id?: Prisma.SortOrderInput | Prisma.SortOrder;
+  fix_ticket_url?: Prisma.SortOrderInput | Prisma.SortOrder;
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -297,6 +308,7 @@ export type ProductionErrorScalarWhereWithAggregatesInput = {
   stack_trace?: Prisma.StringNullableWithAggregatesFilter<'ProductionError'> | string | null;
   severity?: Prisma.EnumErrorSeverityWithAggregatesFilter<'ProductionError'> | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.StringNullableWithAggregatesFilter<'ProductionError'> | string | null;
+  fix_ticket_url?: Prisma.StringNullableWithAggregatesFilter<'ProductionError'> | string | null;
   resolved?: Prisma.BoolWithAggregatesFilter<'ProductionError'> | boolean;
   occurred_at?: Prisma.DateTimeWithAggregatesFilter<'ProductionError'> | Date | string;
   created_at?: Prisma.DateTimeWithAggregatesFilter<'ProductionError'> | Date | string;
@@ -310,6 +322,7 @@ export type ProductionErrorCreateInput = {
   stack_trace?: string | null;
   severity: $Enums.ErrorSeverity;
   fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
@@ -324,6 +337,7 @@ export type ProductionErrorUncheckedCreateInput = {
   stack_trace?: string | null;
   severity: $Enums.ErrorSeverity;
   fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
@@ -338,6 +352,7 @@ export type ProductionErrorUpdateInput = {
   stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -352,6 +367,7 @@ export type ProductionErrorUncheckedUpdateInput = {
   stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -366,6 +382,7 @@ export type ProductionErrorCreateManyInput = {
   stack_trace?: string | null;
   severity: $Enums.ErrorSeverity;
   fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
@@ -379,6 +396,7 @@ export type ProductionErrorUpdateManyMutationInput = {
   stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -392,6 +410,7 @@ export type ProductionErrorUncheckedUpdateManyInput = {
   stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -405,6 +424,7 @@ export type ProductionErrorCountOrderByAggregateInput = {
   stack_trace?: Prisma.SortOrder;
   severity?: Prisma.SortOrder;
   fix_ticket_id?: Prisma.SortOrder;
+  fix_ticket_url?: Prisma.SortOrder;
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -418,6 +438,7 @@ export type ProductionErrorMaxOrderByAggregateInput = {
   stack_trace?: Prisma.SortOrder;
   severity?: Prisma.SortOrder;
   fix_ticket_id?: Prisma.SortOrder;
+  fix_ticket_url?: Prisma.SortOrder;
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -431,6 +452,7 @@ export type ProductionErrorMinOrderByAggregateInput = {
   stack_trace?: Prisma.SortOrder;
   severity?: Prisma.SortOrder;
   fix_ticket_id?: Prisma.SortOrder;
+  fix_ticket_url?: Prisma.SortOrder;
   resolved?: Prisma.SortOrder;
   occurred_at?: Prisma.SortOrder;
   created_at?: Prisma.SortOrder;
@@ -479,6 +501,7 @@ export type ProductionErrorCreateWithoutBug_escapeInput = {
   stack_trace?: string | null;
   severity: $Enums.ErrorSeverity;
   fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
@@ -492,6 +515,7 @@ export type ProductionErrorUncheckedCreateWithoutBug_escapeInput = {
   stack_trace?: string | null;
   severity: $Enums.ErrorSeverity;
   fix_ticket_id?: string | null;
+  fix_ticket_url?: string | null;
   resolved?: boolean;
   occurred_at: Date | string;
   created_at?: Date | string;
@@ -533,6 +557,7 @@ export type ProductionErrorUpdateWithoutBug_escapeInput = {
   stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -546,6 +571,7 @@ export type ProductionErrorUncheckedUpdateWithoutBug_escapeInput = {
   stack_trace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   severity?: Prisma.EnumErrorSeverityFieldUpdateOperationsInput | $Enums.ErrorSeverity;
   fix_ticket_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
+  fix_ticket_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
   resolved?: Prisma.BoolFieldUpdateOperationsInput | boolean;
   occurred_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
@@ -562,6 +588,7 @@ export type ProductionErrorSelect<
     stack_trace?: boolean;
     severity?: boolean;
     fix_ticket_id?: boolean;
+    fix_ticket_url?: boolean;
     resolved?: boolean;
     occurred_at?: boolean;
     created_at?: boolean;
@@ -581,6 +608,7 @@ export type ProductionErrorSelectCreateManyAndReturn<
     stack_trace?: boolean;
     severity?: boolean;
     fix_ticket_id?: boolean;
+    fix_ticket_url?: boolean;
     resolved?: boolean;
     occurred_at?: boolean;
     created_at?: boolean;
@@ -599,6 +627,7 @@ export type ProductionErrorSelectUpdateManyAndReturn<
     stack_trace?: boolean;
     severity?: boolean;
     fix_ticket_id?: boolean;
+    fix_ticket_url?: boolean;
     resolved?: boolean;
     occurred_at?: boolean;
     created_at?: boolean;
@@ -614,6 +643,7 @@ export type ProductionErrorSelectScalar = {
   stack_trace?: boolean;
   severity?: boolean;
   fix_ticket_id?: boolean;
+  fix_ticket_url?: boolean;
   resolved?: boolean;
   occurred_at?: boolean;
   created_at?: boolean;
@@ -629,6 +659,7 @@ export type ProductionErrorOmit<
   | 'stack_trace'
   | 'severity'
   | 'fix_ticket_id'
+  | 'fix_ticket_url'
   | 'resolved'
   | 'occurred_at'
   | 'created_at',
@@ -662,6 +693,7 @@ export type $ProductionErrorPayload<
       stack_trace: string | null;
       severity: $Enums.ErrorSeverity;
       fix_ticket_id: string | null;
+      fix_ticket_url: string | null;
       resolved: boolean;
       occurred_at: Date;
       created_at: Date;
@@ -1257,6 +1289,7 @@ export interface ProductionErrorFieldRefs {
   readonly stack_trace: Prisma.FieldRef<'ProductionError', 'String'>;
   readonly severity: Prisma.FieldRef<'ProductionError', 'ErrorSeverity'>;
   readonly fix_ticket_id: Prisma.FieldRef<'ProductionError', 'String'>;
+  readonly fix_ticket_url: Prisma.FieldRef<'ProductionError', 'String'>;
   readonly resolved: Prisma.FieldRef<'ProductionError', 'Boolean'>;
   readonly occurred_at: Prisma.FieldRef<'ProductionError', 'DateTime'>;
   readonly created_at: Prisma.FieldRef<'ProductionError', 'DateTime'>;

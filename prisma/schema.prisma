@@ -202,17 +202,18 @@ model CostRecord {
 }
 
 model ProductionError {
-  id            String        @id @default(uuid())
-  application   String
-  error_type    String
-  error_message String
-  stack_trace   String?
-  severity      ErrorSeverity
-  fix_ticket_id String?
-  resolved      Boolean       @default(false)
-  occurred_at   DateTime
-  created_at    DateTime      @default(now())
-  bug_escape    BugEscape?
+  id             String        @id @default(uuid())
+  application    String
+  error_type     String
+  error_message  String
+  stack_trace    String?
+  severity       ErrorSeverity
+  fix_ticket_id  String?
+  fix_ticket_url String?
+  resolved       Boolean       @default(false)
+  occurred_at    DateTime
+  created_at     DateTime      @default(now())
+  bug_escape     BugEscape?
 
   @@index([application, severity, resolved])
   @@map("production_errors")

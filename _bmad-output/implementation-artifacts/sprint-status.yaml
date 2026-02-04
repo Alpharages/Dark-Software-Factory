@@ -598,7 +598,10 @@ development_status:
     notes: "✅ CODE REVIEW COMPLETED & REMEDIATED. Implemented Date Range Picker with presets (AC#4), refactored CSV logic (AC#5), added manual refresh/cache invalidation (AC#6), corrected sidebar icon (L1), and enhanced unit tests (M2). All files staged."
   epic-7-retrospective: completed
 
-  epic-8: in-progress
+  epic-8: done
+  epic-8-name: "Lead QA Manual Review Workflow"
+  epic-8-completion_date: "2026-02-04"
+  epic-8-retrospective: "_bmad-output/implementation-artifacts/epic-8-retro-2026-02-04.md"
   epic-8-dependencies-v3: "Epic 3 (QA Automation), Epic 13 (AI Self-Healing)"
   epic-8-notes: "Lead QA manual review workflow. CLEAR SEPARATION: Epic 8 = manual review by Lead QA, Epic 13 = automated AI self-healing. Lead QA reviews QA results + AI self-heal attempts before production approval. See v3-epic-impact-analysis.md."
   8-1-qa-review-queue-sampling-configuration:
@@ -663,7 +666,7 @@ development_status:
     story_points: 5
     developer: "Antigravity"
     notes: "✅ COMPLETE. Implemented unified QA Review Dashboard with sampling queue, code diff viewer, and decision workflow. Fixed pre-existing build errors in auth and conversations types. Build verified."
-  epic-8-retrospective: optional
+  epic-8-retrospective: done
 
   # ===================================================================
   # EPIC 9 UPDATED - Self-healing logic moved to Epic 13
@@ -679,19 +682,21 @@ development_status:
     - "9-6: Fix Verification & Deploy → Epic 14.4 (40% overlap)"
     - "9-7: Self-Healing Metrics → Epic 13 Prometheus metrics (80% overlap)"
   
-  epic-9-U: in-progress
+  epic-9-U: 
+    status: in-progress
     notes: "AI classifies error severity (CRITICAL/HIGH/MEDIUM/LOW) with reasoning. Pattern recognition task. Keep: DB storage, queue ordering. From original 9-2."
     original_story: "9-2"
   9-U-3-automatic-fix-ticket-creation:
-    status: backlog
+    status: done
     effort: "2 days"
     story_points: 5
-    notes: "Auto-create ClickUp tickets for production errors. Link to error logs. Assign based on component ownership. From original 9-3."
+    notes: "Auto-create ClickUp tickets for production errors. Link to error logs. Assign based on component ownership. From original 9-3. CODE REVIEW COMPLETE: All HIGH/MEDIUM issues fixed (RabbitMQModule, Prometheus metrics, execution_id tracking, tag sanitization, FRONTEND_URL validation). See walkthrough.md."
     original_story: "9-3"
   9-U-4-error-context-extraction-linking:
-    status: backlog
+    status: ready-for-dev
     effort: "2 days"
     story_points: 3
+    story_file: "_bmad-output/implementation-artifacts/9-U-4-error-context-extraction-linking.md"
     notes: "Extract stack traces, user context, deployment info. Link errors to code commits. Enhanced by Epic 11.2 audit logs. From original 9-4."
     original_story: "9-4"
     v3_enhancement: "Epic 11.2 (Audit Logger) provides commit history and deployment context"

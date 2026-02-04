@@ -277,6 +277,7 @@ export const ProductionErrorScalarFieldEnum = {
   stack_trace: 'stack_trace',
   severity: 'severity',
   fix_ticket_id: 'fix_ticket_id',
+  fix_ticket_url: 'fix_ticket_url',
   resolved: 'resolved',
   occurred_at: 'occurred_at',
   created_at: 'created_at',

@@ -1,6 +1,7 @@
 import { PrismaClient } from '../src/prisma/client';
 import { TicketStatus, AIProvider, ExecutionStatus } from '../src/prisma/enums';
 import { seedAdminUser } from './seeds/admin.seeder';
+import { seedSystemConfig } from './seeds/system-config.seeder';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import 'dotenv/config';
@@ -15,6 +16,9 @@ async function main() {
 
     // Seed Admin User
     await seedAdminUser(prisma);
+
+    // Seed System Configs
+    await seedSystemConfig(prisma);
 
     // Create sample project
     await prisma.project.upsert({

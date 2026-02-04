@@ -54,6 +54,7 @@ export const QUEUE_NAMES = {
   GITHUB_WEBHOOK: 'github-webhook-queue', // Story 14.1
   GITHUB_PR_REMINDER: 'github-pr-reminder-queue', // Story 14.2
   GITHUB_PR_REMINDER_WAIT: 'github-pr-reminder-wait-queue', // Story 14.2 Delay Queue
+  FIX_TICKET_CREATION: 'fix-ticket-creation-queue', // Story 9-U-3
 } as const;
 
 /**
@@ -62,6 +63,7 @@ export const QUEUE_NAMES = {
 export const EXCHANGE_NAMES = {
   ORCHESTRATOR_EVENTS: 'orchestrator-events',
   DEAD_LETTER_EXCHANGE: 'dlx-exchange',
+  PRODUCTION_EVENTS: 'production-events',
 } as const;
 
 /**
@@ -98,4 +100,7 @@ export const ROUTING_KEYS = {
 
   // GitHub Webhook (Story 14.1)
   GITHUB_WEBHOOK_RECEIVED: 'github.webhook.received',
+
+  // Production Error Monitoring (Story 9-U-3)
+  PRODUCTION_ERROR_STORED: 'error.stored',
 } as const;
