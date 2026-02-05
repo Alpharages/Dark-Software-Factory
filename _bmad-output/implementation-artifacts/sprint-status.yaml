@@ -767,40 +767,47 @@ development_status:
       - "src/realtime/realtime.types.ts"
       - "src/execution/execution-tracker.websocket.spec.ts"
   10-U-3-quality-gate-failure-notifications:
-    status: backlog
+    status: ready-for-dev
     effort: "2 days"
     story_points: 3
     notes: "Real-time notifications for QA failures. Push to PM/Lead QA. From original 10-4."
     original_story: "10-4"
+    story_file: "_bmad-output/implementation-artifacts/10-U-3-quality-gate-failure-notifications.md"
+    story_created_date: "2026-02-05"
   10-U-4-execution-logs-streaming:
-    status: backlog
+    status: ready-for-dev
     effort: "2 days"
     story_points: 5
-    notes: "Stream execution logs and errors to frontend. Uses Epic 11.2 audit logs + Epic 14.5 APIs. Merged from 10-7."
+    notes: "Stream execution logs and errors to frontend. Uses Epic 11.2 audit logs + Epic 14.5 APIs. Merged from 10-7. Validation complete with all improvements applied (2026-02-05)."
     original_story: "10-7"
     v3_enhancement: "Epic 11.2 (Audit Logger) + Epic 14.5 (Observability) provide comprehensive log data"
   10-U-5-manual-intervention-circuit-breaker:
-    status: backlog
+    status: ready-for-dev
     effort: "2 days"
     story_points: 5
-    notes: "UI for manual intervention: pause/resume executions, override decisions, emergency stop. From original 10-8."
+    story_file: "_bmad-output/implementation-artifacts/10-U-5-manual-intervention-circuit-breaker.md"
+    notes: "Story generated via create-story workflow. Implements manual intervention controls: pause/resume executions, emergency stop, decision overrides with full RBAC and audit trail."
     original_story: "10-8"
   10-U-6-system-metrics-export-integration:
-    status: backlog
+    status: cancelled
     effort: "2 days"
     story_points: 3
-    notes: "Export metrics to external systems (Datadog, New Relic). Stream Prometheus metrics. From original 10-9."
+    notes: "CANCELLED - No plans to export metrics to external systems. Metrics remain available via internal Prometheus /metrics endpoint. From original 10-9."
     original_story: "10-9"
+    cancelled_date: "2026-02-05"
+    cancelled_reason: "Not required - no external metrics export planned"
   10-U-7-notification-preferences-channels:
-    status: backlog
+    status: ready-for-dev
     effort: "2 days"
     story_points: 3
     notes: "User preferences: Slack, email, in-app. Notification filtering. Channel management. From original 10-10."
     original_story: "10-10"
   10-UI-system-controls-preferences:
-    status: backlog
-    priority: low
-    notes: "UI Gateway for Epic 10. Defined during Epic 7 Retrospective."
+    status: ready-for-dev
+    effort: "3 days"
+    story_points: 5
+    priority: medium
+    notes: "UI Gateway for Epic 10-U. Integrates all Epic 10-U backend capabilities (Socket.IO, execution controls, notifications) into unified dashboard. Comprehensive story created with Socket.IO client, real-time monitoring, execution controls, logs viewer, notification preferences UI, and in-app notification center."
   epic-10-U-retrospective: optional
 
   # ===================================================================
