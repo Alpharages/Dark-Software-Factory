@@ -37,7 +37,8 @@ import { ClickUpModule } from '../clickup/clickup.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 // Story 7.7: AI Capability Management & Limitations
 import { CapabilitiesModule } from '../architecture-review/capabilities/capabilities.module';
-// LoggerModule not needed - consumer uses NestJS Logger directly
+// Story 10.2: Socket.IO Real-Time Infrastructure
+import { RealtimeModule } from '../realtime/realtime.module';
 
 /**
  * Execution Module
@@ -45,6 +46,7 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
  * Story 2.5: FR62 - System monitors AI execution progress
  * Story 2.9: FR63 - System retries failed executions with error context
  * Story 2.10: RabbitMQ AI Execution Queue Processing
+ * Story 10.2: WebSocket Execution Progress Streaming
  *
  * Provides:
  * - Execution lifecycle management
@@ -54,6 +56,7 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
  * - Prometheus metrics
  * - Retry logic and error handling
  * - Queue publishing and consuming (Story 2.10)
+ * - WebSocket event streaming (Story 10.2)
  */
 @Module({
   imports: [
@@ -71,6 +74,8 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
     AppMetricsModule,
     // Story 7.7: AI Capability Management & Limitations
     CapabilitiesModule,
+    // Story 10.2: Socket.IO Real-Time Infrastructure
+    RealtimeModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1h' },
@@ -176,6 +181,12 @@ import { CapabilitiesModule } from '../architecture-review/capabilities/capabili
       name: AI_METRICS.SELF_HEALING_PROGRESS,
       help: 'Self-healing progress percentage (error reduction)',
       labelNames: ['ticket_id'],
+    }),
+    // Story 10.2: WebSocket Emission Metrics
+    makeCounterProvider({
+      name: 'websocket_emission_errors_total',
+      help: 'WebSocket emission failures',
+      labelNames: ['event', 'reason'],
     }),
   ],
   exports: [

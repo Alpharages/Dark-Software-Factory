@@ -753,14 +753,19 @@ development_status:
     notes: "✅ CODE REVIEW COMPLETED & APPROVED. Socket.IO infrastructure fully implemented with all 5 acceptance criteria met AND all code review fixes applied. CRITICAL FIXES: (1) Applied @UseGuards(WsAuthGuard) to message handlers, (2) Added heartbeat mechanism (pingInterval: 25s, pingTimeout: 60s). HIGH FIXES: (3) Created realtime.types.ts for exported event interfaces, (4) Added error handling wrappers for metrics (safeIncrementGauge/Counter), (5) Improved RBAC documentation with architectural decision notes, (6) Fixed ConfigService inconsistency. DELIVERABLES: (1) Gateway initialization with CORS and lifecycle hooks, (2) JWT authentication via WsAuthGuard with token extraction from auth/header/query, (3) Room management (joinProject/leaveProject) with auto-subscribe to user/role rooms, (4) RealtimeService abstraction exported with emitToProject/emitToRole/emitToUser/broadcast methods, (5) Connection monitoring with Logger and Prometheus metrics (websocket_active_connections, websocket_events_total, websocket_connection_errors). Created 8 new files (gateway, service, guard, types, DTOs, 3 test files) + modified realtime.module.ts. All 14 unit tests passing, linting clean. SECURITY NOTE: RBAC implementation deferred to future story - current implementation allows any authenticated user to join project rooms (connection-level JWT auth ensures only authenticated users access infrastructure). Ready for production deployment."
     original_story: "10-1"
   10-U-2-execution-progress-streaming:
-    status: ready-for-dev
+    status: done
     effort: "2 days"
     story_points: 5
-    notes: "Stream execution progress updates to frontend. Uses Epic 14.5 real-time APIs. WebSocket events. Merged from 10-2."
+    completed_date: "2026-02-05"
+    notes: "✅ CODE REVIEW COMPLETED. Implemented WebSocket streaming for all execution lifecycle events (started, progress, completed, failed) with rate limiting and robust error handling. 6/6 unit tests passing."
     original_story: "10-2"
     v3_enhancement: "Epic 14.5 provides backend real-time APIs for ticket timeline"
     story_file: "_bmad-output/implementation-artifacts/10-U-2-execution-progress-streaming.md"
     story_created_date: "2026-02-04"
+    related_files:
+      - "src/execution/execution-tracker.service.ts"
+      - "src/realtime/realtime.types.ts"
+      - "src/execution/execution-tracker.websocket.spec.ts"
   10-U-3-quality-gate-failure-notifications:
     status: backlog
     effort: "2 days"

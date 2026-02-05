@@ -16,6 +16,15 @@ import {
   IExecutionEvent,
   IStateTransition,
 } from './interfaces';
+import { RealtimeService } from '../realtime/realtime.service';
+import {
+  ExecutionStartedEvent,
+  ExecutionProgressEvent,
+  ExecutionCompletedEvent,
+  ExecutionFailedEvent,
+  ExecutionTimeoutEvent,
+  ExecutionCancelledEvent,
+} from '../realtime/realtime.types';
 
 /**
  * Execution Tracker Service
@@ -39,6 +48,9 @@ export class ExecutionTrackerService implements OnModuleInit {
   /** Track active log subscriptions to prevent memory leaks */
   private activeLogSubscriptions = new Map<string, Subscription>();
 
+  /** Track last progress emission to implement rate limiting */
+  private lastProgressEmitMap = new Map<string, number>();
+
   constructor(
     private readonly repository: ExecutionRepository,
     private readonly stateMachine: ExecutionStateMachine,
@@ -56,8 +68,12 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly containerLogBytesCounter: Counter<string>,
     @InjectMetric('dsf_container_exec_duration_seconds')
     private readonly containerExecDurationHistogram: Histogram<string>,
+    @InjectMetric('websocket_emission_errors_total')
+    private readonly websocketEmissionErrorsCounter: Counter<string>,
     @Optional()
     private readonly executionGateway?: ExecutionGateway,
+    @Optional()
+    private readonly realtimeService?: RealtimeService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -142,6 +158,31 @@ export class ExecutionTrackerService implements OnModuleInit {
     );
 
     await this.applyTransition(execution, transition, correlationId);
+
+    // Emit execution.started event (AC 4: Emitted when execution transitions to IN_PROGRESS)
+    await this.emitWebSocketEvent<ExecutionStartedEvent>('execution.started', {
+      executionId: execution.id,
+      ticketId: execution.ticket_id,
+      projectId: execution.ticket?.project_id || null,
+      aiProvider: execution.ai_provider,
+      startedAt: new Date().toISOString(),
+      payload: {
+        complexityScore: execution.complexity_score || undefined,
+      },
+    });
+
+    // Determine initial status based on provider
+    const initialStatus = 'Starting execution';
+
+    // Emit initial progress event
+    await this.emitProgress(
+      executionId,
+      execution.ticket_id,
+      execution.ticket?.project_id || null,
+      initialStatus,
+      0,
+    );
+
     return transition;
   }
 
@@ -249,6 +290,23 @@ export class ExecutionTrackerService implements OnModuleInit {
       throw e;
     }
 
+    // Emit execution.completed event (AC 5)
+    await this.emitWebSocketEvent<ExecutionCompletedEvent>('execution.completed', {
+      executionId: executionId,
+      ticketId: execution.ticket_id,
+      projectId: execution.ticket?.project_id || null,
+      provider: execution.ai_provider,
+      status: ExecutionStatus.COMPLETED,
+      timestamp: new Date().toISOString(),
+      payload: {
+        confidenceScore,
+        filesChanged: filesChanged || [],
+        durationSeconds: execution.started_at
+          ? (Date.now() - execution.started_at.getTime()) / 1000
+          : 0,
+      },
+    });
+
     return transition;
   }
 
@@ -334,6 +392,23 @@ export class ExecutionTrackerService implements OnModuleInit {
       this.logger.error(`[${correlationId}] Error in failExecution:`, e);
       throw e;
     }
+
+    // Emit execution.failed event (AC 5)
+    await this.emitWebSocketEvent<ExecutionFailedEvent>('execution.failed', {
+      executionId: executionId,
+      ticketId: execution.ticket_id,
+      projectId: execution.ticket?.project_id || null,
+      provider: execution.ai_provider,
+      status: ExecutionStatus.FAILED,
+      timestamp: new Date().toISOString(),
+      payload: {
+        errorMessage,
+        errorCode,
+        isRetryable: isRetryable || false,
+        retryCount: execution.retry_count,
+        maxRetries: execution.max_retries,
+      },
+    });
 
     return transition;
   }
@@ -424,6 +499,21 @@ export class ExecutionTrackerService implements OnModuleInit {
       throw e;
     }
 
+    // Emit execution.timeout event (AC 5)
+    await this.emitWebSocketEvent<ExecutionTimeoutEvent>('execution.timeout', {
+      executionId: executionId,
+      ticketId: execution.ticket_id,
+      projectId: execution.ticket?.project_id || null,
+      provider: execution.ai_provider,
+      status: ExecutionStatus.TIMEOUT,
+      timestamp: new Date().toISOString(),
+      payload: {
+        errorMessage: `Execution timed out after ${timeout.timeoutSeconds} seconds`,
+        timeoutSeconds: timeout.timeoutSeconds,
+        lastKnownProgress: timeout.lastKnownProgress ? parseInt(timeout.lastKnownProgress, 10) : 0,
+      },
+    });
+
     return transition;
   }
 
@@ -453,6 +543,20 @@ export class ExecutionTrackerService implements OnModuleInit {
       this.logger.error(`[${correlationId}] Error in cancelExecution:`, e);
       throw e;
     }
+
+    // Emit execution.cancelled event (AC 5)
+    await this.emitWebSocketEvent<ExecutionCancelledEvent>('execution.cancelled', {
+      executionId: executionId,
+      ticketId: execution.ticket_id,
+      projectId: execution.ticket?.project_id || null,
+      provider: execution.ai_provider,
+      status: ExecutionStatus.CANCELLED,
+      timestamp: new Date().toISOString(),
+      payload: {
+        reason,
+        cancelledBy: 'system', // TODO: Pass user ID if available
+      },
+    });
 
     return transition;
   }
@@ -543,7 +647,9 @@ export class ExecutionTrackerService implements OnModuleInit {
   /**
    * Get execution or throw if not found
    */
-  private async getExecutionOrThrow(executionId: string): Promise<Execution> {
+  private async getExecutionOrThrow(
+    executionId: string,
+  ): Promise<Execution & { ticket?: { project_id: string } }> {
     const execution = await this.repository.findById(executionId);
     if (!execution) {
       throw new Error(`Execution ${executionId} not found`);
@@ -788,5 +894,72 @@ export class ExecutionTrackerService implements OnModuleInit {
    */
   hasLogSubscribers(executionId: string): boolean {
     return this.executionGateway?.hasLogSubscribers(executionId) ?? false;
+  }
+
+  /**
+   * Helper to emit WebSocket events with project routing (Story 10.2 AC 3)
+   */
+  private async emitWebSocketEvent<T extends { projectId: string | null }>(
+    event: string,
+    payload: T,
+  ): Promise<void> {
+    if (!this.realtimeService) {
+      return;
+    }
+
+    try {
+      const { projectId } = payload;
+      if (projectId) {
+        this.realtimeService.emitToProject(projectId, event, payload);
+      } else {
+        // Fallback to role-based rooms if project is unknown
+        this.realtimeService.emitToRole('ADMIN', event, payload);
+        this.realtimeService.emitToRole('MANAGER', event, payload);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to emit WebSocket event ${event}:`, error);
+      this.websocketEmissionErrorsCounter.inc({ event, reason: errorMessage });
+    }
+  }
+
+  /**
+   * Emit execution progress with rate limiting (Story 10.2 AC 2)
+   */
+  async emitProgress(
+    executionId: string,
+    ticketId: string,
+    projectId: string | null,
+    currentStep: string,
+    percentComplete: number,
+  ): Promise<void> {
+    if (!this.realtimeService) {
+      return;
+    }
+
+    // Rate limiting logic: skip if < 5000ms since last emit, unless it's 0% or 100% (critical updates)
+    // 0% is start, 100% is completion (though completion has its own event, sometimes progress=100 is useful)
+    // We treat 0% as critical start progress.
+    const now = Date.now();
+    const lastEmit = this.lastProgressEmitMap.get(executionId) || 0;
+
+    // Always emit if first time (lastEmit == 0) or significant milestone (0%)
+    // Otherwise enforce 5000ms window
+    if (lastEmit > 0 && now - lastEmit < 5000 && percentComplete > 0 && percentComplete < 100) {
+      return;
+    }
+
+    this.lastProgressEmitMap.set(executionId, now);
+
+    const event: ExecutionProgressEvent = {
+      executionId,
+      ticketId,
+      projectId,
+      currentStep,
+      percentComplete,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    await this.emitWebSocketEvent<ExecutionProgressEvent>('execution.progress', event);
   }
 }

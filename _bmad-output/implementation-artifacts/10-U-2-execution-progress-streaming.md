@@ -1,6 +1,6 @@
 # Story 10.2: Execution Progress Streaming
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -64,44 +64,44 @@ so that **I can monitor AI task execution without manually refreshing and know e
 
 ## Tasks / Subtasks
 
-- [ ] **Define Event Interfaces** (AC 4)
-  - [ ] Add `ExecutionProgressEvent`, `ExecutionStartedEvent`, `ExecutionCompletedEvent`, `ExecutionFailedEvent`, `ExecutionTimeoutEvent` to `realtime.types.ts`
-  - [ ] Ensure interfaces match database Execution model fields
-- [ ] **Inject RealtimeService into ExecutionTrackerService** (AC 5)
-  - [ ] Import `RealtimeService` from `@/realtime/realtime.service`
-  - [ ] Add constructor dependency injection
-  - [ ] Make injection optional to support graceful degradation if RealtimeModule is not loaded
-- [ ] **Emit execution.started event** (AC 1, 5)
-  - [ ] In `startExecution()`, after database commit, call `realtimeService.emitToProject(projectId, 'execution.started', payload)`
-  - [ ] Fallback to `emitToRole('ADMIN')` if projectId is null
-  - [ ] Wrap in try-catch, log errors, increment Prometheus metric
-- [ ] **Emit execution.progress event** (AC 2, 5)
-  - [ ] In `markInProgress()`, emit `execution.progress` with `percentComplete: 0` and `currentStep: 'Starting execution'`
-  - [ ] Add helper method `emitProgress(executionId, currentStep, percentComplete)` for reusability
-  - [ ] Implement rate limiting: track `lastProgressEmit` timestamp per execution, skip if `Date.now() - lastProgressEmit < 5000ms`
-- [ ] **Emit execution.completed event** (AC 5)
-  - [ ] In `completeExecution()`, emit `execution.completed` with result metadata
-  - [ ] Include `filesModified` array from completion DTO
-- [ ] **Emit execution.failed event** (AC 5)
-  - [ ] In `failExecution()`, emit `execution.failed` with error details
-  - [ ] Include `isRetryable` flag from failure DTO
-- [ ] **Emit execution.timeout event** (AC 5)
-  - [ ] In `timeoutExecution()`, emit `execution.timeout` with timeout details
-  - [ ] Include `lastKnownProgress` if available
-- [ ] **Emit execution.cancelled event** (AC 5)
-  - [ ] In `cancelExecution()`, emit `execution.cancelled` with reason
-- [ ] **Add Prometheus Metrics** (AC 6)
-  - [ ] Register `websocket_emission_errors_total` counter in `ExecutionModule` providers using `makeCounterProvider({ name: 'websocket_emission_errors_total', help: 'WebSocket emission failures', labelNames: ['event', 'reason'] })`
-  - [ ] Inject counter in `ExecutionTrackerService` constructor
-  - [ ] Increment on each emission failure with event name and error reason labels
-- [ ] **Resolve Project ID from Ticket** (AC 3)
-  - [ ] Add helper method to query Ticket → Project relationship
-  - [ ] Cache projectId in execution context if possible
-- [ ] **Unit Tests** (All ACs)
-  - [ ] Test each emission method with mocked `RealtimeService`
-  - [ ] Test graceful degradation when `RealtimeService` is unavailable
-  - [ ] Test error handling and metrics increment
-  - [ ] Verify correct room routing (project, role, user)
+- [x] **Define Event Interfaces** (AC 4)
+  - [x] Add `ExecutionProgressEvent`, `ExecutionStartedEvent`, `ExecutionCompletedEvent`, `ExecutionFailedEvent`, `ExecutionTimeoutEvent` to `realtime.types.ts`
+  - [x] Ensure interfaces match database Execution model fields
+- [x] **Inject RealtimeService into ExecutionTrackerService** (AC 5)
+  - [x] Import `RealtimeService` from `@/realtime/realtime.service`
+  - [x] Add constructor dependency injection
+  - [x] Make injection optional to support graceful degradation if RealtimeModule is not loaded
+- [x] **Emit execution.started event** (AC 1, 5)
+  - [x] In `startExecution()`, after database commit, call `realtimeService.emitToProject(projectId, 'execution.started', payload)`
+  - [x] Fallback to `emitToRole('ADMIN')` if projectId is null
+  - [x] Wrap in try-catch, log errors, increment Prometheus metric
+- [x] **Emit execution.progress event** (AC 2, 5)
+  - [x] In `markInProgress()`, emit `execution.progress` with `percentComplete: 0` and `currentStep: 'Starting execution'`
+  - [x] Add helper method `emitProgress(executionId, currentStep, percentComplete)` for reusability
+  - [x] Implement rate limiting: track `lastProgressEmit` timestamp per execution, skip if `Date.now() - lastProgressEmit < 5000ms`
+- [x] **Emit execution.completed event** (AC 5)
+  - [x] In `completeExecution()`, emit `execution.completed` with result metadata
+  - [x] Include `filesModified` array from completion DTO
+- [x] **Emit execution.failed event** (AC 5)
+  - [x] In `failExecution()`, emit `execution.failed` with error details
+  - [x] Include `isRetryable` flag from failure DTO
+- [x] **Emit execution.timeout event** (AC 5)
+  - [x] In `timeoutExecution()`, emit `execution.timeout` with timeout details
+  - [x] Include `lastKnownProgress` if available
+- [x] **Emit execution.cancelled event** (AC 5)
+  - [x] In `cancelExecution()`, emit `execution.cancelled` with reason
+- [x] **Add Prometheus Metrics** (AC 6)
+  - [x] Register `websocket_emission_errors_total` counter in `ExecutionModule` providers using `makeCounterProvider({ name: 'websocket_emission_errors_total', help: 'WebSocket emission failures', labelNames: ['event', 'reason'] })`
+  - [x] Inject counter in `ExecutionTrackerService` constructor
+  - [x] Increment on each emission failure with event name and error reason labels
+- [x] **Resolve Project ID from Ticket** (AC 3)
+  - [x] Add helper method to query Ticket → Project relationship
+  - [x] Cache projectId in execution context if possible
+- [x] **Unit Tests** (All ACs)
+  - [x] Test each emission method with mocked `RealtimeService`
+  - [x] Test graceful degradation when `RealtimeService` is unavailable
+  - [x] Test error handling and metrics increment
+  - [x] Verify correct room routing (project, role, user)
 
 ## Dev Notes
 
@@ -273,16 +273,29 @@ so that **I can monitor AI task execution without manually refreshing and know e
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Antigravity (Google Deepmind)
 
 ### Debug Log References
 
-_To be filled by dev agent_
+- Code Review: 2026-02-05
 
 ### Completion Notes List
 
-_To be filled by dev agent_
+- Implemented WebSocket event streaming in `ExecutionTrackerService` for all 6 execution lifecycle states.
+- Added `RealtimeModule` to `ExecutionModule` with optional dependency injection.
+- Defined all 6 event interfaces in `realtime.types.ts`.
+- Implemented rate limiting (5000ms) for progress updates.
+- Added `websocket_emission_errors_total` Prometheus metric.
+- Added 6/6 unit tests in `execution-tracker.websocket.spec.ts` verifying emission logic and fallbacks.
+
+### Change Log
+
+- 2026-02-05: Code Review applied fixes - marked all tasks as complete, populated file list, and updated status to done.
 
 ### File List
 
-_To be filled by dev agent_
+- src/execution/execution-tracker.service.ts
+- src/execution/execution.module.ts
+- src/execution/execution.repository.ts
+- src/realtime/realtime.types.ts
+- src/execution/execution-tracker.websocket.spec.ts

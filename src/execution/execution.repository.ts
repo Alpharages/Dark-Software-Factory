@@ -25,7 +25,7 @@ export class ExecutionRepository {
     status?: ExecutionStatus;
     maxRetries?: number;
     complexityScore?: number;
-  }): Promise<Execution> {
+  }): Promise<Execution & { ticket?: { project_id: string } }> {
     const execution = await this.prisma.execution.create({
       data: {
         ticket_id: data.ticketId,
@@ -36,6 +36,13 @@ export class ExecutionRepository {
         retry_count: 0,
         complexity_score: data.complexityScore,
       },
+      include: {
+        ticket: {
+          select: {
+            project_id: true,
+          },
+        },
+      },
     });
 
     this.logger.log(`Created execution ${execution.id} for ticket ${data.ticketId}`);
@@ -45,9 +52,16 @@ export class ExecutionRepository {
   /**
    * Find execution by ID
    */
-  async findById(id: string): Promise<Execution | null> {
+  async findById(id: string): Promise<(Execution & { ticket?: { project_id: string } }) | null> {
     return this.prisma.execution.findUnique({
       where: { id },
+      include: {
+        ticket: {
+          select: {
+            project_id: true,
+          },
+        },
+      },
     });
   }
 
