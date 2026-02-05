@@ -208,3 +208,45 @@ export interface ComplexityFailureDetails {
   actualComplexity: number;
   maxAllowed: number;
 }
+
+// Execution Log Events - Story 10-U-4
+
+export type LogLevel = 'STDOUT' | 'STDERR' | 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
+export type ErrorType =
+  | 'AI_PROVIDER_ERROR'
+  | 'WORKSPACE_ERROR'
+  | 'GITHUB_ERROR'
+  | 'QA_ERROR'
+  | 'TIMEOUT_ERROR'
+  | 'SYSTEM_ERROR';
+
+export interface ExecutionLogEvent {
+  executionId: string;
+  ticketId: string | null;
+  projectId: string | null;
+  timestamp: Date;
+  level: LogLevel;
+  message: string;
+  source: string; // e.g., 'ai_provider_pty', 'github_push', 'qa_linter'
+}
+
+export interface ExecutionErrorEvent {
+  executionId: string;
+  ticketId: string | null;
+  projectId: string | null;
+  timestamp: Date;
+  errorMessage: string;
+  errorType: ErrorType;
+  stackTrace: string | null;
+  isRetryable: boolean;
+}
+
+export interface ExecutionAuditEvent {
+  executionId: string;
+  ticketId: string | null;
+  projectId: string | null;
+  timestamp: Date;
+  auditEvent: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: Record<string, any>;
+}

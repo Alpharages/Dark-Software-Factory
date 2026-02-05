@@ -56,6 +56,11 @@ export type Ticket = Prisma.TicketModel;
  */
 export type Execution = Prisma.ExecutionModel;
 /**
+ * Model ExecutionLog
+ *
+ */
+export type ExecutionLog = Prisma.ExecutionLogModel;
+/**
  * Model QAResult
  *
  */

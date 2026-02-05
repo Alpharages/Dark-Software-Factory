@@ -776,10 +776,10 @@ development_status:
     story_created_date: "2026-02-05"
     completed_date: "2026-02-05"
   10-U-4-execution-logs-streaming:
-    status: ready-for-dev
+    status: done
     effort: "2 days"
     story_points: 5
-    notes: "Stream execution logs and errors to frontend. Uses Epic 11.2 audit logs + Epic 14.5 APIs. Merged from 10-7. Validation complete with all improvements applied (2026-02-05)."
+    notes: "IMPLEMENTATION COMPLETE 2026-02-05. Review passed. Features: (1) WebSocket streaming of execution logs (INFO/WARN/ERROR) and audit events, (2) Sensitive data redaction (API keys, JWTs), (3) Adaptive rate limiting, (4) Database persistence, (5) REST API."
     original_story: "10-7"
     v3_enhancement: "Epic 11.2 (Audit Logger) + Epic 14.5 (Observability) provide comprehensive log data"
   10-U-5-manual-intervention-circuit-breaker:

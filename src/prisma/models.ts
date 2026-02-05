@@ -10,6 +10,7 @@
 export type * from './models/Project';
 export type * from './models/Ticket';
 export type * from './models/Execution';
+export type * from './models/ExecutionLog';
 export type * from './models/QAResult';
 export type * from './models/GitHubInstallation';
 export type * from './models/GitHubPush';

@@ -378,6 +378,7 @@ export const ModelName = {
   Project: 'Project',
   Ticket: 'Ticket',
   Execution: 'Execution',
+  ExecutionLog: 'ExecutionLog',
   QAResult: 'QAResult',
   GitHubInstallation: 'GitHubInstallation',
   GitHubPush: 'GitHubPush',
@@ -444,6 +445,7 @@ export type TypeMap<
       | 'project'
       | 'ticket'
       | 'execution'
+      | 'executionLog'
       | 'qAResult'
       | 'gitHubInstallation'
       | 'gitHubPush'
@@ -709,6 +711,82 @@ export type TypeMap<
         count: {
           args: Prisma.ExecutionCountArgs<ExtArgs>;
           result: runtime.Types.Utils.Optional<Prisma.ExecutionCountAggregateOutputType> | number;
+        };
+      };
+    };
+    ExecutionLog: {
+      payload: Prisma.$ExecutionLogPayload<ExtArgs>;
+      fields: Prisma.ExecutionLogFieldRefs;
+      operations: {
+        findUnique: {
+          args: Prisma.ExecutionLogFindUniqueArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload> | null;
+        };
+        findUniqueOrThrow: {
+          args: Prisma.ExecutionLogFindUniqueOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>;
+        };
+        findFirst: {
+          args: Prisma.ExecutionLogFindFirstArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload> | null;
+        };
+        findFirstOrThrow: {
+          args: Prisma.ExecutionLogFindFirstOrThrowArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>;
+        };
+        findMany: {
+          args: Prisma.ExecutionLogFindManyArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>[];
+        };
+        create: {
+          args: Prisma.ExecutionLogCreateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>;
+        };
+        createMany: {
+          args: Prisma.ExecutionLogCreateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        createManyAndReturn: {
+          args: Prisma.ExecutionLogCreateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>[];
+        };
+        delete: {
+          args: Prisma.ExecutionLogDeleteArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>;
+        };
+        update: {
+          args: Prisma.ExecutionLogUpdateArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>;
+        };
+        deleteMany: {
+          args: Prisma.ExecutionLogDeleteManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateMany: {
+          args: Prisma.ExecutionLogUpdateManyArgs<ExtArgs>;
+          result: BatchPayload;
+        };
+        updateManyAndReturn: {
+          args: Prisma.ExecutionLogUpdateManyAndReturnArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>[];
+        };
+        upsert: {
+          args: Prisma.ExecutionLogUpsertArgs<ExtArgs>;
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionLogPayload>;
+        };
+        aggregate: {
+          args: Prisma.ExecutionLogAggregateArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.AggregateExecutionLog>;
+        };
+        groupBy: {
+          args: Prisma.ExecutionLogGroupByArgs<ExtArgs>;
+          result: runtime.Types.Utils.Optional<Prisma.ExecutionLogGroupByOutputType>[];
+        };
+        count: {
+          args: Prisma.ExecutionLogCountArgs<ExtArgs>;
+          result:
+            | runtime.Types.Utils.Optional<Prisma.ExecutionLogCountAggregateOutputType>
+            | number;
         };
       };
     };
@@ -4068,6 +4146,19 @@ export const ExecutionScalarFieldEnum = {
 export type ExecutionScalarFieldEnum =
   (typeof ExecutionScalarFieldEnum)[keyof typeof ExecutionScalarFieldEnum];
 
+export const ExecutionLogScalarFieldEnum = {
+  id: 'id',
+  executionId: 'executionId',
+  timestamp: 'timestamp',
+  level: 'level',
+  message: 'message',
+  source: 'source',
+  createdAt: 'createdAt',
+} as const;
+
+export type ExecutionLogScalarFieldEnum =
+  (typeof ExecutionLogScalarFieldEnum)[keyof typeof ExecutionLogScalarFieldEnum];
+
 export const QAResultScalarFieldEnum = {
   id: 'id',
   execution_id: 'execution_id',
@@ -5398,6 +5489,7 @@ export type GlobalOmitConfig = {
   project?: Prisma.ProjectOmit;
   ticket?: Prisma.TicketOmit;
   execution?: Prisma.ExecutionOmit;
+  executionLog?: Prisma.ExecutionLogOmit;
   qAResult?: Prisma.QAResultOmit;
   gitHubInstallation?: Prisma.GitHubInstallationOmit;
   gitHubPush?: Prisma.GitHubPushOmit;

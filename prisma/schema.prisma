@@ -107,11 +107,27 @@ model Execution {
   qa_result             QAResult?
   qa_review_queue       QaReviewQueue?
   archive               WorkspaceArchive?
+  logs                  ExecutionLog[]
 
   @@index([ticket_id, status])
   @@index([ai_provider, status])
   @@index([scheduled_retry_at])
   @@map("executions")
+}
+
+model ExecutionLog {
+   id          String   @id @default(uuid())
+   executionId String   @map("execution_id")
+   timestamp   DateTime @default(now())
+   level       String   // STDOUT, STDERR, INFO, WARN, ERROR, DEBUG
+   message     String   @db.Text
+   source      String   // e.g., 'ai_provider_pty', 'github_push'
+   createdAt   DateTime @default(now()) @map("created_at")
+ 
+   execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+ 
+   @@index([executionId, timestamp])
+   @@map("execution_logs")
 }
 
 model QAResult {

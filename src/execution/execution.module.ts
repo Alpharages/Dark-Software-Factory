@@ -39,6 +39,11 @@ import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { CapabilitiesModule } from '../architecture-review/capabilities/capabilities.module';
 // Story 10.2: Socket.IO Real-Time Infrastructure
 import { RealtimeModule } from '../realtime/realtime.module';
+// Story 10-U-4
+import { ExecutionLogStreamingService } from './services/execution-log-streaming.service';
+import { ExecutionLogRepository } from './repositories/execution-log.repository';
+import { LogRetentionJob } from './jobs/log-retention.job';
+import { ExecutionLogsController } from './controllers/execution-logs.controller';
 
 /**
  * Execution Module
@@ -81,7 +86,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [ExecutionController, ApprovalController],
+  controllers: [ExecutionController, ApprovalController, ExecutionLogsController],
   providers: [
     // Core services
     ExecutionService,
@@ -187,6 +192,36 @@ import { RealtimeModule } from '../realtime/realtime.module';
       name: 'websocket_emission_errors_total',
       help: 'WebSocket emission failures',
       labelNames: ['event', 'reason'],
+    }),
+
+    // Story 10-U-4: Execution Log Streaming
+    ExecutionLogStreamingService,
+    ExecutionLogRepository,
+    LogRetentionJob,
+
+    // Log Streaming Metrics
+    makeCounterProvider({
+      name: 'execution_logs_emitted_total',
+      help: 'Total logs emitted via WebSocket',
+      labelNames: ['execution_id', 'level', 'source'],
+    }),
+    makeCounterProvider({
+      name: 'execution_logs_dropped_total',
+      help: 'Logs dropped due to rate limiting',
+      labelNames: ['execution_id', 'reason'],
+    }),
+    makeCounterProvider({
+      name: 'execution_logs_retention_deleted_total',
+      help: 'Total logs deleted by retention policy',
+    }),
+    makeCounterProvider({
+      name: 'websocket_log_emission_errors_total',
+      help: 'WebSocket log emission failures',
+      labelNames: ['event', 'reason'],
+    }),
+    makeGaugeProvider({
+      name: 'execution_log_buffer_size',
+      help: 'Current size of execution log buffer',
     }),
   ],
   exports: [

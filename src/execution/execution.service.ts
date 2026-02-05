@@ -18,6 +18,7 @@ import {
 import { ExecutionGateway } from './gateways/execution.gateway';
 import { EventBusService } from '@/common/event-bus.service';
 import { ExecutionCompletedEvent } from './events/execution-completed.event';
+import { ExecutionLogStreamingService } from './services/execution-log-streaming.service';
 
 /**
  * Execution Service
@@ -36,6 +37,7 @@ export class ExecutionService {
     private readonly stateMachine: ExecutionStateMachine,
     private readonly eventBus: EventBusService,
     private readonly executionGateway: ExecutionGateway,
+    private readonly logStreamingService: ExecutionLogStreamingService,
   ) {}
 
   /**
@@ -79,6 +81,14 @@ export class ExecutionService {
 
     const execution = await this.tracker.startExecution(input);
 
+    await this.logStreamingService.emitLog(
+      execution.id,
+      'INFO',
+      `Starting execution for ticket ${dto.ticketId}`,
+      'system',
+      dto.ticketId,
+    );
+
     try {
       this.executionGateway.emitProgress({
         executionId: execution.id,
@@ -102,6 +112,13 @@ export class ExecutionService {
   async markInProgress(executionId: string, correlationId: string): Promise<IStateTransition> {
     this.logger.log(`[${correlationId}] Marking execution ${executionId} as in progress`);
     const transition = await this.tracker.markInProgress(executionId, correlationId);
+
+    await this.logStreamingService.emitLog(
+      executionId,
+      'INFO',
+      'Execution marked as IN_PROGRESS',
+      'system',
+    );
 
     // Get execution to include provider in event
     const execution = await this.tracker.getExecution(executionId);
@@ -142,6 +159,13 @@ export class ExecutionService {
     };
 
     const result = await this.tracker.completeExecution(completion, correlationId);
+
+    await this.logStreamingService.emitLog(
+      dto.executionId,
+      'INFO',
+      'Execution completed successfully',
+      'system',
+    );
 
     // Emit event
     const execution = await this.tracker.getExecution(dto.executionId);
@@ -234,6 +258,16 @@ export class ExecutionService {
 
     const result = await this.tracker.failExecution(failure, correlationId);
 
+    await this.logStreamingService.emitError(
+      dto.executionId,
+      'SYSTEM_ERROR',
+      dto.errorMessage,
+      null,
+      null,
+      null,
+      isRetryable,
+    );
+
     const execution = await this.tracker.getExecution(dto.executionId);
     if (execution) {
       try {
@@ -273,6 +307,13 @@ export class ExecutionService {
 
     const result = await this.tracker.timeoutExecution(timeout, correlationId);
 
+    await this.logStreamingService.emitError(
+      executionId,
+      'TIMEOUT_ERROR',
+      `Execution timed out after ${timeoutSeconds}s`,
+      null,
+    );
+
     const execution = await this.tracker.getExecution(executionId);
     if (execution) {
       try {
@@ -300,6 +341,13 @@ export class ExecutionService {
   ): Promise<IStateTransition> {
     this.logger.log(`[${correlationId}] Cancelling execution ${executionId}`);
     const result = await this.tracker.cancelExecution(executionId, reason, correlationId);
+
+    await this.logStreamingService.emitLog(
+      executionId,
+      'WARN',
+      `Execution cancelled: ${reason}`,
+      'user', // Assuming user initiated cancellation
+    );
 
     const execution = await this.tracker.getExecution(executionId);
     if (execution) {

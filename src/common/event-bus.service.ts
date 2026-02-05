@@ -8,6 +8,8 @@ export type EventPayload = {
   'adr.reviewed': import('../architecture-review/events/adr-reviewed.event').AdrReviewedEvent;
   'adr.escalated': import('../architecture-review/events/adr-escalated.event').AdrEscalatedEvent;
   'execution.completed': import('../execution/events/execution-completed.event').ExecutionCompletedEvent;
+  'execution.failed': import('../execution/events/execution-failed.event').ExecutionFailedEvent;
+  'execution.cancelled': import('../execution/events/execution-cancelled.event').ExecutionCancelledEvent;
   'qa.result.completed': import('../qa-automation/events/qa-result-completed.event').QaResultCompletedEvent;
   'quality.anomaly.detected': import('../dashboards/events/quality-anomaly-detected.event').QualityAnomalyDetectedEvent;
 };

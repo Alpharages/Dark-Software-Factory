@@ -51,6 +51,7 @@ export const ModelName = {
   Project: 'Project',
   Ticket: 'Ticket',
   Execution: 'Execution',
+  ExecutionLog: 'ExecutionLog',
   QAResult: 'QAResult',
   GitHubInstallation: 'GitHubInstallation',
   GitHubPush: 'GitHubPush',
@@ -188,6 +189,19 @@ export const ExecutionScalarFieldEnum = {
 
 export type ExecutionScalarFieldEnum =
   (typeof ExecutionScalarFieldEnum)[keyof typeof ExecutionScalarFieldEnum];
+
+export const ExecutionLogScalarFieldEnum = {
+  id: 'id',
+  executionId: 'executionId',
+  timestamp: 'timestamp',
+  level: 'level',
+  message: 'message',
+  source: 'source',
+  createdAt: 'createdAt',
+} as const;
+
+export type ExecutionLogScalarFieldEnum =
+  (typeof ExecutionLogScalarFieldEnum)[keyof typeof ExecutionLogScalarFieldEnum];
 
 export const QAResultScalarFieldEnum = {
   id: 'id',
