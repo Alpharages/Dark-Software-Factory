@@ -109,3 +109,102 @@ export interface ExecutionCancelledEvent {
     cancelledBy?: string;
   };
 }
+
+// QA Automation Events - Story 10.3
+
+export type GateType = 'LINTING' | 'TEST' | 'COVERAGE' | 'SECURITY' | 'COMPLEXITY' | 'CUSTOM';
+export type QaFailureSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface QaGateFailedEvent {
+  executionId: string;
+  ticketId: string;
+  projectId: string | null;
+  gateType: GateType;
+  failureDetails:
+    | LintingFailureDetails
+    | TestFailureDetails
+    | CoverageFailureDetails
+    | SecurityFailureDetails
+    | ComplexityFailureDetails
+    | Record<string, unknown>;
+  severity: QaFailureSeverity;
+  failedAt: Date;
+}
+
+export interface QaAllGatesFailedEvent {
+  executionId: string;
+  ticketId: string;
+  projectId: string | null;
+  failedGates: Array<{
+    gateType: GateType;
+    failureDetails:
+      | LintingFailureDetails
+      | TestFailureDetails
+      | CoverageFailureDetails
+      | SecurityFailureDetails
+      | ComplexityFailureDetails
+      | Record<string, unknown>;
+    severity: QaFailureSeverity;
+  }>;
+  summary: {
+    totalFailures: number;
+    criticalCount: number;
+    highCount: number;
+    mediumCount: number;
+    lowCount: number;
+  };
+  failedAt: Date;
+}
+
+export interface QaGateBlockedEvent {
+  executionId: string;
+  ticketId: string;
+  projectId: string | null;
+  blockedBy: GateType[];
+  canOverride: boolean;
+  overrideRoles: string[];
+  blockedAt: Date;
+}
+
+export interface LintingFailureDetails {
+  fileCount: number;
+  errorCount: number;
+  warningCount: number;
+  topIssues: Array<{ rule: string; count: number }>;
+  sampleErrors: Array<{ file: string; line: number; message: string }>;
+}
+
+export interface TestFailureDetails {
+  testSuite: string;
+  totalTests: number;
+  passed: number;
+  failed: number;
+  failedTests: Array<{ name: string; error: string }>;
+  durationMs: number;
+}
+
+export interface CoverageFailureDetails {
+  requiredCoverage: number;
+  actualCoverage: number;
+  uncoveredFiles: string[];
+  coverageDiff: number;
+}
+
+export interface SecurityFailureDetails {
+  scanType: string;
+  vulnerabilities: Array<{
+    id: string;
+    severity: string;
+    package: string;
+    description: string;
+  }>;
+  severityCounts: { critical: number; high: number; medium: number; low: number };
+  remediationHints: string[];
+}
+
+export interface ComplexityFailureDetails {
+  filePath: string;
+  functionName: string;
+  actualComplexity: number;
+  maxAllowed: number;
+}

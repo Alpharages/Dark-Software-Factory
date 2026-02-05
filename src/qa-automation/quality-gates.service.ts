@@ -60,6 +60,8 @@ export const SAMPLE_FAILING_QA_RESULT = {
 };
 
 import { QualityGateConfigService } from './quality-gate-config/quality-gate-config.service';
+import { QaNotificationService } from './services/qa-notification.service';
+import { GateType, QaFailureSeverity } from '@/realtime/realtime.types';
 
 @Injectable()
 export class QualityGatesService {
@@ -68,6 +70,7 @@ export class QualityGatesService {
   constructor(
     private readonly configService: ConfigService,
     private readonly qualityGateConfigService: QualityGateConfigService,
+    private readonly qaNotificationService: QaNotificationService,
     @InjectMetric(QA_METRICS.QUALITY_GATE_EVALUATIONS_TOTAL)
     private readonly evaluationsCounter: Counter<string>,
     @InjectMetric(QA_METRICS.QUALITY_GATE_DURATION)
@@ -116,6 +119,34 @@ export class QualityGatesService {
       // Track metrics
       this.evaluationsCounter.inc({ status, project_id: projectId });
       this.scoreHistogram.observe({ project_id: projectId }, overallScore);
+
+      // Prepare execution object for notification service
+      // Note: We create a minimal object here sufficient for the service
+      const executionContext = {
+        id: executionId,
+        ticketId: correlationId,
+        ticket: { projectId, project: null }, // Project ID is sufficient for routing usually
+      };
+
+      // Notify on failures (Fire and forget)
+      if (blockingIssues.length > 0) {
+        this.notifyFailures(executionContext, blockingIssues).catch((err) =>
+          this.logger.error(`Failed to notify failures: ${err.message}`),
+        );
+      }
+
+      if (!passed) {
+        // Emit blocked event
+        const blockedBy = blockingIssues.map((issue) => this.mapBlockerToGateType(issue.type));
+        this.qaNotificationService
+          .emitGateBlocked(
+            executionContext,
+            [...new Set(blockedBy)], // Unique types
+            config.allowOverride,
+            ['LEAD_QA', 'ADMIN', 'MANAGER'], // Default override roles
+          )
+          .catch((err) => this.logger.error(`Failed to notify blocked gate: ${err.message}`));
+      }
 
       const result: IQualityGateResult = {
         executionId,
@@ -376,7 +407,7 @@ export class QualityGatesService {
     // High security vulnerabilities (if configured to block)
     if (thresholds.blockOnHighSecurity && securitySummary.highCount > 0) {
       blockers.push({
-        type: BlockerType.CRITICAL_SECURITY,
+        type: BlockerType.CRITICAL_SECURITY, // Using same type for blocker, but details differ
         category: QualityCategory.SECURITY,
         message: `${securitySummary.highCount} high-severity security vulnerability(ies) found`,
         details: { highCount: securitySummary.highCount },
@@ -471,5 +502,68 @@ export class QualityGatesService {
     if (!passed) return 'notify_pm_failure';
     if (warnings.length > 5) return 'manual_review'; // Many warnings = human review
     return 'proceed_to_github';
+  }
+
+  /**
+   * Helper to notify on blocking failures
+   */
+  private async notifyFailures(
+    executionContext: {
+      id: string;
+      ticketId: string;
+      ticket: { projectId: string; project: null };
+    },
+    blockingIssues: IBlockingIssue[],
+  ): Promise<void> {
+    if (blockingIssues.length === 1) {
+      const issue = blockingIssues[0];
+      const gateType = this.mapBlockerToGateType(issue.type);
+      const severity = this.determineSeverity(issue);
+
+      await this.qaNotificationService.emitGateFailed(
+        executionContext,
+        gateType,
+        issue.details || {},
+        severity,
+      );
+    } else {
+      // Multiple failures
+      const failedGates = blockingIssues.map((issue) => ({
+        gateType: this.mapBlockerToGateType(issue.type),
+        failureDetails: issue.details || {},
+        severity: this.determineSeverity(issue),
+      }));
+
+      const summary = {
+        totalFailures: blockingIssues.length,
+        criticalCount: failedGates.filter((g) => g.severity === 'CRITICAL').length,
+        highCount: failedGates.filter((g) => g.severity === 'HIGH').length,
+        mediumCount: failedGates.filter((g) => g.severity === 'MEDIUM').length,
+        lowCount: failedGates.filter((g) => g.severity === 'LOW').length,
+      };
+
+      await this.qaNotificationService.emitAllGatesFailed(executionContext, failedGates, summary);
+    }
+  }
+
+  private mapBlockerToGateType(type: BlockerType): GateType {
+    switch (type) {
+      case BlockerType.LINTING_ERROR:
+        return 'LINTING';
+      case BlockerType.TEST_FAILURE:
+        return 'TEST';
+      case BlockerType.COVERAGE_BELOW_MINIMUM:
+        return 'COVERAGE';
+      case BlockerType.CRITICAL_SECURITY:
+        return 'SECURITY';
+      default:
+        return 'CUSTOM';
+    }
+  }
+
+  private determineSeverity(issue: IBlockingIssue): QaFailureSeverity {
+    if (issue.type === BlockerType.CRITICAL_SECURITY) return 'CRITICAL';
+    if (issue.type === BlockerType.TEST_FAILURE) return 'HIGH'; // Tests failing is high severity
+    return 'MEDIUM'; // Linting/Coverage is usually medium
   }
 }

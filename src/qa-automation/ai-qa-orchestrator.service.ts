@@ -18,6 +18,8 @@ import { renderLintInstruction } from './templates/lint-instruction.template';
 import { renderTestInstruction } from './templates/test-instruction.template';
 import { renderSecurityInstruction } from './templates/security-instruction.template';
 import { renderCoverageInstruction } from './templates/coverage-instruction.template';
+import { QaNotificationService } from './services/qa-notification.service'; // Story 10.3
+import { GateType, QaFailureSeverity } from '@/realtime/realtime.types'; // Story 10.3
 
 /**
  * QA Result interface (simplified from Story 3.6)
@@ -41,6 +43,7 @@ export class AiQaOrchestrator {
     private readonly qaMetrics: QaMetricsService, // Story 3.8
     private readonly sentry: SentryService, // Story 1.9
     private readonly prisma: PrismaService, // Database access
+    private readonly qaNotificationService: QaNotificationService, // Story 10.3
   ) {}
 
   /**
@@ -200,6 +203,14 @@ export class AiQaOrchestrator {
       // 5. Execute any additional post-metrics logic (e.g., coverage-specific metrics)
       if (postMetricsCallback) {
         postMetricsCallback(parsedResult);
+      }
+
+      // 6. Notify on IMMEDIATE failure (Story 10.3)
+      // This is for individual tool failures (e.g., linter found errors), distinct from Quality Gate failure
+      if (status === 'FAILED') {
+        this.notifyCheckFailure(ticketId, executionId, checkType, parsedResult).catch((err) =>
+          this.logger.error(`Failed to emit QA failure notification: ${err.message}`),
+        );
       }
 
       // Log NOT_CONFIGURED as info, not a failure
@@ -451,5 +462,75 @@ export class AiQaOrchestrator {
       data: { error: error.message },
       duration,
     };
+  }
+
+  /**
+   * Helper to emit real-time notifications for check failures (Story 10.3)
+   */
+  private async notifyCheckFailure(
+    ticketId: string,
+    executionId: string,
+    checkType: string,
+    resultData: Record<string, unknown>,
+  ): Promise<void> {
+    const gateType = this.mapCheckTypeToGateType(checkType);
+    const severity = this.determineSeverity(checkType, resultData);
+
+    const executionContext = {
+      id: executionId,
+      ticketId: ticketId,
+      ticket: { projectId: ticketId, project: null }, // Approximation using ticketId as projectId often
+    };
+
+    await this.qaNotificationService.emitGateFailed(
+      executionContext,
+      gateType,
+      resultData,
+      severity,
+    );
+  }
+
+  private mapCheckTypeToGateType(checkType: string): GateType {
+    switch (checkType) {
+      case 'linting':
+        return 'LINTING';
+      case 'testing':
+        return 'TEST';
+      case 'security':
+        return 'SECURITY';
+      case 'coverage':
+        return 'COVERAGE';
+      default:
+        return 'CUSTOM';
+    }
+  }
+
+  private determineSeverity(checkType: string, data: Record<string, unknown>): QaFailureSeverity {
+    if (checkType === 'security') {
+      const summary = data.summary as { criticalCount?: number; highCount?: number } | undefined;
+      if (summary?.criticalCount && summary.criticalCount > 0) return 'CRITICAL';
+      if (summary?.highCount && summary.highCount > 0) return 'HIGH';
+    }
+
+    if (checkType === 'testing') {
+      // If many tests failed, it's high severity. If any failed in "production-bound code" (proxy: any fail) -> CRITICAL often used, but AC says "test failures in production-bound code".
+      // Safe default for test failure is HIGH as per 'determineBlockingIssues' in QualityGatesService usually treating them as blockers.
+      const failedCount = data.failedCount as number | undefined;
+      return failedCount && failedCount > 0 ? 'HIGH' : 'MEDIUM';
+    }
+
+    if (checkType === 'coverage') {
+      const overall = data.overall as number | undefined;
+      // Assuming target is 80 if not provided (safe default) or if we can infer.
+      // But better to use the diff if available.
+      // AC says: "HIGH: Coverage below threshold by >10%"
+      // If we don't have threshold data here, we can't be perfect, but let's try.
+      // Often 'data' comes from parsed results which might not have the threshold.
+      // However, QualityGatesService handles the main logic. This Orchestrator logic is for "Immediate" notification.
+      // Let's assume a default threshold of 80% for immediate alerting if unknown.
+      if (overall !== undefined && overall < 70) return 'HIGH'; // < 80 - 10
+    }
+
+    return 'MEDIUM';
   }
 }

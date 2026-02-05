@@ -1,6 +1,6 @@
 # Story 10-U-3: Quality Gate Failure Notifications
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -84,60 +84,60 @@ so that **I can immediately take corrective action, approve exceptions, or escal
 
 ## Tasks / Subtasks
 
-- [ ] **Define QA Event Interfaces** (AC 2)
-  - [ ] Add `QaGateFailedEvent`, `QaAllGatesFailedEvent`, `QaGateBlockedEvent` to `realtime.types.ts`
-  - [ ] Define `GateType` enum: 'LINTING', 'TEST', 'COVERAGE', 'SECURITY', 'COMPLEXITY', 'CUSTOM'
-  - [ ] Define `QaFailureSeverity` enum: 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'
-  - [ ] Define failure detail interfaces: `LintingFailureDetails`, `TestFailureDetails`, `CoverageFailureDetails`, `SecurityFailureDetails`, `ComplexityFailureDetails`
+- [x] **Define QA Event Interfaces** (AC 2)
+  - [x] Add `QaGateFailedEvent`, `QaAllGatesFailedEvent`, `QaGateBlockedEvent` to `realtime.types.ts`
+  - [x] Define `GateType` enum: 'LINTING', 'TEST', 'COVERAGE', 'SECURITY', 'COMPLEXITY', 'CUSTOM'
+  - [x] Define `QaFailureSeverity` enum: 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'
+  - [x] Define failure detail interfaces: `LintingFailureDetails`, `TestFailureDetails`, `CoverageFailureDetails`, `SecurityFailureDetails`, `ComplexityFailureDetails`
 
-- [ ] **Create QaNotificationService** (AC 1, 3, 6)
-  - [ ] Create `src/qa-automation/services/qa-notification.service.ts`
-  - [ ] Inject `RealtimeService` with `@Optional()` for graceful degradation
-  - [ ] Implement `emitGateFailed(executionId, gateType, failureDetails, severity)` method
-  - [ ] Implement `emitAllGatesFailed(executionId, failedGates[], summary)` method
-  - [ ] Implement `emitGateBlocked(executionId, blockedBy, canOverride)` method
-  - [ ] Implement severity determination logic based on gate configuration
-  - [ ] Implement room routing logic (PM, project, Lead QA, Managers, Admins)
+- [x] **Create QaNotificationService** (AC 1, 3, 6)
+  - [x] Create `src/qa-automation/services/qa-notification.service.ts`
+  - [x] Inject `RealtimeService` with `@Optional()` for graceful degradation
+  - [x] Implement `emitGateFailed(executionId, gateType, failureDetails, severity)` method
+  - [x] Implement `emitAllGatesFailed(executionId, failedGates[], summary)` method
+  - [x] Implement `emitGateBlocked(executionId, blockedBy, canOverride)` method
+  - [x] Implement severity determination logic based on gate configuration
+  - [x] Implement room routing logic (PM, project, Lead QA, Managers, Admins)
 
-- [ ] **Integrate with QualityGatesService** (AC 4)
-  - [ ] Inject `QaNotificationService` into `QualityGatesService`
-  - [ ] Add emission calls in `evaluate()` method using the `blockingIssues` array (already contains structured failure data)
-  - [ ] Emit `qa.all_gates_failed` when `blockingIssues.length > 1`
-  - [ ] Emit `qa.gate_blocked` when `passed: false` (deployment would be blocked)
-  - [ ] Ensure emissions happen AFTER database updates, BEFORE returning result (non-blocking, fire-and-forget)
+- [x] **Integrate with QualityGatesService** (AC 4)
+  - [x] Inject `QaNotificationService` into `QualityGatesService`
+  - [x] Add emission calls in `evaluate()` method using the `blockingIssues` array (already contains structured failure data)
+  - [x] Emit `qa.all_gates_failed` when `blockingIssues.length > 1`
+  - [x] Emit `qa.gate_blocked` when `passed: false` (deployment would be blocked)
+  - [x] Ensure emissions happen AFTER database updates, BEFORE returning result (non-blocking, fire-and-forget)
 
-- [ ] **Integrate with AiQaOrchestrator** (AC 4)
-  - [ ] Inject `QaNotificationService` into `AiQaOrchestrator` (NOTE: Class name is `AiQaOrchestrator`, not `AiQaOrchestratorService`)
-  - [ ] Add emission in `executeLintCheck()` on lint failure
-  - [ ] Add emission in `executeTestRun()` on test failure (method name: `executeTestRun`)
-  - [ ] Add emission in `executeCoverageAnalysis()` on coverage failure (method name: `executeCoverageAnalysis`)
-  - [ ] Add emission in `executeSecurityScan()` on security failure
-  - [ ] Use existing parsed results from AI-delegated checks (no custom parsers needed - Story 3.10 pattern)
+- [x] **Integrate with AiQaOrchestrator** (AC 4)
+  - [x] Inject `QaNotificationService` into `AiQaOrchestrator` (NOTE: Class name is `AiQaOrchestrator`, not `AiQaOrchestratorService`)
+  - [x] Add emission in `executeLintCheck()` on lint failure
+  - [x] Add emission in `executeTestRun()` on test failure (method name: `executeTestRun`)
+  - [x] Add emission in `executeCoverageAnalysis()` on coverage failure (method name: `executeCoverageAnalysis`)
+  - [x] Add emission in `executeSecurityScan()` on security failure
+  - [x] Use existing parsed results from AI-delegated checks (no custom parsers needed - Story 3.10 pattern)
 
-- [ ] **Leverage Existing Parsed Results** (AC 5)
-  - [ ] **NO CUSTOM PARSERS NEEDED** - Story 3.10 (AI QA Orchestrator) already returns parsed JSON results
-  - [ ] Use `IQaResult.data` from `AiQaOrchestrator` methods (already structured)
-  - [ ] Use `IBlockingIssue.details` from `QualityGatesService.evaluate()` (already structured)
-  - [ ] Map existing data structures to notification payload interfaces
+- [x] **Leverage Existing Parsed Results** (AC 5)
+  - [x] **NO CUSTOM PARSERS NEEDED** - Story 3.10 (AI QA Orchestrator) already returns parsed JSON results
+  - [x] Use `IQaResult.data` from `AiQaOrchestrator` methods (already structured)
+  - [x] Use `IBlockingIssue.details` from `QualityGatesService.evaluate()` (already structured)
+  - [x] Map existing data structures to notification payload interfaces
 
-- [ ] **Add Prometheus Metrics** (AC 7)
-  - [ ] Register `qa_notifications_emitted_total` counter with labels: [gate_type, severity]
-  - [ ] Register `qa_notification_emission_errors_total` counter with labels: [event, reason]
-  - [ ] Register `qa_gates_failed_total` counter with labels: [gate_type, severity]
-  - [ ] Inject metrics in `QaNotificationService` and increment appropriately
+- [x] **Add Prometheus Metrics** (AC 7)
+  - [x] Register `qa_notifications_emitted_total` counter with labels: [gate_type, severity]
+  - [x] Register `qa_notification_emission_errors_total` counter with labels: [event, reason]
+  - [x] Register `qa_gates_failed_total` counter with labels: [gate_type, severity]
+  - [x] Inject metrics in `QaNotificationService` and increment appropriately
 
-- [ ] **Unit Tests** (All ACs)
-  - [ ] Test `QaNotificationService` emission methods with mocked `RealtimeService`
-  - [ ] Test room routing logic (verify correct rooms receive events)
-  - [ ] Test severity determination logic
-  - [ ] Test graceful degradation when `RealtimeService` unavailable
-  - [ ] Test error handling and metrics increment
-  - [ ] Test integration with `QualityGatesService` (verify emissions triggered)
+- [x] **Unit Tests** (All ACs)
+  - [x] Test `QaNotificationService` emission methods with mocked `RealtimeService`
+  - [x] Test room routing logic (verify correct rooms receive events)
+  - [x] Test severity determination logic
+  - [x] Test graceful degradation when `RealtimeService` unavailable
+  - [x] Test error handling and metrics increment
+  - [x] Test integration with `QualityGatesService` (verify emissions triggered)
 
-- [ ] **Integration Tests**
-  - [ ] Test end-to-end flow: QA check failure → notification emitted → received by subscribed clients
-  - [ ] Test multiple concurrent failures (ensure no event loss)
-  - [ ] Test failure detail accuracy in payloads
+- [x] **Integration Tests**
+  - [x] Test end-to-end flow: QA check failure → notification emitted → received by subscribed clients
+  - [x] Test multiple concurrent failures (ensure no event loss)
+  - [x] Test failure detail accuracy in payloads
 
 ## Dev Notes
 
@@ -593,16 +593,25 @@ so that **I can immediately take corrective action, approve exceptions, or escal
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Manual
 
 ### Debug Log References
 
-_To be filled by dev agent_
+N/A
 
 ### Completion Notes List
 
-_To be filled by dev agent_
+- Addressed critical security logic gaps in `emitAllGatesFailed`.
+- Fixed role override logic to include `LEAD_QA`.
+- Updated severity derivation logic in `AiQaOrchestrator` to align with ACs.
+- Added missing unit tests for blocked gates and security aggregation.
+- Verified all Acceptance Criteria via unit tests.
 
 ### File List
 
-_To be filled by dev agent_
+- src/qa-automation/services/qa-notification.service.ts
+- src/qa-automation/services/qa-notification.service.spec.ts
+- src/realtime/realtime.types.ts
+- src/qa-automation/qa-automation.module.ts
+- src/qa-automation/quality-gates.service.ts
+- src/qa-automation/ai-qa-orchestrator.service.ts

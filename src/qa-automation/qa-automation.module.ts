@@ -19,6 +19,7 @@ import { QaResultsController, QualityGateController } from './qa-results.control
 import { QaCheckPublisher } from './qa-check.publisher';
 import { QaCheckConsumer } from './qa-check.consumer';
 import { QaMetricsService } from './qa-metrics.service';
+import { QaNotificationService } from './services/qa-notification.service'; // Story 10.3
 import {
   QA_METRICS,
   QUEUE_METRICS,
@@ -30,6 +31,7 @@ import { ExecutionCompletedListener } from './listeners/execution-completed.list
 
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10: For OrchestratorService
+import { RealtimeModule } from '../realtime/realtime.module'; // Story 10.3
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.4: Self-Healing Integration
@@ -69,11 +71,11 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     LoggerModule,
     AppMetricsModule,
     forwardRef(() => AiRoutingModule), // Story 3.10: AiQaOrchestrator needs OrchestratorService (circular dep fix)
+    forwardRef(() => RealtimeModule), // Story 10.3: For QA notifications
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
     // Story 13.4: Self-Healing Integration
     forwardRef(() => ExecutionModule), // Provides SelfHealingOrchestratorService
-    // Story 8.3: Production Approval
     // Story 8.3: Production Approval
     ProductionApprovalModule,
     QualityGateConfigModule,
@@ -116,6 +118,7 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     QaOrchestratorService,
     QaOrchestratorConsumer,
     QaResultsService,
+    QaNotificationService, // Story 10.3
     makeCounterProvider({
       name: QA_METRICS.QUALITY_GATE_EVALUATIONS_TOTAL,
       help: 'Total quality gate evaluations',
@@ -142,6 +145,18 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
       help: 'QA check duration in seconds',
       labelNames: ['check_type', 'status', 'project_id', 'provider'],
       buckets: METRICS_CONSTANTS.DEFAULT_BUCKETS,
+    }),
+
+    // Story 10.3: QA Notification Metrics
+    makeCounterProvider({
+      name: 'qa_notifications_emitted_total',
+      help: 'Total QA notifications emitted',
+      labelNames: ['gate_type', 'severity'],
+    }),
+    makeCounterProvider({
+      name: 'qa_notification_emission_errors_total',
+      help: 'Total QA notification emission errors',
+      labelNames: ['event', 'reason'],
     }),
 
     // Story 3.6 - QA Results Storage & Retrieval
@@ -255,11 +270,7 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     makeCounterProvider({
       name: QA_METRICS.AI_REVIEW_FINDINGS_TOTAL,
       help: 'Total findings identified by AI',
-    }),
-    makeCounterProvider({
-      name: QA_METRICS.AI_REVIEW_FINDING_STATUS_UPDATES,
-      help: 'Total finding status updates',
-      labelNames: ['status'],
+      labelNames: ['risk_level', 'severity'],
     }),
     makeCounterProvider({
       name: QA_METRICS.AI_REVIEW_FINDING_STATUS_UPDATES,
@@ -301,6 +312,7 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     QaCheckPublisher, // Story 3.7
     QaCheckConsumer, // Story 3.7
     QaMetricsService, // Story 3.8
+    QaNotificationService, // Story 10.3
     // Story 8.1 - Export services for use by other modules
     QaSamplingConfigService,
     QaSamplingService,
