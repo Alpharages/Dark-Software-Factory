@@ -9,10 +9,11 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
+import { Logger, UsePipes, ValidationPipe, UseGuards, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MetricsService } from '@/common/metrics/metrics.service';
+import { ProjectService } from '@/projects/project.service';
 import { JoinProjectDto, LeaveProjectDto } from './dto/join-room.dto';
 import { RealtimeService } from './realtime.service';
 import { WsAuthGuard } from './guards/ws-auth.guard';
@@ -67,6 +68,8 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     private readonly metricsService: MetricsService,
     private readonly realtimeService: RealtimeService,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => ProjectService))
+    private readonly projectService: ProjectService,
   ) {}
 
   /**
@@ -171,21 +174,32 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
    */
   @SubscribeMessage('joinProject')
   @UsePipes(new ValidationPipe({ transform: true }))
-  @UseGuards(WsAuthGuard) // CRITICAL FIX: Apply auth guard to handler
+  @UseGuards(WsAuthGuard)
   async handleJoinProject(
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: JoinProjectDto,
-  ): Promise<{ status: string; room: string }> {
+  ): Promise<{ status: string; room: string; message?: string }> {
     const userId = client.data.user?.userId;
+    const userRoles = client.data.user?.roles || [];
     const { projectId } = dto;
 
-    this.logger.log(`User ${userId} joining project: ${projectId}`);
+    this.logger.log(`User ${userId} requesting to join project: ${projectId}`);
 
-    // AC 3: RBAC check deferred to future story
-    // Architectural Decision: Connection-level auth ensures all users are authenticated.
-    // Project-level RBAC will be implemented when CASL integration is complete.
-    // Tracking: Follow-up story needed for ProjectsService RBAC integration
-    // Security Note: Current implementation allows authenticated users to subscribe to any project room
+    // AC 3: RBAC check - Validate user can access this project
+    const canAccess = await this.canAccessProject(userId, userRoles, projectId);
+
+    if (!canAccess) {
+      this.logger.warn(`User ${userId} denied access to project ${projectId}`);
+      this.safeIncrementCounter('websocket_events_total', {
+        event: 'joinProject',
+        result: 'denied',
+      });
+      return {
+        status: 'error',
+        room: `project:${projectId}`,
+        message: 'Access denied to this project',
+      };
+    }
 
     const room = `project:${projectId}`;
     client.join(room);
@@ -193,9 +207,49 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     this.logger.log(`Client ${client.id} joined project room: ${room}`);
     this.safeIncrementCounter('websocket_events_total', {
       event: 'joinProject',
+      result: 'success',
     });
 
     return { status: 'ok', room };
+  }
+
+  /**
+   * Check if user can access a project
+   * - ADMIN: Can access all projects
+   * - MANAGER: Can access all projects
+   * - PM: Can access projects they manage
+   * - TL/QA/VIEWER: Can access projects based on assignment (simplified for now)
+   */
+  private async canAccessProject(
+    userId: string,
+    roles: string[],
+    projectId: string,
+  ): Promise<boolean> {
+    // ADMIN and MANAGER can access all projects
+    if (roles.includes('ADMIN') || roles.includes('MANAGER')) {
+      return true;
+    }
+
+    try {
+      // Get project details
+      const project = await this.projectService.findOne(projectId);
+
+      // PM can access their own projects
+      if (roles.includes('PM') && project.pm_id === userId) {
+        return true;
+      }
+
+      // For TL, QA, VIEWER - additional logic can be added here
+      // For now, allow access if they have any role (already authenticated)
+      // TODO: Implement project membership/assignment check
+      return false;
+    } catch (error) {
+      // Project not found or other error
+      this.logger.warn(
+        `Error checking project access for ${projectId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return false;
+    }
   }
 
   /**

@@ -64,4 +64,22 @@ export class InAppNotificationService {
   async getUnreadCount(userId: string): Promise<number> {
     return this.repository.getUnreadCount(userId);
   }
+
+  /**
+   * Find notifications for a user with optional filtering
+   * @param userId User ID
+   * @param unreadOnly Filter to unread notifications only
+   * @param page Page number for pagination
+   */
+  async findByUserId(
+    userId: string,
+    unreadOnly?: boolean,
+    page?: number,
+  ): Promise<{
+    notifications: import('@/prisma').InAppNotification[];
+    total: number;
+    unread: number;
+  }> {
+    return this.repository.findByUserId(userId, unreadOnly, page);
+  }
 }

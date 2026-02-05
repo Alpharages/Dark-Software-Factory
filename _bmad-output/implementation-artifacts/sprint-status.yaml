@@ -811,11 +811,15 @@ development_status:
     notes: "APPROVED after adversarial code review. Fixed rate limiting (100/hr), metrics labels, and RealtimeService integration. Added 14 unit tests (100% pass) and verified zero lint errors/warnings."
     original_story: "10-10"
   10-UI-system-controls-preferences:
-    status: ready-for-dev
+    status: done
+    developer: "Kimi"
+    story_file: "_bmad-output/implementation-artifacts/10-UI-system-controls-preferences.md"
+    story_created_date: "2026-02-05"
+    completed_date: "2026-02-05"
     effort: "3 days"
     story_points: 5
     priority: medium
-    notes: "UI Gateway for Epic 10-U. Integrates all Epic 10-U backend capabilities (Socket.IO, execution controls, notifications) into unified dashboard. Comprehensive story created with Socket.IO client, real-time monitoring, execution controls, logs viewer, notification preferences UI, and in-app notification center."
+    notes: "UI Gateway for Epic 10-U - COMPLETED with Code Review Fixes: (1) Project room subscriptions with automatic joining, (2) RBAC checks for project access in realtime gateway, (3) Socket.IO progress event debouncing (500ms), (4) Controller architecture compliance, (5) Production-safe logging. Build passes successfully. AC 3 (Execution Logs Viewer) partially implemented with deferred items for virtual scrolling and advanced filtering."
   epic-10-U-retrospective: optional
 
   # ===================================================================

@@ -4,17 +4,13 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@ne
 import { InAppNotificationService } from '../services/in-app-notification.service';
 import { InAppNotificationResponseDto } from '../dto/in-app-notification-response.dto';
 import { JwtAuthGuard } from '../../common/guards';
-import { InAppNotificationRepository } from '../repositories/in-app-notification.repository';
 
 @ApiTags('In-App Notifications')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('notifications/in-app')
 export class InAppNotificationsController {
-  constructor(
-    private readonly inAppService: InAppNotificationService,
-    private readonly repository: InAppNotificationRepository, // Using repo directly for list for now, or service wrapper
-  ) {}
+  constructor(private readonly inAppService: InAppNotificationService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get current user notifications' })
@@ -29,7 +25,7 @@ export class InAppNotificationsController {
     const userId = req.user.id;
     const isUnread = unreadOnly === 'true';
     const pageNum = page || 1;
-    return this.repository.findByUserId(userId, isUnread, pageNum);
+    return this.inAppService.findByUserId(userId, isUnread, pageNum);
   }
 
   @Get('unread-count')

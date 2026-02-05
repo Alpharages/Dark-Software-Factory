@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppMetricsModule } from '@/common/metrics/metrics.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ProjectModule } from '../projects/project.module';
 import { RealtimeGateway } from './realtime.gateway';
 import { RealtimeService } from './realtime.service';
 import { WsAuthGuard } from './guards/ws-auth.guard';
@@ -31,6 +32,7 @@ import { WsAuthGuard } from './guards/ws-auth.guard';
     }),
     AppMetricsModule,
     forwardRef(() => NotificationsModule),
+    forwardRef(() => ProjectModule),
   ],
   providers: [RealtimeGateway, RealtimeService, WsAuthGuard],
   exports: [RealtimeService], // Export RealtimeService for use by other modules
