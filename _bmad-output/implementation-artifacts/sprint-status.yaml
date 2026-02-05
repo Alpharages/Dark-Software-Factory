@@ -509,7 +509,7 @@ development_status:
     original_story: "6-R-3-frontend"
   epic-6-R-retrospective: completed
 
-  epic-7: in-progress
+  epic-7: done
   epic-7-enhancements-v3: "Epic 11.2 (Audit Logger), Epic 14.1 (PR Risk Assessor)"
   epic-7-notes: "V3 ENHANCEMENTS: Story 7-1 (ADR Generation) effort reduced ~50% by leveraging Epic 11.2 AI decision audit logs. Story 7-3 (Risk Prioritization) can leverage Epic 14.1 PR risk scores. See v3-epic-impact-analysis.md."
   7-1-architecture-decision-records-adr-generation:
@@ -683,7 +683,7 @@ development_status:
     - "9-7: Self-Healing Metrics → Epic 13 Prometheus metrics (80% overlap)"
   
   epic-9-U: 
-    status: in-progress
+    status: done
     notes: "AI classifies error severity (CRITICAL/HIGH/MEDIUM/LOW) with reasoning. Pattern recognition task. Keep: DB storage, queue ordering. From original 9-2."
     original_story: "9-2"
   9-U-3-automatic-fix-ticket-creation:
@@ -1144,7 +1144,7 @@ development_status:
     based_on: "Story 19-4"
     blocks: []
 
-  epic-17: in-progress
+  epic-17: done
   epic-17-name: "Authentication & Access Control"
   epic-17-phase: "Critical Security"
   epic-17-priority: critical
@@ -1676,7 +1676,7 @@ development_flow:
 epic_status:
   epic-8:
     name: "Lead QA Manual Review Workflow"
-    status: "in-progress"
+    status: "done"
     priority: "high"
     total_stories: 8
     ready_to_start: true
@@ -1684,14 +1684,14 @@ epic_status:
   
   epic-9-U:
     name: "Error Classification & Handling (Updated)"
-    status: "in-progress"
+    status: "done"
     priority: "medium"
     total_stories: 4
     notes: "AI classifies error severity. Pattern recognition task. From original Epic 9."
   
   epic-10-U:
     name: "Real-time Notifications & Controls (Updated)"
-    status: "backlog"
+    status: "done"
     priority: "medium"
     total_stories: 7
     dependencies: ["Epic 11", "Epic 13", "Epic 14"]
@@ -1706,7 +1706,7 @@ epic_status:
   
   epic-20:
     name: "AI Task Pickup Reliability"
-    status: "in-progress"
+    status: "done"
     priority: "critical"
     total_stories: 3
     ready_stories: 3
