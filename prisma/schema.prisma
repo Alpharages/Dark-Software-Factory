@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/prisma"
 }
 
@@ -64,11 +64,11 @@ model Ticket {
 }
 
 model Execution {
-  id                    String            @id @default(uuid())
+  id                    String               @id @default(uuid())
   ticket_id             String
   ai_provider           AIProvider
   prompt                String
-  status                ExecutionStatus   @default(QUEUED)
+  status                ExecutionStatus      @default(QUEUED)
   confidence_score      Float?
   started_at            DateTime?
   completed_at          DateTime?
@@ -76,38 +76,39 @@ model Execution {
   error_message         String?
   code_output           String?
   files_changed         Json?
-  retry_count           Int               @default(0)
-  max_retries           Int               @default(3)
-  created_at            DateTime          @default(now())
-  updated_at            DateTime          @updatedAt
+  retry_count           Int                  @default(0)
+  max_retries           Int                  @default(3)
+  created_at            DateTime             @default(now())
+  updated_at            DateTime             @updatedAt
   complexity_breakdown  Json?
   complexity_score      Int?
   error_context         String?
-  fallback_used         Boolean           @default(false)
+  fallback_used         Boolean              @default(false)
   original_provider     AIProvider?
   routing_reason        String?
   scheduled_retry_at    DateTime?
   base_branch           String?
   branch_selection_log  String?
-  circular_dep_detected Boolean           @default(false)
+  circular_dep_detected Boolean              @default(false)
   file_modifications    Json?
   risk_level            PRRiskLevel?
   selected_model        String?
   task_type             TaskType?
   container_id          String?
-  debug_mode            Boolean           @default(false)
+  debug_mode            Boolean              @default(false)
   adrs                  Adr[]
   aiCostLogs            AICostLog[]
   aiDecisionLogs        AIDecisionLog[]
   approvalRecords       ApprovalRecord[]
   bug_escapes           BugEscape[]
-  ticket                Ticket            @relation(fields: [ticket_id], references: [id])
+  ticket                Ticket               @relation(fields: [ticket_id], references: [id])
   fileLockQueueEntries  FileLockQueue[]
   fileLocks             FileLock[]
   qa_result             QAResult?
   qa_review_queue       QaReviewQueue?
   archive               WorkspaceArchive?
   logs                  ExecutionLog[]
+  overrides             ExecutionOverride[]
 
   @@index([ticket_id, status])
   @@index([ai_provider, status])
@@ -630,6 +631,10 @@ model User {
   manager                      User?                      @relation("ManagerTeam", fields: [managed_by_id], references: [id])
   team_members                 User[]                     @relation("ManagerTeam")
   utilization_history          UtilizationHistory[]
+  execution_overrides          ExecutionOverride[]
+  slackMemberId              String?                    @map("slack_member_id")
+  notificationPreferences    NotificationPreference[]
+  inAppNotifications         InAppNotification[]
 
   @@index([managed_by_id])
   @@index([role])
@@ -797,6 +802,41 @@ model QaReviewQueue {
   @@map("qa_review_queue")
 }
 
+model NotificationPreference {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  eventType      String   @map("event_type")
+  channels       Json
+  enabled        Boolean  @default(true)
+  filterCriteria Json?    @map("filter_criteria")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventType])
+  @@index([userId, eventType])
+  @@map("notification_preferences")
+}
+
+model InAppNotification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  eventType String   @map("event_type")
+  title     String   @db.VarChar(255)
+  message   String   @db.Text
+  payload   Json?
+  read      Boolean  @default(false)
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@map("in_app_notifications")
+}
+
 model ArchitectureConstraint {
   id        String   @id @default(uuid())
   projectId String?
@@ -956,6 +996,25 @@ model QualityAnomalyConfig {
   @@map("quality_anomaly_configs")
 }
 
+// Story 10-U-5: Manual Intervention Circuit Breaker
+model ExecutionOverride {
+  id               String   @id @default(uuid())
+  executionId      String   @map("execution_id")
+  userId           String   @map("user_id")
+  originalDecision String?  @map("original_decision")
+  newDecision      String   @map("new_decision")
+  reason           String   @db.Text
+  overrideData     Json?    @map("override_data")
+  overriddenAt     DateTime @default(now()) @map("overridden_at")
+
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([executionId])
+  @@index([userId])
+  @@map("execution_overrides")
+}
+
 enum ProjectProvider {
   CLICKUP
   JIRA
@@ -1034,11 +1093,13 @@ enum AIProvider {
 enum ExecutionStatus {
   QUEUED
   IN_PROGRESS
+  PAUSED
   COMPLETED
   FAILED
   TIMEOUT
   CANCELLED
   AWAITING_APPROVAL
+  EMERGENCY_STOPPED
 }
 
 enum GitHubStatus {

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { width: 80%; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .header { background: #c0392b; color: white; padding: 10px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { padding: 20px; }
+        .footer { font-size: 12px; color: #777; text-align: center; margin-top: 20px; }
+        .error { color: #c0392b; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>AI Execution Failed</h2>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+            <p>We are sorry to inform you that the AI execution for ticket <strong>{{ticketId}}</strong> in project <strong>{{projectName}}</strong> has failed.</p>
+            <p class="error"><strong>Error:</strong> {{errorMessage}}</p>
+            <p>Time: {{timestamp}}</p>
+            <p><a href="{{dashboardUrl}}">Check the logs for details</a></p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Dark Software Factory</p>
+        </div>
+    </div>
+</body>
+</html>

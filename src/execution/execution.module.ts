@@ -44,6 +44,13 @@ import { ExecutionLogStreamingService } from './services/execution-log-streaming
 import { ExecutionLogRepository } from './repositories/execution-log.repository';
 import { LogRetentionJob } from './jobs/log-retention.job';
 import { ExecutionLogsController } from './controllers/execution-logs.controller';
+// Story 10-U-5: Manual Intervention Circuit Breaker
+import { ManualInterventionService } from './services/manual-intervention.service';
+import { ManualInterventionController } from './controllers/manual-intervention.controller';
+import { ContainerControlService } from './services/container-control.service';
+import { ExecutionOverrideRepository } from './repositories/execution-override.repository';
+// Audit Logging
+import { AuditLogService } from '../common/audit/audit-log.service';
 
 /**
  * Execution Module
@@ -86,7 +93,12 @@ import { ExecutionLogsController } from './controllers/execution-logs.controller
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [ExecutionController, ApprovalController, ExecutionLogsController],
+  controllers: [
+    ExecutionController,
+    ApprovalController,
+    ExecutionLogsController,
+    ManualInterventionController,
+  ],
   providers: [
     // Core services
     ExecutionService,
@@ -199,6 +211,12 @@ import { ExecutionLogsController } from './controllers/execution-logs.controller
     ExecutionLogRepository,
     LogRetentionJob,
 
+    // Story 10-U-5: Manual Intervention Circuit Breaker
+    ManualInterventionService,
+    ContainerControlService,
+    ExecutionOverrideRepository,
+    AuditLogService,
+
     // Log Streaming Metrics
     makeCounterProvider({
       name: 'execution_logs_emitted_total',
@@ -222,6 +240,33 @@ import { ExecutionLogsController } from './controllers/execution-logs.controller
     makeGaugeProvider({
       name: 'execution_log_buffer_size',
       help: 'Current size of execution log buffer',
+    }),
+
+    // Story 10-U-5: Manual Intervention Metrics
+    makeCounterProvider({
+      name: 'execution_paused_total',
+      help: 'Total number of executions paused',
+      labelNames: ['provider', 'reason'],
+    }),
+    makeCounterProvider({
+      name: 'execution_resumed_total',
+      help: 'Total number of executions resumed',
+      labelNames: ['provider'],
+    }),
+    makeCounterProvider({
+      name: 'execution_emergency_stopped_total',
+      help: 'Total number of executions emergency stopped',
+      labelNames: ['provider', 'reason', 'container_killed'],
+    }),
+    makeCounterProvider({
+      name: 'execution_decision_overridden_total',
+      help: 'Total number of AI decisions overridden',
+      labelNames: ['provider', 'original_decision', 'new_decision'],
+    }),
+    makeCounterProvider({
+      name: 'execution_container_control_failed_total',
+      help: 'Total number of container control operation failures',
+      labelNames: ['operation', 'execution_id'],
     }),
   ],
   exports: [

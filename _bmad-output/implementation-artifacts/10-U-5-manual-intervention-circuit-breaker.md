@@ -656,16 +656,97 @@ This story complements:
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Claude Sonnet 4.5
 
 ### Debug Log References
 
-_To be filled by dev agent_
+N/A - Implementation completed successfully
 
 ### Completion Notes List
 
-_To be filled by dev agent_
+1. **Prisma Schema Updates**:
+   - Added `PAUSED` and `EMERGENCY_STOPPED` to `ExecutionStatus` enum
+   - Created `ExecutionOverride` model with fields: id, executionId, userId, originalDecision, newDecision, reason, overrideData, overriddenAt
+   - Added relations to Execution and User models
+   - Applied database migration via SQL commands
+
+2. **State Machine Updates**:
+   - Updated `VALID_TRANSITIONS` to include `PAUSED` and `EMERGENCY_STOPPED` states
+   - Added `PAUSED` transitions: can resume to IN_PROGRESS, cancel, or emergency stop
+   - Added `EMERGENCY_STOPPED` as terminal state (no transitions out)
+   - Added `canTransition()` method to ExecutionStateMachine
+   - Updated `TERMINAL_STATES` and `STATUS_LABELS`
+
+3. **WebSocket Event Types**:
+   - Added `ExecutionPausedEvent` interface
+   - Added `ExecutionResumedEvent` interface
+   - Added `ExecutionEmergencyStoppedEvent` interface
+   - Added `ExecutionDecisionOverriddenEvent` interface
+
+4. **Services Created**:
+   - `ContainerControlService`: Docker container pause/resume/kill/stop operations
+   - `ExecutionOverrideRepository`: CRUD operations for decision overrides
+   - `ManualInterventionService`: Core business logic for pause/resume/emergency-stop/override
+
+5. **Controller Created**:
+   - `ManualInterventionController`: REST API endpoints with RBAC
+   - POST /api/v1/execution/:id/pause (PM, TL, MANAGER, ADMIN)
+   - POST /api/v1/execution/:id/resume (PM, TL, MANAGER, ADMIN)
+   - POST /api/v1/execution/:id/emergency-stop (TL, MANAGER, ADMIN)
+   - POST /api/v1/execution/:id/override-decision (TL, ADMIN)
+
+6. **DTOs Created**:
+   - `PauseExecutionDto`: reason field validation
+   - `ResumeExecutionDto`: optional resumeNotes
+   - `EmergencyStopDto`: reason and killContainer flag
+   - `OverrideDecisionDto`: decision enum, reason, optional overrideData
+   - `ExecutionControlResponse`: standardized response format
+   - `DecisionOverrideResponse`: override-specific response
+
+7. **ExecutionModule Updates**:
+   - Added new services to providers
+   - Added new controller to controllers
+   - Added 5 Prometheus metric providers (paused, resumed, emergency_stopped, decision_overridden, container_control_failed)
+   - Imported AuditLogService for audit trail
+
+8. **Unit Tests**:
+   - `manual-intervention.service.spec.ts`: 15 tests covering all operations
+   - `manual-intervention.controller.spec.ts`: 8 tests for API endpoints
+   - `container-control.service.spec.ts`: 9 tests for Docker operations
+   - `execution-override.repository.spec.ts`: 6 tests for repository operations
+   - Total: 38 new tests, all passing
 
 ### File List
 
-_To be filled by dev agent_
+**New Files Created (14)**:
+
+1. `src/execution/services/manual-intervention.service.ts` (core service)
+2. `src/execution/services/manual-intervention.service.spec.ts` (tests)
+3. `src/execution/services/container-control.service.ts` (Docker operations)
+4. `src/execution/services/container-control.service.spec.ts` (tests)
+5. `src/execution/controllers/manual-intervention.controller.ts` (REST API)
+6. `src/execution/controllers/manual-intervention.controller.spec.ts` (tests)
+7. `src/execution/repositories/execution-override.repository.ts` (repository)
+8. `src/execution/repositories/execution-override.repository.spec.ts` (tests)
+9. `src/execution/dto/pause-execution.dto.ts`
+10. `src/execution/dto/resume-execution.dto.ts`
+11. `src/execution/dto/emergency-stop.dto.ts`
+12. `src/execution/dto/override-decision.dto.ts`
+13. `src/execution/dto/execution-control-response.dto.ts`
+14. `prisma/migrations/20260205161711_execution_manual_controls/migration.sql`
+
+**Modified Files (6)**:
+
+1. `prisma/schema.prisma` - Added enum values and ExecutionOverride model
+2. `src/execution/enums/execution-status.enum.ts` - Updated state machine transitions
+3. `src/execution/state-machine/execution-state-machine.ts` - Added canTransition method
+4. `src/execution/execution.module.ts` - Added providers, controllers, metrics
+5. `src/execution/dto/index.ts` - Exported new DTOs
+6. `src/realtime/realtime.types.ts` - Added WebSocket event interfaces
+
+### Change Log
+
+- 2026-02-05: Story implementation completed
+- 2026-02-05: Database migration applied (enum values + ExecutionOverride table)
+- 2026-02-05: All 38 unit tests passing
+- 2026-02-05: TypeScript build clean for all new files

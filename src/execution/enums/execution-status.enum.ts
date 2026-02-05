@@ -17,18 +17,28 @@ import { SafeMap } from '../../common/utils/safe-access.util';
  *       └───────────┘ └─────────┘ └──────┬──────┘
  *                                        │
  *                           ┌────────────┼────────────┐
- *                           │            │            │
- *                           ▼            ▼            ▼
- *                    ┌─────────┐  ┌───────────┐ ┌─────────┐
- *                    │ TIMEOUT │  │ COMPLETED │ │ FAILED  │
- *                    └─────────┘  └───────────┘ └─────────┘
- *                           │            │            │
- *                           │      ┌───────────┐      │
- *                           └─────►│ CANCELLED │◄─────┘
- *                                  └───────────┘
+ *              ┌────────────┤            │            │
+ *              │            ▼            ▼            ▼
+ *              │     ┌─────────┐  ┌───────────┐ ┌─────────┐
+ *              │     │ TIMEOUT │  │ COMPLETED │ │ FAILED  │
+ *              │     └─────────┘  └───────────┘ └─────────┘
+ *              │            │            │            │
+ *              │            │      ┌───────────┐      │
+ *              │            └─────►│ CANCELLED │◄─────┘
+ *              │                   └───────────┘      │
+ *              │     ┌─────────┐                      │
+ *              └──►  │ PAUSED  │ ◄────────────────────┘
+ *                    └────┬────┘
+ *                         │
+ *              ┌──────────┼──────────┐
+ *              ▼          ▼          ▼
+ *       ┌──────────┐ ┌────────┐ ┌───────────┐
+ *       │IN_PROGRESS│ │CANCELLED│ │EMERGENCY_STOPPED│
+ *       └──────────┘ └────────┘ └───────────┘
  *
  * Note: CANCELLED can be reached from any non-terminal state
  * Note: FAILED can be reached from QUEUED (e.g., budget exceeded before execution starts)
+ * Note: EMERGENCY_STOPPED is a terminal state - no transitions out
  */
 
 /**
@@ -46,6 +56,13 @@ export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
     ExecutionStatus.TIMEOUT,
     ExecutionStatus.CANCELLED,
     ExecutionStatus.AWAITING_APPROVAL,
+    ExecutionStatus.PAUSED, // Story 10-U-5: Manual pause
+    ExecutionStatus.EMERGENCY_STOPPED, // Story 10-U-5: Emergency stop
+  ],
+  [ExecutionStatus.PAUSED]: [
+    ExecutionStatus.IN_PROGRESS, // Resume
+    ExecutionStatus.CANCELLED,
+    ExecutionStatus.EMERGENCY_STOPPED, // Can emergency stop from paused
   ],
   [ExecutionStatus.COMPLETED]: [ExecutionStatus.AWAITING_APPROVAL],
   [ExecutionStatus.AWAITING_APPROVAL]: [
@@ -53,6 +70,8 @@ export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
     ExecutionStatus.FAILED,
     ExecutionStatus.QUEUED, // For rework
     ExecutionStatus.CANCELLED,
+    ExecutionStatus.PAUSED, // Story 10-U-5: Can pause while awaiting approval
+    ExecutionStatus.EMERGENCY_STOPPED, // Story 10-U-5: Can emergency stop
   ],
   [ExecutionStatus.FAILED]: [
     ExecutionStatus.QUEUED, // Allow retry → back to queue
@@ -63,6 +82,7 @@ export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
     ExecutionStatus.CANCELLED,
   ],
   [ExecutionStatus.CANCELLED]: [], // Terminal state
+  [ExecutionStatus.EMERGENCY_STOPPED]: [], // Terminal state - Story 10-U-5
 };
 
 /**
@@ -71,6 +91,7 @@ export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
 export const TERMINAL_STATES: ExecutionStatus[] = [
   ExecutionStatus.COMPLETED,
   ExecutionStatus.CANCELLED,
+  ExecutionStatus.EMERGENCY_STOPPED, // Story 10-U-5: Terminal state
 ];
 
 /**
@@ -87,11 +108,13 @@ export const RETRYABLE_STATES: ExecutionStatus[] = [
 export const STATUS_LABELS: Record<ExecutionStatus, string> = {
   [ExecutionStatus.QUEUED]: 'Queued',
   [ExecutionStatus.IN_PROGRESS]: 'In Progress',
+  [ExecutionStatus.PAUSED]: 'Paused', // Story 10-U-5
   [ExecutionStatus.COMPLETED]: 'Completed',
   [ExecutionStatus.FAILED]: 'Failed',
   [ExecutionStatus.TIMEOUT]: 'Timed Out',
   [ExecutionStatus.CANCELLED]: 'Cancelled',
   [ExecutionStatus.AWAITING_APPROVAL]: 'Awaiting Approval',
+  [ExecutionStatus.EMERGENCY_STOPPED]: 'Emergency Stopped', // Story 10-U-5
 };
 
 // Type-safe Map for transitions lookup

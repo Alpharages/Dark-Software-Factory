@@ -783,12 +783,16 @@ development_status:
     original_story: "10-7"
     v3_enhancement: "Epic 11.2 (Audit Logger) + Epic 14.5 (Observability) provide comprehensive log data"
   10-U-5-manual-intervention-circuit-breaker:
-    status: ready-for-dev
+    status: done
     effort: "2 days"
     story_points: 5
     story_file: "_bmad-output/implementation-artifacts/10-U-5-manual-intervention-circuit-breaker.md"
-    notes: "Story generated via create-story workflow. Implements manual intervention controls: pause/resume executions, emergency stop, decision overrides with full RBAC and audit trail."
-    original_story: "10-8"
+    developer: "Antigravity"
+    completed_date: "2026-02-05"
+    test_results:
+      unit_tests: "38/38 passed"
+      test_coverage: "ManualInterventionService (15), Controller (8), ContainerControl (9), Repository (6)"
+    notes: "✅ COMPLETE - Manual Intervention Circuit Breaker implemented. Features: (1) Pause/Resume executions with Docker SIGSTOP/SIGCONT, (2) Emergency Stop with SIGKILL or graceful stop, (3) Decision Override with full audit trail, (4) RBAC enforcement (PM/TL/MANAGER/ADMIN for pause/resume, TL/MANAGER/ADMIN for emergency stop, TL/ADMIN for override), (5) Real-time WebSocket events, (6) Prometheus metrics (4 counters), (7) ExecutionOverride table for tracking overrides. All ACs met. Database migration applied. Build passing."
   10-U-6-system-metrics-export-integration:
     status: cancelled
     effort: "2 days"
@@ -798,10 +802,13 @@ development_status:
     cancelled_date: "2026-02-05"
     cancelled_reason: "Not required - no external metrics export planned"
   10-U-7-notification-preferences-channels:
-    status: ready-for-dev
+    status: done
+    developer: "Antigravity"
+    story_file: "_bmad-output/implementation-artifacts/10-U-7-notification-preferences-channels.md"
+    story_created_date: "2026-02-05"
     effort: "2 days"
     story_points: 3
-    notes: "User preferences: Slack, email, in-app. Notification filtering. Channel management. From original 10-10."
+    notes: "APPROVED after adversarial code review. Fixed rate limiting (100/hr), metrics labels, and RealtimeService integration. Added 14 unit tests (100% pass) and verified zero lint errors/warnings."
     original_story: "10-10"
   10-UI-system-controls-preferences:
     status: ready-for-dev

@@ -13,6 +13,7 @@ export default tseslint.config(
       'node_modules/**',
       'coverage/**',
       'prisma/migrations/**',
+      'src/prisma/**', // Prisma-generated client files
       '**/*.config.js',
       '**/*.config.mjs',
     ],

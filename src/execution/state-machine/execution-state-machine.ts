@@ -119,6 +119,18 @@ export class ExecutionStateMachine {
   }
 
   /**
+   * Check if a transition is valid from current status to target status
+   * Story 10-U-5: Manual Intervention Circuit Breaker
+   *
+   * @param currentStatus - Current execution status
+   * @param targetStatus - Desired target status
+   * @returns true if transition is valid
+   */
+  canTransition(currentStatus: ExecutionStatus, targetStatus: ExecutionStatus): boolean {
+    return isValidTransition(currentStatus, targetStatus);
+  }
+
+  /**
    * Get human-readable status label
    */
   getStatusLabel(status: ExecutionStatus): string {

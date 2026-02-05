@@ -23,6 +23,14 @@ export class UserDetailDto extends UserDto {
   lastLoginAt?: Date | null;
 
   @ApiProperty({
+    description: 'Slack Member ID for notifications',
+    example: 'U12345678',
+    required: false,
+    nullable: true,
+  })
+  slackMemberId?: string | null;
+
+  @ApiProperty({
     description: 'Timestamp of account creation',
     example: '2025-12-01T00:00:00.000Z',
   })

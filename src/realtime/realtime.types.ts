@@ -250,3 +250,47 @@ export interface ExecutionAuditEvent {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: Record<string, any>;
 }
+
+// Story 10-U-5: Manual Intervention Circuit Breaker Events
+
+export interface ExecutionPausedEvent {
+  executionId: string;
+  ticketId: string | null;
+  projectId: string | null;
+  pausedAt: string;
+  pausedBy: string;
+  reason: string;
+  containerControlSkipped?: boolean;
+}
+
+export interface ExecutionResumedEvent {
+  executionId: string;
+  ticketId: string | null;
+  projectId: string | null;
+  resumedAt: string;
+  resumedBy: string;
+  resumeNotes?: string;
+  containerControlSkipped?: boolean;
+}
+
+export interface ExecutionEmergencyStoppedEvent {
+  executionId: string;
+  ticketId: string | null;
+  projectId: string | null;
+  stoppedAt: string;
+  stoppedBy: string;
+  reason: string;
+  containerKilled: boolean;
+  containerControlSkipped?: boolean;
+}
+
+export interface ExecutionDecisionOverriddenEvent {
+  executionId: string;
+  ticketId: string | null;
+  projectId: string | null;
+  overriddenAt: string;
+  overriddenBy: string;
+  originalDecision: string | null;
+  newDecision: string;
+  reason: string;
+}

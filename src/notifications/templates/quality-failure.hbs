@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { width: 80%; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .header { background: #f39c12; color: white; padding: 10px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { padding: 20px; }
+        .footer { font-size: 12px; color: #777; text-align: center; margin-top: 20px; }
+        .warning { color: #f39c12; font-weight: bold; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Quality Gate Failure</h2>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+            <p>The latest execution for ticket <strong>{{ticketId}}</strong> in project <strong>{{projectName}}</strong> has failed one or more quality gates.</p>
+            <p class="warning"><strong>Status:</strong> Quality Check Failed</p>
+            {{#if failures}}
+            <p><strong>Failures:</strong></p>
+            <ul>
+                {{#each failures}}
+                <li>{{this}}</li>
+                {{/each}}
+            </ul>
+            {{/if}}
+            <p>Time: {{timestamp}}</p>
+            <p><a href="{{dashboardUrl}}">View Quality Report</a></p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Dark Software Factory</p>
+        </div>
+    </div>
+</body>
+</html>

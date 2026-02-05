@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Server } from 'socket.io';
+import { NotificationDispatcherService } from '../notifications/services/notification-dispatcher.service';
 
 /**
  * Realtime Service - Abstraction layer for Socket.IO emissions
@@ -16,6 +17,11 @@ import { Server } from 'socket.io';
 export class RealtimeService {
   private readonly logger = new Logger(RealtimeService.name);
   private server?: Server;
+
+  constructor(
+    @Inject(forwardRef(() => NotificationDispatcherService))
+    private readonly notificationDispatcher: NotificationDispatcherService,
+  ) {}
 
   /**
    * Set the Socket.IO server instance
@@ -43,6 +49,9 @@ export class RealtimeService {
     const room = `project:${projectId}`;
     this.server.to(room).emit(event, payload);
     this.logger.debug(`Emitted '${event}' to project room: ${room}`);
+
+    // Trigger multi-channel notifications for project-level events?
+    // For now, focusing on user-specific events as per AC, but could be extended.
   }
 
   /**
@@ -81,6 +90,20 @@ export class RealtimeService {
     const room = `user:${userId}`;
     this.server.to(room).emit(event, payload);
     this.logger.debug(`Emitted '${event}' to user room: ${room}`);
+
+    // Trigger multi-channel notification dispatcher
+    const p = payload as Record<string, unknown>;
+    this.notificationDispatcher
+      .dispatch({
+        userId,
+        eventType: event,
+        title: p.title as string,
+        message: p.message as string,
+        payload: p,
+      })
+      .catch((err) => {
+        this.logger.error(`Failed to trigger notification dispatcher for user ${userId}:`, err);
+      });
   }
 
   /**

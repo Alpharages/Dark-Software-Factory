@@ -38,6 +38,7 @@ import { DashboardsModule } from './dashboards/dashboards.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { ConversationsModule } from './conversations/conversations.module'; // Story 5.5
 import { ReportsModule } from './reports/reports.module'; // Story 5.6
+import { NotificationsModule } from './notifications/notifications.module'; // Story 10-U-7
 
 // External integrations
 import { IntegrationsModule } from './integrations/integrations.module';
@@ -113,6 +114,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // User interfaces
     DashboardsModule,
     RealtimeModule,
+    NotificationsModule,
 
     // External integrations
     IntegrationsModule,

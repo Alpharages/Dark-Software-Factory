@@ -57,6 +57,7 @@ export class UsersService {
           full_name: true,
           role: true,
           is_active: true,
+          slackMemberId: true,
         },
       }),
       this.prisma.user.count({ where }),
@@ -106,6 +107,7 @@ export class UsersService {
         is_active: true,
         last_login_at: true,
         created_at: true,
+        slackMemberId: true,
       },
     });
 
@@ -135,6 +137,7 @@ export class UsersService {
       isActive: user.is_active,
       lastLoginAt: user.last_login_at,
       createdAt: user.created_at,
+      slackMemberId: user.slackMemberId,
       invitationsSentCount,
       activeRefreshTokensCount,
     };

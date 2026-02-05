@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppMetricsModule } from '@/common/metrics/metrics.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { RealtimeGateway } from './realtime.gateway';
 import { RealtimeService } from './realtime.service';
 import { WsAuthGuard } from './guards/ws-auth.guard';
@@ -29,6 +30,7 @@ import { WsAuthGuard } from './guards/ws-auth.guard';
       inject: [ConfigService],
     }),
     AppMetricsModule,
+    forwardRef(() => NotificationsModule),
   ],
   providers: [RealtimeGateway, RealtimeService, WsAuthGuard],
   exports: [RealtimeService], // Export RealtimeService for use by other modules
