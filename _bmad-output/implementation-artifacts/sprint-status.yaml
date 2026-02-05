@@ -735,7 +735,7 @@ development_status:
     - "10-5: System Health Dashboard → Epic 14.5 health API (80% overlap)"
     - "10-6: Queue Depth Monitoring → Epic 14.5 queue metrics API (90% overlap)"
   
-  epic-10-U: backlog
+  epic-10-U: done
   epic-10-U-name: "Real-time Notifications & Controls"
   epic-10-U-priority: medium
   epic-10-U-dependencies: "Epic 11 (Audit Logs), Epic 13 (Cost Alerts), Epic 14 (Observability APIs)"
@@ -820,7 +820,10 @@ development_status:
     story_points: 5
     priority: medium
     notes: "UI Gateway for Epic 10-U - COMPLETED with Code Review Fixes: (1) Project room subscriptions with automatic joining, (2) RBAC checks for project access in realtime gateway, (3) Socket.IO progress event debouncing (500ms), (4) Controller architecture compliance, (5) Production-safe logging. Build passes successfully. AC 3 (Execution Logs Viewer) partially implemented with deferred items for virtual scrolling and advanced filtering."
-  epic-10-U-retrospective: optional
+  epic-10-U-retrospective:
+    status: done
+    completion_date: "2026-02-05"
+    retro_file: "_bmad-output/implementation-artifacts/epic-10-U-retro-2026-02-05.md"
 
   # ===================================================================
   # V3 SYSTEM FLOW IMPLEMENTATION
