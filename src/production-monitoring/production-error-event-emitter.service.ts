@@ -11,7 +11,7 @@ import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
 import { RabbitMQConsumerBase } from '@/rabbitmq/rabbitmq-consumer.base';
 import { EXCHANGE_NAMES, ROUTING_KEYS } from '@/rabbitmq/rabbitmq.config';
 import { ErrorSeverity } from '@/prisma/enums';
-import { RealtimeGateway } from '@/realtime/realtime.gateway';
+import { RealtimeService } from '@/realtime/realtime.service';
 import { PrismaService } from '@/database/prisma.service';
 
 /** Queue name for Socket.IO event broadcasting */
@@ -32,7 +32,7 @@ export class ProductionErrorEventEmitter extends RabbitMQConsumerBase implements
 
   constructor(
     private readonly rabbitMQService: RabbitMQService,
-    private readonly realtimeGateway: RealtimeGateway,
+    private readonly realtimeService: RealtimeService,
     private readonly prisma: PrismaService,
   ) {
     super();
@@ -156,7 +156,7 @@ export class ProductionErrorEventEmitter extends RabbitMQConsumerBase implements
   }): void {
     try {
       // Emit to production_events room
-      this.realtimeGateway.server.to('production_events').emit('error.created', {
+      this.realtimeService.emitToRoom('production_events', 'error.created', {
         id: event.id,
         application: event.application,
         error_type: event.error_type,
@@ -178,7 +178,7 @@ export class ProductionErrorEventEmitter extends RabbitMQConsumerBase implements
    */
   broadcastErrorAcknowledged(errorId: string, acknowledgedBy: string): void {
     try {
-      this.realtimeGateway.server.to('production_events').emit('error.acknowledged', {
+      this.realtimeService.emitToRoom('production_events', 'error.acknowledged', {
         id: errorId,
         acknowledged_by: acknowledgedBy,
         acknowledged_at: new Date().toISOString(),
@@ -198,7 +198,7 @@ export class ProductionErrorEventEmitter extends RabbitMQConsumerBase implements
    */
   broadcastTicketCreated(errorId: string, ticketUrl: string): void {
     try {
-      this.realtimeGateway.server.to('production_events').emit('error.ticket_created', {
+      this.realtimeService.emitToRoom('production_events', 'error.ticket_created', {
         id: errorId,
         ticket_url: ticketUrl,
         created_at: new Date().toISOString(),

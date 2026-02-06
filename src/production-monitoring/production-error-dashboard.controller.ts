@@ -51,7 +51,7 @@ function generateCsv(data: Record<string, unknown>[]): string {
 }
 
 @ApiTags('Production Error Dashboard')
-@Controller('/api/v1/monitoring')
+@Controller('monitoring')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class ProductionErrorDashboardController {

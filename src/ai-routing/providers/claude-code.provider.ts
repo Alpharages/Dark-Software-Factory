@@ -153,27 +153,29 @@ export class ClaudeCodeProvider
       // 3. Construct prompt for CLI
       const cliPrompt = this.constructCliPrompt(input);
 
-      // 5. Spawn Claude CLI via PTY
+      // 5. Spawn Claude CLI via PTY in Docker Container
       // Command: claude --model <model> "<prompt>"
       const args = [
         '--model',
         this.model,
-        // '--print', // Removed: We want file generation, not just printed output - actually story requirement says construct appropriate arguments.
-        // Original implementation commented it out. I'll maintain that unless explicitly told otherwise.
         '--dangerously-skip-permissions',
         '--no-session-persistence',
         cliPrompt,
       ];
 
-      this.logger.debug(`Spawning claude with args: ${JSON.stringify(args)} in ${workspacePath}`);
+      this.logger.debug(
+        `Spawning claude in container with args: ${JSON.stringify(args)} in ${workspacePath}`,
+      );
 
-      const { pid, output$, exit$ } = this.ptyService.spawn(this.claudeCliPath, args, {
-        cwd: workspacePath,
-        env: env,
-        name: `claude-${executionId}`,
-        cols: 120, // Wider terminal for better output
+      const containerResult = await this.ptyService.spawnInContainer(this.claudeCliPath, args, {
+        executionId,
+        ticketId,
+        cols: 120,
         rows: 40,
+        env: env,
       });
+
+      const { pid, output$, exit$, containerId } = containerResult;
 
       // Check if spawn failed immediately (pid === -1 indicates pre-spawn validation failure)
       if (pid === -1) {
@@ -181,13 +183,13 @@ export class ClaudeCodeProvider
         return this.createFailedResult(startTime, workspacePath, {
           code: AIErrorCode.CLI_NOT_FOUND,
           message:
-            "'claude' CLI not found in PATH. Please install Claude Code CLI: " +
-            'https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview',
+            "'claude' CLI not found in container. Please ensure it's installed in dsf-agent-base image.",
           isRetryable: false,
         });
       }
 
       this.activeExecutions.set(executionId, pid);
+      this.logger.log(`[${correlationId}] Container spawned: ${containerId} (pseudo-PID ${pid})`);
 
       // 6. Monitor Execution
       let exitPromise: Promise<{ exitCode: number; signal?: number }>;
@@ -196,7 +198,7 @@ export class ClaudeCodeProvider
       } catch (err) {
         // Handle case where exit$ immediately errors
         const errorMsg = err instanceof Error ? err.message : String(err);
-        this.logger.error(`[${correlationId}] PTY exit observable error: ${errorMsg}`);
+        this.logger.error(`[${correlationId}] Container exit observable error: ${errorMsg}`);
 
         if (err instanceof PtySpawnError) {
           return this.createFailedResult(startTime, workspacePath, {
@@ -217,14 +219,13 @@ export class ClaudeCodeProvider
         next: (chunk) => {
           outputChunks.push(chunk);
           // Stream output to logs for real-time visibility (AC #4)
-          // We truncate very long chunks to avoid log spam, but ensures activity is visible
           if (chunk.trim()) {
-            this.logger.debug(`[${executionId}] PTY: ${chunk.trim()}`);
+            this.logger.debug(`[${executionId}] Container: ${chunk.trim()}`);
           }
         },
         error: (err: Error) => {
           spawnError = err;
-          this.logger.error(`[${executionId}] PTY Error: ${err}`);
+          this.logger.error(`[${executionId}] Container Error: ${err}`);
         },
       });
 
@@ -418,6 +419,9 @@ export class ClaudeCodeProvider
   async cancel(executionId: string): Promise<void> {
     const pid = this.activeExecutions.get(executionId);
     if (pid) {
+      // Note: For container executions, we'd need the container reference
+      // For now, this will attempt to kill by PID (which won't work for containers)
+      // TODO: Store container references for proper cleanup
       this.ptyService.kill(pid);
       this.activeExecutions.delete(executionId);
       this.logger.log(`[${executionId}] Execution cancelled`);

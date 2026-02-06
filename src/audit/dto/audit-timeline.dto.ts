@@ -22,7 +22,7 @@ export interface AuditLogDto {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 // Swagger documentation for timeline response
-export class TimelineResponseDto {
+export class AuditTimelineResponseDto {
   @ApiProperty({ example: 'DSF-123', description: 'Ticket ID' })
   ticketId!: string;
 

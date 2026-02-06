@@ -10,6 +10,7 @@ import { NotificationDispatcherService } from '../notifications/services/notific
  * - Specific projects (room-based)
  * - Specific roles (role-based rooms)
  * - Specific users (user-specific rooms)
+ * - Arbitrary rooms (general-purpose)
  *
  * Handles offline clients gracefully (fire-and-forget)
  */
@@ -121,5 +122,23 @@ export class RealtimeService {
 
     this.server.emit(event, payload);
     this.logger.debug(`Broadcasted '${event}' to all clients`);
+  }
+
+  /**
+   * Emit event to a specific arbitrary room
+   * Use for custom room logic not covered by specific methods
+   *
+   * @param room Room name
+   * @param event Event name
+   * @param payload Event payload
+   */
+  emitToRoom(room: string, event: string, payload: unknown): void {
+    if (!this.server) {
+      this.logger.warn('emitToRoom called before server initialization');
+      return;
+    }
+
+    this.server.to(room).emit(event, payload);
+    this.logger.debug(`Emitted '${event}' to room: ${room}`);
   }
 }

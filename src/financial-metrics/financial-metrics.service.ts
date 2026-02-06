@@ -14,7 +14,7 @@ import {
   BudgetSummaryDto,
   TrendForecastDto,
   TimeSeriesDataPointDto,
-  AnomalyDto,
+  FinancialAnomalyDto,
   ModelEfficiencyDto,
   ModelMetricsDto,
   ModelRecommendationDto,
@@ -420,7 +420,7 @@ export class FinancialMetricsService {
         utilizationPct < 50 ? 'healthy' : utilizationPct < 80 ? 'warning' : 'critical';
 
       // Detect anomalies (spending > 150% of 7-day rolling average)
-      const anomalies: AnomalyDto[] = [];
+      const anomalies: FinancialAnomalyDto[] = [];
       if (dailyCosts.length >= 7) {
         for (let i = 7; i < dailyCosts.length; i++) {
           const rollingAvg =

@@ -13,6 +13,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
+# ============================================
+# Install AI Provider CLI Tools (as root)
+# ============================================
+
+# Install Cursor CLI
+# Official installation from: https://cursor.com/docs/cli/headless#setup
+RUN curl https://cursor.com/install -fsS | bash
+
+# Install Claude CLI
+# Official installation from: https://code.claude.com/docs/en/setup
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# Verify CLI installations
+RUN command -v agent || (echo "Cursor CLI (agent) installation failed" && exit 1)
+RUN command -v claude || (echo "Claude CLI installation failed" && exit 1)
+
+# ============================================
+# Set up non-root agent user
+# ============================================
+
 # Remove default 'node' user (UID 1000) to allow creating 'agent' with UID 1000
 RUN userdel -r node || true
 
@@ -27,4 +47,4 @@ RUN chown agent:agent /home/agent/workspace
 USER agent
 
 # Verify installation (fail build if tools are missing)
-RUN node -v && npm -v && python3 --version && git --version
+RUN node -v && npm -v && python3 --version && git --version && cursor-agent --version && claude --version

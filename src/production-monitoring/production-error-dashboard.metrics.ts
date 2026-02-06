@@ -5,7 +5,7 @@
  * Prometheus metrics for dashboard usage tracking.
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Registry, Counter } from 'prom-client';
 import { ErrorSeverity } from '@/prisma/enums';
 
@@ -16,7 +16,7 @@ export class ProductionErrorDashboardMetrics {
   private readonly ticketsCreatedTotal: Counter;
   private readonly filtersUsedTotal: Counter;
 
-  constructor(private readonly registry: Registry) {
+  constructor(@Inject('PROMETHEUS_REGISTRY') private readonly registry: Registry) {
     // Dashboard page views counter
     this.dashboardViewsTotal = new Counter({
       name: 'prod_error_dashboard_views_total',

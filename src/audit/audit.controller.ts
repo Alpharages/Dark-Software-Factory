@@ -25,7 +25,7 @@ import { Role } from '@/auth/constants/roles.enum';
 import { LoggerService } from '@/common/logger/logger.service';
 import { AIDecisionLoggerService } from './ai-decision-logger.service';
 import {
-  TimelineResponseDto,
+  AuditTimelineResponseDto,
   LowConfidenceQueryDto,
   LowConfidenceResponseDto,
   AuditSearchQueryDto,
@@ -61,7 +61,7 @@ export class AuditController {
   @ApiResponse({
     status: 200,
     description: 'Timeline retrieved successfully',
-    type: TimelineResponseDto,
+    type: AuditTimelineResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - JWT required' })
   @ApiResponse({ status: 403, description: 'Forbidden - insufficient role' })
@@ -72,7 +72,7 @@ export class AuditController {
   async getTimeline(
     @Param('ticketId') ticketId: string,
     @CorrelationId() correlationId?: string,
-  ): Promise<TimelineResponseDto> {
+  ): Promise<AuditTimelineResponseDto> {
     this.logger.debug(`Getting timeline for ticket ${ticketId}`, {
       correlationId,
     });

@@ -1,11 +1,12 @@
-import { Module, Global } from '@nestjs/common';
 import {
   PrometheusModule,
   makeCounterProvider,
   makeGaugeProvider,
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
+import { register } from 'prom-client';
 import { MetricsService } from './metrics.service';
+import { Module, Global } from '@nestjs/common';
 import { MetricsController } from './metrics.controller';
 import { PrometheusMetricsController } from './prometheus-metrics.controller';
 import { HttpCollector, BusinessCollector, SystemCollector, QueueCollector } from './collectors';
@@ -49,6 +50,10 @@ import {
   ],
   controllers: [MetricsController],
   providers: [
+    {
+      provide: 'PROMETHEUS_REGISTRY',
+      useValue: register,
+    },
     MetricsService,
     HttpCollector,
     BusinessCollector,
@@ -482,6 +487,6 @@ import {
       labelNames: ['execution_id'],
     }),
   ],
-  exports: [MetricsService],
+  exports: [MetricsService, PrometheusModule, 'PROMETHEUS_REGISTRY'],
 })
 export class AppMetricsModule {}

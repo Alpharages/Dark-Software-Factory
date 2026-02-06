@@ -38,6 +38,9 @@ import { ArchitectureReviewModule } from '@/architecture-review/architecture-rev
 import { EventBusModule } from '@/common/event-bus.module';
 import { CostTrackingModule } from '@/cost-tracking/cost-tracking.module';
 
+import { DockerModule } from '@/docker/docker.module';
+import { ExecutionModule } from '@/execution/execution.module';
+
 @Module({
   imports: [
     ConfigModule,
@@ -51,6 +54,9 @@ import { CostTrackingModule } from '@/cost-tracking/cost-tracking.module';
     ArchitectureReviewModule,
     EventBusModule,
     CostTrackingModule,
+    CostTrackingModule,
+    DockerModule,
+    forwardRef(() => ExecutionModule),
   ],
   providers: [
     // Story 2.3: Routing services

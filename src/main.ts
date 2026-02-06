@@ -145,16 +145,23 @@ async function bootstrap() {
 
 // Wrap bootstrap in try-catch and capture errors to Sentry
 bootstrap().catch((_error) => {
+  // Log a clean error message without dumping large objects (e.g., Prometheus Registry)
+  const errorMessage = _error instanceof Error ? _error.message : String(_error);
+  const errorStack = _error instanceof Error ? _error.stack : undefined;
+
+  console.error('[Bootstrap Error]:', errorMessage);
+  if (errorStack) {
+    console.error('Stack trace:', errorStack);
+  }
+
   // Capture bootstrap errors to Sentry
   if (process.env.SENTRY_DSN) {
     Sentry.captureException(_error);
     // Flush events before exiting
     Sentry.close(2000).then(() => {
-      console.error('[Bootstrap Error]:', _error);
       process.exit(1);
     });
   } else {
-    console.error('[Bootstrap Error]:', _error);
     process.exit(1);
   }
 });

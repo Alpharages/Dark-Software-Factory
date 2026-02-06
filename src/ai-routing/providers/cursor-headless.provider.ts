@@ -312,7 +312,7 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
   }
 
   /**
-   * Execute Cursor CLI command safely using PtyExecutionService
+   * Execute Cursor CLI command safely using PtyExecutionService in Docker container
    */
   private async executeCursorCli(
     executionId: string,
@@ -332,7 +332,7 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
         ? `${dependencyHint}Focus changes only in these files if possible:\n${targetFiles.map((f) => `- ${f}`).join('\n')}\n\n${prompt}`
         : `${dependencyHint}${prompt}`;
 
-    this.logger.log(`[${executionId}] 🚀 Starting Cursor CLI execution (PTY)`);
+    this.logger.log(`[${executionId}] 🚀 Starting Cursor CLI execution (Docker Container)`);
     this.logger.log(`[${executionId}]    Command: ${this.cliPath}`);
     this.logger.log(`[${executionId}]    Args: -p --force --output-format text "<prompt>"`);
     this.logger.log(`[${executionId}]    Working dir: ${workspacePath}`);
@@ -341,145 +341,139 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
 
     return new Promise((resolve, reject) => {
       // Build command arguments
-      // Note: pty.spawn takes command and args array, unlike execSync which takes a string
       const args = ['-p', '--force', '--output-format', 'text', scopedPrompt];
 
-      this.logger.debug(`[${executionId}] Spawning PTY process...`);
+      this.logger.debug(`[${executionId}] Spawning container...`);
 
-      let pid = 0;
       let stdout = '';
       let timer: NodeJS.Timeout;
 
-      try {
-        const ptyResult = this.ptyService.spawn(this.cliPath, args, {
-          cwd: workspacePath,
-          cols: 120, // Wider terminal for better output
+      // Spawn in container (async)
+      this.ptyService
+        .spawnInContainer(this.cliPath, args, {
+          executionId,
+          cols: 120,
           rows: 40,
+          cwd: workspacePath, // Note: Container uses /home/agent/workspace, but we pass for logging
           env: {
-            ...process.env,
-            KUBECONFIG: '', // Security: ensure no sensitive env leaks if not needed
             NODE_ENV: process.env.NODE_ENV || 'development',
           },
-        });
+        })
+        .then((containerResult) => {
+          const { pid, output$, exit$, containerId } = containerResult;
 
-        pid = ptyResult.pid;
-        this.activeExecutions.set(executionId, pid);
-        this.logger.log(`[${executionId}]    ✅ PTY spawned with PID ${pid}`);
+          this.activeExecutions.set(executionId, pid);
+          this.logger.log(
+            `[${executionId}]    ✅ Container spawned: ${containerId} (pseudo-PID ${pid})`,
+          );
 
-        // AC #5: Support writing to stdin if needed
-        // For now, we just ensure the service is capable
-        // ptyService.write(pid, 'some input');
+          timer = setTimeout(() => {
+            this.logger.error(`[${executionId}] ⏱️  CLI execution timed out after ${timeout}ms`);
+            containerResult.kill('SIGTERM');
+            // Wait a bit then force kill if needed
+            setTimeout(() => containerResult.kill('SIGKILL'), 2000);
 
-        timer = setTimeout(() => {
-          this.logger.error(`[${executionId}] ⏱️  CLI execution timed out after ${timeout}ms`);
-          this.ptyService.kill(pid, 'SIGTERM');
-          // Wait a bit then force kill if needed
-          setTimeout(() => this.ptyService.kill(pid, 'SIGKILL'), 2000);
+            reject({
+              code: AIErrorCode.TIMEOUT,
+              message: `Cursor CLI timed out after ${timeout}ms`,
+              isRetryable: true,
+            });
+          }, timeout);
 
+          // Subscribe to output
+          const outputSub = output$.subscribe({
+            next: (data) => {
+              stdout += data;
+              const trimData = data.trim();
+              if (trimData) {
+                this.logger.debug(`[${executionId}][Container] ${trimData}`);
+              }
+            },
+            error: (err) => {
+              this.logger.error(`[${executionId}] Container stream error: ${err}`);
+            },
+          });
+
+          // Subscribe to exit
+          const exitSub = exit$.subscribe({
+            next: ({ exitCode, signal }) => {
+              clearTimeout(timer);
+              outputSub.unsubscribe();
+              exitSub.unsubscribe();
+              this.activeExecutions.delete(executionId);
+
+              this.logger.log(
+                `[${executionId}] 🏁 Container exited with code ${exitCode}, signal ${signal || 'none'}`,
+              );
+              this.logger.debug(`[${executionId}]    Total output length: ${stdout.length} bytes`);
+
+              if (exitCode !== 0) {
+                const mappedCode =
+                  exitCode === 127 ? AIErrorCode.CLI_NOT_FOUND : AIErrorCode.PROCESS_CRASH;
+
+                this.logger.error(`[${executionId}] ❌ CLI failed with exit code ${exitCode}`);
+                this.logger.error(`[${executionId}]    Error type: ${mappedCode}`);
+
+                reject({
+                  code: mappedCode,
+                  message: `Cursor CLI exited with code ${exitCode}`,
+                  isRetryable:
+                    mappedCode !== AIErrorCode.CLI_NOT_FOUND && this.isRetryableExit(exitCode),
+                  exitCode,
+                  rawOutput: stdout,
+                });
+              } else {
+                this.logger.log(`[${executionId}] ✅ CLI execution completed successfully`);
+                resolve({ stdout, stderr: '' });
+              }
+            },
+            error: (err) => {
+              this.logger.error(`[${executionId}] Container exit stream error: ${err}`);
+              reject(err);
+            },
+          });
+        })
+        .catch((error) => {
+          this.activeExecutions.delete(executionId);
+          this.logger.error(`[${executionId}] Failed to spawn container: ${error}`);
           reject({
-            code: AIErrorCode.TIMEOUT,
-            message: `Cursor CLI timed out after ${timeout}ms`,
+            code: AIErrorCode.UNKNOWN,
+            message: error instanceof Error ? error.message : String(error),
             isRetryable: true,
           });
-        }, timeout);
-
-        // Subscribe to output
-        const outputSub = ptyResult.output$.subscribe({
-          next: (data) => {
-            stdout += data;
-            // Real-time logging of output (debug level to avoid noise)
-            // Trim newlines for cleaner logs
-            const trimData = data.trim();
-            if (trimData) {
-              this.logger.debug(`[${executionId}][PTY] ${trimData}`);
-            }
-          },
-          error: (err) => {
-            this.logger.error(`[${executionId}] PTY stream error: ${err}`);
-          },
         });
-
-        // Subscribe to exit
-        const exitSub = ptyResult.exit$.subscribe({
-          next: ({ exitCode, signal }) => {
-            clearTimeout(timer);
-            outputSub.unsubscribe();
-            exitSub.unsubscribe();
-            this.activeExecutions.delete(executionId);
-
-            this.logger.log(
-              `[${executionId}] 🏁 PTY process exited with code ${exitCode}, signal ${signal || 'none'}`,
-            );
-            this.logger.debug(`[${executionId}]    Total output length: ${stdout.length} bytes`);
-
-            if (exitCode !== 0) {
-              // CLI failure
-              const mappedCode =
-                exitCode === 127 ? AIErrorCode.CLI_NOT_FOUND : AIErrorCode.PROCESS_CRASH;
-
-              this.logger.error(`[${executionId}] ❌ CLI failed with exit code ${exitCode}`);
-              this.logger.error(`[${executionId}]    Error type: ${mappedCode}`);
-
-              reject({
-                code: mappedCode,
-                message: `Cursor CLI exited with code ${exitCode}`,
-                isRetryable:
-                  mappedCode !== AIErrorCode.CLI_NOT_FOUND && this.isRetryableExit(exitCode),
-                exitCode,
-                rawOutput: stdout, // PTY mixes stdout/stderr
-              });
-            } else {
-              // Success
-              this.logger.log(`[${executionId}] ✅ CLI execution completed successfully`);
-              resolve({ stdout, stderr: '' }); // PTY merges output
-            }
-          },
-          error: (err) => {
-            // Should not happen, but safe to handle
-            this.logger.error(`[${executionId}] PTY exit stream error: ${err}`);
-            reject(err);
-          },
-        });
-      } catch (error) {
-        if (timer!) clearTimeout(timer);
-        this.activeExecutions.delete(executionId);
-
-        this.logger.error(`[${executionId}] Failed to spawn PTY: ${error}`);
-        reject({
-          code: AIErrorCode.UNKNOWN,
-          message: error instanceof Error ? error.message : String(error),
-          isRetryable: true,
-        });
-      }
     });
   }
 
   /**
-   * Check if Cursor CLI is available using PtyExecutionService
+   * Check if Cursor CLI is available using PtyExecutionService in Docker container
    */
   private async checkCliAvailability(): Promise<void> {
     try {
-      const ptyResult = this.ptyService.spawn(this.cliPath, ['--version'], {
+      const containerResult = await this.ptyService.spawnInContainer(this.cliPath, ['--version'], {
+        executionId: 'cli-check',
         cols: 80,
         rows: 24,
       });
 
       return new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          this.ptyService.kill(ptyResult.pid, 'SIGKILL');
+          containerResult.kill('SIGKILL');
           reject(new Error('CLI version check timed out'));
         }, 5000);
 
-        ptyResult.exit$.subscribe({
+        containerResult.exit$.subscribe({
           next: ({ exitCode }) => {
             clearTimeout(timeout);
             if (exitCode === 0) {
               this.isCliAvailable = true;
-              this.logger.log(`Cursor CLI available at: ${this.cliPath}`);
+              this.logger.log(`Cursor CLI available at: ${this.cliPath} (in container)`);
               resolve();
             } else {
               this.isCliAvailable = false;
-              this.logger.warn(`Cursor CLI returned error code ${exitCode} at: ${this.cliPath}`);
+              this.logger.warn(
+                `Cursor CLI returned error code ${exitCode} at: ${this.cliPath} (in container)`,
+              );
               resolve(); // Don't throw, just mark unavailable
             }
           },

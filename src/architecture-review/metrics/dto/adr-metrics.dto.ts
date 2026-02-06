@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class QueueMetricsDto {
+export class AdrQueueMetricsDto {
   @ApiProperty()
   current_depth: number = 0;
 
@@ -21,8 +21,8 @@ export class AdrMetricsDto {
   @ApiProperty()
   top_rejection_reasons: Record<string, number> = {};
 
-  @ApiProperty({ type: QueueMetricsDto })
-  queue_metrics: QueueMetricsDto = new QueueMetricsDto();
+  @ApiProperty({ type: AdrQueueMetricsDto })
+  queue_metrics: AdrQueueMetricsDto = new AdrQueueMetricsDto();
 }
 
 export class TrendPointDto {

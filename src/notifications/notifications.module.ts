@@ -1,8 +1,9 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { RealtimeModule } from '../realtime/realtime.module'; // Adjust path if needed
-import { DatabaseModule } from '../database/database.module';
-import { AuthModule } from '../auth/auth.module'; // Needed for JwtAuthGuard if not global
+import { RealtimeModule } from '@/realtime/realtime.module'; // Adjust path if needed
+import { DatabaseModule } from '@/database/database.module';
+import { AuthModule } from '@/auth/auth.module'; // Needed for JwtAuthGuard if not global
+import { AuditLogModule } from '@/common/audit/audit-log.module';
 
 import { NotificationPreferencesController } from './controllers/notification-preferences.controller';
 import { InAppNotificationsController } from './controllers/in-app-notifications.controller';
@@ -22,6 +23,7 @@ import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
     DatabaseModule,
     forwardRef(() => RealtimeModule), // Use forwardRef if circular dependency likely, or just RealtimeModule
     AuthModule,
+    AuditLogModule,
   ],
   controllers: [NotificationPreferencesController, InAppNotificationsController],
   providers: [

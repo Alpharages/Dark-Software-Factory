@@ -9,7 +9,7 @@ import { Controller, Get, Param, NotFoundException, Logger } from '@nestjs/commo
 import { PrismaService } from '@/database/prisma.service';
 import { ErrorContextResponseDto } from './dto/error-context.dto';
 
-@Controller('/api/v1/monitoring')
+@Controller('monitoring')
 export class ProductionMonitoringController {
   private readonly logger = new Logger(ProductionMonitoringController.name);
 
@@ -83,7 +83,7 @@ export class ProductionMonitoringController {
   /**
    * List all production errors with basic info
    */
-  @Get('errors')
+  @Get('debug/errors')
   async listErrors(): Promise<
     Array<{
       id: string;

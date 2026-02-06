@@ -124,7 +124,7 @@ export class TrendForecastDto {
 /**
  * Spending anomaly detection
  */
-export class AnomalyDto {
+export class FinancialAnomalyDto {
   @ApiProperty({
     description: 'Date of anomaly',
     example: '2025-12-15',
@@ -192,7 +192,7 @@ export class BudgetTrendsDto {
 
   @ApiProperty({
     description: 'Detected anomalies',
-    type: [AnomalyDto],
+    type: [FinancialAnomalyDto],
   })
-  anomalies!: AnomalyDto[];
+  anomalies!: FinancialAnomalyDto[];
 }

@@ -16,7 +16,7 @@ import {
   IExecutionEvent,
   IStateTransition,
 } from './interfaces';
-import { RealtimeService } from '../realtime/realtime.service';
+import { RealtimeService } from '@/realtime/realtime.service';
 import {
   ExecutionStartedEvent,
   ExecutionProgressEvent,
@@ -24,7 +24,8 @@ import {
   ExecutionFailedEvent,
   ExecutionTimeoutEvent,
   ExecutionCancelledEvent,
-} from '../realtime/realtime.types';
+} from '@/realtime/realtime.types';
+import { AI_METRICS, CONTAINER_METRICS } from '@/common/metrics';
 
 /**
  * Execution Tracker Service
@@ -56,17 +57,17 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly stateMachine: ExecutionStateMachine,
     private readonly publisher: RabbitMQPublisherService,
     private readonly configService: ConfigService,
-    @InjectMetric('dsf_execution_total')
+    @InjectMetric(AI_METRICS.EXECUTIONS_TOTAL)
     private readonly executionCounter: Counter<string>,
-    @InjectMetric('dsf_execution_duration_seconds')
+    @InjectMetric(AI_METRICS.EXECUTION_DURATION)
     private readonly durationHistogram: Histogram<string>,
     @InjectMetric('dsf_execution_status_gauge')
     private readonly statusGauge: Gauge<string>,
     @InjectMetric('dsf_execution_retry_total')
     private readonly retryCounter: Counter<string>,
-    @InjectMetric('dsf_container_log_bytes_total')
+    @InjectMetric(CONTAINER_METRICS.LOG_BYTES_TOTAL)
     private readonly containerLogBytesCounter: Counter<string>,
-    @InjectMetric('dsf_container_exec_duration_seconds')
+    @InjectMetric(CONTAINER_METRICS.EXEC_DURATION_SECONDS)
     private readonly containerExecDurationHistogram: Histogram<string>,
     @InjectMetric('websocket_emission_errors_total')
     private readonly websocketEmissionErrorsCounter: Counter<string>,

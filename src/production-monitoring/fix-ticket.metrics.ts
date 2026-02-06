@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Counter, Registry } from 'prom-client';
 
 @Injectable()
@@ -7,7 +7,7 @@ export class FixTicketMetrics {
   private readonly fixTicketsSkippedTotal: Counter;
   private readonly fixTicketsFailedTotal: Counter;
 
-  constructor(private readonly registry: Registry) {
+  constructor(@Inject('PROMETHEUS_REGISTRY') private readonly registry: Registry) {
     this.fixTicketsCreatedTotal = new Counter({
       name: 'fix_tickets_created_total',
       help: 'Total number of ClickUp fix tickets created for production errors',
