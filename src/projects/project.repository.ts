@@ -43,6 +43,16 @@ export class ProjectRepository {
   }
 
   /**
+   * Find projects by User ID (PM)
+   */
+  async findByUserId(userId: string): Promise<Project[]> {
+    return this.prisma.project.findMany({
+      where: { pm_id: userId },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /**
    * Find all projects with optional active status filter
    * @param activeFilter - true for active only, false for inactive only, undefined for all
    */

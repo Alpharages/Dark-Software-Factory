@@ -32,7 +32,7 @@ interface AuthenticatedRequest extends Request {
 
 @ApiTags('Quality Anomaly Detection')
 @ApiBearerAuth()
-@Controller('api/v1/qa-dashboard/anomalies')
+@Controller('qa-dashboard/anomalies')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class AnomalyDetectionController {
   constructor(private readonly anomalyDetectionService: AnomalyDetectionService) {}

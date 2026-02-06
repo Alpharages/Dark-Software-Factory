@@ -36,7 +36,7 @@ import { ExecutionStatus } from '@/prisma/client';
  */
 @ApiTags('Execution Manual Intervention')
 @ApiBearerAuth()
-@Controller('api/v1/execution')
+@Controller('execution')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ManualInterventionController {
   constructor(private readonly manualInterventionService: ManualInterventionService) {}

@@ -53,7 +53,7 @@ import { UpdateFindingStatusDto } from '../dto/update-finding-status.dto';
  * Handles configuration for QA sampling strategies
  */
 @ApiTags('QA Sampling Configuration')
-@Controller('api/v1/qa-review/config')
+@Controller('qa-review/config')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @ApiBearerAuth()
 export class QaSamplingConfigController {
@@ -138,7 +138,7 @@ export class QaSamplingConfigController {
  * Handles queue management operations
  */
 @ApiTags('QA Review Queue')
-@Controller('api/v1/qa-review/queue')
+@Controller('qa-review/queue')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 @ApiBearerAuth()
 export class QaReviewQueueController {

@@ -637,6 +637,13 @@ export class ExecutionTrackerService implements OnModuleInit {
   }
 
   /**
+   * Get all active executions
+   */
+  async getActiveExecutions(): Promise<Execution[]> {
+    return this.repository.findActiveExecutions();
+  }
+
+  /**
    * Assign container to execution (Story 23.2)
    * Stores container ID for later cleanup
    */

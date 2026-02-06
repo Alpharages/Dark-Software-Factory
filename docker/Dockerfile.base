@@ -4,12 +4,14 @@ FROM node:20-slim
 # git: for cloning repositories
 # python3, make, g++: for compiling native modules (like node-pty)
 # curl: for health checks and downloads
+# ca-certificates: for SSL/TLS connections (required for CLI installers)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     python3 \
     make \
     g++ \
     curl \
+    ca-certificates \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
@@ -19,15 +21,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Cursor CLI
 # Official installation from: https://cursor.com/docs/cli/headless#setup
-RUN curl https://cursor.com/install -fsS | bash
+# The installer puts the binary in ~/.local/bin, need to ensure it's in PATH
+RUN curl https://cursor.com/install -fsS | bash && \
+    # Check where agent was installed
+    echo "=== Searching for agent binary ===" && \
+    find /root -name "agent" -type f 2>/dev/null && \
+    # Copy (not symlink) to /usr/local/bin so all users can access it
+    export PATH="/root/.local/bin:$PATH" && \
+    if [ -f "/root/.local/bin/agent" ]; then \
+    cp /root/.local/bin/agent /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; \
+    elif [ -f "$HOME/.cursor/bin/agent" ]; then \
+    cp "$HOME/.cursor/bin/agent" /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; \
+    else \
+    AGENT_PATH=$(find /root -name "agent" -type f -executable 2>/dev/null | head -1); \
+    if [ -n "$AGENT_PATH" ]; then cp "$AGENT_PATH" /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; fi; \
+    fi
 
 # Install Claude CLI
-# Official installation from: https://code.claude.com/docs/en/setup
-RUN curl -fsSL https://claude.ai/install.sh | bash
+# Official installation from: https://code.claude.com/docs/en/setup  
+# Like Cursor, claude installs to ~/.local/bin
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    # Copy (not symlink) to make claude available to all users
+    if [ -f "/root/.local/bin/claude" ]; then \
+    cp /root/.local/bin/claude /usr/local/bin/claude && chmod 755 /usr/local/bin/claude; \
+    else \
+    CLAUDE_PATH=$(find /root -name "claude" -type f -executable 2>/dev/null | head -1); \
+    if [ -n "$CLAUDE_PATH" ]; then cp "$CLAUDE_PATH" /usr/local/bin/claude && chmod 755 /usr/local/bin/claude; fi; \
+    fi
 
-# Verify CLI installations
-RUN command -v agent || (echo "Cursor CLI (agent) installation failed" && exit 1)
-RUN command -v claude || (echo "Claude CLI installation failed" && exit 1)
+# Verify CLI installations are accessible (existence check, not --version due to config issues)
+RUN which agent && chmod +x /usr/local/bin/agent || (echo "Cursor CLI (agent) installation failed - agent not found in PATH" && exit 1)
+RUN which claude && chmod +x /usr/local/bin/claude || (echo "Claude CLI installation failed - claude not found in PATH" && exit 1)
 
 # ============================================
 # Set up non-root agent user
@@ -47,4 +71,5 @@ RUN chown agent:agent /home/agent/workspace
 USER agent
 
 # Verify installation (fail build if tools are missing)
-RUN node -v && npm -v && python3 --version && git --version && cursor-agent --version && claude --version
+# Note: Using 'which' instead of '--version' for CLI tools due to config file requirements
+RUN node -v && npm -v && python3 --version && git --version && which agent && which claude

@@ -62,6 +62,17 @@ export class ProjectController {
     return this.projectService.importProject(importDto, user.id);
   }
 
+  @Get('my-projects')
+  @Roles(Role.PM, Role.TL, Role.QA, Role.MANAGER, Role.ADMIN)
+  @ApiOperation({ summary: 'Get projects assigned to current user' })
+  @ApiResponse({ status: 200, description: 'Return user projects' })
+  findUserProjects(@CurrentUser() user: User) {
+    if (!user || !user.id) {
+      throw new BadRequestException('User context required');
+    }
+    return this.projectService.findUserProjects(user.id);
+  }
+
   @Get()
   @Roles(Role.PM, Role.TL, Role.QA, Role.MANAGER, Role.ADMIN)
   @ApiOperation({ summary: 'List all projects' })

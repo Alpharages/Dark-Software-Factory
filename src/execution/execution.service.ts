@@ -386,6 +386,14 @@ export class ExecutionService {
   }
 
   /**
+   * Get all active executions
+   */
+  async getActiveExecutions(): Promise<ExecutionResponseDto[]> {
+    const executions = await this.tracker.getActiveExecutions();
+    return executions.map((e) => this.toResponseDto(e));
+  }
+
+  /**
    * Check if execution can be started
    */
   canStart(status: ExecutionStatus): boolean {

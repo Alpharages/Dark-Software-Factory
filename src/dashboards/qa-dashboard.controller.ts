@@ -25,7 +25,7 @@ import {
 
 @ApiTags('Quality Dashboard')
 @ApiBearerAuth()
-@Controller('api/v1/qa-dashboard')
+@Controller('qa-dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class QaDashboardController {
   constructor(private readonly qualityDashboardService: QualityDashboardService) {}

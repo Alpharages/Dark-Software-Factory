@@ -236,6 +236,31 @@ export class ExecutionRepository {
   }
 
   /**
+   * Find all active executions
+   */
+  async findActiveExecutions(): Promise<Execution[]> {
+    return this.prisma.execution.findMany({
+      where: {
+        status: {
+          in: [
+            ExecutionStatus.QUEUED,
+            ExecutionStatus.IN_PROGRESS,
+            ExecutionStatus.AWAITING_APPROVAL,
+          ],
+        },
+      },
+      orderBy: { created_at: 'desc' },
+      include: {
+        ticket: {
+          select: {
+            project_id: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
    * Get active execution count per provider
    */
   async getActiveCountByProvider(): Promise<Record<AIProvider, number>> {

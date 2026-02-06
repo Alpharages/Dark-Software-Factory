@@ -93,6 +93,10 @@ export class ProjectService {
     return project;
   }
 
+  async findUserProjects(userId: string): Promise<Project[]> {
+    return this.repository.findByUserId(userId);
+  }
+
   async update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project> {
     try {
       await this.findOne(id); // Ensure exists

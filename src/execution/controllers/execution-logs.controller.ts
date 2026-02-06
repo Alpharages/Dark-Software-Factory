@@ -14,7 +14,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { ExecutionLogRepository } from '../repositories/execution-log.repository';
 
 @ApiTags('Execution Logs')
-@Controller('api/v1/execution')
+@Controller('execution')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ExecutionLogsController {
   constructor(private readonly logRepository: ExecutionLogRepository) {}

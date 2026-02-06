@@ -3,7 +3,7 @@ import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { InAppNotificationService } from '../services/in-app-notification.service';
 import { InAppNotificationResponseDto } from '../dto/in-app-notification-response.dto';
-import { JwtAuthGuard } from '../../common/guards';
+import { JwtAuthGuard } from '@/common/guards';
 
 @ApiTags('In-App Notifications')
 @ApiBearerAuth()
@@ -30,10 +30,14 @@ export class InAppNotificationsController {
 
   @Get('unread-count')
   @ApiOperation({ summary: 'Get count of unread notifications' })
-  @ApiResponse({ status: 200, type: Number })
+  @ApiResponse({
+    status: 200,
+    schema: { type: 'object', properties: { count: { type: 'number' } } },
+  })
   async getUnreadCount(@Req() req: Request & { user: { id: string } }) {
     const userId = req.user.id;
-    return this.inAppService.getUnreadCount(userId);
+    const count = await this.inAppService.getUnreadCount(userId);
+    return { count };
   }
 
   @Patch(':id/read')

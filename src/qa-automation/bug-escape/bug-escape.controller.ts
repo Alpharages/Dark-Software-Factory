@@ -6,12 +6,12 @@ import { QualityTrendsQueryDto } from './dto/quality-trends-query.dto';
 import { EscapeRateResponseDto } from './dto/escape-rate-response.dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
 // Assuming existing roles guard
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { RolesGuard } from '@/common/guards';
 // import { Roles } from '../../auth/decorators/roles.decorator';
 // import { Role } from '../../auth/enums/role.enum';
 
 @ApiTags('QA Metrics')
-@Controller('api/v1/qa-metrics')
+@Controller('qa-metrics')
 @UseGuards(ThrottlerGuard, RolesGuard)
 export class BugEscapeController {
   constructor(private readonly bugEscapeService: BugEscapeService) {}

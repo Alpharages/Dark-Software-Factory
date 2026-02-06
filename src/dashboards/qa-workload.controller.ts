@@ -19,7 +19,7 @@ import {
 
 @ApiTags('QA Workload')
 @ApiBearerAuth()
-@Controller('api/v1/qa-workload')
+@Controller('qa-workload')
 @UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
 export class QaWorkloadController {
   constructor(private readonly qaWorkloadService: QaWorkloadService) {}
