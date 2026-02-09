@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIProvider, ExecutionStatus, Execution, Prisma } from '@/prisma/client';
+import { AIProvider, Execution, ExecutionStatus, Prisma } from '@/prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { IExecutionAuditLog } from './interfaces';
 
@@ -132,11 +132,10 @@ export class ExecutionRepository {
    * Used for container assignment and other field updates
    */
   async update(id: string, data: Prisma.ExecutionUpdateInput): Promise<Execution> {
-    const execution = await this.prisma.execution.update({
+    return this.prisma.execution.update({
       where: { id },
       data,
     });
-    return execution;
   }
 
   /**

@@ -52,7 +52,6 @@ export class ClaudeCodeProvider
   private isConfigured: boolean = false;
   private apiKey: string | undefined;
   private baseURL: string | undefined;
-  private claudeCliPath: string = 'claude'; // Configurable path to Claude CLI executable
 
   constructor(
     private readonly config: ConfigService,
@@ -81,8 +80,6 @@ export class ClaudeCodeProvider
     this.baseURL = this.config.get<string>('anthropic.baseURL');
     this.model = this.config.get<string>('anthropic.model') || 'claude-sonnet-4-20250514';
     this.timeoutMs = this.config.get<number>('anthropic.timeoutMs') || 300_000;
-    this.claudeCliPath = this.config.get<string>('anthropic.claudeCliPath') || 'claude';
-
     // Check if configuration exists - either API key or Base URL (for self-hosted/Ollama)
 
     if (!this.apiKey && !this.baseURL) {
@@ -94,8 +91,7 @@ export class ClaudeCodeProvider
     this.isConfigured = true;
     this.logger.log(
       `Claude Code CLI Provider initialized: model=${this.model}, ` +
-        `timeout=${this.timeoutMs}ms, baseURL=${this.baseURL || 'default'}, ` +
-        `cliPath=${this.claudeCliPath}`,
+        `timeout=${this.timeoutMs}ms, baseURL=${this.baseURL || 'default'}`,
     );
   }
 
@@ -154,8 +150,10 @@ export class ClaudeCodeProvider
       const cliPrompt = this.constructCliPrompt(input);
 
       // 5. Spawn Claude CLI via PTY in Docker Container
-      // Command: claude --model <model> "<prompt>"
+      // Command: claude --print --model <model> "<prompt>"
+      // Note: --print is required for non-interactive mode in container
       const args = [
+        '--print',
         '--model',
         this.model,
         '--dangerously-skip-permissions',
@@ -167,7 +165,7 @@ export class ClaudeCodeProvider
         `Spawning claude in container with args: ${JSON.stringify(args)} in ${workspacePath}`,
       );
 
-      const containerResult = await this.ptyService.spawnInContainer(this.claudeCliPath, args, {
+      const containerResult = await this.ptyService.spawnInContainer('claude', args, {
         executionId,
         ticketId,
         cols: 120,
@@ -377,15 +375,16 @@ export class ClaudeCodeProvider
     }
 
     // 2. Setup Env Vars
+    // Note: Only pass necessary env vars, not process.env
+    // Host-specific vars (NODE_OPTIONS, NVM_*, etc.) can conflict with container's Node.js
     const env: { [key: string]: string } = {
-      ...(process.env as { [key: string]: string }),
       ANTHROPIC_API_KEY: this.apiKey || '',
       ANTHROPIC_BASE_URL: this.baseURL || '',
     };
 
     // If base URL contains 'localhost', assume it might be Ollama simulation or similar
     if (this.baseURL && this.baseURL.includes('localhost')) {
-      Object.assign(env, { ANTHROPIC_AUTH_TOKEN: 'ollama' });
+      env.ANTHROPIC_AUTH_TOKEN = 'ollama';
     }
 
     return { workspacePath: workspaceInfo.path, env };

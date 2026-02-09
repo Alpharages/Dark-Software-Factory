@@ -163,6 +163,36 @@ export class PtyExecutionService implements OnModuleDestroy {
   }
 
   /**
+   * Filter environment variables to only pass safe ones to container.
+   * Removes host-specific variables that can cause conflicts in container.
+   */
+  private filterSafeEnvVars(env: { [key: string]: string } | undefined): { [key: string]: string } {
+    if (!env) return {};
+
+    // Variables that should NOT be passed to container (host-specific)
+    const blockedPrefixes = [
+      'NVM_', // Node Version Manager
+      'ELECTRON_', // Electron-specific
+      'VSCODE_', // VS Code-specific
+      'npm_', // npm internal
+      'NODE_OPTIONS', // Node.js options (host-specific paths)
+      'ANTHROPIC_CLI_', // Claude CLI internal
+    ];
+
+    const safeEnv: { [key: string]: string } = {};
+    for (const [key, value] of Object.entries(env)) {
+      // Skip blocked prefixes
+      const isBlocked = blockedPrefixes.some((prefix) => key === prefix || key.startsWith(prefix));
+      if (!isBlocked) {
+        // eslint-disable-next-line security/detect-object-injection
+        safeEnv[key] = value;
+      }
+    }
+
+    return safeEnv;
+  }
+
+  /**
    * Spawn a process locally using PTY
    * Falls back to child_process if PTY fails (macOS Gatekeeper)
    */
@@ -347,9 +377,13 @@ export class PtyExecutionService implements OnModuleDestroy {
       tty: true,
       autoRemove: true,
       env: {
-        ...process.env,
-        ...options.env,
+        // Only pass safe environment variables to container
+        // Avoid host-specific variables that can conflict with container's Node.js
         NODE_ENV: process.env.NODE_ENV || 'development',
+        PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+        HOME: '/home/agent',
+        // User-provided env vars (excluding potentially problematic ones)
+        ...this.filterSafeEnvVars(options.env),
       },
       resourceProfile: options.resourceProfile,
       memoryLimit: options.memoryLimit,
