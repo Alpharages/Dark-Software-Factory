@@ -152,7 +152,13 @@ export class OrchestratorService {
           provider: result.executedBy,
         });
 
-        this.logger.error(`[${correlationId}] Orchestration failed: ${result.error?.message}`);
+        // FIX: Handle case where error might not have message property or is an object
+        const errorDetails = result.error
+          ? typeof result.error === 'object'
+            ? JSON.stringify(result.error)
+            : String(result.error)
+          : 'Unknown error';
+        this.logger.error(`[${correlationId}] Orchestration failed: ${errorDetails}`);
       }
 
       this.durationHistogram.observe(

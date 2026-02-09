@@ -270,6 +270,14 @@ export class ClaudeCodeProvider
       const fullOutput = outputChunks.join('');
 
       if (exitCode !== 0) {
+        // Handle specific exit codes
+        if (exitCode === 137) {
+          throw new Error(
+            `Claude CLI was killed (exit code 137 - Out of Memory). ` +
+              `The container exceeded its memory limit. ` +
+              `Consider increasing SANDBOX_MEMORY_LIMIT_MB.`,
+          );
+        }
         throw new Error(
           `Claude CLI exited with code ${exitCode}. Output: ${fullOutput.substring(fullOutput.length - 500)}`,
         );
