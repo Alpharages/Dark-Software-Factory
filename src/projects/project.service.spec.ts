@@ -7,6 +7,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('ProjectService', () => {
   let service: ProjectService;
@@ -70,6 +71,11 @@ describe('ProjectService', () => {
   // Story 20.1: Mock for RabbitMQPublisherService
   const mockRabbitMQPublisher = {
     publishToQueue: jest.fn().mockResolvedValue(undefined),
+  };
+
+  // Mock for ConfigService
+  const mockConfigService = {
+    get: jest.fn((key: string, defaultValue?: unknown) => defaultValue),
   };
 
   const mockTasks = [
@@ -140,6 +146,11 @@ describe('ProjectService', () => {
         {
           provide: RabbitMQPublisherService,
           useValue: mockRabbitMQPublisher,
+        },
+        // ConfigService mock
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -351,25 +362,28 @@ describe('ProjectService', () => {
       mockClickUpService.getList.mockResolvedValue(clickUpList);
       mockClickUpService.getTasks.mockResolvedValue({ tasks: mockTasks });
       repository.update.mockResolvedValue(syncedProject);
-      mockPrismaTx.ticket.upsert.mockResolvedValue({});
 
       const result = await service.syncFromClickUp('project-123');
 
       expect(result.name).toBe('Updated Project Name');
       expect(result.syncedTasksCount).toBe(2);
       expect(mockClickUpService.getList).toHaveBeenCalledWith('list-123');
-      expect(mockClickUpService.getTasks).toHaveBeenCalledWith({ list_id: 'list-123' });
+      expect(mockClickUpService.getTasks).toHaveBeenCalledWith({
+        list_id: 'list-123',
+        page: 0,
+        limit: 50,
+      });
 
-      // Verify task upserts
-      expect(mockPrismaTx.ticket.upsert).toHaveBeenCalledTimes(2);
-      expect(mockPrismaTx.ticket.upsert).toHaveBeenCalledWith(
+      // Story 20.1: Verify tasks are published to RabbitMQ instead of direct DB upserts
+      expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalledTimes(2);
+      expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalledWith(
+        'ticket-intake-queue',
         expect.objectContaining({
-          where: { clickup_task_id: 'task-1' },
-          create: expect.objectContaining({
-            title: 'Test Task 1',
-            status: 'RECEIVED', // Mapped from 'open'
-          }),
+          externalId: 'task-1',
+          title: 'Test Task 1',
+          internalStatus: expect.any(String),
         }),
+        expect.any(String),
       );
 
       expect(mockCounter.inc).toHaveBeenCalledWith({ operation: 'sync', status: 'success' });

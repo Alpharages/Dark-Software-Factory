@@ -400,6 +400,7 @@ export class ClickUpService {
   /**
    * Get tasks from a ClickUp list (for polling)
    * Filters by date_updated to get incremental updates
+   * Supports pagination to prevent memory issues with large lists
    *
    * @param options - Query options
    * @returns List of tasks with updates
@@ -409,6 +410,8 @@ export class ClickUpService {
     space_id?: string;
     date_updated_gt?: number;
     order_by?: 'updated';
+    page?: number;
+    limit?: number;
   }): Promise<{
     tasks: Array<{
       id: string;
@@ -432,6 +435,14 @@ export class ClickUpService {
         reverse: 'true', // Most recent first
       };
 
+      // Add pagination params if provided
+      if (options.page !== undefined) {
+        params.page = options.page.toString();
+      }
+      if (options.limit !== undefined) {
+        params.limit = options.limit.toString();
+      }
+
       // Add date filter if provided
       if (options.date_updated_gt) {
         params.date_updated_gt = options.date_updated_gt.toString();
@@ -444,6 +455,8 @@ export class ClickUpService {
       this.logger.debug('Fetched tasks from ClickUp list', {
         listId: options.list_id,
         taskCount: response.data.tasks?.length || 0,
+        page: options.page,
+        limit: options.limit,
       });
 
       return {

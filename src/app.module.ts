@@ -1,6 +1,12 @@
-import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  Module,
+  MiddlewareConsumer,
+  NestModule,
+  RequestMethod,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -181,6 +187,16 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     {
       provide: APP_INTERCEPTOR,
       useClass: CorrelationIdInterceptor,
+    },
+    // Global ValidationPipe for DTO validation and transformation
+    {
+      provide: APP_PIPE,
+      useFactory: () =>
+        new ValidationPipe({
+          transform: true,
+          whitelist: true,
+          forbidNonWhitelisted: false,
+        }),
     },
   ],
 })

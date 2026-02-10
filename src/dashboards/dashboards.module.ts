@@ -1,6 +1,7 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   makeGaugeProvider,
   makeCounterProvider,
@@ -49,9 +50,19 @@ import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
       ttl: 300, // 5 minutes
       max: 100, // Maximum items in cache
     }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('auth.jwtSecret'),
+        signOptions: {
+          expiresIn: '1h',
+          algorithm: 'HS256',
+        },
+        verifyOptions: {
+          algorithms: ['HS256'],
+        },
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [

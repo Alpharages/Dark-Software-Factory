@@ -46,13 +46,14 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   async handleConnection(client: Socket<ClientToServerEvents, ServerToClientEvents>) {
     try {
-      const token = client.handshake.auth?.token;
-      if (!token) {
+      const rawToken = this.extractToken(client);
+      if (!rawToken) {
+        this.logger.warn(`Connection attempt without token: ${client.id}`);
         client.disconnect();
         return;
       }
 
-      const payload = await this.jwtService.verifyAsync(token);
+      const payload = await this.jwtService.verifyAsync(rawToken);
       const userId = payload.sub;
 
       client.join(`pm_${userId}`);
@@ -94,5 +95,40 @@ export class DashboardGateway implements OnGatewayConnection, OnGatewayDisconnec
 
     // Also emit to global quality room if needed, or PMs
     // For now, assuming PMs subscribe to projects they care about
+  }
+
+  /**
+   * Extract JWT token from WebSocket handshake
+   * Supports Authorization header, auth object, and query parameter
+   */
+  private extractToken(client: Socket): string | null {
+    // Try auth object first (client-side auth configuration)
+    const authToken = client.handshake.auth?.token;
+    if (authToken) {
+      const token = Array.isArray(authToken) ? authToken[0] : authToken;
+      if (typeof token === 'string' && token.trim()) {
+        return token.trim();
+      }
+    }
+
+    // Try Authorization header
+    const authHeader = client.handshake.headers?.authorization;
+    if (authHeader) {
+      const parts = authHeader.split(' ');
+      if (parts.length === 2 && parts[0] === 'Bearer') {
+        return parts[1];
+      }
+    }
+
+    // Try query parameter (less secure but supported for compatibility)
+    const queryToken = client.handshake.query?.token;
+    if (queryToken) {
+      const token = Array.isArray(queryToken) ? queryToken[0] : queryToken;
+      if (typeof token === 'string' && token.trim()) {
+        return token.trim();
+      }
+    }
+
+    return null;
   }
 }

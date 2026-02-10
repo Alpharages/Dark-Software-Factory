@@ -17,6 +17,7 @@ import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '@/database/prisma.service';
+import { ConfigService } from '@nestjs/config';
 // Story 20.1: Provider-Agnostic Intake
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { QUEUE_NAMES } from '@/rabbitmq/rabbitmq.config';
@@ -32,6 +33,7 @@ export class ProjectService {
   constructor(
     private readonly repository: ProjectRepository,
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
     @InjectMetric('project_operations_total')
     private readonly operationsCounter: Counter<string>,
     @InjectMetric('project_lookups_total')
@@ -326,6 +328,9 @@ export class ProjectService {
   /**
    * Sync project details from ClickUp
    * Story 20.1: Now uses provider-agnostic flow - publishes ITaskEvent to queue
+   *
+   * Uses batch processing with pagination to prevent memory issues with large projects.
+   * Configurable via CLICKUP_SYNC_BATCH_SIZE env var (default: 50).
    */
   async syncFromClickUp(id: string): Promise<Project & { syncedTasksCount: number }> {
     const project = await this.findOne(id);
@@ -333,6 +338,10 @@ export class ProjectService {
     if (project.provider !== ProjectProvider.CLICKUP || !project.clickup_list_id) {
       throw new BadRequestException('Project is not linked to ClickUp');
     }
+
+    // Configurable batch size to prevent memory issues
+    const BATCH_SIZE = this.config.get<number>('CLICKUP_SYNC_BATCH_SIZE', 50);
+    const BATCH_DELAY_MS = this.config.get<number>('CLICKUP_SYNC_BATCH_DELAY_MS', 100);
 
     try {
       // 1. Sync List Details
@@ -343,89 +352,124 @@ export class ProjectService {
         name: listDetails.name,
       });
 
-      // 2. Sync Tasks - Story 20.1: Provider-agnostic flow
-      const { tasks } = await this.clickupService.getTasks({
-        list_id: project.clickup_list_id,
-      });
+      // 2. Sync Tasks with pagination - Story 20.1: Provider-agnostic flow
+      let page = 0;
+      let hasMoreTasks = true;
+      let totalSyncedCount = 0;
+      let totalPublishedCount = 0;
 
-      this.logger.log(`Syncing ${tasks.length} tasks for project ${id}`);
+      this.logger.log(`Starting sync for project ${id} with batch size ${BATCH_SIZE}`);
 
-      let syncedCount = 0;
-      let publishedCount = 0;
+      while (hasMoreTasks) {
+        // Fetch tasks in batches to prevent memory issues
+        const { tasks } = await this.clickupService.getTasks({
+          list_id: project.clickup_list_id,
+          page,
+          limit: BATCH_SIZE,
+        });
 
-      for (const task of tasks) {
-        // Story 20.1: Convert ClickUp API task to IRawTaskEvent, then map to ITaskEvent
-        const correlationId = `sync-${project.id}-${task.id}-${Date.now()}`;
-
-        const rawEvent: Partial<IRawTaskEvent> = {
-          taskId: task.id,
-          taskName: task.name,
-          taskDescription: task.description || task.text_content || '',
-          taskStatus: task.status?.status || 'to do',
-          listId: project.clickup_list_id!,
-          taskUrl: task.url || `https://app.clickup.com/t/${task.id}`,
-          tags: task.tags?.map((t) => t.name) || [],
-          customFields:
-            task.custom_fields?.reduce(
-              (acc, field) => {
-                acc[field.name] = field.value;
-                return acc;
-              },
-              {} as Record<string, unknown>,
-            ) || {},
-          creatorEmail: task.creator?.email || '',
-          eventTimestamp: task.date_created || new Date().toISOString(),
-          receivedAt: new Date().toISOString(),
-          correlationId,
-          projectId: project.id,
-          listName: listDetails.name,
-          projectName: project.name,
-          spaceId: task.space?.id || '',
-          eventType: 'taskCreated',
-          webhookEventId: '',
-        };
-
-        const taskEvent = mapClickUpToTaskEvent(rawEvent as IRawTaskEvent, TaskTriggerSource.SYNC);
-
-        // Story 20.1 (AC#1, AC#2): Only process AI-actionable tasks
-        if (isActionableStatus(taskEvent.internalStatus)) {
-          try {
-            // Publish to ticket-intake-queue for processing
-            await this.rabbitMQPublisher.publishToQueue(
-              QUEUE_NAMES.TICKET_INTAKE,
-              taskEvent,
-              taskEvent.correlationId,
-            );
-            publishedCount++;
-            this.logger.debug(
-              `Published task ${task.id} to intake queue (status: ${taskEvent.internalStatus})`,
-            );
-          } catch (error) {
-            const publishError = error as Error;
-            this.logger.error(
-              `Failed to publish task ${task.id} to queue: ${publishError.message}`,
-              publishError.stack,
-            );
-            // Re-throw to inform the user that sync failed
-            throw new Error(`Failed to publish task ${task.id} to queue: ${publishError.message}`);
-          }
-        } else {
-          this.logger.debug(
-            `Skipped non-actionable task ${task.id} (status: ${taskEvent.internalStatus})`,
-          );
+        if (tasks.length === 0) {
+          hasMoreTasks = false;
+          break;
         }
 
-        syncedCount++;
+        this.logger.log(`Processing batch ${page + 1}: ${tasks.length} tasks`);
+
+        // Process this batch
+        let batchPublishedCount = 0;
+        for (const task of tasks) {
+          // Story 20.1: Convert ClickUp API task to IRawTaskEvent, then map to ITaskEvent
+          const correlationId = `sync-${project.id}-${task.id}-${Date.now()}`;
+
+          const rawEvent: Partial<IRawTaskEvent> = {
+            taskId: task.id,
+            taskName: task.name,
+            taskDescription: task.description || task.text_content || '',
+            taskStatus: task.status?.status || 'to do',
+            listId: project.clickup_list_id!,
+            taskUrl: task.url || `https://app.clickup.com/t/${task.id}`,
+            tags: task.tags?.map((t) => t.name) || [],
+            customFields:
+              task.custom_fields?.reduce(
+                (acc, field) => {
+                  acc[field.name] = field.value;
+                  return acc;
+                },
+                {} as Record<string, unknown>,
+              ) || {},
+            creatorEmail: task.creator?.email || '',
+            eventTimestamp: task.date_created || new Date().toISOString(),
+            receivedAt: new Date().toISOString(),
+            correlationId,
+            projectId: project.id,
+            listName: listDetails.name,
+            projectName: project.name,
+            spaceId: task.space?.id || '',
+            eventType: 'taskCreated',
+            webhookEventId: '',
+          };
+
+          const taskEvent = mapClickUpToTaskEvent(
+            rawEvent as IRawTaskEvent,
+            TaskTriggerSource.SYNC,
+          );
+
+          // Story 20.1 (AC#1, AC#2): Only process AI-actionable tasks
+          if (isActionableStatus(taskEvent.internalStatus)) {
+            try {
+              // Publish to ticket-intake-queue for processing
+              await this.rabbitMQPublisher.publishToQueue(
+                QUEUE_NAMES.TICKET_INTAKE,
+                taskEvent,
+                taskEvent.correlationId,
+              );
+              batchPublishedCount++;
+              this.logger.debug(
+                `Published task ${task.id} to intake queue (status: ${taskEvent.internalStatus})`,
+              );
+            } catch (error) {
+              const publishError = error as Error;
+              this.logger.error(
+                `Failed to publish task ${task.id} to queue: ${publishError.message}`,
+                publishError.stack,
+              );
+              // Continue with other tasks instead of failing entire sync
+              this.logger.warn(`Continuing sync despite publish error for task ${task.id}`);
+            }
+          } else {
+            this.logger.debug(
+              `Skipped non-actionable task ${task.id} (status: ${taskEvent.internalStatus})`,
+            );
+          }
+
+          totalSyncedCount++;
+        }
+
+        totalPublishedCount += batchPublishedCount;
+        this.logger.log(
+          `Batch ${page + 1} complete: ${batchPublishedCount}/${tasks.length} tasks published`,
+        );
+
+        // Check if we need to fetch more tasks
+        if (tasks.length < BATCH_SIZE) {
+          hasMoreTasks = false;
+        } else {
+          page++;
+          // Small delay between batches to prevent overwhelming RabbitMQ
+          if (BATCH_DELAY_MS > 0) {
+            await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+          }
+        }
       }
 
       this.operationsCounter.inc({ operation: 'sync', status: 'success' });
       this.syncCounter.inc({ status: 'success' });
 
       this.logger.log(
-        `Successfully synced project ${id}: ${syncedCount} tasks fetched, ${publishedCount} published to intake queue`,
+        `Successfully synced project ${id}: ${totalSyncedCount} tasks fetched, ${totalPublishedCount} published to intake queue`,
       );
 
-      return { ...updated, syncedTasksCount: publishedCount };
+      return { ...updated, syncedTasksCount: totalPublishedCount };
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'sync', status: 'error' });
       this.syncCounter.inc({ status: 'error' });

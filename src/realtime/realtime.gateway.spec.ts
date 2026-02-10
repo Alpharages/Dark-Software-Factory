@@ -6,6 +6,7 @@ import { RealtimeGateway } from './realtime.gateway';
 import { RealtimeService } from './realtime.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { JoinProjectDto, LeaveProjectDto } from './dto/join-room.dto';
+import { ProjectService } from '@/projects/project.service';
 
 describe('RealtimeGateway', () => {
   let gateway: RealtimeGateway;
@@ -43,8 +44,17 @@ describe('RealtimeGateway', () => {
           useValue: {
             get: jest.fn((key: string, defaultValue?: string) => {
               if (key === 'FRONTEND_URL') return 'http://localhost:5173';
+              if (key === 'auth.jwtSecret') return 'test-secret';
               return defaultValue;
             }),
+          },
+        },
+        {
+          provide: ProjectService,
+          useValue: {
+            findOne: jest
+              .fn()
+              .mockImplementation((id: string) => Promise.resolve({ id, pm_id: 'user-123' })),
           },
         },
       ],
@@ -193,7 +203,7 @@ describe('RealtimeGateway', () => {
   describe('handleJoinProject', () => {
     it('should allow authenticated user to join project room', async () => {
       mockClient.data = {
-        user: { userId: 'user-123', roles: ['developer'], email: 'dev@example.com' },
+        user: { userId: 'user-123', roles: ['ADMIN'], email: 'admin@example.com' },
       };
       const dto: JoinProjectDto = { projectId: 'project-456' };
 
@@ -203,12 +213,13 @@ describe('RealtimeGateway', () => {
       expect(result).toEqual({ status: 'ok', room: 'project:project-456' });
       expect(metricsService.incrementCounter).toHaveBeenCalledWith('websocket_events_total', {
         event: 'joinProject',
+        result: 'success',
       });
     });
 
     it('should join multiple projects independently', async () => {
       mockClient.data = {
-        user: { userId: 'user-123', roles: [], email: 'user@example.com' },
+        user: { userId: 'user-123', roles: ['ADMIN'], email: 'admin@example.com' },
       };
 
       await gateway.handleJoinProject(mockClient as Socket, { projectId: 'project-1' });

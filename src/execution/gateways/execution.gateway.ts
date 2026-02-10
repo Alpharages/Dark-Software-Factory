@@ -96,8 +96,7 @@ export class ExecutionGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   async handleConnection(client: Socket<ClientToServerEvents, ServerToClientEvents>) {
     try {
-      const token =
-        client.handshake.auth?.token || client.handshake.headers?.authorization?.split(' ')[1];
+      const token = this.extractToken(client);
       if (!token) {
         this.logger.warn(`Connection attempt without token: ${client.id}`);
         client.disconnect();
@@ -323,5 +322,46 @@ export class ExecutionGateway implements OnGatewayConnection, OnGatewayDisconnec
       this.emitLogImmediate(entry.payload);
       this.logBuffer.delete(key);
     }
+  }
+
+  /**
+   * Extract JWT token from WebSocket handshake
+   * Supports Authorization header, auth object, and query parameter
+   */
+  private extractToken(client: Socket): string | null {
+    // Try auth object first (client-side auth configuration)
+    // Handle case where token might be an array
+    const authToken = client.handshake.auth?.token;
+    if (authToken) {
+      const token = Array.isArray(authToken) ? authToken[0] : authToken;
+      if (typeof token === 'string' && token.trim()) {
+        return token.trim();
+      }
+    }
+
+    // Try Authorization header
+    const authHeader = client.handshake.headers?.authorization;
+    if (authHeader) {
+      const parts = authHeader.split(' ');
+      if (parts.length === 2 && parts[0] === 'Bearer') {
+        return parts[1];
+      }
+      // Handle case where someone sends just the token without "Bearer "
+      if (typeof authHeader === 'string' && authHeader.includes('.')) {
+        return authHeader.trim();
+      }
+    }
+
+    // Try query parameter (less secure but supported for compatibility)
+    // Handle case where query token might be an array
+    const queryToken = client.handshake.query?.token;
+    if (queryToken) {
+      const token = Array.isArray(queryToken) ? queryToken[0] : queryToken;
+      if (typeof token === 'string' && token.trim()) {
+        return token.trim();
+      }
+    }
+
+    return null;
   }
 }

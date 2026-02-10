@@ -14,7 +14,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { ExecutionLogRepository } from '../repositories/execution-log.repository';
 
 @ApiTags('Execution Logs')
-@Controller('execution')
+@Controller('executions')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ExecutionLogsController {
   constructor(private readonly logRepository: ExecutionLogRepository) {}
@@ -30,11 +30,11 @@ export class ExecutionLogsController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async getLogs(
     @Param('id') executionId: string,
-    @Query('level') levels?: string,
+    @Query('level') levels?: string | string[],
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
     @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit = 100,
   ) {
-    const levelFilter = levels ? levels.split(',') : undefined;
+    const levelFilter = levels ? (Array.isArray(levels) ? levels : levels.split(',')) : undefined;
 
     const [logs, total] = await this.logRepository.findByExecution(
       executionId,

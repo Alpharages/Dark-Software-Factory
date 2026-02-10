@@ -280,8 +280,13 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
    */
   private extractToken(client: Socket): string | null {
     // Try auth object first (client-side auth configuration)
-    if (client.handshake.auth?.token) {
-      return client.handshake.auth.token;
+    // Handle case where token might be an array
+    const authToken = client.handshake.auth?.token;
+    if (authToken) {
+      const token = Array.isArray(authToken) ? authToken[0] : authToken;
+      if (typeof token === 'string' && token.trim()) {
+        return token.trim();
+      }
     }
 
     // Try Authorization header
@@ -291,11 +296,20 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       if (parts.length === 2 && parts[0] === 'Bearer') {
         return parts[1];
       }
+      // Handle case where someone sends just the token without "Bearer "
+      if (typeof authHeader === 'string' && authHeader.includes('.')) {
+        return authHeader.trim();
+      }
     }
 
     // Try query parameter (less secure but supported for compatibility)
-    if (client.handshake.query?.token) {
-      return client.handshake.query.token as string;
+    // Handle case where query token might be an array
+    const queryToken = client.handshake.query?.token;
+    if (queryToken) {
+      const token = Array.isArray(queryToken) ? queryToken[0] : queryToken;
+      if (typeof token === 'string' && token.trim()) {
+        return token.trim();
+      }
     }
 
     return null;

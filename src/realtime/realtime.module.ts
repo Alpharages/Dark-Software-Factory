@@ -23,9 +23,13 @@ import { WsAuthGuard } from './guards/ws-auth.guard';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('auth.jwtSecret'),
         signOptions: {
           expiresIn: parseInt(configService.get<string>('JWT_EXPIRATION', '3600'), 10),
+          algorithm: 'HS256',
+        },
+        verifyOptions: {
+          algorithms: ['HS256'],
         },
       }),
       inject: [ConfigService],

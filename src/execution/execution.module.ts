@@ -90,7 +90,13 @@ import { AuditLogService } from '../common/audit/audit-log.service';
     RealtimeModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1h' },
+      signOptions: {
+        expiresIn: '1h',
+        algorithm: 'HS256',
+      },
+      verifyOptions: {
+        algorithms: ['HS256'],
+      },
     }),
   ],
   controllers: [

@@ -110,7 +110,18 @@ export class DockerService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    this.logger.log(`Initializing Docker client with socket: ${this.socketPath}`);
+    // Log resource limit configuration at startup for debugging
+    const memLimit = this.configService.get<number>(
+      'sandbox.resourceLimits.defaultMemoryLimitMB',
+      512,
+    );
+    const cpuLimit = this.configService.get<number>(
+      'sandbox.resourceLimits.defaultCpuLimitPercent',
+      100,
+    );
+    this.logger.log(
+      `DockerService resource limits: memory=${memLimit}MB, cpu=${cpuLimit}% (socket: ${this.socketPath})`,
+    );
 
     try {
       this.docker = new Dockerode({ socketPath: this.socketPath });
@@ -490,7 +501,9 @@ export class DockerService implements OnModuleInit {
         100,
       );
       swapMB = this.configService.get<number>('sandbox.resourceLimits.defaultSwapLimitMB', 512);
-      this.logger.debug('Using config default resource limits');
+      this.logger.log(
+        `Using config default resource limits: memory=${memoryMB}MB, cpu=${cpuPercent}%, swap=${swapMB}MB`,
+      );
     }
 
     // Convert to Docker API format
