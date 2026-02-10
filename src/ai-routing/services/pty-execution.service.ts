@@ -11,6 +11,7 @@ import { WorkspaceService } from '@/docker/workspace.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { InfrastructureException } from '@/common/exceptions/infrastructure.exception';
 import { ResourceProfile } from '@/docker/interfaces/resource-profile.interface';
+import { Semaphore } from '@/common/utils/semaphore.util';
 
 export interface SpawnOptions {
   name?: string;
@@ -82,10 +83,12 @@ export class PtyExecutionService implements OnModuleDestroy {
   private processes = new Map<number, pty.IPty>();
   private containerExecutions = new Map<string, ContainerExecution>();
   private executionCounter = 0;
+  private semaphore: Semaphore;
 
   // Feature flag
   private containerExecutionEnabled = false;
   private containerTimeoutMs = 300000; // 5 minutes default
+  private maxConcurrentContainers = 10;
 
   // Track completed executions to prevent race conditions
   private completedExecutions = new Set<string>();
@@ -102,8 +105,13 @@ export class PtyExecutionService implements OnModuleDestroy {
         'ENABLE_CONTAINER_EXECUTION',
         false,
       );
-      this.containerTimeoutMs = configService.get<number>('DOCKER_CONTAINER_TIMEOUT_MS', 300000);
+      this.containerTimeoutMs = configService.get<number>('sandbox.containerTimeoutMs', 300000);
+      this.maxConcurrentContainers = configService.get<number>('sandbox.maxConcurrent', 10);
     }
+    this.semaphore = new Semaphore(this.maxConcurrentContainers);
+    this.logger.log(
+      `Initialized PtyExecutionService with max concurrent containers: ${this.maxConcurrentContainers}`,
+    );
   }
 
   /**
@@ -343,6 +351,19 @@ export class PtyExecutionService implements OnModuleDestroy {
   ): Promise<ContainerSpawnResult> {
     const { executionId, cols: _cols = 80, rows: _rows = 30 } = options;
 
+    // Acquire semaphore slot before proceeding
+    // This allows backpressure to build up if too many containers are running
+    const availablePermits = this.semaphore.getAvailablePermits();
+    const queueLength = this.semaphore.getQueueLength();
+
+    if (availablePermits === 0) {
+      this.logger.log(
+        `[${executionId}] Waiting for container slot... (Active: ${this.maxConcurrentContainers}, Queued: ${queueLength + 1})`,
+      );
+    }
+
+    await this.semaphore.acquire();
+
     this.logger.log(`[${executionId}] Spawning in container: ${command} ${args.join(' ')}`);
 
     // Validate dependencies
@@ -356,6 +377,7 @@ export class PtyExecutionService implements OnModuleDestroy {
 
     // Ensure Docker is connected
     if (!this.dockerService.isConnected()) {
+      this.semaphore.release(); // Release immediately if check fails
       throw new InfrastructureException('Docker is not connected');
     }
 
@@ -485,6 +507,9 @@ export class PtyExecutionService implements OnModuleDestroy {
       this.cleanupContainerExecution(executionId);
     });
 
+    // IMPORTANT: cleanupContainerExecution() calls this.semaphore.release()
+    // This ensures slots are freed when container exits or errors
+
     // Return result interface
     return {
       pid: pseudoPid,
@@ -585,6 +610,10 @@ export class PtyExecutionService implements OnModuleDestroy {
     }
 
     this.containerExecutions.delete(executionId);
+
+    // Release semaphore slot since execution is hard-killed
+    this.semaphore.release();
+    this.logger.debug(`[${executionId}] Released semaphore slot (kill)`);
   }
 
   /**
@@ -607,7 +636,12 @@ export class PtyExecutionService implements OnModuleDestroy {
 
     this.containerExecutions.delete(executionId);
     this.completedExecutions.delete(executionId);
-    this.logger.debug(`[${executionId}] Container execution cleaned up`);
+
+    // Release semaphore slot on normal cleanup
+    this.semaphore.release();
+    this.logger.debug(
+      `[${executionId}] Container execution cleaned up and semaphore slot released`,
+    );
   }
 
   /**
