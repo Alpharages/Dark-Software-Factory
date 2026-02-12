@@ -30,6 +30,10 @@ export interface ContainerSpawnOptions extends SpawnOptions {
   memoryLimit?: number;
   /** Explicit CPU limit (percentage of single core, overrides profile) */
   cpuLimit?: number;
+  /** Explicit workspace path to mount (overrides default creation) */
+  workspacePath?: string;
+  /** Additional bind mounts (hostPath:containerPath:mode) */
+  extraBinds?: string[];
 }
 
 export interface ContainerSpawnResult {
@@ -381,9 +385,14 @@ export class PtyExecutionService implements OnModuleDestroy {
       throw new InfrastructureException('Docker is not connected');
     }
 
-    // Create workspace
-    const workspacePath = await this.workspaceService.createWorkspace(executionId);
-    this.logger.debug(`[${executionId}] Workspace created at: ${workspacePath}`);
+    // Create or use existing workspace
+    let workspacePath = options.workspacePath;
+    if (!workspacePath) {
+      workspacePath = await this.workspaceService.createWorkspace(executionId);
+      this.logger.debug(`[${executionId}] Workspace created at: ${workspacePath}`);
+    } else {
+      this.logger.debug(`[${executionId}] Using existing workspace: ${workspacePath}`);
+    }
 
     // Build full command
     const fullCommand = [command, ...args];
@@ -393,7 +402,7 @@ export class PtyExecutionService implements OnModuleDestroy {
     const { container, stream } = await this.dockerService.runContainer({
       image: 'dsf-agent-base',
       command: fullCommand,
-      binds: [`${workspacePath}:/home/agent/workspace:rw`],
+      binds: [`${workspacePath}:/home/agent/workspace:rw`, ...(options.extraBinds || [])],
       workingDir: '/home/agent/workspace',
       user: 'agent',
       tty: true,

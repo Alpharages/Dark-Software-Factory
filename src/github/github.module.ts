@@ -31,6 +31,7 @@ import { ClickUpModule } from '../clickup/clickup.module';
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 import { DeploymentHealthMonitorService } from './services/deployment-health-monitor.service';
 import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
+import { ExecutionModule } from '../execution/execution.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-pro
     ClickUpModule,
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
+    forwardRef(() => ExecutionModule),
   ],
   providers: [
     GitHubService,

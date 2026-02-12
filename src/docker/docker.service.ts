@@ -381,8 +381,24 @@ export class DockerService implements OnModuleInit {
 
       if (resourceLimits.memoryBytes > 0) {
         hostConfig.Memory = resourceLimits.memoryBytes;
-        hostConfig.MemorySwap = resourceLimits.swapBytes;
+        // Fix for Story 23.3: MemorySwap is Total (RAM + Swap)
+        // If swapBytes > 0, we add it to memoryBytes to get total limit
+        // If swapBytes == 0, we set it equal to memoryBytes to disable swap
+        // If swapBytes < 0, we set it to -1 (Unlimited swap)
+        if (resourceLimits.swapBytes < 0) {
+          hostConfig.MemorySwap = -1;
+        } else {
+          hostConfig.MemorySwap =
+            resourceLimits.swapBytes > 0
+              ? resourceLimits.memoryBytes + resourceLimits.swapBytes
+              : resourceLimits.memoryBytes;
+        }
         hostConfig.OomKillDisable = resourceLimits.oomKillDisable;
+
+        this.logger.log(
+          `Container ${name || '(unnamed)'} resource limits - Memory: ${hostConfig.Memory} bytes, ` +
+            `MemorySwap: ${hostConfig.MemorySwap} bytes`,
+        );
       }
 
       if (resourceLimits.cpuQuota > 0) {

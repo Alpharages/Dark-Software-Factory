@@ -295,11 +295,30 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       let selectedModel: string = 'gpt-4o'; // Default model (will be overridden by CostOptimizer)
       let estimatedCost: Decimal | null = null;
       try {
+        this.logger.log(`[COST_ESTIMATION] Starting cost estimation for execution ${executionId}`);
+        await this.executionTracker.emitProgress(
+          executionId,
+          payload.ticketId,
+          payload.projectId,
+          'Cost Estimation',
+          5,
+        );
+
         // Get complexity score from execution (populated by Story 2.3 ComplexityScorerService)
         const execution = await this.executionTracker.getExecution(executionId);
         const complexityScore = execution?.complexity_score || DEFAULT_COMPLEXITY_SCORE;
 
         selectedModel = this.costOptimizer.selectOptimalModel(complexityScore);
+        this.logger.log(
+          `[MODEL_SELECTED] Using ${selectedModel} (complexity: ${complexityScore}) for execution ${executionId}`,
+        );
+        await this.executionTracker.emitProgress(
+          executionId,
+          payload.ticketId,
+          payload.projectId,
+          'Model Selection',
+          8,
+        );
 
         // Log model selection decision
         await this.aiDecisionLogger.logDecision({
@@ -360,12 +379,12 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           // 1. Alert PM via ClickUp
           await this.clickup.addComment(
             payload.ticketId,
-            `🚨 **AI Execution Blocked: Budget Exceeded**\n\n` +
-              `The requested AI operation was blocked. Reason: ${reason}\n\n` +
-              `**Analysis:**\n` +
-              `- Budget: $${budgetCheck.budget?.toFixed(2)}\n` +
-              `- Current Spend: $${budgetCheck.spend?.toFixed(2)}\n` +
-              `- Estimated Cost: $${estimatedCost.toFixed(4)}\n\n` +
+            `🚨 **AI Execution Blocked: Budget Exceeded**\\n\\n` +
+              `The requested AI operation was blocked. Reason: ${reason}\\n\\n` +
+              `**Analysis:**\\n` +
+              `- Budget: $${budgetCheck.budget?.toFixed(2)}\\n` +
+              `- Current Spend: $${budgetCheck.spend?.toFixed(2)}\\n` +
+              `- Estimated Cost: $${estimatedCost.toFixed(4)}\\n\\n` +
               `Please increase the project budget or optimize usage to proceed.`,
           );
 
@@ -405,6 +424,16 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             errorCode: 'BUDGET_EXCEEDED',
           };
         }
+
+        // Budget check passed
+        this.logger.log(`[BUDGET_CHECK] Budget check passed for execution ${executionId}`);
+        await this.executionTracker.emitProgress(
+          executionId,
+          payload.ticketId,
+          payload.projectId,
+          'Budget Check',
+          10,
+        );
       } catch (_error) {
         const err = _error as Error;
         this.logger.error(`[${correlationId}] Cost estimation failed: ${err.message}`);
@@ -434,6 +463,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       }
 
       // 2. Execute via OrchestratorService with selected model
+      this.logger.log(
+        `[ORCHESTRATOR] Starting AI execution via ${payload.aiProvider} for execution ${executionId}`,
+      );
       const result = await this.orchestrator.execute({
         correlationId,
         executionId,

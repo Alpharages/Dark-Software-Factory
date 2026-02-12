@@ -15,7 +15,6 @@ import { AIProvider } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import {
-  IAIProvider,
   IAIExecutionInput,
   IAIExecutionResult,
   IProviderHealthStatus,
@@ -28,9 +27,14 @@ import {
 import { PtyExecutionService } from '../services/pty-execution.service';
 import { WorkspaceService } from './workspace.service';
 import { CircuitBreaker, CircuitState } from './circuit-breaker';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
+import { BaseAIProvider } from './base-ai.provider';
 
 @Injectable()
-export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, OnModuleInit {
+export class CursorHeadlessProvider
+  extends BaseAIProvider
+  implements IAIPromptExecutor, OnModuleInit
+{
   private readonly logger = new Logger(CursorHeadlessProvider.name);
 
   readonly provider = AIProvider.CURSOR_HEADLESS;
@@ -51,6 +55,7 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
     private readonly config: ConfigService,
     private readonly workspace: WorkspaceService,
     private readonly ptyService: PtyExecutionService,
+    protected readonly executionTracker: ExecutionTrackerService,
     @InjectMetric('cursor_executions_total')
     private readonly executionsCounter: Counter<string>,
     @InjectMetric('cursor_execution_duration_seconds')
@@ -58,6 +63,7 @@ export class CursorHeadlessProvider implements IAIProvider, IAIPromptExecutor, O
     @InjectMetric('cursor_active_executions')
     private readonly activeGauge: Gauge<string>,
   ) {
+    super();
     this.circuitBreaker = new CircuitBreaker('cursor-headless', {
       failureThreshold: 5,
       resetTimeoutMs: 30_000,

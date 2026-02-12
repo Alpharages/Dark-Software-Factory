@@ -287,9 +287,14 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
       // Create parent directory
       await this.ensureDirectoryExists(path.dirname(mirrorPath));
 
-      // Clone as bare mirror with authentication
+      // Clone as bare mirror with authentication embedded in URL
+      const authenticatedUrl = repoUrl.replace(
+        'https://',
+        `https://x-access-token:${this.gitToken}@`,
+      );
+
       await this.execGitWithAuth(
-        ['clone', '--mirror', repoUrl, mirrorPath],
+        ['clone', '--mirror', authenticatedUrl, mirrorPath],
         undefined,
         'Create bare mirror',
       );
@@ -361,7 +366,18 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Run git fetch --prune in the mirror with authentication
-      await this.execGitWithAuth(['fetch', '--prune'], mirrorPath, 'Update bare mirror');
+      // We need to pass the authenticated URL explicitly since the remote might not have the token saved
+      const repoUrl = `https://github.com/${owner}/${repo}.git`;
+      const authenticatedUrl = repoUrl.replace(
+        'https://',
+        `https://x-access-token:${this.gitToken}@`,
+      );
+
+      await this.execGitWithAuth(
+        ['fetch', authenticatedUrl, '--prune'],
+        mirrorPath,
+        'Update bare mirror',
+      );
 
       // Update metadata
       const now = new Date().toISOString();
@@ -901,37 +917,41 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Execute git command with authentication via environment variables
-   * This avoids embedding tokens in URLs (security best practice)
+   * Execute git command with authentication options
+   * Note: We now use URL embedding for auth, so this method mainly handles execution and logging
    */
   private async execGitWithAuth(
     args: string[],
     cwd?: string,
     description?: string,
-  ): Promise<{ stdout: string; stderr: string }> {
-    try {
-      this.logger.debug(`${description || 'Git'}: git ${this.sanitizeGitArgs(args)}`);
+  ): Promise<string> {
+    const commandDesc = description || `git ${args[0]}`;
+    const sanitizedArgs = this.sanitizeGitArgs(args);
 
-      const result = await execFileAsync('git', args, {
+    this.logger.debug(`Executing: git ${sanitizedArgs}`);
+
+    try {
+      const { stdout } = await execFileAsync('git', args, {
         cwd,
         timeout: this.DEFAULT_TIMEOUT_MS,
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
         env: {
           ...process.env,
-          // Use git credential helper via environment
+          // Disable interactive prompts
+          GIT_TERMINAL_PROMPT: '0',
+          // Ensure we don't use any other credentials
           GIT_ASKPASS: 'echo',
-          GIT_USERNAME: 'x-access-token',
-          GIT_PASSWORD: this.gitToken,
         },
       });
 
-      return { stdout: result.stdout, stderr: result.stderr };
+      return stdout;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      // Sanitize error message to prevent token exposure
-      const sanitizedError = this.sanitizeErrorMessage(errorMessage);
-      this.logger.error(`Git command failed: git ${this.sanitizeGitArgs(args)}`, sanitizedError);
-      throw new Error(`Git operation failed: ${sanitizedError}`);
+      const errorMessage = this.sanitizeErrorMessage(
+        error instanceof Error ? error.message : String(error),
+      );
+
+      this.logger.error(`Failed to ${commandDesc}: ${errorMessage}`);
+      throw error;
     }
   }
 

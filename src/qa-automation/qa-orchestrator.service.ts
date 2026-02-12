@@ -306,6 +306,7 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     this.logger.log(`[${correlationId}] Starting QA orchestration for execution ${executionId}`);
+    await this.executionTracker.emitProgress(executionId, ticketId, projectId, 'Running QA', 85);
 
     try {
       // Update ticket status to QA_REVIEW

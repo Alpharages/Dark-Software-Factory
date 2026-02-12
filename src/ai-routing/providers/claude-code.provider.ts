@@ -15,8 +15,8 @@ import { AIProvider } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { lastValueFrom } from 'rxjs';
+import * as fs from 'fs';
 import {
-  IAIProvider,
   IAIExecutionInput,
   IAIExecutionResult,
   IProviderHealthStatus,
@@ -29,10 +29,13 @@ import {
 import { WorkspaceService } from './workspace.service';
 import { CircuitBreaker, CircuitState } from './circuit-breaker';
 import { PtyExecutionService, PtySpawnError } from '../services/pty-execution.service';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
+import { BaseAIProvider, ExecutionStage } from './base-ai.provider';
 
 @Injectable()
 export class ClaudeCodeProvider
-  implements IAIProvider, IAIPromptExecutor, OnModuleInit, OnModuleDestroy
+  extends BaseAIProvider
+  implements IAIPromptExecutor, OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(ClaudeCodeProvider.name);
 
@@ -57,6 +60,7 @@ export class ClaudeCodeProvider
     private readonly config: ConfigService,
     private readonly workspace: WorkspaceService,
     private readonly ptyService: PtyExecutionService,
+    protected readonly executionTracker: ExecutionTrackerService,
     @InjectMetric('claude_executions_total')
     private readonly executionsCounter: Counter<string>,
     @InjectMetric('claude_execution_duration_seconds')
@@ -68,6 +72,7 @@ export class ClaudeCodeProvider
     @InjectMetric('claude_cost_cents')
     private readonly costGauge: Gauge<string>,
   ) {
+    super();
     this.circuitBreaker = new CircuitBreaker('claude-code', {
       failureThreshold: 5,
       resetTimeoutMs: 60_000, // 1 minute
@@ -142,6 +147,15 @@ export class ClaudeCodeProvider
       const { workspacePath: path, env } = await this.prepareEnvironment(input);
       workspacePath = path;
 
+      // 1.5. Emit specific progress for environment prepared (AC #2)
+      await this.executionTracker.emitProgress(
+        executionId,
+        ticketId,
+        null, // projectId is optional/unknown here, let tracker handle it
+        'Environment ready',
+        10,
+      );
+
       // 2. Update workspace status
       this.workspace.updateWorkspaceStatus(executionId, 'EXECUTING');
       this.activeGauge.inc();
@@ -150,9 +164,10 @@ export class ClaudeCodeProvider
       const cliPrompt = this.constructCliPrompt(input);
 
       // 5. Spawn Claude CLI via PTY in Docker Container
-      // Command: claude --print --model <model> "<prompt>"
-      // Note: --print is required for non-interactive mode in container
-      const args = [
+      // Command: /bin/sh -c "claude --print --model <model> ... | tee /tmp/logs/execution.log"
+      // Note: We use shell redirection via tee to capture logs to the mounted volume while preserving PTY output
+      const claudeArgs = [
+        'claude',
         '--print',
         '--model',
         this.model,
@@ -161,16 +176,77 @@ export class ClaudeCodeProvider
         cliPrompt,
       ];
 
+      // Wrap in shell command to enable piping to tee
+      // We use 'stdbuf -oL' if available to force line buffering, but standard tee is usually fine
+      const command = '/bin/sh';
+      // Escape arguments for shell execution
+      const escapedArgs = claudeArgs
+        .map((arg) => `"${arg.replace(/(["'$`\\])/g, '\\$1')}"`)
+        .join(' ');
+      const args = ['-c', `${escapedArgs} | tee /tmp/logs/execution.log`];
+
       this.logger.debug(
         `Spawning claude in container with args: ${JSON.stringify(args)} in ${workspacePath}`,
       );
+      this.logger.debug(
+        `[${correlationId}] Container Env: NODE_OPTIONS=${env.NODE_OPTIONS}, CLAUDE_CODE_REMOTE=${env.CLAUDE_CODE_REMOTE}`,
+      );
 
-      const containerResult = await this.ptyService.spawnInContainer('claude', args, {
+      // 4. Emit progress for starting Claude
+      await this.executionTracker.emitProgress(
+        executionId,
+        ticketId,
+        null,
+        'Starting Claude AI...',
+        20,
+      );
+
+      // Story 23.3: Enforce minimum memory for Claude CLI (prevent OOM)
+      // Only override if configured limit is too low (< 2GB)
+      // This allows users to set custom Memory/Swap limits in .env that are respected
+      const configuredLimit = this.config.get<number>(
+        'sandbox.resourceLimits.defaultMemoryLimitMB',
+        512,
+      );
+
+      let memoryLimitBytes: number | undefined;
+      let claudeMemoryLimitMB: number;
+
+      if (configuredLimit < 2048) {
+        this.logger.debug(
+          `[${correlationId}] Enforcing minimum 2GB memory for Claude (configured: ${configuredLimit}MB)`,
+        );
+        memoryLimitBytes = 2048 * 1024 * 1024;
+        claudeMemoryLimitMB = 2048;
+      } else {
+        this.logger.debug(
+          `[${correlationId}] Using configured memory limit for Claude: ${configuredLimit}MB`,
+        );
+        claudeMemoryLimitMB = configuredLimit;
+        memoryLimitBytes = configuredLimit * 1024 * 1024;
+      }
+
+      // Ensure host log directory exists
+      const hostLogDir = `/tmp/dsf-agent-logs/${executionId}`;
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      fs.mkdirSync(hostLogDir, { recursive: true });
+
+      // 5. Spawn container and run Claude
+      this.logger.log(
+        `[CONTAINER_SPAWN] Spawning container for execution ${executionId} with memory limit ${claudeMemoryLimitMB}MB`,
+      );
+      // Emit progress: Container spawn (25%)
+      await this.emitStageProgress(executionId, ticketId, ExecutionStage.CONTAINER_SPAWN);
+
+      const containerResult = await this.ptyService.spawnInContainer(command, args, {
         executionId,
         ticketId,
         cols: 120,
         rows: 40,
         env: env,
+        workspacePath: workspacePath,
+        memoryLimit: memoryLimitBytes, // Undefined = use config
+        extraBinds: [`${hostLogDir}:/tmp/logs:rw`], // Mount log directory
       });
 
       const { pid, output$, exit$, containerId } = containerResult;
@@ -212,13 +288,64 @@ export class ClaudeCodeProvider
       // Monitor output in real-time
       const outputChunks: string[] = [];
       let spawnError: Error | undefined;
+      let hasEmittedOutputProgress = false;
+      let lastKnownStage = 'Starting';
 
       output$.subscribe({
         next: (chunk) => {
           outputChunks.push(chunk);
           // Stream output to logs for real-time visibility (AC #4)
           if (chunk.trim()) {
-            this.logger.debug(`[${executionId}] Container: ${chunk.trim()}`);
+            const cleanChunk = chunk.trim();
+            // Log output at INFO level temporarily to debug OOM/Stage issues
+            this.logger.log(`[${executionId}] Container Output: ${cleanChunk}`);
+
+            const lowerChunk = cleanChunk.toLowerCase();
+
+            // Stage Detection Logic
+            if (lowerChunk.includes('cloning')) {
+              lastKnownStage = 'Cloning repository';
+              this.executionTracker
+                .emitProgress(executionId, ticketId, null, 'Cloning repository...', 30)
+                .catch(() => {});
+            } else if (lowerChunk.includes('planning') || lowerChunk.includes('thinking')) {
+              lastKnownStage = 'AI Planning';
+              this.emitStageProgress(executionId, ticketId, ExecutionStage.AI_PLANNING).catch(
+                () => {},
+              );
+            } else if (lowerChunk.includes('writing') || lowerChunk.includes('editing')) {
+              lastKnownStage = 'Writing code';
+              this.emitStageProgress(executionId, ticketId, ExecutionStage.AI_WRITING_CODE).catch(
+                () => {},
+              );
+            } else if (
+              lowerChunk.includes('running') ||
+              lowerChunk.includes('verifying') ||
+              lowerChunk.includes('test')
+            ) {
+              lastKnownStage = 'Running verification';
+              this.emitStageProgress(executionId, ticketId, ExecutionStage.AI_VERIFICATION).catch(
+                () => {},
+              );
+            } else {
+              // Log unrecognized chunks to help refine stage detection
+              this.logger.log(
+                `[${executionId}] Unrecognized stage output: ${cleanChunk.substring(0, 50)}...`,
+              );
+            }
+
+            if (!hasEmittedOutputProgress) {
+              hasEmittedOutputProgress = true;
+              this.executionTracker
+                .emitProgress(
+                  executionId,
+                  ticketId,
+                  null,
+                  'AI is thinking/coding...',
+                  25, // Started
+                )
+                .catch(() => {});
+            }
           }
         },
         error: (err: Error) => {
@@ -274,8 +401,9 @@ export class ClaudeCodeProvider
         if (exitCode === 137) {
           throw new Error(
             `Claude CLI was killed (exit code 137 - Out of Memory). ` +
-              `The container exceeded its memory limit. ` +
-              `Consider increasing SANDBOX_MEMORY_LIMIT_MB.`,
+              `The container exceeded its memory allocation. ` +
+              `Last known stage: ${lastKnownStage}. ` +
+              `If SANDBOX_MEMORY_LIMIT_MB is already high, check your Docker Desktop resource settings (VM Memory/Swap) as the host might be out of resources.`,
           );
         }
         throw new Error(
@@ -286,6 +414,13 @@ export class ClaudeCodeProvider
       this.logger.debug(`[${correlationId}] CLI Output length: ${fullOutput.length}`);
 
       // 7. Extract changes
+      await this.executionTracker.emitProgress(
+        executionId,
+        ticketId,
+        null,
+        'Analyzing changes...',
+        90,
+      );
       const { diff, filesChanged } = await this.workspace.extractChanges(executionId);
 
       // 8. Calculate confidence (simplified)
@@ -370,12 +505,20 @@ export class ClaudeCodeProvider
   ): Promise<{ workspacePath: string; env: Record<string, string> }> {
     const { executionId, ticketId, repositoryUrl, baseBranch } = input;
 
+    // Callback to emit progress during workspace creation
+    const onProgress = async (status: string) => {
+      await this.executionTracker.emitProgress(executionId, ticketId, null, status, 5);
+    };
+
     // 1. Create Workspace
     const workspaceInfo = await this.workspace.createWorkspace(
       executionId,
       ticketId,
       repositoryUrl,
       baseBranch,
+      (status) => {
+        onProgress(status).catch((e) => this.logger.warn(`Failed to emit progress: ${e.message}`));
+      },
     );
 
     if (!workspaceInfo.path) {
@@ -388,6 +531,10 @@ export class ClaudeCodeProvider
     const env: { [key: string]: string } = {
       ANTHROPIC_API_KEY: this.apiKey || '',
       ANTHROPIC_BASE_URL: this.baseURL || '',
+      // Explicitly disable remote mode to prevent 8GB memory allocation by CLI
+      CLAUDE_CODE_REMOTE: 'false',
+      // Force V8 heap limit to 3GB (leaving 1GB for OS/container overhead)
+      NODE_OPTIONS: '--max-old-space-size=3072',
     };
 
     // If base URL contains 'localhost', assume it might be Ollama simulation or similar

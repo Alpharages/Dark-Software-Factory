@@ -3,8 +3,8 @@ import { createLogger, Logger } from 'winston';
 import { ConfigService } from '@nestjs/config';
 import { LOGGER_CONSTANTS, LOG_LEVELS, LogLevel } from './logger.constants';
 import { LogContext } from './logger.interface';
-import { createConsoleTransport } from './transports/console.transport';
-import { createCombinedFileTransport, createErrorFileTransport } from './transports/file.transport';
+import { createConsoleTransport } from '@/common/logger/transports';
+import { createCombinedFileTransport, createErrorFileTransport } from '@/common/logger/transports';
 import { getRequestContext } from '../context';
 
 @Injectable()

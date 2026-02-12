@@ -351,10 +351,12 @@ export const envValidationSchema = Joi.object({
     .description('CPU limit as percentage of single core (default: 100% = 1 core)'),
   SANDBOX_MEMORY_SWAP_LIMIT_MB: Joi.number()
     .integer()
-    .min(0)
+    .min(-1)
     .max(8192)
     .default(512)
-    .description('Swap limit per container in MB (0 to disable swap, default: 512MB)'),
+    .description(
+      'Swap limit per container in MB (0 to disable swap, -1 for unlimited, default: 512MB)',
+    ),
 
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis

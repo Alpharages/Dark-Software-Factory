@@ -6,6 +6,7 @@ import { GitHubCommitOrchestrator } from './github-commit-orchestrator.service';
 import { GitHubPROrchestrator } from './github-pr-orchestrator.service';
 import { EXCHANGE_NAMES, ROUTING_KEYS } from '../../rabbitmq/rabbitmq.config';
 import * as amqp from 'amqplib';
+import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
 
 interface GitHubPushTriggerMessage {
   executionId: string;
@@ -44,6 +45,7 @@ export class GitHubPushTriggerConsumer
     private readonly prisma: PrismaService,
     private readonly commitOrchestrator: GitHubCommitOrchestrator,
     private readonly prOrchestrator: GitHubPROrchestrator,
+    private readonly executionTracker: ExecutionTrackerService,
   ) {
     super();
   }
@@ -146,6 +148,13 @@ export class GitHubPushTriggerConsumer
       this.logger.log(`[${correlationId}] Starting git commit and push`, {
         executionId: message.executionId,
       });
+      await this.executionTracker.emitProgress(
+        message.executionId,
+        message.ticketId,
+        null,
+        'Pushing to GitHub',
+        92,
+      );
 
       const commitResult = await this.commitOrchestrator.commitAndPush(
         message.executionId,
@@ -176,6 +185,13 @@ export class GitHubPushTriggerConsumer
       this.logger.log(`[${correlationId}] Creating pull request`, {
         executionId: message.executionId,
       });
+      await this.executionTracker.emitProgress(
+        message.executionId,
+        message.ticketId,
+        null,
+        'Creating PR',
+        96,
+      );
 
       const prResult = await this.prOrchestrator.createPullRequest(
         message.executionId,

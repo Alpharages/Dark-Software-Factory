@@ -38,16 +38,11 @@ RUN curl https://cursor.com/install -fsS | bash && \
     fi
 
 # Install Claude CLI
-# Official installation from: https://code.claude.com/docs/en/setup  
-# Like Cursor, claude installs to ~/.local/bin
-RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    # Copy (not symlink) to make claude available to all users
-    if [ -f "/root/.local/bin/claude" ]; then \
-    cp /root/.local/bin/claude /usr/local/bin/claude && chmod 755 /usr/local/bin/claude; \
-    else \
-    CLAUDE_PATH=$(find /root -name "claude" -type f -executable 2>/dev/null | head -1); \
-    if [ -n "$CLAUDE_PATH" ]; then cp "$CLAUDE_PATH" /usr/local/bin/claude && chmod 755 /usr/local/bin/claude; fi; \
-    fi
+# Use npm directly to avoid runtime compilation/postinstall spikes
+# This requires the image to be rebuilt
+RUN npm install -g @anthropic-ai/claude-code && \
+    # Ensure binary is in path and executable
+    which claude && chmod +x $(which claude)
 
 # Verify CLI installations are accessible (existence check, not --version due to config issues)
 RUN which agent && chmod +x /usr/local/bin/agent || (echo "Cursor CLI (agent) installation failed - agent not found in PATH" && exit 1)
@@ -72,4 +67,4 @@ USER agent
 
 # Verify installation (fail build if tools are missing)
 # Note: Using 'which' instead of '--version' for CLI tools due to config file requirements
-RUN node -v && npm -v && python3 --version && git --version && which agent && which claude
+RUN node -v && npm -v && python3 --version && git --version && which agent && claude --version

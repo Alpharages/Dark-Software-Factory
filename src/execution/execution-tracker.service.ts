@@ -4,7 +4,7 @@ import { ExecutionStatus, Execution } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Observable, Subscription } from 'rxjs';
-import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
+import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
 import { ExecutionGateway, LogLevel } from './gateways/execution.gateway';
@@ -19,11 +19,11 @@ import {
 import { RealtimeService } from '@/realtime/realtime.service';
 import {
   ExecutionStartedEvent,
-  ExecutionProgressEvent,
   ExecutionCompletedEvent,
   ExecutionFailedEvent,
   ExecutionTimeoutEvent,
   ExecutionCancelledEvent,
+  ExecutionProgressEvent,
 } from '@/realtime/realtime.types';
 import { AI_METRICS, CONTAINER_METRICS } from '@/common/metrics';
 
@@ -51,6 +51,9 @@ export class ExecutionTrackerService implements OnModuleInit {
 
   /** Track last progress emission to implement rate limiting */
   private lastProgressEmitMap = new Map<string, number>();
+
+  /** Track last progress step to force emission on change */
+  private lastProgressStepMap = new Map<string, string>();
 
   constructor(
     private readonly repository: ExecutionRepository,
@@ -945,28 +948,57 @@ export class ExecutionTrackerService implements OnModuleInit {
       return;
     }
 
-    // Rate limiting logic: skip if < 5000ms since last emit, unless it's 0% or 100% (critical updates)
+    // Rate limiting logic: skip if < 500ms since last emit, unless it's critical (0%, 100%) or step changed
     // 0% is start, 100% is completion (though completion has its own event, sometimes progress=100 is useful)
     // We treat 0% as critical start progress.
     const now = Date.now();
     const lastEmit = this.lastProgressEmitMap.get(executionId) || 0;
+    const lastStep = this.lastProgressStepMap.get(executionId) || '';
+    const stepChanged = currentStep !== lastStep;
 
-    // Always emit if first time (lastEmit == 0) or significant milestone (0%)
-    // Otherwise enforce 5000ms window
-    if (lastEmit > 0 && now - lastEmit < 5000 && percentComplete > 0 && percentComplete < 100) {
+    // Always emit if first time (lastEmit == 0), significant milestone (0%), or step changed
+    // Otherwise enforce 500ms window
+    if (
+      !stepChanged &&
+      lastEmit > 0 &&
+      now - lastEmit < 500 &&
+      percentComplete > 0 &&
+      percentComplete < 100
+    ) {
+      this.logger.debug(
+        `[ExecutionTracker] Skipping progress emit for ${executionId}: ${currentStep} (${percentComplete}%) - Rate limited (${now - lastEmit}ms < 500ms)`,
+      );
       return;
     }
 
+    // Resolve projectId if missing (for correct room routing)
+    let resolvedProjectId = projectId;
+    if (!resolvedProjectId) {
+      try {
+        const execution = await this.repository.findById(executionId);
+        if (execution?.ticket?.project_id) {
+          resolvedProjectId = execution.ticket.project_id;
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to resolve projectId for execution ${executionId}: ${err}`);
+      }
+    }
+
     this.lastProgressEmitMap.set(executionId, now);
+    this.lastProgressStepMap.set(executionId, currentStep);
 
     const event: ExecutionProgressEvent = {
       executionId,
       ticketId,
-      projectId,
+      projectId: resolvedProjectId,
       currentStep,
       percentComplete,
       lastUpdated: new Date().toISOString(),
     };
+
+    this.logger.log(
+      `[ExecutionTracker] Emitting progress for ${executionId}: ${currentStep} (${percentComplete}%)`,
+    );
 
     await this.emitWebSocketEvent<ExecutionProgressEvent>('execution.progress', event);
   }

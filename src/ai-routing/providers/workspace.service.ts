@@ -30,6 +30,7 @@ import { safeMkdir, safeReaddir, safeStat } from '../../common/utils/safe-fs.uti
 import { PrismaService } from '../../database/prisma.service';
 import { WorkspaceStatus } from '@/prisma/client';
 import { StorageManagerService } from '../../storage/storage-manager.service';
+import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
 
 @Injectable()
 export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
@@ -54,6 +55,8 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     private readonly storageManager: StorageManagerService,
     @Inject(forwardRef(() => GitMirrorService))
     private readonly gitMirrorService: GitMirrorService,
+    @Inject(forwardRef(() => ExecutionTrackerService))
+    private readonly executionTracker: ExecutionTrackerService,
     @InjectMetric('cursor_workspaces_active')
     private readonly activeGauge: Gauge<string>,
     @InjectMetric('cursor_workspace_operations_total')
@@ -107,6 +110,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     ticketId: string,
     repositoryUrl: string,
     _baseBranch: string = 'main',
+    onProgress?: (status: string) => void,
   ): Promise<IWorkspaceInfo> {
     // Trim repository URL to prevent whitespace issues in git commands
     const trimmedRepositoryUrl = repositoryUrl?.trim() || '';
@@ -218,7 +222,16 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     await this.updateMetrics();
 
     try {
-      this.logger.log(`[${executionId}] Creating workspace: ${workspacePath}`);
+      this.logger.log(
+        `[WORKSPACE_CREATION] Creating workspace for execution ${executionId}: ${workspacePath}`,
+      );
+      await this.executionTracker.emitProgress(
+        executionId,
+        ticketId,
+        null,
+        'Workspace Creation',
+        15,
+      );
 
       // 1. Clean up any existing directory from previous failed runs
       try {
@@ -229,7 +242,15 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
       // 2. Clone repository only if URL is provided
       if (trimmedRepositoryUrl) {
-        this.logger.log(`[${executionId}] Cloning repository`);
+        this.logger.log(`[GIT_CLONE] Cloning repository for execution ${executionId}`);
+        await this.executionTracker.emitProgress(
+          executionId,
+          ticketId,
+          null,
+          'Cloning Repository',
+          20,
+        );
+        onProgress?.('Cloning repository...');
 
         // AC#1: Try mirror-based clone first (if enabled)
         const gitMirroringEnabled = this.config.get<boolean>('ENABLE_GIT_MIRRORING', true);
@@ -259,6 +280,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
         await this.git.configureUser(workspacePath, this.gitUserName, this.gitUserEmail);
 
         // 4. Create feature branch
+        onProgress?.('Checking out feature branch...');
         await this.git.checkoutBranch(workspacePath, branchName, true);
 
         // Log commit hash for reproducibility (AC #7)
