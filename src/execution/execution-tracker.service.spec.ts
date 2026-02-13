@@ -48,6 +48,7 @@ describe('ExecutionTrackerService', () => {
     // Story 23.2: Container cleanup tracking
     container_id: null,
     debug_mode: false,
+    progress: null,
   };
 
   const mockMetricCounter = {

@@ -3,7 +3,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { SystemConfigService } from '@/system-settings/system-config.service';
 import { SentryService } from '@/common/sentry/sentry.service';
-import { ProductionErrorModel as ProductionError, ProjectModel as Project } from '@/prisma/models';
+import { ProductionError, Project } from '@/prisma/client';
 import { ErrorSeverity } from '@/prisma/enums';
 import { CreateFixTicketDto } from './dto/create-fix-ticket.dto';
 import { FixTicketMetrics } from './fix-ticket.metrics';

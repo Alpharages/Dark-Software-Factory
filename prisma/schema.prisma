@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/prisma"
 }
 
 datasource db {
@@ -96,6 +95,7 @@ model Execution {
   task_type             TaskType?
   container_id          String?
   debug_mode            Boolean              @default(false)
+  progress              Json?                @map("progress") // Store latest progress state (step, percent)
   adrs                  Adr[]
   aiCostLogs            AICostLog[]
   aiDecisionLogs        AIDecisionLog[]

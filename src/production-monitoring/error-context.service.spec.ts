@@ -9,7 +9,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { SystemConfigService } from '@/system-settings/system-config.service';
 import { SentryService } from '@/common/sentry/sentry.service';
 
-import { ProductionErrorModel as ProductionError } from '@/prisma/models';
+import { ProductionError } from '@/prisma/client';
 
 describe('ErrorContextService', () => {
   let service: ErrorContextService;

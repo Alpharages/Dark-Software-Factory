@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@/prisma/client';
+import { PrismaClient, Prisma } from '@/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
@@ -14,9 +14,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // Create Prisma adapter for PostgreSQL
     const adapter = new PrismaPg(pool);
 
+    const logLevels: Prisma.LogLevel[] = ['error', 'warn'];
+
+    if (process.env.PRISMA_LOG_QUERY === 'true') {
+      logLevels.push('query');
+    }
+
     super({
       adapter,
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error', 'warn'],
+      log: logLevels,
     });
   }
 

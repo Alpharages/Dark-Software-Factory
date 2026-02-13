@@ -239,10 +239,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
         return true;
       }
 
-      // For TL, QA, VIEWER - additional logic can be added here
       // For now, allow access if they have any role (already authenticated)
       // TODO: Implement project membership/assignment check
-      return false;
+      this.logger.debug(`User ${userId} roles: ${roles.join(', ')}. Defaulting to allowed access.`);
+      return true;
     } catch (error) {
       // Project not found or other error
       this.logger.warn(

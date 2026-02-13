@@ -943,6 +943,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     projectId: string | null,
     currentStep: string,
     percentComplete: number,
+    status: string = ExecutionStatus.IN_PROGRESS,
   ): Promise<void> {
     if (!this.realtimeService) {
       return;
@@ -971,16 +972,24 @@ export class ExecutionTrackerService implements OnModuleInit {
       return;
     }
 
-    // Resolve projectId if missing (for correct room routing)
+    // Resolve missing fields (projectId, aiProvider, startedAt)
     let resolvedProjectId = projectId;
-    if (!resolvedProjectId) {
+    let resolvedAiProvider: string | undefined;
+    let resolvedStartedAt: string | undefined;
+
+    // Check if we need to fetch execution details
+    if (!resolvedProjectId || !resolvedAiProvider || !resolvedStartedAt) {
       try {
         const execution = await this.repository.findById(executionId);
-        if (execution?.ticket?.project_id) {
-          resolvedProjectId = execution.ticket.project_id;
+        if (execution) {
+          if (!resolvedProjectId && execution.ticket?.project_id) {
+            resolvedProjectId = execution.ticket.project_id;
+          }
+          resolvedAiProvider = execution.ai_provider;
+          resolvedStartedAt = execution.started_at ? execution.started_at.toISOString() : undefined;
         }
       } catch (err) {
-        this.logger.warn(`Failed to resolve projectId for execution ${executionId}: ${err}`);
+        this.logger.warn(`Failed to resolve details for execution ${executionId}: ${err}`);
       }
     }
 
@@ -993,13 +1002,38 @@ export class ExecutionTrackerService implements OnModuleInit {
       projectId: resolvedProjectId,
       currentStep,
       percentComplete,
+      status,
       lastUpdated: new Date().toISOString(),
+      aiProvider: resolvedAiProvider,
+      startedAt: resolvedStartedAt,
+      progress: { currentStep, percentComplete }, // Include progress object
     };
+
+    // Story 13.3.1: Persist progress to DB for recovery
+    try {
+      // We don't await this to avoid blocking the event loop
+      // Optimistic update - in high load we might want to debounce this
+      this.repository
+        .update(executionId, {
+          progress: {
+            currentStep,
+            percentComplete,
+            lastUpdated: event.lastUpdated,
+          },
+        })
+        .catch((err) => {
+          this.logger.warn(`Failed to persist progress for ${executionId}: ${err.message}`);
+        });
+    } catch (e) {
+      // Ignore sync errors
+      this.logger.warn(`Failed to persist progress for ${executionId}: ${e}`);
+    }
 
     this.logger.log(
       `[ExecutionTracker] Emitting progress for ${executionId}: ${currentStep} (${percentComplete}%)`,
     );
 
+    // 1. Emit to Project/Role rooms via RealtimeService (New Architecture)
     await this.emitWebSocketEvent<ExecutionProgressEvent>('execution.progress', event);
   }
 }

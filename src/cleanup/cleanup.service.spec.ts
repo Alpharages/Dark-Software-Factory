@@ -48,6 +48,7 @@ describe('CleanupService', () => {
     // Story 23.2 fields
     container_id: 'container-abc123',
     debug_mode: false,
+    progress: null,
   };
 
   const mockMetricHistogram = {

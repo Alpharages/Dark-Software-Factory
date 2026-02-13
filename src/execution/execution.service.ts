@@ -8,6 +8,7 @@ import {
   IExecutionFailure,
   IExecutionTimeout,
   IStateTransition,
+  IExecutionProgress,
 } from './interfaces';
 import {
   StartExecutionDto,
@@ -421,10 +422,10 @@ export class ExecutionService {
     return {
       id: execution.id,
       ticketId: execution.ticket_id,
-      provider: execution.ai_provider,
+      aiProvider: execution.ai_provider,
       status: execution.status,
       confidenceScore: execution.confidence_score,
-      startedAt: execution.started_at,
+      startTime: execution.started_at,
       completedAt: execution.completed_at,
       failedAt: execution.failed_at,
       errorMessage: execution.error_message,
@@ -432,6 +433,9 @@ export class ExecutionService {
       filesChanged: execution.files_changed as string[] | null,
       createdAt: execution.created_at,
       updatedAt: execution.updated_at,
+      currentStep:
+        (execution.progress as unknown as IExecutionProgress)?.currentStep ?? 'Initializing...',
+      percentComplete: (execution.progress as unknown as IExecutionProgress)?.percentComplete ?? 0,
     };
   }
   /**

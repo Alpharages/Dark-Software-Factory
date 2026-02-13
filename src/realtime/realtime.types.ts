@@ -50,7 +50,14 @@ export interface ExecutionProgressEvent {
   projectId: string | null;
   currentStep: string;
   percentComplete: number; // 0-100
+  status: string;
   lastUpdated: string;
+  aiProvider?: string;
+  startedAt?: string;
+  progress?: {
+    currentStep: string;
+    percentComplete: number;
+  };
 }
 
 export interface ExecutionCompletedEvent {

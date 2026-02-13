@@ -4,6 +4,7 @@ export interface ExecutionProgressEvent {
   projectId: string | null;
   currentStep: string;
   percentComplete: number;
+  status: string;
   lastUpdated: string;
   metadata?: {
     startTime?: Date;

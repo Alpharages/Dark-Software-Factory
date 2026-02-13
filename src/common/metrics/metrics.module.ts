@@ -207,7 +207,7 @@ import {
     makeCounterProvider({
       name: COST_METRICS.TOTAL,
       help: 'Total cost in USD',
-      labelNames: [LABELS.PROVIDER, 'model', 'agent_name', 'operation_type'],
+      labelNames: [LABELS.PROVIDER, 'model', 'agent_name', 'operation_type', LABELS.PROJECT],
     }),
     makeGaugeProvider({
       name: COST_METRICS.BUDGET_UTILIZATION,

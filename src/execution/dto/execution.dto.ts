@@ -127,10 +127,10 @@ export class FailExecutionDto {
 export class ExecutionResponseDto {
   id!: string;
   ticketId!: string;
-  provider!: AIProvider;
+  aiProvider!: AIProvider;
   status!: ExecutionStatus;
   confidenceScore!: number | null;
-  startedAt!: Date | null;
+  startTime!: Date | null;
   completedAt!: Date | null;
   failedAt!: Date | null;
   errorMessage!: string | null;
@@ -138,6 +138,8 @@ export class ExecutionResponseDto {
   filesChanged!: string[] | null;
   createdAt!: Date;
   updatedAt!: Date;
+  currentStep?: string;
+  percentComplete?: number;
 }
 
 /**

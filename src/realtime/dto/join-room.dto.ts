@@ -18,6 +18,5 @@ export class JoinProjectDto {
  */
 export class LeaveProjectDto {
   @IsString()
-  @IsNotEmpty()
   projectId!: string;
 }

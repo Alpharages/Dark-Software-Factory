@@ -154,7 +154,7 @@ export const envValidationSchema = Joi.object({
   // Story 2.7: Anthropic API Configuration (optional - provider disabled if not set)
   ANTHROPIC_MODEL: Joi.string().default('claude-sonnet-4-20250514'),
   ANTHROPIC_MAX_TOKENS: Joi.number().min(1000).max(100000).default(8000),
-  ANTHROPIC_TIMEOUT_MS: Joi.number().min(30000).max(300000).default(120000),
+  ANTHROPIC_TIMEOUT_MS: Joi.number().min(30000).max(3000000).default(120000),
   CLAUDE_WORKSPACES_ROOT: Joi.string().default('/tmp/claude-workspaces'),
 
   // Story 2.11: Quality Scoring Configuration (optional - has sensible defaults)

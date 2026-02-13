@@ -56,6 +56,7 @@ describe('ExecutionService', () => {
     // Story 23.2: Container cleanup tracking
     container_id: null,
     debug_mode: false,
+    progress: null, // Story 13.3.1
   };
 
   const mockTransition: IStateTransition = {

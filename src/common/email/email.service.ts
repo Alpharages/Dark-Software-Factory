@@ -4,7 +4,7 @@ import * as nodemailer from 'nodemailer';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as handlebars from 'handlebars';
-import { UserInvitationModel as UserInvitation } from '../../prisma/models/UserInvitation';
+import { UserInvitation } from '@/prisma/client';
 
 @Injectable()
 export class EmailService implements OnModuleInit {

@@ -59,7 +59,7 @@ export class AdrReviewListener implements OnModuleInit {
         ? await this.executionService.getExecution(event.previousExecutionId)
         : null;
 
-      const provider = previousExecution?.provider || AIProvider.CURSOR_HEADLESS;
+      const provider = previousExecution?.aiProvider || AIProvider.CURSOR_HEADLESS;
 
       // 3. Generate NEW Prompt with Feedback
       // We need to re-generate the prompt payload.

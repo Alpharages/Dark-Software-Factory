@@ -14,7 +14,7 @@ import { Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { SystemConfigService } from '@/system-settings/system-config.service';
 import { SentryService } from '@/common/sentry/sentry.service';
-import { ProductionErrorModel as ProductionError } from '@/prisma/models';
+import { ProductionError } from '@/prisma/client';
 import { ParsedStackTrace, StackTraceFrame, ErrorContext, CommitInfo } from './interfaces';
 
 import { execFile } from 'child_process';

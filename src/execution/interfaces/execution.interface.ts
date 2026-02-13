@@ -125,3 +125,12 @@ export interface IExecutionAuditLog {
   afterState: Record<string, unknown>;
   createdAt: Date;
 }
+
+/**
+ * Execution progress JSON structure
+ */
+export interface IExecutionProgress {
+  currentStep: string;
+  percentComplete: number;
+  [key: string]: unknown;
+}
