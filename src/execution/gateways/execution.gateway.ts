@@ -39,10 +39,36 @@ export interface ExecutionLogPayload {
   source: 'stdout' | 'stderr';
 }
 
+export type ActivityCategory =
+  | 'SETUP'
+  | 'DEPENDENCY'
+  | 'GIT'
+  | 'AI_THINKING'
+  | 'AI_CODING'
+  | 'BUILD'
+  | 'TEST'
+  | 'LINT'
+  | 'FILE_OP'
+  | 'DEPLOY'
+  | 'ERROR'
+  | 'SYSTEM';
+
+export interface ContainerActivityPayload {
+  executionId: string;
+  ticketId: string;
+  timestamp: string;
+  activity: string;
+  detail?: string;
+  category: ActivityCategory;
+  icon: string;
+  suggestedPercent?: number;
+}
+
 export interface ServerToClientEvents {
   'execution-progress-update': (data: ExecutionProgressPayload) => void;
   'execution-completed': (data: { executionId: string; ticketId: string }) => void;
   'execution-log': (data: ExecutionLogPayload) => void;
+  'execution-activity': (data: ContainerActivityPayload) => void;
 }
 
 export interface ClientToServerEvents {
@@ -191,6 +217,16 @@ export class ExecutionGateway implements OnGatewayConnection, OnGatewayDisconnec
   emitCompletion(executionId: string, ticketId: string) {
     this.logger.log(`Emitting completion for ticket ${ticketId}`);
     this.server.to(`ticket_${ticketId}`).emit('execution-completed', { executionId, ticketId });
+  }
+
+  /**
+   * Emit a structured container activity event for PM dashboard
+   * These are human-readable, high-level activity updates (not raw logs)
+   */
+  emitActivity(payload: ContainerActivityPayload): void {
+    // Emit to ticket room (so dashboard cards update) AND execution log room
+    this.server.to(`ticket_${payload.ticketId}`).emit('execution-activity', payload);
+    this.server.to(`execution_logs_${payload.executionId}`).emit('execution-activity', payload);
   }
 
   /**

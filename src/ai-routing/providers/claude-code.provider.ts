@@ -31,6 +31,7 @@ import { CircuitBreaker, CircuitState } from './circuit-breaker';
 import { PtyExecutionService, PtySpawnError } from '../services/pty-execution.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { BaseAIProvider, ExecutionStage } from './base-ai.provider';
+import { ContainerOutputParser } from './container-output-parser';
 
 @Injectable()
 export class ClaudeCodeProvider
@@ -286,11 +287,12 @@ export class ClaudeCodeProvider
         throw err;
       }
 
-      // Monitor output in real-time
+      // Monitor output in real-time with rich activity detection
       const outputChunks: string[] = [];
       let spawnError: Error | undefined;
       let hasEmittedOutputProgress = false;
       let lastKnownStage = 'Starting';
+      const outputParser = new ContainerOutputParser();
 
       output$.subscribe({
         next: (chunk) => {
@@ -298,53 +300,46 @@ export class ClaudeCodeProvider
           // Stream output to logs for real-time visibility (AC #4)
           if (chunk.trim()) {
             const cleanChunk = chunk.trim();
-            // Log output at INFO level temporarily to debug OOM/Stage issues
             this.logger.log(`[${executionId}] Container Output: ${cleanChunk}`);
 
-            const lowerChunk = cleanChunk.toLowerCase();
+            // ── Rich Activity Detection ──────────────────────
+            // Parse raw output into structured PM-friendly activities
+            const activity = outputParser.parse(cleanChunk);
+            if (activity) {
+              lastKnownStage = activity.activity;
 
-            // Stage Detection Logic
-            if (lowerChunk.includes('cloning')) {
-              lastKnownStage = 'Cloning repository';
-              this.executionTracker
-                .emitProgress(executionId, ticketId, null, 'Cloning repository...', 30)
-                .catch(() => {});
-            } else if (lowerChunk.includes('planning') || lowerChunk.includes('thinking')) {
-              lastKnownStage = 'AI Planning';
-              this.emitStageProgress(executionId, ticketId, ExecutionStage.AI_PLANNING).catch(
-                () => {},
+              // Emit structured activity event for PM dashboard timeline
+              this.executionTracker.emitActivity(
+                executionId,
+                ticketId,
+                activity.activity,
+                activity.category,
+                activity.icon,
+                activity.detail,
+                activity.suggestedPercent,
               );
-            } else if (lowerChunk.includes('writing') || lowerChunk.includes('editing')) {
-              lastKnownStage = 'Writing code';
-              this.emitStageProgress(executionId, ticketId, ExecutionStage.AI_WRITING_CODE).catch(
-                () => {},
-              );
-            } else if (
-              lowerChunk.includes('running') ||
-              lowerChunk.includes('verifying') ||
-              lowerChunk.includes('test')
-            ) {
-              lastKnownStage = 'Running verification';
-              this.emitStageProgress(executionId, ticketId, ExecutionStage.AI_VERIFICATION).catch(
-                () => {},
-              );
-            } else {
-              // Log unrecognized chunks to help refine stage detection
-              this.logger.log(
-                `[${executionId}] Unrecognized stage output: ${cleanChunk.substring(0, 50)}...`,
-              );
+
+              // Also update the legacy progress event for the progress bar
+              if (activity.suggestedPercent !== undefined) {
+                this.executionTracker
+                  .emitProgress(
+                    executionId,
+                    ticketId,
+                    null,
+                    activity.activity,
+                    activity.suggestedPercent,
+                  )
+                  .catch(() => {});
+              }
+
+              // Map to legacy ExecutionStage for backward compatibility
+              this.emitLegacyStageIfApplicable(executionId, ticketId, activity.category);
             }
 
             if (!hasEmittedOutputProgress) {
               hasEmittedOutputProgress = true;
               this.executionTracker
-                .emitProgress(
-                  executionId,
-                  ticketId,
-                  null,
-                  'AI is thinking/coding...',
-                  25, // Started
-                )
+                .emitProgress(executionId, ticketId, null, 'Container started — processing...', 5)
                 .catch(() => {});
             }
           }
@@ -608,6 +603,30 @@ export class ClaudeCodeProvider
       workspacePath,
       error,
     };
+  }
+
+  /**
+   * Map rich activity categories to legacy ExecutionStage enums
+   * for backward compatibility with existing progress listeners
+   */
+  private emitLegacyStageIfApplicable(
+    executionId: string,
+    ticketId: string,
+    category: string,
+  ): void {
+    const categoryToStage: Record<string, ExecutionStage> = {
+      AI_THINKING: ExecutionStage.AI_PLANNING,
+      AI_CODING: ExecutionStage.AI_WRITING_CODE,
+      TEST: ExecutionStage.AI_VERIFICATION,
+      LINT: ExecutionStage.AI_VERIFICATION,
+    };
+
+    const stage = Object.prototype.hasOwnProperty.call(categoryToStage, category)
+      ? categoryToStage[category as keyof typeof categoryToStage]
+      : undefined;
+    if (stage) {
+      this.emitStageProgress(executionId, ticketId, stage).catch(() => {});
+    }
   }
 
   private parseError(error: unknown): IAIExecutionError {

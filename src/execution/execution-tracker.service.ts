@@ -901,6 +901,33 @@ export class ExecutionTrackerService implements OnModuleInit {
   }
 
   /**
+   * Emit a structured container activity event for PM dashboard
+   * These provide human-readable, icon-tagged updates (not raw logs)
+   */
+  emitActivity(
+    executionId: string,
+    ticketId: string,
+    activity: string,
+    category: string,
+    icon: string,
+    detail?: string,
+    suggestedPercent?: number,
+  ): void {
+    if (this.executionGateway) {
+      this.executionGateway.emitActivity({
+        executionId,
+        ticketId,
+        timestamp: new Date().toISOString(),
+        activity,
+        detail,
+        category: category as import('./gateways/execution.gateway').ActivityCategory,
+        icon,
+        suggestedPercent,
+      });
+    }
+  }
+
+  /**
    * Check if there are active log subscribers for an execution
    */
   hasLogSubscribers(executionId: string): boolean {
