@@ -904,7 +904,7 @@ export class ExecutionTrackerService implements OnModuleInit {
    * Emit a structured container activity event for PM dashboard
    * These provide human-readable, icon-tagged updates (not raw logs)
    */
-  emitActivity(
+  async emitActivity(
     executionId: string,
     ticketId: string,
     activity: string,
@@ -912,18 +912,46 @@ export class ExecutionTrackerService implements OnModuleInit {
     icon: string,
     detail?: string,
     suggestedPercent?: number,
-  ): void {
+  ): Promise<void> {
+    const payload: import('./gateways/execution.gateway').ContainerActivityPayload = {
+      executionId,
+      ticketId,
+      timestamp: new Date().toISOString(),
+      activity,
+      detail,
+      category: category as import('./gateways/execution.gateway').ActivityCategory,
+      icon,
+      suggestedPercent,
+      projectId: null,
+    };
+
+    // Resolve projectId from DB so we can route to the correct project room
+    try {
+      const execution = await this.repository.findById(executionId);
+      if (execution?.ticket?.project_id) {
+        payload.projectId = execution.ticket.project_id;
+      }
+    } catch {
+      // Non-critical: continue without projectId
+    }
+
+    // 1. Emit to project/role rooms via RealtimeService (dashboard cards get these)
+    if (this.realtimeService) {
+      try {
+        if (payload.projectId) {
+          this.realtimeService.emitToProject(payload.projectId, 'execution-activity', payload);
+        } else {
+          this.realtimeService.emitToRole('ADMIN', 'execution-activity', payload);
+          this.realtimeService.emitToRole('MANAGER', 'execution-activity', payload);
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to emit activity via realtimeService: ${err}`);
+      }
+    }
+
+    // 2. Emit to ticket & execution_logs rooms via ExecutionGateway (log viewer sidebar gets these)
     if (this.executionGateway) {
-      this.executionGateway.emitActivity({
-        executionId,
-        ticketId,
-        timestamp: new Date().toISOString(),
-        activity,
-        detail,
-        category: category as import('./gateways/execution.gateway').ActivityCategory,
-        icon,
-        suggestedPercent,
-      });
+      this.executionGateway.emitActivity(payload);
     }
   }
 

@@ -309,15 +309,17 @@ export class ClaudeCodeProvider
               lastKnownStage = activity.activity;
 
               // Emit structured activity event for PM dashboard timeline
-              this.executionTracker.emitActivity(
-                executionId,
-                ticketId,
-                activity.activity,
-                activity.category,
-                activity.icon,
-                activity.detail,
-                activity.suggestedPercent,
-              );
+              this.executionTracker
+                .emitActivity(
+                  executionId,
+                  ticketId,
+                  activity.activity,
+                  activity.category,
+                  activity.icon,
+                  activity.detail,
+                  activity.suggestedPercent,
+                )
+                .catch(() => {});
 
               // Also update the legacy progress event for the progress bar
               if (activity.suggestedPercent !== undefined) {
