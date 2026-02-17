@@ -113,7 +113,9 @@ export class GitHubPROrchestrator {
       });
 
       if (!result.success || !result.response) {
-        throw new Error(`AI provider failed: ${result.error || 'No response'}`);
+        throw new Error(
+          `AI provider failed: ${result.error?.message || result.error ? JSON.stringify(result.error) : 'No response'}`,
+        );
       }
 
       // Parse AI response to extract PR info

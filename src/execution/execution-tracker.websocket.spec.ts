@@ -6,8 +6,6 @@ import { ExecutionStateMachine } from './state-machine';
 import { RealtimeService } from '../realtime/realtime.service';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ExecutionStatus, AIProvider } from '@/prisma/client';
-import { ExecutionGateway } from './gateways/execution.gateway';
-
 describe('ExecutionTrackerService WebSocket Streaming', () => {
   // Variables used in tests via closure, but defined here for potential shared setup access
   // if strictly unused in describe block scope but used in beforeEach/tests,
@@ -48,10 +46,6 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
     transition: jest.fn(),
   };
 
-  const mockGateway = {
-    hasLogSubscribers: jest.fn(),
-  };
-
   const mockMetrics = {
     inc: jest.fn(),
     startTimer: jest.fn(() => jest.fn()),
@@ -90,10 +84,6 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
         {
           provide: RealtimeService,
           useValue: mockRealtimeService,
-        },
-        {
-          provide: ExecutionGateway,
-          useValue: mockGateway,
         },
         {
           provide: 'PROM_METRIC_DSF_EXECUTION_TOTAL',

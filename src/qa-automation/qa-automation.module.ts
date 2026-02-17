@@ -55,6 +55,7 @@ import { AiCodeReviewService } from './services/ai-code-review.service'; // Stor
 import {
   QaSamplingConfigController,
   QaReviewQueueController,
+  QaReviewSamplesController,
 } from './controllers/qa-review.controller';
 import {
   QaReviewQueueConsumer,
@@ -108,6 +109,8 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     // Story 8.1: QA Review Queue & Sampling Controllers
     QaSamplingConfigController,
     QaReviewQueueController,
+    // Story 8.UI: Samples endpoints for Lead QA Review Dashboard
+    QaReviewSamplesController,
   ],
   providers: [
     // Story 3.10 - AI QA Orchestrator (replaces custom services)

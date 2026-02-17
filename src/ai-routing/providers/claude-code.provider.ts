@@ -173,6 +173,7 @@ export class ClaudeCodeProvider
         'claude',
         '--output-format',
         'stream-json',
+        '--verbose',
         '--model',
         this.model,
         '--dangerously-skip-permissions',
@@ -318,7 +319,14 @@ export class ClaudeCodeProvider
         heartbeatCount++;
 
         this.executionTracker
-          .emitActivity(executionId, ticketId, msg, 'AI_THINKING', 'brain', `Running for ${silentDurationSec}s`)
+          .emitActivity(
+            executionId,
+            ticketId,
+            msg,
+            'AI_THINKING',
+            'brain',
+            `Running for ${silentDurationSec}s`,
+          )
           .catch(() => {});
 
         // Advance progress slowly during silent periods (25% → 55% over ~5min)
@@ -598,15 +606,183 @@ export class ClaudeCodeProvider
   }
 
   /**
-   * Execute prompt (Standalone)
+   * Execute standalone AI prompt on an existing workspace.
+   *
+   * Spawns Claude CLI in a Docker container with the workspace mounted,
+   * using text output for simple prompt → response flow.
+   *
+   * Use cases:
+   * - Commit message generation
+   * - PR description generation
+   * - Code review comments
+   * - Any AI task on existing code
    */
-  async executePrompt(_input: IAIPromptExecutionInput): Promise<IAIPromptExecutionResult> {
-    return {
-      success: false,
-      response:
-        'Standalone prompt execution not fully implemented for CLI provider in this iteration',
-      durationMs: 0,
-    };
+  async executePrompt(input: IAIPromptExecutionInput): Promise<IAIPromptExecutionResult> {
+    const { workspacePath, prompt, timeoutMs, contextFiles } = input;
+    const timeout = timeoutMs || 120_000; // 2 minutes for standalone prompts
+    const startTime = Date.now();
+
+    this.logger.log(`Executing standalone prompt on workspace: ${workspacePath}`);
+
+    // Check if provider is configured
+    if (!this.isConfigured) {
+      this.logger.warn('Claude provider not configured - cannot execute standalone prompt');
+      return {
+        success: false,
+        response: 'Claude provider not configured',
+        durationMs: 0,
+        error: {
+          code: AIErrorCode.CLI_NOT_FOUND,
+          message: 'Claude provider not configured - Missing ANTHROPIC_API_KEY or BASE_URL',
+          isRetryable: false,
+        },
+      };
+    }
+
+    try {
+      // Build scoped prompt with optional context files
+      let scopedPrompt = prompt;
+      if (contextFiles && contextFiles.length > 0) {
+        scopedPrompt = `Context files to consider:\n${contextFiles.map((f) => `- ${f}`).join('\n')}\n\n${prompt}`;
+      }
+
+      // Build Claude CLI args for text output (simpler than full execution's stream-json)
+      const claudeArgs = [
+        'claude',
+        '--output-format',
+        'text',
+        '--model',
+        this.model,
+        '--dangerously-skip-permissions',
+        '--no-session-persistence',
+        scopedPrompt,
+      ];
+
+      // Wrap in shell command (same pattern as execute())
+      const command = '/bin/sh';
+      const escapedArgs = claudeArgs
+        .map((arg) => `"${arg.replace(/(["'$`\\])/g, '\\$1')}"`)
+        .join(' ');
+      const args = ['-c', escapedArgs];
+
+      this.logger.debug(`Spawning Claude for standalone prompt in container`);
+
+      // Environment variables for the container
+      const env: Record<string, string> = {
+        ANTHROPIC_API_KEY: this.apiKey || '',
+        ANTHROPIC_BASE_URL: this.baseURL || '',
+        CLAUDE_CODE_REMOTE: 'false',
+        NODE_OPTIONS: '--max-old-space-size=2048',
+      };
+
+      if (this.baseURL && this.baseURL.includes('localhost')) {
+        env.ANTHROPIC_AUTH_TOKEN = 'ollama';
+      }
+
+      // Spawn in container with existing workspace
+      const containerResult = await this.ptyService.spawnInContainer(command, args, {
+        executionId: `prompt-${Date.now()}`,
+        cols: 120,
+        rows: 40,
+        env,
+        workspacePath,
+      });
+
+      const { pid, output$, exit$, containerId } = containerResult;
+
+      // Check if spawn failed immediately
+      if (pid === -1) {
+        return {
+          success: false,
+          response: '',
+          durationMs: Date.now() - startTime,
+          error: {
+            code: AIErrorCode.CLI_NOT_FOUND,
+            message: "'claude' CLI not found in container for standalone prompt execution",
+            isRetryable: false,
+          },
+        };
+      }
+
+      this.logger.log(`Standalone prompt container spawned: ${containerId} (pseudo-PID ${pid})`);
+
+      // Collect output
+      const outputChunks: string[] = [];
+      let spawnError: Error | undefined;
+
+      output$.subscribe({
+        next: (chunk) => {
+          outputChunks.push(chunk);
+          if (chunk.trim()) {
+            this.logger.debug(`[prompt] Container Output: ${chunk.trim().substring(0, 200)}`);
+          }
+        },
+        error: (err: Error) => {
+          spawnError = err;
+          this.logger.error(`[prompt] Container Error: ${err.message}`);
+        },
+      });
+
+      // Wait for exit with timeout
+      const exitPromise = lastValueFrom(exit$);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(
+          () => reject(new Error(`Standalone prompt execution timed out after ${timeout}ms`)),
+          timeout,
+        );
+      });
+
+      let exitResult: { exitCode: number; signal?: number };
+      try {
+        exitResult = (await Promise.race([exitPromise, timeoutPromise])) as {
+          exitCode: number;
+          signal?: number;
+        };
+      } catch (raceError) {
+        if (spawnError) throw spawnError;
+        throw raceError;
+      }
+
+      if (spawnError) throw spawnError;
+
+      const fullOutput = outputChunks.join('');
+      const durationMs = Date.now() - startTime;
+
+      if (exitResult.exitCode !== 0) {
+        this.logger.warn(
+          `Standalone prompt CLI exited with code ${exitResult.exitCode}. Output: ${fullOutput.substring(fullOutput.length - 300)}`,
+        );
+        return {
+          success: false,
+          response: fullOutput,
+          durationMs,
+          error: {
+            code: AIErrorCode.PROCESS_CRASH,
+            message: `Claude CLI exited with code ${exitResult.exitCode} during standalone prompt`,
+            isRetryable: exitResult.exitCode !== 127,
+          },
+        };
+      }
+
+      this.logger.log(`Standalone prompt execution completed in ${durationMs}ms`);
+
+      return {
+        success: true,
+        response: fullOutput.trim(),
+        durationMs,
+      };
+    } catch (error: unknown) {
+      const durationMs = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Standalone prompt execution failed: ${errorMessage}`);
+
+      return {
+        success: false,
+        response: '',
+        durationMs,
+        error: this.parseError(error),
+      };
+    }
   }
 
   async checkHealth(): Promise<IProviderHealthStatus> {
@@ -783,21 +959,57 @@ export class ClaudeCodeProvider
         const shortCmd = cmd.length > 80 ? cmd.substring(0, 80) + '...' : cmd;
         // Categorize common bash commands
         if (/npm\s+(install|i|ci)\b/.test(cmd) || /pnpm\s+(install|i|add)\b/.test(cmd)) {
-          return { activity: 'Installing dependencies', detail: shortCmd, category: 'DEPENDENCY', icon: 'package', suggestedPercent: 18 };
+          return {
+            activity: 'Installing dependencies',
+            detail: shortCmd,
+            category: 'DEPENDENCY',
+            icon: 'package',
+            suggestedPercent: 18,
+          };
         }
         if (/git\s+(commit|push|pull|clone|checkout)\b/.test(cmd)) {
-          return { activity: 'Running git command', detail: shortCmd, category: 'GIT', icon: 'git-branch', suggestedPercent: 80 };
+          return {
+            activity: 'Running git command',
+            detail: shortCmd,
+            category: 'GIT',
+            icon: 'git-branch',
+            suggestedPercent: 80,
+          };
         }
         if (/\b(jest|vitest|mocha|pytest|cargo\s+test)\b/.test(cmd)) {
-          return { activity: 'Running tests', detail: shortCmd, category: 'TEST', icon: 'test-tube-2', suggestedPercent: 75 };
+          return {
+            activity: 'Running tests',
+            detail: shortCmd,
+            category: 'TEST',
+            icon: 'test-tube-2',
+            suggestedPercent: 75,
+          };
         }
         if (/\b(eslint|prettier|biome|lint)\b/.test(cmd)) {
-          return { activity: 'Running linter', detail: shortCmd, category: 'LINT', icon: 'check-circle', suggestedPercent: 70 };
+          return {
+            activity: 'Running linter',
+            detail: shortCmd,
+            category: 'LINT',
+            icon: 'check-circle',
+            suggestedPercent: 70,
+          };
         }
         if (/\b(tsc|webpack|vite|rollup|esbuild|next\s+build|prisma\s+generate)\b/.test(cmd)) {
-          return { activity: 'Building project', detail: shortCmd, category: 'BUILD', icon: 'hammer', suggestedPercent: 65 };
+          return {
+            activity: 'Building project',
+            detail: shortCmd,
+            category: 'BUILD',
+            icon: 'hammer',
+            suggestedPercent: 65,
+          };
         }
-        return { activity: 'Running command', detail: shortCmd, category: 'SYSTEM', icon: 'terminal', suggestedPercent: 60 };
+        return {
+          activity: 'Running command',
+          detail: shortCmd,
+          category: 'SYSTEM',
+          icon: 'terminal',
+          suggestedPercent: 60,
+        };
       }
 
       case 'MultiEdit':

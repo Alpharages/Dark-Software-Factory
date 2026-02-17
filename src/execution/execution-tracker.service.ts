@@ -7,7 +7,7 @@ import { Observable, Subscription } from 'rxjs';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
-import { ExecutionGateway, LogLevel } from './gateways/execution.gateway';
+import { LogLevel, detectLogLevel } from './gateways/execution.gateway';
 import {
   IStartExecutionInput,
   IExecutionCompletion,
@@ -55,6 +55,18 @@ export class ExecutionTrackerService implements OnModuleInit {
   /** Track last progress step to force emission on change */
   private lastProgressStepMap = new Map<string, string>();
 
+  /** Log throttle buffer for streamExecutionLogs (executionId:source → buffered message + timer) */
+  private logStreamBuffer = new Map<string, { message: string; timer: NodeJS.Timeout }>();
+
+  /** Throttle interval for raw log streaming (ms) */
+  private readonly logStreamThrottleMs: number = parseInt(
+    process.env.LOG_STREAM_THROTTLE_MS || '100',
+    10,
+  );
+
+  /** Cache resolved projectIds for log emission to avoid repeated DB lookups */
+  private executionProjectIdCache = new Map<string, string | null>();
+
   constructor(
     private readonly repository: ExecutionRepository,
     private readonly stateMachine: ExecutionStateMachine,
@@ -74,8 +86,6 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly containerExecDurationHistogram: Histogram<string>,
     @InjectMetric('websocket_emission_errors_total')
     private readonly websocketEmissionErrorsCounter: Counter<string>,
-    @Optional()
-    private readonly executionGateway?: ExecutionGateway,
     @Optional()
     private readonly realtimeService?: RealtimeService,
   ) {}
@@ -762,8 +772,11 @@ export class ExecutionTrackerService implements OnModuleInit {
   }
 
   /**
-   * Stream execution logs from container output to WebSocket gateway
-   * AC 1, 3, 5: Pipe container output to ExecutionGateway for real-time streaming
+   * Stream execution logs from container output to RealtimeService
+   * AC 1, 3, 5: Pipe container output to default WebSocket namespace for real-time streaming
+   *
+   * Uses throttled buffering (default 100ms) to avoid flooding frontend clients.
+   * Emits 'execution.log' events to project rooms and role-based rooms via RealtimeService.
    *
    * @param executionId Execution ID
    * @param ticketId Ticket ID
@@ -780,10 +793,13 @@ export class ExecutionTrackerService implements OnModuleInit {
     // Clean up any existing subscription for this execution
     this.cleanupExecutionLogs(executionId);
 
-    // If no gateway is available, just track bytes for metrics
-    if (!this.executionGateway) {
+    // Resolve projectId once for routing (cached for subsequent emissions)
+    this.resolveProjectId(executionId);
+
+    // If no RealtimeService is available, just track bytes for metrics
+    if (!this.realtimeService) {
       this.logger.warn(
-        `ExecutionGateway not available, logs will not be streamed for ${executionId}`,
+        `RealtimeService not available, logs will not be streamed for ${executionId}`,
       );
 
       const subscription = output$.subscribe({
@@ -821,19 +837,23 @@ export class ExecutionTrackerService implements OnModuleInit {
         const byteLength = Buffer.byteLength(data, 'utf8');
         this.containerLogBytesCounter.inc({ execution_id: executionId, source }, byteLength);
 
-        // Emit log via gateway
-        this.executionGateway?.emitLog(executionId, ticketId, data, source);
+        // Buffer and throttle log emissions via RealtimeService
+        this.bufferAndEmitLog(executionId, ticketId, data, source);
       },
       error: (err: Error) => {
         const errorMessage = err instanceof Error ? err.message : String(err);
         this.logger.error(`[${executionId}] Container output stream error: ${errorMessage}`);
 
-        // Emit error log via gateway
-        this.executionGateway?.emitErrorLog(
+        // Flush buffered logs before emitting error
+        this.flushLogBuffer(executionId, source);
+
+        // Emit error log immediately via RealtimeService
+        this.emitLogViaRealtime(
           executionId,
           ticketId,
           `Stream error: ${errorMessage}`,
           'stderr',
+          LogLevel.ERROR,
         );
 
         // Track duration
@@ -843,11 +863,15 @@ export class ExecutionTrackerService implements OnModuleInit {
           durationSec,
         );
 
-        // Clean up subscription tracking
+        // Clean up
         this.activeLogSubscriptions.delete(executionId);
+        this.executionProjectIdCache.delete(executionId);
       },
       complete: () => {
         this.logger.debug(`[${executionId}] Container output stream completed`);
+
+        // Flush any remaining buffered logs
+        this.flushLogBuffer(executionId, source);
 
         // Track duration
         const durationSec = (Date.now() - startTime) / 1000;
@@ -856,8 +880,9 @@ export class ExecutionTrackerService implements OnModuleInit {
           durationSec,
         );
 
-        // Clean up subscription tracking
+        // Clean up
         this.activeLogSubscriptions.delete(executionId);
+        this.executionProjectIdCache.delete(executionId);
       },
     });
 
@@ -865,8 +890,10 @@ export class ExecutionTrackerService implements OnModuleInit {
 
     return {
       unsubscribe: () => {
+        this.flushLogBuffer(executionId, source);
         subscription.unsubscribe();
         this.activeLogSubscriptions.delete(executionId);
+        this.executionProjectIdCache.delete(executionId);
       },
     };
   }
@@ -895,9 +922,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     level: LogLevel = LogLevel.INFO,
     source: 'stdout' | 'stderr' = 'stdout',
   ): void {
-    if (this.executionGateway) {
-      this.executionGateway.emitLog(executionId, ticketId, message, source, level);
-    }
+    this.emitLogViaRealtime(executionId, ticketId, message, source, level);
   }
 
   /**
@@ -935,7 +960,7 @@ export class ExecutionTrackerService implements OnModuleInit {
       // Non-critical: continue without projectId
     }
 
-    // 1. Emit to project/role rooms via RealtimeService (dashboard cards get these)
+    // Emit to project/role rooms via RealtimeService (default namespace — where frontend listens)
     if (this.realtimeService) {
       try {
         if (payload.projectId) {
@@ -948,18 +973,144 @@ export class ExecutionTrackerService implements OnModuleInit {
         this.logger.warn(`Failed to emit activity via realtimeService: ${err}`);
       }
     }
+  }
 
-    // 2. Emit to ticket & execution_logs rooms via ExecutionGateway (log viewer sidebar gets these)
-    if (this.executionGateway) {
-      this.executionGateway.emitActivity(payload);
+  /**
+   * Check if there are active log subscribers for an execution.
+   * With RealtimeService (room-based), we always emit if the service is available
+   * — the room mechanism ensures only subscribed clients receive events.
+   */
+  hasLogSubscribers(_executionId: string): boolean {
+    return !!this.realtimeService;
+  }
+
+  // ============================================================================
+  // Log Streaming Helpers (RealtimeService-based, default namespace)
+  // ============================================================================
+
+  /**
+   * Resolve and cache projectId for an execution (avoids repeated DB lookups)
+   */
+  private resolveProjectId(executionId: string): void {
+    if (this.executionProjectIdCache.has(executionId)) return;
+
+    // Set null initially; async resolution will update cache when ready
+    this.executionProjectIdCache.set(executionId, null);
+
+    this.repository
+      .findById(executionId)
+      .then((execution) => {
+        if (execution?.ticket?.project_id) {
+          this.executionProjectIdCache.set(executionId, execution.ticket.project_id);
+        }
+      })
+      .catch(() => {
+        // Non-critical: continue without projectId, will use role-based rooms
+      });
+  }
+
+  /**
+   * Buffer a log message and emit after throttle interval.
+   * Prevents flooding the frontend with high-frequency container output.
+   */
+  private bufferAndEmitLog(
+    executionId: string,
+    ticketId: string,
+    message: string,
+    source: 'stdout' | 'stderr',
+  ): void {
+    const bufferKey = `${executionId}:${source}`;
+    const existing = this.logStreamBuffer.get(bufferKey);
+
+    if (existing) {
+      // Append to existing buffer, reset timer
+      clearTimeout(existing.timer);
+      existing.message += '\n' + message;
+    }
+
+    const timer = setTimeout(() => {
+      const entry = this.logStreamBuffer.get(bufferKey);
+      if (entry) {
+        const level = detectLogLevel(entry.message);
+        this.emitLogViaRealtime(executionId, ticketId, entry.message, source, level);
+        this.logStreamBuffer.delete(bufferKey);
+      }
+    }, this.logStreamThrottleMs);
+
+    if (existing) {
+      existing.timer = timer;
+    } else {
+      this.logStreamBuffer.set(bufferKey, { message, timer });
     }
   }
 
   /**
-   * Check if there are active log subscribers for an execution
+   * Flush any pending buffered log for an execution+source.
+   * Called on stream completion, error, or unsubscribe.
    */
-  hasLogSubscribers(executionId: string): boolean {
-    return this.executionGateway?.hasLogSubscribers(executionId) ?? false;
+  private flushLogBuffer(executionId: string, source: string): void {
+    const bufferKey = `${executionId}:${source}`;
+    const entry = this.logStreamBuffer.get(bufferKey);
+    if (entry) {
+      clearTimeout(entry.timer);
+      const level = detectLogLevel(entry.message);
+      // Derive ticketId from last known context (best-effort)
+      this.emitLogViaRealtime(executionId, '', entry.message, source as 'stdout' | 'stderr', level);
+      this.logStreamBuffer.delete(bufferKey);
+    }
+  }
+
+  /**
+   * Emit a single log event via RealtimeService to project/role rooms (default namespace).
+   * This is the replacement for ExecutionGateway.emitLog/emitLogImmediate.
+   */
+  private emitLogViaRealtime(
+    executionId: string,
+    ticketId: string,
+    message: string,
+    source: 'stdout' | 'stderr',
+    level: LogLevel = LogLevel.INFO,
+  ): void {
+    if (!this.realtimeService) return;
+
+    const projectId = this.executionProjectIdCache.get(executionId) ?? null;
+
+    const payload = {
+      executionId,
+      ticketId,
+      timestamp: new Date().toISOString(),
+      level: level.toString(),
+      message,
+      source,
+      projectId,
+    };
+
+    try {
+      if (projectId) {
+        this.realtimeService.emitToProject(projectId, 'execution.log', payload);
+      } else {
+        // Fallback: emit to role-based rooms so admins/devs always see logs
+        this.realtimeService.emitToRole('ADMIN', 'execution.log', payload);
+        this.realtimeService.emitToRole('DEVELOPER', 'execution.log', payload);
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to emit log via realtimeService: ${err}`);
+    }
+  }
+
+  /**
+   * Flush all pending log stream buffers (call on shutdown)
+   */
+  flushAllLogBuffers(): void {
+    for (const [key, entry] of this.logStreamBuffer) {
+      clearTimeout(entry.timer);
+      // Best-effort flush without ticketId
+      const [executionId] = key.split(':');
+      const source = key.includes(':stderr') ? 'stderr' : 'stdout';
+      const level = detectLogLevel(entry.message);
+      this.emitLogViaRealtime(executionId, '', entry.message, source as 'stdout' | 'stderr', level);
+    }
+    this.logStreamBuffer.clear();
   }
 
   /**

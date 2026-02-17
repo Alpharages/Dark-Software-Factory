@@ -7,6 +7,7 @@ import { GitHubPROrchestrator } from './github-pr-orchestrator.service';
 import { EXCHANGE_NAMES, ROUTING_KEYS } from '../../rabbitmq/rabbitmq.config';
 import * as amqp from 'amqplib';
 import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
+import { WorkspaceService } from '../../ai-routing/providers/workspace.service';
 
 interface GitHubPushTriggerMessage {
   executionId: string;
@@ -46,6 +47,7 @@ export class GitHubPushTriggerConsumer
     private readonly commitOrchestrator: GitHubCommitOrchestrator,
     private readonly prOrchestrator: GitHubPROrchestrator,
     private readonly executionTracker: ExecutionTrackerService,
+    private readonly workspaceService: WorkspaceService,
   ) {
     super();
   }
@@ -119,7 +121,11 @@ export class GitHubPushTriggerConsumer
       // Step 0: Create GitHubPush record (required by GitHubCommitOrchestrator)
       const execution = await this.prisma.execution.findUnique({
         where: { id: message.executionId },
-        include: { ticket: true },
+        include: {
+          ticket: {
+            include: { project: true },
+          },
+        },
       });
 
       if (!execution || !execution.ticket) {
@@ -129,11 +135,34 @@ export class GitHubPushTriggerConsumer
         return;
       }
 
+      // Get the actual repository URL from the Project (not project_id which is a UUID)
+      const repositoryUrl = execution.ticket.project?.github_repository_url || '';
+      if (!repositoryUrl) {
+        this.logger.error(`[${correlationId}] No github_repository_url found for project`, {
+          executionId: message.executionId,
+          projectId: execution.ticket.project_id,
+        });
+        return;
+      }
+
+      // Get the actual branch name from the workspace record (created during workspace setup)
+      // The workspace creates the branch as `feature/ticket-{ticketId}` — we must use
+      // the SAME branch name here, or the push will fail with "src refspec does not match any"
+      const workspace = await this.workspaceService.getWorkspace(message.executionId);
+      const branchName = workspace?.branchName || `feature/ticket-${message.ticketId}`;
+
+      this.logger.log(`[${correlationId}] Resolved push parameters`, {
+        executionId: message.executionId,
+        repositoryUrl,
+        branchName,
+        branchSource: workspace?.branchName ? 'workspace_record' : 'fallback',
+      });
+
       const githubPush = await this.prisma.gitHubPush.create({
         data: {
           execution_id: message.executionId,
-          repository: execution.ticket.project_id || '', // Use ticket's project_id as repo URL
-          branch_name: `feature/${message.ticketId}`,
+          repository: repositoryUrl,
+          branch_name: branchName,
           push_status: 'PENDING',
         },
       });
@@ -218,6 +247,20 @@ export class GitHubPushTriggerConsumer
 
       // Note: GitHubPROrchestrator already publishes deployment trigger event
       // No additional event publishing needed here
+
+      // CLEANUP: Now that code is safely pushed to GitHub, clean up the workspace.
+      // The workspace was preserved during execution.completed specifically for this push.
+      try {
+        await this.workspaceService.cleanupWorkspace(message.executionId, true);
+        this.logger.log(
+          `[${correlationId}] Workspace cleaned up after successful GitHub push for ${message.executionId}`,
+        );
+      } catch (cleanupError) {
+        // Non-blocking — code is already pushed, workspace cleanup failure is not critical
+        this.logger.warn(
+          `[${correlationId}] Workspace cleanup failed after push (non-blocking): ${(cleanupError as Error).message}`,
+        );
+      }
     } catch (_error) {
       const err = _error as Error;
       this.logger.error(

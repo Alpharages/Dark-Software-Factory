@@ -147,6 +147,11 @@ export default () => {
       selfHealing: process.env.FEATURE_SELF_HEALING === 'true',
       costTracking: process.env.FEATURE_COST_TRACKING === 'true',
       qualityGates: process.env.FEATURE_QUALITY_GATES === 'true',
+      // When true, automatically approves executions after QA passes,
+      // skipping the AWAITING_APPROVAL manual gate. This ensures the workspace
+      // is still alive when the GitHub push is triggered. Useful when PM review
+      // is not needed or when QA checks are temporarily disabled.
+      autoApproveAfterQa: process.env.FEATURE_AUTO_APPROVE_AFTER_QA === 'true',
     },
 
     // Story 2.6: Cursor CLI Headless Configuration
@@ -243,6 +248,11 @@ export default () => {
         maxRetries: parseInt(process.env.QA_CHECK_MAX_RETRIES || '3', 10),
         timeoutMs: parseInt(process.env.QA_CHECK_TIMEOUT_MS || '300000', 10), // 5 minutes
         depthIntervalMs: parseInt(process.env.QA_QUEUE_DEPTH_INTERVAL_MS || '30000', 10), // 30 seconds
+        // Max retry attempts for individual QA checks (lint, test, etc.) before skipping.
+        // When retries are exhausted, the check is marked SKIPPED and execution proceeds
+        // to commit+push instead of blocking indefinitely. This prevents loops caused by
+        // pre-existing broken tests/lint issues or missing sandbox environment (e.g., databases).
+        qaRetryMaxAttempts: parseInt(process.env.QA_CHECK_RETRY_MAX_ATTEMPTS || '2', 10),
       },
     },
 

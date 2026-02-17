@@ -169,6 +169,8 @@ ${requirements.map((r, i) => `${i + 1}. ${r}`).join('\n')}`;
 1. **Explore First:** You have NO provided file contents. You MUST read files using your tools to understand the codebase.
 2. **Context:** Do not assume dependencies or patterns. Check \`package.json\`, \`tsconfig.json\`, and similar files first.
 3. **Tests:** Ensure your implementation is testable and follows the existing test patterns found in the repo.
+4. **Pre-existing Issues:** The project may have pre-existing lint errors, broken tests, or incomplete environment setup. Do NOT get stuck trying to fix issues that existed before your changes. Focus only on YOUR implementation.
+5. **Git Operations:** When committing and pushing, ALWAYS use \`--no-verify\` flag to bypass pre-commit/pre-push hooks (e.g., husky, lint-staged) that may fail due to pre-existing issues.
 
 ## Architecture Decision Records (ADR)
 

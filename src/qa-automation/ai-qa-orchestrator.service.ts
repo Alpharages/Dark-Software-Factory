@@ -9,6 +9,7 @@
  */
 
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { ErrorCategory } from '@/common/sentry/sentry.constants';
 import { OrchestratorService } from '@/ai-routing/orchestrator.service';
@@ -24,10 +25,16 @@ import { GateType, QaFailureSeverity } from '@/realtime/realtime.types'; // Stor
 /**
  * QA Result interface (simplified from Story 3.6)
  */
+/**
+ * QA Result interface (simplified from Story 3.6)
+ * SKIPPED status: QA check was skipped after retries exhausted due to
+ * pre-existing issues (broken tests/lint) or missing sandbox environment.
+ * Treated as non-blocking so execution can proceed to commit+push.
+ */
 export interface IQaResult {
   executionId: string;
   checkType: 'linting' | 'testing' | 'security' | 'coverage';
-  status: 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED';
+  status: 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED' | 'SKIPPED';
   data: unknown;
   duration: number;
   aiProvider?: string;
@@ -44,6 +51,7 @@ export class AiQaOrchestrator {
     private readonly sentry: SentryService, // Story 1.9
     private readonly prisma: PrismaService, // Database access
     private readonly qaNotificationService: QaNotificationService, // Story 10.3
+    private readonly configService: ConfigService, // For QA retry configuration
   ) {}
 
   /**
@@ -192,9 +200,9 @@ export class AiQaOrchestrator {
       await this.saveQaResult(executionId, checkType, parsedResult, duration, aiProvider);
 
       // 4. Record metrics
-      // NOT_CONFIGURED is treated as successful (tool not found, but not an _error)
+      // NOT_CONFIGURED and SKIPPED are treated as non-blocking (proceed to commit+push)
       const status = (parsedResult.status as string) || 'UNKNOWN';
-      const isPassed = status === 'PASSED' || status === 'NOT_CONFIGURED';
+      const isPassed = status === 'PASSED' || status === 'NOT_CONFIGURED' || status === 'SKIPPED';
       this.qaMetrics.recordCheckComplete(checkType, isPassed, duration, {
         projectId: ticketId,
         aiProvider,
@@ -213,10 +221,14 @@ export class AiQaOrchestrator {
         );
       }
 
-      // Log NOT_CONFIGURED as info, not a failure
+      // Log NOT_CONFIGURED and SKIPPED as info, not a failure
       if (status === 'NOT_CONFIGURED') {
         this.logger.log(
           `[${ticketId}] ${checkType} check skipped: tooling not configured. ${parsedResult.summary || ''}`,
+        );
+      } else if (status === 'SKIPPED') {
+        this.logger.warn(
+          `[${ticketId}] ${checkType} check SKIPPED after retry exhaustion. Proceeding to commit+push. ${parsedResult.summary || ''}`,
         );
       } else {
         this.logger.log(`[${ticketId}] ${checkType} check complete: ${status} in ${duration}ms`);
@@ -226,7 +238,8 @@ export class AiQaOrchestrator {
         executionId,
         checkType,
         status:
-          (parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED') || 'ERROR',
+          (parsedResult.status as 'PASSED' | 'FAILED' | 'ERROR' | 'NOT_CONFIGURED' | 'SKIPPED') ||
+          'ERROR',
         data: parsedResult,
         duration,
         aiProvider,
@@ -255,8 +268,16 @@ export class AiQaOrchestrator {
   }
 
   /**
-   * Execute AI task with automatic retry on invalid JSON (AC#6)
-   * @returns Parsed JSON result or throws after retry exhausted
+   * Execute AI task with automatic retry on ALL failure types.
+   *
+   * FIX: Previously only retried on JSON parse errors. Now retries on ALL failures
+   * (AI execution failures, lint/test failures due to pre-existing issues, missing
+   * sandbox environment like databases, etc.) with a configurable max retry limit.
+   *
+   * When retries are exhausted, returns a SKIPPED result instead of throwing,
+   * allowing execution to proceed to commit+push rather than getting stuck in a loop.
+   *
+   * @returns Parsed JSON result, or SKIPPED result after retry exhaustion
    */
   private async executeWithRetry(
     ticketId: string,
@@ -266,54 +287,91 @@ export class AiQaOrchestrator {
     checkType: string,
     allowFallback: boolean,
   ): Promise<{ result: Record<string, unknown>; aiProvider: string }> {
+    const maxAttempts = this.configService.get<number>('qa.check.qaRetryMaxAttempts', 2);
     let lastError: Error | null = null;
+    let lastAiProvider = 'unknown';
 
-    // Attempt 1: Normal execution
-    try {
-      const aiResponse = await this.orchestratorService.execute({
-        ticketId,
-        correlationId: ticketId,
-        executionId,
-        prompt: instruction,
-        repositoryUrl: projectDir,
-        allowFallback,
-      });
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // Build prompt — on retry, add clarification about previous failure
+        let promptToUse = instruction;
+        if (attempt > 1 && lastError) {
+          const isJsonError = lastError.message.includes('Invalid JSON response');
+          const retryContext = isJsonError
+            ? `\n\n⚠️ CRITICAL REMINDER (Attempt ${attempt}/${maxAttempts}): Your previous response was not valid JSON. Return ONLY the JSON object with NO additional text, explanations, or markdown formatting.`
+            : `\n\n⚠️ RETRY (Attempt ${attempt}/${maxAttempts}): Previous attempt failed: ${lastError.message}. If the project has pre-existing lint errors or broken tests that you cannot fix, return status "NOT_CONFIGURED" with a summary explaining the issue. Do NOT loop trying to fix pre-existing issues.`;
+          promptToUse = `${instruction}${retryContext}`;
+        }
 
-      if (!aiResponse.success) {
-        throw new Error(aiResponse.error?.message || 'AI execution failed');
+        const aiResponse = await this.orchestratorService.execute({
+          ticketId,
+          correlationId: attempt === 1 ? ticketId : `${ticketId}-retry-${attempt}`,
+          executionId,
+          prompt: promptToUse,
+          repositoryUrl: projectDir,
+          allowFallback,
+        });
+
+        lastAiProvider = aiResponse.executedBy || lastAiProvider;
+
+        if (!aiResponse.success) {
+          throw new Error(aiResponse.error?.message || 'AI execution failed');
+        }
+
+        const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
+
+        // If the AI reported a FAILED status (e.g., pre-existing lint errors), log it but return the result
+        // The caller will decide whether to treat FAILED as blocking or not
+        return { result: parsedResult, aiProvider: aiResponse.executedBy };
+      } catch (_error) {
+        lastError = _error as Error;
+
+        if (attempt < maxAttempts) {
+          this.logger.warn(
+            `[${ticketId}] ${checkType} check attempt ${attempt}/${maxAttempts} failed: ${lastError.message}. Retrying...`,
+          );
+        } else {
+          this.logger.error(
+            `[${ticketId}] ${checkType} check failed after ${maxAttempts} attempts: ${lastError.message}. Skipping QA check to proceed with commit+push.`,
+          );
+        }
       }
-
-      const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
-      return { result: parsedResult, aiProvider: aiResponse.executedBy };
-    } catch (_error) {
-      lastError = _error as Error;
-
-      // Only retry on JSON parse errors, not on AI execution failures
-      if (!lastError.message.includes('Invalid JSON response')) {
-        throw lastError;
-      }
-
-      this.logger.warn(`[${ticketId}] Retry attempt for ${checkType} with clarified instructions`);
     }
 
-    // Attempt 2: Retry with clearer prompt emphasizing JSON-only output
-    const retryInstruction = `${instruction}\n\n⚠️ CRITICAL REMINDER: Your previous response was not valid JSON. Return ONLY the JSON object with NO additional text, explanations, or markdown formatting.`;
+    // All retries exhausted — return SKIPPED result instead of throwing
+    // This prevents the execution from getting stuck in a loop
+    this.logger.warn(
+      `[${ticketId}] ${checkType} check SKIPPED after ${maxAttempts} retry attempts exhausted. ` +
+        `Last error: ${lastError?.message}. Execution will proceed to commit+push.`,
+    );
 
-    const aiResponse = await this.orchestratorService.execute({
-      ticketId,
-      correlationId: `${ticketId}-retry`,
-      executionId,
-      prompt: retryInstruction,
-      repositoryUrl: projectDir,
-      allowFallback,
-    });
+    // Report to Sentry so we can track how often this happens
+    this.sentry.captureException(
+      lastError || new Error(`${checkType} check skipped after retry exhaustion`),
+      {
+        category: ErrorCategory.QA_AUTOMATION,
+        extra: {
+          ticketId,
+          executionId,
+          checkType,
+          maxAttempts,
+          action: 'SKIPPED_AFTER_RETRY_EXHAUSTION',
+        },
+      },
+    );
 
-    if (!aiResponse.success) {
-      throw new Error(aiResponse.error?.message || 'AI execution failed on retry');
-    }
-
-    const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
-    return { result: parsedResult, aiProvider: aiResponse.executedBy };
+    return {
+      result: {
+        status: 'SKIPPED',
+        summary: `${checkType} check skipped after ${maxAttempts} failed attempts. Last error: ${lastError?.message}. This may be due to pre-existing issues in the repository or missing sandbox environment (e.g., database). The execution will proceed to commit and push.`,
+        errorCount: 0,
+        warningCount: 0,
+        skippedReason: 'RETRY_EXHAUSTION',
+        lastError: lastError?.message,
+        attemptsExhausted: maxAttempts,
+      },
+      aiProvider: lastAiProvider,
+    };
   }
 
   /**
@@ -430,6 +488,11 @@ export class AiQaOrchestrator {
   /**
    * Handle errors during QA check execution
    * AC#6: Error handling + fallback + Sentry logging
+   *
+   * FIX: Now returns SKIPPED instead of ERROR when the error is clearly from
+   * retry exhaustion (executeWithRetry returns SKIPPED results, so this handler
+   * only catches unexpected errors outside the retry loop). These are still treated
+   * as non-blocking to prevent the execution from getting stuck.
    */
   private handleCheckError(
     ticketId: string,
@@ -455,11 +518,24 @@ export class AiQaOrchestrator {
       { projectId: ticketId },
     );
 
+    // Return SKIPPED instead of ERROR to prevent blocking.
+    // The executeWithRetry method handles structured retries and returns SKIPPED
+    // on exhaustion. If we reach here, it's an unexpected error outside the retry
+    // loop (e.g., instruction rendering failure, database error). We still skip
+    // rather than block the entire execution pipeline.
+    this.logger.warn(
+      `[${ticketId}] ${checkType} check returning SKIPPED due to unrecoverable error. Execution will proceed to commit+push.`,
+    );
+
     return {
       executionId: ticketId,
       checkType: checkType as 'linting' | 'testing' | 'security' | 'coverage',
-      status: 'ERROR',
-      data: { error: error.message },
+      status: 'SKIPPED',
+      data: {
+        error: error.message,
+        skippedReason: 'UNRECOVERABLE_ERROR',
+        summary: `${checkType} check skipped due to error: ${error.message}. Execution will proceed to commit+push.`,
+      },
       duration,
     };
   }

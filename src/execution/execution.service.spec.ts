@@ -12,13 +12,13 @@ import {
 } from './dto';
 import { IStateTransition } from './interfaces';
 import { QaCheckPublisher } from '../qa-automation/qa-check.publisher';
-import { ExecutionGateway } from './gateways/execution.gateway'; // Story 3.7 integration
+import { ExecutionLogStreamingService } from './services/execution-log-streaming.service';
+import { EventBusService } from '@/common/event-bus.service';
 
 describe('ExecutionService', () => {
   let service: ExecutionService;
   let trackerService: ExecutionTrackerService;
   let stateMachine: ExecutionStateMachine;
-  let executionGateway: ExecutionGateway;
 
   const mockExecution = {
     id: 'exec-123',
@@ -102,10 +102,16 @@ describe('ExecutionService', () => {
           },
         },
         {
-          provide: ExecutionGateway,
+          provide: EventBusService,
           useValue: {
-            emitProgress: jest.fn(),
-            emitCompletion: jest.fn(),
+            emit: jest.fn(),
+          },
+        },
+        {
+          provide: ExecutionLogStreamingService,
+          useValue: {
+            emitLog: jest.fn().mockResolvedValue(undefined),
+            emitError: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -114,7 +120,6 @@ describe('ExecutionService', () => {
     service = module.get<ExecutionService>(ExecutionService);
     trackerService = module.get<ExecutionTrackerService>(ExecutionTrackerService);
     stateMachine = module.get<ExecutionStateMachine>(ExecutionStateMachine);
-    executionGateway = module.get<ExecutionGateway>(ExecutionGateway);
   });
 
   afterEach(() => {
@@ -151,12 +156,7 @@ describe('ExecutionService', () => {
       expect(result.id).toBe('exec-123');
       expect(result.status).toBe(ExecutionStatus.QUEUED);
       expect(trackerService.startExecution).toHaveBeenCalled();
-      expect(executionGateway.emitProgress).toHaveBeenCalledWith(
-        expect.objectContaining({
-          executionId: 'exec-123',
-          status: ExecutionStatus.QUEUED,
-        }),
-      );
+      // Lifecycle events are now emitted by ExecutionTrackerService via RealtimeService
     });
 
     it('should throw ConflictException when active execution exists (Task 20-3)', async () => {
@@ -200,12 +200,7 @@ describe('ExecutionService', () => {
       expect(result).toBeDefined();
       expect(result.newStatus).toBe(ExecutionStatus.IN_PROGRESS);
       expect(trackerService.markInProgress).toHaveBeenCalledWith('exec-123', 'corr-123');
-      expect(executionGateway.emitProgress).toHaveBeenCalledWith(
-        expect.objectContaining({
-          executionId: 'exec-123',
-          status: ExecutionStatus.IN_PROGRESS,
-        }),
-      );
+      // Lifecycle events are now emitted by ExecutionTrackerService via RealtimeService
     });
   });
 
@@ -233,13 +228,7 @@ describe('ExecutionService', () => {
       expect(result).toBeDefined();
       expect(result.newStatus).toBe(ExecutionStatus.COMPLETED);
       expect(trackerService.completeExecution).toHaveBeenCalled();
-      expect(executionGateway.emitProgress).toHaveBeenCalledWith(
-        expect.objectContaining({
-          executionId: 'exec-123',
-          status: ExecutionStatus.COMPLETED,
-        }),
-      );
-      expect(executionGateway.emitCompletion).toHaveBeenCalledWith('exec-123', 'ticket-123');
+      // Lifecycle events are now emitted by ExecutionTrackerService via RealtimeService
     });
   });
 

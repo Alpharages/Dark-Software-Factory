@@ -16,7 +16,6 @@ import {
   FailExecutionDto,
   ExecutionResponseDto,
 } from './dto';
-import { ExecutionGateway } from './gateways/execution.gateway';
 import { EventBusService } from '@/common/event-bus.service';
 import { ExecutionCompletedEvent } from './events/execution-completed.event';
 import { ExecutionLogStreamingService } from './services/execution-log-streaming.service';
@@ -37,7 +36,6 @@ export class ExecutionService {
     private readonly tracker: ExecutionTrackerService,
     private readonly stateMachine: ExecutionStateMachine,
     private readonly eventBus: EventBusService,
-    private readonly executionGateway: ExecutionGateway,
     private readonly logStreamingService: ExecutionLogStreamingService,
   ) {}
 
@@ -90,19 +88,8 @@ export class ExecutionService {
       dto.ticketId,
     );
 
-    try {
-      this.executionGateway.emitProgress({
-        executionId: execution.id,
-        ticketId: execution.ticket_id,
-        status: execution.status,
-        timestamp: execution.created_at.toISOString(),
-        aiProvider: execution.ai_provider,
-      });
-    } catch (e: unknown) {
-      this.logger.error(
-        `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
-      );
-    }
+    // Note: Lifecycle events (execution.started, execution.progress) are emitted
+    // by ExecutionTrackerService via RealtimeService on the default namespace.
 
     return this.toResponseDto(execution);
   }
@@ -121,23 +108,7 @@ export class ExecutionService {
       'system',
     );
 
-    // Get execution to include provider in event
-    const execution = await this.tracker.getExecution(executionId);
-    if (execution) {
-      try {
-        this.executionGateway.emitProgress({
-          executionId: execution.id,
-          ticketId: execution.ticket_id,
-          status: execution.status,
-          timestamp: transition.transitionedAt.toISOString(),
-          aiProvider: execution.ai_provider,
-        });
-      } catch (e: unknown) {
-        this.logger.error(
-          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
-        );
-      }
-    }
+    // Note: Lifecycle events are emitted by ExecutionTrackerService via RealtimeService.
 
     return transition;
   }
@@ -168,24 +139,8 @@ export class ExecutionService {
       'system',
     );
 
-    // Emit event
-    const execution = await this.tracker.getExecution(dto.executionId);
-    if (execution) {
-      try {
-        this.executionGateway.emitProgress({
-          executionId: execution.id,
-          ticketId: execution.ticket_id,
-          status: execution.status,
-          timestamp: result.transitionedAt.toISOString(),
-          aiProvider: execution.ai_provider,
-        });
-        this.executionGateway.emitCompletion(execution.id, execution.ticket_id);
-      } catch (e: unknown) {
-        this.logger.error(
-          `Failed to emit graduation events for execution ${execution.id}: ${(e as Error).message}`,
-        );
-      }
-    }
+    // Note: Lifecycle events (execution.completed) are emitted
+    // by ExecutionTrackerService via RealtimeService on the default namespace.
 
     // Story 3.7 AC#1: Emit event for QA check request after successful execution
     try {
@@ -269,22 +224,8 @@ export class ExecutionService {
       isRetryable,
     );
 
-    const execution = await this.tracker.getExecution(dto.executionId);
-    if (execution) {
-      try {
-        this.executionGateway.emitProgress({
-          executionId: execution.id,
-          ticketId: execution.ticket_id,
-          status: execution.status,
-          timestamp: result.transitionedAt.toISOString(),
-          aiProvider: execution.ai_provider,
-        });
-      } catch (e: unknown) {
-        this.logger.error(
-          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
-        );
-      }
-    }
+    // Note: Lifecycle events (execution.failed) are emitted
+    // by ExecutionTrackerService via RealtimeService on the default namespace.
 
     return result;
   }
@@ -315,22 +256,8 @@ export class ExecutionService {
       null,
     );
 
-    const execution = await this.tracker.getExecution(executionId);
-    if (execution) {
-      try {
-        this.executionGateway.emitProgress({
-          executionId: execution.id,
-          ticketId: execution.ticket_id,
-          status: execution.status,
-          timestamp: result.transitionedAt.toISOString(),
-          aiProvider: execution.ai_provider,
-        });
-      } catch (e: unknown) {
-        this.logger.error(
-          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
-        );
-      }
-    }
+    // Note: Lifecycle events (execution.timeout) are emitted
+    // by ExecutionTrackerService via RealtimeService on the default namespace.
 
     return result;
   }
@@ -350,22 +277,8 @@ export class ExecutionService {
       'user', // Assuming user initiated cancellation
     );
 
-    const execution = await this.tracker.getExecution(executionId);
-    if (execution) {
-      try {
-        this.executionGateway.emitProgress({
-          executionId: execution.id,
-          ticketId: execution.ticket_id,
-          status: execution.status,
-          timestamp: result.transitionedAt.toISOString(),
-          aiProvider: execution.ai_provider,
-        });
-      } catch (e: unknown) {
-        this.logger.error(
-          `Failed to emit progress for execution ${execution.id}: ${(e as Error).message}`,
-        );
-      }
-    }
+    // Note: Lifecycle events (execution.cancelled) are emitted
+    // by ExecutionTrackerService via RealtimeService on the default namespace.
 
     return result;
   }
@@ -457,14 +370,16 @@ export class ExecutionService {
       // Transition to QUEUED
       await this.tracker.updateStatus(latest.id, ExecutionStatus.QUEUED);
 
-      // Emit event
-      this.executionGateway.emitProgress({
-        executionId: latest.id,
-        ticketId: latest.ticket_id,
-        status: ExecutionStatus.QUEUED,
-        timestamp: new Date().toISOString(),
-        aiProvider: latest.ai_provider,
-      });
+      // Emit progress via tracker's RealtimeService path (default namespace).
+      // projectId=null → tracker.emitProgress resolves it from DB.
+      await this.tracker.emitProgress(
+        latest.id,
+        latest.ticket_id,
+        null,
+        'Resuming execution',
+        0,
+        ExecutionStatus.QUEUED,
+      );
 
       // Trigger processing (Placeholder: depends on how queue consumption works.
       // Often updating status to QUEUED is enough if poller picks it up.

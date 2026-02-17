@@ -427,3 +427,167 @@ export class QaReviewQueueController {
     };
   }
 }
+
+/**
+ * QA Review Samples Controller
+ * Story 8.UI: Provides the /qa-review/samples endpoints consumed by the
+ * Lead QA Review Dashboard (dsf-dashboard).
+ *
+ * This controller exposes the same underlying queue data in the snake_case
+ * shape the frontend expects (QaReviewSample / QaSampleDetail).
+ */
+@ApiTags('QA Review Samples')
+@Controller('qa-review/samples')
+@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)
+@ApiBearerAuth()
+export class QaReviewSamplesController {
+  constructor(
+    private readonly queueService: QaReviewQueueService,
+    private readonly metricsService: QaReviewMetricsService,
+    private readonly aiReviewService: AiCodeReviewService,
+  ) {}
+
+  /**
+   * GET /qa-review/samples
+   * List review samples with optional filters (used by dashboard queue table).
+   */
+  @Get()
+  @Roles(Role.QA, Role.PM, Role.TL, Role.MANAGER, Role.ADMIN)
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
+  @ApiOperation({ summary: 'List QA review samples for the dashboard' })
+  @ApiResponse({ status: 200, description: 'List of review samples' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED'],
+  })
+  @ApiQuery({ name: 'riskLevel', required: false, enum: ['LOW', 'MEDIUM', 'HIGH'] })
+  @ApiQuery({ name: 'projectId', required: false, type: String })
+  @ApiQuery({ name: 'aiProvider', required: false, enum: ['cursor', 'claude'] })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['risk_level', 'created_at'] })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async listSamples(@Query() query: QueueListQueryDto) {
+    const result = await this.queueService.queryQueue({
+      status: query.status,
+      riskLevel: query.riskLevel,
+      projectId: query.projectId,
+      aiProvider: query.aiProvider,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+      page: query.page,
+      limit: query.limit,
+    });
+
+    return {
+      data: result.items.map((item) => this.mapToSample(item)),
+      total: result.total,
+      page: result.page,
+      totalPages: result.totalPages,
+    };
+  }
+
+  /**
+   * GET /qa-review/samples/:id
+   * Get detailed sample info (queue entry + QA summary + diffs placeholder).
+   */
+  @Get(':id')
+  @Roles(Role.QA, Role.PM, Role.TL, Role.MANAGER, Role.ADMIN)
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
+  @ApiOperation({ summary: 'Get QA review sample detail' })
+  @ApiResponse({ status: 200, description: 'Sample detail with QA summary' })
+  async getSampleDetail(@Param('id') id: string) {
+    const details = await this.queueService.getQueueDetails(id);
+    const sample = this.mapToSample(details.queueEntry);
+
+    // Build qa_summary from the stored QA result JSON
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const qaResult = (details.qaResult ?? {}) as Record<string, any>;
+
+    return {
+      data: {
+        ...sample,
+        diffs: qaResult.diffs ?? [],
+        qa_summary: {
+          linting_passed: qaResult.linting_passed ?? qaResult.lintingPassed ?? true,
+          tests_passed: qaResult.tests_passed ?? qaResult.testsPassed ?? true,
+          test_coverage: qaResult.test_coverage ?? qaResult.testCoverage ?? 0,
+          security_score: qaResult.security_score ?? qaResult.securityScore ?? 0,
+          quality_score: qaResult.quality_score ?? qaResult.qualityScore ?? 0,
+        },
+      },
+    };
+  }
+
+  /**
+   * POST /qa-review/samples/:id/decision
+   * Submit a review decision (approve / reject) from the dashboard.
+   */
+  @Post(':id/decision')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.QA, Role.ADMIN)
+  @Throttle({ default: { limit: 50, ttl: 60000 } })
+  @ApiOperation({ summary: 'Submit review decision for a sample' })
+  @ApiResponse({ status: 200, description: 'Decision recorded' })
+  async submitDecision(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      decision: 'APPROVED' | 'REJECTED';
+      severity?: string;
+      remediation_guidance?: string;
+      notes?: string;
+    },
+    @Req() req: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ) {
+    const reviewerId: string = req.user?.id ?? 'system';
+    const notes = [body.notes, body.remediation_guidance].filter(Boolean).join(' | ') || undefined;
+
+    let item;
+    if (body.decision === 'APPROVED') {
+      item = await this.queueService.approveTicket(id, reviewerId, notes);
+    } else {
+      item = await this.queueService.rejectTicket(id, reviewerId, notes);
+    }
+
+    return { data: this.mapToSample(item) };
+  }
+
+  /**
+   * Map IQueueItem (camelCase) → snake_case shape expected by the dashboard.
+   */
+  private mapToSample(item: {
+    id: string;
+    ticketId: string;
+    ticketTitle?: string;
+    executionId: string;
+    status: string;
+    riskLevel: string;
+    riskFactors: string[];
+    aiProvider: string;
+    complexityScore: number;
+    filesChanged: number;
+    samplingStrategy: string | object;
+    createdAt: Date;
+    reviewedBy?: string;
+    reviewedAt?: Date;
+    reviewNotes?: string;
+  }) {
+    return {
+      id: item.id,
+      ticket_id: item.ticketId,
+      ticket_title: item.ticketTitle ?? null,
+      execution_id: item.executionId,
+      project_id: null, // populated if available
+      status: item.status,
+      risk_level: item.riskLevel,
+      risk_factors: item.riskFactors,
+      sampling_strategy: item.samplingStrategy,
+      ai_quality_score: item.complexityScore,
+      reviewed_by: item.reviewedBy ?? null,
+      reviewed_at: item.reviewedAt?.toISOString?.() ?? null,
+      created_at: item.createdAt instanceof Date ? item.createdAt.toISOString() : item.createdAt,
+    };
+  }
+}
