@@ -31,7 +31,7 @@ import { CircuitBreaker, CircuitState } from './circuit-breaker';
 import { PtyExecutionService, PtySpawnError } from '../services/pty-execution.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { BaseAIProvider, ExecutionStage } from './base-ai.provider';
-import { ContainerOutputParser } from './container-output-parser';
+import { ContainerOutputParser, ContainerActivity } from './container-output-parser';
 
 @Injectable()
 export class ClaudeCodeProvider
@@ -142,6 +142,7 @@ export class ClaudeCodeProvider
     }
 
     let workspacePath = '';
+    let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
 
     try {
       // 1. Prepare Environment (Create workspace + setup env vars)
@@ -165,11 +166,13 @@ export class ClaudeCodeProvider
       const cliPrompt = this.constructCliPrompt(input);
 
       // 5. Spawn Claude CLI via PTY in Docker Container
-      // Command: /bin/sh -c "claude --print --model <model> ... | tee /tmp/logs/execution.log"
-      // Note: We use shell redirection via tee to capture logs to the mounted volume while preserving PTY output
+      // Use --output-format stream-json for real-time streaming (NDJSON)
+      // --print mode buffers ALL output and only dumps at the end, giving zero visibility.
+      // stream-json streams JSON events as they happen (thinking, tool calls, file ops).
       const claudeArgs = [
         'claude',
-        '--print',
+        '--output-format',
+        'stream-json',
         '--model',
         this.model,
         '--dangerously-skip-permissions',
@@ -293,6 +296,37 @@ export class ClaudeCodeProvider
       let hasEmittedOutputProgress = false;
       let lastKnownStage = 'Starting';
       const outputParser = new ContainerOutputParser();
+      let lastOutputTime = Date.now();
+
+      // ── Heartbeat Timer ──────────────────────────────────
+      // Claude CLI (especially in --print mode) can be silent for minutes.
+      // Emit synthetic "AI is working" events every 15s so the PM dashboard
+      // shows that the container is alive and processing.
+      const HEARTBEAT_INTERVAL_MS = 15_000;
+      let heartbeatCount = 0;
+      const heartbeatMessages = [
+        'AI is analyzing the codebase...',
+        'AI is planning changes...',
+        'AI is reading project files...',
+        'AI is reasoning about the task...',
+        'AI is evaluating approaches...',
+        'AI is working on implementation...',
+      ];
+      heartbeatTimer = setInterval(() => {
+        const silentDurationSec = Math.floor((Date.now() - lastOutputTime) / 1000);
+        const msg = heartbeatMessages[heartbeatCount % heartbeatMessages.length];
+        heartbeatCount++;
+
+        this.executionTracker
+          .emitActivity(executionId, ticketId, msg, 'AI_THINKING', 'brain', `Running for ${silentDurationSec}s`)
+          .catch(() => {});
+
+        // Advance progress slowly during silent periods (25% → 55% over ~5min)
+        const heartbeatPercent = Math.min(55, 25 + heartbeatCount * 2);
+        this.executionTracker
+          .emitProgress(executionId, ticketId, null, msg, heartbeatPercent)
+          .catch(() => {});
+      }, HEARTBEAT_INTERVAL_MS);
 
       output$.subscribe({
         next: (chunk) => {
@@ -300,11 +334,15 @@ export class ClaudeCodeProvider
           // Stream output to logs for real-time visibility (AC #4)
           if (chunk.trim()) {
             const cleanChunk = chunk.trim();
+            lastOutputTime = Date.now();
             this.logger.log(`[${executionId}] Container Output: ${cleanChunk}`);
 
-            // ── Rich Activity Detection ──────────────────────
-            // Parse raw output into structured PM-friendly activities
-            const activity = outputParser.parse(cleanChunk);
+            // ── Try stream-json parsing first ───────────────
+            // With --output-format stream-json, each line is a JSON event
+            const streamActivity = this.parseStreamJsonLine(cleanChunk);
+            // Fall back to regex-based detection for plain text output
+            const activity = streamActivity ?? outputParser.parse(cleanChunk);
+
             if (activity) {
               lastKnownStage = activity.activity;
 
@@ -365,6 +403,7 @@ export class ClaudeCodeProvider
           signal?: number;
         };
       } catch (raceError) {
+        clearInterval(heartbeatTimer);
         // Check if there was a spawn error captured from output$
         if (spawnError) {
           if (spawnError instanceof PtySpawnError) {
@@ -378,6 +417,9 @@ export class ClaudeCodeProvider
         }
         throw raceError;
       }
+
+      // ── Stop heartbeat on exit ─────────────────────────
+      clearInterval(heartbeatTimer);
 
       // Check if there was a spawn error even if exit succeeded
       if (spawnError) {
@@ -491,6 +533,7 @@ export class ClaudeCodeProvider
 
       return this.createFailedResult(startTime, workspacePath, this.parseError(error));
     } finally {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       this.activeGauge.dec();
       this.activeExecutions.delete(executionId);
     }
@@ -605,6 +648,182 @@ export class ClaudeCodeProvider
       workspacePath,
       error,
     };
+  }
+
+  /**
+   * Parse a line of stream-json output from Claude CLI.
+   * Claude's --output-format stream-json produces NDJSON like:
+   *   {"type":"assistant","subtype":"thinking","content":"..."}
+   *   {"type":"tool_use","name":"Read","input":{"file_path":"..."}}
+   *   {"type":"tool_result","name":"Read","content":"..."}
+   *   {"type":"result","subtype":"success","cost_usd":0.05,...}
+   *
+   * Returns a ContainerActivity if meaningful, or null to fall through
+   * to the regex-based parser.
+   */
+  private parseStreamJsonLine(line: string): ContainerActivity | null {
+    // Only parse lines that look like JSON objects
+    if (!line.startsWith('{')) return null;
+
+    try {
+      const event = JSON.parse(line) as Record<string, unknown>;
+      const type = event['type'] as string | undefined;
+      const subtype = event['subtype'] as string | undefined;
+
+      if (!type) return null;
+
+      switch (type) {
+        case 'system':
+          return {
+            activity: 'AI session initialized',
+            category: 'SETUP',
+            icon: 'settings',
+            suggestedPercent: 28,
+          };
+
+        case 'assistant':
+          if (subtype === 'thinking') {
+            const content = (event['content'] as string) ?? '';
+            return {
+              activity: 'AI is thinking',
+              detail: content.substring(0, 100) || undefined,
+              category: 'AI_THINKING',
+              icon: 'brain',
+              suggestedPercent: 35,
+            };
+          }
+          if (subtype === 'text') {
+            return {
+              activity: 'AI is writing response',
+              category: 'AI_CODING',
+              icon: 'code',
+              suggestedPercent: 50,
+            };
+          }
+          return null;
+
+        case 'tool_use': {
+          const toolName = (event['name'] as string) ?? '';
+          const input = (event['input'] as Record<string, unknown>) ?? {};
+          return this.toolUseToActivity(toolName, input);
+        }
+
+        case 'tool_result': {
+          const resultToolName = (event['name'] as string) ?? '';
+          if (resultToolName === 'Bash') {
+            const content = (event['content'] as string) ?? '';
+            // Check for npm/git/build patterns in bash output
+            const lower = content.toLowerCase();
+            if (lower.includes('added') && lower.includes('packages')) {
+              const pkgs = content.match(/added\s+(\d+)\s+packages?/i);
+              return {
+                activity: 'Dependencies installed',
+                detail: pkgs ? `${pkgs[1]} packages` : undefined,
+                category: 'DEPENDENCY',
+                icon: 'package',
+                suggestedPercent: 20,
+              };
+            }
+          }
+          return null; // Most tool results are noise
+        }
+
+        case 'result':
+          return {
+            activity: subtype === 'success' ? 'AI completed task' : 'AI execution finished',
+            detail: event['cost_usd'] ? `Cost: $${event['cost_usd']}` : undefined,
+            category: 'SYSTEM',
+            icon: 'check-circle',
+            suggestedPercent: 95,
+          };
+
+        default:
+          return null;
+      }
+    } catch {
+      // Not valid JSON — fall through to regex parser
+      return null;
+    }
+  }
+
+  /**
+   * Convert a Claude tool_use event into a PM-friendly activity
+   */
+  private toolUseToActivity(toolName: string, input: Record<string, unknown>): ContainerActivity {
+    switch (toolName) {
+      case 'Read':
+        return {
+          activity: 'AI is reading file',
+          detail: (input['file_path'] as string) ?? undefined,
+          category: 'AI_THINKING',
+          icon: 'file-edit',
+          suggestedPercent: 40,
+        };
+
+      case 'Write':
+        return {
+          activity: 'AI is writing file',
+          detail: (input['file_path'] as string) ?? undefined,
+          category: 'AI_CODING',
+          icon: 'code',
+          suggestedPercent: 55,
+        };
+
+      case 'Edit':
+        return {
+          activity: 'AI is editing file',
+          detail: (input['file_path'] as string) ?? undefined,
+          category: 'AI_CODING',
+          icon: 'file-edit',
+          suggestedPercent: 55,
+        };
+
+      case 'Bash': {
+        const cmd = (input['command'] as string) ?? '';
+        const shortCmd = cmd.length > 80 ? cmd.substring(0, 80) + '...' : cmd;
+        // Categorize common bash commands
+        if (/npm\s+(install|i|ci)\b/.test(cmd) || /pnpm\s+(install|i|add)\b/.test(cmd)) {
+          return { activity: 'Installing dependencies', detail: shortCmd, category: 'DEPENDENCY', icon: 'package', suggestedPercent: 18 };
+        }
+        if (/git\s+(commit|push|pull|clone|checkout)\b/.test(cmd)) {
+          return { activity: 'Running git command', detail: shortCmd, category: 'GIT', icon: 'git-branch', suggestedPercent: 80 };
+        }
+        if (/\b(jest|vitest|mocha|pytest|cargo\s+test)\b/.test(cmd)) {
+          return { activity: 'Running tests', detail: shortCmd, category: 'TEST', icon: 'test-tube-2', suggestedPercent: 75 };
+        }
+        if (/\b(eslint|prettier|biome|lint)\b/.test(cmd)) {
+          return { activity: 'Running linter', detail: shortCmd, category: 'LINT', icon: 'check-circle', suggestedPercent: 70 };
+        }
+        if (/\b(tsc|webpack|vite|rollup|esbuild|next\s+build|prisma\s+generate)\b/.test(cmd)) {
+          return { activity: 'Building project', detail: shortCmd, category: 'BUILD', icon: 'hammer', suggestedPercent: 65 };
+        }
+        return { activity: 'Running command', detail: shortCmd, category: 'SYSTEM', icon: 'terminal', suggestedPercent: 60 };
+      }
+
+      case 'MultiEdit':
+        return {
+          activity: 'AI is editing multiple files',
+          category: 'AI_CODING',
+          icon: 'code',
+          suggestedPercent: 55,
+        };
+
+      case 'TodoRead':
+      case 'TodoWrite':
+        return {
+          activity: 'AI is managing task list',
+          category: 'AI_THINKING',
+          icon: 'brain',
+        };
+
+      default:
+        return {
+          activity: `AI is using tool: ${toolName}`,
+          category: 'AI_CODING',
+          icon: 'code',
+          suggestedPercent: 45,
+        };
+    }
   }
 
   /**
