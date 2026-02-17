@@ -325,7 +325,7 @@ export default () => {
         defaultSwapLimitMB: parseInt(process.env.SANDBOX_MEMORY_SWAP_LIMIT_MB || '512', 10),
       },
       workspacesRoot: process.env.SANDBOX_WORKSPACES_ROOT || path.join(process.cwd(), 'workspaces'),
-      containerTimeoutMs: parseInt(process.env.DOCKER_CONTAINER_TIMEOUT_MS || '300000', 10),
+      containerTimeoutMs: parseInt(process.env.DOCKER_CONTAINER_TIMEOUT_MS || '3000000', 10),
       containerExecutionEnabled: process.env.ENABLE_CONTAINER_EXECUTION === 'true',
       maxConcurrent: parseInt(process.env.DOCKER_MAX_CONCURRENT || '10', 10),
     },

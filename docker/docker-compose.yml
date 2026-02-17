@@ -139,13 +139,13 @@ services:
     networks:
       - dsf-network
     restart: unless-stopped
-    # Resource limits (prevents OOM during Prisma generate)
+    # Resource limits (prevents OOM during Prisma generate and AI operations)
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
         reservations:
-          memory: 512M
+          memory: 1G
     # TTY support for node-pty (Epic 19)
     tty: true
     stdin_open: true

@@ -202,22 +202,23 @@ export class ClaudeCodeProvider
       );
 
       // Story 23.3: Enforce minimum memory for Claude CLI (prevent OOM)
-      // Only override if configured limit is too low (< 2GB)
+      // Claude CLI requires at least 4GB to start reliably (2GB V8 heap + OS/container overhead)
       // This allows users to set custom Memory/Swap limits in .env that are respected
       const configuredLimit = this.config.get<number>(
         'sandbox.resourceLimits.defaultMemoryLimitMB',
         512,
       );
 
+      const CLAUDE_MIN_MEMORY_MB = 4096; // 4GB minimum for Claude CLI
       let memoryLimitBytes: number | undefined;
       let claudeMemoryLimitMB: number;
 
-      if (configuredLimit < 2048) {
+      if (configuredLimit < CLAUDE_MIN_MEMORY_MB) {
         this.logger.debug(
-          `[${correlationId}] Enforcing minimum 2GB memory for Claude (configured: ${configuredLimit}MB)`,
+          `[${correlationId}] Enforcing minimum ${CLAUDE_MIN_MEMORY_MB}MB memory for Claude (configured: ${configuredLimit}MB)`,
         );
-        memoryLimitBytes = 2048 * 1024 * 1024;
-        claudeMemoryLimitMB = 2048;
+        memoryLimitBytes = CLAUDE_MIN_MEMORY_MB * 1024 * 1024;
+        claudeMemoryLimitMB = CLAUDE_MIN_MEMORY_MB;
       } else {
         this.logger.debug(
           `[${correlationId}] Using configured memory limit for Claude: ${configuredLimit}MB`,
@@ -398,7 +399,17 @@ export class ClaudeCodeProvider
 
       if (exitCode !== 0) {
         // Handle specific exit codes
+        if (exitCode === 124) {
+          // Exit code 124 = container execution timeout (from PtyExecutionService)
+          throw new Error(
+            `Claude CLI timed out (exit code 124 - Timeout). ` +
+              `The container exceeded its execution time limit (DOCKER_CONTAINER_TIMEOUT_MS). ` +
+              `Last known stage: ${lastKnownStage}. ` +
+              `Increase DOCKER_CONTAINER_TIMEOUT_MS in .env to allow longer executions.`,
+          );
+        }
         if (exitCode === 137) {
+          // Exit code 137 = SIGKILL (128 + 9), typically OOM killer
           throw new Error(
             `Claude CLI was killed (exit code 137 - Out of Memory). ` +
               `The container exceeded its memory allocation. ` +
@@ -533,8 +544,9 @@ export class ClaudeCodeProvider
       ANTHROPIC_BASE_URL: this.baseURL || '',
       // Explicitly disable remote mode to prevent 8GB memory allocation by CLI
       CLAUDE_CODE_REMOTE: 'false',
-      // Force V8 heap limit to 3GB (leaving 1GB for OS/container overhead)
-      NODE_OPTIONS: '--max-old-space-size=3072',
+      // Force V8 heap limit to 2GB (leaving ~2GB for OS/container overhead within 4GB container)
+      // Previous value of 3072MB caused OOM kills when container limit was 4GB (heap + overhead > limit)
+      NODE_OPTIONS: '--max-old-space-size=2048',
     };
 
     // If base URL contains 'localhost', assume it might be Ollama simulation or similar

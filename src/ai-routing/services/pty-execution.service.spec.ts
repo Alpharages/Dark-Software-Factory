@@ -57,7 +57,7 @@ describe('PtyExecutionService', () => {
 
     mockConfigService.get.mockImplementation((key: string, defaultValue: unknown) => {
       if (key === 'ENABLE_CONTAINER_EXECUTION') return false;
-      if (key === 'DOCKER_CONTAINER_TIMEOUT_MS') return 300000;
+      if (key === 'DOCKER_CONTAINER_TIMEOUT_MS') return 3000000;
       return defaultValue;
     });
 

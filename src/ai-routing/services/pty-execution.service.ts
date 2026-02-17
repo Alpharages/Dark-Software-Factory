@@ -91,7 +91,7 @@ export class PtyExecutionService implements OnModuleDestroy {
 
   // Feature flag
   private containerExecutionEnabled = false;
-  private containerTimeoutMs = 300000; // 5 minutes default
+  private containerTimeoutMs = 3000000; // 50 minutes default (Claude CLI needs time for npm install + code generation)
   private maxConcurrentContainers = 10;
 
   // Track completed executions to prevent race conditions
@@ -455,10 +455,9 @@ export class PtyExecutionService implements OnModuleDestroy {
       this.logger.warn(
         `[${executionId}] Container execution timed out after ${this.containerTimeoutMs}ms`,
       );
-      this.killContainerExecution(executionId, 'SIGKILL');
-      exitSubject.next({ exitCode: 124, signal: undefined }); // 124 = timeout
-      exitSubject.complete();
-      outputSubject.complete();
+      // Pass exit code 124 (timeout) to distinguish from OOM (137)
+      this.killContainerExecution(executionId, 'SIGKILL', 124);
+      // No need to emit exitSubject here - killContainerExecution handles it with the correct exit code
     }, this.containerTimeoutMs);
 
     execution.timeoutTimer = timeoutTimer;
@@ -583,16 +582,22 @@ export class PtyExecutionService implements OnModuleDestroy {
 
   /**
    * Kill a container execution
+   * @param executionId The execution ID
+   * @param signal Kill signal (default: SIGKILL)
+   * @param exitCode Custom exit code to report (default: 137 for SIGKILL, 124 for timeout)
    */
-  private killContainerExecution(executionId: string, signal?: string): void {
+  private killContainerExecution(executionId: string, signal?: string, exitCode?: number): void {
     const execution = this.containerExecutions.get(executionId);
     if (!execution) {
       this.logger.warn(`[${executionId}] No active container execution to kill`);
       return;
     }
 
+    const resolvedExitCode = exitCode ?? 137; // Default to 137 (SIGKILL) if not specified
+    const resolvedSignal = signal || 'SIGKILL';
+
     this.logger.log(
-      `[${executionId}] Killing container ${execution.containerId} with signal ${signal || 'SIGKILL'}`,
+      `[${executionId}] Killing container ${execution.containerId} with signal ${resolvedSignal} (exit code: ${resolvedExitCode})`,
     );
 
     // Clear timeout
@@ -601,7 +606,7 @@ export class PtyExecutionService implements OnModuleDestroy {
     }
 
     // Kill container
-    this.dockerService?.killContainer(execution.containerId, signal || 'SIGKILL');
+    this.dockerService?.killContainer(execution.containerId, resolvedSignal);
 
     // Destroy stream
     const stream = execution.stream as { destroyed?: boolean; destroy?: () => void } | null;
@@ -609,9 +614,9 @@ export class PtyExecutionService implements OnModuleDestroy {
       stream.destroy?.();
     }
 
-    // Complete subjects
+    // Complete subjects with the appropriate exit code
     if (!execution.exitSubject.closed) {
-      execution.exitSubject.next({ exitCode: 137, signal: 9 }); // 137 = SIGKILL
+      execution.exitSubject.next({ exitCode: resolvedExitCode, signal: 9 });
       execution.exitSubject.complete();
     }
     if (!execution.outputSubject.closed) {

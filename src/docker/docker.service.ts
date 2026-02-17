@@ -497,9 +497,15 @@ export class DockerService implements OnModuleInit {
     // Priority 1: Explicit values override everything
     if (options.explicitMemoryLimit && options.explicitMemoryLimit > 0) {
       memoryMB = Math.round(options.explicitMemoryLimit / (1024 * 1024));
-      cpuPercent = options.explicitCpuLimit ? Math.round(options.explicitCpuLimit * 100) : 100;
-      swapMB = memoryMB; // Match memory by default for explicit limits
-      this.logger.debug('Using explicit resource limits');
+      // Use explicit CPU if provided, otherwise fall back to config (not hardcoded 100%)
+      cpuPercent = options.explicitCpuLimit
+        ? Math.round(options.explicitCpuLimit * 100)
+        : this.configService.get<number>('sandbox.resourceLimits.defaultCpuLimitPercent', 100);
+      // Use configured swap limit instead of mirroring memory (which could waste resources)
+      swapMB = this.configService.get<number>('sandbox.resourceLimits.defaultSwapLimitMB', 512);
+      this.logger.debug(
+        `Using explicit resource limits: memory=${memoryMB}MB, cpu=${cpuPercent}%, swap=${swapMB}MB`,
+      );
     }
     // Priority 2: Resource profile (if specified and not 'custom')
     else if (options.resourceProfile && options.resourceProfile !== 'custom') {

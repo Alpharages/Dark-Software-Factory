@@ -268,9 +268,9 @@ export const envValidationSchema = Joi.object({
   DOCKER_CONTAINER_TIMEOUT_MS: Joi.number()
     .integer()
     .min(60000)
-    .max(600000)
-    .default(300000)
-    .description('Max container execution time in milliseconds (default: 5min)'),
+    .max(7200000)
+    .default(3000000)
+    .description('Max container execution time in milliseconds (default: 50min, max: 2hr)'),
   LOG_STREAM_THROTTLE_MS: Joi.number()
     .integer()
     .min(50)
