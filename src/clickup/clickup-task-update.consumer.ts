@@ -166,12 +166,37 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
           'https://github.com/default-org/default-repo',
         );
 
+        // Resolve project_id: look up by github_repository_url, fall back to first active project
+        let project = await this.prisma.project.findFirst({
+          where: { github_repository_url: defaultRepository },
+          select: { id: true },
+        });
+
+        if (!project) {
+          project = await this.prisma.project.findFirst({
+            where: { is_active: true },
+            select: { id: true },
+            orderBy: { created_at: 'asc' },
+          });
+        }
+
+        if (!project) {
+          this.loggerService.warn(
+            'No project found for auto-creating ticket - skipping ticket creation',
+            {
+              taskId: message.task_id,
+              defaultRepository,
+            },
+          );
+          return;
+        }
+
         // Auto-create ticket for production polling workflow
         // This ensures new ClickUp tasks are automatically synced to database
         ticket = await this.prisma.ticket.create({
           data: {
             clickup_task_id: message.task_id,
-            project_id: defaultRepository, // Fallback until Story 4.9 implements Projects table
+            project_id: project.id,
             title: message.name || `Task ${message.task_id}`,
             description: taskDescription, // Now includes fetched description
             acceptance_criteria: '',
@@ -221,7 +246,7 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
           taskUrl: `https://app.clickup.com/t/${message.task_id}`,
           listId: 'clickup-polling', // Fallback - should be from project mapping
           listName: 'ClickUp Polling',
-          projectId: defaultRepository,
+          projectId: project.id,
           projectName: 'Default Project',
           spaceId: '',
           eventType: 'taskCreated',

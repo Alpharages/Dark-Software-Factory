@@ -530,7 +530,12 @@ export class ClaudeCodeProvider
       this.executionsCounter.inc({ status: 'error' });
       this.durationHistogram.observe({ status: 'error' }, durationMs / 1000);
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : error && typeof error === 'object' && 'message' in error
+            ? (error as { message: string }).message
+            : String(error);
       this.logger.error(`[${correlationId}] Claude execution failed: ${errorMessage}`);
       this.workspace.updateWorkspaceStatus(executionId, 'FAILED');
 
@@ -1083,6 +1088,18 @@ export class ClaudeCodeProvider
   }
 
   private parseError(error: unknown): IAIExecutionError {
+    // If error is already an IAIExecutionError object (e.g., thrown by WorkspaceService.createError),
+    // return it directly instead of serializing to "[object Object]"
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      'code' in error &&
+      typeof (error as IAIExecutionError).message === 'string'
+    ) {
+      return error as IAIExecutionError;
+    }
+
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Attempt to map common CLI errors

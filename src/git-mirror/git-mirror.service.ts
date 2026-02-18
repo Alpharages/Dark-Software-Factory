@@ -235,9 +235,11 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
       const { owner, repo } = this.parseMirrorPath(mirrorPath);
       const repoUrl = `https://github.com/${owner}/${repo}.git`;
 
-      // Use --reference for object sharing, with proper authentication via env
+      // Use --reference for fast cloning, --dissociate to copy objects locally
+      // so the workspace is independent of the mirror after clone (prevents
+      // "unable to normalize alternate object path" errors if mirror is updated)
       await this.execGitWithAuth(
-        ['clone', '--reference', mirrorPath, repoUrl, targetPath],
+        ['clone', '--reference', mirrorPath, '--dissociate', repoUrl, targetPath],
         undefined,
         'Clone from mirror',
       );
