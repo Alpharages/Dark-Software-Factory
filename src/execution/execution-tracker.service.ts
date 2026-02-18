@@ -26,6 +26,7 @@ import {
   ExecutionProgressEvent,
 } from '@/realtime/realtime.types';
 import { AI_METRICS, CONTAINER_METRICS } from '@/common/metrics';
+import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
 
 /**
  * Execution Tracker Service
@@ -88,6 +89,8 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly websocketEmissionErrorsCounter: Counter<string>,
     @Optional()
     private readonly realtimeService?: RealtimeService,
+    @Optional()
+    private readonly activityRepository?: ExecutionActivityRepository,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -928,6 +931,13 @@ export class ExecutionTrackerService implements OnModuleInit {
   /**
    * Emit a structured container activity event for PM dashboard
    * These provide human-readable, icon-tagged updates (not raw logs)
+   *
+   * Activities are persisted to the `execution_activities` table for
+   * timeline replay and detail drill-down (e.g. viewing full error content).
+   *
+   * @param rawContent - Full raw content for expandable detail view
+   *   (e.g. full JSON event, complete error output, tool_result body).
+   *   The shorter `detail` field is what the timeline shows inline.
    */
   async emitActivity(
     executionId: string,
@@ -937,13 +947,16 @@ export class ExecutionTrackerService implements OnModuleInit {
     icon: string,
     detail?: string,
     suggestedPercent?: number,
+    rawContent?: string,
   ): Promise<void> {
+    const timestamp = new Date();
     const payload: import('./gateways/execution.gateway').ContainerActivityPayload = {
       executionId,
       ticketId,
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp.toISOString(),
       activity,
       detail,
+      rawContent,
       category: category as import('./gateways/execution.gateway').ActivityCategory,
       icon,
       suggestedPercent,
@@ -960,7 +973,26 @@ export class ExecutionTrackerService implements OnModuleInit {
       // Non-critical: continue without projectId
     }
 
-    // Emit to project/role rooms via RealtimeService (default namespace — where frontend listens)
+    // 1. Persist activity to database (fire-and-forget to avoid blocking)
+    // Note: ticketId is NOT stored on ExecutionActivity — it's available via execution.ticket_id join
+    if (this.activityRepository) {
+      this.activityRepository
+        .save({
+          executionId,
+          activity,
+          detail: detail ?? null,
+          rawContent: rawContent ?? null,
+          category,
+          icon,
+          suggestedPercent: suggestedPercent ?? null,
+          timestamp,
+        })
+        .catch((err) => {
+          this.logger.error(`Failed to persist activity to DB: ${err.message}`, err.stack);
+        });
+    }
+
+    // 2. Emit to project/role rooms via RealtimeService (default namespace — where frontend listens)
     if (this.realtimeService) {
       try {
         if (payload.projectId) {

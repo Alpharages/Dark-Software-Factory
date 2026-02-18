@@ -212,6 +212,8 @@ export class PtyExecutionService implements OnModuleDestroy {
     const defaultShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const cmd = command || defaultShell;
 
+    this.logger.log(`Spawning PTY process: ${cmd} ${args.join(' ')}`);
+
     // Check if command exists before attempting to spawn
     // Skip check for shell commands (bash, sh, etc.) as they should always exist
     // Also skip in test environment to allow mocked commands

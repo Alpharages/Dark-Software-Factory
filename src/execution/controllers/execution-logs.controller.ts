@@ -12,12 +12,16 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/common/guards/auth.guard'; // More specific import to match file system
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ExecutionLogRepository } from '../repositories/execution-log.repository';
+import { ExecutionActivityRepository } from '../repositories/execution-activity.repository';
 
 @ApiTags('Execution Logs')
 @Controller('executions')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ExecutionLogsController {
-  constructor(private readonly logRepository: ExecutionLogRepository) {}
+  constructor(
+    private readonly logRepository: ExecutionLogRepository,
+    private readonly activityRepository: ExecutionActivityRepository,
+  ) {}
 
   @Get(':id/logs')
   @ApiOperation({ summary: 'Get execution logs' })
@@ -49,6 +53,66 @@ export class ExecutionLogsController {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Get execution activities (live activity timeline)
+   *
+   * Returns persisted structured activity events for timeline display.
+   * Each activity includes `rawContent` for expandable drill-down view.
+   */
+  @Get(':id/activities')
+  @ApiOperation({ summary: 'Get execution live activity timeline' })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description:
+      'Filter by categories (comma separated: ERROR,AI_THINKING,AI_CODING,SETUP,DEPENDENCY,GIT,BUILD,TEST,LINT,FILE_OP,DEPLOY,SYSTEM)',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getActivities(
+    @Param('id') executionId: string,
+    @Query('category') categories?: string | string[],
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
+    @Query('limit', new DefaultValuePipe(200), ParseIntPipe) limit = 200,
+  ) {
+    const categoryFilter = categories
+      ? Array.isArray(categories)
+        ? categories
+        : categories.split(',')
+      : undefined;
+
+    const [activities, total] = await this.activityRepository.findByExecution(executionId, {
+      categories: categoryFilter,
+      page,
+      limit,
+    });
+
+    return {
+      activities,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Get the latest N activities (for dashboard widget)
+   */
+  @Get(':id/activities/latest')
+  @ApiOperation({ summary: 'Get latest execution activities for dashboard' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getLatestActivities(
+    @Param('id') executionId: string,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit = 20,
+  ) {
+    const activities = await this.activityRepository.findLatest(executionId, limit);
+
+    return {
+      activities,
     };
   }
 }

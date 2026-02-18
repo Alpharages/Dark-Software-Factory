@@ -59,6 +59,8 @@ export interface ContainerActivityPayload {
   timestamp: string;
   activity: string;
   detail?: string;
+  /** Full raw content for expandable detail view (e.g. full JSON event, error body) */
+  rawContent?: string;
   category: ActivityCategory;
   icon: string;
   suggestedPercent?: number;

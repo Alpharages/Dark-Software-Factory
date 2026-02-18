@@ -364,6 +364,7 @@ export class ClaudeCodeProvider
                   activity.icon,
                   activity.detail,
                   activity.suggestedPercent,
+                  activity.rawContent,
                 )
                 .catch(() => {});
 
@@ -854,6 +855,7 @@ export class ClaudeCodeProvider
             activity: 'AI session initialized',
             category: 'SETUP',
             icon: 'settings',
+            rawContent: line,
             suggestedPercent: 28,
           };
 
@@ -863,14 +865,18 @@ export class ClaudeCodeProvider
             return {
               activity: 'AI is thinking',
               detail: content.substring(0, 100) || undefined,
+              rawContent: content || line,
               category: 'AI_THINKING',
               icon: 'brain',
               suggestedPercent: 35,
             };
           }
           if (subtype === 'text') {
+            const textContent = (event['content'] as string) ?? '';
             return {
               activity: 'AI is writing response',
+              detail: textContent.substring(0, 100) || undefined,
+              rawContent: textContent || line,
               category: 'AI_CODING',
               icon: 'code',
               suggestedPercent: 50,
@@ -881,33 +887,52 @@ export class ClaudeCodeProvider
         case 'tool_use': {
           const toolName = (event['name'] as string) ?? '';
           const input = (event['input'] as Record<string, unknown>) ?? {};
-          return this.toolUseToActivity(toolName, input);
+          const toolActivity = this.toolUseToActivity(toolName, input);
+          // Attach the full JSON line as rawContent for drill-down
+          toolActivity.rawContent = line;
+          return toolActivity;
         }
 
         case 'tool_result': {
           const resultToolName = (event['name'] as string) ?? '';
+          const resultContent = (event['content'] as string) ?? '';
           if (resultToolName === 'Bash') {
-            const content = (event['content'] as string) ?? '';
             // Check for npm/git/build patterns in bash output
-            const lower = content.toLowerCase();
+            const lower = resultContent.toLowerCase();
             if (lower.includes('added') && lower.includes('packages')) {
-              const pkgs = content.match(/added\s+(\d+)\s+packages?/i);
+              const pkgs = resultContent.match(/added\s+(\d+)\s+packages?/i);
               return {
                 activity: 'Dependencies installed',
                 detail: pkgs ? `${pkgs[1]} packages` : undefined,
+                rawContent: resultContent || line,
                 category: 'DEPENDENCY',
                 icon: 'package',
                 suggestedPercent: 20,
               };
             }
           }
-          return null; // Most tool results are noise
+          // Capture all tool_result events (not just Bash) for drill-down visibility
+          if (resultContent || event['error']) {
+            const isError = !!event['error'] || resultContent.toLowerCase().includes('error');
+            return {
+              activity: isError
+                ? 'Error encountered'
+                : `Tool result: ${resultToolName || 'unknown'}`,
+              detail:
+                (resultContent || String(event['error'] ?? '')).substring(0, 120) || undefined,
+              rawContent: line,
+              category: isError ? 'ERROR' : 'SYSTEM',
+              icon: isError ? 'alert-triangle' : 'terminal',
+            };
+          }
+          return null;
         }
 
         case 'result':
           return {
             activity: subtype === 'success' ? 'AI completed task' : 'AI execution finished',
             detail: event['cost_usd'] ? `Cost: $${event['cost_usd']}` : undefined,
+            rawContent: line,
             category: 'SYSTEM',
             icon: 'check-circle',
             suggestedPercent: 95,

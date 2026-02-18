@@ -49,6 +49,8 @@ import { ManualInterventionService } from './services/manual-intervention.servic
 import { ManualInterventionController } from './controllers/manual-intervention.controller';
 import { ContainerControlService } from './services/container-control.service';
 import { ExecutionOverrideRepository } from './repositories/execution-override.repository';
+// Execution Activity Persistence
+import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
 // Audit Logging
 import { AuditLogService } from '../common/audit/audit-log.service';
 
@@ -216,6 +218,9 @@ import { AuditLogService } from '../common/audit/audit-log.service';
     ExecutionLogStreamingService,
     ExecutionLogRepository,
     LogRetentionJob,
+
+    // Execution Activity Persistence (Live Activity Timeline)
+    ExecutionActivityRepository,
 
     // Story 10-U-5: Manual Intervention Circuit Breaker
     ManualInterventionService,

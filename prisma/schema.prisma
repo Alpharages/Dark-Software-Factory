@@ -109,6 +109,7 @@ model Execution {
   archive               WorkspaceArchive?
   logs                  ExecutionLog[]
   overrides             ExecutionOverride[]
+  activities            ExecutionActivity[]
 
   @@index([ticket_id, status])
   @@index([ai_provider, status])
@@ -129,6 +130,28 @@ model ExecutionLog {
  
    @@index([executionId, timestamp])
    @@map("execution_logs")
+}
+
+/// Persisted live activity events for execution timeline
+/// Each row captures a structured, human-readable activity event
+/// (e.g. "AI is thinking", "Installing dependencies", "Error encountered")
+model ExecutionActivity {
+  id               String   @id @default(uuid())
+  executionId      String   @map("execution_id")
+  timestamp        DateTime @default(now())
+  activity         String   // Short human-readable label (e.g. "AI is thinking")
+  detail           String?  // Brief extra info (e.g. file path, duration)
+  rawContent       String?  @db.Text @map("raw_content") // Full raw content for expandable view
+  category         String   // SETUP, DEPENDENCY, GIT, AI_THINKING, AI_CODING, BUILD, TEST, LINT, FILE_OP, DEPLOY, ERROR, SYSTEM
+  icon             String   // Lucide icon name hint for UI
+  suggestedPercent Int?     @map("suggested_percent") // Progress percentage 0-100
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId, timestamp])
+  @@index([executionId, category])
+  @@map("execution_activities")
 }
 
 model QAResult {

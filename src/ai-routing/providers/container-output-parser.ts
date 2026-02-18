@@ -35,6 +35,8 @@ export interface ContainerActivity {
   activity: string;
   /** Optional extra detail (e.g. package count, file name) */
   detail?: string;
+  /** Full raw content for expandable detail view (e.g. full error output, tool result body) */
+  rawContent?: string;
   /** Category for grouping & color-coding */
   category: ActivityCategory;
   /** Icon hint for the UI (lucide icon name) */
@@ -136,6 +138,7 @@ const RULES: PatternRule[] = [
       act({
         activity: 'Error encountered',
         detail: raw.substring(0, 120),
+        rawContent: raw,
         category: 'ERROR',
         icon: 'alert-triangle',
       }),
