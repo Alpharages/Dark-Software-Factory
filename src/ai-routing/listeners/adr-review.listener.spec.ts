@@ -81,7 +81,7 @@ describe('AdrReviewListener', () => {
       };
 
       mockPrisma.ticket.findUnique.mockResolvedValue(mockTicket);
-      mockExecutionService.getExecution.mockResolvedValue({ provider: AIProvider.CLAUDE_CODE });
+      mockExecutionService.getExecution.mockResolvedValue({ aiProvider: AIProvider.CLAUDE_CODE });
       mockPromptGenerator.generatePrompt.mockResolvedValue({
         prompt: 'New Prompt',
         metadata: {

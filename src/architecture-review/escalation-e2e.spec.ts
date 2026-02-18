@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { RiskAssessmentService } from './risk-assessment.service';
 import { ConstraintValidatorService } from './constraint-validator.service';
+import { AdrMetricsService } from './metrics/adr-metrics.service';
 
 // Mock dependencies
 const mockPrismaService = {
@@ -60,6 +61,15 @@ const mockConstraintValidator = {
   validate: jest.fn().mockResolvedValue([]),
 };
 
+const mockAdrMetricsService = {
+  trackReviewCompleted: jest.fn().mockResolvedValue(undefined),
+  reviewsTotal: { labels: jest.fn().mockReturnValue({ inc: jest.fn() }) },
+  reviewDuration: { labels: jest.fn().mockReturnValue({ observe: jest.fn() }) },
+  queueDepth: { set: jest.fn() },
+  approvalRate: { set: jest.fn() },
+  updateQueueDepthGauge: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('Escalation Workflow E2E', () => {
   let adrService: AdrService;
   let _notificationService: ArchitectureReviewNotificationService;
@@ -78,6 +88,7 @@ describe('Escalation Workflow E2E', () => {
         { provide: PromptGeneratorService, useValue: mockPromptGenerator },
         { provide: RiskAssessmentService, useValue: mockRiskService },
         { provide: ConstraintValidatorService, useValue: mockConstraintValidator },
+        { provide: AdrMetricsService, useValue: mockAdrMetricsService },
       ],
     }).compile();
 

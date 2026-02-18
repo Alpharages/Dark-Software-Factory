@@ -12,6 +12,7 @@ import { QaResultsService } from './qa-results.service';
 import { PrismaService } from '../database/prisma.service';
 import { LoggerService } from '../common/logger/logger.service';
 import { SentryService } from '../common/sentry/sentry.service';
+import { EventBusService } from '../common/event-bus.service';
 import { QA_METRICS } from '../common/metrics/metrics.constants';
 import { QaResultFilterStatus } from './interfaces';
 
@@ -106,6 +107,13 @@ describe('QaResultsService', () => {
         },
         { provide: getToken(QA_METRICS.QA_RESULTS_QUERIES_TOTAL), useValue: mockCounter },
         { provide: getToken(QA_METRICS.QA_RESULTS_QUERY_DURATION), useValue: mockHistogram },
+        {
+          provide: EventBusService,
+          useValue: {
+            emit: jest.fn(),
+            on: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

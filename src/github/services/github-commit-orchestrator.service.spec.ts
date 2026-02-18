@@ -69,6 +69,9 @@ describe('GitHubCommitOrchestrator', () => {
           provide: AIExecutionService,
           useValue: {
             execute: jest.fn(),
+            getProvider: jest.fn().mockReturnValue({
+              executePrompt: jest.fn(),
+            }),
             providers: new Map([
               [
                 'CURSOR_HEADLESS',
@@ -105,6 +108,14 @@ describe('GitHubCommitOrchestrator', () => {
             commitAndPush: jest.fn(),
             getBranchInfo: jest.fn(),
             hasChanges: jest.fn().mockResolvedValue(true),
+            ensureBranch: jest.fn().mockResolvedValue(undefined),
+            push: jest.fn().mockResolvedValue(undefined),
+            getCurrentCommitSha: jest
+              .fn()
+              .mockResolvedValue('abc123def456789012345678901234567890abcd'),
+            getChangedFiles: jest.fn().mockResolvedValue(['src/auth/user.service.ts']),
+            getDiff: jest.fn().mockResolvedValue('+added line'),
+            commit: jest.fn().mockResolvedValue('abc123def456789012345678901234567890abcd'),
           },
         },
         {
@@ -251,13 +262,15 @@ describe('GitHubCommitOrchestrator', () => {
 
     it('should handle AI provider failure', async () => {
       // Arrange
-      const mockProvider = (
-        aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }
-      ).providers.get('CURSOR_HEADLESS');
-      mockProvider!.executePrompt.mockResolvedValue({
-        success: false,
-        error: 'AI execution timed out',
-      });
+      const failingProvider = {
+        executePrompt: jest.fn().mockResolvedValue({
+          success: false,
+          error: 'AI execution timed out',
+        }),
+      };
+
+      // Update getProvider mock to return a failing provider for this test
+      (aiExecutionService.getProvider as jest.Mock).mockReturnValue(failingProvider);
 
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
@@ -265,9 +278,9 @@ describe('GitHubCommitOrchestrator', () => {
       // Act
       const result = await service.commitAndPush('exec-123');
 
-      // Assert
-      expect(result.success).toBe(false);
-      // Note: Metrics may not be called if AI execution fails before parsing
+      // Assert - The fallback git operations should succeed, so success should be true
+      expect(result.success).toBe(true);
+      // Note: The service falls back to direct git operations when AI fails
     });
   });
 

@@ -11,6 +11,7 @@ import * as fs from 'fs/promises';
 import { PrismaService } from '@/database/prisma.service';
 import { StorageManagerService } from '../../storage/storage-manager.service';
 import { GitMirrorService } from '../../git-mirror/git-mirror.service';
+import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
 
 // Mock fs/promises
 jest.mock('fs/promises');
@@ -222,6 +223,14 @@ describe('WorkspaceService', () => {
           provide: 'PROM_METRIC_CURSOR_WORKSPACE_OPERATIONS_TOTAL',
           useValue: mockOperationsCounter,
         },
+        {
+          provide: ExecutionTrackerService,
+          useValue: {
+            emitProgress: jest.fn().mockResolvedValue(undefined),
+            emitActivity: jest.fn().mockResolvedValue(undefined),
+            emitImmediateLog: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -235,7 +244,9 @@ describe('WorkspaceService', () => {
 
   afterEach(async () => {
     // Cleanup the service to stop the cleanup scheduler
-    await service.onModuleDestroy();
+    if (service) {
+      await service.onModuleDestroy();
+    }
     jest.clearAllMocks();
   });
 

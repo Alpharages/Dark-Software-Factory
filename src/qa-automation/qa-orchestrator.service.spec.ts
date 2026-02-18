@@ -20,6 +20,7 @@ import { QaMetricsService } from './qa-metrics.service';
 import { WorkspaceService } from '../ai-routing/providers';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { SelfHealingOrchestratorService } from '../execution/self-healing-orchestrator.service';
+import { ExecutionTrackerService } from '../execution/execution-tracker.service';
 
 describe('QaOrchestratorService', () => {
   let service: QaOrchestratorService;
@@ -111,6 +112,12 @@ describe('QaOrchestratorService', () => {
     attemptFix: jest.fn(),
   };
 
+  const mockExecutionTracker = {
+    emitProgress: jest.fn().mockResolvedValue(undefined),
+    emitActivity: jest.fn().mockResolvedValue(undefined),
+    markAwaitingApproval: jest.fn().mockResolvedValue(undefined),
+  };
+
   const mockCounter = {
     inc: jest.fn(),
   };
@@ -131,6 +138,7 @@ describe('QaOrchestratorService', () => {
         { provide: WorkspaceService, useValue: mockWorkspaceService },
         { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
         { provide: SelfHealingOrchestratorService, useValue: mockSelfHealingOrchestrator },
+        { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
         // Story 3.10: Deleted service providers - replaced by AI delegation
         // { provide: LinterService, useValue: mockLinterService },
         // { provide: TestRunnerService, useValue: mockTestRunnerService },
@@ -211,7 +219,7 @@ describe('QaOrchestratorService', () => {
       // Verify final ticket update
       expect(prisma.ticket.update).toHaveBeenCalledWith({
         where: { id: mockMessage.ticketId },
-        data: { status: TicketStatus.GITHUB_PUSH },
+        data: { status: TicketStatus.AWAITING_APPROVAL },
       });
 
       // Verify event emission

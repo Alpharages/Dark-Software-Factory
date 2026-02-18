@@ -98,6 +98,13 @@ describe('ExecutionRepository', () => {
           retry_count: 0,
           complexity_score: 50,
         },
+        include: {
+          ticket: {
+            select: {
+              project_id: true,
+            },
+          },
+        },
       });
     });
 
@@ -116,6 +123,13 @@ describe('ExecutionRepository', () => {
           max_retries: 3,
           retry_count: 0,
         }),
+        include: {
+          ticket: {
+            select: {
+              project_id: true,
+            },
+          },
+        },
       });
     });
   });
@@ -129,6 +143,13 @@ describe('ExecutionRepository', () => {
       expect(result).toEqual(mockExecution);
       expect(prisma.execution.findUnique).toHaveBeenCalledWith({
         where: { id: 'exec-123' },
+        include: {
+          ticket: {
+            select: {
+              project_id: true,
+            },
+          },
+        },
       });
     });
 

@@ -16,7 +16,7 @@ describe('EscalationService', () => {
   };
 
   const mockNotificationService = {
-    notifyEscalation: jest.fn(),
+    notifyStuckEscalation: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -94,8 +94,8 @@ describe('EscalationService', () => {
       });
 
       // Verify Notification
-      expect(_notificationService.notifyEscalation).toHaveBeenCalledWith(stuckAdr);
-      expect(_notificationService.notifyEscalation).toHaveBeenCalledTimes(1);
+      expect(_notificationService.notifyStuckEscalation).toHaveBeenCalledWith(stuckAdr);
+      expect(_notificationService.notifyStuckEscalation).toHaveBeenCalledTimes(1);
     });
 
     it('should escalate multiple stuck ADRs', async () => {
@@ -106,7 +106,7 @@ describe('EscalationService', () => {
 
       await service.checkHighRiskAdrs();
 
-      expect(_notificationService.notifyEscalation).toHaveBeenCalledTimes(2);
+      expect(_notificationService.notifyStuckEscalation).toHaveBeenCalledTimes(2);
     });
   });
 });

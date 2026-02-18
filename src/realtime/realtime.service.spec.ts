@@ -1,14 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Server } from 'socket.io';
 import { RealtimeService } from './realtime.service';
+import { NotificationDispatcherService } from '../notifications/services/notification-dispatcher.service';
 
 describe('RealtimeService', () => {
   let service: RealtimeService;
   let mockServer: Partial<Server>;
+  let mockNotificationDispatcher: Partial<NotificationDispatcherService>;
 
   beforeEach(async () => {
+    mockNotificationDispatcher = {
+      dispatch: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RealtimeService],
+      providers: [
+        RealtimeService,
+        {
+          provide: NotificationDispatcherService,
+          useValue: mockNotificationDispatcher,
+        },
+      ],
     }).compile();
 
     service = module.get<RealtimeService>(RealtimeService);

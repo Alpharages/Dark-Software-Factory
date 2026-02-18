@@ -15,11 +15,28 @@ describe('QaMetricsService', () => {
     };
     mockLogger = { debug: jest.fn(), log: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
+    // Mock Prometheus metric objects
+    const mockCounter = {
+      labels: jest.fn().mockReturnThis(),
+      inc: jest.fn(),
+    };
+    const mockGauge = {
+      labels: jest.fn().mockReturnThis(),
+      set: jest.fn(),
+    };
+    const mockHistogram = {
+      observe: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QaMetricsService,
         { provide: MetricsService, useValue: mockMetricsService },
         { provide: LoggerService, useValue: mockLogger },
+        { provide: 'PROM_METRIC_DSF_BUG_ESCAPES_TOTAL', useValue: mockCounter },
+        { provide: 'PROM_METRIC_DSF_BUG_ESCAPE_RATE_PERCENT', useValue: mockGauge },
+        { provide: 'PROM_METRIC_DSF_BUG_ESCAPE_THRESHOLD_BREACHES_TOTAL', useValue: mockCounter },
+        { provide: 'PROM_METRIC_DSF_BUG_ESCAPE_RESOLUTION_TIME_HOURS', useValue: mockHistogram },
       ],
     }).compile();
 

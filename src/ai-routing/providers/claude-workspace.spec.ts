@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { ClaudeCodeProvider } from './claude-code.provider';
 import { WorkspaceService } from './workspace.service';
 import { PtyExecutionService } from '../services/pty-execution.service';
+import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
 import { IAIExecutionInput, AIErrorCode } from '../interfaces';
 import { Subject } from 'rxjs';
 
@@ -31,7 +32,7 @@ describe('ClaudeCodeProvider Workspace', () => {
     const mockExitSubject = new Subject<{ exitCode: number; signal?: number }>();
 
     const mockPtyExecutionService = {
-      spawn: jest.fn().mockImplementation(() => {
+      spawnInContainer: jest.fn().mockImplementation(() => {
         setTimeout(() => {
           mockExitSubject.next({ exitCode: 0 });
           mockExitSubject.complete();
@@ -41,8 +42,10 @@ describe('ClaudeCodeProvider Workspace', () => {
           pid: 12345,
           output$: mockOutputSubject.asObservable(),
           exit$: mockExitSubject.asObservable(),
+          containerId: 'container-123',
         };
       }),
+      spawn: jest.fn(),
       write: jest.fn(),
       kill: jest.fn(),
       resize: jest.fn(),
@@ -80,6 +83,14 @@ describe('ClaudeCodeProvider Workspace', () => {
         { provide: 'PROM_METRIC_CLAUDE_ACTIVE_EXECUTIONS', useValue: mockMetrics },
         { provide: 'PROM_METRIC_CLAUDE_TOKENS_TOTAL', useValue: mockMetrics },
         { provide: 'PROM_METRIC_CLAUDE_COST_CENTS', useValue: mockMetrics },
+        {
+          provide: ExecutionTrackerService,
+          useValue: {
+            emitProgress: jest.fn().mockResolvedValue(undefined),
+            emitActivity: jest.fn().mockResolvedValue(undefined),
+            emitImmediateLog: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -136,11 +147,13 @@ describe('ClaudeCodeProvider Workspace', () => {
       mockInput.ticketId,
       mockInput.repositoryUrl,
       mockInput.baseBranch,
+      expect.any(Function),
+      'CLAUDE_CODE',
     );
 
     // Verify PTY spawned in the correct path
-    expect(ptyExecutionService.spawn).toHaveBeenCalled();
-    const spawnCalls = ptyExecutionService.spawn.mock.calls;
-    expect(spawnCalls[0][2].cwd).toBe('/tmp/persistent-workspace');
+    expect(ptyExecutionService.spawnInContainer).toHaveBeenCalled();
+    const spawnCalls = ptyExecutionService.spawnInContainer.mock.calls;
+    expect(spawnCalls[0][2].workspacePath).toBe('/tmp/persistent-workspace');
   });
 });

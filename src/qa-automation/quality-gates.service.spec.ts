@@ -5,6 +5,7 @@ import { QualityCategory, QualityGateStatus } from './interfaces/quality-gate.in
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { QA_METRICS } from '../common/metrics/metrics.constants';
 import { QualityGateConfigService } from './quality-gate-config/quality-gate-config.service';
+import { QaNotificationService } from './services/qa-notification.service';
 
 describe('QualityGatesService', () => {
   let service: QualityGatesService;
@@ -72,6 +73,14 @@ describe('QualityGatesService', () => {
         {
           provide: getToken(QA_METRICS.QUALITY_SCORE_HISTOGRAM),
           useValue: { observe: jest.fn() },
+        },
+        {
+          provide: QaNotificationService,
+          useValue: {
+            sendQualityGateNotification: jest.fn().mockResolvedValue(undefined),
+            emitGateBlocked: jest.fn().mockResolvedValue(undefined),
+            emitGateFailed: jest.fn().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();

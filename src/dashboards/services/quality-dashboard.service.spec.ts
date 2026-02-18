@@ -42,9 +42,15 @@ describe('QualityDashboardService', () => {
     },
     project: {
       findMany: jest.fn(),
+      count: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    qualityGateConfig: {
+      count: jest.fn(),
     },
     execution: {
       findMany: jest.fn(),
+      groupBy: jest.fn(),
     },
   };
 
@@ -56,10 +62,18 @@ describe('QualityDashboardService', () => {
   const mockBugEscapeService = {
     calculateEscapeRate: jest.fn(),
     getEscapesByCategory: jest.fn(),
+    compareProviders: jest.fn(),
   };
 
   const mockQualityGateConfigService = {
     getAllConfigs: jest.fn(),
+    getEffectiveConfig: jest.fn().mockResolvedValue({
+      thresholds: {
+        minCoverage: 80,
+        minTestPassRate: 90,
+        maxComplexity: 10,
+      },
+    }),
   };
 
   const mockAIDecisionLogger = {
@@ -189,6 +203,8 @@ describe('QualityDashboardService', () => {
       mockQualityGateConfigService.getAllConfigs.mockResolvedValue([
         { project: { id: 'proj-1' }, pass_threshold: 80 },
       ]);
+      mockPrismaService.project.count.mockResolvedValue(3);
+      mockPrismaService.qualityGateConfig.count.mockResolvedValue(2);
 
       const result = await service.getSummary();
 
@@ -218,6 +234,8 @@ describe('QualityDashboardService', () => {
       mockPrismaService.ticket.findMany.mockResolvedValue([{ status: 'DEPLOYED' }]);
 
       mockQualityGateConfigService.getAllConfigs.mockResolvedValue([]);
+      mockPrismaService.project.count.mockResolvedValue(3);
+      mockPrismaService.qualityGateConfig.count.mockResolvedValue(2);
 
       const result = await service.getSummary();
 
@@ -260,6 +278,8 @@ describe('QualityDashboardService', () => {
       mockPrismaService.qaReviewQueue.count.mockResolvedValue(0);
       mockPrismaService.ticket.findMany.mockResolvedValue([]);
       mockQualityGateConfigService.getAllConfigs.mockResolvedValue([]);
+      mockPrismaService.project.count.mockResolvedValue(3);
+      mockPrismaService.qualityGateConfig.count.mockResolvedValue(2);
 
       const result = await service.getSummary();
 
@@ -326,9 +346,19 @@ describe('QualityDashboardService', () => {
         { category: 'TEST_GAP', count: 2 },
       ]);
 
+      mockBugEscapeService.compareProviders.mockResolvedValue([
+        { provider: 'CLAUDE', escapes: 1 },
+        { provider: 'OPENAI', escapes: 1 },
+      ]);
+
       mockPrismaService.execution.findMany.mockResolvedValue([
         { ai_provider: 'CLAUDE', status: 'COMPLETED' },
         { ai_provider: 'OPENAI', status: 'COMPLETED' },
+      ]);
+
+      mockPrismaService.execution.groupBy.mockResolvedValue([
+        { ai_provider: 'CLAUDE', _count: { id: 1 } },
+        { ai_provider: 'OPENAI', _count: { id: 1 } },
       ]);
 
       const result = await service.getProviderComparison('30d');
@@ -343,16 +373,39 @@ describe('QualityDashboardService', () => {
     it('should return drill-down data for a project (AC#5)', async () => {
       const projectId = 'proj-1';
 
-      mockPrismaService.project.findMany.mockResolvedValue([
-        { id: projectId, name: 'Project Alpha' },
-      ]);
+      mockPrismaService.project.findUnique.mockResolvedValue({
+        id: projectId,
+        name: 'Project Alpha',
+        pm_id: 'pm-1',
+      });
 
       mockQaResultsService.getMetrics.mockResolvedValue({
         totalExecutions: 50,
         passedCount: 45,
         failedCount: 5,
         passRate: 90.0,
+        lintingPassRate: 95,
+        testPassRate: 90,
+        securityPassRate: 98,
       });
+
+      mockPrismaService.execution.findMany.mockResolvedValue([
+        {
+          ticket_id: 'ticket-1',
+          status: 'COMPLETED',
+          ticket: {
+            clickup_task_id: 'CU-123',
+            title: 'Test Ticket',
+          },
+          qa_result: {
+            overall_passed: true,
+            test_coverage: 85,
+          },
+          updated_at: new Date(),
+        },
+      ]);
+
+      mockBugEscapeService.getEscapesByCategory.mockResolvedValue([]);
 
       const result = await service.getDrillDown('project', projectId, '30d');
 
@@ -363,7 +416,7 @@ describe('QualityDashboardService', () => {
     });
 
     it('should throw NotFoundException if dimension not found (AC#5)', async () => {
-      mockPrismaService.project.findMany.mockResolvedValue([]);
+      mockPrismaService.project.findUnique.mockResolvedValue(null);
 
       await expect(service.getDrillDown('project', 'invalid-id', '30d')).rejects.toThrow(
         NotFoundException,
@@ -421,7 +474,7 @@ describe('QualityDashboardService', () => {
 
       expect(result.contentType).toBe('text/csv');
       expect(result.filename).toContain('.csv');
-      expect(result.buffer.toString()).toContain('Project,Pass Rate');
+      expect(result.buffer.toString()).toContain('Dimension Type,Dimension Name');
     });
 
     it('should throw error for unsupported export format (AC#6)', async () => {
@@ -430,7 +483,7 @@ describe('QualityDashboardService', () => {
         period: '30d',
       };
 
-      await expect(service.generateExport(query)).rejects.toThrow('Unsupported export format: xml');
+      await expect(service.generateExport(query)).rejects.toThrow('Unsupported format: xml');
     });
 
     it('should handle large datasets without crashing (H3)', async () => {

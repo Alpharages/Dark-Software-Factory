@@ -4,6 +4,7 @@ import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
 import { RealtimeService } from '../realtime/realtime.service';
+import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ExecutionStatus, AIProvider } from '@/prisma/client';
 describe('ExecutionTrackerService WebSocket Streaming', () => {
@@ -86,11 +87,19 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
           useValue: mockRealtimeService,
         },
         {
-          provide: 'PROM_METRIC_DSF_EXECUTION_TOTAL',
+          provide: 'PROM_METRIC_DSF_AI_EXECUTIONS_TOTAL',
           useValue: mockMetrics,
         },
         {
-          provide: 'PROM_METRIC_DSF_EXECUTION_DURATION_SECONDS',
+          provide: ExecutionActivityRepository,
+          useValue: {
+            create: jest.fn(),
+            findByExecutionId: jest.fn(),
+            findRecentByExecutionId: jest.fn(),
+          },
+        },
+        {
+          provide: 'PROM_METRIC_DSF_AI_EXECUTION_DURATION_SECONDS',
           useValue: mockMetrics,
         },
         {
@@ -293,24 +302,28 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
   describe('emitProgress', () => {
     it('should emit progress and respect rate limiting', async () => {
       const executionId = 'exec-1';
-      jest.useFakeTimers();
 
-      // First emit (0%) - should go through
+      // Mock Date.now() to control time
+      let currentTime = 1000;
+      jest.spyOn(Date, 'now').mockImplementation(() => currentTime);
+
+      // First emit (0%) - should go through (always emitted)
       await service.emitProgress(executionId, 'ticket-1', 'proj-1', 'Step 1', 0);
       expect(mockRealtimeService.emitToProject).toHaveBeenCalledTimes(1);
 
-      // Second emit (10%) immediately - should be skipped
-      await service.emitProgress(executionId, 'ticket-1', 'proj-1', 'Step 2', 10);
+      // Second emit (10%) with same step immediately - should be skipped (rate limited, < 500ms)
+      currentTime += 100; // Only 100ms passed
+      await service.emitProgress(executionId, 'ticket-1', 'proj-1', 'Step 1', 10);
       expect(mockRealtimeService.emitToProject).toHaveBeenCalledTimes(1);
 
-      // Advance time by 6s
-      jest.advanceTimersByTime(6000);
+      // Advance time by 600ms (> 500ms threshold)
+      currentTime += 600;
 
-      // Third emit (20%) - should go through
-      await service.emitProgress(executionId, 'ticket-1', 'proj-1', 'Step 3', 20);
+      // Third emit (20%) - should go through now
+      await service.emitProgress(executionId, 'ticket-1', 'proj-1', 'Step 1', 20);
       expect(mockRealtimeService.emitToProject).toHaveBeenCalledTimes(2);
 
-      jest.useRealTimers();
+      jest.restoreAllMocks();
     });
   });
 

@@ -10,7 +10,7 @@ describe('WorkloadService', () => {
   const mockPm = {
     id: 'pm-123',
     email: 'pm@example.com',
-    name: 'Test PM',
+    full_name: 'Test PM',
     role: 'PM',
     max_tickets: 20,
     created_at: new Date(),
@@ -20,7 +20,7 @@ describe('WorkloadService', () => {
   const mockManager = {
     id: 'mgr-456',
     email: 'manager@example.com',
-    name: 'Test Manager',
+    full_name: 'Test Manager',
     role: 'MANAGER',
     max_tickets: 0,
     created_at: new Date(),
@@ -38,6 +38,9 @@ describe('WorkloadService', () => {
     },
     ticket: {
       count: jest.fn(),
+    },
+    project: {
+      groupBy: jest.fn(),
     },
     utilizationHistory: {
       findMany: jest.fn(),
@@ -177,13 +180,13 @@ describe('WorkloadService', () => {
     const mockPms = [
       {
         id: 'pm-1',
-        name: 'PM One',
+        full_name: 'PM One',
         email: 'pm1@example.com',
         max_tickets: 20,
       },
       {
         id: 'pm-2',
-        name: 'PM Two',
+        full_name: 'PM Two',
         email: 'pm2@example.com',
         max_tickets: 15,
       },
@@ -192,6 +195,10 @@ describe('WorkloadService', () => {
     it('should return team capacity for a manager', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockManager);
       mockPrismaService.user.findMany.mockResolvedValue(mockPms);
+      mockPrismaService.project.groupBy.mockResolvedValue([
+        { pm_id: 'pm-1', _count: { _all: 1 } },
+        { pm_id: 'pm-2', _count: { _all: 1 } },
+      ]);
       mockPrismaService.ticket.count
         .mockResolvedValueOnce(15) // PM One: 75% utilization
         .mockResolvedValueOnce(12); // PM Two: 80% utilization
@@ -222,6 +229,7 @@ describe('WorkloadService', () => {
     it('should filter PMs by managed_by_id for MANAGER role', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockManager);
       mockPrismaService.user.findMany.mockResolvedValue([]);
+      mockPrismaService.project.groupBy.mockResolvedValue([]);
 
       await service.getTeamCapacity('mgr-456');
 
@@ -232,12 +240,12 @@ describe('WorkloadService', () => {
         },
         select: {
           id: true,
-          name: true,
+          full_name: true,
           email: true,
           max_tickets: true,
         },
         orderBy: {
-          name: 'asc',
+          full_name: 'asc',
         },
       });
     });
@@ -246,6 +254,7 @@ describe('WorkloadService', () => {
       const mockAdmin = { ...mockManager, role: 'ADMIN' };
       mockPrismaService.user.findUnique.mockResolvedValue(mockAdmin);
       mockPrismaService.user.findMany.mockResolvedValue([]);
+      mockPrismaService.project.groupBy.mockResolvedValue([]);
 
       await service.getTeamCapacity('admin-789');
 
@@ -255,12 +264,12 @@ describe('WorkloadService', () => {
         },
         select: {
           id: true,
-          name: true,
+          full_name: true,
           email: true,
           max_tickets: true,
         },
         orderBy: {
-          name: 'asc',
+          full_name: 'asc',
         },
       });
     });
@@ -283,6 +292,10 @@ describe('WorkloadService', () => {
     it('should sort PMs by utilization descending (highest first)', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockManager);
       mockPrismaService.user.findMany.mockResolvedValue(mockPms);
+      mockPrismaService.project.groupBy.mockResolvedValue([
+        { pm_id: 'pm-1', _count: { _all: 1 } },
+        { pm_id: 'pm-2', _count: { _all: 1 } },
+      ]);
       mockPrismaService.ticket.count
         .mockResolvedValueOnce(10) // PM One: 50% utilization
         .mockResolvedValueOnce(14); // PM Two: 93.33% utilization

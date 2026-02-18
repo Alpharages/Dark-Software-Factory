@@ -19,6 +19,9 @@ import { IAIProvider, IAIPromptExecutor } from '../../ai-routing/interfaces';
 import { WorkspaceService } from '../../ai-routing/providers';
 // import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
+import { PRRiskAssessorService } from './pr-risk-assessor.service';
+import { PRAutoMergeService } from './pr-auto-merge.service';
+import { PRReminderService } from './pr-reminder.service';
 
 type MockAIProvider = IAIProvider &
   IAIPromptExecutor & {
@@ -181,6 +184,28 @@ describe('GitHubPROrchestrator', () => {
             publishToQueue: jest.fn().mockResolvedValue(undefined),
             subscribe: jest.fn(),
             getChannel: jest.fn(),
+          },
+        },
+        {
+          provide: PRRiskAssessorService,
+          useValue: {
+            assess: jest.fn().mockResolvedValue({
+              riskLevel: 'LOW',
+              reasoning: 'Test risk assessment',
+              mergeRecommendation: 'proceed',
+            }),
+          },
+        },
+        {
+          provide: PRAutoMergeService,
+          useValue: {
+            attemptAutoMerge: jest.fn().mockResolvedValue(true),
+          },
+        },
+        {
+          provide: PRReminderService,
+          useValue: {
+            scheduleInitialReminder: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

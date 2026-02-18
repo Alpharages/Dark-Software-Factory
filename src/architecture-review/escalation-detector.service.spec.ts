@@ -52,7 +52,7 @@ describe('Escalation DetectorService', () => {
       } as any);
 
       const threshold = await service.getEscalationThreshold('project-1');
-      expect(threshold).toBe(0.3); // DEFAULT_THRESHOLD
+      expect(threshold).toBe(0.7); // DEFAULT_THRESHOLD
     });
 
     it('should escalate when multiple valid approaches are mentioned', () => {

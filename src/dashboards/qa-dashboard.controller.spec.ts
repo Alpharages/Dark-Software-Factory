@@ -2,6 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Response } from 'express';
 import { QaDashboardController } from './qa-dashboard.controller';
 import { QualityDashboardService } from './services/quality-dashboard.service';
+import { JwtAuthGuard } from '../common/guards/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import {
   QualityDashboardSummaryDto,
   QualityMetricsQueryDto,
@@ -32,7 +35,14 @@ describe('QaDashboardController', () => {
           useValue: mockQualityDashboardService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<QaDashboardController>(QaDashboardController);
     service = module.get<QualityDashboardService>(QualityDashboardService);

@@ -388,8 +388,15 @@ export class CursorHeadlessProvider
             });
           }, timeout);
 
+          // Declare subscriptions first to avoid TDZ issues
+
+          let outputSub: ReturnType<typeof output$.subscribe>;
+
+          let exitSub: ReturnType<typeof exit$.subscribe>;
+
           // Subscribe to output
-          const outputSub = output$.subscribe({
+          // eslint-disable-next-line prefer-const
+          outputSub = output$.subscribe({
             next: (data) => {
               stdout += data;
               const trimData = data.trim();
@@ -403,11 +410,12 @@ export class CursorHeadlessProvider
           });
 
           // Subscribe to exit
-          const exitSub = exit$.subscribe({
+          // eslint-disable-next-line prefer-const
+          exitSub = exit$.subscribe({
             next: ({ exitCode, signal }) => {
               clearTimeout(timer);
               outputSub.unsubscribe();
-              exitSub.unsubscribe();
+              exitSub?.unsubscribe();
               this.activeExecutions.delete(executionId);
 
               this.logger.log(

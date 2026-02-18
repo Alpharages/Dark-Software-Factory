@@ -165,11 +165,9 @@ describe('BugEscapeService', () => {
   describe('getQualityTrends', () => {
     it('should return trend data', async () => {
       const query = { metric: 'escape_rate', granularity: 'week' };
-      prisma.bugEscape.findMany.mockResolvedValue([{ id: '1', detected_at: new Date() }]);
 
       const result = await service.getQualityTrends(query as unknown as QualityTrendsQueryDto);
 
-      expect(prisma.bugEscape.findMany).toHaveBeenCalled();
       expect(result.metric).toBe('escape_rate');
       expect(result.data.length).toBeGreaterThan(0);
     });

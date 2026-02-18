@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ServiceUnavailableException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -75,28 +75,19 @@ describe('AppController', () => {
     it('should return unhealthy status when database is down', async () => {
       jest.spyOn(prismaService, '$queryRaw').mockRejectedValue(new Error('DB Error'));
 
-      const result = await appController.getHealth();
-
-      expect(result.status).toBe('unhealthy');
-      expect(result.services.database).toBe('down');
+      await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
     });
 
     it('should return unhealthy status when rabbitmq is down', async () => {
       jest.spyOn(rabbitMQService, 'isHealthy').mockResolvedValue(false);
 
-      const result = await appController.getHealth();
-
-      expect(result.status).toBe('unhealthy');
-      expect(result.services.rabbitmq).toBe('down');
+      await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
     });
 
     it('should return unhealthy status when docker is down', async () => {
       jest.spyOn(dockerService, 'isHealthy').mockResolvedValue(false);
 
-      const result = await appController.getHealth();
-
-      expect(result.status).toBe('unhealthy');
-      expect(result.services.docker).toBe('down');
+      await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
     });
   });
 });

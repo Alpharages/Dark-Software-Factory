@@ -25,7 +25,7 @@ describe('PatternDetectorService', () => {
   };
 
   const mockNotificationService = {
-    notifyHighPriorityReview: jest.fn(),
+    notifyAiCapabilityPattern: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -207,7 +207,7 @@ describe('PatternDetectorService', () => {
 
       mockPrismaService.aiTaskPattern.upsert.mockResolvedValueOnce({});
       mockCapabilityService.updateLimitations.mockResolvedValueOnce(undefined);
-      mockNotificationService.notifyHighPriorityReview.mockResolvedValueOnce(undefined);
+      mockNotificationService.notifyAiCapabilityPattern.mockResolvedValueOnce(undefined);
 
       await service.analyzeExecutionPatterns();
 
@@ -223,11 +223,13 @@ describe('PatternDetectorService', () => {
       );
 
       // Verify TL notification
-      expect(mockNotificationService.notifyHighPriorityReview).toHaveBeenCalledWith(
+      expect(mockNotificationService.notifyAiCapabilityPattern).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: expect.stringContaining('CRITICAL'),
-          priority: 1,
+          taskType: TaskType.CODE_GENERATION,
+          failureRate: 80,
+          patternSignature: expect.any(String),
         }),
+        true, // isCritical
       );
     });
 

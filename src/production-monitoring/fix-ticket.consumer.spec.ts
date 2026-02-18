@@ -95,7 +95,7 @@ describe('FixTicketConsumer', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (consumer as any).processMessage(payload, 'corr-1');
 
-      expect(fixTicketService.processError).toHaveBeenCalledWith('error-123', 'corr-1');
+      expect(fixTicketService.processError).toHaveBeenCalledWith('error-123', 'corr-1', undefined);
     });
   });
 });

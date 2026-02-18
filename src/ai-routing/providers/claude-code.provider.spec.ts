@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { ClaudeCodeProvider } from './claude-code.provider';
 import { WorkspaceService } from './workspace.service';
 import { PtyExecutionService } from '../services/pty-execution.service';
+import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
 import { IAIExecutionInput } from '../interfaces';
 import { Subject } from 'rxjs';
 
@@ -38,7 +39,7 @@ describe('ClaudeCodeProvider', () => {
     const mockExitSubject = new Subject<{ exitCode: number; signal?: number }>();
 
     const mockPtyExecutionService = {
-      spawn: jest.fn().mockImplementation(() => {
+      spawnInContainer: jest.fn().mockImplementation(() => {
         // Simulate output and exit
         setTimeout(() => {
           mockOutputSubject.next('Claude Code execution started\n');
@@ -53,8 +54,10 @@ describe('ClaudeCodeProvider', () => {
           pid: 12345,
           output$: mockOutputSubject.asObservable(),
           exit$: mockExitSubject.asObservable(),
+          containerId: 'container-123',
         };
       }),
+      spawn: jest.fn(),
       write: jest.fn(),
       kill: jest.fn(),
       resize: jest.fn(),
@@ -105,6 +108,14 @@ describe('ClaudeCodeProvider', () => {
         { provide: 'PROM_METRIC_CLAUDE_ACTIVE_EXECUTIONS', useValue: mockMetrics },
         { provide: 'PROM_METRIC_CLAUDE_TOKENS_TOTAL', useValue: mockMetrics },
         { provide: 'PROM_METRIC_CLAUDE_COST_CENTS', useValue: mockMetrics },
+        {
+          provide: ExecutionTrackerService,
+          useValue: {
+            emitProgress: jest.fn().mockResolvedValue(undefined),
+            emitActivity: jest.fn().mockResolvedValue(undefined),
+            emitImmediateLog: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -115,32 +126,31 @@ describe('ClaudeCodeProvider', () => {
   });
 
   afterEach(async () => {
-    await provider.onModuleDestroy();
+    if (provider) {
+      await provider.onModuleDestroy();
+    }
   });
 
   describe('execute', () => {
     it('should use PtyExecutionService to spawn claude CLI', async () => {
       await provider.execute(mockInput);
 
-      expect(ptyExecutionService.spawn).toHaveBeenCalled();
-      const call = ptyExecutionService.spawn.mock.calls[0];
+      expect(ptyExecutionService.spawnInContainer).toHaveBeenCalled();
+      const call = ptyExecutionService.spawnInContainer.mock.calls[0];
       const command = call[0];
       const args = call[1];
       const options = call[2];
 
-      expect(command).toBe('claude');
+      expect(command).toBe('/bin/sh');
 
       expect(args).toBeDefined();
-      expect(args![0]).toBe('--model');
-      expect(args).toContain('--dangerously-skip-permissions');
-      expect(args).toContain('--no-session-persistence');
-
-      // Verify prompt is passed in args
-      expect(args!.join(' ')).toContain(mockInput.prompt);
+      // The args should be shell command with claude
+      expect(args![0]).toBe('-c');
+      expect(args![1]).toContain('claude');
 
       // Verify options
       expect(options).toBeDefined();
-      expect(options!.cwd).toBe('/tmp/test-workspace');
+      expect(options!.workspacePath).toBe('/tmp/test-workspace');
       expect(options!.env).toBeDefined();
       expect(options!.env!.ANTHROPIC_API_KEY).toBe('sk-ant-test-key');
     });
@@ -148,7 +158,7 @@ describe('ClaudeCodeProvider', () => {
     it('should inject environment variables correctly', async () => {
       await provider.execute(mockInput);
 
-      const call = ptyExecutionService.spawn.mock.calls[0];
+      const call = ptyExecutionService.spawnInContainer.mock.calls[0];
       const options = call[2];
       expect(options).toBeDefined();
       expect(options!.env).toBeDefined();

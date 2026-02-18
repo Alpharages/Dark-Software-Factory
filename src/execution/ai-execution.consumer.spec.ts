@@ -12,6 +12,7 @@ import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { ClickUpService } from '../clickup/clickup.service';
+import { AiCapabilityTrackerService } from '../architecture-review/capabilities/ai-capability-tracker.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -80,6 +81,7 @@ describe('AIExecutionConsumer', () => {
         newStatus: ExecutionStatus.FAILED,
         transitionedAt: new Date(),
       }),
+      emitProgress: jest.fn(),
     };
 
     const mockOrchestrator = {
@@ -119,6 +121,11 @@ describe('AIExecutionConsumer', () => {
       addComment: jest.fn().mockResolvedValue(true),
     };
 
+    // Mock AiCapabilityTrackerService
+    const mockAiCapabilityTracker = {
+      trackExecution: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIExecutionConsumer,
@@ -131,6 +138,7 @@ describe('AIExecutionConsumer', () => {
         { provide: CostOptimizerService, useValue: mockCostOptimizer },
         { provide: SentryService, useValue: mockSentry },
         { provide: ClickUpService, useValue: mockClickUpService },
+        { provide: AiCapabilityTrackerService, useValue: mockAiCapabilityTracker },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_FAILED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_PROCESSING_DURATION_SECONDS', useValue: mockHistogram },

@@ -16,7 +16,10 @@ describe('ProductionErrorDashboardMetrics', () => {
     registry = new Registry();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ProductionErrorDashboardMetrics, { provide: Registry, useValue: registry }],
+      providers: [
+        ProductionErrorDashboardMetrics,
+        { provide: 'PROMETHEUS_REGISTRY', useValue: registry },
+      ],
     }).compile();
 
     metrics = module.get<ProductionErrorDashboardMetrics>(ProductionErrorDashboardMetrics);

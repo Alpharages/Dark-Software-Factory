@@ -9,6 +9,7 @@ import { AIProvider } from '@/prisma/client';
 import { AIExecutionService } from './ai-execution.service';
 import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '../execution/execution.service';
+import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { IAIExecutionInput, IAIExecutionResult, AIErrorCode } from './interfaces';
 
 describe('AIExecutionService', () => {
@@ -16,6 +17,8 @@ describe('AIExecutionService', () => {
   let cursorProvider: jest.Mocked<CursorHeadlessProvider>;
   let claudeProvider: jest.Mocked<ClaudeCodeProvider>;
   let executionService: jest.Mocked<ExecutionService>;
+
+  let _costTrackerService: jest.Mocked<AICostTrackerService>;
 
   const mockInput: IAIExecutionInput = {
     correlationId: 'corr-123',
@@ -82,12 +85,25 @@ describe('AIExecutionService', () => {
       cancelExecution: jest.fn(),
     };
 
+    const mockCostTrackerService = {
+      checkBudgetAvailability: jest.fn().mockResolvedValue({ allowed: true }),
+      calculateUSD: jest.fn().mockReturnValue({ toNumber: () => 0.001 }),
+      estimateCost: jest.fn().mockReturnValue({ toNumber: () => 0.001 }),
+      logCost: jest.fn().mockResolvedValue(undefined),
+      getCostStats: jest.fn().mockResolvedValue({
+        totalCost: 0,
+        projectBudget: 100,
+        projectSpend: 0,
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIExecutionService,
         { provide: CursorHeadlessProvider, useValue: mockCursorProvider },
         { provide: ClaudeCodeProvider, useValue: mockClaudeProvider },
         { provide: ExecutionService, useValue: mockExecutionService },
+        { provide: AICostTrackerService, useValue: mockCostTrackerService },
       ],
     }).compile();
 
@@ -95,6 +111,7 @@ describe('AIExecutionService', () => {
     cursorProvider = module.get(CursorHeadlessProvider);
     claudeProvider = module.get(ClaudeCodeProvider);
     executionService = module.get(ExecutionService);
+    _costTrackerService = module.get(AICostTrackerService);
   });
 
   describe('executeWithProvider', () => {

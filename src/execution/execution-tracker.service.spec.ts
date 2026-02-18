@@ -5,6 +5,8 @@ import { ExecutionRepository } from './execution.repository';
 import { ExecutionStateMachine } from './state-machine';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ExecutionStatus, AIProvider, PRRiskLevel } from '@/prisma/client';
+import { RealtimeService } from '@/realtime/realtime.service';
+import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
 
 describe('ExecutionTrackerService', () => {
   let service: ExecutionTrackerService;
@@ -102,11 +104,11 @@ describe('ExecutionTrackerService', () => {
           },
         },
         {
-          provide: 'PROM_METRIC_DSF_EXECUTION_TOTAL',
+          provide: 'PROM_METRIC_DSF_AI_EXECUTIONS_TOTAL',
           useValue: mockMetricCounter,
         },
         {
-          provide: 'PROM_METRIC_DSF_EXECUTION_DURATION_SECONDS',
+          provide: 'PROM_METRIC_DSF_AI_EXECUTION_DURATION_SECONDS',
           useValue: mockMetricHistogram,
         },
         {
@@ -127,9 +129,26 @@ describe('ExecutionTrackerService', () => {
           useValue: mockMetricHistogram,
         },
         {
+          provide: 'PROM_METRIC_WEBSOCKET_EMISSION_ERRORS_TOTAL',
+          useValue: mockMetricCounter,
+        },
+        {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue(true),
+          },
+        },
+        {
+          provide: RealtimeService,
+          useValue: {
+            emitToProject: jest.fn(),
+            emitToRole: jest.fn(),
+          },
+        },
+        {
+          provide: ExecutionActivityRepository,
+          useValue: {
+            save: jest.fn(),
           },
         },
       ],

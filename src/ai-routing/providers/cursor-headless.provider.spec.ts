@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { CursorHeadlessProvider } from './cursor-headless.provider';
 import { WorkspaceService } from './workspace.service';
 import { PtyExecutionService } from '../services/pty-execution.service';
+import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
 import { AIErrorCode } from '../interfaces';
 import { AIProvider } from '@/prisma/client';
 import { Subject, ReplaySubject } from 'rxjs';
@@ -27,6 +28,7 @@ describe('CursorHeadlessProvider', () => {
 
     ptyService = {
       spawn: jest.fn(),
+      spawnInContainer: jest.fn(),
       kill: jest.fn(),
       write: jest.fn(),
     } as any;
@@ -50,18 +52,27 @@ describe('CursorHeadlessProvider', () => {
           provide: 'PROM_METRIC_CURSOR_ACTIVE_EXECUTIONS',
           useValue: { inc: jest.fn(), dec: jest.fn() },
         },
+        {
+          provide: ExecutionTrackerService,
+          useValue: {
+            emitProgress: jest.fn().mockResolvedValue(undefined),
+            emitActivity: jest.fn().mockResolvedValue(undefined),
+            emitImmediateLog: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     provider = module.get<CursorHeadlessProvider>(CursorHeadlessProvider);
 
-    // Mock ptyService.spawn for checkCliAvailability during onModuleInit
+    // Mock ptyService.spawnInContainer for checkCliAvailability during onModuleInit
     const versionOutput$ = new ReplaySubject<string>(1);
     const versionExit$ = new ReplaySubject<{ exitCode: number }>(1);
-    ptyService.spawn.mockReturnValue({
+    ptyService.spawnInContainer.mockResolvedValue({
       pid: 999,
       output$: versionOutput$.asObservable(),
       exit$: versionExit$.asObservable(),
+      containerId: 'container-999',
     } as any);
 
     const initPromise = provider.onModuleInit();
@@ -88,11 +99,15 @@ describe('CursorHeadlessProvider', () => {
 
       const output$ = new ReplaySubject<string>(1);
       const exit$ = new ReplaySubject<{ exitCode: number }>(1);
-      ptyService.spawn.mockReturnValue({
+      ptyService.spawnInContainer.mockResolvedValue({
         pid: 123,
         output$: output$.asObservable(),
         exit$: exit$.asObservable(),
-      });
+        containerId: 'container-123',
+        resize: jest.fn(),
+        write: jest.fn(),
+        kill: jest.fn(),
+      } as any);
 
       const promise = provider.execute(input);
       output$.next('output data');
@@ -117,11 +132,15 @@ describe('CursorHeadlessProvider', () => {
 
       const output$ = new ReplaySubject<string>(1);
       const exit$ = new ReplaySubject<{ exitCode: number }>(1);
-      ptyService.spawn.mockReturnValue({
+      ptyService.spawnInContainer.mockResolvedValue({
         pid: 123,
         output$: output$.asObservable(),
         exit$: exit$.asObservable(),
-      });
+        containerId: 'container-123',
+        resize: jest.fn(),
+        write: jest.fn(),
+        kill: jest.fn(),
+      } as any);
 
       const promise = provider.execute(input);
       exit$.next({ exitCode: 1 });
@@ -177,11 +196,15 @@ describe('CursorHeadlessProvider', () => {
 
       const output$ = new ReplaySubject<string>(1);
       const exit$ = new ReplaySubject<{ exitCode: number }>(1);
-      ptyService.spawn.mockReturnValue({
+      ptyService.spawnInContainer.mockResolvedValue({
         pid: 456,
         output$: output$.asObservable(),
         exit$: exit$.asObservable(),
-      });
+        containerId: 'container-456',
+        resize: jest.fn(),
+        write: jest.fn(),
+        kill: jest.fn(),
+      } as any);
 
       const promise = provider.executePrompt(input);
       output$.next('This code does X');

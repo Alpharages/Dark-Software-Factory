@@ -127,7 +127,7 @@ describe('PRRiskAssessorService', () => {
       (aiExecution.getProvider as jest.Mock).mockReturnValue(mockFailingProvider);
 
       await expect(service.assess('exec-123', 'org/repo', 42)).rejects.toThrow(
-        'AI provider failed: AI is sleep',
+        'AI provider failed: "AI is sleep"',
       );
     });
 

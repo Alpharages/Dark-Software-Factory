@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { QualityGateConfigService } from './quality-gate-config.service';
+import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service';
 
 describe('QualityGateConfigService', () => {
   let service: QualityGateConfigService;
@@ -26,6 +27,11 @@ describe('QualityGateConfigService', () => {
     $transaction: jest.fn((cb) => cb(mockTransactionClient)),
   };
 
+  const mockAIDecisionLogger = {
+    logDecision: jest.fn(),
+    getDecisionTimeline: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -37,6 +43,10 @@ describe('QualityGateConfigService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: AIDecisionLoggerService,
+          useValue: mockAIDecisionLogger,
         },
       ],
     }).compile();

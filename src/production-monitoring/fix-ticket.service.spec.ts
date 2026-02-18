@@ -4,6 +4,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { SystemConfigService } from '@/system-settings/system-config.service';
 import { SentryService } from '@/common/sentry/sentry.service';
+import { FixTicketMetrics } from './fix-ticket.metrics';
 import { ErrorSeverity } from '@/prisma/enums';
 
 describe('FixTicketService', () => {
@@ -37,6 +38,12 @@ describe('FixTicketService', () => {
     captureException: jest.fn(),
   };
 
+  const mockFixTicketMetrics = {
+    recordTicketCreated: jest.fn(),
+    recordTicketSkipped: jest.fn(),
+    recordTicketFailed: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -45,6 +52,7 @@ describe('FixTicketService', () => {
         { provide: ClickUpService, useValue: mockClickUpService },
         { provide: SystemConfigService, useValue: mockSystemConfigService },
         { provide: SentryService, useValue: mockSentryService },
+        { provide: FixTicketMetrics, useValue: mockFixTicketMetrics },
       ],
     }).compile();
 
@@ -166,6 +174,7 @@ describe('FixTicketService', () => {
       mockSystemConfigService.get.mockImplementation((key) => {
         if (key === 'AUTO_TICKET_SEVERITY_THRESHOLD') return Promise.resolve('HIGH');
         if (key === 'DEFAULT_PRODUCTION_ERRORS_LIST_ID') return Promise.resolve('default-list');
+        if (key === 'FRONTEND_URL') return Promise.resolve('http://localhost:3000');
         return Promise.resolve(null);
       });
       mockPrismaService.productionError.findFirst.mockResolvedValue(null);

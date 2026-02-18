@@ -7,6 +7,7 @@ import { EventBusService } from '../common/event-bus.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ArchitectureReviewNotificationService } from './architecture-review-notification.service';
 import { CreateAdrDto } from './dto';
+import { AdrMetricsService } from './metrics/adr-metrics.service';
 
 import { ConstraintValidatorService } from './constraint-validator.service';
 import { EscalationDetectorService } from './escalation-detector.service';
@@ -59,6 +60,14 @@ describe('AdrService', () => {
     getEscalationThreshold: jest.fn().mockResolvedValue(0.7),
   };
 
+  const mockAdrMetricsService = {
+    trackReviewCompleted: jest.fn().mockResolvedValue(undefined),
+    reviewsTotal: { labels: jest.fn().mockReturnValue({ inc: jest.fn() }) },
+    reviewDuration: { labels: jest.fn().mockReturnValue({ observe: jest.fn() }) },
+    queueDepth: { set: jest.fn() },
+    approvalRate: { set: jest.fn() },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -88,6 +97,7 @@ describe('AdrService', () => {
           useValue: mockConstraintValidator,
         },
         { provide: EscalationDetectorService, useValue: mockEscalationDetector },
+        { provide: AdrMetricsService, useValue: mockAdrMetricsService },
       ],
     }).compile();
 
@@ -114,6 +124,7 @@ describe('AdrService', () => {
       status: AdrStatus.PROPOSED,
       ticket_id: 'ticket-1',
       execution_id: 'exec-1',
+      created_at: new Date(),
     };
 
     it('should approve an ADR and trigger side effects', async () => {
@@ -484,10 +495,12 @@ describe('AdrService', () => {
       expect(result.success).toBe(true);
       expect(result.message).toBe('ADR approved successfully');
       expect(result.adr.status).toBe('ACCEPTED');
-      expect(mockPrismaService.adr.update).toHaveBeenCalledWith({
-        where: { id: adrId },
-        data: { status: 'ACCEPTED' },
-      });
+      expect(mockPrismaService.adr.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adrId },
+          data: expect.objectContaining({ status: 'ACCEPTED' }),
+        }),
+      );
     });
 
     it('should reject an ADR with notes (REJECT → REJECTED)', async () => {
@@ -497,6 +510,7 @@ describe('AdrService', () => {
         id: adrId,
         title: 'Use Redis',
         status: 'PROPOSED',
+        created_at: new Date(),
       };
       const mockUpdatedAdr = {
         ...mockProposedAdr,
@@ -511,6 +525,12 @@ describe('AdrService', () => {
       expect(result.success).toBe(true);
       expect(result.message).toBe('ADR rejected successfully');
       expect(result.adr.status).toBe('REJECTED');
+      expect(mockPrismaService.adr.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adrId },
+          data: expect.objectContaining({ status: 'REJECTED', rejection_reason: notes }),
+        }),
+      );
     });
 
     it('should throw error when ADR not found', async () => {
@@ -538,6 +558,7 @@ describe('AdrService', () => {
         id: adrId,
         title: 'Test ADR',
         status: 'PROPOSED',
+        created_at: new Date(),
       };
       const mockUpdatedAdr = {
         ...mockProposedAdr,
@@ -551,6 +572,12 @@ describe('AdrService', () => {
 
       expect(result.success).toBe(true);
       expect(result.adr.status).toBe('PROPOSED');
+      expect(mockPrismaService.adr.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: adrId },
+          data: expect.objectContaining({ status: 'PROPOSED' }),
+        }),
+      );
     });
   });
 });

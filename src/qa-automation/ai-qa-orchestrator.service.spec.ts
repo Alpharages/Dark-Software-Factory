@@ -5,6 +5,7 @@ import { OrchestratorService } from '../ai-routing/orchestrator.service';
 import { QaMetricsService } from './qa-metrics.service';
 import { PrismaService } from '../database/prisma.service';
 import { SentryService } from '../common/sentry/sentry.service';
+import { QaNotificationService } from './services/qa-notification.service';
 import { AIProvider } from '@/prisma/client';
 
 describe('AiQaOrchestrator', () => {
@@ -40,6 +41,12 @@ describe('AiQaOrchestrator', () => {
       captureException: jest.fn(),
     };
 
+    const mockQaNotificationService = {
+      emitGateFailed: jest.fn().mockResolvedValue(undefined),
+      emitAllGatesFailed: jest.fn().mockResolvedValue(undefined),
+      emitGateBlocked: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AiQaOrchestrator,
@@ -47,7 +54,8 @@ describe('AiQaOrchestrator', () => {
         { provide: QaMetricsService, useValue: mockQaMetrics },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: SentryService, useValue: mockSentry },
-        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: QaNotificationService, useValue: mockQaNotificationService },
+        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(2) } },
       ],
     }).compile();
 
@@ -88,7 +96,7 @@ describe('AiQaOrchestrator', () => {
 
       const result = await service.executeLintCheck('ticket-1', 'exec-1', '/project/path');
 
-      expect(result.status).toBe('ERROR');
+      expect(result.status).toBe('SKIPPED');
       expect(sentry.captureException).toHaveBeenCalled();
     });
 
