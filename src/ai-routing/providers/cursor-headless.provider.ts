@@ -140,6 +140,8 @@ export class CursorHeadlessProvider
         ticketId,
         repositoryUrl,
         baseBranch,
+        undefined, // no onProgress callback
+        AIProvider.CURSOR_HEADLESS,
       );
       workspacePath = workspaceInfo.path;
       this.logger.log(

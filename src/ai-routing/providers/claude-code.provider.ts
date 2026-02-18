@@ -579,6 +579,7 @@ export class ClaudeCodeProvider
       (status) => {
         onProgress(status).catch((e) => this.logger.warn(`Failed to emit progress: ${e.message}`));
       },
+      AIProvider.CLAUDE_CODE,
     );
 
     if (!workspaceInfo.path) {
@@ -648,8 +649,9 @@ export class ClaudeCodeProvider
       }
 
       // Build Claude CLI args for text output (simpler than full execution's stream-json)
-      const claudeArgs = [
-        'claude',
+      // Run claude directly (not through shell) to avoid escaping issues with complex prompts
+      const command = 'claude';
+      const args = [
         '--output-format',
         'text',
         '--model',
@@ -658,13 +660,6 @@ export class ClaudeCodeProvider
         '--no-session-persistence',
         scopedPrompt,
       ];
-
-      // Wrap in shell command (same pattern as execute())
-      const command = '/bin/sh';
-      const escapedArgs = claudeArgs
-        .map((arg) => `"${arg.replace(/(["'$`\\])/g, '\\$1')}"`)
-        .join(' ');
-      const args = ['-c', escapedArgs];
 
       this.logger.debug(`Spawning Claude for standalone prompt in container`);
 

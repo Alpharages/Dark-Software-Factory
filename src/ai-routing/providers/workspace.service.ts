@@ -32,6 +32,16 @@ import { WorkspaceStatus } from '@/prisma/client';
 import { StorageManagerService } from '../../storage/storage-manager.service';
 import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
 
+/**
+ * Maps AI provider names to their convention instruction filenames.
+ * Each repo can have a single `.ai/instructions.md` that gets copied
+ * to the provider-specific filename after cloning.
+ */
+const AI_INSTRUCTION_TARGETS: Record<string, string> = {
+  CLAUDE_CODE: 'CLAUDE.md',
+  CURSOR_HEADLESS: '.cursorrules',
+};
+
 @Injectable()
 export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WorkspaceService.name);
@@ -111,6 +121,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     repositoryUrl: string,
     _baseBranch: string = 'main',
     onProgress?: (status: string) => void,
+    provider?: string,
   ): Promise<IWorkspaceInfo> {
     // Trim repository URL to prevent whitespace issues in git commands
     const trimmedRepositoryUrl = repositoryUrl?.trim() || '';
@@ -296,6 +307,11 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
         await fs.mkdir(workspacePath, { recursive: true });
       }
 
+      // 5. Inject AI instructions for provider (copy .ai/instructions.md → provider convention file)
+      if (provider) {
+        await this.injectAIInstructions(workspacePath, provider, executionId);
+      }
+
       // Update workspace status to READY
       await this.prisma.workspace.update({
         where: { execution_id: executionId },
@@ -332,6 +348,58 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
         true,
         errorMessage,
       );
+    }
+  }
+
+  /**
+   * Inject project-level AI instructions into the provider's convention file.
+   *
+   * Copies `.ai/instructions.md` → provider-specific filename (e.g. CLAUDE.md, .cursorrules).
+   * Skips if:
+   *  - The provider has no known convention filename
+   *  - The source `.ai/instructions.md` doesn't exist in the repo
+   *  - The target file already exists (repo-level override takes precedence)
+   */
+  private async injectAIInstructions(
+    workspacePath: string,
+    provider: string,
+    executionId: string,
+  ): Promise<void> {
+    // eslint-disable-next-line security/detect-object-injection
+    const targetFilename = AI_INSTRUCTION_TARGETS[provider];
+    if (!targetFilename) return;
+
+    const sourceFile = path.join(workspacePath, '.ai', 'instructions.md');
+    const targetFile = path.join(workspacePath, targetFilename);
+
+    try {
+      // Check if source exists
+      await fs.access(sourceFile);
+    } catch {
+      // Source doesn't exist — no project instructions, skip silently
+      return;
+    }
+
+    try {
+      // Check if target already exists (repo override)
+      await fs.access(targetFile);
+      this.logger.log(
+        `[${executionId}] Provider file ${targetFilename} already exists, skipping AI instructions injection`,
+      );
+      return;
+    } catch {
+      // Target doesn't exist — proceed with copy
+    }
+
+    try {
+      await fs.copyFile(sourceFile, targetFile);
+      this.logger.log(
+        `[${executionId}] Injected AI instructions: .ai/instructions.md → ${targetFilename}`,
+      );
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[${executionId}] Failed to inject AI instructions: ${msg}`);
+      // Non-fatal — don't fail workspace creation over this
     }
   }
 
