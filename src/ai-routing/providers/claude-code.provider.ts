@@ -52,7 +52,7 @@ export class ClaudeCodeProvider
 
   /** Configuration */
   private model: string = 'claude-sonnet-4-20250514';
-  private timeoutMs: number = 120_000;
+  private timeoutMs: number = 300_000;
   private isConfigured: boolean = false;
   private apiKey: string | undefined;
   private baseURL: string | undefined;
@@ -177,7 +177,6 @@ export class ClaudeCodeProvider
         '--model',
         this.model,
         '--dangerously-skip-permissions',
-        '--no-session-persistence',
         cliPrompt,
       ];
 
@@ -506,6 +505,15 @@ export class ClaudeCodeProvider
       this.executionsCounter.inc({ status: 'success' });
       this.workspace.updateWorkspaceStatus(executionId, 'COMPLETED');
 
+      // Emit final progress so dashboard reaches 100%
+      await this.executionTracker.emitProgress(
+        executionId,
+        ticketId,
+        null,
+        'Execution complete',
+        100,
+      );
+
       const durationMs = Date.now() - startTime;
       this.durationHistogram.observe({ status: 'success' }, durationMs / 1000);
 
@@ -626,7 +634,7 @@ export class ClaudeCodeProvider
    */
   async executePrompt(input: IAIPromptExecutionInput): Promise<IAIPromptExecutionResult> {
     const { workspacePath, prompt, timeoutMs, contextFiles } = input;
-    const timeout = timeoutMs || 120_000; // 2 minutes for standalone prompts
+    const timeout = timeoutMs || this.timeoutMs;
     const startTime = Date.now();
 
     this.logger.log(`Executing standalone prompt on workspace: ${workspacePath}`);
@@ -657,12 +665,10 @@ export class ClaudeCodeProvider
       // Run claude directly (not through shell) to avoid escaping issues with complex prompts
       const command = 'claude';
       const args = [
-        '--output-format',
-        'text',
+        '--print',
         '--model',
         this.model,
         '--dangerously-skip-permissions',
-        '--no-session-persistence',
         scopedPrompt,
       ];
 

@@ -182,12 +182,14 @@ export class PtyExecutionService implements OnModuleDestroy {
     if (!env) return {};
 
     // Variables that should NOT be passed to container (host-specific)
+    // NOTE: NODE_OPTIONS is intentionally NOT blocked here — providers like
+    // ClaudeCodeProvider explicitly set container-appropriate values
+    // (e.g., --max-old-space-size=2048) that must reach the container.
     const blockedPrefixes = [
       'NVM_', // Node Version Manager
       'ELECTRON_', // Electron-specific
       'VSCODE_', // VS Code-specific
       'npm_', // npm internal
-      'NODE_OPTIONS', // Node.js options (host-specific paths)
       'ANTHROPIC_CLI_', // Claude CLI internal
     ];
 
