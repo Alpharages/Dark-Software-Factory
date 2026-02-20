@@ -16,7 +16,9 @@ export class QaCheckPublisher {
   constructor(
     private readonly publisher: RabbitMQPublisherService,
     private readonly logger: LoggerService,
-  ) {}
+  ) {
+    console.log('[QaCheckPublisher] Instantiated');
+  }
 
   /**
    * Publish QA check message to qa-check-queue

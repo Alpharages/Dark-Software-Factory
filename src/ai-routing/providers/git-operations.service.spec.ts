@@ -6,10 +6,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { GitOperationsService } from './git-operations.service';
 import * as childProcess from 'child_process';
+import * as fsPromises from 'fs/promises';
 
 // Mock child_process.execFile with callback pattern support for promisify
 jest.mock('child_process', () => ({
   execFile: jest.fn(),
+}));
+
+// Mock fs/promises for .gitignore operations
+jest.mock('fs/promises', () => ({
+  readFile: jest.fn(),
+  appendFile: jest.fn(),
 }));
 
 describe('GitOperationsService', () => {
@@ -69,6 +76,12 @@ describe('GitOperationsService', () => {
 
   beforeEach(async () => {
     mockExecFile = childProcess.execFile as unknown as jest.Mock;
+
+    // Default: .gitignore already contains all exclusions (no append needed)
+    (fsPromises.readFile as jest.Mock).mockResolvedValue(
+      '# compiled output\n/dist\n/node_modules\n.pnpm-store\n.yarn/cache\n.npm\n__pycache__\n.cache\n',
+    );
+    (fsPromises.appendFile as jest.Mock).mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [GitOperationsService],
@@ -212,6 +225,16 @@ describe('GitOperationsService', () => {
       const files = await service.getChangedFiles('/tmp/workspace');
 
       expect(files).toEqual([]);
+    });
+
+    it('should filter out .pnpm-store and other excluded paths', async () => {
+      const mockStatus =
+        'A  src/app.ts\nA  .pnpm-store/v10/files/00/abc123\nA  .pnpm-store/v10/files/01/def456\nM  README.md\nA  __pycache__/module.cpython-311.pyc';
+      mockSuccess(mockStatus);
+
+      const files = await service.getChangedFiles('/tmp/workspace');
+
+      expect(files).toEqual(['src/app.ts', 'README.md']);
     });
   });
 

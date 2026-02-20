@@ -35,6 +35,8 @@ import { AppModule } from './app.module';
 import { LoggerService } from './common/logger';
 
 async function bootstrap() {
+  console.log('--- SERVER STARTUP INITIATED ---');
+  console.log('--- CHECKING FOR UPDATED CODE ---');
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }), // Disable Fastify's default logger

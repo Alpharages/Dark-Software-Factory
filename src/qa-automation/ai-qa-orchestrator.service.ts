@@ -255,14 +255,31 @@ export class AiQaOrchestrator {
    */
   private parseJSONResponse(output: string, checkType: string): Record<string, unknown> {
     try {
-      // Remove markdown code blocks if present
-      const cleanOutput = output
+      // 1. Strip Docker stream metadata that can prefix container output
+      let cleanOutput = output.replace(/^\s*\{"stream"\s*:\s*true[^}]*\}\s*/g, '');
+      // 2. Remove ANSI escape codes
+      // eslint-disable-next-line no-control-regex
+      cleanOutput = cleanOutput.replace(/\x1b\[[0-9;]*m/g, '');
+      // 3. Remove markdown code blocks if present
+      cleanOutput = cleanOutput
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim();
-      return JSON.parse(cleanOutput);
+
+      // 4. Try direct parse first
+      try {
+        return JSON.parse(cleanOutput);
+      } catch {
+        // 5. Fallback: extract the last JSON object (skip any prefixed noise)
+        const jsonObjects = cleanOutput.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g);
+        if (jsonObjects && jsonObjects.length > 0) {
+          // Use the last JSON object — the actual response, not metadata
+          return JSON.parse(jsonObjects[jsonObjects.length - 1]);
+        }
+        throw new Error('No valid JSON object found');
+      }
     } catch (_error) {
-      this.logger.warn(`Failed to parse JSON for ${checkType}: ${output.substring(0, 100)}...`);
+      this.logger.warn(`Failed to parse JSON for ${checkType}: ${output.substring(0, 200)}...`);
       throw new Error(`Invalid JSON response from AI for ${checkType} check`);
     }
   }

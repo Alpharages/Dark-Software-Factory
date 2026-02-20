@@ -69,7 +69,7 @@ describe('ClaudeCodeProvider', () => {
           'anthropic.apiKey': 'sk-ant-test-key',
           'anthropic.model': 'claude-sonnet-4-20250505',
           'anthropic.maxTokens': 8000,
-          'anthropic.timeoutMs': 120000,
+          'anthropic.timeoutMs': 300000,
           'anthropic.baseURL': 'http://localhost:11434', // For testing env injection
         };
         return config[key] ?? defaultValue;

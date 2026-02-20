@@ -328,14 +328,46 @@ Execute these tasks now and return ONLY the JSON response.`;
   /**
    * Parse AI response to extract PR information
    */
+  /**
+   * Strip Docker stream metadata and other non-JSON noise that can prefix
+   * the AI response when output is captured from a container exec/attach stream.
+   * Example noise: `{"stream":true,"stdout":true,"stderr":true,"stdin":true}`
+   */
+  private stripStreamNoise(raw: string): string {
+    // Remove Docker attach/exec stream metadata objects (always at the start)
+    let cleaned = raw.replace(/^\s*\{"stream"\s*:\s*true[^}]*\}\s*/g, '');
+    // Also remove any ANSI escape codes
+    // eslint-disable-next-line no-control-regex
+    cleaned = cleaned.replace(/\x1b\[[0-9;]*m/g, '');
+    return cleaned.trim();
+  }
+
   private parsePRResponse(response: string): {
     prUrl: string;
     prNumber: number;
     prTitle?: string;
   } {
     try {
-      // Try to parse as JSON first
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      const cleaned = this.stripStreamNoise(response);
+
+      // Fallback first: Try to extract PR URL from text (most reliable)
+      const urlMatch = cleaned.match(/https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)/);
+      if (urlMatch) {
+        // Also try to extract prTitle from nearby JSON if available
+        let prTitle: string | undefined;
+        const jsonMatch = cleaned.match(/\{[^{}]*"prTitle"\s*:\s*"([^"]+)"[^{}]*\}/);
+        if (jsonMatch) {
+          prTitle = jsonMatch[1];
+        }
+        return {
+          prUrl: urlMatch[0],
+          prNumber: parseInt(urlMatch[1], 10),
+          prTitle,
+        };
+      }
+
+      // Try to parse JSON containing prUrl
+      const jsonMatch = cleaned.match(/\{[^{}]*"prUrl"\s*:[^{}]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.prUrl && parsed.prNumber) {
@@ -345,15 +377,6 @@ Execute these tasks now and return ONLY the JSON response.`;
             prTitle: parsed.prTitle,
           };
         }
-      }
-
-      // Fallback: Try to extract PR URL from text
-      const urlMatch = response.match(/https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)/);
-      if (urlMatch) {
-        return {
-          prUrl: urlMatch[0],
-          prNumber: parseInt(urlMatch[1], 10),
-        };
       }
 
       throw new Error('Could not parse PR URL from AI response');
