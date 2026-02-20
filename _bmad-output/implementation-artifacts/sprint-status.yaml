@@ -37,8 +37,8 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # PENDING UI STORIES
-  11-5-UI-audit-log-viewer: drafted
-  12-UI-ai-resource-manager: drafted
+  11-5-UI-audit-log-viewer: done
+  12-UI-ai-resource-manager: ready-for-dev
   14-5-UI-observability-control-panel: drafted
 
   # EPIC 15 - PRODUCTION ROLLOUT
