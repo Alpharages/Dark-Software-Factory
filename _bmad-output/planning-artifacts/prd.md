@@ -308,6 +308,13 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 - **FR22:** PMs can schedule sprint reviews and availability windows with clients
 - **FR23:** PMs can document client feedback and link to relevant tickets
 
+**GitHub Account Management (Multi-Account):**
+
+- **FR146:** PMs can authenticate and connect multiple GitHub accounts to their profile via a GitHub App integration
+- **FR147:** PMs can view a list of all their connected GitHub accounts
+- **FR148:** PMs can associate a specific GitHub repository (from their connected accounts) to a client project via a repository selector
+- **FR149:** System securely stores and utilizes the corresponding GitHub token during AI execution to clone, fetch, and push to the project's selected private repository
+
 ---
 
 ### Technical Lead (TL) Capabilities
@@ -540,7 +547,7 @@ The critical missing 20% that connects existing AetherFlow (80%) into automated 
 
 ## Functional Requirements Summary
 
-**Total FRs:** 136 (63 MVP Phase 1, 38 Growth Phase 2, 35 Vision Phase 3)
+**Total FRs:** 140 (67 MVP Phase 1, 38 Growth Phase 2, 35 Vision Phase 3)
 
 **Capability Coverage:**
 

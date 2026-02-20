@@ -89,7 +89,7 @@ development_status:
   epic-24-name: 'GitHub Multi-Account Integration & Repository Selection'
   epic-24-notes: 'Enables users to connect multiple GitHub accounts'
   24-1-github-app-flow-for-multiple-accounts:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
     notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'

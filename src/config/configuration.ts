@@ -58,6 +58,8 @@ export default () => {
       token: process.env.GITHUB_TOKEN,
       defaultRepository: process.env.GITHUB_DEFAULT_REPOSITORY,
       appId: process.env.GITHUB_APP_ID ? parseInt(process.env.GITHUB_APP_ID, 10) : undefined,
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
       privateKeyPath: process.env.GITHUB_APP_PRIVATE_KEY_PATH,
       webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
       autoMergeLowRisk: process.env.GITHUB_AUTO_MERGE_LOW_RISK === 'true',

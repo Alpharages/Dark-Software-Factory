@@ -397,6 +397,7 @@ NFR-C9: Human approval gates must be documented for liability protection
 - **FR91-95 (Metrics):** Epics 11, 14 (Audit & Observability)
 - **FR96-127 (Dashboards):** Epics 7, 17, 18 (UI & Auth)
 - **FR137-141 (Claude):** Epic 19 (Claude Code Integration)
+- **FR146-149 (GitHub Accounts):** Epic 24 (Multi-Account Integration)
 
 ## Epic List
 
@@ -486,3 +487,47 @@ So that I can see the AI's execution progress in real-time on the dashboard.
 **And** it should handle TTY resizing events (getting terminal rows/cols) passed to the Docker session.
 
 ---
+
+### Epic 24: GitHub Multi-Account Integration & Repository Selection
+
+**Goal:** Enable users to connect multiple GitHub accounts to their profile and assign specific repositories to projects, ensuring the AI execution engine has the correct authentication configuration for cloning and pushing to private repositories.
+
+**User Value:** Solves the critical blocker of AI execution failing due to lack of authentication when projects span across multiple different client GitHub accounts.
+
+**FRs Covered:** FR146-FR149, NFR-S3, NFR-S11.
+
+#### Story 24-1: GitHub App Flow for Multiple Accounts
+
+As a PM,
+I want to connect multiple GitHub accounts securely,
+So that I can eventually pick repositories from any of my client accounts.
+
+**Acceptance Criteria:**
+
+- Create GitHub App integration capable of requesting installation/user-to-server tokens.
+- UI allows adding a new GitHub account.
+- Successfully connected accounts are displayed with their username/avatar.
+
+#### Story 24-2: Repository Selector in Project Setup
+
+As a PM,
+I want to select a specific repository from my connected GitHub accounts for a project,
+So the orchestrator knows where to commit code.
+
+**Acceptance Criteria:**
+
+- Provide a UI on the Project page to select a connected GitHub account.
+- Fetch and display the list of accessible repositories for that account.
+- Save the selected Repository ID and associated Account ID to the project.
+
+#### Story 24-3: Execution Token Retrieval
+
+As the AI Orchestrator,
+I need to securely retrieve the correct GitHub token based on the project's selected repository,
+So I can perform git clone, fetch, and push without auth errors.
+
+**Acceptance Criteria:**
+
+- Orchestrator checks the `project.github_account_id`.
+- Retrieves the correct OAuth or installation token from the secure vault/database.
+- Injects the authenticated URL or token into the AI sandbox environment correctly.

@@ -5,6 +5,7 @@ import {
   ExecutionLog,
   QAResult,
   GitHubInstallation,
+  GitHubAccount,
   GitHubPush,
   Deployment,
   CostRecord,
@@ -62,6 +63,7 @@ export type ExecutionModel = Execution;
 export type ExecutionLogModel = ExecutionLog;
 export type QAResultModel = QAResult;
 export type GitHubInstallationModel = GitHubInstallation;
+export type GitHubAccountModel = GitHubAccount;
 export type GitHubPushModel = GitHubPush;
 export type DeploymentModel = Deployment;
 export type CostRecordModel = CostRecord;

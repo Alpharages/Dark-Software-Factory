@@ -658,6 +658,7 @@ model User {
   slackMemberId              String?                    @map("slack_member_id")
   notificationPreferences    NotificationPreference[]
   inAppNotifications         InAppNotification[]
+  gitHubAccounts             GitHubAccount[]
 
   @@index([managed_by_id])
   @@index([role])
@@ -1237,4 +1238,18 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   REVOKED
+}
+
+model GitHubAccount {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  installationId  String   @unique @map("installation_id")
+  accessToken     String   @map("access_token") // Encrypted
+  username        String
+  avatarUrl       String?  @map("avatar_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("github_accounts")
 }
