@@ -18,12 +18,28 @@ export class GitHubAuthFlowController {
   @UseGuards(JwtAuthGuard)
   @Get('auth/callback')
   async handleCallback(
-    @Query('code') code: string,
     @Req() req: Request & { user: { id: string } },
     @Res() res: Response,
+    @Query('code') code?: string,
+    @Query('error') errorQuery?: string,
+    @Query('error_description') errorDescription?: string,
   ) {
     const userId = req.user.id;
     try {
+      if (errorQuery) {
+        // If GitHub redirected with an error (e.g., user denied access)
+        const errorMessage = errorDescription || errorQuery;
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/profile?error=${encodeURIComponent(
+            errorMessage === 'access_denied' ? 'GitHub access request was declined.' : errorMessage,
+          )}`,
+        );
+      }
+
+      if (!code) {
+        throw new Error('Authorization code is missing.');
+      }
+
       await this.authFlowService.handleCallback(code, userId);
       // Redirect back to profile page
       return res.redirect(`${process.env.FRONTEND_URL}/profile?success=true`);

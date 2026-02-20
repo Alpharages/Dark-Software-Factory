@@ -93,6 +93,16 @@ development_status:
     effort: '2 days'
     story_points: 5
     notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
+  24-2-repository-selector-in-project-setup:
+    status: ready-for-dev
+    effort: '2 days'
+    story_points: 5
+    notes: 'Schema migration + backend repo listing + save endpoints + frontend GithubRepoSelector component'
+  24-3-execution-token-retrieval:
+    status: ready-for-dev
+    effort: '1 day'
+    story_points: 3
+    notes: 'GitHubTokenResolverService + inject per-project token into CommitOrchestrator push + GitMirrorService clone'
 
 priority_sequence:
   last_updated: '2026-02-20T17:25:00+05:00'

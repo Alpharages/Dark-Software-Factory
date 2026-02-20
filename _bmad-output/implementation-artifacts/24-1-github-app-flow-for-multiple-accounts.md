@@ -64,9 +64,9 @@ so that I can eventually pick repositories from any of my client accounts.
 
 ### Adversarial Review Findings (Follow-ups)
 
-- [ ] **Critical**: Refine `installationId` logic to handle App installations correctly (currently brittle/picks first).
-- [ ] **Security**: Transition from broad OAuth scopes to fine-grained App tokens (NFR-S11).
-- [ ] **UX**: Add proper error toast handling in the frontend for OAuth rejections.
+- [x] **Critical**: Refine `installationId` logic to handle App installations correctly (currently brittle/picks first).
+- [x] **Security**: Transition from broad OAuth scopes to fine-grained App tokens (NFR-S11).
+- [x] **UX**: Add proper error toast handling in the frontend for OAuth rejections.
 
 ### References
 
@@ -83,6 +83,10 @@ Antigravity
 ### Debug Log References
 
 ### Completion Notes List
+
+- ✅ Resolved review finding [Critical]: Refined installationId logic to process every installed GitHub App correctly.
+- ✅ Resolved review finding [Security]: Transitioned from broad OAuth scopes to fine-grained user-to-server tokens.
+- ✅ Resolved review finding [UX]: Added proper parsing of OAuth denial statuses to gracefully redirect back with readable toast errors.
 
 ### File List
 

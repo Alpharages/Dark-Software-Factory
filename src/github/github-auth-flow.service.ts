@@ -26,12 +26,14 @@ export class GitHubAuthFlowService {
 
     const redirectUri = `${this.config.get<string>('FRONTEND_URL')}/settings/github/callback`;
 
-    // Using user-to-server flow to identify the PM
-    return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,user`;
+    // Using user-to-server flow to identify the PM.
+    // GitHub Apps don't use 'scope' parameter for user-to-server tokens,
+    // they inherit the App's permissions, fulfilling NFR-S11.
+    return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
   }
 
   /**
-   * Exchanges authorization code for an access token and stores the account
+   * Exchanges authorization code for an access token and stores the account(s)
    */
   async handleCallback(code: string, userId: string): Promise<void> {
     const clientId = this.config.get<string>('github.clientId');
@@ -64,40 +66,73 @@ export class GitHubAuthFlowService {
     const octokit = new Octokit({ auth: access_token });
     const { data: ghUser } = await octokit.users.getAuthenticated();
 
-    // 3. Fetch installations for this user to get an installationId (if available)
-    // IMPROVEMENT: Use the first installation or the user's login as a fallback unique identifier.
-    // This prevents '0' collisions for different users without apps installed.
+    // 3. Fetch installations for this user to save every connected App installation
     const { data: installations } = await octokit.apps.listInstallationsForAuthenticatedUser();
-    const installationId = installations.installations[0]?.id.toString() || `user_${ghUser.id}`;
 
-    // 4. Encrypt and store/update the account
+    // 4. Encrypt and store/update the account(s)
     const encryptedToken = this.encryption.encrypt(access_token);
 
     try {
-      await this.prisma.gitHubAccount.upsert({
-        where: { installationId },
-        update: {
-          accessToken: encryptedToken,
-          username: ghUser.login,
-          avatarUrl: ghUser.avatar_url,
-          userId,
-        },
-        create: {
-          userId,
-          installationId,
-          accessToken: encryptedToken,
-          username: ghUser.login,
-          avatarUrl: ghUser.avatar_url,
-        },
-      });
-      this.logger.log(
-        `GitHub Auth Flow: Successfully connected account ${ghUser.login} (ID: ${installationId})`,
-      );
+      if (installations.installations.length === 0) {
+        // Fallback for user without any installations yet
+        const installationId = `user_${ghUser.id}`;
+        await this.prisma.gitHubAccount.upsert({
+          where: { installationId },
+          update: {
+            accessToken: encryptedToken,
+            username: ghUser.login,
+            avatarUrl: ghUser.avatar_url,
+            userId,
+          },
+          create: {
+            userId,
+            installationId,
+            accessToken: encryptedToken,
+            username: ghUser.login,
+            avatarUrl: ghUser.avatar_url,
+          },
+        });
+        this.logger.log(
+          `GitHub Auth Flow: Successfully connected fallback personal account ${ghUser.login} (ID: ${installationId})`,
+        );
+      } else {
+        // Iterate over all installations to capture each org/account accurately
+        for (const installation of installations.installations) {
+          const installationId = installation.id.toString();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const targetAccount: any = installation.account || {};
+          const username = targetAccount.login || ghUser.login;
+          const avatarUrl = targetAccount.avatar_url || ghUser.avatar_url;
+
+          await this.prisma.gitHubAccount.upsert({
+            where: { installationId },
+            update: {
+              accessToken: encryptedToken,
+              username,
+              avatarUrl,
+              userId,
+            },
+            create: {
+              userId,
+              installationId,
+              accessToken: encryptedToken,
+              username,
+              avatarUrl,
+            },
+          });
+          this.logger.log(
+            `GitHub Auth Flow: Successfully connected installation account ${username} (ID: ${installationId})`,
+          );
+        }
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`GitHub Auth Flow: Database upsert failed for ${ghUser.login}`, stack);
-      throw new Error(`Failed to store GitHub account: ${errorMessage}`);
+      this.logger.error(
+        `GitHub Auth Flow: Database upsert failed for installations tied to ${ghUser.login}`,
+        stack,
+      );
+      throw new Error(`Failed to store GitHub accounts: ${errorMessage}`);
     }
   }
 
