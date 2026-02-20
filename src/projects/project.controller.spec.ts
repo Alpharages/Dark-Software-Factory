@@ -14,6 +14,7 @@ describe('ProjectController', () => {
     id: 'project-123',
     name: 'Test Project',
     clickup_list_id: 'list-123',
+    github_account_id: null,
     github_repository_url: 'https://github.com/test/repo',
     default_branch: 'main',
     pm_id: 'pm-123',
@@ -47,6 +48,7 @@ describe('ProjectController', () => {
             updateStatus: jest.fn(),
             syncFromClickUp: jest.fn(),
             deleteProject: jest.fn(),
+            updateGithubRepo: jest.fn(),
           },
         },
       ],
@@ -114,6 +116,19 @@ describe('ProjectController', () => {
       const result = await controller.updateRepository('project-123', dto);
       expect(result).toEqual(mockProject);
       expect(service.updateGitHubRepository).toHaveBeenCalledWith('project-123', dto.repositoryUrl);
+    });
+  });
+
+  describe('updateGithubRepo', () => {
+    it('should update github account and repository url', async () => {
+      service.updateGithubRepo.mockResolvedValue(mockProject);
+      const dto = { githubAccountId: 'acc-123', repositoryFullName: 'test/repo' };
+      const reqUser = { id: 'pm-123' } as unknown as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      const result = await controller.updateGithubRepo('project-123', dto, reqUser);
+
+      expect(result).toEqual(mockProject);
+      expect(service.updateGithubRepo).toHaveBeenCalledWith('project-123', dto, 'pm-123');
     });
   });
 

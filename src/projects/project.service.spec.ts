@@ -17,6 +17,7 @@ describe('ProjectService', () => {
     id: 'project-123',
     name: 'Test Project',
     clickup_list_id: 'list-123',
+    github_account_id: null,
     github_repository_url: 'https://github.com/test/repo',
     default_branch: 'main',
     pm_id: 'pm-123',
@@ -41,6 +42,9 @@ describe('ProjectService', () => {
     project: {
       findUnique: jest.fn(),
       update: jest.fn(),
+    },
+    gitHubAccount: {
+      findUnique: jest.fn(),
     },
     user: {
       findUnique: jest.fn(),
@@ -111,6 +115,7 @@ describe('ProjectService', () => {
             countActiveTickets: jest.fn(),
             updateRepository: jest.fn(),
             updateStatus: jest.fn(),
+            updateGithubRepo: jest.fn(),
           },
         },
         {
@@ -333,6 +338,64 @@ describe('ProjectService', () => {
       expect(repository.delete).toHaveBeenCalledWith('project-123');
       // But audit log was attempted
       expect(mockAIDecisionLogger.logDecision).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateGithubRepo', () => {
+    it('should update github account and repository url successfully', async () => {
+      const updatedProject = {
+        ...mockProject,
+        github_account_id: 'acc-123',
+        github_repository_url: 'https://github.com/test/repo',
+      };
+      const dto = { githubAccountId: 'acc-123', repositoryFullName: 'test/repo' };
+
+      repository.findById.mockResolvedValue(mockProject);
+      mockPrisma.gitHubAccount.findUnique.mockResolvedValue({
+        id: 'acc-123',
+        userId: 'user-1',
+      } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      repository.updateGithubRepo.mockResolvedValue(updatedProject);
+
+      const result = await service.updateGithubRepo('project-123', dto, 'user-1');
+
+      expect(result.github_account_id).toBe('acc-123');
+      expect(repository.updateGithubRepo).toHaveBeenCalledWith(
+        'project-123',
+        'acc-123',
+        'https://github.com/test/repo',
+      );
+      expect(mockCounter.inc).toHaveBeenCalledWith({
+        operation: 'update_github_repo',
+        status: 'success',
+      });
+    });
+
+    it('should throw ForbiddenException if account does not belong to user', async () => {
+      const dto = { githubAccountId: 'acc-123', repositoryFullName: 'test/repo' };
+
+      repository.findById.mockResolvedValue(mockProject);
+      mockPrisma.gitHubAccount.findUnique.mockResolvedValue({
+        id: 'acc-123',
+        userId: 'other-user',
+      } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      await expect(service.updateGithubRepo('project-123', dto, 'user-1')).rejects.toThrow(
+        'Not your GitHub account',
+      );
+      expect(repository.updateGithubRepo).not.toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException if account not found', async () => {
+      const dto = { githubAccountId: 'acc-invalid', repositoryFullName: 'test/repo' };
+
+      repository.findById.mockResolvedValue(mockProject);
+      mockPrisma.gitHubAccount.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateGithubRepo('project-123', dto, 'user-1')).rejects.toThrow(
+        'Not your GitHub account',
+      );
+      expect(repository.updateGithubRepo).not.toHaveBeenCalled();
     });
   });
 

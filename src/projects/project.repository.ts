@@ -103,6 +103,22 @@ export class ProjectRepository {
   }
 
   /**
+   * Update GitHub account and repository URL
+   */
+  async updateGithubRepo(
+    id: string,
+    githubAccountId: string,
+    repositoryUrl: string,
+  ): Promise<Project> {
+    const project = await this.prisma.project.update({
+      where: { id },
+      data: { github_account_id: githubAccountId, github_repository_url: repositoryUrl },
+    });
+    this.logger.log(`Updated GitHub repo for project ${id}`);
+    return project;
+  }
+
+  /**
    * Count active tickets for a project
    * Active = Not in terminal state (COMPLETED, FAILED, REJECTED)
    */

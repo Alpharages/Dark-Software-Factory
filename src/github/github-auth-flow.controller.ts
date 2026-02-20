@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Req, Res, Logger } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req, Res, Logger, Param } from '@nestjs/common';
 import { GitHubAuthFlowService } from './github-auth-flow.service';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { Response, Request } from 'express';
@@ -56,5 +56,14 @@ export class GitHubAuthFlowController {
   async getAccounts(@Req() req: Request & { user: { id: string } }) {
     const userId = req.user.id;
     return this.authFlowService.getConnectedAccounts(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('accounts/:accountId/repos')
+  async getRepos(
+    @Param('accountId') accountId: string,
+    @Req() req: Request & { user: { id: string } },
+  ) {
+    return this.authFlowService.getReposForAccount(accountId, req.user.id);
   }
 }

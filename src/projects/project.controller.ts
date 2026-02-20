@@ -19,6 +19,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
 import { UpdateRepositoryDto } from './dto/update-repository.dto';
+import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import {
   ApiTags,
@@ -142,6 +143,18 @@ export class ProjectController {
   @ApiResponse({ status: 200, description: 'Repository updated successfully' })
   updateRepository(@Param('id') id: string, @Body() dto: UpdateRepositoryDto) {
     return this.projectService.updateGitHubRepository(id, dto.repositoryUrl);
+  }
+
+  @Patch(':id/github-repo')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PM)
+  @ApiOperation({ summary: 'Set GitHub account and repository for project' })
+  @ApiResponse({ status: 200, description: 'Repository updated successfully' })
+  updateGithubRepo(
+    @Param('id') id: string,
+    @Body() dto: UpdateGithubRepoDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.projectService.updateGithubRepo(id, dto, user.id);
   }
 
   @Patch(':id/status')

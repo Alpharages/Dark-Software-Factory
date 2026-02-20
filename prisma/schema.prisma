@@ -29,7 +29,10 @@ model Project {
   quality_gate_config   QualityGateConfig?
   reports               Report[]
   tickets               Ticket[]
+  github_account_id     String?                @map("github_account_id")
+  gitHubAccount         GitHubAccount?         @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
 
+  @@index([github_account_id])
   @@map("projects")
 }
 
@@ -1250,6 +1253,7 @@ model GitHubAccount {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects        Project[]
 
   @@map("github_accounts")
 }

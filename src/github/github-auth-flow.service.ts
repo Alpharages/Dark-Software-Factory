@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
@@ -147,5 +147,36 @@ export class GitHubAuthFlowService {
         updatedAt: true,
       },
     });
+  }
+
+  async getReposForAccount(accountId: string, userId: string) {
+    const account = await this.prisma.gitHubAccount.findUnique({
+      where: { id: accountId },
+    });
+
+    if (!account || account.userId !== userId) {
+      throw new ForbiddenException('Not your account');
+    }
+
+    const token = this.encryption.decrypt(account.accessToken);
+    const octokit = new Octokit({ auth: token });
+
+    try {
+      const data = await octokit.paginate(octokit.repos.listForAuthenticatedUser, {
+        per_page: 100,
+        type: 'all',
+      });
+
+      return data.map((r) => ({
+        id: r.id,
+        fullName: r.full_name,
+        private: r.private,
+        htmlUrl: r.html_url,
+      }));
+    } catch (err: unknown) {
+      const error = err as Error;
+      this.logger.error(`GitHub API error: ${error.message}`, error.stack);
+      throw new HttpException('GitHub API error: ' + error.message, 502);
+    }
   }
 }

@@ -5,6 +5,7 @@ import {
   Inject,
   forwardRef,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { ProjectRepository } from './project.repository';
@@ -12,6 +13,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
+import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { Project, TicketStatus } from '@/prisma/client';
 import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
@@ -306,6 +308,35 @@ export class ProjectService {
       return project;
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'update_repo', status: 'error' });
+      throw _error;
+    }
+  }
+
+  /**
+   * Update GitHub account and repository URL
+   */
+  async updateGithubRepo(id: string, dto: UpdateGithubRepoDto, userId: string): Promise<Project> {
+    try {
+      await this.findOne(id);
+
+      // Verify that the GitHub account belongs to the user
+      const account = await this.prisma.gitHubAccount.findUnique({
+        where: { id: dto.githubAccountId },
+      });
+
+      if (!account || account.userId !== userId) {
+        throw new ForbiddenException('Not your GitHub account');
+      }
+
+      const project = await this.repository.updateGithubRepo(
+        id,
+        dto.githubAccountId,
+        `https://github.com/${dto.repositoryFullName}`,
+      );
+      this.operationsCounter.inc({ operation: 'update_github_repo', status: 'success' });
+      return project;
+    } catch (_error) {
+      this.operationsCounter.inc({ operation: 'update_github_repo', status: 'error' });
       throw _error;
     }
   }

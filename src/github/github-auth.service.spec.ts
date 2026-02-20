@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { GitHubAuthService } from './github-auth.service';
 import { GitHubAuthError } from './exceptions/github.exceptions';
+import { PrismaService } from '../database/prisma.service';
+import { EncryptionService } from '../common/encryption/encryption.service';
 
 describe('GitHubAuthService', () => {
   let service: GitHubAuthService;
@@ -15,6 +17,20 @@ describe('GitHubAuthService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn(),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            gitHubAccount: {
+              findUnique: jest.fn(),
+            },
+          },
+        },
+        {
+          provide: EncryptionService,
+          useValue: {
+            decrypt: jest.fn(),
           },
         },
       ],
