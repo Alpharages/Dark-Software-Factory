@@ -38,8 +38,8 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # PENDING UI STORIES
   11-5-UI-audit-log-viewer: done
-  12-UI-ai-resource-manager: ready-for-dev
-  14-5-UI-observability-control-panel: drafted
+  12-UI-ai-resource-manager: done
+  14-5-UI-observability-control-panel: done
 
   # EPIC 15 - PRODUCTION ROLLOUT
   epic-15: contexted
@@ -83,6 +83,16 @@ development_status:
     status: review
     effort: '2 days'
     story_points: 5
+
+  # EPIC 24 - GITHUB MULTI-ACCOUNT
+  epic-24: in-progress
+  epic-24-name: 'GitHub Multi-Account Integration & Repository Selection'
+  epic-24-notes: 'Enables users to connect multiple GitHub accounts'
+  24-1-github-app-flow-for-multiple-accounts:
+    status: ready-for-dev
+    effort: '2 days'
+    story_points: 5
+    notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
 
 priority_sequence:
   last_updated: '2026-02-20T17:25:00+05:00'
