@@ -20,6 +20,7 @@ import { PRAutoMergeService } from './services/pr-auto-merge.service';
 import { PRReminderService } from './services/pr-reminder.service';
 import { PRReminderConsumer } from './services/pr-reminder.consumer';
 import { GitHubWebhookConsumer } from './services/github-webhook.consumer';
+import { GitHubTokenResolverService } from './github-token-resolver.service';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
@@ -75,6 +76,7 @@ import { EncryptionModule } from '../common/encryption/encryption.module';
     PRReminderService,
     PRReminderConsumer,
     GitHubWebhookConsumer,
+    GitHubTokenResolverService,
     // Story 14.4: Health Monitoring Prometheus Metrics (AC#6)
     makeCounterProvider({
       name: 'deployment_health_checks_total',
@@ -108,6 +110,7 @@ import { EncryptionModule } from '../common/encryption/encryption.module';
     PRRiskAssessorService,
     PRAutoMergeService,
     PRReminderService,
+    GitHubTokenResolverService,
   ],
 })
 export class GitHubModule {}

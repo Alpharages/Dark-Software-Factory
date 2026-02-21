@@ -12,6 +12,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { StorageManagerService } from '../../storage/storage-manager.service';
 import { GitMirrorService } from '../../git-mirror/git-mirror.service';
 import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
+import { GitHubTokenResolverService } from '../../github/github-token-resolver.service';
 
 // Mock fs/promises
 jest.mock('fs/promises');
@@ -67,6 +68,9 @@ describe('WorkspaceService', () => {
     const workspaces: Array<{ execution_id: string; [key: string]: unknown }> = [];
 
     const mockPrismaService = {
+      ticket: {
+        findUnique: jest.fn().mockResolvedValue({ project_id: 'proj-123' }),
+      },
       workspace: {
         findUnique: jest.fn(async ({ where }: { where: { execution_id: string } }) => {
           return workspaces.find((w) => w.execution_id === where.execution_id) ?? null;
@@ -211,6 +215,10 @@ describe('WorkspaceService', () => {
         { provide: GitOperationsService, useValue: mockGitService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: StorageManagerService, useValue: mockStorageManagerService },
+        {
+          provide: GitHubTokenResolverService,
+          useValue: { resolveForProject: jest.fn().mockResolvedValue(null) },
+        },
         {
           provide: GitMirrorService,
           useValue: {

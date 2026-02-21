@@ -157,7 +157,7 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
    * Get or create a mirror for a repository
    * AC#1, AC#2: Check for existing mirror, create if not exists
    */
-  async getOrCreateMirror(repoUrl: string): Promise<MirrorInfo> {
+  async getOrCreateMirror(repoUrl: string, authenticatedUrl?: string): Promise<MirrorInfo> {
     if (!this.enabled) {
       throw new Error('Git mirroring is disabled');
     }
@@ -180,7 +180,7 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
         if (isCorrupted) {
           this.logger.warn(`Mirror for ${mirrorKey} is corrupted, recreating...`);
           await this.removeMirror(owner, repo);
-          await this.createBareMirror(owner, repo);
+          await this.createBareMirror(owner, repo, authenticatedUrl);
         } else {
           // Check if stale
           const metadata = this.metadataCache.get(mirrorKey);
@@ -188,13 +188,13 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
             const lastUpdated = new Date(metadata.lastUpdated);
             if (this.isMirrorStale(lastUpdated)) {
               this.logger.log(`Mirror for ${mirrorKey} is stale, updating...`);
-              await this.updateBareMirror(owner, repo);
+              await this.updateBareMirror(owner, repo, authenticatedUrl);
             }
           } else {
             // Mirror exists but no metadata - recreate
             this.logger.warn(`Mirror exists but metadata missing for ${mirrorKey}, recreating...`);
             await this.removeMirror(owner, repo);
-            await this.createBareMirror(owner, repo);
+            await this.createBareMirror(owner, repo, authenticatedUrl);
           }
         }
       } else {
@@ -203,7 +203,7 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
 
         // Create new mirror with retry logic
         this.logger.log(`Creating new mirror for ${mirrorKey}...`);
-        await this.createBareMirrorWithRetry(owner, repo);
+        await this.createBareMirrorWithRetry(owner, repo, authenticatedUrl);
       }
 
       // Get current mirror info
@@ -225,7 +225,11 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
    * Clone from mirror to workspace
    * AC#1: Clone from local mirror instead of GitHub
    */
-  async cloneFromMirror(mirrorPath: string, targetPath: string): Promise<void> {
+  async cloneFromMirror(
+    mirrorPath: string,
+    targetPath: string,
+    authenticatedUrl?: string,
+  ): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -235,11 +239,13 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
       const { owner, repo } = this.parseMirrorPath(mirrorPath);
       const repoUrl = `https://github.com/${owner}/${repo}.git`;
 
+      const resolvedUrl = authenticatedUrl || repoUrl;
+
       // Use --reference for fast cloning, --dissociate to copy objects locally
       // so the workspace is independent of the mirror after clone (prevents
       // "unable to normalize alternate object path" errors if mirror is updated)
       await this.execGitWithAuth(
-        ['clone', '--reference', mirrorPath, '--dissociate', repoUrl, targetPath],
+        ['clone', '--reference', mirrorPath, '--dissociate', resolvedUrl, targetPath],
         undefined,
         'Clone from mirror',
       );
@@ -266,9 +272,13 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
    * Create a bare mirror from GitHub with retry logic
    * AC#2: Fetch from GitHub and create bare mirror
    */
-  private async createBareMirrorWithRetry(owner: string, repo: string): Promise<string> {
+  private async createBareMirrorWithRetry(
+    owner: string,
+    repo: string,
+    authenticatedUrl?: string,
+  ): Promise<string> {
     return this.withRetry(
-      () => this.createBareMirror(owner, repo),
+      () => this.createBareMirror(owner, repo, authenticatedUrl),
       `create mirror for ${owner}/${repo}`,
     );
   }
@@ -276,13 +286,17 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
   /**
    * Create a bare mirror from GitHub
    */
-  private async createBareMirror(owner: string, repo: string): Promise<string> {
+  private async createBareMirror(
+    owner: string,
+    repo: string,
+    authenticatedUrl?: string,
+  ): Promise<string> {
     const mirrorPath = this.getMirrorPath(owner, repo);
     const repoUrl = `https://github.com/${owner}/${repo}.git`;
 
     try {
       // Check authentication token
-      if (!this.gitToken) {
+      if (!this.gitToken && !authenticatedUrl) {
         throw new MirrorAuthError(repoUrl);
       }
 
@@ -290,13 +304,11 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
       await this.ensureDirectoryExists(path.dirname(mirrorPath));
 
       // Clone as bare mirror with authentication embedded in URL
-      const authenticatedUrl = repoUrl.replace(
-        'https://',
-        `https://x-access-token:${this.gitToken}@`,
-      );
+      const resolvedUrl =
+        authenticatedUrl || repoUrl.replace('https://', `https://x-access-token:${this.gitToken}@`);
 
       await this.execGitWithAuth(
-        ['clone', '--mirror', authenticatedUrl, mirrorPath],
+        ['clone', '--mirror', resolvedUrl, mirrorPath],
         undefined,
         'Create bare mirror',
       );
@@ -350,14 +362,18 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
    * Update existing bare mirror with retry logic
    * AC#3: Refresh stale mirror with git fetch --prune
    */
-  async updateBareMirror(owner: string, repo: string): Promise<void> {
+  async updateBareMirror(owner: string, repo: string, authenticatedUrl?: string): Promise<void> {
     return this.withRetry(
-      () => this.doUpdateBareMirror(owner, repo),
+      () => this.doUpdateBareMirror(owner, repo, authenticatedUrl),
       `update mirror for ${owner}/${repo}`,
     );
   }
 
-  private async doUpdateBareMirror(owner: string, repo: string): Promise<void> {
+  private async doUpdateBareMirror(
+    owner: string,
+    repo: string,
+    authenticatedUrl?: string,
+  ): Promise<void> {
     const mirrorPath = this.getMirrorPath(owner, repo);
     const startTime = Date.now();
 
@@ -370,13 +386,11 @@ export class GitMirrorService implements OnModuleInit, OnModuleDestroy {
       // Run git fetch --prune in the mirror with authentication
       // We need to pass the authenticated URL explicitly since the remote might not have the token saved
       const repoUrl = `https://github.com/${owner}/${repo}.git`;
-      const authenticatedUrl = repoUrl.replace(
-        'https://',
-        `https://x-access-token:${this.gitToken}@`,
-      );
+      const resolvedUrl =
+        authenticatedUrl || repoUrl.replace('https://', `https://x-access-token:${this.gitToken}@`);
 
       await this.execGitWithAuth(
-        ['fetch', authenticatedUrl, '--prune'],
+        ['fetch', resolvedUrl, '--prune'],
         mirrorPath,
         'Update bare mirror',
       );

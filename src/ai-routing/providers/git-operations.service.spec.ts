@@ -308,9 +308,7 @@ describe('GitOperationsService', () => {
     let loggerErrorSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      // @ts-ignore - reaching into private property for testing logging
       loggerDebugSpy = jest.spyOn(service['logger'], 'debug').mockImplementation(() => {});
-      // @ts-ignore
       loggerErrorSpy = jest.spyOn(service['logger'], 'error').mockImplementation(() => {});
     });
 
@@ -357,7 +355,7 @@ describe('GitOperationsService', () => {
       mockFailure(mockError);
 
       await expect(service.push('/tmp/workspace', tokenUrl, 'main')).rejects.toThrow(
-        /https:\/\/\*\*\*@github\.com/
+        /https:\/\/\*\*\*@github\.com/,
       );
 
       const errorLogs = loggerErrorSpy.mock.calls.flat().join(' ');

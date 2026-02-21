@@ -16,6 +16,7 @@ import {
   generateCommitMessageTool,
   GenerateCommitMessageInput,
 } from '@/ai-routing/providers/anthropic-tools';
+import { GitHubTokenResolverService } from '../github-token-resolver.service';
 
 export interface CommitOrchestrationResult {
   success: boolean;
@@ -41,6 +42,7 @@ export class GitHubCommitOrchestrator {
     private readonly config: ConfigService,
     // Story 11.4: AI Decision Audit Logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
+    private readonly tokenResolver: GitHubTokenResolverService,
   ) {
     const apiKey = this.config.get<string>('anthropic.apiKey');
     // Use Haiku 3.5 for commit messages — cheap, fast, and more than capable
@@ -129,7 +131,16 @@ export class GitHubCommitOrchestrator {
         // (e.g., the AI already committed during code generation)
         try {
           const repositoryUrl = workspace.repositoryUrl || githubPush.repository;
-          await this.gitOps.push(workspace.path, repositoryUrl, githubPush.branch_name);
+          let pushUrl = repositoryUrl;
+          if (execution.ticket?.project_id) {
+            const resolvedAuth = await this.tokenResolver.resolveForProject(
+              execution.ticket.project_id,
+              repositoryUrl,
+            );
+            pushUrl = resolvedAuth?.authenticatedUrl ?? repositoryUrl;
+          }
+
+          await this.gitOps.push(workspace.path, pushUrl, githubPush.branch_name);
           const currentSha = await this.gitOps.getCurrentCommitSha(workspace.path);
 
           this.logger.log('Pushed existing commits successfully', {
@@ -150,11 +161,20 @@ export class GitHubCommitOrchestrator {
 
       // Commit and push using direct git operations + AI-generated commit message
       const repositoryUrl = workspace.repositoryUrl || githubPush.repository;
+      let pushUrl = repositoryUrl;
+      if (execution.ticket?.project_id) {
+        const resolvedAuth = await this.tokenResolver.resolveForProject(
+          execution.ticket.project_id,
+          repositoryUrl,
+        );
+        pushUrl = resolvedAuth?.authenticatedUrl ?? repositoryUrl;
+      }
+
       const commitResult = await this.commitAndPushDirect(
         execution,
         githubPush,
         workspace,
-        repositoryUrl,
+        pushUrl, // Pass authenticated URL for push operation
         correlationId,
       );
 
@@ -293,7 +313,7 @@ export class GitHubCommitOrchestrator {
     },
     githubPush: { id: string; repository: string; branch_name: string },
     workspace: { path: string; repositoryUrl?: string },
-    repositoryUrl: string,
+    pushUrl: string,
     _correlationId?: string,
   ): Promise<CommitOrchestrationResult> {
     this.logger.log('Performing direct git commit and push', {
@@ -359,7 +379,7 @@ export class GitHubCommitOrchestrator {
     });
 
     // 5. Push with --no-verify
-    await this.gitOps.push(workspace.path, repositoryUrl, githubPush.branch_name);
+    await this.gitOps.push(workspace.path, pushUrl, githubPush.branch_name);
 
     this.logger.log('Git push completed successfully', {
       executionId: execution.id,

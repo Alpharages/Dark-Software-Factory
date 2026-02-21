@@ -31,6 +31,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { WorkspaceStatus } from '@/prisma/client';
 import { StorageManagerService } from '../../storage/storage-manager.service';
 import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
+import { GitHubTokenResolverService } from '../../github/github-token-resolver.service';
 
 /**
  * Maps AI provider names to their convention instruction filenames.
@@ -67,6 +68,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     private readonly gitMirrorService: GitMirrorService,
     @Inject(forwardRef(() => ExecutionTrackerService))
     private readonly executionTracker: ExecutionTrackerService,
+    private readonly tokenResolver: GitHubTokenResolverService,
     @InjectMetric('cursor_workspaces_active')
     private readonly activeGauge: Gauge<string>,
     @InjectMetric('cursor_workspace_operations_total')
@@ -267,10 +269,33 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
         const gitMirroringEnabled = this.config.get<boolean>('ENABLE_GIT_MIRRORING', true);
         let clonedFromMirror = false;
 
+        let authenticatedUrl: string | undefined;
+        const ticket = await this.prisma.ticket.findUnique({
+          where: { id: ticketId },
+          select: { project_id: true },
+        });
+
+        if (ticket?.project_id) {
+          const resolvedAuth = await this.tokenResolver.resolveForProject(
+            ticket.project_id,
+            trimmedRepositoryUrl,
+          );
+          if (resolvedAuth) {
+            authenticatedUrl = resolvedAuth.authenticatedUrl;
+          }
+        }
+
         if (gitMirroringEnabled) {
           try {
-            const mirror = await this.gitMirrorService.getOrCreateMirror(trimmedRepositoryUrl);
-            await this.gitMirrorService.cloneFromMirror(mirror.mirrorPath, workspacePath);
+            const mirror = await this.gitMirrorService.getOrCreateMirror(
+              trimmedRepositoryUrl,
+              authenticatedUrl,
+            );
+            await this.gitMirrorService.cloneFromMirror(
+              mirror.mirrorPath,
+              workspacePath,
+              authenticatedUrl,
+            );
             clonedFromMirror = true;
             this.logger.log(`[${executionId}] Cloned from local mirror: ${mirror.mirrorPath}`);
           } catch (mirrorError: unknown) {
@@ -284,7 +309,9 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
         // Fallback to direct clone if mirror failed or disabled
         if (!clonedFromMirror) {
-          await this.git.clone(trimmedRepositoryUrl, workspacePath, { depth: 1 });
+          await this.git.clone(authenticatedUrl ?? trimmedRepositoryUrl, workspacePath, {
+            depth: 1,
+          });
         }
 
         // 3. Configure git user for commits
