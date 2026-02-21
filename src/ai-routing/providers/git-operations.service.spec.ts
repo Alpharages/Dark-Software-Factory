@@ -302,4 +302,67 @@ describe('GitOperationsService', () => {
       expect(sha).toBe(mockSha);
     });
   });
+
+  describe('push', () => {
+    let loggerDebugSpy: jest.SpyInstance;
+    let loggerErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // @ts-ignore - reaching into private property for testing logging
+      loggerDebugSpy = jest.spyOn(service['logger'], 'debug').mockImplementation(() => {});
+      // @ts-ignore
+      loggerErrorSpy = jest.spyOn(service['logger'], 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      loggerDebugSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
+    });
+
+    it('should push commits to remote repository', async () => {
+      mockSequence([
+        { stdout: '', stderr: '' }, // remote set-url
+        { stdout: '', stderr: '' }, // push
+      ]);
+
+      await service.push('/tmp/workspace', 'https://github.com/test/repo.git', 'main');
+
+      expect(mockExecFile).toHaveBeenCalledTimes(2);
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['remote', 'set-url', 'origin', 'https://github.com/test/repo.git'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+
+    it('should sanitize credentials in debug logs when pushing', async () => {
+      mockSequence([
+        { stdout: '', stderr: '' }, // remote set-url
+        { stdout: '', stderr: '' }, // push
+      ]);
+
+      const tokenUrl = 'https://x-access-token:ghp_secrettoken123@github.com/test/repo.git';
+      await service.push('/tmp/workspace', tokenUrl, 'main');
+
+      // Check debug logs for sanitization
+      const logCalls = loggerDebugSpy.mock.calls.flat().join(' ');
+      expect(logCalls).not.toContain('ghp_secrettoken123');
+      expect(logCalls).toContain('https://***@github.com/test/repo.git');
+    });
+
+    it('should sanitize credentials in error messages and error logs', async () => {
+      const tokenUrl = 'https://x-access-token:ghp_secrettoken123@github.com/test/repo.git';
+      const mockError = new Error(`fatal: Authentication failed for '${tokenUrl}'`);
+      mockFailure(mockError);
+
+      await expect(service.push('/tmp/workspace', tokenUrl, 'main')).rejects.toThrow(
+        /https:\/\/\*\*\*@github\.com/
+      );
+
+      const errorLogs = loggerErrorSpy.mock.calls.flat().join(' ');
+      expect(errorLogs).not.toContain('ghp_secrettoken123');
+      expect(errorLogs).toContain('https://***@github.com');
+    });
+  });
 });

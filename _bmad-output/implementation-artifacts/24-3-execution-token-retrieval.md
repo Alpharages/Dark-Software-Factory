@@ -1,6 +1,6 @@
 # Story 24.3: Execution Token Retrieval
 
-Status: ready-for-dev
+Status: DONE
 
 ## Story
 
@@ -20,7 +20,7 @@ So I can perform git clone, fetch, and push without auth errors.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create `GitHubTokenResolverService`** (AC: #1, #4, #5, #6)
+- [x] **Task 1: Create `GitHubTokenResolverService`** (AC: #1, #4, #5, #6)
   - [ ] Create `src/github/github-token-resolver.service.ts`:
 
     ```typescript
@@ -111,7 +111,7 @@ So I can perform git clone, fetch, and push without auth errors.
 
   - [ ] Register `GitHubTokenResolverService` as a provider in `src/github/github.module.ts` (add to `providers` array and `exports` array so it can be consumed by other modules).
 
-- [ ] **Task 2: Inject Token into `GitHubCommitOrchestrator`** (AC: #2, #3, #4, #5)
+- [x] **Task 2: Inject Token into `GitHubCommitOrchestrator`** (AC: #2, #3, #4, #5)
   - [ ] In `src/github/services/github-commit-orchestrator.service.ts`, add `GitHubTokenResolverService` to the constructor.
   - [ ] In the `commitAndPush()` method, after loading the `execution` and before any push operations, fetch the project and resolve the token:
 
@@ -136,7 +136,7 @@ So I can perform git clone, fetch, and push without auth errors.
     ```
   - [ ] Ensure the plain `repositoryUrl` variable is **never** replaced by `authenticatedUrl` in audit logs, `gitHubPush.repository`, or the Prisma update call. Only the push URL argument to `gitOps.push()` uses the authenticated form.
 
-- [ ] **Task 3: Inject Token into `GitMirrorService`** (AC: #2, #4, #5)
+- [x] **Task 3: Inject Token into `GitMirrorService`** (AC: #2, #4, #5)
   - [ ] `GitMirrorService` currectly has a single `this.gitToken` (from `ConfigService` env var `GITHUB_TOKEN`). The token resolution must be per-operation, not module-level.
   - [ ] Add `GitHubTokenResolverService` to `GitMirrorService` constructor (import `GitMirrorModule` ↔ `GitHubModule` — add `GitHubModule` to `GItMirrorModule` imports to avoid circular dep, OR export resolver from a shared module).
   - [ ] Add an optional `authenticatedUrl?: string` parameter to `getOrCreateMirror(repoUrl: string, authenticatedUrl?: string)`:
@@ -145,12 +145,12 @@ So I can perform git clone, fetch, and push without auth errors.
     - SECURITY: do NOT store `authenticatedUrl` in `MirrorMetadata` — only store the plain `repoUrl` in `metadata.repositoryUrl`.
   - [ ] In the call sites that invoke `gitMirrorService.getOrCreateMirror()` (currently in the AI providers / `WorkspaceService`), resolve token before calling mirror service and pass `resolvedAuth?.authenticatedUrl` as the second argument.
 
-- [ ] **Task 4: Update `GitHubModule` exports** (AC: #1)
+- [x] **Task 4: Update `GitHubModule` exports** (AC: #1)
   - [ ] In `src/github/github.module.ts`:
     - Add `GitHubTokenResolverService` to `providers: [...]`.
     - Add `GitHubTokenResolverService` to `exports: [...]` so it can be injected into `GItMirrorModule` (or any module that imports `GitHubModule`).
 
-- [ ] **Task 5: Unit Tests for `GitHubTokenResolverService`** (AC: #7)
+- [x] **Task 5: Unit Tests for `GitHubTokenResolverService`** (AC: #7)
   - [ ] Create `src/github/github-token-resolver.service.spec.ts`:
     - **Test 1 — Happy path:** Mock `prisma.project.findUnique` returns `{ github_account_id: 'acct-uuid' }`. Mock `prisma.gitHubAccount.findUnique` returns `{ id: 'acct-uuid', username: 'octocat', accessToken: '<encrypted>' }`. Mock `encryption.decrypt` returns `'ghp_token'`. Assert returned `authenticatedUrl` contains `x-access-token:ghp_token@github.com`. Assert `username === 'octocat'`.
     - **Test 2 — No account ID (null):** Mock project with `github_account_id: null`. Assert returns `null`. Assert no call to `gitHubAccount.findUnique`. Assert no call to `encryption.decrypt`.
@@ -236,4 +236,20 @@ Antigravity
 
 ### Completion Notes List
 
+- Addressed code review feedback (AI):
+  - Fixed security vulnerability in `GitOperationsService` where token-injected URLs were logged in plaintext. Reused the `sanitizeGitArgs` and `sanitizeErrorMessage` strategy from `GitMirrorService`.
+  - Added test coverage in `src/ai-routing/providers/git-operations.service.spec.ts` for credential sanitization.
+  - Documented changed files under File List.
+
 ### File List
+
+- `src/github/github-token-resolver.service.ts`
+- `src/github/github-token-resolver.service.spec.ts`
+- `src/github/github.module.ts`
+- `src/github/services/github-commit-orchestrator.service.ts`
+- `src/git-mirror/git-mirror.service.ts`
+- `src/ai-routing/providers/workspace.service.ts`
+- `src/ai-routing/providers/workspace.service.spec.ts`
+- `src/ai-routing/providers/git-operations.service.ts`
+- `src/ai-routing/providers/git-operations.service.spec.ts`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`

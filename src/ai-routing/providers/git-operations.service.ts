@@ -300,7 +300,7 @@ export class GitOperationsService {
     description?: string,
   ): Promise<{ stdout: string; stderr: string }> {
     try {
-      this.logger.debug(`${description || 'Git'}: git ${args.join(' ')}`);
+      this.logger.debug(`${description || 'Git'}: git ${this.sanitizeGitArgs(args)}`);
 
       const result = await execFileAsync('git', args, {
         cwd,
@@ -311,8 +311,37 @@ export class GitOperationsService {
       return { stdout: result.stdout, stderr: result.stderr };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Git command failed: git ${args.join(' ')}`, errorMessage);
-      throw new Error(`Git operation failed: ${errorMessage}`);
+      const sanitizedError = this.sanitizeErrorMessage(errorMessage);
+      this.logger.error(`Git command failed: git ${this.sanitizeGitArgs(args)}`, sanitizedError);
+      throw new Error(`Git operation failed: ${sanitizedError}`);
     }
+  }
+
+  /**
+   * Sanitize git arguments for logging (remove sensitive data)
+   */
+  private sanitizeGitArgs(args: string[]): string {
+    return args
+      .map((arg) => {
+        // Mask any URL that might contain credentials
+        if (arg.includes('@') && (arg.includes('http') || arg.includes('://'))) {
+          return arg.replace(/:\/\/[^:]+:[^@]+@/, '://***@');
+        }
+        return arg;
+      })
+      .join(' ');
+  }
+
+  /**
+   * Sanitize error message to remove potential tokens
+   */
+  private sanitizeErrorMessage(message: string): string {
+    // Remove URLs with embedded credentials
+    return message
+      .replace(/:\/\/[^:]+:[^@]+@/g, '://***@')
+      .replace(/x-access-token:[^@\s]+/g, 'x-access-token:***')
+      .replace(/ghp_[a-zA-Z0-9]+/g, '***')
+      .replace(/ghs_[a-zA-Z0-9]+/g, '***')
+      .replace(/github_pat_[a-zA-Z0-9_]+/g, '***');
   }
 }
