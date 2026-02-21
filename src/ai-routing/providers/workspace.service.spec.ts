@@ -19,6 +19,7 @@ jest.mock('fs/promises');
 
 describe('WorkspaceService', () => {
   let service: WorkspaceService;
+  let module: TestingModule;
   let gitService: jest.Mocked<GitOperationsService>;
   let mockGitMirrorService: jest.Mocked<GitMirrorService>;
   let mockActiveGauge: { set: jest.Mock };
@@ -208,7 +209,7 @@ describe('WorkspaceService', () => {
       archiveWorkspace: jest.fn().mockResolvedValue(undefined),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         WorkspaceService,
         { provide: ConfigService, useValue: mockConfigService },
@@ -310,6 +311,42 @@ describe('WorkspaceService', () => {
         operation: 'create',
         status: 'success',
       });
+    });
+
+    it('should pass authenticatedUrl to mirror service when token resolves', async () => {
+      // Mock token resolver returning an authenticated URL
+      const mockTokenResolver = module.get(GitHubTokenResolverService);
+      (mockTokenResolver.resolveForProject as jest.Mock).mockResolvedValue({
+        authenticatedUrl: 'https://x-access-token:ghp_test@github.com/test/repo.git',
+        username: 'octocat',
+        accountId: 'acct-uuid',
+      });
+
+      mockGitMirrorService.getOrCreateMirror.mockResolvedValue({
+        owner: 'test',
+        repo: 'repo',
+        mirrorPath: '/tmp/mirrors/test/repo.git',
+        sizeBytes: 1000000,
+        lastUpdated: new Date(),
+        lastUsed: new Date(),
+        cloneCount: 0,
+      });
+      mockGitMirrorService.cloneFromMirror.mockResolvedValue(undefined);
+      gitService.configureUser.mockResolvedValue();
+      gitService.checkoutBranch.mockResolvedValue();
+
+      await service.createWorkspace('exec-auth', '456', 'https://github.com/test/repo.git', 'main');
+
+      // Verify authenticatedUrl is passed to mirror service
+      expect(mockGitMirrorService.getOrCreateMirror).toHaveBeenCalledWith(
+        'https://github.com/test/repo.git',
+        'https://x-access-token:ghp_test@github.com/test/repo.git',
+      );
+      expect(mockGitMirrorService.cloneFromMirror).toHaveBeenCalledWith(
+        '/tmp/mirrors/test/repo.git',
+        expect.any(String),
+        'https://x-access-token:ghp_test@github.com/test/repo.git',
+      );
     });
 
     it('should fallback to direct clone when mirror fails', async () => {

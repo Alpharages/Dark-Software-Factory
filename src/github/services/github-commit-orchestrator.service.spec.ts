@@ -23,6 +23,7 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { AIProvider } from '@/prisma/client';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { GitHubTokenResolverService } from '../github-token-resolver.service';
 
 describe('GitHubCommitOrchestrator', () => {
   let service: GitHubCommitOrchestrator;
@@ -174,6 +175,12 @@ describe('GitHubCommitOrchestrator', () => {
             publishToQueue: jest.fn().mockResolvedValue(undefined),
             subscribe: jest.fn(),
             getChannel: jest.fn(),
+          },
+        },
+        {
+          provide: GitHubTokenResolverService,
+          useValue: {
+            resolveForProject: jest.fn().mockResolvedValue(null),
           },
         },
       ],

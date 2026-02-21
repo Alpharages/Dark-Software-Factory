@@ -115,6 +115,17 @@ export class GitHubCommitOrchestrator {
       });
       await this.gitOps.ensureBranch(workspace.path, githubPush.branch_name);
 
+      // Resolve per-project GitHub token once (used by both push paths below)
+      const repositoryUrl = workspace.repositoryUrl || githubPush.repository;
+      let pushUrl = repositoryUrl;
+      if (execution.ticket?.project_id) {
+        const resolvedAuth = await this.tokenResolver.resolveForProject(
+          execution.ticket.project_id,
+          repositoryUrl,
+        );
+        pushUrl = resolvedAuth?.authenticatedUrl ?? repositoryUrl;
+      }
+
       // Check if there are changes to commit
       const hasChanges = await this.gitOps.hasChanges(workspace.path);
 
@@ -130,16 +141,6 @@ export class GitHubCommitOrchestrator {
         // Even if there are no uncommitted changes, there may be unpushed commits
         // (e.g., the AI already committed during code generation)
         try {
-          const repositoryUrl = workspace.repositoryUrl || githubPush.repository;
-          let pushUrl = repositoryUrl;
-          if (execution.ticket?.project_id) {
-            const resolvedAuth = await this.tokenResolver.resolveForProject(
-              execution.ticket.project_id,
-              repositoryUrl,
-            );
-            pushUrl = resolvedAuth?.authenticatedUrl ?? repositoryUrl;
-          }
-
           await this.gitOps.push(workspace.path, pushUrl, githubPush.branch_name);
           const currentSha = await this.gitOps.getCurrentCommitSha(workspace.path);
 
@@ -160,16 +161,6 @@ export class GitHubCommitOrchestrator {
       }
 
       // Commit and push using direct git operations + AI-generated commit message
-      const repositoryUrl = workspace.repositoryUrl || githubPush.repository;
-      let pushUrl = repositoryUrl;
-      if (execution.ticket?.project_id) {
-        const resolvedAuth = await this.tokenResolver.resolveForProject(
-          execution.ticket.project_id,
-          repositoryUrl,
-        );
-        pushUrl = resolvedAuth?.authenticatedUrl ?? repositoryUrl;
-      }
-
       const commitResult = await this.commitAndPushDirect(
         execution,
         githubPush,
