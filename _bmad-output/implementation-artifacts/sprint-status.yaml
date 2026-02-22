@@ -55,7 +55,7 @@ development_status:
     story_points: 3
     notes: 'Staging deploy. 10% canary. Gradual to 100% over 1 week. Rollback procedures.'
   15-5-e2e-testing-validation:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 5
     notes: 'E2E test full v3 flow. Load test 100 concurrent tickets. Validate circular deps, file locks, metrics.'
