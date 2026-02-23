@@ -1,9 +1,9 @@
-import { Controller, Get, Query, UseGuards, Req, Res, Logger, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Logger, Param } from '@nestjs/common';
 import { GitHubAuthFlowService } from './github-auth-flow.service';
-import { JwtAuthGuard } from '../common/guards/auth.guard';
-import { Response, Request } from 'express';
+import { JwtAuthGuard } from '@/common/guards';
+import { Request } from 'express';
 
-@Controller('api/v1/github')
+@Controller('github')
 export class GitHubAuthFlowController {
   private readonly logger = new Logger(GitHubAuthFlowController.name);
 
@@ -16,24 +16,22 @@ export class GitHubAuthFlowController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('auth/callback')
+  @Post('auth/callback')
   async handleCallback(
     @Req() req: Request & { user: { id: string } },
-    @Res() res: Response,
-    @Query('code') code?: string,
-    @Query('error') errorQuery?: string,
-    @Query('error_description') errorDescription?: string,
+    @Body() body: { code?: string; error?: string; error_description?: string },
   ) {
     const userId = req.user.id;
+    const { code, error, error_description } = body;
     try {
-      if (errorQuery) {
+      if (error) {
         // If GitHub redirected with an error (e.g., user denied access)
-        const errorMessage = errorDescription || errorQuery;
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/profile?error=${encodeURIComponent(
+        const errorMessage = error_description || error;
+        return {
+          success: false,
+          error:
             errorMessage === 'access_denied' ? 'GitHub access request was declined.' : errorMessage,
-          )}`,
-        );
+        };
       }
 
       if (!code) {
@@ -41,13 +39,10 @@ export class GitHubAuthFlowController {
       }
 
       await this.authFlowService.handleCallback(code, userId);
-      // Redirect back to profile page
-      return res.redirect(`${process.env.FRONTEND_URL}/profile?success=true`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/profile?error=${encodeURIComponent(message)}`,
-      );
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, error: message };
     }
   }
 

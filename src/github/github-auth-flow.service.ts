@@ -50,6 +50,7 @@ export class GitHubAuthFlowService {
         client_id: clientId,
         client_secret: clientSecret,
         code,
+        redirect_uri: `${this.config.get<string>('FRONTEND_URL')}/settings/github/callback`,
       },
       {
         headers: { Accept: 'application/json' },
