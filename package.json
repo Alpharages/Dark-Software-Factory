@@ -125,7 +125,7 @@
     "@nestjs/cli": "^11.0.14",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.1.9",
-    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/adapter-pg": "^7.4.1",
     "@types/amqplib": "^0.10.8",
     "@types/dockerode": "3.3.34",
     "@types/express": "^5.0.6",

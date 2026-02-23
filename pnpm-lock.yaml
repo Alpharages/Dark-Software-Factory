@@ -199,8 +199,8 @@ importers:
         specifier: ^11.1.9
         version: 11.1.10(@nestjs/common@11.1.10(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.10)(@nestjs/microservices@11.1.10)(@nestjs/platform-express@11.1.10)
       '@prisma/adapter-pg':
-        specifier: ^7.1.0
-        version: 7.2.0
+        specifier: ^7.4.1
+        version: 7.4.1
       '@types/amqplib':
         specifier: ^0.10.8
         version: 0.10.8
@@ -1703,8 +1703,8 @@ packages:
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
-  '@prisma/adapter-pg@7.2.0':
-    resolution: {integrity: sha512-euIdQ13cRB2wZ3jPsnDnFhINquo1PYFPCg6yVL8b2rp3EdinQHsX9EDdCtRr489D5uhphcRk463OdQAFlsCr0w==}
+  '@prisma/adapter-pg@7.4.1':
+    resolution: {integrity: sha512-AH9XrqvSoBAaStn0Gm/sAnF97pDKz8uLpNmn51j1S9O9dhUva6LIxGdoDiiU9VXRIR89wAJXsvJSy+mK40m2xw==}
 
   '@prisma/client-runtime-utils@7.2.0':
     resolution: {integrity: sha512-dn7oB53v0tqkB0wBdMuTNFNPdEbfICEUe82Tn9FoKAhJCUkDH+fmyEp0ClciGh+9Hp2Tuu2K52kth2MTLstvmA==}
@@ -1730,11 +1730,14 @@ packages:
   '@prisma/debug@7.2.0':
     resolution: {integrity: sha512-YSGTiSlBAVJPzX4ONZmMotL+ozJwQjRmZweQNIq/ER0tQJKJynNkRB3kyvt37eOfsbMCXk3gnLF6J9OJ4QWftw==}
 
+  '@prisma/debug@7.4.1':
+    resolution: {integrity: sha512-qEtzO8oLouRv18JDQUC3G3Gnv+fGVscHZm/x1DBB/WT+kOvPDQLM2woX6IGgWnSMYYlrxjuALshT7G/blvY0bQ==}
+
   '@prisma/dev@0.17.0':
     resolution: {integrity: sha512-6sGebe5jxX+FEsQTpjHLzvOGPn6ypFQprcs3jcuIWv1Xp/5v6P/rjfdvAwTkP2iF6pDx2tCd8vGLNWcsWzImTA==}
 
-  '@prisma/driver-adapter-utils@7.2.0':
-    resolution: {integrity: sha512-gzrUcbI9VmHS24Uf+0+7DNzdIw7keglJsD5m/MHxQOU68OhGVzlphQRobLiDMn8CHNA2XN8uugwKjudVtnfMVQ==}
+  '@prisma/driver-adapter-utils@7.4.1':
+    resolution: {integrity: sha512-gEZOC2tnlHaZNbHUdbK8YvQphq2tKq/Ovu1YixJ/hPSutDAvNzC3R+xUeBuJ4AJp236eELMzwxb7rgo3UbRkTg==}
 
   '@prisma/engines-version@7.2.0-4.0c8ef2ce45c83248ab3df073180d5eda9e8be7a3':
     resolution: {integrity: sha512-KezsjCZDsbjNR7SzIiVlUsn9PnLePI7r5uxABlwL+xoerurZTfgQVbIjvjF2sVr3Uc0ZcsnREw3F84HvbggGdA==}
@@ -3563,11 +3566,13 @@ packages:
 
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@11.1.0:
     resolution: {integrity: sha512-vuNwKSaKiqm7g0THUBu2x7ckSs3XJLXE+2ssL7/MfTGPLLcrJQ/4Uq1CjPTtO5cCIiRxqvN6Twy1qOwhL0Xjcw==}
     engines: {node: 20 || >=22}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@13.0.0:
@@ -3576,7 +3581,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
@@ -7428,9 +7433,9 @@ snapshots:
 
   '@pkgr/core@0.2.9': {}
 
-  '@prisma/adapter-pg@7.2.0':
+  '@prisma/adapter-pg@7.4.1':
     dependencies:
-      '@prisma/driver-adapter-utils': 7.2.0
+      '@prisma/driver-adapter-utils': 7.4.1
       pg: 8.16.3
       postgres-array: 3.0.4
     transitivePeerDependencies:
@@ -7458,6 +7463,8 @@ snapshots:
 
   '@prisma/debug@7.2.0': {}
 
+  '@prisma/debug@7.4.1': {}
+
   '@prisma/dev@0.17.0(typescript@5.9.3)':
     dependencies:
       '@electric-sql/pglite': 0.3.2
@@ -7480,9 +7487,9 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@prisma/driver-adapter-utils@7.2.0':
+  '@prisma/driver-adapter-utils@7.4.1':
     dependencies:
-      '@prisma/debug': 7.2.0
+      '@prisma/debug': 7.4.1
 
   '@prisma/engines-version@7.2.0-4.0c8ef2ce45c83248ab3df073180d5eda9e8be7a3': {}
 
