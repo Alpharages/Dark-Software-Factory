@@ -7,7 +7,7 @@
 # ===========================================
 
 # ---- Dependencies Stage ----
-FROM node:22-alpine AS dependencies
+FROM node:25-alpine AS dependencies
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 # ---- Build Stage ----
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 
 WORKDIR /app
 
@@ -50,7 +50,7 @@ COPY . .
 RUN pnpm run build
 
 # ---- Production Stage ----
-FROM node:22-alpine AS production
+FROM node:25-alpine AS production
 
 # Install runtime dependencies for node-pty and Claude CLI
 RUN apk add --no-cache libgcc libstdc++ curl bash
