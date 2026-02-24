@@ -103,6 +103,11 @@ development_status:
     effort: '1 day'
     story_points: 3
     notes: 'GitHubTokenResolverService + inject per-project token into CommitOrchestrator push + GitMirrorService clone'
+  24-4-disconnect-github-account:
+    status: done
+    effort: '0.5 days'
+    story_points: 2
+    notes: 'DELETE /github/accounts/:accountId + ownership guard + SetNull cascade + disconnect UI with AlertDialog confirmation'
 
 priority_sequence:
   last_updated: '2026-02-20T17:25:00+05:00'

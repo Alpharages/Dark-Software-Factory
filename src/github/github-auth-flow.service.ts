@@ -1,4 +1,10 @@
-import { Injectable, Logger, ForbiddenException, HttpException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ForbiddenException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { EncryptionService } from '../common/encryption/encryption.service';
@@ -148,6 +154,47 @@ export class GitHubAuthFlowService {
         updatedAt: true,
       },
     });
+  }
+
+  async disconnectAccount(
+    accountId: string,
+    userId: string,
+  ): Promise<{ message: string; affectedProjects: number }> {
+    const account = await this.prisma.gitHubAccount.findUnique({
+      where: { id: accountId },
+      include: { projects: { select: { id: true } } },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`GitHub account ${accountId} not found.`);
+    }
+
+    if (account.userId !== userId) {
+      throw new ForbiddenException('You do not own this GitHub account.');
+    }
+
+    const affectedProjects = account.projects.length;
+
+    try {
+      await this.prisma.gitHubAccount.delete({ where: { id: accountId } });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to delete GitHub account ${accountId} (${account.username}) for user ${userId}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new Error(`Failed to disconnect GitHub account: ${errorMessage}`);
+    }
+
+    this.logger.log(
+      `GitHub account ${accountId} (${account.username}) disconnected by user ${userId}. ` +
+        `${affectedProjects} project(s) affected.`,
+    );
+
+    return {
+      message: `GitHub account @${account.username} disconnected successfully.`,
+      affectedProjects,
+    };
   }
 
   async getReposForAccount(accountId: string, userId: string) {

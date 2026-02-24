@@ -1,4 +1,5 @@
 import { Controller, Get, Res, VERSION_NEUTRAL } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Public } from '../decorators/public.decorator';
 import { register } from 'prom-client';
 import { ApiExcludeController } from '@nestjs/swagger';
@@ -8,6 +9,7 @@ import { ApiExcludeController } from '@nestjs/swagger';
  * Exposes metrics at /metrics endpoint for Prometheus scraping
  * This endpoint is excluded from the global 'api' prefix and versioning
  */
+@SkipThrottle()
 @ApiExcludeController()
 @Controller({ path: 'metrics', version: VERSION_NEUTRAL })
 export class PrometheusMetricsController {

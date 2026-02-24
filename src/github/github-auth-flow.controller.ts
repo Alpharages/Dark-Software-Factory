@@ -1,8 +1,22 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Logger, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Logger,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { GitHubAuthFlowService } from './github-auth-flow.service';
 import { JwtAuthGuard } from '@/common/guards';
 import { Request } from 'express';
 
+@ApiTags('GitHub')
+@ApiBearerAuth()
 @Controller('github')
 export class GitHubAuthFlowController {
   private readonly logger = new Logger(GitHubAuthFlowController.name);
@@ -56,9 +70,24 @@ export class GitHubAuthFlowController {
   @UseGuards(JwtAuthGuard)
   @Get('accounts/:accountId/repos')
   async getRepos(
-    @Param('accountId') accountId: string,
+    @Param('accountId', ParseUUIDPipe) accountId: string,
     @Req() req: Request & { user: { id: string } },
   ) {
     return this.authFlowService.getReposForAccount(accountId, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('accounts/:accountId')
+  @ApiOperation({ summary: 'Disconnect a connected GitHub account' })
+  @ApiParam({ name: 'accountId', description: 'GitHub Account UUID' })
+  @ApiResponse({ status: 200, description: 'Account disconnected successfully' })
+  @ApiResponse({ status: 401, description: 'Not authenticated' })
+  @ApiResponse({ status: 403, description: 'Account belongs to a different user' })
+  @ApiResponse({ status: 404, description: 'GitHub account not found' })
+  async disconnectAccount(
+    @Param('accountId', ParseUUIDPipe) accountId: string,
+    @Req() req: Request & { user: { id: string } },
+  ) {
+    return this.authFlowService.disconnectAccount(accountId, req.user.id);
   }
 }
