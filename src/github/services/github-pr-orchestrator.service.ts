@@ -95,6 +95,7 @@ export class GitHubPROrchestrator {
         repository: githubPush.repository,
         branchName: githubPush.branch_name,
         baseBranch: 'main',
+        workspacePath: workspace.path,
       });
 
       // Get AI provider instance and cast to IAIPromptExecutor
@@ -287,18 +288,31 @@ export class GitHubPROrchestrator {
     repository: string;
     branchName: string;
     baseBranch: string;
+    workspacePath: string;
   }): string {
-    const { ticketId, ticketTitle, ticketDescription, branchName, baseBranch } = context;
+    const { ticketId, ticketTitle, ticketDescription, branchName, baseBranch, workspacePath } =
+      context;
 
     return `You are a senior software engineer creating a GitHub Pull Request. Execute the following tasks:
+
+⚠️ CRITICAL: ALL commands MUST be run from inside the sandbox workspace directory:
+  ${workspacePath}
+
+First step — navigate to the workspace:
+  cd ${workspacePath}
 
 CONTEXT:
 - Ticket ID: ${ticketId}
 - Ticket Title: ${ticketTitle}
 ${ticketDescription ? `- Description: ${ticketDescription}` : ''}
+- Workspace path: ${workspacePath}
 
 TASKS:
-1. Analyze the code changes in the workspace using git commands (git log, git diff, etc.)
+1. Navigate to the workspace and analyze the code changes:
+   cd ${workspacePath}
+   git log --oneline -5
+   git diff HEAD~1 HEAD --stat
+
 2. Generate a comprehensive PR title following conventional commits format:
    - Format: <type>(<scope>): <description>
    - Types: feat, fix, refactor, docs, test, chore, perf
@@ -310,10 +324,10 @@ TASKS:
    - Related ticket: ${ticketId}
    - Testing notes if applicable
    
-4. Create the PR using GitHub CLI:
-   \`gh pr create --title "<your title>" --body "<your description>" --head ${branchName} --base ${baseBranch}\`
+4. Create the PR using GitHub CLI (MUST run from inside ${workspacePath}):
+   cd ${workspacePath} && gh pr create --title "<your title>" --body "<your description>" --head ${branchName} --base ${baseBranch}
    
-5. Extract the PR URL and number from the output
+5. Extract the PR URL and number from the gh output
 
 REQUIRED OUTPUT FORMAT (JSON):
 {
