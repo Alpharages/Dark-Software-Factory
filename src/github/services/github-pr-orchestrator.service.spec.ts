@@ -403,6 +403,36 @@ describe('GitHubPROrchestrator', () => {
       expect(result.error).toContain('Failed to parse PR response');
     });
 
+    it('should not pass a string prNumber to Prisma when AI cannot create the PR', async () => {
+      // This reproduces the PrismaClientValidationError from error-2026-02-26.log:
+      // AI returns a JSON response where prNumber is a descriptive failure string instead of an int.
+      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
+      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
+
+      (
+        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
+          'CURSOR_HEADLESS',
+        )!.executePrompt as jest.Mock
+      ).mockResolvedValue({
+        success: true,
+        response: JSON.stringify({
+          prUrl: 'Unable to create - GitHub CLI and git access unavailable',
+          prNumber: 'Unable to determine - PR creation failed',
+          prTitle: 'N/A',
+        }),
+      });
+
+      const result = await service.createPullRequest('exec-123');
+
+      // Must not reach Prisma with a string prNumber — should fail gracefully
+      expect(result.success).toBe(false);
+      // prismaService.gitHubPush.update must NOT have been called with a string pr_number
+      const updateCalls = (prismaService.gitHubPush.update as jest.Mock).mock.calls;
+      const badCall = updateCalls.find((call) => typeof call[0]?.data?.pr_number === 'string');
+      expect(badCall).toBeUndefined();
+    });
+
     it('should handle database update failure', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);

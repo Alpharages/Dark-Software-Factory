@@ -370,10 +370,24 @@ Execute these tasks now and return ONLY the JSON response.`;
       const jsonMatch = cleaned.match(/\{[^{}]*"prUrl"\s*:[^{}]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.prUrl && parsed.prNumber) {
+        if (parsed.prUrl) {
+          // Always coerce prNumber to a real integer — the AI sometimes returns a
+          // descriptive string (e.g. "Unable to determine...") when it can't create
+          // the PR, which would cause a PrismaClientValidationError on the Int column.
+          const prNumber =
+            typeof parsed.prNumber === 'number'
+              ? parsed.prNumber
+              : parseInt(String(parsed.prNumber ?? ''), 10);
+
+          if (!Number.isFinite(prNumber)) {
+            throw new Error(
+              `AI could not create the PR — prNumber is not a valid integer: ${JSON.stringify(parsed.prNumber)}`,
+            );
+          }
+
           return {
             prUrl: parsed.prUrl,
-            prNumber: parsed.prNumber,
+            prNumber,
             prTitle: parsed.prTitle,
           };
         }
