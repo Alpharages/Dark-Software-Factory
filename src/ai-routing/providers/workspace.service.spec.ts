@@ -197,6 +197,26 @@ describe('WorkspaceService', () => {
           workspaces.splice(0, workspaces.length);
           return { count };
         }),
+        // Atomic status transition guard used by cleanupWorkspace
+        updateMany: jest.fn(
+          async ({
+            where,
+            data,
+          }: {
+            where: { execution_id: string; status?: { notIn: string[] } };
+            data: Record<string, unknown>;
+          }) => {
+            const candidates = workspaces.filter((w) => {
+              if (w.execution_id !== where.execution_id) return false;
+              if (where.status?.notIn) {
+                return !where.status.notIn.includes(w.status as string);
+              }
+              return true;
+            });
+            candidates.forEach((w) => Object.assign(w, data));
+            return { count: candidates.length };
+          },
+        ),
       },
     };
 
@@ -484,6 +504,11 @@ describe('WorkspaceService', () => {
       gitService.getChangedFiles.mockResolvedValue(['src/file.ts']);
 
       await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
+
+      // Mock fs.stat so that both the workspace path and .git subdir appear to be directories
+      mockFs.stat.mockResolvedValue({ isDirectory: () => true } as unknown as Awaited<
+        ReturnType<typeof fs.stat>
+      >);
 
       const changes = await service.extractChanges('exec-123');
 

@@ -469,6 +469,26 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       throw new Error(`Workspace not found: ${executionId}`);
     }
 
+    // Guard: workspace path must exist (may have been cleaned before this call)
+    const pathExists = await this.directoryExists(workspace.path);
+    if (!pathExists) {
+      throw this.createError(
+        AIErrorCode.GIT_ERROR,
+        `Failed to extract changes: workspace path does not exist: ${workspace.path}`,
+        false,
+      );
+    }
+
+    // Guard: must be a valid git repo (cloned workspaces always have .git)
+    const gitDirExists = await this.directoryExists(path.join(workspace.path, '.git'));
+    if (!gitDirExists) {
+      throw this.createError(
+        AIErrorCode.GIT_ERROR,
+        `Failed to extract changes: not a git repository: ${workspace.path}`,
+        false,
+      );
+    }
+
     try {
       // Get diff against HEAD (captures all uncommitted changes)
       const diff = await this.git.getDiff(workspace.path);
@@ -497,6 +517,15 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Guard: prevent duplicate concurrent cleanup calls (ENOTEMPTY race condition).
+    // If a parallel call already updated the DB to CLEANING or CLEANED, skip quietly.
+    if (workspace.status === 'CLEANING' || workspace.status === 'COMPLETED') {
+      this.logger.debug(
+        `[${executionId}] Workspace already being cleaned/cleaned — skipping duplicate cleanup`,
+      );
+      return;
+    }
+
     // Delegate to StorageManagerService for archival if failed workspace is preserved
     if (workspace.status === 'FAILED' && this.preserveFailed && !force) {
       try {
@@ -514,13 +543,24 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // Update status to CLEANING
-    await this.prisma.workspace
-      .update({
-        where: { execution_id: executionId },
+    // Atomically mark as CLEANING to prevent other concurrent callers from entering
+    const updated = await this.prisma.workspace
+      .updateMany({
+        where: {
+          execution_id: executionId,
+          status: { notIn: [WorkspaceStatus.CLEANING, WorkspaceStatus.CLEANED] },
+        },
         data: { status: WorkspaceStatus.CLEANING },
       })
-      .catch(() => {});
+      .catch(() => ({ count: 0 }));
+
+    if (updated.count === 0) {
+      // Another call already claimed the CLEANING transition
+      this.logger.debug(
+        `[${executionId}] Workspace CLEANING already claimed by another call — skipping`,
+      );
+      return;
+    }
 
     try {
       await fs.rm(workspace.path, { recursive: true, force: true });

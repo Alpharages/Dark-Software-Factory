@@ -138,5 +138,24 @@ describe('PRRiskAssessorService', () => {
         'Execution exec-123 not found',
       );
     });
+
+    it('should retry getPullRequestDiff when GitHub returns Not Found (404 propagation lag)', async () => {
+      // First call throws Not Found, second call succeeds
+      (github.getPullRequestDiff as jest.Mock)
+        .mockRejectedValueOnce(new Error('Not Found - https://docs.github.com/rest'))
+        .mockResolvedValueOnce('diff content');
+
+      // Use fake timers so the 1 s delay completes instantly
+      jest.useFakeTimers();
+      const assessPromise = service.assess('exec-123', 'org/repo', 42);
+      // Advance past the 1000 ms back-off
+      await jest.runAllTimersAsync();
+      const result = await assessPromise;
+      jest.useRealTimers();
+
+      expect(result.riskLevel).toBe('MEDIUM');
+      // getPullRequestDiff was called twice (once failed, once succeeded)
+      expect(github.getPullRequestDiff).toHaveBeenCalledTimes(2);
+    });
   });
 });
