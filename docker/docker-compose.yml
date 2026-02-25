@@ -22,11 +22,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ai_orchestrator}" ]
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ai_orchestrator}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,12 +47,12 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
     ports:
-      - "${RABBITMQ_PORT:-5672}:5672" # AMQP protocol
-      - "${RABBITMQ_MGMT_PORT:-15672}:15672" # Management UI
+      - '${RABBITMQ_PORT:-5672}:5672' # AMQP protocol
+      - '${RABBITMQ_MGMT_PORT:-15672}:15672' # Management UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,8 +75,8 @@ services:
       PORT: 3000
 
       # Hot reload (required for macOS Docker file watching)
-      WATCHPACK_POLLING: "true"
-      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: 'true'
+      CHOKIDAR_USEPOLLING: 'true'
 
       # Database (connects to postgres service)
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
@@ -107,9 +108,9 @@ services:
       SENTRY_DSN: ${SENTRY_DSN:-}
 
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - '${APP_PORT:-3000}:3000'
     volumes:
       # Mount source code for hot reload
       - ../src:/app/src:delegated
@@ -131,7 +132,13 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))" ]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -150,57 +157,55 @@ services:
     tty: true
     stdin_open: true
 
-    # Log rotation (prevents unbounded log growth)
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ===========================================
+  # # Log rotation (prevents unbounded log growth)
+  # logging:
+  # driver: 'json-file'
+  # options:
+  # max-size: '10m'
+  # max-file: '3'
+  #   # ===========================================
   # Prometheus (Optional - Metrics)
   # ===========================================
-  prometheus:
-    image: prom/prometheus:v2.48.1
-    container_name: dsf-prometheus
-    profiles:
-      - monitoring
-    volumes:
-      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    networks:
-      - dsf-network
-    restart: unless-stopped
-
-  # ===========================================
+  # prometheus:
+  #   image: prom/prometheus:v2.48.1
+  #   container_name: dsf-prometheus
+  #   profiles:
+  #     - monitoring
+  #   volumes:
+  #     - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - prometheus_data:/prometheus
+  #   ports:
+  #     - "${PROMETHEUS_PORT:-9090}:9090"
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #     - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+  #     - '--web.console.templates=/usr/share/prometheus/consoles'
+  #     - '--web.enable-lifecycle'
+  #   networks:
+  #     - dsf-network
+  #   restart: unless-stopped
+  #   # ===========================================
   # Grafana (Optional - Dashboards)
   # ===========================================
-  grafana:
-    image: grafana/grafana:10.2.3
-    container_name: dsf-grafana
-    profiles:
-      - monitoring
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      GF_USERS_ALLOW_SIGN_UP: false
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "${GRAFANA_PORT:-3001}:3000"
-    depends_on:
-      - prometheus
-    networks:
-      - dsf-network
-    restart: unless-stopped
+  # grafana:
+  #   image: grafana/grafana:10.2.3
+  #   container_name: dsf-grafana
+  #   profiles:
+  #     - monitoring
+  #   environment:
+  #     GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+  #     GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+  #     GF_USERS_ALLOW_SIGN_UP: false
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   ports:
+  #     - "${GRAFANA_PORT:-3001}:3000"
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - dsf-network
+  #   restart: unless-stopped
 
 # ===========================================
 # Networks

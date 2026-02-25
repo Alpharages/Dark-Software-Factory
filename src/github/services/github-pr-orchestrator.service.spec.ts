@@ -2,42 +2,31 @@
  * GitHub PR Orchestrator Service Tests
  * Story 4.4: Pull Request Creation & Metadata
  * AC#1, #3, #4, #5, #6: Full PR orchestration flow
+ *
+ * PR creation now uses Anthropic SDK for title/body generation and
+ * GitHubService (Octokit) for the actual API call — no container CLI.
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { ConfigService } from '@nestjs/config';
 import { GitHubPROrchestrator } from './github-pr-orchestrator.service';
-import { AIExecutionService } from '../../ai-routing/ai-execution.service';
 import { GitHubService } from '../github.service';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { LoggerService } from '../../common/logger/logger.service';
-import { IAIProvider, IAIPromptExecutor } from '../../ai-routing/interfaces';
-import { WorkspaceService } from '../../ai-routing/providers';
-// import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 import { PRRiskAssessorService } from './pr-risk-assessor.service';
 import { PRAutoMergeService } from './pr-auto-merge.service';
 import { PRReminderService } from './pr-reminder.service';
 
-type MockAIProvider = IAIProvider &
-  IAIPromptExecutor & {
-    executePrompt: jest.Mock;
-    execute: jest.Mock;
-  };
-
 describe('GitHubPROrchestrator', () => {
   let service: GitHubPROrchestrator;
-  let aiExecutionService: jest.Mocked<AIExecutionService>;
   let prismaService: jest.Mocked<PrismaService>;
   let auditService: jest.Mocked<AuditLogService>;
   let metricsService: jest.Mocked<MetricsService>;
-  let _sentryService: jest.Mocked<SentryService>;
-  // let errorMonitor: jest.Mocked<GitHubErrorMonitor>;
-  let _logger: jest.Mocked<Logger>;
+  let githubService: jest.Mocked<GitHubService>;
 
   const mockExecution = {
     id: 'exec-123',
@@ -49,31 +38,25 @@ describe('GitHubPROrchestrator', () => {
       clickup_task_id: 'DSF-245',
       title: 'Implement user authentication',
       description: 'Add JWT-based authentication',
+      project_id: 'project-001',
     },
   };
 
   const mockGitHubPush = {
     id: 'push-789',
     execution_id: 'exec-123',
-    repository: 'org/repo',
-    branch_name: 'ai/DSF-245-auth',
+    repository: 'https://github.com/org/repo',
+    branch_name: 'feature/ticket-DSF-245',
     push_status: 'PUSHED',
+    commit_sha: 'abc123',
   };
 
-  const mockQAResults = {
-    linting_passed: true,
-    tests_passed: true,
-    test_coverage: 85,
-    code_review_passed: true,
-    qa_summary_details: 'All checks passed',
+  const mockPRData = {
+    number: 42,
+    html_url: 'https://github.com/org/repo/pull/42',
   };
 
   beforeEach(async () => {
-    const mockAIExecution = {
-      execute: jest.fn(),
-      delegateToAI: jest.fn(),
-    };
-
     const mockPrisma = {
       execution: {
         findUnique: jest.fn(),
@@ -82,8 +65,11 @@ describe('GitHubPROrchestrator', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
       },
-      qAResult: {
-        findFirst: jest.fn(),
+      project: {
+        findUnique: jest.fn().mockResolvedValue({ github_account_id: null }),
+      },
+      gitHubAccount: {
+        findUnique: jest.fn(),
       },
     };
 
@@ -95,32 +81,21 @@ describe('GitHubPROrchestrator', () => {
       captureException: jest.fn(),
     };
 
-    const mockLogger = {
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
+    const mockGitHub = {
+      createPullRequest: jest.fn().mockResolvedValue(mockPRData),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GitHubPROrchestrator,
         {
-          provide: AIExecutionService,
-          useValue: {
-            ...mockAIExecution,
-            providers: new Map([
-              [
-                'CURSOR_HEADLESS',
-                {
-                  executePrompt: jest.fn(),
-                },
-              ],
-            ]),
-          },
+          provide: ConfigService,
+          // No Anthropic API key → fallback title/body used in tests
+          useValue: { get: jest.fn().mockReturnValue(undefined) },
         },
         {
           provide: GitHubService,
-          useValue: {},
+          useValue: mockGitHub,
         },
         {
           provide: LoggerService,
@@ -128,14 +103,6 @@ describe('GitHubPROrchestrator', () => {
             log: jest.fn(),
             error: jest.fn(),
             warn: jest.fn(),
-          },
-        },
-        {
-          provide: WorkspaceService,
-          useValue: {
-            getWorkspace: jest.fn().mockResolvedValue({ path: '/tmp/workspace' }),
-            createWorkspace: jest.fn(),
-            cleanupWorkspace: jest.fn(),
           },
         },
         {
@@ -159,24 +126,6 @@ describe('GitHubPROrchestrator', () => {
           provide: SentryService,
           useValue: mockSentry,
         },
-        {
-          provide: WINSTON_MODULE_PROVIDER,
-          useValue: mockLogger,
-        },
-        // {
-        //   provide: GitHubErrorMonitor,
-        //   useValue: {
-        //     recordError: jest.fn(),
-        //     classifyError: jest.fn().mockReturnValue({
-        //       severity: 'medium',
-        //       retryable: true,
-        //       category: 'github_api',
-        //     }),
-        //     sanitizeError: jest.fn().mockImplementation((msg: string) => msg),
-        //     checkForRollback: jest.fn().mockResolvedValue(false),
-        //     handleGitHubError: jest.fn(),
-        //   },
-        // },
         {
           provide: RabbitMQService,
           useValue: {
@@ -212,13 +161,10 @@ describe('GitHubPROrchestrator', () => {
     }).compile();
 
     service = module.get<GitHubPROrchestrator>(GitHubPROrchestrator);
-    aiExecutionService = module.get(AIExecutionService);
     prismaService = module.get(PrismaService);
     auditService = module.get(AuditLogService);
     metricsService = module.get(MetricsService);
-    _sentryService = module.get(SentryService);
-    // errorMonitor = module.get(GitHubErrorMonitor);
-    _logger = module.get(WINSTON_MODULE_PROVIDER);
+    githubService = module.get(GitHubService);
   });
 
   it('should be defined', () => {
@@ -226,84 +172,29 @@ describe('GitHubPROrchestrator', () => {
   });
 
   describe('createPullRequest', () => {
-    it('should create PR via AI delegation (success path)', async () => {
-      // Setup mocks
-      const mockProvider = (
-        aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }
-      ).providers.get('CURSOR_HEADLESS');
-      mockProvider!.executePrompt.mockResolvedValue({
-        success: true,
-        response: JSON.stringify({
-          prUrl: 'https://github.com/org/repo/pull/42',
-          prNumber: 42,
-        }),
-      });
-
+    it('should create PR via GitHub REST API (success path)', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
 
-      // Execute
       const result = await service.createPullRequest('exec-123');
 
-      // Assert
       expect(result.success).toBe(true);
       expect(result.prUrl).toBe('https://github.com/org/repo/pull/42');
       expect(result.prNumber).toBe(42);
-    });
-
-    it('should parse JSON AI response', async () => {
-      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
-      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: '{"prUrl":"https://github.com/org/repo/pull/123","prNumber":123}',
-      });
-
-      const result = await service.createPullRequest('exec-123');
-
-      expect(result.prNumber).toBe(123);
-    });
-
-    it('should parse unstructured AI response (regex fallback)', async () => {
-      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
-      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: 'PR created: https://github.com/org/repo/pull/999',
-      });
-
-      const result = await service.createPullRequest('exec-123');
-
-      expect(result.success).toBe(true);
-      expect(result.prNumber).toBe(999);
+      expect(githubService.createPullRequest).toHaveBeenCalledWith(
+        'org',
+        'repo',
+        expect.any(String), // title
+        expect.any(String), // body
+        'feature/ticket-DSF-245',
+        'main',
+        undefined, // no installationId (github_account_id is null)
+      );
     });
 
     it('should update database with PR URL/number', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
-      });
 
       await service.createPullRequest('exec-123');
 
@@ -320,16 +211,6 @@ describe('GitHubPROrchestrator', () => {
     it('should create audit log entry', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
-      });
 
       await service.createPullRequest('exec-123');
 
@@ -339,26 +220,16 @@ describe('GitHubPROrchestrator', () => {
         entityId: 'exec-123',
         actorType: 'system',
         afterState: expect.objectContaining({
-          repository: 'org/repo',
+          repository: 'https://github.com/org/repo',
           prUrl: 'https://github.com/org/repo/pull/42',
           prNumber: 42,
         }),
       });
     });
 
-    it('should record metrics (success)', async () => {
+    it('should record metrics on success', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
-      });
 
       await service.createPullRequest('exec-123');
 
@@ -366,87 +237,84 @@ describe('GitHubPROrchestrator', () => {
       expect(metricsService.recordGitHubOperationDuration).toHaveBeenCalled();
     });
 
-    it('should handle AI timeout error', async () => {
+    it('should use per-project installationId when project has linked GitHub account', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockRejectedValue(new Error('AI execution timeout'));
-
-      const result = await service.createPullRequest('exec-123');
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('AI execution timeout');
-    });
-
-    it('should handle parsing failure', async () => {
-      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
-      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: 'Invalid output with no PR URL',
+      (prismaService.project.findUnique as jest.Mock).mockResolvedValue({
+        github_account_id: 'account-uuid-1',
+      });
+      (prismaService.gitHubAccount.findUnique as jest.Mock).mockResolvedValue({
+        installationId: 'install-id-abc',
       });
 
-      const result = await service.createPullRequest('exec-123');
+      await service.createPullRequest('exec-123');
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to parse PR response');
+      expect(githubService.createPullRequest).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        'main',
+        'install-id-abc',
+      );
     });
 
-    it('should not pass a string prNumber to Prisma when AI cannot create the PR', async () => {
-      // This reproduces the PrismaClientValidationError from error-2026-02-26.log:
-      // AI returns a JSON response where prNumber is a descriptive failure string instead of an int.
+    it('should parse owner/repo from full GitHub URL', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
-      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: JSON.stringify({
-          prUrl: 'Unable to create - GitHub CLI and git access unavailable',
-          prNumber: 'Unable to determine - PR creation failed',
-          prTitle: 'N/A',
-        }),
+      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue({
+        ...mockGitHubPush,
+        repository: 'https://github.com/myorg/myrepo.git',
       });
+
+      await service.createPullRequest('exec-123');
+
+      expect(githubService.createPullRequest).toHaveBeenCalledWith(
+        'myorg',
+        'myrepo',
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        'main',
+        undefined,
+      );
+    });
+
+    it('should return error result when execution not found', async () => {
+      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(null);
 
       const result = await service.createPullRequest('exec-123');
 
-      // Must not reach Prisma with a string prNumber — should fail gracefully
       expect(result.success).toBe(false);
-      // prismaService.gitHubPush.update must NOT have been called with a string pr_number
-      const updateCalls = (prismaService.gitHubPush.update as jest.Mock).mock.calls;
-      const badCall = updateCalls.find((call) => typeof call[0]?.data?.pr_number === 'string');
-      expect(badCall).toBeUndefined();
+      expect(result.error).toContain('Execution exec-123 not found');
+    });
+
+    it('should return error result when github push record not found', async () => {
+      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.createPullRequest('exec-123');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('GitHub push record not found');
+    });
+
+    it('should handle GitHub API failure', async () => {
+      (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
+      (githubService.createPullRequest as jest.Mock).mockRejectedValue(
+        new Error('GitHub API error: 422 Unprocessable Entity'),
+      );
+
+      const result = await service.createPullRequest('exec-123');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('GitHub API error');
     });
 
     it('should handle database update failure', async () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
-      (prismaService.qAResult.findFirst as jest.Mock).mockResolvedValue(mockQAResults);
-
-      (
-        (aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }).providers.get(
-          'CURSOR_HEADLESS',
-        )!.executePrompt as jest.Mock
-      ).mockResolvedValue({
-        success: true,
-        response: '{"prUrl":"https://github.com/org/repo/pull/42","prNumber":42}',
-      });
-
       (prismaService.gitHubPush.update as jest.Mock).mockRejectedValue(
         new Error('DB connection lost'),
       );
@@ -454,16 +322,6 @@ describe('GitHubPROrchestrator', () => {
       const result = await service.createPullRequest('exec-123');
 
       expect(result.success).toBe(false);
-    });
-
-    it('should forward errors to error monitor', async () => {
-      (prismaService.execution.findUnique as jest.Mock).mockRejectedValue(
-        new Error('Execution not found'),
-      );
-
-      await service.createPullRequest('exec-123');
-
-      // Note: ErrorMonitor was removed from implementation, but we still handle the error
     });
   });
 });

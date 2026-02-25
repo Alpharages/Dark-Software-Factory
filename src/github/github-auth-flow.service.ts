@@ -31,11 +31,19 @@ export class GitHubAuthFlowService {
     }
 
     const redirectUri = `${this.config.get<string>('FRONTEND_URL')}/settings/github/callback`;
+    const appSlug = this.config.get<string>('github.appSlug');
 
-    // Using user-to-server flow to identify the PM.
-    // GitHub Apps don't use 'scope' parameter for user-to-server tokens,
-    // they inherit the App's permissions, fulfilling NFR-S11.
-    return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    if (appSlug) {
+      // GitHub App installation URL — shows the repo/org selection page.
+      // Users can choose "All repositories" or specific repos, and pick which org to install on.
+      // After installation GitHub redirects back with an installation_id instead of a code.
+      // We append redirect_uri so GitHub sends the user back after installation.
+      return `https://github.com/apps/${appSlug}/installations/new?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    }
+
+    // Fallback: plain OAuth user-authorization URL with repo + read:org scopes.
+    // This does NOT show a repo-selection screen. Only used if GITHUB_APP_SLUG is not set.
+    return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,read:org`;
   }
 
   /**
@@ -81,7 +89,7 @@ export class GitHubAuthFlowService {
 
     try {
       if (installations.installations.length === 0) {
-        // Fallback for user without any installations yet
+        // Fallback: store the personal account
         const installationId = `user_${ghUser.id}`;
         await this.prisma.gitHubAccount.upsert({
           where: { installationId },
@@ -102,6 +110,35 @@ export class GitHubAuthFlowService {
         this.logger.log(
           `GitHub Auth Flow: Successfully connected fallback personal account ${ghUser.login} (ID: ${installationId})`,
         );
+
+        // Also store one entry per org the user belongs to so they appear in the account dropdown
+        const orgs = await octokit.paginate(octokit.orgs.listForAuthenticatedUser, {
+          per_page: 100,
+        });
+        for (const org of orgs) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const orgAny = org as any;
+          const orgInstallationId = `org_${orgAny.id}`;
+          await this.prisma.gitHubAccount.upsert({
+            where: { installationId: orgInstallationId },
+            update: {
+              accessToken: encryptedToken,
+              username: orgAny.login,
+              avatarUrl: orgAny.avatar_url ?? null,
+              userId,
+            },
+            create: {
+              userId,
+              installationId: orgInstallationId,
+              accessToken: encryptedToken,
+              username: orgAny.login,
+              avatarUrl: orgAny.avatar_url ?? null,
+            },
+          });
+          this.logger.log(
+            `GitHub Auth Flow: Stored org account ${orgAny.login} (ID: ${orgInstallationId})`,
+          );
+        }
       } else {
         // Iterate over all installations to capture each org/account accurately
         for (const installation of installations.installations) {
@@ -210,9 +247,34 @@ export class GitHubAuthFlowService {
     const octokit = new Octokit({ auth: token });
 
     try {
-      const data = await octokit.paginate(octokit.repos.listForAuthenticatedUser, {
+      // 1. User's own repos (owned + direct collaborator)
+      const userRepos = await octokit.paginate(octokit.repos.listForAuthenticatedUser, {
         per_page: 100,
         type: 'all',
+      });
+
+      // 2. Fetch all orgs the user belongs to, then their repos
+      const orgs = await octokit.paginate(octokit.orgs.listForAuthenticatedUser, {
+        per_page: 100,
+      });
+
+      const orgRepoArrays = await Promise.all(
+        orgs.map((org) =>
+          octokit.paginate(octokit.repos.listForOrg, {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            org: (org as any).login as string,
+            per_page: 100,
+            type: 'all',
+          }),
+        ),
+      );
+
+      // 3. Merge + deduplicate by repo id
+      const seenIds = new Set<number>();
+      const data = [...userRepos, ...orgRepoArrays.flat()].filter((r) => {
+        if (seenIds.has(r.id)) return false;
+        seenIds.add(r.id);
+        return true;
       });
 
       return data.map((r) => ({

@@ -8,6 +8,8 @@ import axios from 'axios';
 
 // Octokit mock functions — defined at module level so they survive jest.mock hoisting
 const mockListForAuthenticatedUser = jest.fn();
+const mockListForOrg = jest.fn();
+const mockListOrgsForAuthenticatedUser = jest.fn();
 const mockGetAuthenticated = jest.fn();
 const mockListInstallations = jest.fn();
 
@@ -15,6 +17,10 @@ jest.mock('@octokit/rest', () => ({
   Octokit: jest.fn().mockImplementation(() => ({
     repos: {
       listForAuthenticatedUser: mockListForAuthenticatedUser,
+      listForOrg: mockListForOrg,
+    },
+    orgs: {
+      listForAuthenticatedUser: mockListOrgsForAuthenticatedUser,
     },
     users: {
       getAuthenticated: mockGetAuthenticated,
@@ -24,7 +30,7 @@ jest.mock('@octokit/rest', () => ({
     },
     paginate: jest.fn().mockImplementation(async (fn, params) => {
       const result = await fn(params);
-      return result.data;
+      return Array.isArray(result) ? result : result.data;
     }),
   })),
 }));
@@ -96,6 +102,8 @@ describe('GitHubAuthFlowService', () => {
       jest.mocked(axios.post).mockResolvedValue({ data: { access_token: 'gh-token' } });
       mockGetAuthenticated.mockResolvedValue({ data: mockGhUser });
       mockListInstallations.mockResolvedValue({ data: { installations: [] } });
+      // Default: no orgs
+      mockListOrgsForAuthenticatedUser.mockResolvedValue([]);
       (prisma.gitHubAccount.upsert as jest.Mock).mockResolvedValue({});
       encryption.encrypt.mockReturnValue('encrypted-token');
     });
@@ -109,6 +117,7 @@ describe('GitHubAuthFlowService', () => {
         expect.any(Object),
       );
       expect(encryption.encrypt).toHaveBeenCalledWith('gh-token');
+      // 1 upsert for personal account only (no orgs)
       expect(prisma.gitHubAccount.upsert as jest.Mock).toHaveBeenCalledTimes(1);
       expect(prisma.gitHubAccount.upsert as jest.Mock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -119,6 +128,30 @@ describe('GitHubAuthFlowService', () => {
             avatarUrl: 'https://github.com/testuser.png',
             accessToken: 'encrypted-token',
           }),
+        }),
+      );
+    });
+
+    it('also stores org accounts when user belongs to orgs (no App installations)', async () => {
+      mockListOrgsForAuthenticatedUser.mockResolvedValue([
+        { id: 100, login: 'myorg', avatar_url: 'https://github.com/myorg.png' },
+        { id: 200, login: 'anotherorg', avatar_url: 'https://github.com/anotherorg.png' },
+      ]);
+
+      await service.handleCallback('auth-code', 'user-1');
+
+      // 1 personal + 2 org upserts
+      expect(prisma.gitHubAccount.upsert as jest.Mock).toHaveBeenCalledTimes(3);
+      expect(prisma.gitHubAccount.upsert as jest.Mock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { installationId: 'org_100' },
+          create: expect.objectContaining({ username: 'myorg', userId: 'user-1' }),
+        }),
+      );
+      expect(prisma.gitHubAccount.upsert as jest.Mock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { installationId: 'org_200' },
+          create: expect.objectContaining({ username: 'anotherorg', userId: 'user-1' }),
         }),
       );
     });
@@ -280,20 +313,26 @@ describe('GitHubAuthFlowService', () => {
   // ---------------------------------------------------------------------------
 
   describe('getReposForAccount', () => {
-    it('should return mapped repos on success', async () => {
-      (prisma.gitHubAccount.findUnique as jest.Mock).mockResolvedValue({
-        id: 'acc-1',
-        userId: 'user-1',
-        accessToken: 'encrypted-token',
-        installationId: 'inst-1',
-        username: 'testuser',
-        avatarUrl: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+    const mockAccount = {
+      id: 'acc-1',
+      userId: 'user-1',
+      accessToken: 'encrypted-token',
+      installationId: 'inst-1',
+      username: 'testuser',
+      avatarUrl: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
+    beforeEach(() => {
+      (prisma.gitHubAccount.findUnique as jest.Mock).mockResolvedValue(mockAccount);
       encryption.decrypt.mockReturnValue('decrypted-token');
+      // Default: user has no orgs
+      mockListOrgsForAuthenticatedUser.mockResolvedValue([]);
+      mockListForOrg.mockResolvedValue({ data: [] });
+    });
 
+    it('should return mapped repos on success (personal only)', async () => {
       mockListForAuthenticatedUser.mockResolvedValue({
         data: [
           {
@@ -323,6 +362,47 @@ describe('GitHubAuthFlowService', () => {
         per_page: 100,
         type: 'all',
       });
+    });
+
+    it('should merge and deduplicate org repos with personal repos', async () => {
+      mockListForAuthenticatedUser.mockResolvedValue({
+        data: [
+          {
+            id: 1,
+            full_name: 'testuser/personal',
+            private: false,
+            html_url: 'https://github.com/testuser/personal',
+          },
+        ],
+      });
+      mockListOrgsForAuthenticatedUser.mockResolvedValue([{ id: 100, login: 'myorg' }]);
+      mockListForOrg.mockResolvedValue({
+        data: [
+          {
+            id: 2,
+            full_name: 'myorg/org-repo',
+            private: true,
+            html_url: 'https://github.com/myorg/org-repo',
+          },
+          // duplicate of the personal repo — should be filtered out
+          {
+            id: 1,
+            full_name: 'testuser/personal',
+            private: false,
+            html_url: 'https://github.com/testuser/personal',
+          },
+        ],
+      });
+
+      const result = await service.getReposForAccount('acc-1', 'user-1');
+
+      expect(result).toHaveLength(2);
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 1, fullName: 'testuser/personal' }),
+          expect.objectContaining({ id: 2, fullName: 'myorg/org-repo' }),
+        ]),
+      );
     });
 
     it('should throw ForbiddenException if account belongs to someone else', async () => {
