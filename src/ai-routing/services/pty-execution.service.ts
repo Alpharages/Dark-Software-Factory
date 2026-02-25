@@ -214,7 +214,11 @@ export class PtyExecutionService implements OnModuleDestroy {
     const defaultShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const cmd = command || defaultShell;
 
-    this.logger.log(`Spawning PTY process: ${cmd} ${args.join(' ')}`);
+    this.logger.log(`Spawning PTY process: ${cmd} ${args.join(' ')}`, {
+      command: cmd,
+      args: args,
+      cwd: options.cwd || process.cwd()
+    });
 
     // Check if command exists before attempting to spawn
     // Skip check for shell commands (bash, sh, etc.) as they should always exist
@@ -372,7 +376,12 @@ export class PtyExecutionService implements OnModuleDestroy {
 
     await this.semaphore.acquire();
 
-    this.logger.log(`[${executionId}] Spawning in container: ${command} ${args.join(' ')}`);
+    this.logger.log(`[${executionId}] Spawning in container: ${command} ${args.join(' ')}`, {
+      executionId,
+      command,
+      args: args,
+      resourceProfile: options.resourceProfile
+    });
 
     // Validate dependencies
     if (!this.dockerService) {
