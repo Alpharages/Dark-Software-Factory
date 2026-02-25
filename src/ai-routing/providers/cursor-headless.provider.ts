@@ -363,6 +363,7 @@ export class CursorHeadlessProvider
           cols: 120,
           rows: 40,
           cwd: workspacePath, // Note: Container uses /home/agent/workspace, but we pass for logging
+          workspacePath, // We must explicitly pass the mounted path!
           env: {
             NODE_ENV: process.env.NODE_ENV || 'development',
           },
