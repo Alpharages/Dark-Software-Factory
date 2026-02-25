@@ -214,7 +214,10 @@ export class PtyExecutionService implements OnModuleDestroy {
     const defaultShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const cmd = command || defaultShell;
 
-    this.logger.log(`Spawning PTY process: ${cmd} ${args.join(' ')}`);
+    // Enhanced info logging for spawn process tracking
+    this.logger.log(
+      `Spawning PTY process: command="${cmd}" args=[${args.map((arg) => `"${arg}"`).join(', ')}] cwd="${options.cwd || process.cwd()}" platform=${os.platform()}`,
+    );
 
     // Check if command exists before attempting to spawn
     // Skip check for shell commands (bash, sh, etc.) as they should always exist
@@ -287,6 +290,9 @@ export class PtyExecutionService implements OnModuleDestroy {
       const pid = ptyProcess.pid;
       this.processes.set(pid, ptyProcess);
       this.logger.debug(`Spawned PTY process ${pid}: ${resolvedCmd} ${args.join(' ')}`);
+
+      // Info log for successful PTY process creation
+      this.logger.log(`PTY process successfully started: pid=${pid} command="${resolvedCmd}" platform=${os.platform()}`);
 
       const outputSubject = new Subject<string>();
       const exitSubject = new Subject<{ exitCode: number; signal?: number }>();
@@ -372,7 +378,10 @@ export class PtyExecutionService implements OnModuleDestroy {
 
     await this.semaphore.acquire();
 
-    this.logger.log(`[${executionId}] Spawning in container: ${command} ${args.join(' ')}`);
+    // Enhanced info logging for container spawn tracking
+    this.logger.log(
+      `[${executionId}] Spawning in container: command="${command}" args=[${args.map((arg) => `"${arg}"`).join(', ')}] image=dsf-agent-base resourceProfile=${options.resourceProfile || 'auto'} workspacePath=${options.workspacePath || 'auto-create'}`,
+    );
 
     // Validate dependencies
     if (!this.dockerService) {
@@ -425,7 +434,10 @@ export class PtyExecutionService implements OnModuleDestroy {
       cpuLimit: options.cpuLimit,
     });
 
-    this.logger.log(`[${executionId}] Container started: ${container.id}`);
+    // Enhanced info log for successful container creation
+    this.logger.log(
+      `[${executionId}] Container successfully started: containerId="${container.id}" image="dsf-agent-base" resourceProfile=${options.resourceProfile || 'auto'} pseudoPid=${-this.executionCounter - 1}`,
+    );
 
     // Story 23.2: Store container ID for cleanup tracking
     if (this.executionTracker) {
