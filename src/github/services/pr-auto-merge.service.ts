@@ -129,7 +129,12 @@ export class PRAutoMergeService {
   }
 
   private parseRepository(repository: string): { owner: string; repo: string } {
-    const [owner, repo] = repository.split('/');
+    const clean = repository.replace(/\.git$/, '');
+    const urlMatch = clean.match(/github\.com\/([^/]+)\/([^/]+)/);
+    if (urlMatch) {
+      return { owner: urlMatch[1], repo: urlMatch[2] };
+    }
+    const [owner, repo] = clean.split('/');
     if (!owner || !repo) {
       throw new Error(`Invalid repository format: ${repository}`);
     }

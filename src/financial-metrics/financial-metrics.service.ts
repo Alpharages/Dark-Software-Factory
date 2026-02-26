@@ -61,16 +61,18 @@ export class FinancialMetricsService {
         if (endDate) whereClause.timestamp.lte = endDate;
       }
 
-      const epic_num = epicId.replace('epic-', '');
+      const epic_num = epicId !== 'all' ? epicId.replace('epic-', '') : undefined;
 
-      // Strategic alignment using epic_num (Story 6-R-3 schema update)
-      (whereClause as Record<string, unknown>).ticket = {
-        epic_num,
-      };
-
+      // Build ticket relation filter
+      const ticketFilter: Prisma.TicketWhereInput = {};
+      if (epic_num !== undefined) {
+        ticketFilter.epic_num = epic_num;
+      }
       if (projectId) {
-        ((whereClause as Record<string, unknown>).ticket as Record<string, unknown>).project_id =
-          projectId;
+        ticketFilter.project_id = projectId;
+      }
+      if (Object.keys(ticketFilter).length > 0) {
+        whereClause.ticket = { is: ticketFilter };
       }
 
       // Query cost logs and aggregate by ticket
@@ -83,7 +85,7 @@ export class FinancialMetricsService {
               title: true,
               clickup_task_id: true,
               completion_date: true,
-            } as { title: boolean; clickup_task_id: boolean; completion_date: boolean },
+            },
           },
         },
       });
@@ -411,10 +413,13 @@ export class FinancialMetricsService {
       const daysElapsed = dailyCosts.length || 1;
       const burnRatePerDay = totalSpent / daysElapsed;
 
-      // Forecast
-      const daysRemaining = remaining > 0 ? Math.floor(remaining / burnRatePerDay) : 0;
+      // Forecast — guard against zero burn rate (no spend yet) to avoid Infinity / invalid date
+      const daysRemaining =
+        burnRatePerDay > 0 && remaining > 0 ? Math.floor(remaining / burnRatePerDay) : 0;
       const forecastDate = new Date();
-      forecastDate.setDate(forecastDate.getDate() + daysRemaining);
+      if (daysRemaining > 0) {
+        forecastDate.setDate(forecastDate.getDate() + daysRemaining);
+      }
 
       const status: 'healthy' | 'warning' | 'critical' =
         utilizationPct < 50 ? 'healthy' : utilizationPct < 80 ? 'warning' : 'critical';

@@ -18,12 +18,9 @@ import {
   IAIExecutionMessage,
   IConsumerState,
   IProcessingResult,
-  IExecutionCompletion,
   IExecutionFailure,
 } from './interfaces';
 import { OrchestratorService } from '@/ai-routing/orchestrator.service';
-import { EventBusService } from '@/common/event-bus.service';
-import { ExecutionCompletedEvent } from './events/execution-completed.event';
 import { DEFAULT_COMPLEXITY_SCORE, DEFAULT_ESTIMATED_OUTPUT_TOKENS } from './execution.constants';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
@@ -85,7 +82,6 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly rabbitmq: RabbitMQService,
     private readonly executionTracker: ExecutionTrackerService,
-    private readonly eventBus: EventBusService,
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestrator: OrchestratorService,
     // Story 11.4: AI Decision Audit Logging
@@ -603,41 +599,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           confidence: result.confidenceScore || 0.8,
         });
 
-        // 3. Mark as completed
-        const completion: IExecutionCompletion = {
-          executionId,
-          codeOutput: result.codeDiff || '',
-          filesChanged: result.filesChanged || [],
-          confidenceScore: result.confidenceScore || 0.8,
-        };
-        await this.executionTracker.completeExecution(completion, correlationId);
-
-        // Emit EventBus event so downstream listeners (QA check, commit/push/PR) are triggered.
-        // The tracker updates DB + websocket, but only EventBus reaches server-side listeners.
-        try {
-          const execution = await this.executionTracker.getExecution(executionId);
-          if (execution) {
-            this.eventBus.emit(
-              'execution.completed',
-              new ExecutionCompletedEvent(
-                executionId,
-                execution.ticket_id,
-                execution.ticket_id, // projectId placeholder
-                result.filesChanged || [],
-                result.codeDiff || '',
-                execution.ai_provider,
-                correlationId,
-              ),
-            );
-            this.logger.log(
-              `[${correlationId}] Emitted execution.completed event for ${executionId}`,
-            );
-          }
-        } catch (eventError) {
-          this.logger.error(
-            `[${correlationId}] Failed to emit execution.completed event: ${(eventError as Error).message}`,
-          );
-        }
+        // Note: execution status and execution.completed EventBus event are handled by
+        // AIExecutionService.executeWithProvider() → ExecutionService.completeExecution().
+        // Emitting here again would cause a duplicate QA check to be published.
 
         // Story 7.7: Track AI capability success (C2 fix)
         await this.capabilityTracker.trackExecution(true, payload.prompt);

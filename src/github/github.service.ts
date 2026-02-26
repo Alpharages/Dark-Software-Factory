@@ -359,7 +359,9 @@ export class GitHubService {
     prNumber: number,
     installationId?: string,
   ): Promise<string> {
-    const [owner, repo] = repository.split('/');
+    const clean = repository.replace(/\.git$/, '');
+    const urlMatch = clean.match(/github\.com\/([^/]+)\/([^/]+)/);
+    const [owner, repo] = urlMatch ? [urlMatch[1], urlMatch[2]] : repository.split('/');
     return this.clientService.execute(
       async (client: Octokit) => {
         const { data } = await client.pulls.get({

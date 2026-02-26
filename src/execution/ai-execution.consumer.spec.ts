@@ -13,7 +13,6 @@ import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { ClickUpService } from '../clickup/clickup.service';
 import { AiCapabilityTrackerService } from '../architecture-review/capabilities/ai-capability-tracker.service';
-import { EventBusService } from '../common/event-bus.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -127,19 +126,12 @@ describe('AIExecutionConsumer', () => {
       trackExecution: jest.fn().mockResolvedValue(undefined),
     };
 
-    // Mock EventBusService
-    const mockEventBus = {
-      emit: jest.fn(),
-      on: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIExecutionConsumer,
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(1) } },
         { provide: RabbitMQService, useValue: mockRabbitmq },
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
-        { provide: EventBusService, useValue: mockEventBus },
         { provide: OrchestratorService, useValue: mockOrchestrator },
         { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
         { provide: AICostTrackerService, useValue: mockAICostTracker },

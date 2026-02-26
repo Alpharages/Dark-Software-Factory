@@ -44,6 +44,8 @@ model Ticket {
   description          String
   acceptance_criteria  String
   ticket_quality_score Int
+  epic_num             String?
+  completion_date      DateTime?
   status               TicketStatus         @default(RECEIVED)
   created_at           DateTime             @default(now())
   updated_at           DateTime             @updatedAt
