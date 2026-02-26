@@ -214,6 +214,9 @@ export class PtyExecutionService implements OnModuleDestroy {
     const defaultShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const cmd = command || defaultShell;
 
+    // Log info message for PTY process tracking
+    this.logger.log(`PTY spawn requested: command='${cmd}', args=[${args.join(', ')}]`);
+
     this.logger.log(`Spawning PTY process: ${cmd} ${args.join(' ')}`);
 
     // Check if command exists before attempting to spawn
@@ -358,6 +361,11 @@ export class PtyExecutionService implements OnModuleDestroy {
     options: ContainerSpawnOptions,
   ): Promise<ContainerSpawnResult> {
     const { executionId, cols: _cols = 80, rows: _rows = 30 } = options;
+
+    // Log info message for container PTY process tracking
+    this.logger.log(
+      `Container spawn requested: executionId='${executionId}', command='${command}', args=[${args.join(', ')}]`,
+    );
 
     // Acquire semaphore slot before proceeding
     // This allows backpressure to build up if too many containers are running
