@@ -133,15 +133,15 @@ development_status:
     story_points: 3
     notes: 'BE-14 GET /locks/active, BE-13 telemetry DTO fix. QA-FR5, QA-FR6. Ultimate context engine analysis completed - comprehensive developer guide created.'
   25-4-critical-frontend-route-crash-fixes:
-    status: backlog
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'FE-1 /cost route, FE-2 /admin/users crash, FE-3 /admin/invitations crash. QA-FR7,FR8,FR9.'
+    notes: 'FE-1 /cost route, FE-2 /admin/users crash (UsersResponse type fixed to match backend pagination/users keys), FE-3 /admin/invitations crash (InvitationsTable dual-filter fixed). 9 regression tests added. QA-FR7,FR8,FR9.'
   25-5-workload-capacity-auth-fix:
-    status: backlog
+    status: ready-for-dev
     effort: '0.5 days'
     story_points: 1
-    notes: 'FE-13 localStorage → useAuth(). Also fixes BE-11, BE-12 (404/400 on workload). QA-FR10.'
+    notes: 'FE-13 localStorage → useAuth(). Also fixes BE-11, BE-12 (404/400 on workload). QA-FR10. Ultimate context engine analysis completed - comprehensive developer guide created.'
   25-6-react-query-performance-socket-centralization:
     status: backlog
     effort: '1 day'
