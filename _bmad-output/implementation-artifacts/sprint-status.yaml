@@ -123,15 +123,15 @@ development_status:
     story_points: 2
     notes: 'BE-2 wildcard route, BE-3 ActionableStatusService removal, BE-4 Prisma guard. QA-FR2,FR3,FR4.'
   25-2-github-webhook-security:
-    status: backlog
+    status: done
     effort: '0.5 days'
     story_points: 2
-    notes: 'BE-1 CRITICAL — HMAC enforcement via GITHUB_WEBHOOK_SECRET. QA-FR1, QA-NFR1.'
+    notes: 'BE-1 CRITICAL — HMAC enforcement via GITHUB_WEBHOOK_SECRET. QA-FR1, QA-NFR1. Ultimate context engine analysis completed - comprehensive developer guide created.'
   25-3-missing-backend-api-endpoints:
-    status: backlog
+    status: in-progress
     effort: '1 day'
     story_points: 3
-    notes: 'BE-14 GET /locks/active, BE-13 telemetry DTO fix. QA-FR5, QA-FR6.'
+    notes: 'BE-14 GET /locks/active, BE-13 telemetry DTO fix. QA-FR5, QA-FR6. Ultimate context engine analysis completed - comprehensive developer guide created.'
   25-4-critical-frontend-route-crash-fixes:
     status: backlog
     effort: '1 day'

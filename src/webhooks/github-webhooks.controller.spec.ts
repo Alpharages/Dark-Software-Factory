@@ -6,6 +6,9 @@ import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
 import { EXCHANGE_NAMES, ROUTING_KEYS } from '@/rabbitmq/rabbitmq.config';
 import { GitHubWebhookSignatureGuard } from './guards';
 
+// '__guards__' is the stable NestJS metadata key written by @UseGuards()
+const GUARDS_METADATA = '__guards__';
+
 describe('GitHubWebhooksController', () => {
   let controller: GitHubWebhooksController;
   let rabbitMQ: jest.Mocked<RabbitMQService>;
@@ -88,5 +91,16 @@ describe('GitHubWebhooksController', () => {
     await controller.handleGitHubWebhook('pull_request', payload, 'corr-123');
 
     expect(rabbitMQ.publishToExchange).not.toHaveBeenCalled();
+  });
+
+  describe('security — guard wiring', () => {
+    it('should have GitHubWebhookSignatureGuard applied to handleGitHubWebhook', () => {
+      const guards: unknown[] = Reflect.getMetadata(
+        GUARDS_METADATA,
+        GitHubWebhooksController.prototype.handleGitHubWebhook,
+      );
+      expect(guards).toBeDefined();
+      expect(guards).toContain(GitHubWebhookSignatureGuard);
+    });
   });
 });

@@ -9,6 +9,10 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { FastifyRequest } from 'fastify';
 
+interface FastifyRequestWithRawBody extends FastifyRequest {
+  rawBody?: Buffer;
+}
+
 /**
  * Guard to verify GitHub webhook signatures (X-Hub-Signature-256).
  *
@@ -23,12 +27,21 @@ export class GitHubWebhookSignatureGuard implements CanActivate {
     this.webhookSecret = this.configService.get<string>('github.webhookSecret') || '';
 
     if (!this.webhookSecret) {
-      this.logger.error('GITHUB_WEBHOOK_SECRET is not configured!');
+      this.logger.warn(
+        'GITHUB_WEBHOOK_SECRET is not configured — webhook HMAC validation is disabled',
+      );
     }
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<FastifyRequest>();
+    if (!this.webhookSecret) {
+      this.logger.debug(
+        'Processing unverified webhook request — GITHUB_WEBHOOK_SECRET not configured',
+      );
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest<FastifyRequestWithRawBody>();
 
     const signature = request.headers['x-hub-signature-256'] as string | undefined;
     if (!signature) {
@@ -36,8 +49,7 @@ export class GitHubWebhookSignatureGuard implements CanActivate {
       throw new UnauthorizedException('Missing GitHub webhook signature');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawBody = (request as any).rawBody as Buffer | undefined;
+    const rawBody = request.rawBody;
     if (!rawBody) {
       this.logger.error('Raw body not available for GitHub signature verification');
       throw new UnauthorizedException('Unable to verify GitHub signature');
