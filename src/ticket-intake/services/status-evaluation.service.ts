@@ -79,7 +79,7 @@ const GENERIC_STATUS_MAP: ReadonlyMap<string, InternalTaskStatus> = new Map([
  * Unified status evaluation service
  *
  * This service provides centralized status evaluation logic that is used by:
- * - Webhook processing (via ActionableStatusService facade)
+ * - Webhook processing (directly)
  * - Manual sync processing (via task-event.mapper)
  *
  * Ensures consistent "Ready for AI" determination across all entry points.

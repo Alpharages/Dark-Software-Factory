@@ -110,7 +110,7 @@ development_status:
     notes: 'DELETE /github/accounts/:accountId + ownership guard + SetNull cascade + disconnect UI with AlertDialog confirmation'
 
   # EPIC 25 - QA STABILIZATION (Critical & High Bug Fixes)
-  epic-25: backlog
+  epic-25: in-progress
   epic-25-name: 'QA Stabilization — Critical & High Bug Fixes'
   epic-25-phase: 'QA Sprint (2026-02-27+)'
   epic-25-priority: critical
@@ -118,7 +118,7 @@ development_status:
   epic-25-estimated_effort: '6 days'
   epic-25-notes: 'Source: QA-REPORT-2026-02-27. Fixes all 3 Critical + 14 High severity issues. Must complete before Epic 26/27.'
   25-1-backend-startup-health:
-    status: backlog
+    status: done
     effort: '0.5 days'
     story_points: 2
     notes: 'BE-2 wildcard route, BE-3 ActionableStatusService removal, BE-4 Prisma guard. QA-FR2,FR3,FR4.'
@@ -366,7 +366,7 @@ epic_status:
     notes: 'UNBLOCKED. Ready for rollout planning.'
   epic-25:
     name: 'QA Stabilization — Critical & High Bug Fixes'
-    status: 'backlog'
+    status: 'in-progress'
     priority: 'critical'
     source: 'QA-REPORT-2026-02-27.md'
     stories: 8

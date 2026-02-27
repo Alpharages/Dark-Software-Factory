@@ -9,7 +9,7 @@ import { WebhooksController } from './webhooks.controller';
 import { GitHubWebhooksController } from './github-webhooks.controller';
 import { WebhooksService } from './webhooks.service';
 import { WebhookSignatureGuard, GitHubWebhookSignatureGuard } from './guards';
-import { WebhookDeduplicationService, ActionableStatusService } from './services';
+import { WebhookDeduplicationService } from './services';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 // Story 20.2: Import TicketIntakeModule for StatusEvaluationService
@@ -49,7 +49,7 @@ import { FileLocksModule } from '@/file-locks/file-locks.module';
     GitHubWebhookSignatureGuard,
     // Story 20.1: Webhook reliability services
     WebhookDeduplicationService,
-    ActionableStatusService,
+
     // Webhook Metrics (Story 2.1 - NFR-O5)
     // Note: These metrics are also registered in AppMetricsModule, but @willsoto/nestjs-prometheus
     // requires providers to be in the same module where @InjectMetric is used
@@ -97,6 +97,6 @@ import { FileLocksModule } from '@/file-locks/file-locks.module';
       labelNames: ['internal_status'],
     }),
   ],
-  exports: [WebhooksService, WebhookDeduplicationService, ActionableStatusService],
+  exports: [WebhooksService, WebhookDeduplicationService],
 })
 export class WebhooksModule {}

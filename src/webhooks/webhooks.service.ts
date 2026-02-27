@@ -23,7 +23,8 @@ import {
   PROCESSABLE_EVENTS,
 } from './interfaces';
 import { WebhookResponseDto } from './dto';
-import { WebhookDeduplicationService, ActionableStatusService } from './services';
+import { WebhookDeduplicationService } from './services';
+import { StatusEvaluationService } from '../ticket-intake/services/status-evaluation.service';
 import {
   ITaskEvent,
   TaskProviderType,
@@ -77,7 +78,7 @@ export class WebhooksService implements OnModuleDestroy {
     private readonly configService: ConfigService,
     // Story 20.1: New services for robust handling
     private readonly deduplicationService: WebhookDeduplicationService,
-    private readonly actionableStatusService: ActionableStatusService,
+    private readonly statusEvaluationService: StatusEvaluationService,
     // Prometheus metrics
     @InjectMetric(WEBHOOK_METRICS.RECEIVED_TOTAL)
     private readonly webhookReceivedCounter: Counter<string>,
@@ -191,7 +192,7 @@ export class WebhooksService implements OnModuleDestroy {
 
       // 4. Status-based actionability check (AC3, AC4)
       const taskStatus = payload.task?.status?.status || 'unknown';
-      const statusEval = this.actionableStatusService.evaluateStatus(
+      const statusEval = this.statusEvaluationService.evaluateStatus(
         taskStatus,
         TaskProviderType.CLICKUP,
       );

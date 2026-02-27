@@ -12,12 +12,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { WebhooksService } from './webhooks.service';
-import { WebhookDeduplicationService, ActionableStatusService } from './services';
+import { WebhookDeduplicationService } from './services';
 import { PrismaService } from '../database/prisma.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { WEBHOOK_METRICS, QUEUE_METRICS } from '../common/metrics/metrics.constants';
 import { IClickUpWebhookPayload } from './interfaces';
 import { TaskProviderType, TaskTriggerSource } from '../ticket-intake/dto/task-event.dto';
+import { StatusEvaluationService } from '../ticket-intake/services/status-evaluation.service';
 
 // Helper to generate metric tokens
 const getMetricToken = (name: string): string => `PROM_METRIC_${name.toUpperCase()}`;
@@ -50,7 +51,7 @@ const mockDeduplicationService = {
   getStats: jest.fn().mockReturnValue({ backend: 'redis', inMemorySize: 0, dedupTtlMs: 300000 }),
 };
 
-const mockActionableStatusService = {
+const mockStatusEvaluationService = {
   evaluateStatus: jest.fn(),
 };
 
@@ -97,7 +98,7 @@ describe('WebhooksService (Story 20.1)', () => {
         { provide: RabbitMQService, useValue: mockRabbitMQ },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: WebhookDeduplicationService, useValue: mockDeduplicationService },
-        { provide: ActionableStatusService, useValue: mockActionableStatusService },
+        { provide: StatusEvaluationService, useValue: mockStatusEvaluationService },
         // Metric providers using correct token format
         { provide: getMetricToken(WEBHOOK_METRICS.RECEIVED_TOTAL), useValue: mockCounter },
         { provide: getMetricToken(WEBHOOK_METRICS.PROCESSED_TOTAL), useValue: mockCounter },
@@ -127,7 +128,7 @@ describe('WebhooksService (Story 20.1)', () => {
         isDuplicate: false,
         source: 'redis',
       });
-      mockActionableStatusService.evaluateStatus.mockReturnValue({
+      mockStatusEvaluationService.evaluateStatus.mockReturnValue({
         isActionable: true,
         internalStatus: 'AI_PROCESSING',
         reason: 'Status is actionable',
@@ -178,7 +179,7 @@ describe('WebhooksService (Story 20.1)', () => {
 
     it('should filter non-actionable statuses (AC4)', async () => {
       const correlationId = 'corr-123';
-      mockActionableStatusService.evaluateStatus.mockReturnValue({
+      mockStatusEvaluationService.evaluateStatus.mockReturnValue({
         isActionable: false,
         internalStatus: 'COMPLETED',
         reason: 'Status is completed',
@@ -248,7 +249,7 @@ describe('WebhooksService (Story 20.1)', () => {
         // No task object
       };
 
-      mockActionableStatusService.evaluateStatus.mockReturnValue({
+      mockStatusEvaluationService.evaluateStatus.mockReturnValue({
         isActionable: true,
         internalStatus: 'QUEUED',
         reason: 'Default to actionable',

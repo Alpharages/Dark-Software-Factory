@@ -131,10 +131,10 @@ export class ExecutionRepository {
    * Update execution with partial data (Story 23.2)
    * Used for container assignment and other field updates
    */
-  async update(id: string, data: Prisma.ExecutionUpdateInput): Promise<Execution> {
-    return this.prisma.execution.update({
+  async update(id: string, data: Prisma.ExecutionUpdateInput): Promise<void> {
+    await this.prisma.execution.updateMany({
       where: { id },
-      data,
+      data: data as Prisma.ExecutionUpdateManyMutationInput,
     });
   }
 
