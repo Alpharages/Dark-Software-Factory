@@ -118,7 +118,7 @@ development_status:
   epic-25-estimated_effort: '6 days'
   epic-25-notes: 'Source: QA-REPORT-2026-02-27. Fixes all 3 Critical + 14 High severity issues. Must complete before Epic 26/27.'
   25-1-backend-startup-health:
-    status: done
+    status: review
     effort: '0.5 days'
     story_points: 2
     notes: 'BE-2 wildcard route, BE-3 ActionableStatusService removal, BE-4 Prisma guard. QA-FR2,FR3,FR4.'
