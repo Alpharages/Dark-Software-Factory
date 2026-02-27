@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ValidationPipe } from '@nestjs/common';
 import { MetricsController } from './metrics.controller';
 import { MetricsService } from './metrics.service';
 import { ShortcutTelemetryDto } from './dto/telemetry.dto';
@@ -22,7 +23,10 @@ describe('MetricsController', () => {
           useValue: mockMetricsService,
         },
       ],
-    }).compile();
+    })
+      .overridePipe(ValidationPipe)
+      .useValue(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+      .compile();
 
     controller = module.get<MetricsController>(MetricsController);
     service = module.get(MetricsService);
