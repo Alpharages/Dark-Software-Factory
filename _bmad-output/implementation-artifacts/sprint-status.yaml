@@ -109,26 +109,186 @@ development_status:
     story_points: 2
     notes: 'DELETE /github/accounts/:accountId + ownership guard + SetNull cascade + disconnect UI with AlertDialog confirmation'
 
+  # EPIC 25 - QA STABILIZATION (Critical & High Bug Fixes)
+  epic-25: backlog
+  epic-25-name: 'QA Stabilization — Critical & High Bug Fixes'
+  epic-25-phase: 'QA Sprint (2026-02-27+)'
+  epic-25-priority: critical
+  epic-25-dependencies: none
+  epic-25-estimated_effort: '6 days'
+  epic-25-notes: 'Source: QA-REPORT-2026-02-27. Fixes all 3 Critical + 14 High severity issues. Must complete before Epic 26/27.'
+  25-1-backend-startup-health:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 2
+    notes: 'BE-2 wildcard route, BE-3 ActionableStatusService removal, BE-4 Prisma guard. QA-FR2,FR3,FR4.'
+  25-2-github-webhook-security:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 2
+    notes: 'BE-1 CRITICAL — HMAC enforcement via GITHUB_WEBHOOK_SECRET. QA-FR1, QA-NFR1.'
+  25-3-missing-backend-api-endpoints:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'BE-14 GET /locks/active, BE-13 telemetry DTO fix. QA-FR5, QA-FR6.'
+  25-4-critical-frontend-route-crash-fixes:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'FE-1 /cost route, FE-2 /admin/users crash, FE-3 /admin/invitations crash. QA-FR7,FR8,FR9.'
+  25-5-workload-capacity-auth-fix:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 1
+    notes: 'FE-13 localStorage → useAuth(). Also fixes BE-11, BE-12 (404/400 on workload). QA-FR10.'
+  25-6-react-query-performance-socket-centralization:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'FE-14 global staleTime + SocketProvider. QA-FR12, QA-FR13, QA-NFR2, QA-NFR3.'
+  25-7-chart-rendering-fix:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 1
+    notes: 'FE-5 CE-1/CE-2/CE-3 Recharts zero-dimension on 3 pages. QA-FR11, QA-NFR6.'
+  25-8-notification-stability:
+    status: backlog
+    effort: '1 day'
+    story_points: 2
+    notes: 'FE-17 rate limit 429, FE-4 preferences crash. staleTime:30000 on notification queries. QA-FR14, QA-FR15.'
+  epic-25-retrospective: optional
+
+  # EPIC 26 - PM DASHBOARD FEATURE COMPLETION & OPERATIONAL KPIs
+  epic-26: backlog
+  epic-26-name: 'PM Dashboard Feature Completion & Operational KPIs'
+  epic-26-phase: 'QA Sprint (2026-02-27+)'
+  epic-26-priority: high
+  epic-26-dependencies: 'Epic 25 recommended (stable auth/QueryClient base)'
+  epic-26-estimated_effort: '8 days'
+  epic-26-notes: 'Completes stubbed PM Dashboard features (FE-6/7/8/9) + 8 new KPI widgets (STAT-1–8).'
+  26-1-new-project-creation-dialog:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'FE-6 — New Project stub → real Dialog. QA-FR16.'
+  26-2-project-filter-panel:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'FE-7 — Filter stub → functional Sheet. QA-FR17.'
+  26-3-sort-and-view-mode-toggle:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'FE-8 Sort + FE-9 Grid/List toggle + UI-2 active state fix. QA-FR18, QA-FR19.'
+  26-4-role-guards-and-reactive-auth:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 2
+    notes: 'FE-15 FinancialMetrics role guard + FE-16 useEffect reactive auth. QA-FR20, QA-FR21.'
+  26-5-observability-constraints-error-states:
+    status: backlog
+    effort: '1 day'
+    story_points: 2
+    notes: 'FE-10 Observability degradation + FE-11 Constraints mutual-exclusion state. QA-FR22, QA-FR23.'
+  26-6-ai-execution-kpi-widgets:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'STAT-1 Success Rate, STAT-2 Avg Time, STAT-7 Live Active/Queued. QA-FR31, QA-FR32, QA-FR37.'
+  26-7-financial-kpi-widgets:
+    status: backlog
+    effort: '1.5 days'
+    story_points: 5
+    notes: 'STAT-3 Cost per Ticket, STAT-4 Budget Burn Rate chart. QA-FR33, QA-FR34. MANAGER/ADMIN only.'
+  26-8-quality-provider-kpi-widgets:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'STAT-5 PR Merge Rate, STAT-6 QA First-Pass Rate, STAT-8 AI Provider Distribution. QA-FR35, QA-FR36, QA-FR38.'
+  epic-26-retrospective: optional
+
+  # EPIC 27 - PLATFORM POLISH, GLOBAL UX & MOBILE NAVIGATION
+  epic-27: backlog
+  epic-27-name: 'Platform Polish, Global UX & Mobile Navigation'
+  epic-27-phase: 'QA Sprint (2026-02-27+)'
+  epic-27-priority: high
+  epic-27-dependencies: none
+  epic-27-estimated_effort: '6 days'
+  epic-27-notes: 'UI inconsistencies (UI-1–10), mobile navigation (UI-9), integration health in Settings.'
+  27-1-proper-404-page:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 1
+    notes: 'S-1 — catch-all path="*" → NotFoundPage (not Dashboard). QA-FR24.'
+  27-2-per-page-document-titles:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 1
+    notes: 'UI-5, UI-10 — document.title on all 30 routes. QA-FR26.'
+  27-3-mobile-tablet-navigation:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'UI-9, S-2 — hamburger menu + slide-in drawer for <1024px. QA-FR27.'
+  27-4-notification-bell-badge:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 1
+    notes: 'UI-6 — unread count badge on notification bell. QA-FR28.'
+  27-5-sidebar-visual-polish:
+    status: backlog
+    effort: '1 day'
+    story_points: 2
+    notes: 'UI-1 dynamic last-sync, UI-4 icon consistency, UI-7 Live badge contrast. QA-FR25, QA-FR29, QA-FR30.'
+  27-6-integration-health-panel:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'BE-5/7/8/9 surfaced in Settings UI. Docker, SendGrid, OpenAI, Slack status cards + GET /health/integrations endpoint.'
+  27-7-auth-loading-flash-fix:
+    status: backlog
+    effort: '0.5 days'
+    story_points: 2
+    notes: 'UI-8 — null render during auth re-evaluation + enabled:!!user guards. QA-NFR5.'
+  epic-27-retrospective: optional
+
 priority_sequence:
-  last_updated: '2026-02-20T17:25:00+05:00'
-  updated_by: 'Cleanup & Re-prioritization'
+  last_updated: '2026-02-27T00:00:00+05:00'
+  updated_by: 'QA Report Triage 2026-02-27 — Epics 25, 26, 27 added'
 
   critical_p0:
-    description: 'CRITICAL - Must develop first. UI Gateways for v3 features.'
+    description: 'CRITICAL - QA Stabilization. Must fix before any new feature work.'
     stories:
-      - id: '11-5-UI'
-        name: 'UI: Audit Log Viewer'
-        reason: 'Visibility into AI decision chain. Required for trust.'
-      - id: '12-UI'
-        name: 'UI: AI Resource Manager'
-        reason: 'Control over file locks and ETA calculation.'
-      - id: '14-5-UI'
-        name: 'UI: Observability Control Panel'
-        reason: 'Real-time monitoring of v3 system health.'
+      - id: '25-1'
+        name: 'Backend Startup Health'
+        reason: 'Eliminates 3 startup errors on every server restart.'
+      - id: '25-2'
+        name: 'GitHub Webhook Security'
+        reason: 'SECURITY: HMAC validation completely bypassed — exploitable.'
+      - id: '25-4'
+        name: 'Critical Frontend Route & Crash Fixes'
+        reason: '3 broken routes including /cost (no page) and 2 admin blank-page crashes.'
+      - id: '25-5'
+        name: 'Workload Capacity Auth Fix'
+        reason: 'Every visit fires 404+400 errors; Team Capacity chart invisible to all roles.'
 
   high_p1:
-    description: 'HIGH PRIORITY - Production Rollout'
+    description: 'HIGH PRIORITY - Remaining QA Stabilization + Production Rollout'
     stories:
+      - id: '25-3'
+        name: 'Missing Backend API Endpoints'
+        reason: 'Resource Manager 404 floods backend logs every 2s.'
+      - id: '25-6'
+        name: 'React Query Performance & Socket Centralization'
+        reason: 'Eliminates 2-6x duplicate API calls per navigation; prevents rate limit 429s.'
+      - id: '25-7'
+        name: 'Chart Rendering Fix'
+        reason: '10 charts invisible on first paint across 3 key pages.'
+      - id: '25-8'
+        name: 'Notification Stability'
+        reason: 'Notification bell breaks after 3-4 page navigations (429 rate limit).'
       - id: '15-4'
         story: 'production-rollout-plan'
         epic: 'epic-15'
@@ -139,8 +299,30 @@ priority_sequence:
         name: 'E2E Testing & Validation'
 
   medium_p2:
-    description: 'MEDIUM PRIORITY - Backend Refinements & Review Workflows'
+    description: 'MEDIUM PRIORITY - PM Dashboard Completion & UX Polish'
     stories:
+      - id: '26-1'
+        name: 'New Project Creation Dialog'
+        reason: 'Primary action on most-viewed page currently a stub.'
+      - id: '26-2'
+        name: 'Project Filter Panel'
+      - id: '26-3'
+        name: 'Sort & View Mode Toggle'
+      - id: '26-4'
+        name: 'Role Guards & Reactive Auth'
+      - id: '26-5'
+        name: 'Observability & Constraints Error States'
+      - id: '27-1'
+        name: 'Proper 404 Page'
+      - id: '27-2'
+        name: 'Per-Page Document Titles'
+      - id: '27-3'
+        name: 'Mobile/Tablet Navigation'
+        reason: 'App completely unusable on any screen < 1024px.'
+      - id: '27-4'
+        name: 'Notification Bell Badge'
+      - id: '27-7'
+        name: 'Auth Loading Flash Fix'
       - id: '8-1'
         name: 'QA Review Queue Configuration'
       - id: '8-3'
@@ -150,8 +332,18 @@ priority_sequence:
         reason: 'Unblocks real-time UI updates.'
 
   lower_p3:
-    description: 'LOWER PRIORITY - Operational Dashboards'
+    description: 'LOWER PRIORITY - KPI Enhancements & Sidebar Polish'
     stories:
+      - id: '26-6'
+        name: 'AI Execution KPI Widgets'
+      - id: '26-7'
+        name: 'Financial KPI Widgets'
+      - id: '26-8'
+        name: 'Quality & Provider KPI Widgets'
+      - id: '27-5'
+        name: 'Sidebar & Visual Polish'
+      - id: '27-6'
+        name: 'Integration Health Panel in Settings'
       - id: '8-UI'
         name: 'UI: Lead QA Review Dashboard'
       - id: '9-U-5'
@@ -172,3 +364,27 @@ epic_status:
     status: 'contexted'
     priority: 'high'
     notes: 'UNBLOCKED. Ready for rollout planning.'
+  epic-25:
+    name: 'QA Stabilization — Critical & High Bug Fixes'
+    status: 'backlog'
+    priority: 'critical'
+    source: 'QA-REPORT-2026-02-27.md'
+    stories: 8
+    estimated_effort: '6 days'
+    notes: 'No context step needed — stories are direct fixes mapped to QA report IDs. Start immediately.'
+  epic-26:
+    name: 'PM Dashboard Feature Completion & Operational KPIs'
+    status: 'backlog'
+    priority: 'high'
+    source: 'QA-REPORT-2026-02-27.md'
+    stories: 8
+    estimated_effort: '8 days'
+    notes: 'Complete stubbed PM Dashboard features + 8 new KPI widgets. Recommended after Epic 25.'
+  epic-27:
+    name: 'Platform Polish, Global UX & Mobile Navigation'
+    status: 'backlog'
+    priority: 'high'
+    source: 'QA-REPORT-2026-02-27.md'
+    stories: 7
+    estimated_effort: '6 days'
+    notes: 'Can run in parallel with Epic 26. Mobile nav, 404 page, document titles, integration health.'
