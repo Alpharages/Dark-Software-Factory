@@ -1,6 +1,6 @@
 # Story 25.3: Missing Backend API Endpoints
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -25,14 +25,14 @@ so that the Resource Manager page does not crash and telemetry shortcuts are cor
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Fix `GET /api/v1/locks/active` route mapping (AC: 1)
-  - [ ] Update the frontend (`dsf-dasbhoard/src/features/resource-manager/api/resource-manager.api.ts`) call `apiClient.get('/locks/active')` to point to `/file-locks` OR update `FileLocksController` (`src/file-locks/file-locks.controller.ts`) to map its `@Get()` route to `@Get('active')`.
-- [ ] Task 2: Fix `POST /api/v1/telemetry/shortcut` DTO validation (AC: 2)
-  - [ ] Locate `ShortcutTelemetryDto` in `src/common/metrics/dto/telemetry.dto.ts`.
-  - [ ] Add missing `class-validator` decorators (e.g., `@IsString()`, `@IsNotEmpty()`) to the `shortcut` property so NestJS `ValidationPipe` accepts the payload.
-- [ ] Task 3: Write tests for the implementation
-  - [ ] Update any affected tests in `file-locks.controller.spec.ts` if route is changed.
-  - [ ] Update tests in `metrics.controller.spec.ts` or add tests for `ShortcutTelemetryDto` validation.
+- [x] Task 1: Fix `GET /api/v1/locks/active` route mapping (AC: 1)
+  - [x] Update the frontend (`dsf-dasbhoard/src/features/resource-manager/api/resource-manager.api.ts`) call `apiClient.get('/locks/active')` to point to `/file-locks` OR update `FileLocksController` (`src/file-locks/file-locks.controller.ts`) to map its `@Get()` route to `@Get('active')`.
+- [x] Task 2: Fix `POST /api/v1/telemetry/shortcut` DTO validation (AC: 2)
+  - [x] Locate `ShortcutTelemetryDto` in `src/common/metrics/dto/telemetry.dto.ts`.
+  - [x] Add missing `class-validator` decorators (e.g., `@IsString()`, `@IsNotEmpty()`) to the `shortcut` property so NestJS `ValidationPipe` accepts the payload.
+- [x] Task 3: Write tests for the implementation
+  - [x] Update any affected tests in `file-locks.controller.spec.ts` if route is changed.
+  - [x] Update tests in `metrics.controller.spec.ts` or add tests for `ShortcutTelemetryDto` validation.
 
 ## Dev Notes
 
@@ -63,4 +63,12 @@ Antigravity BMad Create Story
 
 ### Completion Notes List
 
+- Updated frontend Resource Manager API client to call `/file-locks` instead of `/locks/active`, unwrapping the `{ locks, total }` response to match expected frontend types.
+- Verified `ShortcutTelemetryDto` already has `@IsString()` and `@IsNotEmpty()` decorators. The DTO validation works correctly.
+- Created unit tests for `ShortcutTelemetryDto` in `metrics.controller.spec.ts` to verify the validation logic and the metrics controller endpoints.
+- Regression test suite passed successfully.
+
 ### File List
+
+- `../dsf-dasbhoard/src/features/resource-manager/api/resource-manager.api.ts` [MODIFIED]
+- `src/common/metrics/metrics.controller.spec.ts` [NEW]
