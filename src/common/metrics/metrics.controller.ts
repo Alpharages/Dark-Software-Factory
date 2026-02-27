@@ -2,10 +2,11 @@ import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { Public } from '../decorators/public.decorator';
 import { MetricsService } from './metrics.service';
 import { ShortcutTelemetryDto } from './dto/telemetry.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/auth.guard';
 
 @ApiTags('Telemetry')
+@ApiBearerAuth()
 @Controller({ path: 'telemetry', version: '1' })
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}

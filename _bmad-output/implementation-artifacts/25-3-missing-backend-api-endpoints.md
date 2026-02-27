@@ -1,6 +1,6 @@
 # Story 25.3: Missing Backend API Endpoints
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -75,8 +75,8 @@ Antigravity BMad Create Story
 
 ### Review Follow-ups (Low Severity)
 
-- [ ] [AI-Review][LOW] Add `@ApiBearerAuth()` to `MetricsController` class-level so Swagger shows padlock on `POST /telemetry/shortcut` [src/common/metrics/metrics.controller.ts]
-- [ ] [AI-Review][LOW] Move `ShortcutTelemetryDto` validation tests from `metrics.controller.spec.ts` into `src/common/metrics/dto/telemetry.dto.spec.ts`
+- [x] [AI-Review][LOW] Add `@ApiBearerAuth()` to `MetricsController` class-level so Swagger shows padlock on `POST /telemetry/shortcut` [src/common/metrics/metrics.controller.ts]
+- [x] [AI-Review][LOW] Move `ShortcutTelemetryDto` validation tests from `metrics.controller.spec.ts` into `src/common/metrics/dto/telemetry.dto.spec.ts`
 
 ### File List
 
@@ -84,3 +84,5 @@ Antigravity BMad Create Story
 - `src/common/metrics/metrics.controller.spec.ts` [NEW]
 - `src/file-locks/file-lock-manager.service.ts` [MODIFIED] — review fix H1/H2
 - `src/file-locks/file-locks.controller.ts` [MODIFIED] — review fix H1/H2
+- `src/common/metrics/metrics.controller.ts` [MODIFIED] — review fix L1
+- `src/common/metrics/dto/telemetry.dto.spec.ts` [NEW] — review fix L2
