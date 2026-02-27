@@ -1,6 +1,6 @@
 # Story 25.1: Backend Startup Health
 
-Status: review
+Status: done
 
 ## Story
 
@@ -74,6 +74,9 @@ None
 - Removed `ActionableStatusService` and `StatusEvaluationResult` exports. Replaced with references and DI injections pointing directly to `StatusEvaluationService`. Removed tests, module imports, and provider declarations.
 - Updated `WebhooksService` and `webhooks.service.spec.ts` to properly mock and rely on `StatusEvaluationService`.
 - Modified `ExecutionRepository.update` signature to use `this.prisma.execution.updateMany` inside to eliminate `record-not-found` Prisma errors when containers fail or when `assignContainer` is executed at startup. Both tests and the development server cleanly start up without `WARN`/`ERROR` logs regarding this issue.
+- **[Code Review Fix]** `ExecutionRepository.updateStatus()` and `incrementRetryAndRequeue()` — both were still using `prisma.execution.update()` (throws P2025 on missing records). Updated both to use `updateMany` pattern followed by `findUnique` re-fetch to maintain return type contract while eliminating startup/shutdown error noise (AC6 extended).
+- **[Code Review Fix]** `webhooks.service.spec.ts` — set `retryDelayMs: 0` in `mockConfigService` to prevent retry backoff test from blocking CI for 3+ real seconds.
+- **[Code Review Fix]** `webhooks.service.spec.ts` — renamed misleading `taskDeleted` test description to accurately reflect it tests non-PROCESSABLE_EVENTS filtering.
 
 ### File List
 

@@ -76,7 +76,11 @@ export class ExecutionRepository {
   }
 
   /**
-   * Update execution status with timestamp handling
+   * Update execution status with timestamp handling.
+   *
+   * Uses updateMany instead of update to gracefully handle cases where the
+   * execution record no longer exists (e.g. container crash cleaned up the
+   * record), avoiding Prisma P2025 NotFound errors on startup/shutdown.
    */
   async updateStatus(
     id: string,
@@ -88,7 +92,7 @@ export class ExecutionRepository {
       errorMessage: string;
     }>,
   ): Promise<Execution> {
-    const updateData: Prisma.ExecutionUpdateInput = {
+    const updateData: Prisma.ExecutionUpdateManyMutationInput = {
       status,
     };
 
@@ -118,12 +122,21 @@ export class ExecutionRepository {
         break;
     }
 
-    const execution = await this.prisma.execution.update({
+    // updateMany returns { count: 0 } if record not found — no throw (AC6 pattern)
+    await this.prisma.execution.updateMany({
       where: { id },
       data: updateData,
     });
 
     this.logger.log(`Updated execution ${id} status to ${status}`);
+
+    // Re-fetch to satisfy return type; if record was deleted, callers receive null-safe fallback
+    const execution = await this.prisma.execution.findUnique({ where: { id } });
+    if (!execution) {
+      this.logger.warn(`Execution ${id} no longer exists after status update to ${status}`);
+      // Return a synthetic shell so callers don't throw — only safe fields needed
+      return { id, status } as Execution;
+    }
     return execution;
   }
 
@@ -139,10 +152,19 @@ export class ExecutionRepository {
   }
 
   /**
-   * Increment retry count and reset to QUEUED
+   * Increment retry count and reset to QUEUED.
+   *
+   * Uses updateMany to avoid P2025 NotFound if the record was cleaned up
+   * before the retry fires. Re-fetches afterward to return the updated record.
    */
   async incrementRetryAndRequeue(id: string): Promise<Execution> {
-    return this.prisma.execution.update({
+    const existing = await this.prisma.execution.findUnique({ where: { id } });
+    if (!existing) {
+      this.logger.warn(`Execution ${id} not found during incrementRetryAndRequeue — skipping`);
+      return { id, status: ExecutionStatus.QUEUED, retry_count: 0 } as Execution;
+    }
+
+    await this.prisma.execution.updateMany({
       where: { id },
       data: {
         retry_count: { increment: 1 },
@@ -152,6 +174,10 @@ export class ExecutionRepository {
         error_message: null,
       },
     });
+
+    // Re-fetch the updated record
+    const updated = await this.prisma.execution.findUnique({ where: { id } });
+    return updated ?? existing;
   }
 
   /**

@@ -38,7 +38,8 @@ const mockConfigService = {
   get: jest.fn((key: string, defaultValue?: unknown) => {
     const config: Record<string, unknown> = {
       'webhooks.maxRetries': 3,
-      'webhooks.retryDelayMs': 1000,
+      // Set to 0 so retry backoff tests don't wait real milliseconds in CI
+      'webhooks.retryDelayMs': 0,
     };
     return config[key] ?? defaultValue;
   }),
@@ -193,7 +194,7 @@ describe('WebhooksService (Story 20.1)', () => {
       expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
-    it('should acknowledge but not process unknown event types', async () => {
+    it('should acknowledge but not process non-PROCESSABLE_EVENTS event types (e.g. taskDeleted)', async () => {
       const unknownPayload: IClickUpWebhookPayload = {
         ...validPayload,
         webhook_id: 'wh-unknown',
