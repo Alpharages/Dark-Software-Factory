@@ -138,25 +138,25 @@ development_status:
     story_points: 3
     notes: 'FE-1 /cost route, FE-2 /admin/users crash (UsersResponse type fixed to match backend pagination/users keys), FE-3 /admin/invitations crash (InvitationsTable dual-filter fixed). 9 regression tests added. QA-FR7,FR8,FR9.'
   25-5-workload-capacity-auth-fix:
-    status: ready-for-dev
+    status: done
     effort: '0.5 days'
     story_points: 1
     notes: 'FE-13 localStorage → useAuth(). Also fixes BE-11, BE-12 (404/400 on workload). QA-FR10. Ultimate context engine analysis completed - comprehensive developer guide created.'
   25-6-react-query-performance-socket-centralization:
-    status: backlog
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'FE-14 global staleTime + SocketProvider. QA-FR12, QA-FR13, QA-NFR2, QA-NFR3.'
+    notes: 'FE-14 global staleTime + SocketProvider. QA-FR12, QA-FR13, QA-NFR2, QA-NFR3. Centralized socket context implemented and hooks refactored.'
   25-7-chart-rendering-fix:
-    status: backlog
+    status: done
     effort: '0.5 days'
     story_points: 1
-    notes: 'FE-5 CE-1/CE-2/CE-3 Recharts zero-dimension on 3 pages. QA-FR11, QA-NFR6.'
+    notes: 'FE-5 CE-1/CE-2/CE-3 Recharts zero-dimension on 3 pages. QA-FR11, QA-NFR6. Code review auto-fixed: QueueMetricsChart/EpicComparisonChart skeleton heights, min-w-0 wrappers on BurnRateChart/RoiTrendChart/SuccessRateChart, EpicComparisonChart staleTime, CostSectionContainer as-any cast removed.'
   25-8-notification-stability:
-    status: backlog
+    status: done
     effort: '1 day'
     story_points: 2
-    notes: 'FE-17 rate limit 429, FE-4 preferences crash. staleTime:30000 on notification queries. QA-FR14, QA-FR15.'
+    notes: 'FE-17 rate limit 429, FE-4 preferences crash. Fix: harden canAccessEventType and rely on socket events for query invalidation. QA-FR14, QA-FR15.'
   epic-25-retrospective: optional
 
   # EPIC 26 - PM DASHBOARD FEATURE COMPLETION & OPERATIONAL KPIs
@@ -286,9 +286,9 @@ priority_sequence:
       - id: '25-7'
         name: 'Chart Rendering Fix'
         reason: '10 charts invisible on first paint across 3 key pages.'
-      - id: '25-8'
-        name: 'Notification Stability'
-        reason: 'Notification bell breaks after 3-4 page navigations (429 rate limit).'
+      - id: '25-8-notification-stability'
+        name: 'Notification Stability — Fix Dashboard Crash & Rate Limiting'
+        reason: 'FE-17 rate limit 429, FE-4 preferences crash.'
       - id: '15-4'
         story: 'production-rollout-plan'
         epic: 'epic-15'
