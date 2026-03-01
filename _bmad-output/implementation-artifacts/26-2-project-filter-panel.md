@@ -1,6 +1,6 @@
 # Story 26.2: Project Filter Panel
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -93,10 +93,24 @@ N/A
 - Wired filtering state centrally inside `Dashboard` component within `App.tsx` and persisted with `useSearchParams`.
 - Display a dynamic empty state if no projects match criteria, along with a "Clear Filters" command.
 - Verified components structure with new tests in `src/__tests__/components/ProjectFilterSheet.test.tsx`.
+- **Code Review Fixes (2026-03-02):** 7 HIGH/MEDIUM issues auto-fixed by SM code review.
+  - [H1] Fixed STATUS_OPTIONS to match actual `ProjectStatus` type: `['Active', 'Paused', 'Completed', 'On Hold']` replacing incorrect `'Archived'` option with correct `'Completed'` and `'On Hold'` (matching `on-hold` backend value via `replace(/ /g, '-')`).
+  - [H2] Added `useCallback` to `handleFilterChange` and `handleClearFilters` — stabilises `onFilterChange` reference passed to `ProjectFilterSheet` debounce useEffect, which was restarting every render.
+  - [H3] Extracted `filterProjects()` to `src/utils/projectFilters.ts`; added 37 tests across `projectFilters.test.ts` (22 tests) and expanded `ProjectFilterSheet.test.tsx` (14 tests → debounce, date UX, status options, clear behaviour).
+  - [M1] Moved `Dashboard` component from `App.tsx` (inline 360-line function) to `src/pages/Dashboard.tsx` — aligns with Dev Notes and project structure.
+  - [M2] Moved mid-file imports (lines 462-467) to top of `App.tsx`; all imports now precede component definitions.
+  - [M3] `DateRangePicker` no longer shows ghost fallback dates when no date filter is active — replaced with a "Select date range..." placeholder button that activates the picker on first click.
+  - [M4] Added `parseDate()` guard — `new Date(null/invalid)` now returns `null` instead of silently producing `NaN` that would bypass the date filter.
+- **Remaining LOW issues (deferred):**
+  - [L1] `date-fns` not used for end-of-day normalisation — selecting a date as end-date excludes projects created after midnight on that day.
+  - [L2] Client search matches both `client_name` and `project.name` but UI only labels it "Client".
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/26-2-project-filter-panel.md`
 - `src/components/dashboard/ProjectFilterSheet.tsx`
+- `src/pages/Dashboard.tsx`
 - `src/App.tsx`
+- `src/utils/projectFilters.ts`
 - `src/__tests__/components/ProjectFilterSheet.test.tsx`
+- `src/__tests__/utils/projectFilters.test.ts`

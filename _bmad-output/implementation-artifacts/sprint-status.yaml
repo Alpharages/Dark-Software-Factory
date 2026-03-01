@@ -173,10 +173,10 @@ development_status:
     story_points: 3
     notes: 'FE-6 — New Project stub → real Dialog. QA-FR16.'
   26-2-project-filter-panel:
-    status: review
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'FE-7 — Filter stub → functional Sheet. QA-FR17.'
+    notes: 'FE-7 — Filter stub → functional Sheet. QA-FR17. Code review: 7 HIGH/MEDIUM issues fixed (STATUS_OPTIONS type mismatch, broken debounce, test coverage, Dashboard extracted to pages/, import order, DateRangePicker ghost dates, NaN date guard).'
   26-3-sort-and-view-mode-toggle:
     status: ready-for-dev
     effort: '1 day'
