@@ -178,10 +178,10 @@ development_status:
     story_points: 3
     notes: 'FE-7 — Filter stub → functional Sheet. QA-FR17. Code review: 7 HIGH/MEDIUM issues fixed (STATUS_OPTIONS type mismatch, broken debounce, test coverage, Dashboard extracted to pages/, import order, DateRangePicker ghost dates, NaN date guard).'
   26-3-sort-and-view-mode-toggle:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'FE-8 Sort + FE-9 Grid/List toggle + UI-2 active state fix. QA-FR18, QA-FR19.'
+    notes: 'FE-8 Sort + FE-9 Grid/List toggle + UI-2 active state fix. QA-FR18, QA-FR19. Code review fixes: AC2 column order, null guards, isMobile init, aria-pressed, view transitions, sort utility extracted + 31 new tests.'
   26-4-role-guards-and-reactive-auth:
     status: ready-for-dev
     effort: '0.5 days'

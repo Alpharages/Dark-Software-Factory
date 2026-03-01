@@ -1,6 +1,6 @@
 # Story 26.3: Project Sort & View Mode Toggle
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,15 +34,15 @@ so that I can organize and view my portfolio in the way that best matches my cur
 
 ## Tasks / Subtasks
 
-- [ ] Implement `Sort` Dropdown (AC: 1, 3, 4)
-  - [ ] Add `DropdownMenu` (shadcn/ui) with sorting options (Last Activity desc, Name A-Z, Ticket Count desc, Blocked Count desc).
-  - [ ] Add client-side state for sort preference with `localStorage` persistence.
-  - [ ] Implement array sorting safely (handle `.length === 0`).
-- [ ] Implement View Mode Toggle (AC: 2, 3, 4)
-  - [ ] Add `ToggleGroup` (shadcn/ui) for Grid/List switch and persist choice to `localStorage`.
-  - [ ] Restrict List view on mobile (`<768px`) using CSS media queries or React window width checks.
-  - [ ] Create `ProjectCardListView` using native HTML table elements for a11y.
-  - [ ] Add smooth opacity/transform CSS transitions when switching view modes.
+- [x] Implement `Sort` Dropdown (AC: 1, 3, 4)
+  - [x] Add `DropdownMenu` (shadcn/ui) with sorting options (Last Activity desc, Name A-Z, Ticket Count desc, Blocked Count desc).
+  - [x] Add client-side state for sort preference with `localStorage` persistence.
+  - [x] Implement array sorting safely (handle `.length === 0`).
+- [x] Implement View Mode Toggle (AC: 2, 3, 4)
+  - [x] Add `ToggleGroup` (shadcn/ui) for Grid/List switch and persist choice to `localStorage` (Using custom styled buttons to replicate ToggleGroup).
+  - [x] Restrict List view on mobile (`<768px`) using CSS media queries or React window width checks.
+  - [x] Create `ProjectCardListView` using native HTML table elements for a11y.
+  - [x] Add smooth opacity/transform CSS transitions when switching view modes.
 
 ## Dev Notes
 
@@ -59,10 +59,32 @@ so that I can organize and view my portfolio in the way that best matches my cur
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+BMad-Dev-Agent-v6
 
 ### Debug Log References
 
+- Handled undefined sort cases safely by checking `tickets.total` and `.blocked`.
+- Fixed several existing frontend TypeScript errors (e.g. `dropdown-menu.tsx`, `notification-stability.test.ts`) that were preventing successful builds.
+- Code review (2026-03-02): Fixed column order AC violation, null guards, isMobile init flash, type alias scope, aria-pressed a11y, view transition classes, extracted sort utility for testability.
+
 ### Completion Notes List
 
+- Implemented standard `DropdownMenu` for the sort options. Used localStorage for `dsf_project_sort`.
+- Implemented `ProjectCardListView` native table to show compact view on larger screens.
+- Fallback to Grid View and disabled the switch button if `<768px`.
+- Built and TypeChecked successfully.
+- Code review fixes applied: AC 2 column order corrected (Status before Client); `project.tickets` null guards added; `isMobile` lazy-initialised to avoid flash; `SortOption`/`ViewMode` types moved to module scope; `aria-pressed` added to toggle buttons; `animate-in` transition now triggers on view-mode switch; sort logic extracted to `src/utils/projectSort.ts`.
+- Tests added: `src/__tests__/utils/projectSort.test.ts` (13 tests), `src/__tests__/components/ProjectCardListView.test.tsx` (18 tests). All pass.
+
 ### File List
+
+- `src/pages/Dashboard.tsx`
+- `src/components/dashboard/ProjectCardListView.tsx`
+- `src/components/ui/dropdown-menu.tsx`
+- `src/__tests__/notifications/notification-stability.test.ts`
+- `src/components/financial/page/CostSectionContainer.tsx`
+- `src/components/ui/command.tsx`
+- `src/features/projects/components/GithubRepoSelector.tsx`
+- `src/utils/projectSort.ts`
+- `src/__tests__/utils/projectSort.test.ts`
+- `src/__tests__/components/ProjectCardListView.test.tsx`
