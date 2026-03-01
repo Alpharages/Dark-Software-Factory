@@ -1,6 +1,6 @@
 # Story 26.2: Project Filter Panel
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -36,26 +36,26 @@ so that I can focus on the subset of projects that need my attention right now.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create the Filter Panel UI component (AC: 1)
-  - [ ] Colocate a `ProjectFilterSheet` or `ProjectFilterPopover` component inside `src/features/projects/components` (alongside `NewProjectDialog`).
-  - [ ] Implement the UI using `shadcn/ui` (`Sheet` or `Popover`, `Select` / `Checkbox` for Status, `Input` for Client Search, `DatePickerWithRange` for Date Range).
-  - [ ] Debounce the Client Search text input (e.g., 300ms) to prevent unnecessary re-renders.
+- [x] Task 1: Create the Filter Panel UI component (AC: 1)
+  - [x] Colocate a `ProjectFilterSheet` or `ProjectFilterPopover` component inside `src/features/projects/components` (alongside `NewProjectDialog`).
+  - [x] Implement the UI using `shadcn/ui` (`Sheet` or `Popover`, `Select` / `Checkbox` for Status, `Input` for Client Search, `DatePickerWithRange` for Date Range).
+  - [x] Debounce the Client Search text input (e.g., 300ms) to prevent unnecessary re-renders.
 
-- [ ] Task 2: Implement URL-Persisted Filtering State (AC: 2)
-  - [ ] Implement filter state management using `useSearchParams` in `src/pages/Dashboard.tsx` (or the equivalent component rendering the project grid) so filters survive page reloads.
-  - [ ] Sync the `ProjectFilterSheet` state with the `useSearchParams` state.
+- [x] Task 2: Implement URL-Persisted Filtering State (AC: 2)
+  - [x] Implement filter state management using `useSearchParams` in `src/pages/Dashboard.tsx` (or the equivalent component rendering the project grid) so filters survive page reloads.
+  - [x] Sync the `ProjectFilterSheet` state with the `useSearchParams` state.
 
-- [ ] Task 3: Implement Client-Side Filtering Logic (AC: 2, 3)
-  - [ ] Filter the React Query project data using a `useMemo` block that explicitly depends on the query data and the search params.
-  - [ ] Status filter logic: Exact match against selected statuses.
-  - [ ] Client name filter logic: Case-insensitive substring match.
-  - [ ] Date Range filter logic: Project `created_at` falls within the selected `From`/`To` dates.
-  - [ ] Implement the Empty State UI for when the filtered length is 0.
+- [x] Task 3: Implement Client-Side Filtering Logic (AC: 2, 3)
+  - [x] Filter the React Query project data using a `useMemo` block that explicitly depends on the query data and the search params.
+  - [x] Status filter logic: Exact match against selected statuses.
+  - [x] Client name filter logic: Case-insensitive substring match.
+  - [x] Date Range filter logic: Project `created_at` falls within the selected `From`/`To` dates.
+  - [x] Implement the Empty State UI for when the filtered length is 0.
 
-- [ ] Task 4: Filter Button and Badge State (AC: 2, 4)
-  - [ ] Wire the "Filter" button in `src/pages/Dashboard.tsx` to open the filter component.
-  - [ ] Add a dynamic badge to the "Filter" button that displays the count of active filter criteria.
-  - [ ] Implement a "Clear filters" action inside the panel that deletes the search params directly.
+- [x] Task 4: Filter Button and Badge State (AC: 2, 4)
+  - [x] Wire the "Filter" button in `src/pages/Dashboard.tsx` to open the filter component.
+  - [x] Add a dynamic badge to the "Filter" button that displays the count of active filter criteria.
+  - [x] Implement a "Clear filters" action inside the panel that deletes the search params directly.
 
 ## Dev Notes
 
@@ -88,7 +88,15 @@ N/A
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
 - Quality Validation: Addressed URL state persistence, empty states, ambiguous date filtering targets, and target component paths to ensure flawless implementation.
+- Implemented client-side filtering logic with exact match status, case-insensitive client name, and date range support using `DateRangePicker`.
+- Added a `ProjectFilterSheet` UI component inside `src/components/dashboard` using `shadcn` elements to handle interactions.
+- Wired filtering state centrally inside `Dashboard` component within `App.tsx` and persisted with `useSearchParams`.
+- Display a dynamic empty state if no projects match criteria, along with a "Clear Filters" command.
+- Verified components structure with new tests in `src/__tests__/components/ProjectFilterSheet.test.tsx`.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/26-2-project-filter-panel.md`
+- `src/components/dashboard/ProjectFilterSheet.tsx`
+- `src/App.tsx`
+- `src/__tests__/components/ProjectFilterSheet.test.tsx`

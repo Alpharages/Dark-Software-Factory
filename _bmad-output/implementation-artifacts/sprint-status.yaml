@@ -168,12 +168,12 @@ development_status:
   epic-26-estimated_effort: '8 days'
   epic-26-notes: 'Completes stubbed PM Dashboard features (FE-6/7/8/9) + 8 new KPI widgets (STAT-1–8).'
   26-1-new-project-creation-dialog:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
     notes: 'FE-6 — New Project stub → real Dialog. QA-FR16.'
   26-2-project-filter-panel:
-    status: ready-for-dev
+    status: review
     effort: '1 day'
     story_points: 3
     notes: 'FE-7 — Filter stub → functional Sheet. QA-FR17.'

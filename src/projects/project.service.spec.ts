@@ -184,11 +184,40 @@ describe('ProjectService', () => {
 
       expect(result).toEqual(mockProject);
       expect(repository.create).toHaveBeenCalledWith({
-        ...dto,
+        name: 'Test Project',
+        clickup_list_id: 'list-123',
+        github_repository_url: 'https://github.com/test/repo',
         default_branch: 'main',
+        pm_id: 'pm-123',
         status: 'active',
+        client_name: 'Test Client',
       });
       expect(mockCounter.inc).toHaveBeenCalledWith({ operation: 'create', status: 'success' });
+    });
+
+    it('should create a project without github_repository_url (the optional path)', async () => {
+      const mockProjectNoGithub = { ...mockProject, github_repository_url: '' };
+      repository.create.mockResolvedValue(mockProjectNoGithub);
+      const dto = {
+        name: 'No-Repo Project',
+        clickup_list_id: 'list-456',
+        pm_id: 'pm-123',
+        client_name: 'Acme Corp',
+        // github_repository_url intentionally omitted
+      };
+
+      const result = await service.create(dto);
+
+      expect(result).toEqual(mockProjectNoGithub);
+      expect(repository.create).toHaveBeenCalledWith({
+        name: 'No-Repo Project',
+        clickup_list_id: 'list-456',
+        github_repository_url: '', // undefined?.trim() || '' → ''
+        default_branch: 'main',
+        pm_id: 'pm-123',
+        status: 'active',
+        client_name: 'Acme Corp',
+      });
     });
   });
 

@@ -1,6 +1,6 @@
 # Story 26.1: New Project Creation Dialog
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,21 +34,21 @@ so that I can onboard a new client project without navigating away from my portf
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create the UI Component for New Project Dialog (AC: 1, 3)
-  - [ ] Implement a `NewProjectDialog` component using `shadcn/ui` Dialog or Sheet.
-  - [ ] Build the form using React Hook Form and Zod for schema validation.
-  - [ ] Define required fields (`name`, `client_name`, `clickup_list_id`) and optional (`github_repository_url`).
-  - [ ] Ensure inline validation errors are displayed for empty required fields.
-- [ ] Task 2: Integrate with Backend and Handle Submission (AC: 2)
-  - [ ] Implement the `POST /api/v1/projects` API call inside the form submission handler.
-  - [ ] Ensure payload structure strictly matches the backend `CreateProjectDto` (`name`, `clickup_list_id`, `client_name`, `github_repository_url`, `pm_id`). Note: `github_repository_url` is required in backend DTO, so frontend needs to handle empty gracefully or send a placeholder if not provided, or update backend DTO to be optional.
-  - [ ] Handle success state: close the dialog, show a success toast, and invalidate the React Query projects list to refresh the dashboard.
-  - [ ] Handle error state: keep the dialog open, and display the error message within the dialog (`e.response?.data?.message`).
-- [ ] Task 3: Update Backend Roles for Project Creation (AC: 4)
-  - [ ] In the backend repo, update `ProjectController.create` (`src/projects/project.controller.ts`) to include `@Roles(Role.ADMIN, Role.MANAGER, Role.PM)`. Currently, it only allows ADMIN and MANAGER.
-  - [ ] _Optimization:_ Review `CreateProjectDto` to ensure frontend expectations of optional `githubRepoUrl` are supported (backend currently has `@IsNotEmpty()` on `github_repository_url`).
-- [ ] Task 4: Replace the stub button (AC: 3)
-  - [ ] In the PM Dashboard view, replace the stubbed "New Project" button's `onClick` action (which fires a toast) to open the new `NewProjectDialog`.
+- [x] Task 1: Create the UI Component for New Project Dialog (AC: 1, 3)
+  - [x] Implement a `NewProjectDialog` component using `shadcn/ui` Dialog or Sheet.
+  - [x] Build the form using React Hook Form and Zod for schema validation.
+  - [x] Define required fields (`name`, `client_name`, `clickup_list_id`) and optional (`github_repository_url`).
+  - [x] Ensure inline validation errors are displayed for empty required fields.
+- [x] Task 2: Integrate with Backend and Handle Submission (AC: 2)
+  - [x] Implement the `POST /api/v1/projects` API call inside the form submission handler.
+  - [x] Ensure payload structure strictly matches the backend `CreateProjectDto` (`name`, `clickup_list_id`, `client_name`, `github_repository_url`, `pm_id`). Note: `github_repository_url` is required in backend DTO, so frontend needs to handle empty gracefully or send a placeholder if not provided, or update backend DTO to be optional.
+  - [x] Handle success state: close the dialog, show a success toast, and invalidate the React Query projects list to refresh the dashboard.
+  - [x] Handle error state: keep the dialog open, and display the error message within the dialog (`e.response?.data?.message`).
+- [x] Task 3: Update Backend Roles for Project Creation (AC: 4)
+  - [x] In the backend repo, update `ProjectController.create` (`src/projects/project.controller.ts`) to include `@Roles(Role.ADMIN, Role.MANAGER, Role.PM)`. Currently, it only allows ADMIN and MANAGER.
+  - [x] _Optimization:_ Review `CreateProjectDto` to ensure frontend expectations of optional `githubRepoUrl` are supported (backend currently has `@IsNotEmpty()` on `github_repository_url`).
+- [x] Task 4: Replace the stub button (AC: 3)
+  - [x] In the PM Dashboard view, replace the stubbed "New Project" button's `onClick` action (which fires a toast) to open the new `NewProjectDialog`.
 
 ## Dev Notes
 
@@ -82,7 +82,24 @@ N/A
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
+- ✅ Implemented NewProjectDialog in the frontend with React Hook Form and Zod validation, mapping to backend CreateProjectDto.
+- ✅ Updated `CreateProjectDto.github_repository_url` to be optional in the backend, supporting the frontend requirement.
+- ✅ Added `Role.PM` to the `create` endpoint in `ProjectController` to authorize PMs to create projects.
+- ✅ Replaced the PM Dashboard stub button with integration for the new dialog, added success caching invalidation, and wrote unit test coverage.
+
+### Change Log
+
+- Date: 2026-03-02
+  - Backend: Updated `CreateProjectDto` and `ProjectController` for PM assignment and optional GitHub URLs. Checked via unit tests.
+  - Frontend: Created `NewProjectDialog.tsx`, test suite, and integrated into `App.tsx`. Checked via unit tests.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/26-1-new-project-creation-dialog.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `/Volumes/Data/project/products/alpharages/Dark Software Factory/src/projects/dto/create-project.dto.ts`
+- `/Volumes/Data/project/products/alpharages/Dark Software Factory/src/projects/project.controller.ts`
+- `/Volumes/Data/project/products/alpharages/Dark Software Factory/src/projects/project.service.ts`
+- `/Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/components/dashboard/NewProjectDialog.tsx`
+- `/Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/__tests__/components/NewProjectDialog.test.tsx`
+- `/Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/App.tsx`

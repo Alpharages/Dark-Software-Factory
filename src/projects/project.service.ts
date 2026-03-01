@@ -57,7 +57,7 @@ export class ProjectService {
       const project = await this.repository.create({
         name: createProjectDto.name,
         clickup_list_id: createProjectDto.clickup_list_id,
-        github_repository_url: createProjectDto.github_repository_url.trim(),
+        github_repository_url: createProjectDto.github_repository_url?.trim() || '',
         default_branch: createProjectDto.default_branch || 'main',
         pm_id: createProjectDto.pm_id,
         status: createProjectDto.status || 'active',

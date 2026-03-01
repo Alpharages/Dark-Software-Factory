@@ -5,6 +5,8 @@ import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma } from '@/prisma/client';
+import { ROLES_KEY } from '@/common/decorators/roles.decorator';
+import { Role } from '@/auth/constants/roles.enum';
 
 describe('ProjectController', () => {
   let controller: ProjectController;
@@ -84,6 +86,13 @@ describe('ProjectController', () => {
 
       expect(result).toEqual(mockProject);
       expect(service.create).toHaveBeenCalledWith(dto);
+    });
+
+    it('should require ADMIN, MANAGER, and PM roles (AC3)', () => {
+      const roles = Reflect.getMetadata(ROLES_KEY, ProjectController.prototype.create);
+      expect(roles).toContain(Role.ADMIN);
+      expect(roles).toContain(Role.MANAGER);
+      expect(roles).toContain(Role.PM);
     });
   });
 

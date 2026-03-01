@@ -45,7 +45,7 @@ export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.MANAGER) // Changed to use Role enum for consistency with existing code
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PM) // Changed to use Role enum for consistency with existing code
   @ApiOperation({ summary: 'Create a new project' })
   @ApiResponse({ status: 201, description: 'The project has been successfully created.' })
   create(@Body() createProjectDto: CreateProjectDto) {
