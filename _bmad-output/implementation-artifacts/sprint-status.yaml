@@ -183,10 +183,10 @@ development_status:
     story_points: 3
     notes: 'FE-8 Sort + FE-9 Grid/List toggle + UI-2 active state fix. QA-FR18, QA-FR19. Code review fixes: AC2 column order, null guards, isMobile init, aria-pressed, view transitions, sort utility extracted + 31 new tests.'
   26-4-role-guards-and-reactive-auth:
-    status: ready-for-dev
+    status: done
     effort: '0.5 days'
     story_points: 2
-    notes: 'FE-15 FinancialMetrics role guard + FE-16 useEffect reactive auth. QA-FR20, QA-FR21. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'FE-15 FinancialMetrics role guard + FE-16 useEffect reactive auth. QA-FR20, QA-FR21. Code review: fixed broken localStorage auth in FinancialMetricsSection, moved test to __tests__/components/, fixed 3 any-type lint errors, added TL/QA/null-user test cases (8 tests green).'
   26-5-observability-constraints-error-states:
     status: ready-for-dev
     effort: '1 day'
