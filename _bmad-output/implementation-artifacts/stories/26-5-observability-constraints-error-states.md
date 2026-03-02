@@ -3,7 +3,7 @@
 ## Status
 
 - **Epic**: [Epic 26: PM Dashboard Feature Completion & Operational KPIs](file:///Volumes/Data/project/products/alpharages/Dark%20Software%20Factory/docs/epics.md)
-- **Status**: Ready for Dev
+- **Status**: Done
 - **Priority**: Medium (P2 - High Impact on Operational Visibility)
 - **Effort**: 1 day (2 story points)
 - **Source**: [QA-REPORT-2026-02-27.md](file:///Volumes/Data/project/products/alpharages/Dark%20Software%20Factory/docs/QA-REPORT-2026-02-27.md) (FE-10, FE-11, CE-2, CE-3)
@@ -87,3 +87,33 @@ Improve the stability and error handling of the Observability and Architecture C
 
 1. **Docker Stop Test:** Stop Docker, verify Observability page shows individual service failures but no global banner.
 2. **First-Load Test:** Clear cache, open Financial Metrics, verify charts render instantly.
+
+## Dev Agent Record
+
+### Agent Model Used
+
+claude-sonnet-4-6
+
+### Completion Notes List
+
+- Replaced `localStorage` token reads with `useAuth()` + `getAccessToken()` in both `useObservabilityData.ts` and `useArchitectureConstraints.ts`
+- Fixed tautological token condition: `options.token ?? (isAuthenticated ? getAccessToken() : null)`
+- Removed global `hasErrors` alert from `ObservabilityControlPanel`; replaced with per-section "Metrics Unavailable" cards for system health, queue metrics, and file locks
+- Added `aiProvidersError` prop to `HealthMonitorGrid` to surface AI provider failures instead of showing fake hardcoded fallback providers
+- `isDisconnected` now only fires when socket is down AND system health fails (true backend unreachability), not on any individual HTTP error
+- `ConstraintsPage` refactored to clean `Loading → Error → Empty → Data` state machine with strict mutual exclusion
+- `useArchitectureConstraints` query guarded with `enabled: isAuthenticated && !!token`
+- Applied `min-w-0` wrappers to Recharts containers in `ProductionErrorDashboard` and `CostTimelineChart`
+- Updated tests from Jest to Vitest; added AuthContext mock; added Docker-down disconnection scenario tests
+
+### File List
+
+- `src/features/observability/components/ObservabilityControlPanel.tsx`
+- `src/features/observability/components/HealthMonitorGrid.tsx`
+- `src/features/observability/hooks/useObservabilityData.ts`
+- `src/features/observability/hooks/useObservabilityData.test.tsx`
+- `src/hooks/api/useArchitectureConstraints.ts`
+- `src/pages/architecture-review/constraints/ConstraintsPage.tsx`
+- `src/pages/ProductionErrorDashboard.tsx`
+- `src/components/financial/page/CostTimelineChart.tsx`
+- `src/__tests__/components/architecture-review/ConstraintsPage.test.tsx`
