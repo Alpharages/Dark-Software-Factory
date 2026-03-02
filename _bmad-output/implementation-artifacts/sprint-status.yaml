@@ -203,10 +203,10 @@ development_status:
     story_points: 5
     notes: 'STAT-3 Cost per Ticket, STAT-4 Budget Burn Rate chart. QA-FR33, QA-FR34. MANAGER/ADMIN only. Code review: 3H+6M fixed (budget ceiling → SystemConfig, forecast line anchor, error state, FinancialKPISection decoupled from summary, SVG gradient ID, duplicate WorkloadSchedulerService, role metadata test, global cache key, Swagger 403).'
   26-8-quality-provider-kpi-widgets:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
+    notes: 'STAT-5/STAT-6/STAT-8 implemented: backend summary KPIs (PR merge rate, QA first-pass rate, provider distribution) + frontend StatsGrid widgets + provider donut chart with min-w-0/debounce guard. Code review fixes: Promise.allSettled isolation (H1), groupBy DB aggregate (H2), React.FC removed (H3), QA denominator fix (M2), hardcoded trends removed (M3), eslint suppressions targeted (M4), PM-scope tests added (M5). All 79 tests green.'
   epic-26-retrospective: optional
 
   # EPIC 27 - PLATFORM POLISH, GLOBAL UX & MOBILE NAVIGATION

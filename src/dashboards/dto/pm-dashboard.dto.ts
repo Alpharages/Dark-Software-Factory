@@ -73,6 +73,17 @@ export class TicketCountsDto {
   awaiting_approval!: number;
 }
 
+export class ProviderDistributionItemDto {
+  @ApiProperty({ example: 'CLAUDE' })
+  provider!: string;
+
+  @ApiProperty({ example: 52.4 })
+  percentage!: number;
+
+  @ApiProperty({ example: 22 })
+  count!: number;
+}
+
 export class ProjectResponseDto {
   @ApiProperty()
   id!: string;
@@ -147,6 +158,24 @@ export class DashboardSummaryDto {
     description: '7-day daily average completion hours (index 0 = oldest day)',
   })
   daily_avg_completion_hours!: number[];
+
+  @ApiProperty({
+    description: 'Percentage of auto-generated pull requests merged without manual rework (0 to 1)',
+    example: 0.82,
+  })
+  pr_merge_rate!: number;
+
+  @ApiProperty({
+    description: 'Percentage of executions that passed QA on first attempt (0 to 1)',
+    example: 0.74,
+  })
+  qa_first_pass_rate!: number;
+
+  @ApiProperty({
+    description: 'AI provider usage distribution for recent routing decisions',
+    type: [ProviderDistributionItemDto],
+  })
+  provider_distribution!: ProviderDistributionItemDto[];
 }
 
 export class FinancialSummaryDto {

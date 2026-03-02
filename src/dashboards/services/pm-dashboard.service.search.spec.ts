@@ -4,6 +4,9 @@ import { PrismaService } from '@/database/prisma.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { FinancialMetricsService } from '@/financial-metrics/financial-metrics.service';
+import { GitHubService } from '@/github/github.service';
+import { QaResultsService } from '@/qa-automation/qa-results.service';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 
 describe('PmDashboardService - Search', () => {
   let service: PmDashboardService;
@@ -28,6 +31,18 @@ describe('PmDashboardService - Search', () => {
     set: jest.fn(),
   };
 
+  const mockGitHubService = {
+    getPrMergeRateStats: jest.fn(),
+  };
+
+  const mockQaResultsService = {
+    getQaFirstPassRateStats: jest.fn(),
+  };
+
+  const mockAiDecisionLoggerService = {
+    getProviderDistributionStats: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -35,6 +50,9 @@ describe('PmDashboardService - Search', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: MetricsService, useValue: mockMetricsService },
         { provide: FinancialMetricsService, useValue: mockFinancialMetricsService },
+        { provide: GitHubService, useValue: mockGitHubService },
+        { provide: QaResultsService, useValue: mockQaResultsService },
+        { provide: AIDecisionLoggerService, useValue: mockAiDecisionLoggerService },
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
       ],
     }).compile();

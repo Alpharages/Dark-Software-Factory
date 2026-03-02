@@ -34,6 +34,7 @@ import { AnomalyNotificationListener } from './listeners/anomaly-notification.li
 import { ConversationsModule } from '@/conversations/conversations.module';
 import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
 import { FinancialMetricsModule } from '@/financial-metrics/financial-metrics.module';
+import { GitHubModule } from '@/github/github.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { FinancialMetricsModule } from '@/financial-metrics/financial-metrics.mo
     QualityGateConfigModule,
     DecisionDashboardModule,
     FinancialMetricsModule,
+    GitHubModule,
     ConversationsModule,
     AIDecisionLoggerModule,
     EmailModule,

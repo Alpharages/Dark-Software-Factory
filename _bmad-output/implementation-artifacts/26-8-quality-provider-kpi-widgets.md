@@ -1,6 +1,6 @@
 # Story 26.8: Quality & Provider KPI Widgets
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -27,19 +27,19 @@ so that I can monitor the reliability of our AI outputs and understand which mod
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Backend API and Service Integration (AC: 1, 2, 3)
-  - [ ] Add new endpoints or expand `getSummary` in `PmDashboardService` to provide `pr_merge_rate`, `qa_first_pass_rate`, and `provider_distribution`.
-  - [ ] **PREVENT REINVENTION**: Inject existing services (e.g., from `GitHubModule`, `QaAutomationModule`, and `AiRoutingModule`) to calculate these metrics rather than writing raw queries.
-  - [ ] Update `DashboardSummaryDto` in `pm-dashboard.dto.ts` to reflect the new KPI stats.
-- [ ] Task 2: Frontend Components (AC: 1, 2, 3)
-  - [ ] Update `DashboardSummary` interface in `src/types/index.ts` to include the new fields.
-  - [ ] Add the PR Merge Rate and QA First-Pass Rate widgets to the dashboard `StatsGrid` (`src/components/dashboard/StatsGrid.tsx`).
-  - [ ] Create a new pie/donut chart component for AI Provider Distribution using Recharts. **Note**: Consider refactoring the existing `ProviderDonutChart` in `financial/page` into a shared component to avoid duplication.
-  - [ ] **Recharts Safety**: Ensure the donut chart's `<ResponsiveContainer>` is wrapped in a container that has `min-w-0` and `debounce={100}`.
-- [ ] Task 3: Client Data Fetching and Caching
-  - [ ] Update frontend React Query hooks to fetch the new metrics.
-  - [ ] Set `staleTime` appropriately (e.g., 60 seconds) to avoid duplicate fetching and hitting the database too frequently, adhering to performance fixes from Epic 25.
-  - [ ] Provide graceful degradation (e.g., "No data yet") if the metrics are not available or there's zero data.
+- [x] Task 1: Backend API and Service Integration (AC: 1, 2, 3)
+  - [x] Add new endpoints or expand `getSummary` in `PmDashboardService` to provide `pr_merge_rate`, `qa_first_pass_rate`, and `provider_distribution`.
+  - [x] **PREVENT REINVENTION**: Inject existing services (e.g., from `GitHubModule`, `QaAutomationModule`, and `AiRoutingModule`) to calculate these metrics rather than writing raw queries.
+  - [x] Update `DashboardSummaryDto` in `pm-dashboard.dto.ts` to reflect the new KPI stats.
+- [x] Task 2: Frontend Components (AC: 1, 2, 3)
+  - [x] Update `DashboardSummary` interface in `src/types/index.ts` to include the new fields.
+  - [x] Add the PR Merge Rate and QA First-Pass Rate widgets to the dashboard `StatsGrid` (`src/components/dashboard/StatsGrid.tsx`).
+  - [x] Create a new pie/donut chart component for AI Provider Distribution using Recharts. **Note**: Consider refactoring the existing `ProviderDonutChart` in `financial/page` into a shared component to avoid duplication.
+  - [x] **Recharts Safety**: Ensure the donut chart's `<ResponsiveContainer>` is wrapped in a container that has `min-w-0` and `debounce={100}`.
+- [x] Task 3: Client Data Fetching and Caching
+  - [x] Update frontend React Query hooks to fetch the new metrics.
+  - [x] Set `staleTime` appropriately (e.g., 60 seconds) to avoid duplicate fetching and hitting the database too frequently, adhering to performance fixes from Epic 25.
+  - [x] Provide graceful degradation (e.g., "No data yet") if the metrics are not available or there's zero data.
 
 ## Dev Notes
 
@@ -64,16 +64,49 @@ so that I can monitor the reliability of our AI outputs and understand which mod
 
 ### Agent Model Used
 
-Gemini Antigravity
+GPT-5 Codex
 
 ### Debug Log References
 
-N/A
+- Backend tests: `pnpm test src/dashboards/services/pm-dashboard.service.spec.ts src/dashboards/services/pm-dashboard.service.search.spec.ts src/github/github.service.spec.ts src/audit/ai-decision-logger.service.spec.ts src/qa-automation/qa-results.service.spec.ts`
+- Backend lint: `pnpm exec eslint src/dashboards/dto/pm-dashboard.dto.ts src/dashboards/services/pm-dashboard.service.ts src/dashboards/dashboards.module.ts src/github/github.service.ts src/github/github.service.spec.ts src/qa-automation/qa-results.service.ts src/qa-automation/qa-results.service.spec.ts src/audit/ai-decision-logger.service.ts src/audit/ai-decision-logger.service.spec.ts src/dashboards/services/pm-dashboard.service.spec.ts src/dashboards/services/pm-dashboard.service.search.spec.ts`
+- Frontend tests: `cd ../dsf-dasbhoard && pnpm test src/__tests__/components/dashboard/StatsGrid.test.tsx src/__tests__/components/dashboard/ProviderDistributionChart.test.tsx src/__tests__/components/DashboardAuth.test.tsx src/__tests__/components/dashboard/FinancialKPISection.test.tsx`
+- Frontend lint: `cd ../dsf-dasbhoard && pnpm exec eslint src/types/index.ts src/components/dashboard/StatsGrid.tsx src/components/dashboard/ProviderDistributionChart.tsx src/pages/Dashboard.tsx src/__tests__/components/dashboard/StatsGrid.test.tsx src/__tests__/components/dashboard/ProviderDistributionChart.test.tsx src/__tests__/components/DashboardAuth.test.tsx`
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created
+- Extended `DashboardSummaryDto` and PM dashboard summary payload with `pr_merge_rate`, `qa_first_pass_rate`, and `provider_distribution`.
+- Implemented KPI aggregation via existing module services (not raw dashboard queries): `GitHubService.getPrMergeRateStats()`, `QaResultsService.getQaFirstPassRateStats()`, and `AIDecisionLoggerService.getProviderDistributionStats()`.
+- Updated `PmDashboardService` to inject/reuse those services and include new KPI values in cached summary responses.
+- Wired `DashboardsModule` to import `GitHubModule` for cross-module KPI service reuse.
+- Updated frontend summary types and enhanced `StatsGrid` with PR Merge Rate and QA First-Pass Rate cards.
+- Added new `ProviderDistributionChart` donut widget and mounted it on the dashboard page.
+- Enforced Recharts safety requirements on the new donut chart (`min-w-0` wrapper + `debounce={100}`).
+- Added frontend regression tests for `StatsGrid` and `ProviderDistributionChart`, and updated dashboard auth test mocks.
 
 ### File List
 
 - \_bmad-output/implementation-artifacts/26-8-quality-provider-kpi-widgets.md
+- \_bmad-output/implementation-artifacts/sprint-status.yaml
+- src/dashboards/dto/pm-dashboard.dto.ts
+- src/dashboards/services/pm-dashboard.service.ts
+- src/dashboards/dashboards.module.ts
+- src/github/github.service.ts
+- src/qa-automation/qa-results.service.ts
+- src/audit/ai-decision-logger.service.ts
+- src/dashboards/services/pm-dashboard.service.spec.ts
+- src/dashboards/services/pm-dashboard.service.search.spec.ts
+- src/github/github.service.spec.ts
+- src/qa-automation/qa-results.service.spec.ts
+- src/audit/ai-decision-logger.service.spec.ts
+- ../dsf-dasbhoard/src/types/index.ts
+- ../dsf-dasbhoard/src/components/dashboard/StatsGrid.tsx
+- ../dsf-dasbhoard/src/components/dashboard/ProviderDistributionChart.tsx
+- ../dsf-dasbhoard/src/pages/Dashboard.tsx
+- ../dsf-dasbhoard/src/**tests**/components/dashboard/StatsGrid.test.tsx
+- ../dsf-dasbhoard/src/**tests**/components/dashboard/ProviderDistributionChart.test.tsx
+- ../dsf-dasbhoard/src/**tests**/components/DashboardAuth.test.tsx
+
+## Change Log
+
+- 2026-03-02: Implemented quality/provider KPI widgets across backend and frontend, added tests/lint coverage, and moved story status to `review`.

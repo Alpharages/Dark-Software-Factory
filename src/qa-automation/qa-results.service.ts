@@ -42,6 +42,12 @@ const toJsonValue = (
   return value as Prisma.InputJsonValue;
 };
 
+export interface QaFirstPassRateStats {
+  qaFirstPassRate: number;
+  totalExecutions: number;
+  firstPassCount: number;
+}
+
 @Injectable()
 export class QaResultsService {
   private readonly defaultPageSize: number;
@@ -532,6 +538,52 @@ export class QaResultsService {
     } finally {
       endTimer();
     }
+  }
+
+  async getQaFirstPassRateStats(options?: {
+    pmId?: string;
+    role?: 'PM' | 'MANAGER' | 'ADMIN';
+    days?: number;
+  }): Promise<QaFirstPassRateStats> {
+    const { pmId, role = 'MANAGER', days = 30 } = options || {};
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const scopedExecutionWhere: Prisma.ExecutionWhereInput =
+      role === 'PM' && pmId
+        ? {
+            ticket: {
+              project: {
+                pm_id: pmId,
+              },
+            },
+          }
+        : {};
+
+    // Denominator: only first-attempt QA runs (retry_count=0), so retried executions
+    // don't inflate the total and drag down the rate unfairly.
+    const [totalExecutions, firstPassCount] = await Promise.all([
+      this.prisma.qAResult.count({
+        where: {
+          created_at: { gte: since },
+          execution: { ...scopedExecutionWhere, retry_count: 0 },
+        },
+      }),
+      this.prisma.qAResult.count({
+        where: {
+          created_at: { gte: since },
+          overall_passed: true,
+          execution: { ...scopedExecutionWhere, retry_count: 0 },
+        },
+      }),
+    ]);
+
+    const qaFirstPassRate = totalExecutions > 0 ? firstPassCount / totalExecutions : 0;
+
+    return {
+      qaFirstPassRate,
+      totalExecutions,
+      firstPassCount,
+    };
   }
 
   /**

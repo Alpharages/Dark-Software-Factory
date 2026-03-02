@@ -5,6 +5,9 @@ import { Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { FinancialMetricsService } from '@/financial-metrics/financial-metrics.service';
+import { GitHubService } from '@/github/github.service';
+import { QaResultsService } from '@/qa-automation/qa-results.service';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import {
   ProjectQueryDto,
   ProjectResponseDto,
@@ -25,6 +28,9 @@ export class PmDashboardService {
     private readonly prisma: PrismaService,
     private readonly metricsService: MetricsService,
     private readonly financialMetricsService: FinancialMetricsService,
+    private readonly gitHubService: GitHubService,
+    private readonly qaResultsService: QaResultsService,
+    private readonly aiDecisionLoggerService: AIDecisionLoggerService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
@@ -283,6 +289,32 @@ export class PmDashboardService {
       }),
     ]);
 
+    // KPI service calls run independently with graceful degradation:
+    // a failure in any KPI service must not bring down the entire dashboard summary.
+    const [prMergeRateResult, qaFirstPassResult, providerDistributionResult] =
+      await Promise.allSettled([
+        this.gitHubService.getPrMergeRateStats({ pmId, role }),
+        this.qaResultsService.getQaFirstPassRateStats({ pmId, role }),
+        this.aiDecisionLoggerService.getProviderDistributionStats({ pmId, role }),
+      ]);
+
+    if (prMergeRateResult.status === 'rejected') {
+      this.logger.error('getPrMergeRateStats failed', prMergeRateResult.reason);
+    }
+    if (qaFirstPassResult.status === 'rejected') {
+      this.logger.error('getQaFirstPassRateStats failed', qaFirstPassResult.reason);
+    }
+    if (providerDistributionResult.status === 'rejected') {
+      this.logger.error('getProviderDistributionStats failed', providerDistributionResult.reason);
+    }
+
+    const prMergeRateStats =
+      prMergeRateResult.status === 'fulfilled' ? prMergeRateResult.value : { prMergeRate: 0 };
+    const qaFirstPassStats =
+      qaFirstPassResult.status === 'fulfilled' ? qaFirstPassResult.value : { qaFirstPassRate: 0 };
+    const providerDistributionStats =
+      providerDistributionResult.status === 'fulfilled' ? providerDistributionResult.value : [];
+
     const total_projects = projectStats._count.id;
 
     const ticketCountsByStatus: Record<string, number> = {};
@@ -362,6 +394,9 @@ export class PmDashboardService {
       active_ai_executions,
       queued_ai_executions,
       daily_avg_completion_hours,
+      pr_merge_rate: prMergeRateStats.prMergeRate,
+      qa_first_pass_rate: qaFirstPassStats.qaFirstPassRate,
+      provider_distribution: providerDistributionStats,
     };
 
     await this.cacheManager.set(cacheKey, result, 60 * 1000); // M2: 60s TTL matches frontend staleTime

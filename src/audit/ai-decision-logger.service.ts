@@ -5,6 +5,12 @@ import { ErrorSeverity } from '@/common/sentry/sentry.constants';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { AIDecisionLog, Prisma } from '@/prisma/client';
 
+export interface ProviderDistributionStatsItem {
+  provider: string;
+  percentage: number;
+  count: number;
+}
+
 @Injectable()
 export class AIDecisionLoggerService {
   private readonly logger = new Logger(AIDecisionLoggerService.name);
@@ -169,6 +175,51 @@ export class AIDecisionLoggerService {
       });
       return []; // Graceful degradation
     }
+  }
+
+  async getProviderDistributionStats(options?: {
+    pmId?: string;
+    role?: 'PM' | 'MANAGER' | 'ADMIN';
+    days?: number;
+  }): Promise<ProviderDistributionStatsItem[]> {
+    const { pmId, role = 'MANAGER', days = 30 } = options || {};
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // Use DB-level aggregation (groupBy) instead of loading all log records into memory.
+    // Groups executions by ai_provider for those started within the time window.
+    const scopedWhere = role === 'PM' && pmId ? { ticket: { project: { pm_id: pmId } } } : {};
+
+    const executionGroups = await this.prisma.execution.groupBy({
+      by: ['ai_provider'],
+      where: {
+        started_at: { gte: since },
+        ...scopedWhere,
+      },
+      _count: { _all: true },
+    });
+
+    const providerCounts: Record<string, number> = {
+      CLAUDE: 0,
+      CURSOR: 0,
+      WINDSURF: 0,
+    };
+
+    for (const group of executionGroups) {
+      const provider = this.normalizeProvider(group.ai_provider?.toString() ?? null);
+      if (!provider) {
+        continue;
+      }
+      // eslint-disable-next-line security/detect-object-injection
+      providerCounts[provider] = (providerCounts[provider] ?? 0) + group._count._all;
+    }
+
+    const total = Object.values(providerCounts).reduce((sum, count) => sum + count, 0);
+
+    return Object.entries(providerCounts).map(([provider, count]) => ({
+      provider,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 10000) / 100 : 0,
+    }));
   }
 
   /**
@@ -363,5 +414,39 @@ export class AIDecisionLoggerService {
    */
   private getConfidenceThreshold(): number {
     return this.confidenceThreshold;
+  }
+
+  private extractProviderFromOutputData(outputData: Prisma.JsonValue): string | null {
+    if (!outputData || typeof outputData !== 'object' || Array.isArray(outputData)) {
+      return null;
+    }
+    const data = outputData as Record<string, unknown>;
+    const selectedProvider = data.selectedProvider;
+    const provider = data.provider;
+    if (typeof selectedProvider === 'string') {
+      return selectedProvider;
+    }
+    if (typeof provider === 'string') {
+      return provider;
+    }
+    return null;
+  }
+
+  private normalizeProvider(provider: string | null): string | null {
+    if (!provider) {
+      return null;
+    }
+
+    const normalized = provider.toUpperCase();
+    if (normalized.includes('CLAUDE')) {
+      return 'CLAUDE';
+    }
+    if (normalized.includes('CURSOR')) {
+      return 'CURSOR';
+    }
+    if (normalized.includes('WINDSURF')) {
+      return 'WINDSURF';
+    }
+    return null;
   }
 }

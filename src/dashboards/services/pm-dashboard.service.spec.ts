@@ -4,6 +4,9 @@ import { PmDashboardService } from './pm-dashboard.service';
 import { PrismaService } from '@/database/prisma.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { FinancialMetricsService } from '@/financial-metrics/financial-metrics.service';
+import { GitHubService } from '@/github/github.service';
+import { QaResultsService } from '@/qa-automation/qa-results.service';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 
 describe('PmDashboardService', () => {
   let service: PmDashboardService;
@@ -36,6 +39,18 @@ describe('PmDashboardService', () => {
     getDashboardBudgetInsights: jest.fn(),
   };
 
+  const mockGitHubService = {
+    getPrMergeRateStats: jest.fn(),
+  };
+
+  const mockQaResultsService = {
+    getQaFirstPassRateStats: jest.fn(),
+  };
+
+  const mockAiDecisionLoggerService = {
+    getProviderDistributionStats: jest.fn(),
+  };
+
   const mockCacheManager = {
     get: jest.fn(),
     set: jest.fn(),
@@ -56,6 +71,18 @@ describe('PmDashboardService', () => {
         {
           provide: FinancialMetricsService,
           useValue: mockFinancialMetricsService,
+        },
+        {
+          provide: GitHubService,
+          useValue: mockGitHubService,
+        },
+        {
+          provide: QaResultsService,
+          useValue: mockQaResultsService,
+        },
+        {
+          provide: AIDecisionLoggerService,
+          useValue: mockAiDecisionLoggerService,
         },
         {
           provide: CACHE_MANAGER,
@@ -150,6 +177,16 @@ describe('PmDashboardService', () => {
       mockPrismaService.qAResult.count
         .mockResolvedValueOnce(10) // qaTotal
         .mockResolvedValueOnce(8); // qaPassed
+      mockGitHubService.getPrMergeRateStats.mockResolvedValue({
+        prMergeRate: 0.75,
+      });
+      mockQaResultsService.getQaFirstPassRateStats.mockResolvedValue({
+        qaFirstPassRate: 0.6,
+      });
+      mockAiDecisionLoggerService.getProviderDistributionStats.mockResolvedValue([
+        { provider: 'CLAUDE_CODE', percentage: 60, count: 6 },
+        { provider: 'CURSOR_HEADLESS', percentage: 40, count: 4 },
+      ]);
 
       const result = await service.getSummary('pm-1', 'PM');
 
@@ -165,6 +202,12 @@ describe('PmDashboardService', () => {
       expect(result.active_ai_executions).toBe(2);
       expect(result.queued_ai_executions).toBe(1);
       expect(result.daily_avg_completion_hours).toHaveLength(7);
+      expect(result.pr_merge_rate).toBeCloseTo(0.75);
+      expect(result.qa_first_pass_rate).toBeCloseTo(0.6);
+      expect(result.provider_distribution).toEqual([
+        { provider: 'CLAUDE_CODE', percentage: 60, count: 6 },
+        { provider: 'CURSOR_HEADLESS', percentage: 40, count: 4 },
+      ]);
     });
   });
 
