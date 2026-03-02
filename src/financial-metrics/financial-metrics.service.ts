@@ -27,6 +27,13 @@ import { JwtService } from '@nestjs/jwt';
 
 type Decimal = Prisma.Decimal;
 
+export interface DashboardBudgetInsights {
+  monthlySpend: number;
+  dailyBudgetBurn: number[];
+  budgetCeiling: number;
+  budgetForecast: number;
+}
+
 @Injectable()
 export class FinancialMetricsService {
   private readonly logger: Logger;
@@ -317,6 +324,105 @@ export class FinancialMetricsService {
       });
       this.sentry.captureException(_error as Error, {
         tags: { operation: 'calculateRoi' },
+      });
+      throw _error;
+    }
+  }
+
+  /**
+   * Shared helper for PM dashboard financial widgets.
+   * Reuses financial-metrics aggregation patterns in one place to avoid query duplication.
+   */
+  async getDashboardBudgetInsights(options?: { days?: number }): Promise<DashboardBudgetInsights> {
+    try {
+      const days = Math.max(1, options?.days ?? 14);
+      const now = new Date();
+
+      const startDate = new Date(now);
+      startDate.setHours(0, 0, 0, 0);
+      startDate.setDate(startDate.getDate() - (days - 1));
+
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      const [costLogs, monthlySpendAgg, budgetAgg] = await Promise.all([
+        this.prisma.aICostLog.findMany({
+          where: {
+            timestamp: {
+              gte: startDate,
+              lte: now,
+            },
+          },
+          select: {
+            timestamp: true,
+            cost_usd: true,
+          },
+          orderBy: {
+            timestamp: 'asc',
+          },
+        }),
+        this.prisma.aICostLog.aggregate({
+          where: {
+            timestamp: {
+              gte: startOfMonth,
+              lte: endOfMonth,
+            },
+          },
+          _sum: {
+            cost_usd: true,
+          },
+        }),
+        this.prisma.project.aggregate({
+          where: {
+            budget_usd: {
+              not: null,
+            },
+          },
+          _sum: {
+            budget_usd: true,
+          },
+        }),
+      ]);
+
+      const dailyCostMap = new Map<string, Decimal>();
+      costLogs.forEach((log) => {
+        const dateKey = log.timestamp.toISOString().split('T')[0];
+        const existing = dailyCostMap.get(dateKey) ?? new Prisma.Decimal(0);
+        dailyCostMap.set(dateKey, existing.add(log.cost_usd as Decimal));
+      });
+
+      const dateKeys: string[] = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        dateKeys.push(d.toISOString().split('T')[0]);
+      }
+
+      const dailyBudgetBurn = dateKeys.map((key) => {
+        const value = parseFloat((dailyCostMap.get(key) ?? new Prisma.Decimal(0)).toString());
+        return Number(value.toFixed(2));
+      });
+
+      const monthlySpend = parseFloat(monthlySpendAgg._sum.cost_usd?.toString() || '0');
+      const budgetCeiling = parseFloat(budgetAgg._sum.budget_usd?.toString() || '0');
+
+      const dayOfMonth = now.getDate();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const budgetForecast =
+        dayOfMonth > 0 ? Number(((monthlySpend / dayOfMonth) * daysInMonth).toFixed(2)) : 0;
+
+      return {
+        monthlySpend: Number(monthlySpend.toFixed(2)),
+        dailyBudgetBurn,
+        budgetCeiling: Number(budgetCeiling.toFixed(2)),
+        budgetForecast,
+      };
+    } catch (_error) {
+      this.logger.error(`Failed to get dashboard budget insights: ${(_error as Error).message}`, {
+        error: (_error as Error).stack,
+      });
+      this.sentry.captureException(_error as Error, {
+        tags: { operation: 'getDashboardBudgetInsights' },
       });
       throw _error;
     }

@@ -1,6 +1,6 @@
 # Story 26.7: Financial KPI Widgets
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -27,16 +27,16 @@ so that I can spot budget overruns before they become critical, without navigati
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Backend API and Service Integration (AC: 1, 2)
-  - [ ] **PREVENT PERFORMANCE DISASTER**: Do NOT add heavy 14-day array calculations to the main `getSummary` endpoint. Create a separate endpoint `GET /api/v1/pm-dashboard/financial-summary` and DTO `FinancialSummaryDto`.
-  - [ ] **PREVENT REINVENTION**: Do NOT write raw queries to calculate cost per ticket or daily spend arrays. Inject `FinancialMetricsService` or `AICostTrackerService` into `PmDashboardService` and reuse existing calculation methods (like `getBudgetTrends` logic).
-  - [ ] Implement the new endpoint to return `cost_per_ticket`, 14-day `daily_budget_burn` array, `budget_ceiling`, and `budget_forecast`.
-- [ ] Task 2: Frontend Components (AC: 1, 2)
-  - [ ] Create `FinancialKPISection` or incorporate into `<FinancialMetricsSection>` on the PM Dashboard.
-  - [ ] **IMPLEMENTATION ACCELERATOR**: Do not build an animated sparkline from scratch. Analyze and reuse/adapt the `sparklineData` SVG pattern and `<motion.div>` animations from `src/components/dashboard/StatsGrid.tsx`.
-- [ ] Task 3: Role Guarding and Client Caching (AC: 3)
-  - [ ] Ensure the component only renders if `useAuth().user?.role === 'MANAGER' || useAuth().user?.role === 'ADMIN'`.
-  - [ ] Ensure the frontend caches this data using React Query with `staleTime: 60000`.
+- [x] Task 1: Backend API and Service Integration (AC: 1, 2)
+  - [x] **PREVENT PERFORMANCE DISASTER**: Do NOT add heavy 14-day array calculations to the main `getSummary` endpoint. Create a separate endpoint `GET /api/v1/pm-dashboard/financial-summary` and DTO `FinancialSummaryDto`.
+  - [x] **PREVENT REINVENTION**: Do NOT write raw queries to calculate cost per ticket or daily spend arrays. Inject `FinancialMetricsService` or `AICostTrackerService` into `PmDashboardService` and reuse existing calculation methods (like `getBudgetTrends` logic).
+  - [x] Implement the new endpoint to return `cost_per_ticket`, 14-day `daily_budget_burn` array, `budget_ceiling`, and `budget_forecast`.
+- [x] Task 2: Frontend Components (AC: 1, 2)
+  - [x] Create `FinancialKPISection` or incorporate into `<FinancialMetricsSection>` on the PM Dashboard.
+  - [x] **IMPLEMENTATION ACCELERATOR**: Do not build an animated sparkline from scratch. Analyze and reuse/adapt the `sparklineData` SVG pattern and `<motion.div>` animations from `src/components/dashboard/StatsGrid.tsx`.
+- [x] Task 3: Role Guarding and Client Caching (AC: 3)
+  - [x] Ensure the component only renders if `useAuth().user?.role === 'MANAGER' || useAuth().user?.role === 'ADMIN'`.
+  - [x] Ensure the frontend caches this data using React Query with `staleTime: 60000`.
 
 ## Dev Notes
 
@@ -61,10 +61,45 @@ so that I can spot budget overruns before they become critical, without navigati
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+GPT-5 Codex
 
 ### Debug Log References
 
+- Backend tests: `pnpm test src/dashboards/pm-dashboard.controller.spec.ts src/dashboards/services/pm-dashboard.service.spec.ts src/dashboards/services/pm-dashboard.service.search.spec.ts`
+- Backend lint: `pnpm exec eslint src/dashboards/dto/pm-dashboard.dto.ts src/dashboards/services/pm-dashboard.service.ts src/dashboards/pm-dashboard.controller.ts src/dashboards/dashboards.module.ts src/financial-metrics/financial-metrics.service.ts src/dashboards/services/pm-dashboard.service.spec.ts src/dashboards/services/pm-dashboard.service.search.spec.ts src/dashboards/pm-dashboard.controller.spec.ts`
+- Frontend tests: `pnpm test src/__tests__/components/dashboard/FinancialKPISection.test.tsx src/__tests__/components/DashboardAuth.test.tsx`
+- Frontend lint: `pnpm exec eslint src/types/index.ts src/components/dashboard/FinancialKPISection.tsx src/pages/Dashboard.tsx src/__tests__/components/dashboard/FinancialKPISection.test.tsx src/__tests__/components/DashboardAuth.test.tsx`
+
 ### Completion Notes List
 
+- Added `GET /api/v1/pm-dashboard/financial-summary` with `MANAGER`/`ADMIN` guard and Swagger DTO contract.
+- Implemented `PmDashboardService.getFinancialSummary()` with 60s cache, current-month cost-per-ticket calculation, zero-division guard (`null`), and 14-day burn/ceiling/forecast payload.
+- Added reusable `FinancialMetricsService.getDashboardBudgetInsights()` to centralize financial aggregation logic (14-day spend, monthly spend, budget ceiling, forecast).
+- Wired backend module dependencies so PM dashboard can reuse financial metrics service without duplicating raw queries.
+- Added/updated backend unit tests for new controller endpoint and service behavior.
+- Added frontend `FinancialKPISection` on dashboard, using `motion.div` and SVG sparkline pattern adapted from `StatsGrid`.
+- Implemented strict role gating via `useAuth().user?.role === 'MANAGER' || user?.role === 'ADMIN'`.
+- Implemented React Query caching with `staleTime: 60000` for financial summary fetch.
+- Added `"No data yet"` graceful fallbacks when cost-per-ticket or burn data are empty.
+- Added frontend tests for manager/admin rendering, role blocking for PM, and no-data fallback; updated dashboard auth test harness with `QueryClientProvider`.
+
 ### File List
+
+- src/dashboards/dto/pm-dashboard.dto.ts
+- src/dashboards/services/pm-dashboard.service.ts
+- src/dashboards/pm-dashboard.controller.ts
+- src/dashboards/dashboards.module.ts
+- src/financial-metrics/financial-metrics.service.ts
+- src/dashboards/services/pm-dashboard.service.spec.ts
+- src/dashboards/services/pm-dashboard.service.search.spec.ts
+- src/dashboards/pm-dashboard.controller.spec.ts
+- ../dsf-dasbhoard/src/types/index.ts
+- ../dsf-dasbhoard/src/components/dashboard/FinancialKPISection.tsx
+- ../dsf-dasbhoard/src/pages/Dashboard.tsx
+- ../dsf-dasbhoard/src/**tests**/components/dashboard/FinancialKPISection.test.tsx
+- ../dsf-dasbhoard/src/**tests**/components/DashboardAuth.test.tsx
+- \_bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Change Log
+
+- 2026-03-02: Implemented Financial KPI widgets across backend and frontend, added tests, and moved story to `review`.

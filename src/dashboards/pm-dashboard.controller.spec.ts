@@ -12,6 +12,7 @@ describe('PmDashboardController', () => {
   const mockPmDashboardService = {
     getProjects: jest.fn(),
     getSummary: jest.fn(),
+    getFinancialSummary: jest.fn(),
   };
 
   const mockMetricsService = {
@@ -79,6 +80,33 @@ describe('PmDashboardController', () => {
 
       const result = await controller.getSummary(req);
       expect(result).toBeDefined();
+    });
+  });
+
+  describe('getFinancialSummary', () => {
+    it('should call service.getFinancialSummary with user sub and role', async () => {
+      const mockReq = { user: { sub: 'manager-123', role: 'MANAGER' as UserRole } };
+
+      await controller.getFinancialSummary(mockReq);
+
+      expect(mockPmDashboardService.getFinancialSummary).toHaveBeenCalledWith(
+        'manager-123',
+        'MANAGER',
+      );
+    });
+
+    it('should return financial summary payload', async () => {
+      const req = { user: { sub: 'admin-123', role: 'ADMIN' as UserRole } };
+      const payload = {
+        cost_per_ticket: 42.5,
+        daily_budget_burn: Array(14).fill(0),
+        budget_ceiling: 12000,
+        budget_forecast: 8400,
+      };
+      mockPmDashboardService.getFinancialSummary.mockResolvedValue(payload);
+
+      const result = await controller.getFinancialSummary(req);
+      expect(result).toEqual(payload);
     });
   });
 });

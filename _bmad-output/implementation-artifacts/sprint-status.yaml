@@ -193,12 +193,12 @@ development_status:
     story_points: 2
     notes: 'FE-10 Observability degradation + FE-11 Constraints mutual-exclusion state. QA-FR22, QA-FR23. Code review fixes: token tautology in useObservabilityData, systemHealthError surfaced per-card via Metrics Unavailable pattern, aiProvidersError now shown instead of fake hardcoded fallback, isDisconnected narrowed to true backend unreachability, 2 new isDisconnected tests, empty-state test for ConstraintsPage, modal assertion uses heading role.'
   26-6-ai-execution-kpi-widgets:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
+    notes: 'AI Execution KPI widgets: STAT-1 success rate gauge, STAT-2 avg completion time sparkline, STAT-7 live load via Socket.IO. Code review fixes (4H+5M): corrected timing calc (started_at vs ticket.created_at), added 7-day date filter on execution query, replaced Math.random() sparkline with real daily_avg_completion_hours from backend, added daily bucket computation to service, moved QA count queries into Promise.all (parallel), reduced cache TTL 300s→60s, migrated Dashboard.tsx summary fetch to React Query with staleTime:60s.'
   26-7-financial-kpi-widgets:
-    status: ready-for-dev
+    status: review
     effort: '1.5 days'
     story_points: 5
     notes: 'STAT-3 Cost per Ticket, STAT-4 Budget Burn Rate chart. QA-FR33, QA-FR34. MANAGER/ADMIN only. Ultimate context engine analysis completed - comprehensive developer guide created'

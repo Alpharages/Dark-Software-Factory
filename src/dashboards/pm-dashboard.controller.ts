@@ -2,7 +2,7 @@ import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PmDashboardService, UserRole } from './services/pm-dashboard.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
-import { ProjectQueryDto, TicketSearchQueryDto } from './dto/pm-dashboard.dto';
+import { FinancialSummaryDto, ProjectQueryDto, TicketSearchQueryDto } from './dto/pm-dashboard.dto';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -63,5 +63,23 @@ export class PmDashboardController {
       role,
     });
     return this.pmDashboardService.getSummary(userId, role);
+  }
+
+  @Get('financial-summary')
+  @Roles('MANAGER', 'ADMIN')
+  @ApiOperation({ summary: 'Get financial KPI summary for PM dashboard widgets' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return financial summary statistics',
+    type: FinancialSummaryDto,
+  })
+  async getFinancialSummary(@Request() req: { user: { sub: string; role: UserRole } }) {
+    const userId = req.user.sub;
+    const role = req.user.role;
+    this.metricsService.incrementCounter('pm_dashboard_api_calls_total', {
+      endpoint: 'financial-summary',
+      role,
+    });
+    return this.pmDashboardService.getFinancialSummary(userId, role);
   }
 }

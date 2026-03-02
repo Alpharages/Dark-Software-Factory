@@ -129,6 +129,52 @@ export class DashboardSummaryDto {
 
   @ApiProperty()
   utilization_percent!: number;
+
+  @ApiProperty()
+  success_rate!: number;
+
+  @ApiProperty()
+  avg_completion_time_hours!: number;
+
+  @ApiProperty()
+  active_ai_executions!: number;
+
+  @ApiProperty()
+  queued_ai_executions!: number;
+
+  @ApiProperty({
+    type: [Number],
+    description: '7-day daily average completion hours (index 0 = oldest day)',
+  })
+  daily_avg_completion_hours!: number[];
+}
+
+export class FinancialSummaryDto {
+  @ApiProperty({
+    description: 'Current calendar month total AI spend divided by completed ticket count',
+    example: 42.53,
+    nullable: true,
+  })
+  cost_per_ticket!: number | null;
+
+  @ApiProperty({
+    description: 'Daily spend values for the past 14 days (oldest to newest)',
+    type: [Number],
+    example: [12.5, 8.2, 0, 14.9],
+  })
+  daily_budget_burn!: number[];
+
+  @ApiProperty({
+    description: 'Configured monthly budget ceiling in USD',
+    example: 12000,
+  })
+  budget_ceiling!: number;
+
+  @ApiProperty({
+    description: 'Projected total spend by end of current month in USD',
+    example: 9800,
+  })
+  budget_forecast!: number;
 }
 
 export class TicketSearchQueryDto {

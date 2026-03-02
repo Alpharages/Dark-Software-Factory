@@ -33,6 +33,7 @@ import { AnomalyDetectionController } from './anomaly-detection.controller';
 import { AnomalyNotificationListener } from './listeners/anomaly-notification.listener';
 import { ConversationsModule } from '@/conversations/conversations.module';
 import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
+import { FinancialMetricsModule } from '@/financial-metrics/financial-metrics.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
     BugEscapeModule,
     QualityGateConfigModule,
     DecisionDashboardModule,
+    FinancialMetricsModule,
     ConversationsModule,
     AIDecisionLoggerModule,
     EmailModule,
