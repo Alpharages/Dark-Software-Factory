@@ -233,12 +233,12 @@ development_status:
     story_points: 5
     notes: 'Responsive mobile/tablet navigation implemented: Header-controlled mobile drawer + md icon-only sidebar with tooltips + shared navigation config + targeted tests. Code review: 3H+5M fixed (React.FC import, double TooltipProvider, redundant widths, MobileSidebar dark hardcoded colors, breakpoint comment, isNavItemActive extracted to navigation.ts, ScrollArea flex height, brittle test selector).'
   27-4-notification-bell-badge:
-    status: ready-for-dev
+    status: done
     effort: '0.5 days'
     story_points: 1
-    notes: 'UI-6 — unread count badge on notification bell. QA-FR28. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'UI-6 — unread count badge on notification bell. QA-FR28. Code review: 2H+4M fixed (refetchInterval 5min→30s for AC4, added 7 new tests incl. interaction+aria+disconnect, dead formatBadgeCount branch removed, error state with ? badge, aria-label on trigger, fragile regex replaced). All 10 tests green.'
   27-5-sidebar-visual-polish:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 2
     notes: 'UI-1 dynamic last-sync, UI-4 icon consistency, UI-7 Live badge contrast. QA-FR25, QA-FR29, QA-FR30.'

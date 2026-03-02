@@ -1,6 +1,6 @@
 # Story 27.5: Sidebar & Visual Polish
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -27,14 +27,14 @@ so that I can navigate the platform efficiently and trust the status information
 
 ## Tasks / Subtasks
 
-- [ ] Migrate to `ImprovedSidebar` in `src/App.tsx` (AC: 4)
-  - [ ] Replace legacy `Sidebar` import and usage with `ImprovedSidebar` from `@/components/improved/Sidebar`.
-- [ ] Enhancements in `src/components/improved/Sidebar.tsx` (AC: 1, 2)
-  - [ ] **Navigation Sync:** Import navigation config from `@/config/navigation` instead of using the hardcoded `navigationGroups` array within the component.
-  - [ ] **Icon Consistency:** Standardize the toggle button to use `PanelLeftClose` and `PanelLeftOpen` icons.
-  - [ ] **Dynamic Timestamp:** Replace hardcoded "2 minutes ago" with a dynamic value using `date-fns/formatDistanceToNow`. Use a `useEffect` timer (60s interval) to trigger re-renders and ensure the UI stays fresh.
-- [ ] Accessibility Fixes in `src/pages/Dashboard.tsx` (AC: 3)
-  - [ ] **Live Badge Contrast:** Update the "Real-time Live" badge styling. Use `text-emerald-700` for Light Mode and `dark:text-emerald-500` for Dark Mode to ensure WCAG AA compliance (4.5:1 ratio).
+- [x] Migrate to `ImprovedSidebar` in `src/App.tsx` (AC: 4)
+  - [x] Replace legacy `Sidebar` import and usage with `ImprovedSidebar` from `@/components/improved/Sidebar`.
+- [x] Enhancements in `src/components/improved/Sidebar.tsx` (AC: 1, 2)
+  - [x] **Navigation Sync:** Import navigation config from `@/config/navigation` instead of using the hardcoded `navigationGroups` array within the component.
+  - [x] **Icon Consistency:** Standardize the toggle button to use `PanelLeftClose` and `PanelLeftOpen` icons.
+  - [x] **Dynamic Timestamp:** Replace hardcoded "2 minutes ago" with a dynamic value using `date-fns/formatDistanceToNow`. Use a `useEffect` timer (60s interval) to trigger re-renders and ensure the UI stays fresh.
+- [x] Accessibility Fixes in `src/pages/Dashboard.tsx` (AC: 3)
+  - [x] **Live Badge Contrast:** Update the "Real-time Live" badge styling. Use `text-emerald-700` for Light Mode and `dark:text-emerald-500` for Dark Mode to ensure WCAG AA compliance (4.5:1 ratio).
 
 ## Dev Notes
 
@@ -65,3 +65,33 @@ so that I can navigate the platform efficiently and trust the status information
 
 - 2026-03-02: Created Story 27.5 for Sidebar & Visual Polish. Context extracted from Epic 27 and QA Report. Status set to `ready-for-dev`. (Khakanali)
 - 2026-03-02: Applied validation improvements (UI-1 update logic, UI-7 contrast specifics, navigation sync reinforcement). (Khakanali)
+- 2026-03-02: Implemented sidebar polish in frontend app: migrated App layout to `ImprovedSidebar`, synced improved sidebar navigation with shared config, standardized toggle icons, and added dynamic "Last sync" relative timestamp updates. (Codex)
+- 2026-03-02: Updated PM Dashboard live badge contrast (`text-emerald-700` in light mode, `dark:text-emerald-500` in dark mode), added sidebar behavior tests, and validated changed files with eslint + targeted vitest runs. (Codex)
+- 2026-03-03: Code review fixes applied: H1 — `isCollapsed` now initialises based on viewport width (collapsed at md/< 1024px) to prevent content overlap; H2 — restored auto-expand for active route group via derived `expandedGroups` useMemo (avoids setState-in-effect lint); M2 — removed redundant `TooltipProvider` wrapper (App.tsx already provides one), added `delayDuration={0}` to individual Tooltips; M4 — `lastSyncAt` exposed as optional prop for callers who can supply real sync times; L1 — outer `<aside>` in App.tsx changed to `<div>` (invalid nested landmark). 4 tests pass. (SM)
+
+## File List
+
+- ../dsf-dasbhoard/src/App.tsx
+- ../dsf-dasbhoard/src/components/improved/Sidebar.tsx
+- ../dsf-dasbhoard/src/components/improved/Sidebar.test.tsx
+- ../dsf-dasbhoard/src/pages/Dashboard.tsx
+
+## Dev Agent Record
+
+### Debug Log
+
+- `pnpm exec vitest run src/components/improved/Sidebar.test.tsx`
+- `pnpm exec eslint src/App.tsx src/components/improved/Sidebar.tsx src/components/improved/Sidebar.test.tsx src/pages/Dashboard.tsx`
+- `pnpm exec vitest run src/components/improved/Sidebar.test.tsx src/components/layout/__tests__/Sidebar.test.tsx src/__tests__/components/DashboardAuth.test.tsx`
+- `pnpm test` (full suite executed; contains pre-existing unrelated failures outside this story scope)
+- Code review fixes: `pnpm exec eslint src/App.tsx src/components/improved/Sidebar.tsx src/components/improved/Sidebar.test.tsx` → exit 0; `pnpm exec vitest run src/components/improved/Sidebar.test.tsx` → 4 passed
+
+### Completion Notes
+
+- AC4 complete: desktop layout in `App.tsx` now renders `ImprovedSidebar` instead of legacy `Sidebar`.
+- AC1 complete: improved sidebar now imports shared `navigationGroups` from `@/config/navigation` and uses shared active-route logic.
+- AC2 complete: sidebar collapse/expand controls now use `PanelLeftClose` and `PanelLeftOpen`.
+- AC1 complete: "Last sync" now uses `formatDistanceToNow` with a 60s interval tick to keep relative time text fresh.
+- AC3 complete: dashboard "Real-time Live" badge now uses `text-emerald-700 dark:text-emerald-500` for better light-mode contrast.
+- Added targeted tests for shared navigation rendering, toggle icon pair behavior, dynamic timestamp update, and auto-expand on direct navigation.
+- Code review fixes: md-breakpoint layout regression fixed, auto-expand group logic restored, double TooltipProvider removed, lastSyncAt prop added, nested aside landmark fixed.
