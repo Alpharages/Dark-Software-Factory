@@ -73,6 +73,7 @@ export class PmDashboardController {
     description: 'Return financial summary statistics',
     type: FinancialSummaryDto,
   })
+  @ApiResponse({ status: 403, description: 'Forbidden – MANAGER or ADMIN role required' })
   async getFinancialSummary(@Request() req: { user: { sub: string; role: UserRole } }) {
     const userId = req.user.sub;
     const role = req.user.role;

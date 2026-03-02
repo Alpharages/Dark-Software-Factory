@@ -188,7 +188,7 @@ describe('PmDashboardService', () => {
         budget_forecast: 2200,
       });
       expect(mockCacheManager.set).toHaveBeenCalledWith(
-        'dashboard_financial_summary_manager-1_MANAGER',
+        'dashboard_financial_summary',
         result,
         60 * 1000,
       );

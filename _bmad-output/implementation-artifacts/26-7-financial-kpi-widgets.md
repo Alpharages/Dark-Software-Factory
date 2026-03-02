@@ -1,6 +1,6 @@
 # Story 26.7: Financial KPI Widgets
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -103,3 +103,4 @@ GPT-5 Codex
 ## Change Log
 
 - 2026-03-02: Implemented Financial KPI widgets across backend and frontend, added tests, and moved story to `review`.
+- 2026-03-02: Code review fixes applied — fixed budget ceiling data source (SystemConfig), corrected forecast line anchor to current day, added error state handling to FinancialKPISection, decoupled FinancialKPISection from summary block, fixed SVG gradient ID collision, removed duplicate WorkloadSchedulerService provider, added role metadata test for financial-summary, fixed global cache key, added Swagger 403 response. Story moved to `done`.

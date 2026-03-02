@@ -368,8 +368,8 @@ export class PmDashboardService {
     return result;
   }
 
-  async getFinancialSummary(pmId: string, role: UserRole): Promise<FinancialSummaryDto> {
-    const cacheKey = `dashboard_financial_summary_${pmId}_${role}`;
+  async getFinancialSummary(_pmId: string, _role: UserRole): Promise<FinancialSummaryDto> {
+    const cacheKey = 'dashboard_financial_summary';
     const cachedData = await this.cacheManager.get<FinancialSummaryDto>(cacheKey);
     if (cachedData) {
       return cachedData;

@@ -345,7 +345,7 @@ export class FinancialMetricsService {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-      const [costLogs, monthlySpendAgg, budgetAgg] = await Promise.all([
+      const [costLogs, monthlySpendAgg, budgetConfigEntry] = await Promise.all([
         this.prisma.aICostLog.findMany({
           where: {
             timestamp: {
@@ -372,15 +372,9 @@ export class FinancialMetricsService {
             cost_usd: true,
           },
         }),
-        this.prisma.project.aggregate({
-          where: {
-            budget_usd: {
-              not: null,
-            },
-          },
-          _sum: {
-            budget_usd: true,
-          },
+        this.prisma.systemConfig.findUnique({
+          where: { key: 'MONTHLY_BUDGET_CEILING_USD' },
+          select: { value: true },
         }),
       ]);
 
@@ -404,7 +398,7 @@ export class FinancialMetricsService {
       });
 
       const monthlySpend = parseFloat(monthlySpendAgg._sum.cost_usd?.toString() || '0');
-      const budgetCeiling = parseFloat(budgetAgg._sum.budget_usd?.toString() || '0');
+      const budgetCeiling = budgetConfigEntry ? parseFloat(budgetConfigEntry.value) || 0 : 0;
 
       const dayOfMonth = now.getDate();
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();

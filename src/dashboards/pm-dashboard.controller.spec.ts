@@ -108,5 +108,17 @@ describe('PmDashboardController', () => {
       const result = await controller.getFinancialSummary(req);
       expect(result).toEqual(payload);
     });
+
+    it('should restrict access to MANAGER and ADMIN roles only', () => {
+      const roles = Reflect.getMetadata(
+        'roles',
+        PmDashboardController.prototype.getFinancialSummary,
+      );
+      expect(roles).toContain('MANAGER');
+      expect(roles).toContain('ADMIN');
+      expect(roles).not.toContain('PM');
+      expect(roles).not.toContain('TL');
+      expect(roles).not.toContain('QA');
+    });
   });
 });

@@ -167,7 +167,6 @@ import { FinancialMetricsModule } from '@/financial-metrics/financial-metrics.mo
     PmDashboardService,
     WorkloadService,
     WorkloadSchedulerService,
-    WorkloadSchedulerService,
     DashboardGateway,
     QualityDashboardService,
     QualityDashboardListener,

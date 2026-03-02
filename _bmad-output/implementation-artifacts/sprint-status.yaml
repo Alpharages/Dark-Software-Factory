@@ -198,10 +198,10 @@ development_status:
     story_points: 3
     notes: 'AI Execution KPI widgets: STAT-1 success rate gauge, STAT-2 avg completion time sparkline, STAT-7 live load via Socket.IO. Code review fixes (4H+5M): corrected timing calc (started_at vs ticket.created_at), added 7-day date filter on execution query, replaced Math.random() sparkline with real daily_avg_completion_hours from backend, added daily bucket computation to service, moved QA count queries into Promise.all (parallel), reduced cache TTL 300s→60s, migrated Dashboard.tsx summary fetch to React Query with staleTime:60s.'
   26-7-financial-kpi-widgets:
-    status: review
+    status: done
     effort: '1.5 days'
     story_points: 5
-    notes: 'STAT-3 Cost per Ticket, STAT-4 Budget Burn Rate chart. QA-FR33, QA-FR34. MANAGER/ADMIN only. Ultimate context engine analysis completed - comprehensive developer guide created'
+    notes: 'STAT-3 Cost per Ticket, STAT-4 Budget Burn Rate chart. QA-FR33, QA-FR34. MANAGER/ADMIN only. Code review: 3H+6M fixed (budget ceiling → SystemConfig, forecast line anchor, error state, FinancialKPISection decoupled from summary, SVG gradient ID, duplicate WorkloadSchedulerService, role metadata test, global cache key, Swagger 403).'
   26-8-quality-provider-kpi-widgets:
     status: ready-for-dev
     effort: '1 day'
