@@ -20,13 +20,14 @@ Dark Software Factory (DSF) is an AI-powered software development orchestration 
 - **Runtime:** Node.js 22.x LTS
 - **Package Manager:** pnpm 10.27+ (not npm/yarn)
 - **Language:** TypeScript 5.9 (strict mode)
-- **Framework:** NestJS 11 with Fastify adapter
-- **Database:** PostgreSQL 16+ via Prisma 7
-- **Message Queue:** RabbitMQ 3.13+ (amqplib)
+- **Framework:** NestJS 11.1+ with Fastify 5 adapter
+- **Database:** PostgreSQL 16+ via Prisma 7.1
+- **Message Queue:** RabbitMQ 3.13+ (amqplib 0.10)
+- **Cache:** Redis via ioredis 5
 - **Real-time:** Socket.IO 4.8
 - **Testing:** Jest 30 + ts-jest
-- **Linting:** ESLint 9 (flat config) + Prettier
-- **Monitoring:** Sentry, Prometheus, Winston logging
+- **Linting:** ESLint 9 (flat config) + Prettier 3.7
+- **Monitoring:** Sentry 10, Prometheus (prom-client 15), Winston 3.18
 
 ### Common Commands
 
@@ -60,14 +61,24 @@ pnpm db:migrate         # Create/apply migrations
 pnpm db:migrate:deploy  # Deploy migrations in production
 pnpm db:migrate:reset   # Reset dev database
 pnpm db:push            # Push schema changes (dev only)
+pnpm db:pull            # Pull schema from DB
 pnpm db:seed            # Seed database
 pnpm db:studio          # Open Prisma Studio GUI
+pnpm db:validate        # Validate Prisma schema
+pnpm db:format          # Format Prisma schema
 
-# Docker services (PostgreSQL, RabbitMQ, etc.)
+# Docker services (PostgreSQL, RabbitMQ, Redis, etc.)
 pnpm docker:up          # Start services
 pnpm docker:down        # Stop services
 pnpm docker:logs        # View logs
+pnpm docker:logs:app    # View app logs only
 pnpm docker:clean       # Remove volumes
+pnpm docker:rebuild     # Rebuild containers
+pnpm docker:shell       # Shell into app container
+pnpm docker:migrate     # Run migrations in Docker
+pnpm docker:seed        # Seed DB in Docker
+pnpm docker:studio      # Prisma Studio in Docker
+pnpm docker:monitoring  # Start monitoring stack
 ```
 
 ### Project Structure
@@ -77,6 +88,7 @@ src/
 ├── main.ts                    # App bootstrap (Fastify + Sentry init)
 ├── app.module.ts              # Root module
 ├── ai-routing/                # AI provider selection & fallback
+├── ai-monitoring/             # AI progress validation & decision logging
 ├── execution/                 # AI execution lifecycle (state machine)
 ├── qa-automation/             # Testing, linting, security scanning
 ├── github/                    # GitHub commits, PRs, branches
@@ -85,24 +97,31 @@ src/
 ├── webhooks/                  # External webhook handlers
 ├── auth/                      # JWT auth, user management, invitations
 ├── projects/                  # Project management
-├── dashboards/                # Real-time dashboard data (PM, TL, QA, Manager)
+├── dashboards/                # Real-time dashboard data (PM, TL, QA, Manager, Decision, Observability)
 ├── realtime/                  # Socket.IO gateway
 ├── rabbitmq/                  # Message queue consumers/publishers
-├── databases/                 # Prisma module setup
+├── database/                  # Prisma module setup
+├── prisma/                    # Prisma client re-exports
 ├── config/                    # Configuration & env validation (Joi)
 ├── common/                    # Shared: encryption, logger, metrics, guards, decorators
 ├── cost-tracking/             # Budget & cost logging
+├── financial-metrics/         # Financial KPIs and metrics
 ├── notifications/             # Email (SendGrid) & Slack
 ├── production-monitoring/     # Sentry integration, auto-fix loop
 ├── architecture-review/       # ADR generation & review
 ├── conversations/             # Client communication, audio transcription
 ├── docker/                    # Container execution (DooD pattern)
+├── deployment/                # Deployment management
 ├── cleanup/                   # Workspace cleanup
 ├── dependencies/              # Circular dependency detection
 ├── file-locks/                # Concurrency control
 ├── system-settings/           # Global settings
 ├── integrations/              # AetherFlow, third-party APIs
-└── git-mirror/                # Local git operations
+├── git-mirror/                # Local git operations
+├── audit/                     # Audit log controller & DTOs
+├── metrics/                   # Prometheus metrics module
+├── reports/                   # Reports aggregation & export
+└── storage/                   # File storage management
 ```
 
 ### Database
@@ -130,6 +149,7 @@ Config is validated via Joi at startup. Copy `.env.example` to `.env`. Key vars:
 
 - `DATABASE_URL` — PostgreSQL connection string
 - `RABBITMQ_URL` — RabbitMQ connection string
+- `REDIS_URL` — Redis connection string
 - `JWT_SECRET` / `ENCRYPTION_KEY` — Auth secrets
 - `ANTHROPIC_API_KEY` — Claude API key
 - `GITHUB_TOKEN` — GitHub access token
@@ -143,6 +163,7 @@ Config is validated via Joi at startup. Copy `.env.example` to `.env`. Key vars:
 - **Multi-provider AI routing:** Provider factory + fallback strategy for Claude/Cursor/Windsurf
 - **JWT auth:** Passport.js with bcrypt password hashing
 - **Correlation IDs:** Middleware for request tracing across services
+- **Caching:** Redis via ioredis for session and data caching
 
 ---
 
@@ -155,12 +176,12 @@ Config is validated via Joi at startup. Copy `.env.example` to `.env`. Key vars:
 - **Language:** TypeScript 5.9 (strict mode)
 - **Framework:** React 19 + Vite 7
 - **Styling:** Tailwind CSS 4 + shadcn/ui (Radix primitives)
-- **State:** TanStack Query (server state), React Context (auth/theme), React Hook Form + Zod
-- **Real-time:** Socket.IO Client
-- **HTTP:** Axios with auth interceptors and token refresh
-- **Testing:** Vitest + React Testing Library
+- **State:** TanStack Query 5 (server state), React Context (auth/theme), React Hook Form + Zod 4
+- **Real-time:** Socket.IO Client 4.8
+- **HTTP:** Axios 1.13 with auth interceptors and token refresh
+- **Testing:** Vitest 4 + React Testing Library
 - **Routing:** React Router DOM 7
-- **Charts:** Recharts, XYFlow (architecture diagrams), React Gauge
+- **Charts:** Recharts 3, XYFlow (architecture diagrams), react-gauge-component
 
 ### Common Commands
 
@@ -183,17 +204,21 @@ src/
 ├── App.tsx                    # Routing & layout
 ├── api/                       # Axios API clients (client.ts = base instance)
 ├── components/
-│   ├── ui/                    # 26 shadcn/Radix primitives
+│   ├── ui/                    # shadcn/Radix primitives
 │   ├── layout/                # Sidebar, Header
 │   ├── common/                # RoleBadge, StatusBadge
 │   └── <feature>/             # Feature-specific components
+├── config/                    # App-level config (navigation, etc.)
 ├── features/                  # Self-contained feature modules
-│   └── <feature>/
+│   ├── audit-logs/
+│   ├── observability/
+│   ├── projects/
+│   └── resource-manager/
 │       ├── api/
 │       ├── components/
 │       ├── hooks/
 │       └── types/
-├── pages/                     # Route-level page components (~26 pages)
+├── pages/                     # Route-level page components (~27 pages)
 ├── hooks/                     # Custom hooks (useSocket, useApprovals, etc.)
 ├── contexts/                  # AuthContext, ThemeContext
 ├── types/                     # Shared TypeScript types
@@ -233,7 +258,7 @@ When making cross-cutting changes (e.g., new API endpoint + UI):
 ```bash
 # Terminal 1: Start backend services
 cd "/Volumes/Data/project/products/alpharages/Dark Software Factory"
-pnpm docker:up          # PostgreSQL + RabbitMQ
+pnpm docker:up          # PostgreSQL + RabbitMQ + Redis
 pnpm start:dev          # NestJS on port 3000
 
 # Terminal 2: Start frontend
