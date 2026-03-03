@@ -210,7 +210,7 @@ development_status:
   epic-26-retrospective: done
 
   # EPIC 27 - PLATFORM POLISH, GLOBAL UX & MOBILE NAVIGATION
-  epic-27: in-progress
+  epic-27: done
   epic-27-name: 'Platform Polish, Global UX & Mobile Navigation'
   epic-27-phase: 'QA Sprint (2026-02-27+)'
   epic-27-priority: high
@@ -252,7 +252,7 @@ development_status:
     effort: '0.5 days'
     story_points: 2
     notes: 'UI-8 — null render during auth re-evaluation + enabled:!!user guards. QA-NFR5. Code review fixes (2H+4M): enabled guard bypass via ...options spread fixed in 8 hooks; ProtectedRoute test rewritten for correct redirect assertion; AuthProvider/SocketProvider mocked in AppContent test; useApprovals nested closure test added; duplicate task entries removed; Dev Agent Record File List filled.'
-  epic-27-retrospective: optional
+  epic-27-retrospective: done
 
 priority_sequence:
   last_updated: '2026-02-27T00:00:00+05:00'
@@ -382,7 +382,7 @@ epic_status:
     notes: 'Complete stubbed PM Dashboard features + 8 new KPI widgets. Recommended after Epic 25.'
   epic-27:
     name: 'Platform Polish, Global UX & Mobile Navigation'
-    status: 'in-progress'
+    status: 'done'
     priority: 'high'
     source: 'QA-REPORT-2026-02-27.md'
     stories: 7
