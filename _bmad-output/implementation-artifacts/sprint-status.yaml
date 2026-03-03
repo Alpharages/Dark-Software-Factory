@@ -248,10 +248,10 @@ development_status:
     story_points: 3
     notes: 'BE-5/7/8/9 surfaced in Settings UI. Docker, SendGrid, OpenAI, Slack status cards + GET /health/integrations endpoint. Code review fixes (3H+3M): frontend RBAC guard on /settings/integrations, AppService explicit return type, IntegrationHealthPanel error state, AppService unit tests (6 cases), untracked files staged, Dev Agent Record added.'
   27-7-auth-loading-flash-fix:
-    status: ready-for-dev
+    status: done
     effort: '0.5 days'
     story_points: 2
-    notes: 'UI-8 — null render during auth re-evaluation + enabled:!!user guards. QA-NFR5. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'UI-8 — null render during auth re-evaluation + enabled:!!user guards. QA-NFR5. Code review fixes (2H+4M): enabled guard bypass via ...options spread fixed in 8 hooks; ProtectedRoute test rewritten for correct redirect assertion; AuthProvider/SocketProvider mocked in AppContent test; useApprovals nested closure test added; duplicate task entries removed; Dev Agent Record File List filled.'
   epic-27-retrospective: optional
 
 priority_sequence:

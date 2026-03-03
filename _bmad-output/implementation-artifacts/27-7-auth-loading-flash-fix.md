@@ -1,6 +1,7 @@
 # Story 27.7: Auth Loading Flash & Race Condition Fix
 
-Status: ready-for-dev
+Status: COMPLETED
+Last Updated: 2026-03-03
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -27,43 +28,65 @@ so that I never see a jarring full-screen loading spinner on first visit and no 
 
 ## Tasks / Subtasks
 
-- [ ] Fix `AppContent` auth loading flash in `src/App.tsx` (AC: 1)
-  - [ ] Replace the full-screen `<Loader2>` spinner block (lines 125–134) with `return null`
-  - [ ] Remove the now-unused `Loader2` import from `lucide-react` (check if used elsewhere in the file first)
+- [x] Fix `AppContent` auth loading flash in `src/App.tsx` (AC: 1)
+  - [x] Replace the full-screen `<Loader2>` spinner block (lines 125–134) with `return null`
+  - [x] Remove the now-unused `Loader2` import from `lucide-react` (check if used elsewhere in the file first)
 
-- [ ] Clean up dead `isLoading` code in `src/components/auth/ProtectedRoute.tsx` (AC: 1)
-  - [ ] Remove the `isLoading` spinner block (lines 28–37) — this is dead code since `AppContent` already gates route rendering behind the `isLoading` check. Replace with `return null` or remove entirely.
-  - [ ] Remove the now-unused `Loader2` import from `lucide-react` if no longer needed
+- [x] Clean up dead `isLoading` code in `src/components/auth/ProtectedRoute.tsx` (AC: 1)
+  - [x] Remove the `isLoading` spinner block (lines 28–37) — this is dead code since `AppContent` already gates route rendering behind the `isLoading` check. Replace with `return null` or remove entirely.
+  - [x] Remove the now-unused `Loader2` import from `lucide-react` if no longer needed
 
-- [ ] Add `enabled: !!user` guard to `src/hooks/useApprovals.ts` (AC: 2)
-  - [ ] ⚠️ NESTED HOOK STRUCTURE: `useApprovalQueue`, `useApprovalDetail`, and `useApprovalSummary` are closures defined INSIDE `useApprovals()`, not standalone exports. Call `useAuth()` ONCE at the top of `useApprovals()` and capture `user` via closure.
-  - [ ] Import `useAuth` from `../contexts/AuthContext` at the top of the file
-  - [ ] Add `const { user } = useAuth()` at the top of `useApprovals()` body (after `useQueryClient()`)
-  - [ ] In `useApprovalQueue` closure: add `enabled: !!user`
-  - [ ] In `useApprovalSummary` closure: add `enabled: !!user`
-  - [ ] In `useApprovalDetail` closure: change `enabled: !!executionId` → `enabled: !!executionId && !!user`
+- [x] Add `enabled: !!user` guard to `src/hooks/useApprovals.ts` (AC: 2)
+  - [x] ⚠️ NESTED HOOK STRUCTURE: `useApprovalQueue`, `useApprovalDetail`, and `useApprovalSummary` are closures defined INSIDE `useApprovals()`, not standalone exports. Call `useAuth()` ONCE at the top of `useApprovals()` and capture `user` via closure.
+  - [x] Import `useAuth` from `../contexts/AuthContext` at the top of the file
+  - [x] Add `const { user } = useAuth()` at the top of `useApprovals()` body (after `useQueryClient()`)
+  - [x] In `useApprovalQueue` closure: add `enabled: !!user`
+  - [x] In `useApprovalSummary` closure: add `enabled: !!user`
+  - [x] In `useApprovalDetail` closure: change `enabled: !!executionId` → `enabled: !!executionId && !!user`
 
-- [ ] Add `enabled: !!user` guard to `src/hooks/queries/useNotifications.ts` (AC: 2) — **HIGHEST PRIORITY**
-  - [ ] ⚠️ These hooks are called by `NotificationCenter` which renders inside `Header.tsx` → `DashboardLayout` — OUTSIDE `ProtectedRoute`. They can fire even for unauthenticated users before redirect.
-  - [ ] Add `const { user } = useAuth()` and `enabled: !!user` to `useNotificationPreferences`
-  - [ ] Add `const { user } = useAuth()` and `enabled: !!user` to `useInAppNotifications` — this hook also has `refetchInterval: 300_000` (5 min polling); `enabled: false` will pause polling automatically
-  - [ ] Add `const { user } = useAuth()` and `enabled: !!user` to `useUnreadNotificationCount` — same 5 min polling; same pause behavior
+- [x] Add `enabled: !!user` guard to `src/hooks/queries/useNotifications.ts` (AC: 2) — **HIGHEST PRIORITY**
+  - [x] ⚠️ These hooks are called by `NotificationCenter` which renders inside `Header.tsx` → `DashboardLayout` — OUTSIDE `ProtectedRoute`. They can fire even for unauthenticated users before redirect.
+  - [x] Add `const { user } = useAuth()` and `enabled: !!user` to `useNotificationPreferences`
+  - [x] Add `const { user } = useAuth()` and `enabled: !!user` to `useInAppNotifications` — this hook also has `refetchInterval: 300_000` (5 min polling); `enabled: false` will pause polling automatically
+  - [x] Add `const { user } = useAuth()` and `enabled: !!user` to `useUnreadNotificationCount` — same 5 min polling; same pause behavior
 
-- [ ] Add `enabled: !!user` guard to `src/hooks/queries/useExecutions.ts` (AC: 2)
-  - [ ] Add `enabled: !!user` to `useActiveExecutions` (refetchInterval hook — highest risk)
-  - [ ] For hooks that already have `enabled: !!executionId`, combine: `enabled: !!executionId && !!user`
+- [x] Add `enabled: !!user` guard to `src/hooks/queries/useExecutions.ts` (AC: 2)
+  - [x] Add `enabled: !!user` to `useActiveExecutions` (refetchInterval hook — highest risk)
+  - [x] For hooks that already have `enabled: !!executionId`, combine: `enabled: !!executionId && !!user`
 
-- [ ] Add `enabled: !!user` guard to `src/hooks/useQaReview.ts` (AC: 2)
-  - [ ] Add `enabled: !!user` to `useQueue`
-  - [ ] Add `enabled: !!user` to `useWorkloadSummary`
+- [x] Add `enabled: !!user` guard to `src/hooks/useQaReview.ts` (AC: 2)
+  - [x] Add `enabled: !!user` to `useQueue`
+  - [x] Add `enabled: !!user` to `useWorkloadSummary`
 
-- [ ] Add `enabled: !!user` guard to `src/hooks/queries/useSystemConfig.ts` (AC: 2)
-  - [ ] Add `enabled: !!user` to the primary `useQuery` call inside the hook
+- [x] Add `enabled: !!user` guard to `src/hooks/queries/useSystemConfig.ts` (AC: 2)
+  - [x] Add `enabled: !!user` to the primary `useQuery` call inside the hook
 
-- [ ] Tests — all are NEW tests (no existing ProtectedRoute or AppContent tests exist)
-  - [ ] Create `src/__tests__/AppContent.test.tsx`: assert `null` is rendered (container is empty, no spinner text) when `useAuth` returns `{ isLoading: true }` — use MemoryRouter + mock `useAuth`
-  - [ ] Create `src/components/auth/__tests__/ProtectedRoute.test.tsx` (new file — none exists): assert no spinner is rendered when `auth.isLoading = true`; assert redirect to `/login` when `isAuthenticated = false`; assert children render when authenticated
-  - [ ] Add hook guard test: render `useApprovals` in a test component with `useAuth` mocked to return `{ user: null }`, assert no network requests are made (mock `apiClient`); then re-render with `user` set, assert requests fire
+- [x] Tests — all are NEW tests (no existing ProtectedRoute or AppContent tests exist)
+  - [x] Create `src/__tests__/AppContent.test.tsx`: assert `null` is rendered (container is empty, no spinner text) when `useAuth` returns `{ isLoading: true }` — use MemoryRouter + mock `useAuth`
+  - [x] Create `src/components/auth/__tests__/ProtectedRoute.test.tsx` (new file — none exists): assert no spinner is rendered when `auth.isLoading = true`; assert redirect to `/login` when `isAuthenticated = false`; assert children render when authenticated
+  - [x] Add hook guard test: render `useApprovals` in a test component with `useAuth` mocked to return `{ user: null }`, assert no network requests are made (mock `apiClient`); then re-render with `user` set, assert requests fire
+- [x] Initialize story 27-7-auth-loading-flash-fix
+  - [x] Create dedicated task file [x]
+  - [x] Mark story as in-progress in sprint-status.yaml [x]
+- [x] Research & Planning
+  - [x] Analyze current auth flash mechanism in App.tsx [x]
+  - [x] Identify hooks requiring enabled: !!user guards [x]
+- [x] Implementation
+  - [x] Modify App.tsx to return null during loading [x]
+  - [x] Remove dead isLoading spinner from ProtectedRoute.tsx [x]
+  - [x] Add enabled: !!user guards to Approval hooks [x]
+  - [x] Add enabled: !!user guards to Notification hooks [x]
+  - [x] Add enabled: !!user guards to Execution hooks [x]
+  - [x] Add enabled: !!user guards to System Config hook [x]
+  - [x] Add enabled: !!user guards to QA Review hooks [x]
+- [x] Verification
+  - [x] Create unit tests for AppContent loading state [x]
+  - [x] Create unit tests for ProtectedRoute loading state [x]
+  - [x] Create hook tests for auth guards [x]
+  - [x] Verify no 401 errors are thrown during initial cold load [x]
+- [x] Completion
+  - [x] Update story file tasks and status [x]
+  - [x] Mark story as done in sprint-status.yaml [x]
 
 ## Dev Notes
 
@@ -243,4 +266,17 @@ claude-4.6-sonnet-medium-thinking
 
 ### Completion Notes List
 
+- Code review fixes applied 2026-03-03: (H-1) moved `...options` spread after `enabled` guard in 8 hooks across `useExecutions.ts` and `useNotifications.ts` to prevent auth guard bypass; (H-2) rewrote ProtectedRoute test to assert correct redirect-not-spinner behavior with `/login` route defined; (M-1) filled Dev Agent Record File List; (M-2) mocked `AuthProvider`/`SocketProvider` in AppContent test to prevent async side effects; (M-3) added `useApprovals` nested-closure hook guard tests with `apiClient` mock; (M-4) removed duplicate unchecked task entries from story. LOW: fixed stale JSDoc in ProtectedRoute.tsx, `any` types in useQaReview.ts, misleading comment in App.tsx.
+
 ### File List
+
+- `src/App.tsx` — replaced auth loading spinner with `return null`; removed `Loader2` import; fixed misleading comment
+- `src/components/auth/ProtectedRoute.tsx` — removed dead `isLoading` spinner block and `Loader2` import; removed stale JSDoc line
+- `src/hooks/useApprovals.ts` — added `useAuth()` at parent scope; `enabled: !!user` to `useApprovalQueue`, `useApprovalSummary`; conjunction to `useApprovalDetail`
+- `src/hooks/queries/useNotifications.ts` — added `enabled: !!user` (after `...options` spread) to `useNotificationPreferences`, `useInAppNotifications`, `useUnreadNotificationCount`
+- `src/hooks/queries/useExecutions.ts` — added `enabled: !!user` (after `...options` spread) to `useActiveExecutions`; conjunction with `!!executionId` for `useExecution`, `useExecutionLogs`, `useExecutionActivities`, `useLatestExecutionActivities`
+- `src/hooks/useQaReview.ts` — added `enabled: !!user` to `useQueue`, `useWorkloadSummary`; conjunction for `useSampleDetail`; fixed `any` types
+- `src/hooks/queries/useSystemConfig.ts` — added `enabled: !!user` to main query
+- `src/__tests__/AppContent.test.tsx` (new) — tests null render when `isLoading: true`; mocks `AuthProvider`/`SocketProvider`
+- `src/__tests__/ProtectedRoute.test.tsx` (new) — tests redirect-not-spinner when unauthenticated, redirect to login, children render when authenticated
+- `src/__tests__/useAuthGuards.test.tsx` (new) — tests `enabled: !!user` guard on `useActiveExecutions` and `useApprovalQueue` (nested closure pattern)
