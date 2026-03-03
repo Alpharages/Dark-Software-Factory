@@ -62,6 +62,9 @@ export class ProjectService {
         pm_id: createProjectDto.pm_id,
         status: createProjectDto.status || 'active',
         client_name: createProjectDto.client_name,
+        ...(createProjectDto.budget_usd !== undefined && {
+          budget_usd: createProjectDto.budget_usd,
+        }),
       });
       this.operationsCounter.inc({ operation: 'create', status: 'success' });
       return project;

@@ -1,11 +1,22 @@
-import { IsString, IsNotEmpty, IsUrl, IsOptional, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsUrl,
+  IsOptional,
+  Matches,
+  IsNumber,
+  Min,
+  MaxLength,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateProjectDto {
   @ApiProperty({ description: 'Name of the project' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.replace(/<[^>]*>/g, '') : value))
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name!: string;
 
   @ApiProperty({ description: 'ClickUp List ID mapped to this project' })
@@ -45,4 +56,10 @@ export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   client_name!: string;
+
+  @ApiProperty({ description: 'Project budget in USD', required: false })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  budget_usd?: number;
 }

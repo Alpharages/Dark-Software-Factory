@@ -40,6 +40,8 @@ import { CostTrackingModule } from '@/cost-tracking/cost-tracking.module';
 
 import { DockerModule } from '@/docker/docker.module';
 import { ExecutionModule } from '@/execution/execution.module';
+import { SystemConfigModule } from '@/system-settings/system-config.module';
+import { AIProvidersController } from './ai-providers.controller';
 
 @Module({
   imports: [
@@ -57,7 +59,9 @@ import { ExecutionModule } from '@/execution/execution.module';
     CostTrackingModule,
     DockerModule,
     forwardRef(() => ExecutionModule),
+    SystemConfigModule,
   ],
+  controllers: [AIProvidersController],
   providers: [
     // Story 2.3: Routing services
     AIRoutingService,

@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '@/database/prisma.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
@@ -765,6 +766,43 @@ export class FileLockManagerService {
       if (!progressed) {
         break;
       }
+    }
+  }
+
+  /**
+   * BUG-006: Global stale lock cleanup scheduler.
+   * Runs every 10 minutes to release ALL locks that have exceeded lockTimeoutMs.
+   * Complements releaseStaleLocksForFiles which only cleans up per-request file paths.
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async cleanupStaleLocksGlobally(): Promise<void> {
+    const staleThreshold = new Date(Date.now() - this.lockTimeoutMs);
+
+    try {
+      const staleLocks = await this.prisma.fileLock.findMany({
+        where: {
+          status: 'LOCKED',
+          locked_at: { lt: staleThreshold },
+        },
+        select: { execution_id: true, file_path: true, ticket_id: true },
+      });
+
+      if (staleLocks.length === 0) return;
+
+      const executionIds = Array.from(new Set(staleLocks.map((l) => l.execution_id)));
+      this.logger.warn(
+        `[Scheduler] Releasing ${staleLocks.length} globally stale lock(s) across ${executionIds.length} execution(s)`,
+      );
+
+      for (const executionId of executionIds) {
+        await this.releaseLocksForExecution(executionId);
+      }
+
+      this.safeIncrementCounter('file_lock_stale_releases_total', {
+        count: staleLocks.length.toString(),
+      });
+    } catch (error) {
+      this.logger.error(`Global stale lock cleanup failed: ${(error as Error).message}`);
     }
   }
 

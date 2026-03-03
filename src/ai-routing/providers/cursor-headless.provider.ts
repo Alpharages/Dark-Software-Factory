@@ -497,14 +497,14 @@ export class CursorHeadlessProvider
           error: (err) => {
             clearTimeout(timeout);
             this.isCliAvailable = false;
-            this.logger.warn(`Cursor CLI availability check failed: ${err}`);
+            this.logger.debug(`Cursor CLI availability check failed: ${err}`);
             resolve();
           },
         });
       });
     } catch (error) {
       this.isCliAvailable = false;
-      this.logger.warn(`Failed to check Cursor CLI availability: ${error}`);
+      this.logger.debug(`Failed to check Cursor CLI availability: ${error}`);
     }
   }
 
