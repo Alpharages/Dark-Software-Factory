@@ -1,6 +1,6 @@
 # Story 27.6: Integration Health Panel in Settings
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -27,15 +27,15 @@ so that I immediately know which integrations are missing configuration without 
 
 ## Tasks / Subtasks
 
-- [ ] **Backend: Integration Health Endpoint** (AC: 2)
-  - [ ] Create `src/common/dto/integration-health.dto.ts` with `IntegrationHealthResponseDto`.
-  - [ ] Add `GET /health/integrations` to `AppController` with `RolesGuard` (ADMIN/MANAGER).
-  - [ ] Implement health check logic in `AppService` to check Docker via `DockerService` and env vars via `ConfigService`.
-- [ ] **Frontend: Integration Health UI** (AC: 1, 3)
-  - [ ] Create `useIntegrationHealth` hook in `src/hooks/queries/useIntegrationHealth.ts`.
-  - [ ] Implement `IntegrationHealthPanel` in `src/pages/settings/panels/AllPanels.tsx` (or as a separate component if preferred).
-  - [ ] Add the new panel to the settings navigation in `SettingsLayout.tsx`.
-  - [ ] Design high-quality status cards using `lucide-react` icons and `shadcn/ui` components.
+- [x] **Backend: Integration Health Endpoint** (AC: 2)
+  - [x] Create `src/common/dto/integration-health.dto.ts` with `IntegrationHealthResponseDto`.
+  - [x] Add `GET /health/integrations` to `AppController` with `RolesGuard` (ADMIN/MANAGER).
+  - [x] Implement health check logic in `AppService` to check Docker via `DockerService` and env vars via `ConfigService`.
+- [x] **Frontend: Integration Health UI** (AC: 1, 3)
+  - [x] Create `useIntegrationHealth` hook in `src/hooks/queries/useIntegrationHealth.ts`.
+  - [x] Implement `IntegrationHealthPanel` in `src/pages/settings/panels/AllPanels.tsx` (or as a separate component if preferred).
+  - [x] Add the new panel to the settings navigation in `SettingsLayout.tsx`.
+  - [x] Design high-quality status cards using `lucide-react` icons and `shadcn/ui` components.
 
 ## Dev Notes
 
@@ -64,6 +64,27 @@ so that I immediately know which integrations are missing configuration without 
 - [Source: epics.md#Story-27.6](file:///Volumes/Data/project/products/alpharages/Dark%20Software%20Factory/_bmad-output/planning-artifacts/epics.md)
 - [Source: architecture.md#Health-Monitoring](file:///Volumes/Data/project/products/alpharages/Dark%20Software%20Factory/_bmad-output/planning-artifacts/architecture.md)
 
+## Dev Agent Record
+
+### File List
+
+**Backend (`Dark Software Factory`):**
+
+- `src/app.controller.ts` — Added `GET /health/integrations` endpoint with `@UseGuards(RolesGuard)` and `@Roles(ADMIN, MANAGER)`
+- `src/app.service.ts` — Added `getIntegrationHealth(): Promise<IntegrationHealthResponseDto>` using `DockerService` and `ConfigService`
+- `src/common/dto/integration-health.dto.ts` — New: `IntegrationHealthResponseDto` with Swagger decorators
+- `src/common/dto/index.ts` — Added re-export for `integration-health.dto.ts`
+- `src/app.controller.spec.ts` — Added `getIntegrationHealth` controller test
+- `src/app.service.spec.ts` — New: Unit tests for `AppService.getIntegrationHealth()` (Docker throw, env var presence, no secret leakage)
+
+**Frontend (`dsf-dasbhoard`):**
+
+- `src/hooks/queries/useIntegrationHealth.ts` — New: TanStack Query hook (`queryKey: ['integration-health']`, `refetchInterval: 30000`)
+- `src/pages/settings/panels/AllPanels.tsx` — Added `IntegrationHealthPanel` component with loading, error, and status card states
+- `src/pages/settings/SettingsLayout.tsx` — Added `{ id: 'integrations', label: 'Third-Party Integrations', icon: Blocks }` to panels array
+- `src/App.tsx` — Imported `IntegrationHealthPanel`; registered `/settings/integrations` route with `ProtectedRoute requiredRoles={['ADMIN', 'MANAGER']}`
+
 ## Change Log
 
 - 2026-03-02: Created Story 27.6 for Integration Health Panel. Context extracted from Epic 27 and Architecture requirements. (Khakanali)
+- 2026-03-03: Code review applied fixes — added frontend RBAC guard on /settings/integrations, explicit return type on AppService method, error state in IntegrationHealthPanel, AppService unit tests, and Dev Agent Record. (Code Review)

@@ -243,10 +243,10 @@ development_status:
     story_points: 2
     notes: 'UI-1 dynamic last-sync, UI-4 icon consistency, UI-7 Live badge contrast. QA-FR25, QA-FR29, QA-FR30.'
   27-6-integration-health-panel:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'BE-5/7/8/9 surfaced in Settings UI. Docker, SendGrid, OpenAI, Slack status cards + GET /health/integrations endpoint. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'BE-5/7/8/9 surfaced in Settings UI. Docker, SendGrid, OpenAI, Slack status cards + GET /health/integrations endpoint. Code review fixes (3H+3M): frontend RBAC guard on /settings/integrations, AppService explicit return type, IntegrationHealthPanel error state, AppService unit tests (6 cases), untracked files staged, Dev Agent Record added.'
   27-7-auth-loading-flash-fix:
     status: ready-for-dev
     effort: '0.5 days'

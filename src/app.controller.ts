@@ -21,6 +21,7 @@ import {
   AdminStatsResponseDto,
   UnauthorizedResponseDto,
   ForbiddenResponseDto,
+  IntegrationHealthResponseDto,
 } from './common/dto';
 
 @Controller()
@@ -84,6 +85,22 @@ export class AppController {
     }
 
     return response;
+  }
+
+  @ApiTags('Health')
+  @ApiOperation({
+    summary: 'Integration health',
+    description: 'Returns health status of third-party integrations',
+  })
+  @ApiResponse({ status: 200, type: IntegrationHealthResponseDto })
+  @ApiBearerAuth('JWT-auth')
+  @ApiUnauthorizedResponse({ type: UnauthorizedResponseDto })
+  @ApiForbiddenResponse({ type: ForbiddenResponseDto })
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER)
+  @Get('health/integrations')
+  async getIntegrationHealth(): Promise<IntegrationHealthResponseDto> {
+    return this.appService.getIntegrationHealth();
   }
 
   @ApiTags('Auth')
