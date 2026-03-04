@@ -5,6 +5,7 @@ import {
   Inject,
   forwardRef,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
 import { ClickUpService } from '@/clickup/clickup.service';
@@ -209,7 +210,9 @@ export class ProjectService {
       // Check if already exists first? repository.create might fail or we should check.
       const existing = await this.repository.findByListId(resourceId);
       if (existing) {
-        throw new Error(`Project already imported for ClickUp List ${resourceId}`);
+        throw new ConflictException(
+          `A project has already been imported for ClickUp List ${resourceId}`,
+        );
       }
 
       const project = await this.repository.create({
