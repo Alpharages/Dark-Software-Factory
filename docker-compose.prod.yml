@@ -2,11 +2,11 @@
 # Dark Software Factory - Production Stack
 # ===========================================
 # Usage:
-#   Start:     docker-compose -f docker-compose.prod.yml up -d
-#   Logs:      docker-compose -f docker-compose.prod.yml logs -f
-#   Stop:      docker-compose -f docker-compose.prod.yml down
-#   Migrate:   docker-compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
-#   Shell:     docker-compose -f docker-compose.prod.yml exec app sh
+#   Start:          docker-compose -f docker-compose.prod.yml up -d
+#   Logs:           docker-compose -f docker-compose.prod.yml logs -f
+#   Stop:           docker-compose -f docker-compose.prod.yml down
+#   Shell:          docker-compose -f docker-compose.prod.yml exec app sh
+#   Seed (1st deploy only): docker-compose -f docker-compose.prod.yml run --rm migrate-seed
 # ===========================================
 
 name: dark-software-factory
@@ -19,7 +19,7 @@ services:
     image: rabbitmq:3.13-management-alpine
     container_name: dsf-rabbitmq
     env_file:
-      - .env.prod
+      - .env
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
@@ -42,6 +42,59 @@ services:
         max-file: '3'
 
   # ===========================================
+  # Database Migrations (runs before app, exits after)
+  # ===========================================
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: dsf-migrate
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    command: npx prisma migrate deploy
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - dsf-network
+    restart: 'no'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '5m'
+        max-file: '2'
+
+  # ===========================================
+  # Seed (first deployment only — run manually)
+  # Usage: docker-compose -f docker-compose.prod.yml run --rm migrate-seed
+  # ===========================================
+  migrate-seed:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: dsf-migrate-seed
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    command: npx prisma db seed
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - dsf-network
+    restart: 'no'
+    profiles:
+      - seed
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '5m'
+        max-file: '2'
+
+  # ===========================================
   # AI Dev Orchestrator Application
   # ===========================================
   app:
@@ -51,9 +104,9 @@ services:
     container_name: dsf-app
     user: "root"
     env_file:
-      - .env.prod
+      - .env
     environment:
-      # Hardcoded — must not be overridden by .env.prod
+      # Hardcoded — must not be overridden by .env
       NODE_ENV: production
       PORT: 3000
 
@@ -67,6 +120,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
