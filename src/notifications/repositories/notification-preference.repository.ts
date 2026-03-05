@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { NotificationPreference, Prisma } from '@/prisma';
+import { NotificationPreference, Prisma } from '@/prisma/client';
 import { CreateNotificationPreferenceDto } from '../dto/create-notification-preference.dto';
 import { UpdateNotificationPreferenceDto } from '../dto/update-notification-preference.dto';
 

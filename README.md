@@ -663,6 +663,113 @@ All code must pass:
 
 ## 🚢 Deployment
 
+### Production Deployment (Docker Compose)
+
+This is the **recommended way to deploy DSF on a production server**. The production stack uses `docker-compose.prod.yml` with a separate `.env.prod` file and a pre-built Docker image.
+
+> **Architecture note:** The production compose file includes **RabbitMQ** and the **App** only. PostgreSQL and Redis must be provisioned externally (managed DB service, separate server, etc.) and referenced via `DATABASE_URL` and `REDIS_URL` in `.env.prod`.
+
+#### Step 1: Provision external services
+
+Before deploying, ensure the following are available and reachable from the server:
+
+- **PostgreSQL 16+** — set `DATABASE_URL` in `.env.prod`
+- **Redis 7+** — set `REDIS_URL` in `.env.prod` (required for Socket.IO)
+
+#### Step 2: Configure `.env.prod`
+
+```bash
+# On the production server, create .env.prod from the example
+cp .env.prod.example .env.prod   # or copy from .env.prod and adjust values
+
+# Critical values to update for production:
+# - DATABASE_URL         → point to your external PostgreSQL
+# - REDIS_URL            → point to your external Redis
+# - RABBITMQ_USER/PASS   → use strong credentials (not guest/guest)
+# - JWT_SECRET           → generate: openssl rand -base64 32
+# - ENCRYPTION_KEY       → generate: openssl rand -hex 32
+# - NODE_ENV             → must be "production"
+# - ANTHROPIC_API_KEY    → your Claude API key
+# - GITHUB_TOKEN         → your GitHub PAT
+# - CLICKUP_API_KEY      → your ClickUp API key
+# - SENTRY_DSN           → your Sentry DSN for error tracking
+# - CORS_ORIGINS         → your production frontend URL(s)
+# - FRONTEND_URL         → your production frontend URL
+```
+
+**Security:** Never commit `.env.prod` to git. It is already in `.gitignore`.
+
+#### Step 3: Build and start the production stack
+
+```bash
+# Build the Docker image (multi-stage, optimized for production)
+docker compose -f docker-compose.prod.yml build
+
+# Start all services in detached mode
+docker compose -f docker-compose.prod.yml up -d
+
+# View live logs
+docker compose -f docker-compose.prod.yml logs -f
+
+# View app logs only
+docker compose -f docker-compose.prod.yml logs -f app
+```
+
+#### Step 4: Run database migrations
+
+> **Run this after every deployment that includes schema changes.**
+
+```bash
+docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
+```
+
+#### Step 5: Verify the deployment
+
+```bash
+# Check container health
+docker compose -f docker-compose.prod.yml ps
+
+# Hit the health endpoint
+curl http://localhost:3000/api/v1/health
+
+# Swagger UI (disable in production if not needed)
+open http://your-server:3000/api/v1/docs
+```
+
+#### Common production operations
+
+```bash
+# Stop all services (data volumes are preserved)
+docker compose -f docker-compose.prod.yml down
+
+# Restart the app container only (e.g. after config change)
+docker compose -f docker-compose.prod.yml restart app
+
+# Open a shell inside the running app container
+docker compose -f docker-compose.prod.yml exec app sh
+
+# Pull the latest image and redeploy
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d --build
+
+# View resource usage
+docker stats dsf-app dsf-rabbitmq
+```
+
+#### Environment differences: development vs. production
+
+| Concern       | Development (`docker-compose.yml`) | Production (`docker-compose.prod.yml`) |
+| ------------- | ---------------------------------- | -------------------------------------- |
+| PostgreSQL    | Included in compose                | **External** (managed DB)              |
+| Redis         | Included in compose                | **External** (managed Redis)           |
+| RabbitMQ      | Included                           | Included                               |
+| `NODE_ENV`    | `development`                      | `production` (hardcoded)               |
+| Source mounts | Hot-reload volume mount            | None (baked into image)                |
+| Memory limit  | None                               | 4 GB (app container)                   |
+| Env file      | `.env`                             | `.env.prod`                            |
+
+---
+
 ### Production Checklist
 
 Before deploying to production, ensure:

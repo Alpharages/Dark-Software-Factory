@@ -1,7 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InAppNotificationRepository } from '../repositories/in-app-notification.repository';
 import { RealtimeService } from '../../realtime/realtime.service';
-import { InAppNotification } from '@/prisma';
+import { InAppNotification } from '@/prisma/client';
 
 @Injectable()
 export class InAppNotificationService {
@@ -76,7 +76,7 @@ export class InAppNotificationService {
     unreadOnly?: boolean,
     page?: number,
   ): Promise<{
-    notifications: import('@/prisma').InAppNotification[];
+    notifications: import('@/prisma/client').InAppNotification[];
     total: number;
     unread: number;
   }> {
