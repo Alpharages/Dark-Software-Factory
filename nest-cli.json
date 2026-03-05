@@ -5,8 +5,8 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": false,
-    "tsConfigPath": "tsconfig.json",
-    "assets": [{ "include": "**/*.hbs", "outDir": "./dist/src" }]
+    "tsConfigPath": "tsconfig.build.json",
+    "assets": [{ "include": "**/*.hbs", "outDir": "dist" }]
   },
   "generateOptions": {
     "spec": true,
