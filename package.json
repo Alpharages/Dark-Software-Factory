@@ -30,7 +30,7 @@
     "db:migrate:reset": "npx prisma migrate reset",
     "db:push": "npx prisma db push",
     "db:pull": "npx prisma db pull",
-    "db:seed": "npx prisma db seed",
+    "db:seed": "ts-node prisma/seed.ts",
     "db:studio": "npx prisma studio",
     "db:generate": "npx prisma generate",
     "db:validate": "npx prisma validate",
