@@ -23,8 +23,9 @@ COPY package.json pnpm-lock.yaml ./
 # Install ALL dependencies (HUSKY=0 skips git-hooks setup in CI/Docker)
 RUN HUSKY=0 pnpm install --frozen-lockfile
 
-# Copy Prisma schema
+# Copy Prisma schema and config
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 # Generate Prisma client
 RUN npx prisma generate
@@ -55,6 +56,7 @@ WORKDIR /app
 # the pnpm virtual store paths match what prisma generate wrote during the build.
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml ./
 
