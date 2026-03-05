@@ -6,8 +6,8 @@
 # Used by: Story 1.11 (CI/CD Pipeline)
 # ===========================================
 
-# ---- Dependencies Stage ----
-FROM node:22-alpine AS dependencies
+# ---- Build Stage ----
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -20,22 +20,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
-
-# ---- Build Stage ----
-FROM node:22-alpine AS build
-
-WORKDIR /app
-
-# Enable pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-
-# Install ALL dependencies (need devDependencies for build)
-RUN pnpm install --frozen-lockfile
+# Install ALL dependencies (HUSKY=0 skips git-hooks setup in CI/Docker)
+RUN HUSKY=0 pnpm install --frozen-lockfile
 
 # Copy Prisma schema
 COPY prisma ./prisma/
@@ -52,35 +38,28 @@ RUN pnpm run build
 # ---- Production Stage ----
 FROM node:22-alpine AS production
 
-# Install runtime dependencies for node-pty and Claude CLI
-RUN apk add --no-cache libgcc libstdc++ curl bash
-
-# Install Claude Code CLI (Epic 19)
-# Claude CLI is installed to /root/.local/bin/claude
-RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    ln -sf /root/.local/bin/claude /usr/local/bin/claude
+# Install runtime dependencies for node-pty
+RUN apk add --no-cache libgcc libstdc++ bash
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001 -G nodejs && \
-    mkdir -p /home/nestjs/.local/bin && \
-    cp /root/.local/bin/claude /home/nestjs/.local/bin/claude && \
-    chown -R nestjs:nodejs /home/nestjs/.local
+    adduser -S nestjs -u 1001 -G nodejs
+
+# Enable pnpm (needed to prune devDependencies)
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy built artifacts from build stage
+# Copy built artifacts and full node_modules from build stage.
+# Copying node_modules from the build stage (not a separate --prod install) ensures
+# the pnpm virtual store paths match what prisma generate wrote during the build.
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml ./
 
-# Copy production dependencies from dependencies stage
-COPY --from=dependencies /app/node_modules ./node_modules
-
-# Copy package.json for script access
-COPY package.json ./
-
-# Generate Prisma client for production
-RUN npx prisma generate
+# Remove devDependencies from the copied node_modules
+RUN HUSKY=0 pnpm prune --prod
 
 # Set ownership to non-root user
 RUN chown -R nestjs:nodejs /app /home/nestjs
@@ -88,9 +67,7 @@ RUN chown -R nestjs:nodejs /app /home/nestjs
 # Switch to non-root user
 USER nestjs
 
-# Ensure Claude CLI is in PATH (installed to user's home directory)
-ENV CLAUDE_CLI_PATH=/home/nestjs/.local/bin/claude
-ENV PATH="/home/nestjs/.local/bin:${PATH}"
+
 
 # Expose application port
 EXPOSE 3000

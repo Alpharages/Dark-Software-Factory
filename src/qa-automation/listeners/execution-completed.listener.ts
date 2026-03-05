@@ -11,9 +11,12 @@ export class ExecutionCompletedListener implements OnModuleInit {
   constructor(
     private readonly qaCheckPublisher: QaCheckPublisher,
     private readonly eventBus: EventBusService,
-  ) {}
+  ) {
+    this.logger.log('ExecutionCompletedListener instantiated');
+  }
 
   onModuleInit() {
+    this.logger.log('ExecutionCompletedListener initializing subscription');
     this.eventBus.on('execution.completed', (event: ExecutionCompletedEvent) =>
       this.handleExecutionCompleted(event),
     );
@@ -21,13 +24,21 @@ export class ExecutionCompletedListener implements OnModuleInit {
 
   async handleExecutionCompleted(event: ExecutionCompletedEvent) {
     this.logger.log(`Handling execution.completed event for execution ${event.executionId}`);
+    this.logger.debug(
+      `Received execution.completed payload: ${JSON.stringify({
+        executionId: event.executionId,
+        ticketId: event.ticketId,
+        filesChangedCount: event.filesChanged?.length,
+        aiProvider: event.aiProvider,
+      })}`,
+    );
 
     try {
-      // Re-construct ICodeFile objects from event data
-      // TODO: In actual implementation, content should be extracted per file
+      // Build lightweight file list — only include path and language.
+      // The full diff is sent once as a shared field, NOT duplicated per file.
       const codeFiles: ICodeFile[] = event.filesChanged.map((filePath: string) => ({
         path: filePath,
-        content: event.codeOutput,
+        content: '', // Per-file content is not available at this stage
         language: this.detectLanguage(filePath),
       }));
 

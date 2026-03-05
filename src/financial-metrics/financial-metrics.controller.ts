@@ -10,7 +10,7 @@ import {
   Res,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { FastifyReply } from 'fastify';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
@@ -102,7 +102,10 @@ export class FinancialMetricsController {
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid parameters' })
   @ApiResponse({ status: 401, description: 'Unauthorized - No JWT token' })
   @ApiResponse({ status: 403, description: 'Forbidden - Insufficient role' })
-  async getCostPerFeature(@Query() query: CostPerFeatureQueryDto, @Res() res?: Response) {
+  async getCostPerFeature(
+    @Query() query: CostPerFeatureQueryDto,
+    @Res({ passthrough: true }) res?: FastifyReply,
+  ) {
     try {
       this.loggerService.debug('GET /cost-per-feature', { query });
 
@@ -121,8 +124,8 @@ export class FinancialMetricsController {
       if (query.format === 'csv' && res) {
         const csv = this.convertCostPerFeatureToCsv(result);
         const filename = `cost-per-feature-${query.epicId}-${new Date().toISOString().split('T')[0]}.csv`;
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.header('Content-Type', 'text/csv');
+        res.header('Content-Disposition', `attachment; filename="${filename}"`);
         return res.send(csv);
       }
 
@@ -226,7 +229,10 @@ export class FinancialMetricsController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async getBudgetTrends(@Query() query: BudgetTrendsQueryDto, @Res() res?: Response) {
+  async getBudgetTrends(
+    @Query() query: BudgetTrendsQueryDto,
+    @Res({ passthrough: true }) res?: FastifyReply,
+  ) {
     try {
       this.loggerService.debug('GET /budget-trends', { query });
 
@@ -239,8 +245,8 @@ export class FinancialMetricsController {
       if (query.format === 'csv' && res) {
         const csv = this.convertBudgetTrendsToCsv(result);
         const filename = `budget-trends-${query.projectId}-${query.period}-${new Date().toISOString().split('T')[0]}.csv`;
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.header('Content-Type', 'text/csv');
+        res.header('Content-Disposition', `attachment; filename="${filename}"`);
         return res.send(csv);
       }
 

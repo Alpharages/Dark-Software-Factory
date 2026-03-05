@@ -2,45 +2,54 @@
  * GitHub PR Orchestrator Service
  *
  * Story 4.4: Pull Request Creation & Metadata
- * Delegates PR creation to AI agents following thin coordination pattern
+ * Generates PR title/description via Anthropic SDK, then creates the PR
+ * directly via GitHub REST API (Octokit) — not via AI CLI in container.
  *
- * Flow: Call AI provider → AI analyzes changes, generates PR title/description, and creates PR
+ * Flow: Anthropic SDK → generate title/body → GitHubService.createPullRequest (Octokit)
  */
 
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Anthropic from '@anthropic-ai/sdk';
 import { PrismaService } from '@/database/prisma.service';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { AuditLogService } from '@/common/audit/audit-log.service';
 import { LoggerService } from '@/common/logger/logger.service';
-import { AIExecutionService } from '@/ai-routing/ai-execution.service';
-import { WorkspaceService } from '@/ai-routing/providers';
-import { IAIPromptExecutor } from '@/ai-routing/interfaces';
 import { PROrchestrationResult } from '../interfaces/pr-result.interface';
 import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
 import { PRRiskAssessorService } from './pr-risk-assessor.service';
 import { PRAutoMergeService } from './pr-auto-merge.service';
 import { PRReminderService } from './pr-reminder.service';
+import { GitHubService } from '../github.service';
 
 @Injectable()
 export class GitHubPROrchestrator {
+  private readonly anthropic: Anthropic | null = null;
+
   constructor(
-    private readonly aiExecution: AIExecutionService,
     private readonly prisma: PrismaService,
     private readonly rabbitMQ: RabbitMQService,
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
     private readonly logger: LoggerService,
-    private readonly workspaceService: WorkspaceService,
     private readonly riskAssessor: PRRiskAssessorService,
     private readonly autoMergeService: PRAutoMergeService,
     private readonly reminderService: PRReminderService,
-  ) {}
+    private readonly githubService: GitHubService,
+    private readonly config: ConfigService,
+  ) {
+    const apiKey = this.config.get<string>('anthropic.apiKey');
+    if (apiKey) {
+      this.anthropic = new Anthropic({ apiKey });
+    }
+  }
 
   /**
-   * Orchestrates PR creation via AI provider
-   * Flow: Call AI provider → AI analyzes changes, generates PR title/description, and creates PR
+   * Orchestrates PR creation.
+   * Flow: Anthropic SDK generates title/body → GitHubService (Octokit) creates the PR.
+   * The container-based AI provider is NOT used here because it lacks `gh` CLI auth.
    */
   async createPullRequest(
     executionId: string,
@@ -48,7 +57,7 @@ export class GitHubPROrchestrator {
   ): Promise<PROrchestrationResult> {
     const startTime = Date.now();
 
-    this.logger.log('Starting AI-delegated PR creation', {
+    this.logger.log('Starting PR creation via GitHub REST API', {
       executionId,
       correlationId,
     });
@@ -72,54 +81,54 @@ export class GitHubPROrchestrator {
         throw new Error(`GitHub push record not found for execution ${executionId}`);
       }
 
-      // Get existing workspace
-      const workspace = await this.workspaceService.getWorkspace(executionId);
-
-      if (!workspace) {
-        throw new Error(`Workspace not found for execution ${executionId}`);
-      }
-
-      this.logger.log('Delegating PR creation to AI provider', {
+      this.logger.log('Generating PR title/description via Anthropic SDK', {
         executionId,
-        provider: execution.ai_provider,
         repository: githubPush.repository,
         branch: githubPush.branch_name,
       });
 
-      // Build prompt for AI to handle PR creation
-      // AI CLI is already in the workspace and can discover changes itself
-      const prompt = this.buildPRPrompt({
+      // Step 1: Generate PR title and description using Anthropic SDK directly
+      // (not via container provider — containers lack `gh` CLI auth)
+      const { prTitle, prBody } = await this.generatePRTitleAndBody({
         ticketId: execution.ticket.clickup_task_id,
         ticketTitle: execution.ticket.title,
-        ticketDescription: execution.ticket.description,
-        repository: githubPush.repository,
+        ticketDescription: execution.ticket.description ?? undefined,
         branchName: githubPush.branch_name,
         baseBranch: 'main',
       });
 
-      // Get AI provider instance and cast to IAIPromptExecutor
-      const providerInstance = this.aiExecution['providers'].get(execution.ai_provider);
+      // Step 2: Parse owner/repo from repository URL
+      const { owner, repo } = this.parseRepositoryUrl(githubPush.repository);
 
-      if (!providerInstance) {
-        throw new Error(`Provider ${execution.ai_provider} not available`);
-      }
+      // Step 3: Resolve per-project GitHub installationId for Octokit auth
+      const installationId = execution.ticket.project_id
+        ? await this.resolveInstallationId(execution.ticket.project_id)
+        : undefined;
 
-      const aiProvider = providerInstance as unknown as IAIPromptExecutor;
-
-      // Call AI provider to execute PR creation
-      const result = await aiProvider.executePrompt({
-        workspacePath: workspace.path,
-        prompt,
+      // Step 4: Create the PR via GitHub REST API (Octokit) — reliable server-side call
+      this.logger.log('Creating PR via GitHub REST API', {
+        executionId,
+        owner,
+        repo,
+        head: githubPush.branch_name,
+        base: 'main',
       });
 
-      if (!result.success || !result.response) {
-        throw new Error(
-          `AI provider failed: ${result.error?.message || result.error ? JSON.stringify(result.error) : 'No response'}`,
-        );
-      }
+      const prData = (await this.githubService.createPullRequest(
+        owner,
+        repo,
+        prTitle,
+        prBody,
+        githubPush.branch_name,
+        'main',
+        installationId,
+      )) as { number: number; html_url: string };
 
-      // Parse AI response to extract PR info
-      const prInfo = this.parsePRResponse(result.response);
+      const prInfo = {
+        prNumber: prData.number,
+        prUrl: prData.html_url,
+        prTitle,
+      };
 
       // Update database with PR results
       await this.prisma.gitHubPush.update({
@@ -277,93 +286,106 @@ export class GitHubPROrchestrator {
   }
 
   /**
-   * Build comprehensive prompt for AI to handle PR creation
-   * AI CLI is already in the workspace and can discover changes itself
+   * Generate PR title and description via Anthropic SDK.
+   * Falls back to a template if the SDK is unavailable or the response is unparseable.
    */
-  private buildPRPrompt(context: {
+  private async generatePRTitleAndBody(context: {
     ticketId: string;
     ticketTitle: string;
     ticketDescription?: string;
-    repository: string;
     branchName: string;
     baseBranch: string;
-  }): string {
+  }): Promise<{ prTitle: string; prBody: string }> {
     const { ticketId, ticketTitle, ticketDescription, branchName, baseBranch } = context;
 
-    return `You are a senior software engineer creating a GitHub Pull Request. Execute the following tasks:
+    const fallback = {
+      prTitle: `feat(${ticketId}): ${ticketTitle}`,
+      prBody: `## Ticket\n\nClickUp: ${ticketId}\n\n## Changes\n\n_AI-generated code changes for: ${ticketTitle}_\n\n## Branch\n\n\`${branchName}\` → \`${baseBranch}\``,
+    };
 
-CONTEXT:
-- Ticket ID: ${ticketId}
-- Ticket Title: ${ticketTitle}
-${ticketDescription ? `- Description: ${ticketDescription}` : ''}
+    if (!this.anthropic) {
+      this.logger.warn('Anthropic SDK not configured — using fallback PR title/body');
+      return fallback;
+    }
 
-TASKS:
-1. Analyze the code changes in the workspace using git commands (git log, git diff, etc.)
-2. Generate a comprehensive PR title following conventional commits format:
-   - Format: <type>(<scope>): <description>
-   - Types: feat, fix, refactor, docs, test, chore, perf
-   - Example: "feat(auth): add OAuth2 authentication flow"
-   
-3. Generate a detailed PR description that includes:
-   - Summary of changes (2-3 sentences)
-   - Key changes made (3-5 bullet points)
-   - Related ticket: ${ticketId}
-   - Testing notes if applicable
-   
-4. Create the PR using GitHub CLI:
-   \`gh pr create --title "<your title>" --body "<your description>" --head ${branchName} --base ${baseBranch}\`
-   
-5. Extract the PR URL and number from the output
-
-REQUIRED OUTPUT FORMAT (JSON):
-{
-  "prUrl": "https://github.com/<owner>/<repo>/pull/<number>",
-  "prNumber": <number>,
-  "prTitle": "<your generated title>"
-}
-
-Execute these tasks now and return ONLY the JSON response.`;
-  }
-
-  /**
-   * Parse AI response to extract PR information
-   */
-  private parsePRResponse(response: string): {
-    prUrl: string;
-    prNumber: number;
-    prTitle?: string;
-  } {
     try {
-      // Try to parse as JSON first
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      const prompt = `Generate a GitHub Pull Request title and description for the following ticket.
+
+Ticket ID: ${ticketId}
+Ticket Title: ${ticketTitle}
+${ticketDescription ? `Description: ${ticketDescription}` : ''}
+Branch: ${branchName} → ${baseBranch}
+
+Requirements:
+- Title must follow conventional commits format: <type>(<scope>): <description>
+- Body must be markdown with: summary, key changes (bullet points), and ticket reference
+
+Return ONLY valid JSON with no other text:
+{"prTitle": "<title>", "prBody": "<markdown body>"}`;
+
+      const response = await this.anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
+
+      // Extract JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*"prTitle"[\s\S]*"prBody"[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.prUrl && parsed.prNumber) {
-          return {
-            prUrl: parsed.prUrl,
-            prNumber: parsed.prNumber,
-            prTitle: parsed.prTitle,
-          };
+        if (parsed.prTitle && parsed.prBody) {
+          return { prTitle: parsed.prTitle, prBody: parsed.prBody };
         }
       }
 
-      // Fallback: Try to extract PR URL from text
-      const urlMatch = response.match(/https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)/);
-      if (urlMatch) {
-        return {
-          prUrl: urlMatch[0],
-          prNumber: parseInt(urlMatch[1], 10),
-        };
-      }
-
-      throw new Error('Could not parse PR URL from AI response');
+      this.logger.warn('Could not parse Anthropic PR content response — using fallback');
+      return fallback;
     } catch (_error) {
-      this.logger.error('Failed to parse PR response', 'unknown', {
+      this.logger.warn('Anthropic PR content generation failed — using fallback', {
         error: (_error as Error).message,
-        response: response.substring(0, 500),
       });
-      throw new Error(`Failed to parse PR response: ${(_error as Error).message}`);
+      return fallback;
     }
+  }
+
+  /**
+   * Parse "owner/repo" from a repository URL or "owner/repo" slug.
+   * Handles: https://github.com/owner/repo, https://github.com/owner/repo.git, owner/repo
+   */
+  private parseRepositoryUrl(repository: string): { owner: string; repo: string } {
+    // Strip .git suffix
+    const clean = repository.replace(/\.git$/, '');
+    // Try full URL
+    const urlMatch = clean.match(/github\.com\/([^/]+)\/([^/]+)/);
+    if (urlMatch) {
+      return { owner: urlMatch[1], repo: urlMatch[2] };
+    }
+    // Try owner/repo slug
+    const slugMatch = clean.match(/^([^/]+)\/([^/]+)$/);
+    if (slugMatch) {
+      return { owner: slugMatch[1], repo: slugMatch[2] };
+    }
+    throw new Error(`Cannot parse owner/repo from repository: "${repository}"`);
+  }
+
+  /**
+   * Look up the GitHub installationId for the project's linked account.
+   * Returns undefined if the project has no linked account (falls back to global PAT).
+   */
+  private async resolveInstallationId(projectId: string): Promise<string | undefined> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { github_account_id: true },
+    });
+    if (!project?.github_account_id) return undefined;
+
+    const account = await this.prisma.gitHubAccount.findUnique({
+      where: { id: project.github_account_id },
+      select: { installationId: true },
+    });
+    return account?.installationId ?? undefined;
   }
 
   /**

@@ -13,6 +13,7 @@ describe('QualityGateConfigService', () => {
 
   const mockTransactionClient = {
     qualityGateConfig: {
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
       create: jest.fn(),
@@ -80,6 +81,7 @@ describe('QualityGateConfigService', () => {
         overrideRequiresApproval: false,
       };
 
+      mockPrismaService.qualityGateConfig.findFirst.mockResolvedValueOnce(null);
       mockPrismaService.qualityGateConfig.findUnique.mockResolvedValueOnce(projectConfig);
 
       const result = await service.getEffectiveConfig('proj-1');

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
@@ -21,11 +21,30 @@ export class FileLocksController {
   @ApiOperation({ summary: 'List active file locks' })
   @ApiResponse({ status: 200, description: 'Active locks returned' })
   async listActiveLocks(): Promise<{
-    locks: Array<{ filePath: string; ticketId: string; executionId: string; lockedAt: string }>;
+    locks: Array<{
+      id: string;
+      filePath: string;
+      ticketId: string;
+      executionId: string;
+      lockedAt: string;
+      lockAgeMinutes: number;
+      isStale: boolean;
+    }>;
     total: number;
   }> {
     const locks = await this.fileLocks.getActiveLocks();
     return { locks, total: locks.length };
+  }
+
+  @Delete(':lockId')
+  @Roles(Role.PM, Role.TL, Role.QA, Role.MANAGER, Role.ADMIN)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Force release an active file lock' })
+  @ApiResponse({ status: 204, description: 'Lock released successfully' })
+  @ApiResponse({ status: 404, description: 'Lock not found or already released' })
+  async forceReleaseLock(@Param('lockId') lockId: string): Promise<void> {
+    await this.fileLocks.forceReleaseLock(lockId);
   }
 
   @Get('waiting')

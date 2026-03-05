@@ -1,6 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck - Prisma's complex generic types conflict with Jest mocks, causing false positive errors
-// Tests compile and run successfully despite TypeScript warnings
 import { Test, TestingModule } from '@nestjs/testing';
 import { AIDecisionLoggerService } from './ai-decision-logger.service';
 import { PrismaService } from '@/database/prisma.service';
@@ -9,7 +6,11 @@ import { MetricsService } from '@/common/metrics/metrics.service';
 
 describe('AIDecisionLoggerService', () => {
   let service: AIDecisionLoggerService;
-  let prisma: jest.Mocked<PrismaService>;
+  // Explicitly typed to match the partial mock object structure, avoiding @ts-nocheck
+  let prisma: {
+    aIDecisionLog: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
+    execution: { groupBy: jest.Mock };
+  };
   let sentry: jest.Mocked<SentryService>;
   let metrics: jest.Mocked<MetricsService>;
 
@@ -41,6 +42,9 @@ describe('AIDecisionLoggerService', () => {
               findMany: mockFindMany.mockResolvedValue([]),
               count: jest.fn().mockResolvedValue(0),
             },
+            execution: {
+              groupBy: jest.fn().mockResolvedValue([]),
+            },
           },
         },
         {
@@ -71,7 +75,7 @@ describe('AIDecisionLoggerService', () => {
      * but the tests compile and run successfully at runtime.
      */
 
-    prisma = module.get(PrismaService) as unknown;
+    prisma = module.get(PrismaService) as typeof prisma;
     sentry = module.get(SentryService) as jest.Mocked<SentryService>;
     metrics = module.get(MetricsService) as jest.Mocked<MetricsService>;
 
@@ -445,6 +449,55 @@ describe('AIDecisionLoggerService', () => {
       });
 
       expect(result.data).toEqual([]);
+    });
+  });
+
+  describe('getProviderDistributionStats', () => {
+    it('should return normalized provider percentages', async () => {
+      // Now uses execution.groupBy (DB aggregate) instead of aIDecisionLog.findMany
+      prisma.execution.groupBy.mockResolvedValue([
+        { ai_provider: 'CURSOR_HEADLESS', _count: { _all: 1 } },
+        { ai_provider: 'CLAUDE_CODE', _count: { _all: 2 } },
+      ]);
+
+      const result = await service.getProviderDistributionStats();
+
+      expect(result).toEqual([
+        { provider: 'CLAUDE', percentage: 66.67, count: 2 },
+        { provider: 'CURSOR', percentage: 33.33, count: 1 },
+        { provider: 'WINDSURF', percentage: 0, count: 0 },
+      ]);
+    });
+
+    it('should return zeroed distribution when no executions exist', async () => {
+      prisma.execution.groupBy.mockResolvedValue([]);
+
+      const result = await service.getProviderDistributionStats();
+
+      expect(result).toEqual([
+        { provider: 'CLAUDE', percentage: 0, count: 0 },
+        { provider: 'CURSOR', percentage: 0, count: 0 },
+        { provider: 'WINDSURF', percentage: 0, count: 0 },
+      ]);
+    });
+
+    it('should apply PM scope filter to execution groupBy query', async () => {
+      prisma.execution.groupBy.mockResolvedValue([
+        { ai_provider: 'CLAUDE_CODE', _count: { _all: 3 } },
+      ]);
+
+      const result = await service.getProviderDistributionStats({ pmId: 'pm-1', role: 'PM' });
+
+      expect(prisma.execution.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            ticket: expect.objectContaining({
+              project: expect.objectContaining({ pm_id: 'pm-1' }),
+            }),
+          }),
+        }),
+      );
+      expect(result.find((r) => r.provider === 'CLAUDE')?.count).toBe(3);
     });
   });
 });

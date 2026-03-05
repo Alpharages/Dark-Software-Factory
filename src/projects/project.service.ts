@@ -5,6 +5,8 @@ import {
   Inject,
   forwardRef,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { ProjectRepository } from './project.repository';
@@ -12,6 +14,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
+import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { Project, TicketStatus } from '@/prisma/client';
 import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
@@ -55,11 +58,14 @@ export class ProjectService {
       const project = await this.repository.create({
         name: createProjectDto.name,
         clickup_list_id: createProjectDto.clickup_list_id,
-        github_repository_url: createProjectDto.github_repository_url.trim(),
+        github_repository_url: createProjectDto.github_repository_url?.trim() || '',
         default_branch: createProjectDto.default_branch || 'main',
         pm_id: createProjectDto.pm_id,
         status: createProjectDto.status || 'active',
         client_name: createProjectDto.client_name,
+        ...(createProjectDto.budget_usd !== undefined && {
+          budget_usd: createProjectDto.budget_usd,
+        }),
       });
       this.operationsCounter.inc({ operation: 'create', status: 'success' });
       return project;
@@ -204,7 +210,9 @@ export class ProjectService {
       // Check if already exists first? repository.create might fail or we should check.
       const existing = await this.repository.findByListId(resourceId);
       if (existing) {
-        throw new Error(`Project already imported for ClickUp List ${resourceId}`);
+        throw new ConflictException(
+          `A project has already been imported for ClickUp List ${resourceId}`,
+        );
       }
 
       const project = await this.repository.create({
@@ -306,6 +314,35 @@ export class ProjectService {
       return project;
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'update_repo', status: 'error' });
+      throw _error;
+    }
+  }
+
+  /**
+   * Update GitHub account and repository URL
+   */
+  async updateGithubRepo(id: string, dto: UpdateGithubRepoDto, userId: string): Promise<Project> {
+    try {
+      await this.findOne(id);
+
+      // Verify that the GitHub account belongs to the user
+      const account = await this.prisma.gitHubAccount.findUnique({
+        where: { id: dto.githubAccountId },
+      });
+
+      if (!account || account.userId !== userId) {
+        throw new ForbiddenException('Not your GitHub account');
+      }
+
+      const project = await this.repository.updateGithubRepo(
+        id,
+        dto.githubAccountId,
+        `https://github.com/${dto.repositoryFullName}`,
+      );
+      this.operationsCounter.inc({ operation: 'update_github_repo', status: 'success' });
+      return project;
+    } catch (_error) {
+      this.operationsCounter.inc({ operation: 'update_github_repo', status: 'error' });
       throw _error;
     }
   }

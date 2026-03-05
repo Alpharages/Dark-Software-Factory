@@ -19,6 +19,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
 import { UpdateRepositoryDto } from './dto/update-repository.dto';
+import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import {
   ApiTags,
@@ -44,7 +45,7 @@ export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.MANAGER) // Changed to use Role enum for consistency with existing code
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PM) // Changed to use Role enum for consistency with existing code
   @ApiOperation({ summary: 'Create a new project' })
   @ApiResponse({ status: 201, description: 'The project has been successfully created.' })
   create(@Body() createProjectDto: CreateProjectDto) {
@@ -144,12 +145,31 @@ export class ProjectController {
     return this.projectService.updateGitHubRepository(id, dto.repositoryUrl);
   }
 
+  @Patch(':id/github-repo')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PM)
+  @ApiOperation({ summary: 'Set GitHub account and repository for project' })
+  @ApiResponse({ status: 200, description: 'Repository updated successfully' })
+  updateGithubRepo(
+    @Param('id') id: string,
+    @Body() dto: UpdateGithubRepoDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.projectService.updateGithubRepo(id, dto, user.id);
+  }
+
   @Patch(':id/status')
   @Roles(Role.ADMIN, Role.MANAGER)
   @ApiOperation({ summary: 'Update project active status' })
   @ApiResponse({ status: 200, description: 'Status updated successfully' })
   updateStatus(@Param('id') id: string, @Body() dto: UpdateProjectStatusDto) {
-    return this.projectService.updateStatus(id, dto.isActive);
+    // Accept either `isActive` (boolean) or `status` ("active"|"inactive")
+    if (dto.isActive === undefined && dto.status === undefined) {
+      throw new BadRequestException(
+        'Provide either "isActive" (boolean) or "status" ("active"|"inactive")',
+      );
+    }
+    const resolvedIsActive = dto.isActive ?? dto.status === 'active';
+    return this.projectService.updateStatus(id, resolvedIsActive);
   }
 
   @Post(':id/sync')

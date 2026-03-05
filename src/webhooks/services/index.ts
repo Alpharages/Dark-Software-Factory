@@ -4,5 +4,3 @@
  */
 
 export { WebhookDeduplicationService } from './webhook-deduplication.service';
-export { ActionableStatusService } from './actionable-status.service';
-export type { StatusEvaluationResult } from './actionable-status.service';

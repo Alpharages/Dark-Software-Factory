@@ -33,6 +33,8 @@ import { AnomalyDetectionController } from './anomaly-detection.controller';
 import { AnomalyNotificationListener } from './listeners/anomaly-notification.listener';
 import { ConversationsModule } from '@/conversations/conversations.module';
 import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
+import { FinancialMetricsModule } from '@/financial-metrics/financial-metrics.module';
+import { GitHubModule } from '@/github/github.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
     BugEscapeModule,
     QualityGateConfigModule,
     DecisionDashboardModule,
+    FinancialMetricsModule,
+    GitHubModule,
     ConversationsModule,
     AIDecisionLoggerModule,
     EmailModule,
@@ -164,7 +168,6 @@ import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
     ObservabilityDashboardService,
     PmDashboardService,
     WorkloadService,
-    WorkloadSchedulerService,
     WorkloadSchedulerService,
     DashboardGateway,
     QualityDashboardService,

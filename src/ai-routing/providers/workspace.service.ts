@@ -31,6 +31,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { WorkspaceStatus } from '@/prisma/client';
 import { StorageManagerService } from '../../storage/storage-manager.service';
 import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
+import { GitHubTokenResolverService } from '../../github/github-token-resolver.service';
 
 /**
  * Maps AI provider names to their convention instruction filenames.
@@ -67,6 +68,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
     private readonly gitMirrorService: GitMirrorService,
     @Inject(forwardRef(() => ExecutionTrackerService))
     private readonly executionTracker: ExecutionTrackerService,
+    private readonly tokenResolver: GitHubTokenResolverService,
     @InjectMetric('cursor_workspaces_active')
     private readonly activeGauge: Gauge<string>,
     @InjectMetric('cursor_workspace_operations_total')
@@ -267,10 +269,33 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
         const gitMirroringEnabled = this.config.get<boolean>('ENABLE_GIT_MIRRORING', true);
         let clonedFromMirror = false;
 
+        let authenticatedUrl: string | undefined;
+        const ticket = await this.prisma.ticket.findUnique({
+          where: { id: ticketId },
+          select: { project_id: true },
+        });
+
+        if (ticket?.project_id) {
+          const resolvedAuth = await this.tokenResolver.resolveForProject(
+            ticket.project_id,
+            trimmedRepositoryUrl,
+          );
+          if (resolvedAuth) {
+            authenticatedUrl = resolvedAuth.authenticatedUrl;
+          }
+        }
+
         if (gitMirroringEnabled) {
           try {
-            const mirror = await this.gitMirrorService.getOrCreateMirror(trimmedRepositoryUrl);
-            await this.gitMirrorService.cloneFromMirror(mirror.mirrorPath, workspacePath);
+            const mirror = await this.gitMirrorService.getOrCreateMirror(
+              trimmedRepositoryUrl,
+              authenticatedUrl,
+            );
+            await this.gitMirrorService.cloneFromMirror(
+              mirror.mirrorPath,
+              workspacePath,
+              authenticatedUrl,
+            );
             clonedFromMirror = true;
             this.logger.log(`[${executionId}] Cloned from local mirror: ${mirror.mirrorPath}`);
           } catch (mirrorError: unknown) {
@@ -284,7 +309,9 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
         // Fallback to direct clone if mirror failed or disabled
         if (!clonedFromMirror) {
-          await this.git.clone(trimmedRepositoryUrl, workspacePath, { depth: 1 });
+          await this.git.clone(authenticatedUrl ?? trimmedRepositoryUrl, workspacePath, {
+            depth: 1,
+          });
         }
 
         // 3. Configure git user for commits
@@ -442,6 +469,26 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       throw new Error(`Workspace not found: ${executionId}`);
     }
 
+    // Guard: workspace path must exist (may have been cleaned before this call)
+    const pathExists = await this.directoryExists(workspace.path);
+    if (!pathExists) {
+      throw this.createError(
+        AIErrorCode.GIT_ERROR,
+        `Failed to extract changes: workspace path does not exist: ${workspace.path}`,
+        false,
+      );
+    }
+
+    // Guard: must be a valid git repo (cloned workspaces always have .git)
+    const gitDirExists = await this.directoryExists(path.join(workspace.path, '.git'));
+    if (!gitDirExists) {
+      throw this.createError(
+        AIErrorCode.GIT_ERROR,
+        `Failed to extract changes: not a git repository: ${workspace.path}`,
+        false,
+      );
+    }
+
     try {
       // Get diff against HEAD (captures all uncommitted changes)
       const diff = await this.git.getDiff(workspace.path);
@@ -470,6 +517,15 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Guard: prevent duplicate concurrent cleanup calls (ENOTEMPTY race condition).
+    // If a parallel call already updated the DB to CLEANING or CLEANED, skip quietly.
+    if (workspace.status === 'CLEANING' || workspace.status === 'COMPLETED') {
+      this.logger.debug(
+        `[${executionId}] Workspace already being cleaned/cleaned — skipping duplicate cleanup`,
+      );
+      return;
+    }
+
     // Delegate to StorageManagerService for archival if failed workspace is preserved
     if (workspace.status === 'FAILED' && this.preserveFailed && !force) {
       try {
@@ -487,13 +543,24 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // Update status to CLEANING
-    await this.prisma.workspace
-      .update({
-        where: { execution_id: executionId },
+    // Atomically mark as CLEANING to prevent other concurrent callers from entering
+    const updated = await this.prisma.workspace
+      .updateMany({
+        where: {
+          execution_id: executionId,
+          status: { notIn: [WorkspaceStatus.CLEANING, WorkspaceStatus.CLEANED] },
+        },
         data: { status: WorkspaceStatus.CLEANING },
       })
-      .catch(() => {});
+      .catch(() => ({ count: 0 }));
+
+    if (updated.count === 0) {
+      // Another call already claimed the CLEANING transition
+      this.logger.debug(
+        `[${executionId}] Workspace CLEANING already claimed by another call — skipping`,
+      );
+      return;
+    }
 
     try {
       await fs.rm(workspace.path, { recursive: true, force: true });

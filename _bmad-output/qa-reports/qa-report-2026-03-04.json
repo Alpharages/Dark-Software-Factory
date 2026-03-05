@@ -1,0 +1,476 @@
+{
+  "meta": {
+    "report_version": "1.0.0",
+    "orchestrator_version": "3.0.0",
+    "generated_at": "2026-03-04T00:00:00Z",
+    "duration_minutes": 190,
+    "environment": "local-development"
+  },
+  "repositories": {
+    "backend": {
+      "path": "/Volumes/Data/project/products/alpharages/Dark Software Factory",
+      "commit": "6296b75",
+      "stack": "NestJS 11 + Fastify + Prisma + PostgreSQL + RabbitMQ + Redis"
+    },
+    "frontend": {
+      "path": "/Volumes/Data/project/products/alpharages/dsf-dasbhoard",
+      "commit": "20c1f28",
+      "stack": "React 19 + Vite + Tailwind CSS + shadcn/ui"
+    }
+  },
+  "verdict": {
+    "decision": "NO-GO",
+    "risk_level": "MEDIUM",
+    "justification": "P0 blocker: frontend build fails. P1 critical: registration endpoint requires authentication. P1 critical: backend coverage 67.37% below 80% threshold. P2 major: notification polling causes cascading rate limit failures."
+  },
+  "phase_summary": [
+    {
+      "phase": 0,
+      "name": "Pre-flight",
+      "status": "PASS",
+      "notes": "All services up, 42 migrations applied, pnpm installed"
+    },
+    {
+      "phase": 1,
+      "name": "Static Analysis",
+      "status": "WARN",
+      "notes": "Frontend build fails (2 TS errors); 261 ESLint errors frontend; 191 as-any backend"
+    },
+    {
+      "phase": 2,
+      "name": "Unit Tests",
+      "status": "WARN",
+      "notes": "1849 backend + 296 frontend tests pass; coverage 67.37% (below 80%)"
+    },
+    {
+      "phase": 3,
+      "name": "Service Startup",
+      "status": "PASS",
+      "notes": "Backend port 3000 healthy; frontend port 5173 healthy"
+    },
+    { "phase": 4, "name": "Smoke Tests", "status": "PASS", "notes": "All 8 smoke tests pass" },
+    {
+      "phase": 5,
+      "name": "Authentication",
+      "status": "WARN",
+      "notes": "Core auth works; access token remains valid 24h after logout"
+    },
+    {
+      "phase": 6,
+      "name": "RBAC",
+      "status": "WARN",
+      "notes": "TL role missing from PM and QA dashboard endpoints"
+    },
+    {
+      "phase": 7,
+      "name": "UI Functional",
+      "status": "WARN",
+      "notes": "All pages load; WebSocket 3-5s connection delay; 3x 429 on executions page"
+    },
+    {
+      "phase": 8,
+      "name": "API Contracts",
+      "status": "WARN",
+      "notes": "PATCH status accepts wrong field; /decisions and /observability 404"
+    },
+    {
+      "phase": 9,
+      "name": "Data Integrity",
+      "status": "PASS",
+      "notes": "CRUD, unicode, 5x concurrent creates all pass; duplicate returns 500 not 409"
+    },
+    {
+      "phase": 10,
+      "name": "WebSocket",
+      "status": "WARN",
+      "notes": "Connects after 3-5s; brief offline state"
+    },
+    {
+      "phase": 11,
+      "name": "Security",
+      "status": "WARN",
+      "notes": "No HTTP security headers; /metrics and /docs open in dev; 27+ dep vulns"
+    },
+    {
+      "phase": 12,
+      "name": "Performance",
+      "status": "WARN",
+      "notes": "3.24MB JS bundle exceeds 2.5MB threshold; all API responses <10ms"
+    },
+    {
+      "phase": 13,
+      "name": "Accessibility",
+      "status": "WARN",
+      "notes": "7 WCAG violations on login page (landmark elements)"
+    },
+    {
+      "phase": 14,
+      "name": "Regression",
+      "status": "WARN",
+      "notes": "Bugs #1,#2 resolved; #3,#4,#5,#6 still open; #7 partially resolved"
+    },
+    {
+      "phase": 15,
+      "name": "Exploratory",
+      "status": "WARN",
+      "notes": "Registration requires auth (P1); duplicate 500 not 409; notifications cascade 429"
+    },
+    {
+      "phase": 16,
+      "name": "Production Readiness",
+      "status": "WARN",
+      "notes": "REDIS_URL missing; no security headers; /metrics and /docs must be gated for production"
+    }
+  ],
+  "defects": [
+    {
+      "id": "QA-2026-03-04-001",
+      "severity": "P0",
+      "severity_label": "BLOCKER",
+      "title": "Frontend production build fails with TypeScript unused import errors",
+      "component": "Frontend",
+      "files": ["src/components/users/EditUserModal.tsx", "src/components/users/UsersTable.tsx"],
+      "steps_to_reproduce": "cd dsf-dasbhoard && pnpm build",
+      "expected": "Successful production build",
+      "actual": "Exit code 2: TS6133 errors for unused imports 'Input' and 'CardHeader'",
+      "suggested_fix": "Remove unused import 'Input' from EditUserModal.tsx:12 and 'CardHeader' from UsersTable.tsx:32",
+      "blocking": true
+    },
+    {
+      "id": "QA-2026-03-04-002",
+      "severity": "P1",
+      "severity_label": "CRITICAL",
+      "title": "Registration endpoint requires authentication — new user onboarding broken",
+      "component": "Backend",
+      "files": ["src/auth/registration/registration.controller.ts"],
+      "steps_to_reproduce": "POST /api/v1/auth/register with valid inviteToken body (no Authorization header)",
+      "expected": "201 Created",
+      "actual": "401 Unauthorized — missing @Public() decorator on register endpoint",
+      "suggested_fix": "Add @Public() decorator to RegistrationController.register() method",
+      "blocking": true
+    },
+    {
+      "id": "QA-2026-03-04-003",
+      "severity": "P1",
+      "severity_label": "CRITICAL",
+      "title": "Backend test coverage 67.37% — below 80% mandatory threshold",
+      "component": "Backend",
+      "steps_to_reproduce": "pnpm test:cov --forceExit",
+      "expected": "Coverage >= 80% statements, functions, branches",
+      "actual": "67.37% statements, 52.95% functions, 48.47% branches",
+      "suggested_fix": "Write tests for uncovered modules; target 80% across all metrics",
+      "blocking": true
+    },
+    {
+      "id": "QA-2026-03-04-004",
+      "severity": "P2",
+      "severity_label": "MAJOR",
+      "title": "Frontend has 261 ESLint errors (no-explicit-any violations)",
+      "component": "Frontend",
+      "steps_to_reproduce": "cd dsf-dasbhoard && pnpm lint",
+      "expected": "0 lint errors",
+      "actual": "261 errors, 17 warnings",
+      "suggested_fix": "Replace any types with proper TypeScript types",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-005",
+      "severity": "P2",
+      "severity_label": "MAJOR",
+      "title": "TL role denied access to PM Dashboard and QA Dashboard (spec violation)",
+      "component": "Backend",
+      "files": [
+        "src/dashboards/pm-dashboard.controller.ts",
+        "src/dashboards/qa-dashboard.controller.ts"
+      ],
+      "steps_to_reproduce": "GET /api/v1/pm-dashboard/summary with TL role token",
+      "expected": "200 OK",
+      "actual": "403 Forbidden — TL not in @Roles decorator for PM or QA dashboards",
+      "suggested_fix": "Add 'TL' to @Roles decorator in both dashboard controllers",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-006",
+      "severity": "P2",
+      "severity_label": "MAJOR",
+      "title": "Backend has 1 critical, 26 high dependency vulnerabilities",
+      "component": "Backend",
+      "steps_to_reproduce": "pnpm audit --audit-level=high",
+      "expected": "0 critical/high vulnerabilities",
+      "actual": "1 critical, 26 high, 8 moderate, 7 low",
+      "suggested_fix": "Run pnpm audit fix; update vulnerable packages",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-007",
+      "severity": "P2",
+      "severity_label": "MAJOR",
+      "title": "Frontend has 9 high dependency vulnerabilities",
+      "component": "Frontend",
+      "steps_to_reproduce": "cd dsf-dasbhoard && pnpm audit --audit-level=high",
+      "expected": "0 high vulnerabilities",
+      "actual": "9 high, 4 moderate, 1 low",
+      "suggested_fix": "Run pnpm audit fix; update typescript-eslint to fix minimatch ReDoS",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-008",
+      "severity": "P2",
+      "severity_label": "MAJOR",
+      "title": "Notifications polling triggers cascading rate limit (429) causing UI failures",
+      "component": "Frontend + Backend",
+      "steps_to_reproduce": "Navigate to /executions page; observe browser console",
+      "expected": "Notifications load without rate limit errors",
+      "actual": "3+ consecutive 429 errors for /notifications/in-app/unread-count",
+      "suggested_fix": "Add @SkipThrottle() to notification polling endpoint OR add exponential backoff in frontend",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-009",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "Access token remains valid 24h after logout (no token blacklist)",
+      "component": "Backend",
+      "steps_to_reproduce": "Login → logout → use old access token on /auth/me",
+      "expected": "401 Unauthorized",
+      "actual": "200 OK — token still valid",
+      "suggested_fix": "Implement Redis-based access token blacklist or reduce TTL to 15min",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-010",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "PATCH /projects/:id/status accepts wrong field {status: inactive} returning 200",
+      "component": "Backend",
+      "steps_to_reproduce": "PATCH /projects/:id/status with body {\"status\":\"inactive\"}",
+      "expected": "400 Bad Request",
+      "actual": "200 OK — wrong field silently ignored",
+      "suggested_fix": "Add forbidNonWhitelisted DTO validation to reject unknown fields",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-011",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "Duplicate project creation (same clickup_list_id) returns 500 instead of 409",
+      "component": "Backend",
+      "steps_to_reproduce": "Create 2 projects with same clickup_list_id concurrently",
+      "expected": "409 Conflict",
+      "actual": "500 Internal Server Error (unhandled Prisma P2002)",
+      "suggested_fix": "Catch Prisma P2002 unique constraint violation and return 409 Conflict",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-012",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "REDIS_URL environment variable missing from .env",
+      "component": "Backend",
+      "steps_to_reproduce": "Check .env for REDIS_URL key",
+      "expected": "REDIS_URL defined",
+      "actual": "Key absent; Redis running natively but not configured via env",
+      "suggested_fix": "Add REDIS_URL=redis://localhost:6379 to .env and .env.example",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-013",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "Missing HTTP security response headers (X-Frame-Options, CSP, X-Content-Type-Options)",
+      "component": "Backend",
+      "steps_to_reproduce": "curl -I http://localhost:3000/api/v1/health",
+      "expected": "X-Frame-Options, X-Content-Type-Options, Content-Security-Policy headers present",
+      "actual": "No security headers in response",
+      "suggested_fix": "Register @fastify/helmet in main.ts: app.register(helmet)",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-014",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "API responses use snake_case field names instead of camelCase",
+      "component": "Backend",
+      "steps_to_reproduce": "POST /api/v1/projects → inspect response body",
+      "expected": "camelCase: isActive, createdAt, updatedAt",
+      "actual": "snake_case: is_active, created_at, updated_at, clickup_list_id",
+      "suggested_fix": "Configure NestJS ClassSerializerInterceptor with camelCase transformation",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-015",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "Main JS bundle 3.24MB exceeds 2.5MB warning threshold",
+      "component": "Frontend",
+      "steps_to_reproduce": "Inspect dist/assets/ after successful build",
+      "expected": "Main JS bundle < 2.5MB",
+      "actual": "index-LtH6yG6c.js = 3.24MB; react-pdf = 1.51MB (not lazy-loaded)",
+      "suggested_fix": "Implement route-level code splitting; lazy-load react-pdf",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-016",
+      "severity": "P3",
+      "severity_label": "MEDIUM",
+      "title": "7 WCAG accessibility violations on login page (landmark elements)",
+      "component": "Frontend",
+      "steps_to_reproduce": "npx @axe-core/cli http://localhost:5173/login",
+      "expected": "0 accessibility violations",
+      "actual": "7 violations: landmark-one-main (1), region (6)",
+      "suggested_fix": "Add <main> landmark; wrap page sections in appropriate semantic HTML",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-017",
+      "severity": "P4",
+      "severity_label": "MINOR",
+      "title": "4 Recharts dimension warnings on PM Dashboard (REGRESSION BUG #4)",
+      "component": "Frontend",
+      "steps_to_reproduce": "Load PM Dashboard; open browser console",
+      "expected": "No Recharts warnings",
+      "actual": "4x 'width(-1) and height(-1) of chart should be greater than 0'",
+      "suggested_fix": "Wrap charts in ResizeObserver or use conditional rendering until dimensions available",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-018",
+      "severity": "P4",
+      "severity_label": "MINOR",
+      "title": "Backend code quality: 12 console.log, 3 @ts-ignore, 191 as-any casts",
+      "component": "Backend",
+      "steps_to_reproduce": "grep -r console.log src/; grep -r @ts-ignore src/; grep -rn 'as any' src/",
+      "expected": "No console.log; no @ts-ignore; minimal as-any",
+      "actual": "12 console.log, 3 @ts-ignore, 191 as-any",
+      "suggested_fix": "Use Winston Logger; remove @ts-ignore with proper types; reduce as-any casts",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-019",
+      "severity": "P4",
+      "severity_label": "MINOR",
+      "title": "WebSocket initial 3-5s delay showing 'Connecting...' state",
+      "component": "Frontend",
+      "steps_to_reproduce": "Load PM Dashboard; observe WebSocket badge on initial render",
+      "expected": "Instant or < 1s connection time",
+      "actual": "3-5s delay before 'Real-time Live' state",
+      "suggested_fix": "Add skeleton loading state; consider eager connection in AuthContext",
+      "blocking": false
+    },
+    {
+      "id": "QA-2026-03-04-020",
+      "severity": "P4",
+      "severity_label": "MINOR",
+      "title": "/metrics and /api/v1/docs-json accessible without authentication in dev",
+      "component": "Backend",
+      "steps_to_reproduce": "curl http://localhost:3000/metrics (no auth)",
+      "expected": "Dev: acceptable; Production: must require auth",
+      "actual": "200 OK without authentication",
+      "suggested_fix": "Disable docs in production via NODE_ENV check; add IP allowlist for /metrics",
+      "blocking": false
+    }
+  ],
+  "defect_counts": {
+    "P0_BLOCKER": 1,
+    "P1_CRITICAL": 2,
+    "P2_MAJOR": 5,
+    "P3_MEDIUM": 9,
+    "P4_MINOR": 4,
+    "total": 21
+  },
+  "test_results": {
+    "backend_unit": {
+      "suites": 178,
+      "passed": 1849,
+      "skipped": 1,
+      "failed": 0,
+      "status": "PASS"
+    },
+    "backend_coverage": {
+      "statements": 67.37,
+      "branches": 48.47,
+      "functions": 52.95,
+      "lines": 67.09,
+      "threshold": 80.0,
+      "status": "FAIL"
+    },
+    "frontend_unit": {
+      "files": 51,
+      "passed": 296,
+      "failed": 0,
+      "status": "PASS"
+    },
+    "smoke_tests": {
+      "passed": 8,
+      "failed": 0,
+      "status": "PASS"
+    },
+    "accessibility": {
+      "pages_scanned": 1,
+      "violations": 7,
+      "status": "FAIL"
+    }
+  },
+  "build_status": {
+    "backend": "PASS",
+    "frontend": "FAIL"
+  },
+  "lint_status": {
+    "backend": "PASS",
+    "frontend": "FAIL",
+    "frontend_errors": 261,
+    "frontend_warnings": 17
+  },
+  "dependency_audit": {
+    "backend": {
+      "critical": 1,
+      "high": 26,
+      "moderate": 8,
+      "low": 7
+    },
+    "frontend": {
+      "critical": 0,
+      "high": 9,
+      "moderate": 4,
+      "low": 1
+    }
+  },
+  "performance": {
+    "frontend_bundle_js_kb": 3317,
+    "frontend_bundle_js_threshold_kb": 2560,
+    "api_response_times_ms": {
+      "health": 9,
+      "auth_me": 4,
+      "projects": 5,
+      "users": 7,
+      "pm_dashboard": 8,
+      "qa_dashboard": 2
+    }
+  },
+  "security_headers": {
+    "X-Frame-Options": false,
+    "X-Content-Type-Options": false,
+    "Content-Security-Policy": false,
+    "Strict-Transport-Security": false
+  },
+  "env_variables": {
+    "DATABASE_URL": true,
+    "RABBITMQ_URL": true,
+    "REDIS_URL": false,
+    "JWT_SECRET": true,
+    "ENCRYPTION_KEY": true,
+    "ANTHROPIC_API_KEY": true,
+    "GITHUB_TOKEN": true,
+    "CLICKUP_API_KEY": true,
+    "SENTRY_DSN": true
+  },
+  "regression_bugs": {
+    "bug_1_users_redirect": "RESOLVED",
+    "bug_2_qa_review_redirect": "RESOLVED",
+    "bug_3_patch_status_field": "OPEN",
+    "bug_4_recharts_errors": "OPEN",
+    "bug_5_metrics_unauthenticated": "OPEN",
+    "bug_6_docs_unauthenticated": "OPEN",
+    "bug_7_websocket_offline": "PARTIALLY_RESOLVED"
+  }
+}

@@ -10,7 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
@@ -130,6 +130,7 @@ export class AuthController {
    * GET /api/v1/auth/me
    * AC#8
    */
+  @SkipThrottle()
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -12,12 +12,14 @@ import { PrismaService } from '@/database/prisma.service';
 import { StorageManagerService } from '../../storage/storage-manager.service';
 import { GitMirrorService } from '../../git-mirror/git-mirror.service';
 import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
+import { GitHubTokenResolverService } from '../../github/github-token-resolver.service';
 
 // Mock fs/promises
 jest.mock('fs/promises');
 
 describe('WorkspaceService', () => {
   let service: WorkspaceService;
+  let module: TestingModule;
   let gitService: jest.Mocked<GitOperationsService>;
   let mockGitMirrorService: jest.Mocked<GitMirrorService>;
   let mockActiveGauge: { set: jest.Mock };
@@ -67,6 +69,9 @@ describe('WorkspaceService', () => {
     const workspaces: Array<{ execution_id: string; [key: string]: unknown }> = [];
 
     const mockPrismaService = {
+      ticket: {
+        findUnique: jest.fn().mockResolvedValue({ project_id: 'proj-123' }),
+      },
       workspace: {
         findUnique: jest.fn(async ({ where }: { where: { execution_id: string } }) => {
           return workspaces.find((w) => w.execution_id === where.execution_id) ?? null;
@@ -192,6 +197,26 @@ describe('WorkspaceService', () => {
           workspaces.splice(0, workspaces.length);
           return { count };
         }),
+        // Atomic status transition guard used by cleanupWorkspace
+        updateMany: jest.fn(
+          async ({
+            where,
+            data,
+          }: {
+            where: { execution_id: string; status?: { notIn: string[] } };
+            data: Record<string, unknown>;
+          }) => {
+            const candidates = workspaces.filter((w) => {
+              if (w.execution_id !== where.execution_id) return false;
+              if (where.status?.notIn) {
+                return !where.status.notIn.includes(w.status as string);
+              }
+              return true;
+            });
+            candidates.forEach((w) => Object.assign(w, data));
+            return { count: candidates.length };
+          },
+        ),
       },
     };
 
@@ -204,13 +229,17 @@ describe('WorkspaceService', () => {
       archiveWorkspace: jest.fn().mockResolvedValue(undefined),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         WorkspaceService,
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GitOperationsService, useValue: mockGitService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: StorageManagerService, useValue: mockStorageManagerService },
+        {
+          provide: GitHubTokenResolverService,
+          useValue: { resolveForProject: jest.fn().mockResolvedValue(null) },
+        },
         {
           provide: GitMirrorService,
           useValue: {
@@ -302,6 +331,42 @@ describe('WorkspaceService', () => {
         operation: 'create',
         status: 'success',
       });
+    });
+
+    it('should pass authenticatedUrl to mirror service when token resolves', async () => {
+      // Mock token resolver returning an authenticated URL
+      const mockTokenResolver = module.get(GitHubTokenResolverService);
+      (mockTokenResolver.resolveForProject as jest.Mock).mockResolvedValue({
+        authenticatedUrl: 'https://x-access-token:ghp_test@github.com/test/repo.git',
+        username: 'octocat',
+        accountId: 'acct-uuid',
+      });
+
+      mockGitMirrorService.getOrCreateMirror.mockResolvedValue({
+        owner: 'test',
+        repo: 'repo',
+        mirrorPath: '/tmp/mirrors/test/repo.git',
+        sizeBytes: 1000000,
+        lastUpdated: new Date(),
+        lastUsed: new Date(),
+        cloneCount: 0,
+      });
+      mockGitMirrorService.cloneFromMirror.mockResolvedValue(undefined);
+      gitService.configureUser.mockResolvedValue();
+      gitService.checkoutBranch.mockResolvedValue();
+
+      await service.createWorkspace('exec-auth', '456', 'https://github.com/test/repo.git', 'main');
+
+      // Verify authenticatedUrl is passed to mirror service
+      expect(mockGitMirrorService.getOrCreateMirror).toHaveBeenCalledWith(
+        'https://github.com/test/repo.git',
+        'https://x-access-token:ghp_test@github.com/test/repo.git',
+      );
+      expect(mockGitMirrorService.cloneFromMirror).toHaveBeenCalledWith(
+        '/tmp/mirrors/test/repo.git',
+        expect.any(String),
+        'https://x-access-token:ghp_test@github.com/test/repo.git',
+      );
     });
 
     it('should fallback to direct clone when mirror fails', async () => {
@@ -439,6 +504,11 @@ describe('WorkspaceService', () => {
       gitService.getChangedFiles.mockResolvedValue(['src/file.ts']);
 
       await service.createWorkspace('exec-123', '456', 'https://github.com/test/repo.git', 'main');
+
+      // Mock fs.stat so that both the workspace path and .git subdir appear to be directories
+      mockFs.stat.mockResolvedValue({ isDirectory: () => true } as unknown as Awaited<
+        ReturnType<typeof fs.stat>
+      >);
 
       const changes = await service.extractChanges('exec-123');
 

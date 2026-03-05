@@ -50,14 +50,36 @@
     "docker:seed": "docker compose exec app npx prisma db seed",
     "docker:studio": "docker compose exec app npx prisma studio",
     "docker:monitoring": "docker compose --profile monitoring up -d",
+    "docker:prod:up": "docker compose -f docker-compose.prod.yml up -d",
+    "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
+    "docker:prod:logs": "docker compose -f docker-compose.prod.yml logs -f",
+    "docker:prod:logs:app": "docker compose -f docker-compose.prod.yml logs -f app",
+    "docker:prod:rebuild": "docker compose -f docker-compose.prod.yml build --no-cache",
+    "docker:prod:shell": "docker compose -f docker-compose.prod.yml exec app sh",
+    "docker:prod:migrate": "docker compose -f docker-compose.prod.yml exec app npx prisma migrate deploy",
     "clean": "rm -rf dist node_modules/.cache",
     "claude": "./scripts/run-claude.sh",
     "check": "pnpm run lint && pnpm run test && pnpm run build",
     "check:versions": "echo 'Node:' && node -v && echo 'pnpm:' && pnpm -v && echo 'Docker:' && docker -v",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/engines",
+      "@scarf/scarf",
+      "@sentry-internal/node-cpu-profiler",
+      "bcrypt",
+      "cpu-features",
+      "node-pty",
+      "prisma",
+      "protobufjs",
+      "ssh2",
+      "unrs-resolver"
+    ]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.0",
@@ -79,6 +101,7 @@
     "@nestjs/websockets": "^11.1.10",
     "@octokit/app": "^16.1.2",
     "@octokit/rest": "^22.0.1",
+    "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.1.0",
     "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^10.27.0",
@@ -101,6 +124,7 @@
     "handlebars": "^4.7.8",
     "ioredis": "^5.9.2",
     "joi": "^18.0.2",
+    "js-yaml": "^4.1.1",
     "mammoth": "^1.11.0",
     "multer": "^2.0.2",
     "nest-winston": "^1.10.2",
@@ -125,7 +149,6 @@
     "@nestjs/cli": "^11.0.14",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.1.9",
-    "@prisma/adapter-pg": "^7.1.0",
     "@types/amqplib": "^0.10.8",
     "@types/dockerode": "3.3.34",
     "@types/express": "^5.0.6",
@@ -180,6 +203,7 @@
       "^@octokit/rest$": "<rootDir>/../test/mocks/octokit.mock.ts",
       "^@/(.*)$": "<rootDir>/$1",
       "^src/(.*)$": "<rootDir>/$1"
-    }
+    },
+    "forceExit": true
   }
 }

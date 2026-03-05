@@ -5,12 +5,12 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { DeploymentOrchestrator } from '../../github/services/deployment-orchestrator.service';
-import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service';
-import { ClickUpService } from '../../clickup/clickup.service';
-import { TicketStatus, ApprovalDecision } from '../../prisma/client';
-import { TriggerDeploymentDto } from '../../github/dto/trigger-deployment.dto';
+import { PrismaService } from '@/database/prisma.service';
+import { DeploymentOrchestrator } from '@/github/services/deployment-orchestrator.service';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
+import { ClickUpService } from '@/clickup/clickup.service';
+import { TicketStatus, ApprovalDecision, ProductionApproval } from '../../prisma/client';
+import { TriggerDeploymentDto } from '@/github/dto/trigger-deployment.dto';
 
 export interface IGateCheckResult {
   ready: boolean;
@@ -72,7 +72,11 @@ export class ProductionApprovalService {
   /**
    * Approve a release for production deployment
    */
-  async approveRelease(ticketId: string, approverId: string, overrideReason?: string) {
+  async approveRelease(
+    ticketId: string,
+    approverId: string,
+    overrideReason?: string,
+  ): Promise<ProductionApproval> {
     this.logger.log(`Processing approval for ticket ${ticketId} by ${approverId}`);
 
     const readiness = await this.checkReadiness(ticketId);
@@ -177,7 +181,11 @@ export class ProductionApprovalService {
   /**
    * Reject a release
    */
-  async rejectRelease(ticketId: string, approverId: string, rejectionReason: string) {
+  async rejectRelease(
+    ticketId: string,
+    approverId: string,
+    rejectionReason: string,
+  ): Promise<ProductionApproval> {
     this.logger.log(`Processing rejection for ticket ${ticketId} by ${approverId}`);
 
     const ticket = await this.prisma.ticket.findUnique({

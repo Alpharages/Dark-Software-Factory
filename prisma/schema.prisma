@@ -29,7 +29,10 @@ model Project {
   quality_gate_config   QualityGateConfig?
   reports               Report[]
   tickets               Ticket[]
+  github_account_id     String?                @map("github_account_id")
+  gitHubAccount         GitHubAccount?         @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
 
+  @@index([github_account_id])
   @@map("projects")
 }
 
@@ -41,6 +44,8 @@ model Ticket {
   description          String
   acceptance_criteria  String
   ticket_quality_score Int
+  epic_num             String?
+  completion_date      DateTime?
   status               TicketStatus         @default(RECEIVED)
   created_at           DateTime             @default(now())
   updated_at           DateTime             @updatedAt
@@ -658,6 +663,7 @@ model User {
   slackMemberId              String?                    @map("slack_member_id")
   notificationPreferences    NotificationPreference[]
   inAppNotifications         InAppNotification[]
+  gitHubAccounts             GitHubAccount[]
 
   @@index([managed_by_id])
   @@index([role])
@@ -1237,4 +1243,19 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   REVOKED
+}
+
+model GitHubAccount {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  installationId  String   @unique @map("installation_id")
+  accessToken     String   @map("access_token") // Encrypted
+  username        String
+  avatarUrl       String?  @map("avatar_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects        Project[]
+
+  @@map("github_accounts")
 }

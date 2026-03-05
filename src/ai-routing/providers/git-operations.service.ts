@@ -9,6 +9,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { appendFile, readFile } from 'fs/promises';
+import { join } from 'path';
 
 const execFileAsync = promisify(execFile);
 
@@ -18,6 +20,9 @@ export class GitOperationsService {
 
   /** Default timeout for git operations (2 minutes) */
   private readonly DEFAULT_TIMEOUT_MS = 120_000;
+
+  /** Default max buffer for git stdout (50MB) */
+  private readonly DEFAULT_MAX_BUFFER = 50 * 1024 * 1024;
 
   /**
    * Clone a repository to target path
@@ -67,20 +72,73 @@ export class GitOperationsService {
   }
 
   /**
-   * Get diff of all changes
+   * Paths that should never be committed — package-manager stores, caches,
+   * and build artefacts created at runtime inside the workspace
+   * (e.g. when the AI agent runs `pnpm install` inside a Docker container).
+   */
+  private readonly EXCLUDED_PATHS = [
+    '.pnpm-store',
+    'node_modules',
+    '.yarn/cache',
+    '.npm',
+    '__pycache__',
+    '.cache',
+  ];
+
+  /**
+   * Ensure the workspace `.gitignore` contains entries for runtime artefacts
+   * that should never be staged (e.g. `.pnpm-store`).
+   */
+  private async ensureGitignoreExclusions(workspacePath: string): Promise<void> {
+    const gitignorePath = join(workspacePath, '.gitignore');
+    let existing = '';
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      existing = await readFile(gitignorePath, 'utf-8');
+    } catch {
+      // No .gitignore yet — will create one
+    }
+
+    const missing = this.EXCLUDED_PATHS.filter(
+      (p) => !existing.split('\n').some((line) => line.trim() === p || line.trim() === `/${p}`),
+    );
+
+    if (missing.length > 0) {
+      const suffix =
+        (existing.length > 0 && !existing.endsWith('\n') ? '\n' : '') +
+        `\n# Auto-added by DSF (runtime artefacts)\n` +
+        missing.map((p) => p).join('\n') +
+        '\n';
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      await appendFile(gitignorePath, suffix);
+      this.logger.debug(`Appended ${missing.length} exclusions to .gitignore`);
+    }
+  }
+
+  /**
+   * Get diff summary of all changes (stat only).
+   * Uses --stat to avoid maxBuffer issues with large diffs.
+   * The full diff content is not needed — only file names and line counts.
    */
   async getDiff(workspacePath: string): Promise<string> {
-    // First add all files to staging to capture new files
+    // Ensure runtime artefacts (.pnpm-store, etc.) are ignored before staging
+    await this.ensureGitignoreExclusions(workspacePath);
+
+    // Stage all tracked + new files (git respects .gitignore)
     await this.execGit(['add', '-A'], workspacePath, 'Stage all changes');
 
-    // Get diff of staged changes
-    const result = await this.execGit(['diff', '--cached'], workspacePath, 'Get staged diff');
+    // Get stat summary of staged changes (always small output)
+    const result = await this.execGit(
+      ['diff', '--cached', '--stat'],
+      workspacePath,
+      'Get staged diff stat',
+    );
 
     return result.stdout;
   }
 
   /**
-   * Get list of changed files
+   * Get list of changed files (excludes package-manager stores / caches)
    */
   async getChangedFiles(workspacePath: string): Promise<string[]> {
     // Get status in porcelain format for easy parsing
@@ -93,7 +151,8 @@ export class GitOperationsService {
     const files = result.stdout
       .split('\n')
       .filter((line) => line.trim())
-      .map((line) => line.substring(3).trim()); // Remove status prefix (e.g., "M  ", "A  ")
+      .map((line) => line.substring(3).trim()) // Remove status prefix (e.g., "M  ", "A  ")
+      .filter((file) => !this.EXCLUDED_PATHS.some((p) => file === p || file.startsWith(p + '/')));
 
     return files;
   }
@@ -104,6 +163,9 @@ export class GitOperationsService {
    * (e.g., projects with pre-existing lint errors that trigger hook failures)
    */
   async commit(workspacePath: string, message: string): Promise<string> {
+    // Ensure runtime artefacts are ignored before staging
+    await this.ensureGitignoreExclusions(workspacePath);
+
     // Add all changes
     await this.execGit(['add', '-A'], workspacePath, 'Stage changes');
 
@@ -238,19 +300,48 @@ export class GitOperationsService {
     description?: string,
   ): Promise<{ stdout: string; stderr: string }> {
     try {
-      this.logger.debug(`${description || 'Git'}: git ${args.join(' ')}`);
+      this.logger.debug(`${description || 'Git'}: git ${this.sanitizeGitArgs(args)}`);
 
       const result = await execFileAsync('git', args, {
         cwd,
         timeout: this.DEFAULT_TIMEOUT_MS,
-        maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large diffs
+        maxBuffer: this.DEFAULT_MAX_BUFFER,
       });
 
       return { stdout: result.stdout, stderr: result.stderr };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Git command failed: git ${args.join(' ')}`, errorMessage);
-      throw new Error(`Git operation failed: ${errorMessage}`);
+      const sanitizedError = this.sanitizeErrorMessage(errorMessage);
+      this.logger.error(`Git command failed: git ${this.sanitizeGitArgs(args)}`, sanitizedError);
+      throw new Error(`Git operation failed: ${sanitizedError}`);
     }
+  }
+
+  /**
+   * Sanitize git arguments for logging (remove sensitive data)
+   */
+  private sanitizeGitArgs(args: string[]): string {
+    return args
+      .map((arg) => {
+        // Mask any URL that might contain credentials
+        if (arg.includes('@') && (arg.includes('http') || arg.includes('://'))) {
+          return arg.replace(/:\/\/[^:]+:[^@]+@/, '://***@');
+        }
+        return arg;
+      })
+      .join(' ');
+  }
+
+  /**
+   * Sanitize error message to remove potential tokens
+   */
+  private sanitizeErrorMessage(message: string): string {
+    // Remove URLs with embedded credentials
+    return message
+      .replace(/:\/\/[^:]+:[^@]+@/g, '://***@')
+      .replace(/x-access-token:[^@\s]+/g, 'x-access-token:***')
+      .replace(/ghp_[a-zA-Z0-9]+/g, '***')
+      .replace(/ghs_[a-zA-Z0-9]+/g, '***')
+      .replace(/github_pat_[a-zA-Z0-9_]+/g, '***');
   }
 }

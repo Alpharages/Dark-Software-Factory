@@ -71,14 +71,26 @@ This file contains the BMAD PRD philosophy, standards, and validation criteria t
 
 - Use provided path
 
-**If no PRD path provided:**
-"**PRD Validation Workflow**
+**If no PRD path provided, auto-discover:**
 
-Which PRD would you like to validate?
+- Search `{planning_artifacts}` for files matching `*prd*.md`
+- Also check for sharded PRDs: `{planning_artifacts}/*prd*/*.md`
 
-Please provide the path to the PRD file you want to validate."
+**If exactly ONE PRD found:**
 
-**Wait for user to provide PRD path.**
+- Use it automatically
+- Inform user: "Found PRD: {discovered_path} — using it for validation."
+
+**If MULTIPLE PRDs found:**
+
+- List all discovered PRDs with numbered options
+- "I found multiple PRDs. Which one would you like to validate?"
+- Wait for user selection
+
+**If NO PRDs found:**
+
+- "I couldn't find any PRD files in {planning_artifacts}. Please provide the path to the PRD file you want to validate."
+- Wait for user to provide PRD path.
 
 ### 3. Validate PRD Exists and Load
 

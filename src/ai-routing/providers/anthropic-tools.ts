@@ -117,6 +117,43 @@ export const deleteFileTool: Tool = {
 };
 
 /**
+ * Tool: Generate conventional commit message from code changes
+ * Used by GitHubCommitOrchestrator for AI-powered commit messages
+ * without spawning a Docker container.
+ */
+export const generateCommitMessageTool: Tool = {
+  name: 'generate_commit_message',
+  description:
+    'Generate a conventional commit message for code changes based on the diff and ticket context',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['feat', 'fix', 'refactor', 'docs', 'test', 'chore', 'perf'],
+        description: 'Conventional commit type inferred from the changes',
+      },
+      scope: {
+        type: 'string',
+        description:
+          'Component scope inferred from the changed files (e.g., auth, api, ui, database)',
+      },
+      subject: {
+        type: 'string',
+        description:
+          'Concise description of the change in imperative mood, lowercase, no trailing period (max 72 chars)',
+      },
+      body: {
+        type: 'string',
+        description:
+          'Detailed multi-line description of what changed and why. Include key technical decisions, affected components, and any breaking changes.',
+      },
+    },
+    required: ['type', 'scope', 'subject', 'body'],
+  },
+};
+
+/**
  * All available tools for Claude
  */
 export const codeEditingTools: Tool[] = [
@@ -152,6 +189,13 @@ export interface ListFilesInput {
 
 export interface DeleteFileInput {
   path: string;
+}
+
+export interface GenerateCommitMessageInput {
+  type: 'feat' | 'fix' | 'refactor' | 'docs' | 'test' | 'chore' | 'perf';
+  scope: string;
+  subject: string;
+  body: string;
 }
 
 /**

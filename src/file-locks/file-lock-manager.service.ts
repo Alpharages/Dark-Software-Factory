@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '@/database/prisma.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
@@ -397,22 +398,62 @@ export class FileLockManagerService {
 
   /**
    * AC#6: Dashboard support - list current active (LOCKED) file locks.
+   * Returns full lock shape required by the Resource Manager frontend (FileLock type).
    */
   async getActiveLocks(): Promise<
-    Array<{ filePath: string; ticketId: string; executionId: string; lockedAt: string }>
+    Array<{
+      id: string;
+      filePath: string;
+      ticketId: string;
+      executionId: string;
+      lockedAt: string;
+      lockAgeMinutes: number;
+      isStale: boolean;
+    }>
   > {
+    const STALE_THRESHOLD_MINUTES = 30;
     const locks = await this.prisma.fileLock.findMany({
       where: { status: 'LOCKED' },
       orderBy: { locked_at: 'desc' },
-      select: { file_path: true, ticket_id: true, execution_id: true, locked_at: true },
+      select: { id: true, file_path: true, ticket_id: true, execution_id: true, locked_at: true },
     });
 
-    return locks.map((l) => ({
-      filePath: l.file_path,
-      ticketId: l.ticket_id,
-      executionId: l.execution_id,
-      lockedAt: l.locked_at.toISOString(),
-    }));
+    const now = Date.now();
+    return locks.map((l) => {
+      const lockAgeMinutes = Math.floor((now - l.locked_at.getTime()) / 60000);
+      return {
+        id: l.id,
+        filePath: l.file_path,
+        ticketId: l.ticket_id,
+        executionId: l.execution_id,
+        lockedAt: l.locked_at.toISOString(),
+        lockAgeMinutes,
+        isStale: lockAgeMinutes >= STALE_THRESHOLD_MINUTES,
+      };
+    });
+  }
+
+  /**
+   * Force-release a specific active lock by its ID.
+   * Used by the Resource Manager dashboard "Force Unlock" action.
+   */
+  async forceReleaseLock(lockId: string): Promise<void> {
+    const lock = await this.prisma.fileLock.findFirst({
+      where: { id: lockId, status: 'LOCKED' },
+    });
+
+    if (!lock) {
+      throw new NotFoundException(`Lock '${lockId}' not found or already released`);
+    }
+
+    await this.prisma.fileLock.update({
+      where: { id: lockId },
+      data: { status: 'RELEASED', released_at: new Date() },
+    });
+
+    this.safeIncrementCounter('file_lock_force_releases_total', { lockId });
+    this.updateActiveLocksGauge();
+    this.logger.log(`Force-released lock ${lockId} (file: ${lock.file_path})`);
   }
 
   /**
@@ -725,6 +766,43 @@ export class FileLockManagerService {
       if (!progressed) {
         break;
       }
+    }
+  }
+
+  /**
+   * BUG-006: Global stale lock cleanup scheduler.
+   * Runs every 10 minutes to release ALL locks that have exceeded lockTimeoutMs.
+   * Complements releaseStaleLocksForFiles which only cleans up per-request file paths.
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async cleanupStaleLocksGlobally(): Promise<void> {
+    const staleThreshold = new Date(Date.now() - this.lockTimeoutMs);
+
+    try {
+      const staleLocks = await this.prisma.fileLock.findMany({
+        where: {
+          status: 'LOCKED',
+          locked_at: { lt: staleThreshold },
+        },
+        select: { execution_id: true, file_path: true, ticket_id: true },
+      });
+
+      if (staleLocks.length === 0) return;
+
+      const executionIds = Array.from(new Set(staleLocks.map((l) => l.execution_id)));
+      this.logger.warn(
+        `[Scheduler] Releasing ${staleLocks.length} globally stale lock(s) across ${executionIds.length} execution(s)`,
+      );
+
+      for (const executionId of executionIds) {
+        await this.releaseLocksForExecution(executionId);
+      }
+
+      this.safeIncrementCounter('file_lock_stale_releases_total', {
+        count: staleLocks.length.toString(),
+      });
+    } catch (error) {
+      this.logger.error(`Global stale lock cleanup failed: ${(error as Error).message}`);
     }
   }
 

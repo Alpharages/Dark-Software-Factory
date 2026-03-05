@@ -22,6 +22,9 @@ describe('AppController', () => {
           provide: AppService,
           useValue: {
             getHello: jest.fn().mockReturnValue('Hello World!'),
+            getIntegrationHealth: jest
+              .fn()
+              .mockResolvedValue({ docker: true, sendgrid: true, openai: false, slack: true }),
           },
         },
         {
@@ -88,6 +91,14 @@ describe('AppController', () => {
       jest.spyOn(dockerService, 'isHealthy').mockResolvedValue(false);
 
       await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
+    });
+  });
+
+  describe('getIntegrationHealth', () => {
+    it('should return integration health status', async () => {
+      const expectedHealth = { docker: true, sendgrid: true, openai: false, slack: true };
+      const result = await appController.getIntegrationHealth();
+      expect(result).toEqual(expectedHealth);
     });
   });
 });

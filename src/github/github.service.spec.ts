@@ -1,18 +1,17 @@
-/* eslint-disable */
 import { Test, TestingModule } from '@nestjs/testing';
-import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { GitHubService } from './github.service';
 import { GitHubClientService } from './github-client.service';
-import { AuditLogService } from '../common/audit/audit-log.service';
-import { MetricsService } from '../common/metrics/metrics.service';
-import { SentryService } from '../common/sentry/sentry.service';
-import { LoggerService } from '../common/logger/logger.service';
+import { AuditLogService } from '@/common/audit/audit-log.service';
+import { MetricsService } from '@/common/metrics';
+import { SentryService } from '@/common/sentry';
+import { LoggerService } from '@/common/logger';
+import { PrismaService } from '@/database/prisma.service';
 
 describe('GitHubService', () => {
   let service: GitHubService;
-  let clientService: GitHubClientService;
   let auditLogService: AuditLogService;
+  let prismaService: jest.Mocked<PrismaService>;
 
   const mockOctokit = {
     repos: {
@@ -77,6 +76,18 @@ describe('GitHubService', () => {
           },
         },
         {
+          provide: PrismaService,
+          useValue: {
+            execution: {
+              findMany: jest.fn(),
+              findFirst: jest.fn(),
+            },
+            gitHubPush: {
+              findMany: jest.fn(),
+            },
+          },
+        },
+        {
           provide: WINSTON_MODULE_PROVIDER,
           useValue: {
             info: jest.fn(),
@@ -87,8 +98,9 @@ describe('GitHubService', () => {
     }).compile();
 
     service = module.get<GitHubService>(GitHubService);
-    clientService = module.get<GitHubClientService>(GitHubClientService);
+    module.get<GitHubClientService>(GitHubClientService);
     auditLogService = module.get<AuditLogService>(AuditLogService);
+    prismaService = module.get(PrismaService) as jest.Mocked<PrismaService>;
   });
 
   it('should be defined', () => {
@@ -145,11 +157,17 @@ describe('GitHubService', () => {
       const newCommitData = { sha: 'new-commit-sha' };
 
       mockOctokit.repos.get = jest.fn(); // Just in case
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockOctokit.git as any).getRef = jest.fn().mockResolvedValue({ data: refData });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockOctokit.git as any).getCommit = jest.fn().mockResolvedValue({ data: commitData });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockOctokit.git as any).createBlob = jest.fn().mockResolvedValue({ data: blobData });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockOctokit.git as any).createTree = jest.fn().mockResolvedValue({ data: treeData });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockOctokit.git as any).createCommit = jest.fn().mockResolvedValue({ data: newCommitData });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockOctokit.git as any).updateRef = jest.fn().mockResolvedValue({ data: {} });
 
       const files = [{ path: 'test.txt', content: 'test content' }];
@@ -231,6 +249,66 @@ describe('GitHubService', () => {
       expect(auditLogService.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'update_commit_status' }),
       );
+    });
+  });
+
+  describe('getPrMergeRateStats', () => {
+    it('should calculate merge rate using merged PRs without retries', async () => {
+      // Two-query approach: gitHubPush.findMany for pushes, execution.findMany for retry counts
+      (prismaService.gitHubPush.findMany as jest.Mock).mockResolvedValue([
+        { push_status: 'MERGED', execution_id: 'e1' },
+        { push_status: 'MERGED', execution_id: 'e2' },
+        { push_status: 'FAILED', execution_id: 'e3' },
+      ]);
+      (prismaService.execution.findMany as jest.Mock).mockResolvedValue([
+        { id: 'e1', retry_count: 0 },
+        { id: 'e2', retry_count: 1 },
+        { id: 'e3', retry_count: 0 },
+      ]);
+
+      const result = await service.getPrMergeRateStats();
+
+      expect(result.totalPrs).toBe(3);
+      expect(result.mergedWithoutRework).toBe(1);
+      expect(result.prMergeRate).toBeCloseTo(1 / 3);
+    });
+
+    it('should return zero rate when PM has no scoped executions', async () => {
+      (prismaService.execution.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getPrMergeRateStats({ pmId: 'pm-1', role: 'PM' });
+
+      expect(result.prMergeRate).toBe(0);
+      expect(result.totalPrs).toBe(0);
+      expect(result.mergedWithoutRework).toBe(0);
+      expect(prismaService.gitHubPush.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should scope gitHubPush query to PM execution IDs', async () => {
+      // First call: PM scope lookup returns execution IDs
+      (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce([
+        { id: 'e1' },
+        { id: 'e2' },
+      ]);
+      (prismaService.gitHubPush.findMany as jest.Mock).mockResolvedValue([
+        { push_status: 'MERGED', execution_id: 'e1' },
+      ]);
+      // Second call: retry count lookup
+      (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce([
+        { id: 'e1', retry_count: 0 },
+      ]);
+
+      const result = await service.getPrMergeRateStats({ pmId: 'pm-1', role: 'PM' });
+
+      expect(prismaService.gitHubPush.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            execution_id: { in: ['e1', 'e2'] },
+          }),
+        }),
+      );
+      expect(result.prMergeRate).toBeCloseTo(1);
+      expect(result.mergedWithoutRework).toBe(1);
     });
   });
 });

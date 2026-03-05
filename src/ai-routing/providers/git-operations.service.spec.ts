@@ -6,10 +6,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { GitOperationsService } from './git-operations.service';
 import * as childProcess from 'child_process';
+import * as fsPromises from 'fs/promises';
 
 // Mock child_process.execFile with callback pattern support for promisify
 jest.mock('child_process', () => ({
   execFile: jest.fn(),
+}));
+
+// Mock fs/promises for .gitignore operations
+jest.mock('fs/promises', () => ({
+  readFile: jest.fn(),
+  appendFile: jest.fn(),
 }));
 
 describe('GitOperationsService', () => {
@@ -69,6 +76,12 @@ describe('GitOperationsService', () => {
 
   beforeEach(async () => {
     mockExecFile = childProcess.execFile as unknown as jest.Mock;
+
+    // Default: .gitignore already contains all exclusions (no append needed)
+    (fsPromises.readFile as jest.Mock).mockResolvedValue(
+      '# compiled output\n/dist\n/node_modules\n.pnpm-store\n.yarn/cache\n.npm\n__pycache__\n.cache\n',
+    );
+    (fsPromises.appendFile as jest.Mock).mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [GitOperationsService],
@@ -213,6 +226,16 @@ describe('GitOperationsService', () => {
 
       expect(files).toEqual([]);
     });
+
+    it('should filter out .pnpm-store and other excluded paths', async () => {
+      const mockStatus =
+        'A  src/app.ts\nA  .pnpm-store/v10/files/00/abc123\nA  .pnpm-store/v10/files/01/def456\nM  README.md\nA  __pycache__/module.cpython-311.pyc';
+      mockSuccess(mockStatus);
+
+      const files = await service.getChangedFiles('/tmp/workspace');
+
+      expect(files).toEqual(['src/app.ts', 'README.md']);
+    });
   });
 
   describe('hasChanges', () => {
@@ -277,6 +300,67 @@ describe('GitOperationsService', () => {
       const sha = await service.commit('/tmp/workspace', 'Test commit message');
 
       expect(sha).toBe(mockSha);
+    });
+  });
+
+  describe('push', () => {
+    let loggerDebugSpy: jest.SpyInstance;
+    let loggerErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      loggerDebugSpy = jest.spyOn(service['logger'], 'debug').mockImplementation(() => {});
+      loggerErrorSpy = jest.spyOn(service['logger'], 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      loggerDebugSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
+    });
+
+    it('should push commits to remote repository', async () => {
+      mockSequence([
+        { stdout: '', stderr: '' }, // remote set-url
+        { stdout: '', stderr: '' }, // push
+      ]);
+
+      await service.push('/tmp/workspace', 'https://github.com/test/repo.git', 'main');
+
+      expect(mockExecFile).toHaveBeenCalledTimes(2);
+      expect(mockExecFile).toHaveBeenCalledWith(
+        'git',
+        ['remote', 'set-url', 'origin', 'https://github.com/test/repo.git'],
+        expect.objectContaining({ cwd: '/tmp/workspace' }),
+        expect.any(Function),
+      );
+    });
+
+    it('should sanitize credentials in debug logs when pushing', async () => {
+      mockSequence([
+        { stdout: '', stderr: '' }, // remote set-url
+        { stdout: '', stderr: '' }, // push
+      ]);
+
+      const tokenUrl = 'https://x-access-token:ghp_secrettoken123@github.com/test/repo.git';
+      await service.push('/tmp/workspace', tokenUrl, 'main');
+
+      // Check debug logs for sanitization
+      const logCalls = loggerDebugSpy.mock.calls.flat().join(' ');
+      expect(logCalls).not.toContain('ghp_secrettoken123');
+      expect(logCalls).toContain('https://***@github.com/test/repo.git');
+    });
+
+    it('should sanitize credentials in error messages and error logs', async () => {
+      const tokenUrl = 'https://x-access-token:ghp_secrettoken123@github.com/test/repo.git';
+      const mockError = new Error(`fatal: Authentication failed for '${tokenUrl}'`);
+      mockFailure(mockError);
+
+      await expect(service.push('/tmp/workspace', tokenUrl, 'main')).rejects.toThrow(
+        /https:\/\/\*\*\*@github\.com/,
+      );
+
+      const errorLogs = loggerErrorSpy.mock.calls.flat().join(' ');
+      expect(errorLogs).not.toContain('ghp_secrettoken123');
+      expect(errorLogs).toContain('https://***@github.com');
     });
   });
 });

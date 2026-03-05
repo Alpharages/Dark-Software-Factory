@@ -58,6 +58,9 @@ export default () => {
       token: process.env.GITHUB_TOKEN,
       defaultRepository: process.env.GITHUB_DEFAULT_REPOSITORY,
       appId: process.env.GITHUB_APP_ID ? parseInt(process.env.GITHUB_APP_ID, 10) : undefined,
+      appSlug: process.env.GITHUB_APP_SLUG,
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
       privateKeyPath: process.env.GITHUB_APP_PRIVATE_KEY_PATH,
       webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
       autoMergeLowRisk: process.env.GITHUB_AUTO_MERGE_LOW_RISK === 'true',
@@ -178,8 +181,10 @@ export default () => {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
       baseURL: process.env.ANTHROPIC_BASE_URL,
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+      // lightweight tasks (commit messages, file predictions)
+      commitMessageModel: process.env.ANTHROPIC_COMMIT_MESSAGE_MODEL || 'claude-3-haiku-20240307',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
-      timeoutMs: parseInt(process.env.ANTHROPIC_TIMEOUT_MS || '120000', 10),
+      timeoutMs: parseInt(process.env.ANTHROPIC_TIMEOUT_MS || '300000', 10),
       // Reserved for future provider-specific workspace isolation (currently uses shared WorkspaceService)
       workspacesRoot: process.env.CLAUDE_WORKSPACES_ROOT || '/tmp/claude-workspaces',
     },

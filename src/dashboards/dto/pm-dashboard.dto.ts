@@ -73,6 +73,17 @@ export class TicketCountsDto {
   awaiting_approval!: number;
 }
 
+export class ProviderDistributionItemDto {
+  @ApiProperty({ example: 'CLAUDE' })
+  provider!: string;
+
+  @ApiProperty({ example: 52.4 })
+  percentage!: number;
+
+  @ApiProperty({ example: 22 })
+  count!: number;
+}
+
 export class ProjectResponseDto {
   @ApiProperty()
   id!: string;
@@ -129,6 +140,70 @@ export class DashboardSummaryDto {
 
   @ApiProperty()
   utilization_percent!: number;
+
+  @ApiProperty()
+  success_rate!: number;
+
+  @ApiProperty()
+  avg_completion_time_hours!: number;
+
+  @ApiProperty()
+  active_ai_executions!: number;
+
+  @ApiProperty()
+  queued_ai_executions!: number;
+
+  @ApiProperty({
+    type: [Number],
+    description: '7-day daily average completion hours (index 0 = oldest day)',
+  })
+  daily_avg_completion_hours!: number[];
+
+  @ApiProperty({
+    description: 'Percentage of auto-generated pull requests merged without manual rework (0 to 1)',
+    example: 0.82,
+  })
+  pr_merge_rate!: number;
+
+  @ApiProperty({
+    description: 'Percentage of executions that passed QA on first attempt (0 to 1)',
+    example: 0.74,
+  })
+  qa_first_pass_rate!: number;
+
+  @ApiProperty({
+    description: 'AI provider usage distribution for recent routing decisions',
+    type: [ProviderDistributionItemDto],
+  })
+  provider_distribution!: ProviderDistributionItemDto[];
+}
+
+export class FinancialSummaryDto {
+  @ApiProperty({
+    description: 'Current calendar month total AI spend divided by completed ticket count',
+    example: 42.53,
+    nullable: true,
+  })
+  cost_per_ticket!: number | null;
+
+  @ApiProperty({
+    description: 'Daily spend values for the past 14 days (oldest to newest)',
+    type: [Number],
+    example: [12.5, 8.2, 0, 14.9],
+  })
+  daily_budget_burn!: number[];
+
+  @ApiProperty({
+    description: 'Configured monthly budget ceiling in USD',
+    example: 12000,
+  })
+  budget_ceiling!: number;
+
+  @ApiProperty({
+    description: 'Projected total spend by end of current month in USD',
+    example: 9800,
+  })
+  budget_forecast!: number;
 }
 
 export class TicketSearchQueryDto {

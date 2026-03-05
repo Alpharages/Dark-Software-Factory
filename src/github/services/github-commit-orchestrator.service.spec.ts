@@ -9,33 +9,27 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { ConfigService } from '@nestjs/config';
 import { GitHubCommitOrchestrator } from './github-commit-orchestrator.service';
-import { AIExecutionService } from '../../ai-routing/ai-execution.service';
 import { GitHubService } from '../github.service';
-import { PrismaService } from '../../database/prisma.service';
-import { AuditLogService } from '../../common/audit/audit-log.service';
-import { MetricsService } from '../../common/metrics/metrics.service';
-import { SentryService } from '../../common/sentry/sentry.service';
-import { LoggerService } from '../../common/logger/logger.service';
-import { WorkspaceService } from '../../ai-routing/providers';
-import { GitOperationsService } from '../../ai-routing/providers/git-operations.service';
-import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service';
+import { PrismaService } from '@/database/prisma.service';
+import { AuditLogService } from '@/common/audit/audit-log.service';
+import { MetricsService } from '@/common/metrics';
+import { SentryService } from '@/common/sentry';
+import { LoggerService } from '@/common/logger';
+import { WorkspaceService } from '@/ai-routing/providers';
+import { GitOperationsService } from '@/ai-routing/providers';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { AIProvider } from '@/prisma/client';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
-import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
-import { IAIProvider, IAIPromptExecutor } from '../../ai-routing/interfaces';
-
-type MockAIProvider = IAIProvider &
-  IAIPromptExecutor & {
-    executePrompt: jest.Mock;
-    execute: jest.Mock;
-  };
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { GitHubTokenResolverService } from '../github-token-resolver.service';
 
 describe('GitHubCommitOrchestrator', () => {
   let service: GitHubCommitOrchestrator;
-  let aiExecutionService: AIExecutionService;
   let prismaService: PrismaService;
   let metricsService: MetricsService;
+  let gitOpsService: GitOperationsService;
 
   const mockExecution = {
     id: 'exec-123',
@@ -66,20 +60,15 @@ describe('GitHubCommitOrchestrator', () => {
       providers: [
         GitHubCommitOrchestrator,
         {
-          provide: AIExecutionService,
+          provide: ConfigService,
           useValue: {
-            execute: jest.fn(),
-            getProvider: jest.fn().mockReturnValue({
-              executePrompt: jest.fn(),
+            get: jest.fn().mockImplementation((key: string) => {
+              const config: Record<string, string> = {
+                'anthropic.apiKey': '',
+                'anthropic.model': 'claude-sonnet-4-20250514',
+              };
+              return config[key] ?? undefined;
             }),
-            providers: new Map([
-              [
-                'CURSOR_HEADLESS',
-                {
-                  executePrompt: jest.fn(),
-                },
-              ],
-            ]),
           },
         },
         {
@@ -188,13 +177,19 @@ describe('GitHubCommitOrchestrator', () => {
             getChannel: jest.fn(),
           },
         },
+        {
+          provide: GitHubTokenResolverService,
+          useValue: {
+            resolveForProject: jest.fn().mockResolvedValue(null),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<GitHubCommitOrchestrator>(GitHubCommitOrchestrator);
-    aiExecutionService = module.get<AIExecutionService>(AIExecutionService);
     prismaService = module.get<PrismaService>(PrismaService);
     metricsService = module.get<MetricsService>(MetricsService);
+    gitOpsService = module.get<GitOperationsService>(GitOperationsService);
   });
 
   it('should be defined', () => {
@@ -202,17 +197,8 @@ describe('GitHubCommitOrchestrator', () => {
   });
 
   describe('commitAndPush - Happy Path', () => {
-    it('should successfully commit and push with valid AI response', async () => {
+    it('should successfully commit and push using direct git operations', async () => {
       // Arrange
-
-      const mockProvider = (
-        aiExecutionService as unknown as { providers: Map<string, MockAIProvider> }
-      ).providers.get('CURSOR_HEADLESS');
-      mockProvider!.executePrompt.mockResolvedValue({
-        success: true,
-        response: `Committed and pushed changes.\nCommit SHA: abc123def456789012345678901234567890abcd\nFiles changed: 1`,
-      });
-
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.gitHubPush.update as jest.Mock).mockResolvedValue({
@@ -226,6 +212,9 @@ describe('GitHubCommitOrchestrator', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.commitSha).toBeTruthy();
+      expect(gitOpsService.getChangedFiles).toHaveBeenCalled();
+      expect(gitOpsService.commit).toHaveBeenCalled();
+      expect(gitOpsService.push).toHaveBeenCalled();
       expect(metricsService.incrementGitHubCommitsCreated).toHaveBeenCalledWith(
         'success',
         'owner/repo',
@@ -260,44 +249,25 @@ describe('GitHubCommitOrchestrator', () => {
       expect(result.error).toContain('GitHub push record not found');
     });
 
-    it('should handle AI provider failure', async () => {
-      // Arrange
-      const failingProvider = {
-        executePrompt: jest.fn().mockResolvedValue({
-          success: false,
-          error: 'AI execution timed out',
-        }),
-      };
-
-      // Update getProvider mock to return a failing provider for this test
-      (aiExecutionService.getProvider as jest.Mock).mockReturnValue(failingProvider);
-
+    it('should handle AI provider failure gracefully', async () => {
+      // Arrange - no AI provider override needed, git ops are mocked to succeed
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
+      (prismaService.gitHubPush.update as jest.Mock).mockResolvedValue(mockGitHubPush);
 
-      // Act
+      // Act - should succeed with deterministic fallback commit message
       const result = await service.commitAndPush('exec-123');
 
-      // Assert - The fallback git operations should succeed, so success should be true
+      // Assert - Direct git operations should succeed
       expect(result.success).toBe(true);
-      // Note: The service falls back to direct git operations when AI fails
+      expect(gitOpsService.commit).toHaveBeenCalled();
+      expect(gitOpsService.push).toHaveBeenCalled();
     });
   });
 
   describe('Metrics Recording', () => {
     it('should record success metrics', async () => {
       // Arrange
-
-      const mockProvider = (
-        aiExecutionService as unknown as {
-          providers: Map<string, MockAIProvider>;
-        }
-      ).providers.get('CURSOR_HEADLESS');
-      mockProvider!.executePrompt.mockResolvedValue({
-        success: true,
-        response: `Committed and pushed changes.\nCommit SHA: abc123def456789012345678901234567890abcd\nFiles changed: 1`,
-      });
-
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.gitHubPush.update as jest.Mock).mockResolvedValue(mockGitHubPush);

@@ -12,12 +12,15 @@ import { DeploymentTriggerConsumer } from './services/deployment-trigger.consume
 import { DeploymentStatusSync } from './services/deployment-status-sync.service';
 import { GitHubErrorMonitor } from './services/github-error-monitor.service';
 import { DeploymentSuccessRateCalculator } from './services/deployment-success-rate-calculator.service';
+import { GitHubAuthFlowService } from './github-auth-flow.service';
+import { GitHubAuthFlowController } from './github-auth-flow.controller';
 import { BranchStrategistService } from './services/branch-strategist.service';
 import { PRRiskAssessorService } from './services/pr-risk-assessor.service';
 import { PRAutoMergeService } from './services/pr-auto-merge.service';
 import { PRReminderService } from './services/pr-reminder.service';
 import { PRReminderConsumer } from './services/pr-reminder.consumer';
 import { GitHubWebhookConsumer } from './services/github-webhook.consumer';
+import { GitHubTokenResolverService } from './github-token-resolver.service';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { SentryModule } from '../common/sentry/sentry.module';
@@ -32,6 +35,7 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 import { DeploymentHealthMonitorService } from './services/deployment-health-monitor.service';
 import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
 import { ExecutionModule } from '../execution/execution.module';
+import { EncryptionModule } from '../common/encryption/encryption.module';
 
 @Module({
   imports: [
@@ -47,10 +51,13 @@ import { ExecutionModule } from '../execution/execution.module';
     ClickUpModule,
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
+    EncryptionModule,
     forwardRef(() => ExecutionModule),
   ],
+  controllers: [GitHubAuthFlowController],
   providers: [
     GitHubService,
+    GitHubAuthFlowService,
     GitHubAuthService,
     GitHubClientService,
     GitHubBranchService,
@@ -69,6 +76,7 @@ import { ExecutionModule } from '../execution/execution.module';
     PRReminderService,
     PRReminderConsumer,
     GitHubWebhookConsumer,
+    GitHubTokenResolverService,
     // Story 14.4: Health Monitoring Prometheus Metrics (AC#6)
     makeCounterProvider({
       name: 'deployment_health_checks_total',
@@ -102,6 +110,7 @@ import { ExecutionModule } from '../execution/execution.module';
     PRRiskAssessorService,
     PRAutoMergeService,
     PRReminderService,
+    GitHubTokenResolverService,
   ],
 })
 export class GitHubModule {}

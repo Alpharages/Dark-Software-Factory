@@ -46,8 +46,9 @@ export class PRRiskAssessorService {
     });
 
     try {
-      // 1. Fetch PR diff
-      const diff = await this.github.getPullRequestDiff(repository, prNumber);
+      // 1. Fetch PR diff — retry with back-off because GitHub may not have
+      //    propagated the newly-created PR yet (causes 404 on immediate call)
+      const diff = await this.fetchDiffWithRetry(repository, prNumber);
 
       // 2. Fetch execution context with ticket and context documents
       const execution = await this.prisma.execution.findUnique({
@@ -145,6 +146,42 @@ export class PRRiskAssessorService {
       });
       throw _error;
     }
+  }
+
+  /**
+   * Fetch PR diff with exponential back-off retry.
+   *
+   * GitHub may return 404 immediately after PR creation while the PR propagates
+   * through their infrastructure. This method retries up to `maxAttempts` times
+   * with delays of 1 s, 2 s, 4 s, … before re-throwing.
+   */
+  private async fetchDiffWithRetry(
+    repository: string,
+    prNumber: number,
+    maxAttempts = 3,
+  ): Promise<string> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await this.github.getPullRequestDiff(repository, prNumber);
+      } catch (err) {
+        const isNotFound =
+          (err as Error).message?.includes('Not Found') || (err as Error).message?.includes('404');
+
+        if (!isNotFound || attempt === maxAttempts) {
+          throw err;
+        }
+
+        const delayMs = 1000 * Math.pow(2, attempt - 1); // 1 s, 2 s, 4 s …
+        this.logger.warn(
+          `PR ${repository}#${prNumber} not yet available on GitHub ` +
+            `(attempt ${attempt}/${maxAttempts}) — retrying in ${delayMs}ms`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    // Should never reach here (loop always throws or returns)
+    throw new Error(`fetchDiffWithRetry: failed to fetch diff for ${repository}#${prNumber}`);
   }
 
   private parseRiskResponse(response: string): RiskAssessmentResult {

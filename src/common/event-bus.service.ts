@@ -16,8 +16,13 @@ export type EventPayload = {
 
 @Injectable()
 export class EventBusService implements OnModuleDestroy {
+  private readonly id = Math.random().toString(36).substring(7);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private subject$ = new Subject<{ key: keyof EventPayload; data: any }>();
+
+  constructor() {
+    console.log(`[EventBusService] Initialized with ID: ${this.id}`);
+  }
 
   /**
    * Emit an event
@@ -39,7 +44,24 @@ export class EventBusService implements OnModuleDestroy {
         filter((event) => event.key === key),
         map((event) => event.data as EventPayload[K]),
       )
-      .subscribe(callback);
+      .subscribe({
+        next: (data) => {
+          try {
+            callback(data);
+          } catch (error) {
+            console.error(
+              `[EventBusService] Error handling event ${key}:`,
+              error instanceof Error ? error.message : error,
+            );
+          }
+        },
+        error: (err) => {
+          console.error(
+            `[EventBusService] Subscription error for event ${key}:`,
+            err instanceof Error ? err.message : err,
+          );
+        },
+      });
   }
 
   onModuleDestroy() {

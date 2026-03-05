@@ -8,12 +8,19 @@ FROM node:20-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     python3 \
+    python3-pip \
+    php-cli \
+    unzip \
+    sudo \
     make \
     g++ \
     curl \
     ca-certificates \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Composer for PHP/Laravel support
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # ============================================
 # Install AI Provider CLI Tools (as root)
@@ -44,6 +51,15 @@ RUN npm install -g @anthropic-ai/claude-code && \
     # Ensure binary is in path and executable
     which claude && chmod +x $(which claude)
 
+# ============================================
+# Install Common Package Managers (as root)
+# ============================================
+# Pre-install pnpm and yarn so the AI agent doesn't waste time
+# installing them on every execution. These are globally available
+# via /usr/local/bin and accessible to the non-root agent user.
+RUN npm install -g --force pnpm yarn && \
+    pnpm --version && yarn --version
+
 # Verify CLI installations are accessible (existence check, not --version due to config issues)
 RUN which agent && chmod +x /usr/local/bin/agent || (echo "Cursor CLI (agent) installation failed - agent not found in PATH" && exit 1)
 RUN which claude && chmod +x /usr/local/bin/claude || (echo "Claude CLI installation failed - claude not found in PATH" && exit 1)
@@ -57,6 +73,10 @@ RUN userdel -r node || true
 
 # Create a non-root user 'agent'
 RUN useradd -m -u 1000 agent
+
+# Configure passwordless sudo for agent user
+RUN echo "agent ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/agent && \
+    chmod 0440 /etc/sudoers.d/agent
 
 # Set up workspace
 WORKDIR /home/agent/workspace

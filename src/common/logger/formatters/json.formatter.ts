@@ -1,9 +1,9 @@
-import { format } from 'winston';
+import { format, Logform } from 'winston';
 import { redactSensitiveData, redactString } from './sensitive-data.redactor';
 
 const { combine, timestamp, errors, json, printf } = format;
 
-export const jsonFormatter = (serviceName: string, redactFields: string[] = []) =>
+export const jsonFormatter = (serviceName: string, redactFields: string[] = []): Logform.Format =>
   combine(
     timestamp({ format: 'YYYY-MM-DDTHH:mm:ss.SSSZ' }),
     errors({ stack: true }),
@@ -39,7 +39,7 @@ export const jsonFormatter = (serviceName: string, redactFields: string[] = []) 
     json(),
   );
 
-export const prettyFormatter = (serviceName: string, redactFields: string[] = []) =>
+export const prettyFormatter = (serviceName: string, redactFields: string[] = []): Logform.Format =>
   combine(
     timestamp({ format: 'HH:mm:ss.SSS' }),
     errors({ stack: true }),

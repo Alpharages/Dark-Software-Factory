@@ -29,10 +29,9 @@ export class QualityGateConfigService {
    * AC#3: Partial configurations are merged with global defaults
    */
   async getEffectiveConfig(projectId?: string): Promise<IQualityGateConfig> {
-    // 1. Get global config first as base
-    const globalConfig = await this.prisma.qualityGateConfig.findUnique({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      where: { projectId: null as any },
+    // 1. Get global config first as base (Prisma 7.x does not allow null in findUnique)
+    const globalConfig = await this.prisma.qualityGateConfig.findFirst({
+      where: { projectId: { equals: null } },
     });
 
     const baseConfig = globalConfig

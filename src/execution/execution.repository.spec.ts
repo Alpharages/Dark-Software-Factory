@@ -48,6 +48,7 @@ describe('ExecutionRepository', () => {
               findMany: jest.fn(),
               findFirst: jest.fn(),
               update: jest.fn(),
+              updateMany: jest.fn(),
               groupBy: jest.fn(),
               count: jest.fn(),
             },
@@ -178,7 +179,8 @@ describe('ExecutionRepository', () => {
 
   describe('updateStatus', () => {
     it('should update to IN_PROGRESS and set started_at', async () => {
-      (prisma.execution.update as jest.Mock).mockResolvedValue({
+      (prisma.execution.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.IN_PROGRESS,
         started_at: new Date(),
@@ -186,7 +188,7 @@ describe('ExecutionRepository', () => {
 
       await repository.updateStatus('exec-123', ExecutionStatus.IN_PROGRESS);
 
-      expect(prisma.execution.update).toHaveBeenCalledWith({
+      expect(prisma.execution.updateMany).toHaveBeenCalledWith({
         where: { id: 'exec-123' },
         data: expect.objectContaining({
           status: ExecutionStatus.IN_PROGRESS,
@@ -196,7 +198,8 @@ describe('ExecutionRepository', () => {
     });
 
     it('should update to COMPLETED with additional data', async () => {
-      (prisma.execution.update as jest.Mock).mockResolvedValue({
+      (prisma.execution.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.COMPLETED,
         completed_at: new Date(),
@@ -209,7 +212,7 @@ describe('ExecutionRepository', () => {
         filesChanged: ['file.ts'],
       });
 
-      expect(prisma.execution.update).toHaveBeenCalledWith({
+      expect(prisma.execution.updateMany).toHaveBeenCalledWith({
         where: { id: 'exec-123' },
         data: expect.objectContaining({
           status: ExecutionStatus.COMPLETED,
@@ -222,7 +225,8 @@ describe('ExecutionRepository', () => {
     });
 
     it('should update to FAILED and set failed_at', async () => {
-      (prisma.execution.update as jest.Mock).mockResolvedValue({
+      (prisma.execution.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.FAILED,
         failed_at: new Date(),
@@ -232,7 +236,7 @@ describe('ExecutionRepository', () => {
         errorMessage: 'Something went wrong',
       });
 
-      expect(prisma.execution.update).toHaveBeenCalledWith({
+      expect(prisma.execution.updateMany).toHaveBeenCalledWith({
         where: { id: 'exec-123' },
         data: expect.objectContaining({
           status: ExecutionStatus.FAILED,
@@ -243,7 +247,8 @@ describe('ExecutionRepository', () => {
     });
 
     it('should update to TIMEOUT and set failed_at', async () => {
-      (prisma.execution.update as jest.Mock).mockResolvedValue({
+      (prisma.execution.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.TIMEOUT,
         failed_at: new Date(),
@@ -253,7 +258,7 @@ describe('ExecutionRepository', () => {
         errorMessage: 'Timed out after 300s',
       });
 
-      expect(prisma.execution.update).toHaveBeenCalledWith({
+      expect(prisma.execution.updateMany).toHaveBeenCalledWith({
         where: { id: 'exec-123' },
         data: expect.objectContaining({
           status: ExecutionStatus.TIMEOUT,
@@ -265,16 +270,20 @@ describe('ExecutionRepository', () => {
 
   describe('incrementRetryAndRequeue', () => {
     it('should increment retry count and reset to QUEUED', async () => {
-      (prisma.execution.update as jest.Mock).mockResolvedValue({
-        ...mockExecution,
-        status: ExecutionStatus.QUEUED,
-        retry_count: 1,
-      });
+      (prisma.execution.findUnique as jest.Mock)
+        .mockResolvedValueOnce(mockExecution)
+        .mockResolvedValueOnce({
+          ...mockExecution,
+          status: ExecutionStatus.QUEUED,
+          retry_count: 1,
+        });
+
+      (prisma.execution.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       const result = await repository.incrementRetryAndRequeue('exec-123');
 
       expect(result.retry_count).toBe(1);
-      expect(prisma.execution.update).toHaveBeenCalledWith({
+      expect(prisma.execution.updateMany).toHaveBeenCalledWith({
         where: { id: 'exec-123' },
         data: {
           retry_count: { increment: 1 },

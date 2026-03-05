@@ -1,0 +1,115 @@
+# ===========================================
+# Dark Software Factory - Production Stack
+# ===========================================
+# Usage:
+#   Start:     docker-compose -f docker-compose.prod.yml up -d
+#   Logs:      docker-compose -f docker-compose.prod.yml logs -f
+#   Stop:      docker-compose -f docker-compose.prod.yml down
+#   Migrate:   docker-compose -f docker-compose.prod.yml exec app npx prisma migrate deploy
+#   Shell:     docker-compose -f docker-compose.prod.yml exec app sh
+# ===========================================
+
+name: dark-software-factory
+
+services:
+  # ===========================================
+  # RabbitMQ Message Queue
+  # ===========================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: dsf-rabbitmq
+    env_file:
+      - .env.prod
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dsf-network
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # ===========================================
+  # AI Dev Orchestrator Application
+  # ===========================================
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: dsf-app
+    user: "root"
+    env_file:
+      - .env.prod
+    environment:
+      # Hardcoded — must not be overridden by .env.prod
+      NODE_ENV: production
+      PORT: 3000
+
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    volumes:
+      # Docker socket for DooD pattern (Story 22.1) — no source mounts in production
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/api/v1/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - dsf-network
+    restart: unless-stopped
+    # Resource limits (prevents OOM during Prisma generate and AI operations)
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+    # TTY support for node-pty (Epic 19)
+    tty: true
+    stdin_open: true
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  dsf-network:
+    driver: bridge
+    name: dsf-network-prod
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  rabbitmq_data:
+    driver: local
+    name: dsf-rabbitmq-data-prod

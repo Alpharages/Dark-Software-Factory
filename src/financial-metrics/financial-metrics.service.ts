@@ -27,6 +27,13 @@ import { JwtService } from '@nestjs/jwt';
 
 type Decimal = Prisma.Decimal;
 
+export interface DashboardBudgetInsights {
+  monthlySpend: number;
+  dailyBudgetBurn: number[];
+  budgetCeiling: number;
+  budgetForecast: number;
+}
+
 @Injectable()
 export class FinancialMetricsService {
   private readonly logger: Logger;
@@ -61,16 +68,18 @@ export class FinancialMetricsService {
         if (endDate) whereClause.timestamp.lte = endDate;
       }
 
-      const epic_num = epicId.replace('epic-', '');
+      const epic_num = epicId !== 'all' ? epicId.replace('epic-', '') : undefined;
 
-      // Strategic alignment using epic_num (Story 6-R-3 schema update)
-      (whereClause as Record<string, unknown>).ticket = {
-        epic_num,
-      };
-
+      // Build ticket relation filter
+      const ticketFilter: Prisma.TicketWhereInput = {};
+      if (epic_num !== undefined) {
+        ticketFilter.epic_num = epic_num;
+      }
       if (projectId) {
-        ((whereClause as Record<string, unknown>).ticket as Record<string, unknown>).project_id =
-          projectId;
+        ticketFilter.project_id = projectId;
+      }
+      if (Object.keys(ticketFilter).length > 0) {
+        whereClause.ticket = { is: ticketFilter };
       }
 
       // Query cost logs and aggregate by ticket
@@ -83,7 +92,7 @@ export class FinancialMetricsService {
               title: true,
               clickup_task_id: true,
               completion_date: true,
-            } as { title: boolean; clickup_task_id: boolean; completion_date: boolean },
+            },
           },
         },
       });
@@ -321,6 +330,99 @@ export class FinancialMetricsService {
   }
 
   /**
+   * Shared helper for PM dashboard financial widgets.
+   * Reuses financial-metrics aggregation patterns in one place to avoid query duplication.
+   */
+  async getDashboardBudgetInsights(options?: { days?: number }): Promise<DashboardBudgetInsights> {
+    try {
+      const days = Math.max(1, options?.days ?? 14);
+      const now = new Date();
+
+      const startDate = new Date(now);
+      startDate.setHours(0, 0, 0, 0);
+      startDate.setDate(startDate.getDate() - (days - 1));
+
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      const [costLogs, monthlySpendAgg, budgetConfigEntry] = await Promise.all([
+        this.prisma.aICostLog.findMany({
+          where: {
+            timestamp: {
+              gte: startDate,
+              lte: now,
+            },
+          },
+          select: {
+            timestamp: true,
+            cost_usd: true,
+          },
+          orderBy: {
+            timestamp: 'asc',
+          },
+        }),
+        this.prisma.aICostLog.aggregate({
+          where: {
+            timestamp: {
+              gte: startOfMonth,
+              lte: endOfMonth,
+            },
+          },
+          _sum: {
+            cost_usd: true,
+          },
+        }),
+        this.prisma.systemConfig.findUnique({
+          where: { key: 'MONTHLY_BUDGET_CEILING_USD' },
+          select: { value: true },
+        }),
+      ]);
+
+      const dailyCostMap = new Map<string, Decimal>();
+      costLogs.forEach((log) => {
+        const dateKey = log.timestamp.toISOString().split('T')[0];
+        const existing = dailyCostMap.get(dateKey) ?? new Prisma.Decimal(0);
+        dailyCostMap.set(dateKey, existing.add(log.cost_usd as Decimal));
+      });
+
+      const dateKeys: string[] = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        dateKeys.push(d.toISOString().split('T')[0]);
+      }
+
+      const dailyBudgetBurn = dateKeys.map((key) => {
+        const value = parseFloat((dailyCostMap.get(key) ?? new Prisma.Decimal(0)).toString());
+        return Number(value.toFixed(2));
+      });
+
+      const monthlySpend = parseFloat(monthlySpendAgg._sum.cost_usd?.toString() || '0');
+      const budgetCeiling = budgetConfigEntry ? parseFloat(budgetConfigEntry.value) || 0 : 0;
+
+      const dayOfMonth = now.getDate();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const budgetForecast =
+        dayOfMonth > 0 ? Number(((monthlySpend / dayOfMonth) * daysInMonth).toFixed(2)) : 0;
+
+      return {
+        monthlySpend: Number(monthlySpend.toFixed(2)),
+        dailyBudgetBurn,
+        budgetCeiling: Number(budgetCeiling.toFixed(2)),
+        budgetForecast,
+      };
+    } catch (_error) {
+      this.logger.error(`Failed to get dashboard budget insights: ${(_error as Error).message}`, {
+        error: (_error as Error).stack,
+      });
+      this.sentry.captureException(_error as Error, {
+        tags: { operation: 'getDashboardBudgetInsights' },
+      });
+      throw _error;
+    }
+  }
+
+  /**
    * AC#3: Get budget utilization trends with forecasting
    */
   async getBudgetTrends(options: {
@@ -411,10 +513,13 @@ export class FinancialMetricsService {
       const daysElapsed = dailyCosts.length || 1;
       const burnRatePerDay = totalSpent / daysElapsed;
 
-      // Forecast
-      const daysRemaining = remaining > 0 ? Math.floor(remaining / burnRatePerDay) : 0;
+      // Forecast — guard against zero burn rate (no spend yet) to avoid Infinity / invalid date
+      const daysRemaining =
+        burnRatePerDay > 0 && remaining > 0 ? Math.floor(remaining / burnRatePerDay) : 0;
       const forecastDate = new Date();
-      forecastDate.setDate(forecastDate.getDate() + daysRemaining);
+      if (daysRemaining > 0) {
+        forecastDate.setDate(forecastDate.getDate() + daysRemaining);
+      }
 
       const status: 'healthy' | 'warning' | 'critical' =
         utilizationPct < 50 ? 'healthy' : utilizationPct < 80 ? 'warning' : 'critical';

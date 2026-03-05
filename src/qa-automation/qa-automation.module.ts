@@ -324,6 +324,7 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     QaReviewMetricsService,
     QaReviewQueueConsumer,
     AiCodeReviewService, // Story 8.2
+    ExecutionCompletedListener,
   ],
 })
 export class QaAutomationModule {}

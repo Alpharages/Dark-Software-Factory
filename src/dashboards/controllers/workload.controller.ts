@@ -9,6 +9,7 @@ import {
   Logger,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -103,6 +104,9 @@ export class WorkloadController {
   })
   async getTeamCapacity(@Query('managerId') managerId: string): Promise<TeamCapacityResponseDto[]> {
     this.logger.log(`GET /workload/team?managerId=${managerId}`);
+    if (!managerId) {
+      throw new BadRequestException('managerId query parameter is required');
+    }
     return await this.workloadService.getTeamCapacity(managerId);
   }
 

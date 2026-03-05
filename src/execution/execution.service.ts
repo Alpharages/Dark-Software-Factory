@@ -37,7 +37,9 @@ export class ExecutionService {
     private readonly stateMachine: ExecutionStateMachine,
     private readonly eventBus: EventBusService,
     private readonly logStreamingService: ExecutionLogStreamingService,
-  ) {}
+  ) {
+    this.logger.log('ExecutionService initialized');
+  }
 
   /**
    * Start a new AI execution

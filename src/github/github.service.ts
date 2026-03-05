@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { GitHubClientService } from './github-client.service';
-import { AuditLogService } from '../common/audit/audit-log.service';
+import { AuditLogService } from '@/common/audit/audit-log.service';
+import { PrismaService } from '@/database/prisma.service';
+import { SentryService } from '@/common/sentry';
+import { LoggerService } from '@/common/logger';
+import { GitHubRepoDetails } from './interfaces/github.interfaces';
+import { Octokit } from '@octokit/rest';
 
 export interface GitHubPR {
   number: number;
@@ -24,10 +29,11 @@ export interface GitHubMergeResult {
   message: string;
 }
 
-import { SentryService } from '../common/sentry/sentry.service';
-import { LoggerService } from '../common/logger/logger.service';
-import { GitHubRepoDetails } from './interfaces/github.interfaces';
-import { Octokit } from '@octokit/rest';
+export interface PrMergeRateStats {
+  prMergeRate: number;
+  totalPrs: number;
+  mergedWithoutRework: number;
+}
 
 @Injectable()
 export class GitHubService {
@@ -36,6 +42,7 @@ export class GitHubService {
     private readonly auditLog: AuditLogService,
     private readonly sentry: SentryService,
     private readonly logger: LoggerService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -44,6 +51,83 @@ export class GitHubService {
    */
   async getAuthenticatedClient(installationId?: string): Promise<Octokit> {
     return this.clientService.getClient(installationId);
+  }
+
+  async getPrMergeRateStats(options?: {
+    pmId?: string;
+    role?: 'PM' | 'MANAGER' | 'ADMIN';
+    days?: number;
+  }): Promise<PrMergeRateStats> {
+    const { pmId, role = 'MANAGER', days = 30 } = options || {};
+
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    let executionIdsForScope: string[] | null = null;
+    if (role === 'PM' && pmId) {
+      const scopedExecutions = await this.prisma.execution.findMany({
+        where: {
+          ticket: {
+            project: {
+              pm_id: pmId,
+            },
+          },
+        },
+        select: { id: true },
+      });
+      executionIdsForScope = scopedExecutions.map((execution) => execution.id);
+      if (executionIdsForScope.length === 0) {
+        return { prMergeRate: 0, totalPrs: 0, mergedWithoutRework: 0 };
+      }
+    }
+
+    const pushes = await this.prisma.gitHubPush.findMany({
+      where: {
+        pr_number: { not: null },
+        created_at: { gte: since },
+        ...(executionIdsForScope
+          ? {
+              execution_id: { in: executionIdsForScope },
+            }
+          : {}),
+      },
+      select: {
+        execution_id: true,
+        push_status: true,
+      },
+    });
+
+    if (pushes.length === 0) {
+      return { prMergeRate: 0, totalPrs: 0, mergedWithoutRework: 0 };
+    }
+
+    // GitHubPush has no Prisma relation to Execution — fetch retry counts separately.
+    const executionIds = Array.from(new Set(pushes.map((push) => push.execution_id)));
+    const executions = await this.prisma.execution.findMany({
+      where: {
+        id: { in: executionIds },
+      },
+      select: {
+        id: true,
+        retry_count: true,
+      },
+    });
+
+    const retryCountByExecutionId = new Map(
+      executions.map((execution) => [execution.id, execution.retry_count]),
+    );
+
+    const mergedWithoutRework = pushes.filter((push) => {
+      if (push.push_status !== 'MERGED') {
+        return false;
+      }
+      const retryCount = retryCountByExecutionId.get(push.execution_id) ?? 0;
+      return retryCount === 0;
+    }).length;
+
+    const totalPrs = pushes.length;
+    const prMergeRate = totalPrs > 0 ? mergedWithoutRework / totalPrs : 0;
+
+    return { prMergeRate, totalPrs, mergedWithoutRework };
   }
 
   async getRepository(
@@ -359,7 +443,9 @@ export class GitHubService {
     prNumber: number,
     installationId?: string,
   ): Promise<string> {
-    const [owner, repo] = repository.split('/');
+    const clean = repository.replace(/\.git$/, '');
+    const urlMatch = clean.match(/github\.com\/([^/]+)\/([^/]+)/);
+    const [owner, repo] = urlMatch ? [urlMatch[1], urlMatch[2]] : repository.split('/');
     return this.clientService.execute(
       async (client: Octokit) => {
         const { data } = await client.pulls.get({

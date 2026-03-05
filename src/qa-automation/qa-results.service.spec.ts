@@ -569,4 +569,67 @@ describe('QaResultsService', () => {
       );
     });
   });
+
+  describe('getQaFirstPassRateStats', () => {
+    it('should compute first-pass rate from QA results', async () => {
+      // Both total and firstPass now filter by retry_count=0 (first-attempt only)
+      mockPrismaService.qAResult.count.mockResolvedValueOnce(10).mockResolvedValueOnce(7);
+
+      const result = await service.getQaFirstPassRateStats();
+
+      expect(result.totalExecutions).toBe(10);
+      expect(result.firstPassCount).toBe(7);
+      expect(result.qaFirstPassRate).toBeCloseTo(0.7);
+    });
+
+    it('should return zero rate when no QA results exist', async () => {
+      mockPrismaService.qAResult.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+
+      const result = await service.getQaFirstPassRateStats();
+
+      expect(result.totalExecutions).toBe(0);
+      expect(result.firstPassCount).toBe(0);
+      expect(result.qaFirstPassRate).toBe(0);
+    });
+
+    it('should scope queries to PM projects when role is PM', async () => {
+      mockPrismaService.qAResult.count.mockResolvedValueOnce(5).mockResolvedValueOnce(4);
+
+      const result = await service.getQaFirstPassRateStats({ pmId: 'pm-1', role: 'PM' });
+
+      expect(result.qaFirstPassRate).toBeCloseTo(0.8);
+      // Both count queries must include the PM scope filter
+      expect(mockPrismaService.qAResult.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            execution: expect.objectContaining({
+              ticket: expect.objectContaining({
+                project: expect.objectContaining({ pm_id: 'pm-1' }),
+              }),
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('should filter denominator to first-attempt runs only (retry_count=0)', async () => {
+      mockPrismaService.qAResult.count.mockResolvedValueOnce(8).mockResolvedValueOnce(6);
+
+      await service.getQaFirstPassRateStats();
+
+      // Both count calls must include retry_count: 0 so retried executions
+      // don't inflate the denominator
+      const calls = mockPrismaService.qAResult.count.mock.calls;
+      expect(calls[0][0]).toMatchObject({
+        where: expect.objectContaining({
+          execution: expect.objectContaining({ retry_count: 0 }),
+        }),
+      });
+      expect(calls[1][0]).toMatchObject({
+        where: expect.objectContaining({
+          execution: expect.objectContaining({ retry_count: 0 }),
+        }),
+      });
+    });
+  });
 });
