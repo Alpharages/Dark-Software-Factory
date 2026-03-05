@@ -36,6 +36,11 @@ COPY . .
 # Build the application
 RUN pnpm run build
 
+# Compile seed files for production (ts-node not available at runtime)
+RUN npx tsc --module commonjs --moduleResolution node --esModuleInterop --resolveJsonModule \
+    --outDir dist-seed --skipLibCheck \
+    prisma/seed.ts
+
 # ---- Production Stage ----
 FROM node:22-alpine AS production
 
@@ -55,6 +60,7 @@ WORKDIR /app
 # Copying node_modules from the build stage (not a separate --prod install) ensures
 # the pnpm virtual store paths match what prisma generate wrote during the build.
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/dist-seed ./dist-seed
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/node_modules ./node_modules
