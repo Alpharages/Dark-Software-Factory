@@ -117,7 +117,7 @@
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.2.5",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.3",
+    "class-validator": "^0.14.4",
     "dockerode": "4.0.9",
     "fastify": "^5.6.2",
     "form-data": "^4.0.5",
