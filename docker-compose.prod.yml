@@ -81,7 +81,7 @@ services:
       - .env
     environment:
       NODE_ENV: production
-    command: npx prisma db seed
+    command: node dist-seed/prisma/seed.js
     depends_on:
       migrate:
         condition: service_completed_successfully
