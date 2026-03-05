@@ -1,24 +1,27 @@
-import { PrismaClient } from '../src/prisma/client';
-import { TicketStatus, AIProvider, ExecutionStatus } from '../src/prisma/enums';
+import { PrismaClient, TicketStatus, AIProvider, ExecutionStatus } from '@prisma/client';
 import { seedAdminUser } from './seeds/admin.seeder';
 import { seedSystemConfig } from './seeds/system-config.seeder';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
+
+// Strip Prisma-specific query params (e.g. ?schema=public) before passing to pg's
+// Pool — pg's URL parser rejects unknown params and fails to extract the password.
+const rawUrl = new URL(process.env.DATABASE_URL!);
+rawUrl.search = '';
+const pool = new Pool({ connectionString: rawUrl.toString() });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
     console.log('🌱 Seeding database...');
 
-    // Seed Admin User
-    await seedAdminUser(prisma);
+    // Seed Admin User — returns the created or existing admin
+    const admin = await seedAdminUser(prisma);
 
     // Seed System Configs
     await seedSystemConfig(prisma);
 
-    // Create sample project
+    // Create sample project (idempotent)
     await prisma.project.upsert({
         where: { id: 'sample-project' },
         update: {},
@@ -26,14 +29,15 @@ async function main() {
             id: 'sample-project',
             name: 'Sample Project',
             github_repository_url: 'https://github.com/sample/project',
-            pm_id: 'admin-001', // Using the admin we just created (or random)
-            // status: 'active', // Default is active
+            pm_id: admin.id,
         },
     });
 
-    // Create sample ticket
-    const ticket = await prisma.ticket.create({
-        data: {
+    // Create sample ticket (idempotent — clickup_task_id is unique)
+    const ticket = await prisma.ticket.upsert({
+        where: { clickup_task_id: 'SAMPLE-001' },
+        update: {},
+        create: {
             clickup_task_id: 'SAMPLE-001',
             project_id: 'sample-project',
             title: 'Sample Ticket: Add User Authentication',
@@ -44,38 +48,45 @@ async function main() {
         },
     });
 
-    console.log('✅ Created ticket:', ticket.id);
+    console.log('✅ Upserted ticket:', ticket.id);
 
-    // Create sample execution
-    const execution = await prisma.execution.create({
-        data: {
-            ticket_id: ticket.id,
-            ai_provider: AIProvider.CURSOR_HEADLESS,
-            prompt: 'Implement JWT authentication...',
-            status: ExecutionStatus.COMPLETED,
-            confidence_score: 0.92,
-            code_output: '// Generated authentication code...',
-            files_changed: ['src/auth/auth.service.ts', 'src/auth/jwt.strategy.ts'],
-            started_at: new Date(),
-            completed_at: new Date(),
-        },
+    // Create sample execution only if none exists for this ticket
+    const existingExecution = await prisma.execution.findFirst({
+        where: { ticket_id: ticket.id },
     });
 
-    console.log('✅ Created execution:', execution.id);
+    if (!existingExecution) {
+        const execution = await prisma.execution.create({
+            data: {
+                ticket_id: ticket.id,
+                ai_provider: AIProvider.CURSOR_HEADLESS,
+                prompt: 'Implement JWT authentication...',
+                status: ExecutionStatus.COMPLETED,
+                confidence_score: 0.92,
+                code_output: '// Generated authentication code...',
+                files_changed: ['src/auth/auth.service.ts', 'src/auth/jwt.strategy.ts'],
+                started_at: new Date(),
+                completed_at: new Date(),
+            },
+        });
 
-    // Create sample cost record
-    const costRecord = await prisma.costRecord.create({
-        data: {
-            ticket_id: ticket.id,
-            ai_provider: AIProvider.CURSOR_HEADLESS,
-            operation_type: 'code_generation',
-            tokens_used: 1500,
-            api_calls: 1,
-            cost_in_cents: 45, // $0.45
-        },
-    });
+        console.log('✅ Created execution:', execution.id);
 
-    console.log('✅ Created cost record:', costRecord.id);
+        const costRecord = await prisma.costRecord.create({
+            data: {
+                ticket_id: ticket.id,
+                ai_provider: AIProvider.CURSOR_HEADLESS,
+                operation_type: 'code_generation',
+                tokens_used: 1500,
+                api_calls: 1,
+                cost_in_cents: 45,
+            },
+        });
+
+        console.log('✅ Created cost record:', costRecord.id);
+    } else {
+        console.log('ℹ️  Sample execution already exists, skipping.');
+    }
 
     console.log('🎉 Seeding complete!');
 }

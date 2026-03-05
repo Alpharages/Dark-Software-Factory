@@ -6,7 +6,7 @@
 #   Logs:           docker-compose -f docker-compose.prod.yml logs -f
 #   Stop:           docker-compose -f docker-compose.prod.yml down
 #   Shell:          docker-compose -f docker-compose.prod.yml exec app sh
-#   Seed (1st deploy only): docker-compose -f docker-compose.prod.yml run --rm migrate-seed
+#   Seed (1st deploy only): docker exec dsf-app node dist-seed/prisma/seed.js
 # ===========================================
 
 name: dark-software-factory
@@ -56,42 +56,9 @@ services:
     command: npx prisma migrate deploy
     extra_hosts:
       - 'host.docker.internal:host-gateway'
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     networks:
       - dsf-network
     restart: 'no'
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '5m'
-        max-file: '2'
-
-  # ===========================================
-  # Seed (first deployment only — run manually)
-  # Usage: docker-compose -f docker-compose.prod.yml run --rm migrate-seed
-  # ===========================================
-  migrate-seed:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    container_name: dsf-migrate-seed
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-    command: node dist-seed/prisma/seed.js
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    networks:
-      - dsf-network
-    restart: 'no'
-    profiles:
-      - seed
     logging:
       driver: 'json-file'
       options:

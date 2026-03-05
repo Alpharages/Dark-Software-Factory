@@ -1,8 +1,8 @@
-import { PrismaClient } from '../../src/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
-export async function seedAdminUser(prisma: PrismaClient) {
+export async function seedAdminUser(prisma: PrismaClient): Promise<{ id: string; email: string }> {
     console.log('🌱 Seeding admin user...');
 
     const email = 'admin@darksoftwarefactory.com';
@@ -15,7 +15,7 @@ export async function seedAdminUser(prisma: PrismaClient) {
 
     if (existingAdmin) {
         console.log('ℹ️ Admin user already exists.');
-        return;
+        return existingAdmin;
     }
 
     // Hash password
@@ -37,4 +37,5 @@ export async function seedAdminUser(prisma: PrismaClient) {
     });
 
     console.log(`✅ Created admin user: ${admin.email}`);
+    return admin;
 }

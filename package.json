@@ -57,15 +57,12 @@
     "docker:prod:rebuild": "docker compose -f docker-compose.prod.yml build --no-cache",
     "docker:prod:shell": "docker compose -f docker-compose.prod.yml exec app sh",
     "docker:prod:migrate": "docker compose -f docker-compose.prod.yml run --rm migrate",
-    "docker:prod:seed": "docker compose -f docker-compose.prod.yml run --rm --profile seed migrate-seed",
+    "docker:prod:seed": "docker exec dsf-app node dist-seed/prisma/seed.js",
     "clean": "rm -rf dist node_modules/.cache",
     "claude": "./scripts/run-claude.sh",
     "check": "pnpm run lint && pnpm run test && pnpm run build",
     "check:versions": "echo 'Node:' && node -v && echo 'pnpm:' && pnpm -v && echo 'Docker:' && docker -v",
     "prepare": "husky || true"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

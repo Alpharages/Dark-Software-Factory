@@ -4,10 +4,6 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    seed: "ts-node prisma/seed.ts",
-  },
-  datasource: {
-    // Fallback to empty string during build — migrate deploy requires the real URL at runtime
-    url: process.env.DATABASE_URL ?? "",
+    seed: "ts-node -r dotenv/config prisma/seed.ts",
   },
 });

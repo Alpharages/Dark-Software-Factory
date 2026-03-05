@@ -37,9 +37,10 @@ COPY . .
 RUN pnpm run build
 
 # Compile seed files for production (ts-node not available at runtime)
+# --rootDir . anchors the output structure so dist-seed/prisma/seed.js is stable
 RUN npx tsc --module commonjs --moduleResolution node --esModuleInterop --resolveJsonModule \
-    --outDir dist-seed --skipLibCheck \
-    prisma/seed.ts
+    --target ES2022 --rootDir . --outDir dist-seed --skipLibCheck \
+    prisma/seed.ts prisma/seeds/admin.seeder.ts prisma/seeds/system-config.seeder.ts
 
 # ---- Production Stage ----
 FROM node:22-alpine AS production
