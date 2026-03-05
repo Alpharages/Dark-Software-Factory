@@ -54,6 +54,8 @@ services:
     environment:
       NODE_ENV: production
     command: npx prisma migrate deploy
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     depends_on:
       rabbitmq:
         condition: service_healthy
