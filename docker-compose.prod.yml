@@ -54,10 +54,10 @@ services:
     environment:
       NODE_ENV: production
     command: npx prisma migrate deploy
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     networks:
       - dsf-network
+      - mynet
+      - redis-net
     restart: 'no'
     logging:
       driver: 'json-file'
@@ -81,8 +81,6 @@ services:
       NODE_ENV: production
       PORT: 3000
 
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     ports:
       - '${APP_PORT:-3000}:3000'
     volumes:
@@ -107,6 +105,8 @@ services:
       start_period: 60s
     networks:
       - dsf-network
+      - mynet
+      - redis-net
     restart: unless-stopped
     # Resource limits (prevents OOM during Prisma generate and AI operations)
     deploy:
@@ -131,6 +131,14 @@ networks:
   dsf-network:
     driver: bridge
     name: dsf-network-prod
+  # Postgres lives on this network — container resolvable as 'postgres_container'
+  mynet:
+    external: true
+    name: mynet
+  # Redis lives on this network — container resolvable as 'redis'
+  redis-net:
+    external: true
+    name: redis-net
 
 # ===========================================
 # Volumes
