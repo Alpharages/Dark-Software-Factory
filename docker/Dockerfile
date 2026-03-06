@@ -45,8 +45,8 @@ RUN npx tsc --module commonjs --moduleResolution node --esModuleInterop --resolv
 # ---- Production Stage ----
 FROM node:22-alpine AS production
 
-# Install runtime dependencies for node-pty
-RUN apk add --no-cache libgcc libstdc++ bash
+# Install runtime dependencies for node-pty and git (required by OrchestratorService for workspace cloning)
+RUN apk add --no-cache libgcc libstdc++ bash git
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

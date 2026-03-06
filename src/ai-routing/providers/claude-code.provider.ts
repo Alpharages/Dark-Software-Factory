@@ -232,7 +232,8 @@ export class ClaudeCodeProvider
       }
 
       // Ensure host log directory exists
-      const hostLogDir = `/tmp/dsf-agent-logs/${executionId}`;
+      const logsRoot = this.config.get<string>('sandbox.logsRoot') || '/tmp/dsf-agent-logs';
+      const hostLogDir = `${logsRoot}/${executionId}`;
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.mkdirSync(hostLogDir, { recursive: true });
 

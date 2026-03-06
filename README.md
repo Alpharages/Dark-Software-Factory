@@ -770,6 +770,67 @@ docker stats dsf-app dsf-rabbitmq
 
 ---
 
+### ⚠️ DooD Sandbox Architecture (Workspaces & Logs) — Important Notes
+
+The AI execution engine uses **Docker-outside-of-Docker (DooD)**: the `dsf-app` container controls the **host Docker daemon** via `/var/run/docker.sock` to spin up sibling agent containers (from the `dsf-agent-base` image) for each AI execution.
+
+#### How sandbox sharing works
+
+```
+HOST filesystem  (/opt/dsf-[workspaces|agent-logs]/<executionId>/)
+       │
+       ├── bind-mounted into  dsf-app          → reads diffs, monitors logs
+       └── bind-mounted into  agent container  → executes code, writes logs
+```
+
+1. `dsf-app` receives a ticket and creates workspace & log host directories
+2. A sibling agent container is spawned from `dsf-agent-base` with these paths bind-mounted
+3. The agent container runs `git clone` and executes the AI CLI inside the workspace, streaming logs to the log directory
+4. `dsf-app` streams the logs in real-time, then reads the resulting diff and pushes to GitHub
+
+#### Critical rules
+
+> **`SANDBOX_WORKSPACES_ROOT` and `SANDBOX_LOGS_ROOT` MUST be real host filesystem paths — never `/tmp` or Docker named volumes.**
+>
+> Because `dsf-app` passes the raw path strings to the host Docker daemon (via Dockerode), Docker resolves them **on the HOST**. If the path only exists inside `dsf-app` (e.g. `/tmp/...`) or in a named volume, the sibling agent containers will start with an empty workspace and every execution will fail.
+
+> **The paths must be identical inside `dsf-app` and on the host.**
+>
+> The `docker-compose.prod.yml` mounts them as `${PATH}:${PATH}:rw` (same source and target), which guarantees this automatically.
+
+#### One-time host setup (run on server before first deploy)
+
+```bash
+# Create the workspace and log directories on the HOST machine
+sudo mkdir -p /opt/dsf-workspaces /opt/dsf-agent-logs
+sudo chmod 777 /opt/dsf-workspaces /opt/dsf-agent-logs
+```
+
+#### `.env.prod` setting
+
+```bash
+# Must be real host paths — same paths both inside dsf-app and on the host
+SANDBOX_WORKSPACES_ROOT=/opt/dsf-workspaces
+SANDBOX_LOGS_ROOT=/opt/dsf-agent-logs
+```
+
+#### `docker-compose.prod.yml` volume mount
+
+```yaml
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock
+  - ${SANDBOX_WORKSPACES_ROOT}:${SANDBOX_WORKSPACES_ROOT}:rw
+  - ${SANDBOX_LOGS_ROOT}:${SANDBOX_LOGS_ROOT}:rw
+```
+
+#### `git` in the production image
+
+The production Docker image (`docker/Dockerfile`) installs `git` in the **production stage**. This is required because `dsf-app` also runs git operations (diff extraction, branch management) directly. The agent containers (`dsf-agent-base`) already include `git` independently.
+
+> If you ever see `spawn git ENOENT` in app logs, it means `git` was removed from the production image. Verify line `RUN apk add --no-cache libgcc libstdc++ bash git` is present in `docker/Dockerfile`.
+
+---
+
 ### Production Checklist
 
 Before deploying to production, ensure:

@@ -263,6 +263,9 @@ export const envValidationSchema = Joi.object({
   SANDBOX_WORKSPACES_ROOT: Joi.string()
     .default(path.join(process.cwd(), 'workspaces'))
     .description('Root directory for sandbox workspaces'),
+  SANDBOX_LOGS_ROOT: Joi.string()
+    .default('/tmp/dsf-agent-logs')
+    .description('Root directory for sandbox container logs'),
 
   // Story 22.4: Container Execution Log Streaming Configuration
   ENABLE_CONTAINER_EXECUTION: Joi.boolean()
