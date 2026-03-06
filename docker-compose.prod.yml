@@ -42,30 +42,6 @@ services:
         max-file: '3'
 
   # ===========================================
-  # Database Migrations (runs before app, exits after)
-  # ===========================================
-  migrate:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    container_name: dsf-migrate
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-    command: npx prisma migrate deploy
-    networks:
-      - dsf-network
-      - mynet
-      - redis-net
-    restart: 'no'
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '5m'
-        max-file: '2'
-
-  # ===========================================
   # AI Dev Orchestrator Application
   # ===========================================
   app:
@@ -73,7 +49,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     container_name: dsf-app
-    user: "root"
+    user: 'root'
     env_file:
       - .env
     environment:
@@ -89,8 +65,6 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     healthcheck:
       test:
         [
