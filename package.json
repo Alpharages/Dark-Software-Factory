@@ -100,7 +100,7 @@
     "@octokit/app": "^16.1.2",
     "@octokit/rest": "^22.0.1",
     "@prisma/adapter-pg": "^7.4.2",
-    "@prisma/client": "^7.1.0",
+    "@prisma/client": "^7.4.2",
     "prisma": "^7.1.0",
     "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^10.27.0",
