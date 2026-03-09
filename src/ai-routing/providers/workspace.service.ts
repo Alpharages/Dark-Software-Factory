@@ -77,7 +77,7 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     this.workspacesRoot = this.config.get<string>(
-      'cursor.workspacesRoot',
+      'sandbox.workspacesRoot',
       '/tmp/cursor-workspaces',
     );
     this.maxConcurrent = this.config.get<number>('cursor.maxConcurrentWorkspaces', 10);
