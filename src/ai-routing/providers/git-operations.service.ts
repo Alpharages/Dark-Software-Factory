@@ -302,7 +302,11 @@ export class GitOperationsService {
     try {
       this.logger.debug(`${description || 'Git'}: git ${this.sanitizeGitArgs(args)}`);
 
-      const result = await execFileAsync('git', args, {
+      // Inject '-c safe.directory=*' to bypass dubious ownership checks.
+      // dsf-app runs as root, but workspaces are chowned to agent (1000:1000).
+      const safeArgs = ['-c', 'safe.directory=*', ...args];
+
+      const result = await execFileAsync('git', safeArgs, {
         cwd,
         timeout: this.DEFAULT_TIMEOUT_MS,
         maxBuffer: this.DEFAULT_MAX_BUFFER,
