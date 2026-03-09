@@ -453,7 +453,7 @@ export class ClaudeCodeProvider
       const fullOutput = outputChunks.join('');
 
       if (exitCode !== 0) {
-        // Handle specific exit codes
+        // Handle fatal exit codes first (these override any in-stream success)
         if (exitCode === 124) {
           // Exit code 124 = container execution timeout (from PtyExecutionService)
           throw new Error(
@@ -472,9 +472,24 @@ export class ClaudeCodeProvider
               `If SANDBOX_MEMORY_LIMIT_MB is already high, check your Docker Desktop resource settings (VM Memory/Swap) as the host might be out of resources.`,
           );
         }
-        throw new Error(
-          `Claude CLI exited with code ${exitCode}. Output: ${fullOutput.substring(fullOutput.length - 500)}`,
-        );
+
+        // Claude CLI with --output-format stream-json may exit with code 1 even on
+        // successful completions. Check the streamed output for a success result before
+        // treating this as a failure.
+        const hasStreamSuccess =
+          fullOutput.includes('"subtype":"success"') && fullOutput.includes('"is_error":false');
+
+        if (hasStreamSuccess) {
+          this.logger.warn(
+            `[${correlationId}] Claude CLI exited with code ${exitCode} but stream output ` +
+              `contains a success result — treating as success (known CLI behavior with stream-json).`,
+          );
+          // Fall through to normal success handling below
+        } else {
+          throw new Error(
+            `Claude CLI exited with code ${exitCode}. Output: ${fullOutput.substring(fullOutput.length - 500)}`,
+          );
+        }
       }
 
       this.logger.debug(`[${correlationId}] CLI Output length: ${fullOutput.length}`);
