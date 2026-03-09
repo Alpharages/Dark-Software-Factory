@@ -16,6 +16,7 @@ import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { lastValueFrom } from 'rxjs';
 import * as fs from 'fs';
+import { execSync } from 'child_process';
 import {
   IAIExecutionInput,
   IAIExecutionResult,
@@ -231,11 +232,17 @@ export class ClaudeCodeProvider
         memoryLimitBytes = configuredLimit * 1024 * 1024;
       }
 
-      // Ensure host log directory exists
+      // Ensure host log directory exists and is writable by container agent user (UID 1000)
       const logsRoot = this.config.get<string>('sandbox.logsRoot') || '/tmp/dsf-agent-logs';
       const hostLogDir = `${logsRoot}/${executionId}`;
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       fs.mkdirSync(hostLogDir, { recursive: true });
+      try {
+        execSync(`chown -R 1000:1000 "${hostLogDir}"`, { timeout: 5_000 });
+      } catch {
+        // Non-fatal: tee may fail, but Claude execution can still proceed
+        this.logger.warn(`[${executionId}] Could not chown log directory ${hostLogDir}`);
+      }
 
       // 5. Spawn container and run Claude
       this.logger.log(

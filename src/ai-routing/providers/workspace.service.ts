@@ -23,6 +23,7 @@ import * as fs from 'fs/promises';
 import { Dirent } from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { execSync } from 'child_process';
 import { IWorkspaceInfo, AIErrorCode, IAIExecutionError } from '../interfaces';
 import { GitOperationsService } from './git-operations.service';
 import { GitMirrorService } from '../../git-mirror/git-mirror.service';
@@ -332,6 +333,21 @@ export class WorkspaceService implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`[${executionId}] Skipping git clone - no repository URL`);
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         await fs.mkdir(workspacePath, { recursive: true });
+      }
+
+      // Fix workspace ownership for container agent user (UID 1000).
+      // dsf-app runs as root so git-cloned files are root:root, but the
+      // sibling dsf-agent-base container runs as 'agent' (UID 1000).
+      // Without this chown, Claude CLI gets EACCES permission denied errors.
+      try {
+        execSync(`chown -R 1000:1000 "${workspacePath}"`, { timeout: 30_000 });
+        this.logger.log(`[${executionId}] Fixed workspace ownership for agent user (UID 1000)`);
+      } catch (chownError: unknown) {
+        const chownMsg = chownError instanceof Error ? chownError.message : String(chownError);
+        this.logger.warn(
+          `[${executionId}] Failed to fix workspace ownership (chown): ${chownMsg}. ` +
+            `Container agent may encounter permission errors.`,
+        );
       }
 
       // 5. Inject AI instructions for provider (copy .ai/instructions.md → provider convention file)
