@@ -154,7 +154,7 @@ jobs:
       - run: pnpm exec prisma generate
       - name: 🏗️ Build
         run: pnpm run build
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       # Note: Requires docker/Dockerfile from Story 1-10 (prerequisite)
       # Build will fail with clear error if Dockerfile is missing
       - name: 🐳 Build Docker Image
