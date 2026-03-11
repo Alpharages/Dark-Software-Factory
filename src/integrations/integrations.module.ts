@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
 import { IntegrationsController } from './integrations.controller';
 import { ClickUpModule } from '../clickup/clickup.module';
+import { ProjectIntegrationService } from './project-integration.service';
+import { DatabaseModule } from '../database/database.module';
+import { EncryptionModule } from '../common/encryption/encryption.module';
 
 @Module({
-  imports: [ClickUpModule],
+  imports: [ClickUpModule, DatabaseModule, EncryptionModule],
   controllers: [IntegrationsController],
+  providers: [ProjectIntegrationService],
+  exports: [ProjectIntegrationService],
 })
 export class IntegrationsModule {}

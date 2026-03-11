@@ -31,6 +31,7 @@ model Project {
   tickets               Ticket[]
   github_account_id     String?                @map("github_account_id")
   gitHubAccount         GitHubAccount?         @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
+  integrations          ProjectIntegration[]
 
   @@index([github_account_id])
   @@map("projects")
@@ -68,11 +69,11 @@ model Ticket {
 }
 
 model Execution {
-  id                    String               @id @default(uuid())
+  id                    String              @id @default(uuid())
   ticket_id             String
   ai_provider           AIProvider
   prompt                String
-  status                ExecutionStatus      @default(QUEUED)
+  status                ExecutionStatus     @default(QUEUED)
   confidence_score      Float?
   started_at            DateTime?
   completed_at          DateTime?
@@ -80,33 +81,33 @@ model Execution {
   error_message         String?
   code_output           String?
   files_changed         Json?
-  retry_count           Int                  @default(0)
-  max_retries           Int                  @default(3)
-  created_at            DateTime             @default(now())
-  updated_at            DateTime             @updatedAt
+  retry_count           Int                 @default(0)
+  max_retries           Int                 @default(3)
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @updatedAt
   complexity_breakdown  Json?
   complexity_score      Int?
   error_context         String?
-  fallback_used         Boolean              @default(false)
+  fallback_used         Boolean             @default(false)
   original_provider     AIProvider?
   routing_reason        String?
   scheduled_retry_at    DateTime?
   base_branch           String?
   branch_selection_log  String?
-  circular_dep_detected Boolean              @default(false)
+  circular_dep_detected Boolean             @default(false)
   file_modifications    Json?
   risk_level            PRRiskLevel?
   selected_model        String?
   task_type             TaskType?
   container_id          String?
-  debug_mode            Boolean              @default(false)
-  progress              Json?                @map("progress") // Store latest progress state (step, percent)
+  debug_mode            Boolean             @default(false)
+  progress              Json?               @map("progress") // Store latest progress state (step, percent)
   adrs                  Adr[]
   aiCostLogs            AICostLog[]
   aiDecisionLogs        AIDecisionLog[]
   approvalRecords       ApprovalRecord[]
   bug_escapes           BugEscape[]
-  ticket                Ticket               @relation(fields: [ticket_id], references: [id])
+  ticket                Ticket              @relation(fields: [ticket_id], references: [id])
   fileLockQueueEntries  FileLockQueue[]
   fileLocks             FileLock[]
   qa_result             QAResult?
@@ -123,18 +124,18 @@ model Execution {
 }
 
 model ExecutionLog {
-   id          String   @id @default(uuid())
-   executionId String   @map("execution_id")
-   timestamp   DateTime @default(now())
-   level       String   // STDOUT, STDERR, INFO, WARN, ERROR, DEBUG
-   message     String   @db.Text
-   source      String   // e.g., 'ai_provider_pty', 'github_push'
-   createdAt   DateTime @default(now()) @map("created_at")
- 
-   execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
- 
-   @@index([executionId, timestamp])
-   @@map("execution_logs")
+  id          String   @id @default(uuid())
+  executionId String   @map("execution_id")
+  timestamp   DateTime @default(now())
+  level       String // STDOUT, STDERR, INFO, WARN, ERROR, DEBUG
+  message     String   @db.Text
+  source      String // e.g., 'ai_provider_pty', 'github_push'
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId, timestamp])
+  @@map("execution_logs")
 }
 
 /// Persisted live activity events for execution timeline
@@ -144,11 +145,11 @@ model ExecutionActivity {
   id               String   @id @default(uuid())
   executionId      String   @map("execution_id")
   timestamp        DateTime @default(now())
-  activity         String   // Short human-readable label (e.g. "AI is thinking")
-  detail           String?  // Brief extra info (e.g. file path, duration)
-  rawContent       String?  @db.Text @map("raw_content") // Full raw content for expandable view
-  category         String   // SETUP, DEPENDENCY, GIT, AI_THINKING, AI_CODING, BUILD, TEST, LINT, FILE_OP, DEPLOY, ERROR, SYSTEM
-  icon             String   // Lucide icon name hint for UI
+  activity         String // Short human-readable label (e.g. "AI is thinking")
+  detail           String? // Brief extra info (e.g. file path, duration)
+  rawContent       String?  @map("raw_content") @db.Text // Full raw content for expandable view
+  category         String // SETUP, DEPENDENCY, GIT, AI_THINKING, AI_CODING, BUILD, TEST, LINT, FILE_OP, DEPLOY, ERROR, SYSTEM
+  icon             String // Lucide icon name hint for UI
   suggestedPercent Int?     @map("suggested_percent") // Progress percentage 0-100
   createdAt        DateTime @default(now()) @map("created_at")
 
@@ -250,34 +251,34 @@ model CostRecord {
 }
 
 model ProductionError {
-  id                 String        @id @default(uuid())
-  application        String
-  error_type         String
-  error_message      String
-  stack_trace        String?
-  severity           ErrorSeverity
-  fix_ticket_id      String?
-  fix_ticket_url     String?
-  resolved           Boolean       @default(false)
-  occurred_at        DateTime
-  created_at         DateTime      @default(now())
+  id             String        @id @default(uuid())
+  application    String
+  error_type     String
+  error_message  String
+  stack_trace    String?
+  severity       ErrorSeverity
+  fix_ticket_id  String?
+  fix_ticket_url String?
+  resolved       Boolean       @default(false)
+  occurred_at    DateTime
+  created_at     DateTime      @default(now())
 
   // Context extraction fields (Story 9-U-4)
-  parsed_stack_trace Json?         @map("parsed_stack_trace")
-  user_context       Json?         @map("user_context")
-  deployment_id      String?       @map("deployment_id")
-  affected_users     Int           @default(1) @map("affected_users")
-  occurrence_count   Int           @default(1) @map("occurrence_count")
+  parsed_stack_trace Json?   @map("parsed_stack_trace")
+  user_context       Json?   @map("user_context")
+  deployment_id      String? @map("deployment_id")
+  affected_users     Int     @default(1) @map("affected_users")
+  occurrence_count   Int     @default(1) @map("occurrence_count")
 
   // Dashboard fields (Story 9-U-5)
-  acknowledged_at    DateTime?     @map("acknowledged_at")
-  acknowledged_by    String?       @map("acknowledged_by")
-  resolved_at        DateTime?     @map("resolved_at")
+  acknowledged_at DateTime? @map("acknowledged_at")
+  acknowledged_by String?   @map("acknowledged_by")
+  resolved_at     DateTime? @map("resolved_at")
 
   // Relations
-  bug_escape         BugEscape?
-  deployment         Deployment?   @relation(fields: [deployment_id], references: [id])
-  related_commits    ProductionErrorCommit[]
+  bug_escape      BugEscape?
+  deployment      Deployment?             @relation(fields: [deployment_id], references: [id])
+  related_commits ProductionErrorCommit[]
 
   @@index([application, severity, resolved])
   @@index([deployment_id])
@@ -660,10 +661,10 @@ model User {
   team_members                 User[]                     @relation("ManagerTeam")
   utilization_history          UtilizationHistory[]
   execution_overrides          ExecutionOverride[]
-  slackMemberId              String?                    @map("slack_member_id")
-  notificationPreferences    NotificationPreference[]
-  inAppNotifications         InAppNotification[]
-  gitHubAccounts             GitHubAccount[]
+  slackMemberId                String?                    @map("slack_member_id")
+  notificationPreferences      NotificationPreference[]
+  inAppNotifications           InAppNotification[]
+  gitHubAccounts               GitHubAccount[]
 
   @@index([managed_by_id])
   @@index([role])
@@ -841,7 +842,7 @@ model NotificationPreference {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventType])
   @@index([userId, eventType])
@@ -849,17 +850,17 @@ model NotificationPreference {
 }
 
 model InAppNotification {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  eventType String   @map("event_type")
-  title     String   @db.VarChar(255)
-  message   String   @db.Text
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  eventType String    @map("event_type")
+  title     String    @db.VarChar(255)
+  message   String    @db.Text
   payload   Json?
-  read      Boolean  @default(false)
+  read      Boolean   @default(false)
   readAt    DateTime? @map("read_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
   @@index([userId, createdAt])
@@ -1042,6 +1043,17 @@ model ExecutionOverride {
   @@index([executionId])
   @@index([userId])
   @@map("execution_overrides")
+}
+
+// IntegrationProvider: per-connection identity on ProjectIntegration.provider.
+// ProjectProvider: project-level PM tool selection on Project.provider.
+// Both intentionally share the same values and must be kept in sync.
+// They are kept separate so each can evolve independently (e.g. ProjectIntegration
+// may gain providers not yet supported at the Project configuration level).
+enum IntegrationProvider {
+  CLICKUP
+  JIRA
+  ASANA
 }
 
 enum ProjectProvider {
@@ -1245,17 +1257,45 @@ enum InvitationStatus {
   REVOKED
 }
 
+model ProjectIntegration {
+  id                   String              @id @default(uuid())
+  project_id           String
+  provider             IntegrationProvider
+  workspace_id         String
+  workspace_name       String
+  access_token         String?
+  refresh_token        String?
+  token_expiry         DateTime?
+  bot_user_id          String?
+  bot_username         String?
+  polling_enabled      Boolean             @default(false)
+  polling_interval_min Int                 @default(15)
+  polling_last_run_at  DateTime?
+  webhook_enabled      Boolean             @default(false)
+  webhook_id           String?
+  webhook_secret       String?
+  provider_config      Json
+  ai_trigger_status    String?
+  created_at           DateTime            @default(now())
+  updated_at           DateTime            @updatedAt
+  project              Project             @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, provider])
+  @@index([project_id])
+  @@map("project_integrations")
+}
+
 model GitHubAccount {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  installationId  String   @unique @map("installation_id")
-  accessToken     String   @map("access_token") // Encrypted
-  username        String
-  avatarUrl       String?  @map("avatar_url")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projects        Project[]
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  installationId String    @unique @map("installation_id")
+  accessToken    String    @map("access_token") // Encrypted
+  username       String
+  avatarUrl      String?   @map("avatar_url")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects       Project[]
 
   @@map("github_accounts")
 }

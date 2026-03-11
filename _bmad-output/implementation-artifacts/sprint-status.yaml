@@ -209,6 +209,165 @@ development_status:
     notes: 'STAT-5/STAT-6/STAT-8 implemented: backend summary KPIs (PR merge rate, QA first-pass rate, provider distribution) + frontend StatsGrid widgets + provider donut chart with min-w-0/debounce guard. Code review fixes: Promise.allSettled isolation (H1), groupBy DB aggregate (H2), React.FC removed (H3), QA denominator fix (M2), hardcoded trends removed (M3), eslint suppressions targeted (M4), PM-scope tests added (M5). All 79 tests green.'
   epic-26-retrospective: done
 
+  # EPIC CS0 - PM TOOL INTEGRATION FRAMEWORK
+  epic-CS0: in-progress
+  epic-CS0-name: 'PM Tool Integration Framework'
+  epic-CS0-phase: 'New Feature Sprint'
+  epic-CS0-priority: high
+  epic-CS0-dependencies: none
+  epic-CS0-estimated_effort: '18 days'
+  epic-CS0-source: 'epics-clickup-smart-sync.md'
+  epic-CS0-notes: 'Provider-agnostic PM integration layer. Prerequisite for Epics CS1–CS3. Covers OAuth, IPMProvider interface, ClickUpProvider, PMProviderFactory, polling, webhook routing.'
+  CS0-1-project-integration-model:
+    status: done
+    effort: '2 days'
+    story_points: 5
+    notes: 'Replace ClickUpConnection with ProjectIntegration model. Provider enum (CLICKUP/JIRA/ASANA), encrypted OAuth tokens, polling config, webhook config, ai_trigger_status, bot_user_id. Ultimate context engine analysis completed - comprehensive developer guide created.'
+  CS0-2-ipm-provider-interface:
+    status: ready-for-dev
+    effort: '2 days'
+    story_points: 5
+    notes: 'Define IPMProvider interface: getSelf, getStatuses, updateStatus, addComment, assignTask, getRequiredFields, setFieldValue, registerWebhook, normalizeEvent. Ultimate context engine analysis completed - comprehensive developer guide created.'
+  CS0-3-clickup-provider-implementation:
+    status: backlog
+    effort: '3 days'
+    story_points: 8
+    notes: 'Implement ClickUpProvider implementing IPMProvider. Wraps existing ClickUp API calls.'
+  CS0-4-pm-provider-factory:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'PMProviderFactory resolves correct IPMProvider from ProjectIntegration.provider enum.'
+  CS0-5-clickup-oauth-app:
+    status: backlog
+    effort: '3 days'
+    story_points: 8
+    notes: 'ClickUp OAuth App flow. POST /integrations/clickup/connect, OAuth callback, token storage, GET /user to capture bot_user_id.'
+  CS0-6-connect-ui:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'Frontend: Connect PM tool UI. OAuth "Connect ClickUp" button, connection status, disconnect.'
+  CS0-7-sync-settings-ui:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'Frontend: PM sync settings — polling enable/disable toggle, polling interval, webhook URL display for PM to configure in ClickUp.'
+  CS0-8-provider-agnostic-polling:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'Polling service uses IPMProvider.normalizeEvent. PM-configurable interval stored in ProjectIntegration. Per-project enable/disable.'
+  CS0-9-multi-tenant-webhook-routing:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'Webhook routing via workspace ID in payload. Per-workspace webhook_secret lookup. Multi-tenant signature verification.'
+  epic-CS0-retrospective: optional
+
+  # EPIC CS1 - PER-PROJECT WORKFLOW CONFIGURATION
+  epic-CS1: backlog
+  epic-CS1-name: 'Per-Project Workflow Configuration'
+  epic-CS1-phase: 'New Feature Sprint'
+  epic-CS1-priority: high
+  epic-CS1-dependencies: 'Epic CS0'
+  epic-CS1-estimated_effort: '12 days'
+  epic-CS1-source: 'epics-clickup-smart-sync.md'
+  epic-CS1-notes: 'Eliminate all hardcoded status maps. Replace with runtime discovery + per-project ai_trigger_status.'
+  CS1-1-remove-hardcoded-status-maps:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'Remove CLICKUP_STATUS_MAP, mapClickUpStatusToTicketStatus(), CLICKUP_STATUS_DEPLOYED env vars, actionableStatuses/nonActionableStatuses config. Remove all references.'
+  CS1-2-status-discovery-service:
+    status: backlog
+    effort: '3 days'
+    story_points: 8
+    notes: 'StatusDiscoveryService: IPMProvider.getStatuses() per project list. TTL cache (15 min). Fallback to stored statuses on API failure.'
+  CS1-3-ai-trigger-status-field:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'ai_trigger_status field on ProjectIntegration. API: GET/PATCH /projects/:id/integration/sync-config. Replaces all global env-var status config.'
+  CS1-4-live-status-picker-ui:
+    status: backlog
+    effort: '3 days'
+    story_points: 5
+    notes: 'Frontend: Live status picker in project integration settings. Fetches live statuses, PM selects ai_trigger_status from dropdown.'
+  CS1-5-auto-assign-bot-on-execution:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'On execution start, auto-assign bot (bot_user_id from ProjectIntegration) to task via IPMProvider.assignTask(). No hardcoded user IDs.'
+  CS1-6-development-gate-intake-filter:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'Gate all incoming tasks (webhook + polling) against ai_trigger_status. Only exact status match enters the dev queue. Backlog/done/human-in-progress tasks silently discarded. Deduplication on (taskId, provider). pm_polling_tasks_skipped_total + pm_tasks_dropped_no_trigger_total Prometheus counters.'
+  epic-CS1-retrospective: optional
+
+  # EPIC CS2 - INTELLIGENT REQUIRED FIELD PRE-CHECK & AUTO-FILL
+  epic-CS2: backlog
+  epic-CS2-name: 'Intelligent Required Field Pre-Check & Auto-Fill'
+  epic-CS2-phase: 'New Feature Sprint'
+  epic-CS2-priority: high
+  epic-CS2-dependencies: 'Epic CS0, Epic CS1'
+  epic-CS2-estimated_effort: '10 days'
+  epic-CS2-source: 'epics-clickup-smart-sync.md'
+  epic-CS2-notes: 'Pre-flight check for required fields before status push. AI auto-fill for factual + inferred fields. Eliminates silent automation failures.'
+  CS2-1-required-field-pre-check:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'Before status push: IPMProvider.getRequiredFields() + current task field values in parallel. Build missing fields list.'
+  CS2-2-factual-auto-fill:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'Auto-fill factual fields: execution duration → Estimated Time, PR link, start/end dates, commit count. Uses dropdown option_id mapping.'
+  CS2-3-ai-inferred-fill:
+    status: backlog
+    effort: '3 days'
+    story_points: 8
+    notes: 'Claude-inferred fill: story points (complexity), priority, tags. Uses task context. Falls back to skip if confidence low.'
+  CS2-4-verification-comment:
+    status: backlog
+    effort: '1 day'
+    story_points: 2
+    notes: 'Post-fill: IPMProvider.addComment() with verification summary — what was auto-filled, what was inferred, what needs manual review.'
+  epic-CS2-retrospective: optional
+
+  # EPIC CS3 - ACTIONABLE SYNC FAILURE HANDLING & DASHBOARD VISIBILITY
+  epic-CS3: backlog
+  epic-CS3-name: 'Actionable Sync Failure Handling & Dashboard Visibility'
+  epic-CS3-phase: 'New Feature Sprint'
+  epic-CS3-priority: high
+  epic-CS3-dependencies: 'Epic CS0'
+  epic-CS3-estimated_effort: '8 days'
+  epic-CS3-source: 'epics-clickup-smart-sync.md'
+  epic-CS3-notes: 'Fix silent 4xx pass-through. Add pm_synced field. Actionable failure comments. SYNC_PENDING dashboard state.'
+  CS3-1-fix-4xx-5xx-classification:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'isRetryableError(): 4xx = permanent failure (no retry), 5xx/network = transient (retry with backoff). Fixes silent 4xx swallowing.'
+  CS3-2-pm-synced-field:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'pm_synced boolean on Ticket model. Set false on sync failure, true on success. Tracked independently from execution completion.'
+  CS3-3-actionable-failure-comment:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+    notes: 'On permanent sync failure: IPMProvider.addComment() with actionable message listing exactly which fields need manual action + deep link to ClickUp task.'
+  CS3-4-sync-pending-dashboard-state:
+    status: backlog
+    effort: '3 days'
+    story_points: 5
+    notes: 'SYNC_PENDING amber dashboard state distinct from red FAILED. Socket.IO pm-sync-failed event. Frontend banner on affected tickets.'
+  epic-CS3-retrospective: optional
+
   # EPIC 27 - PLATFORM POLISH, GLOBAL UX & MOBILE NAVIGATION
   epic-27: done
   epic-27-name: 'Platform Polish, Global UX & Mobile Navigation'
@@ -255,8 +414,8 @@ development_status:
   epic-27-retrospective: done
 
 priority_sequence:
-  last_updated: '2026-02-27T00:00:00+05:00'
-  updated_by: 'QA Report Triage 2026-02-27 — Epics 25, 26, 27 added'
+  last_updated: '2026-03-10T00:00:00+05:00'
+  updated_by: 'PM Tool Integration planning 2026-03-10 — Epics CS0, CS1, CS2, CS3 added'
 
   critical_p0:
     description: 'CRITICAL - QA Stabilization. Must fix before any new feature work.'
@@ -331,6 +490,62 @@ priority_sequence:
         name: 'Socket.IO Infrastructure'
         reason: 'Unblocks real-time UI updates.'
 
+  new_features_p2_5:
+    description: 'NEW FEATURES - PM Tool Integration (backlog, pending context step)'
+    stories:
+      - id: 'CS0-1'
+        name: 'ProjectIntegration Model'
+        reason: 'Foundation for all CS epics — must be done first.'
+      - id: 'CS0-2'
+        name: 'IPMProvider Interface'
+        reason: 'Provider-agnostic contract required before ClickUpProvider + factory.'
+      - id: 'CS0-3'
+        name: 'ClickUpProvider Implementation'
+      - id: 'CS0-4'
+        name: 'PMProviderFactory'
+      - id: 'CS0-5'
+        name: 'ClickUp OAuth App'
+        reason: 'Replaces CLICKUP_API_KEY — required for multi-tenant bot identity.'
+      - id: 'CS0-6'
+        name: 'Connect PM Tool UI'
+      - id: 'CS0-7'
+        name: 'Sync Settings UI'
+      - id: 'CS0-8'
+        name: 'Provider-Agnostic Polling'
+      - id: 'CS0-9'
+        name: 'Multi-Tenant Webhook Routing'
+      - id: 'CS1-1'
+        name: 'Remove Hardcoded Status Maps'
+        reason: 'Eliminates CLICKUP_STATUS_MAP + all env-var status config.'
+      - id: 'CS1-2'
+        name: 'Status Discovery Service'
+      - id: 'CS1-3'
+        name: 'ai_trigger_status Field'
+      - id: 'CS1-4'
+        name: 'Live Status Picker UI'
+      - id: 'CS1-5'
+        name: 'Auto-Assign Bot on Execution'
+      - id: 'CS1-6'
+        name: 'Development Gate — Task Intake Filter'
+        reason: 'Critical: prevents backlog/done tasks from accidentally entering the dev queue.'
+      - id: 'CS2-1'
+        name: 'Required Field Pre-Check'
+      - id: 'CS2-2'
+        name: 'Factual Auto-Fill'
+      - id: 'CS2-3'
+        name: 'AI-Inferred Field Fill'
+      - id: 'CS2-4'
+        name: 'Verification Comment'
+      - id: 'CS3-1'
+        name: 'Fix 4xx/5xx Classification'
+        reason: 'Critical: prevents silent sync failure swallowing.'
+      - id: 'CS3-2'
+        name: 'pm_synced Field on Ticket'
+      - id: 'CS3-3'
+        name: 'Actionable Failure Comment'
+      - id: 'CS3-4'
+        name: 'SYNC_PENDING Dashboard State'
+
   lower_p3:
     description: 'LOWER PRIORITY - KPI Enhancements & Sidebar Polish'
     stories:
@@ -359,6 +574,41 @@ development_flow:
     depends_on: 'phase_3'
 
 epic_status:
+  epic-CS0:
+    name: 'PM Tool Integration Framework'
+    status: 'in-progress'
+    priority: 'high'
+    source: 'epics-clickup-smart-sync.md'
+    stories: 9
+    estimated_effort: '18 days'
+    notes: 'Prerequisite for CS1–CS3. Provider-agnostic layer: ProjectIntegration model, IPMProvider interface, ClickUpProvider, PMProviderFactory, OAuth, polling, multi-tenant webhooks.'
+  epic-CS1:
+    name: 'Per-Project Workflow Configuration'
+    status: 'backlog'
+    priority: 'high'
+    source: 'epics-clickup-smart-sync.md'
+    stories: 6
+    estimated_effort: '12 days'
+    dependencies: 'epic-CS0'
+    notes: 'Remove all hardcoded status maps + env-vars. Runtime status discovery. Per-project ai_trigger_status. Live status picker UI. Development gate: only tasks at trigger status enter the dev queue — backlog/done/in-progress tasks silently discarded.'
+  epic-CS2:
+    name: 'Intelligent Required Field Pre-Check & Auto-Fill'
+    status: 'backlog'
+    priority: 'high'
+    source: 'epics-clickup-smart-sync.md'
+    stories: 4
+    estimated_effort: '10 days'
+    dependencies: 'epic-CS0, epic-CS1'
+    notes: 'Required field pre-check before status push. Factual auto-fill + Claude-inferred fill. Verification comment posted to task.'
+  epic-CS3:
+    name: 'Actionable Sync Failure Handling & Dashboard Visibility'
+    status: 'backlog'
+    priority: 'high'
+    source: 'epics-clickup-smart-sync.md'
+    stories: 4
+    estimated_effort: '8 days'
+    dependencies: 'epic-CS0'
+    notes: 'Fix silent 4xx swallowing. pm_synced field on Ticket. Actionable failure comments. SYNC_PENDING amber dashboard state.'
   epic-15:
     name: 'v3 Configuration & Production Rollout'
     status: 'contexted'
