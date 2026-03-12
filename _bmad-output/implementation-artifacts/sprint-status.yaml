@@ -229,35 +229,35 @@ development_status:
     story_points: 5
     notes: 'Define IPMProvider interface: getSelf, getStatuses, updateStatus, addComment, assignTask, getRequiredFields, setFieldValue, registerWebhook, normalizeEvent. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-3-clickup-provider-implementation:
-    status: backlog
+    status: ready-for-dev
     effort: '3 days'
     story_points: 8
-    notes: 'Implement ClickUpProvider implementing IPMProvider. Wraps existing ClickUp API calls.'
+    notes: 'Implement ClickUpProvider implementing IPMProvider. Wraps existing ClickUp API calls. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-4-pm-provider-factory:
-    status: backlog
+    status: ready-for-dev
     effort: '1 day'
     story_points: 3
-    notes: 'PMProviderFactory resolves correct IPMProvider from ProjectIntegration.provider enum.'
+    notes: 'PMProviderFactory resolves correct IPMProvider from ProjectIntegration.provider enum. Token refresh (5-min window) + UnsupportedProviderException + IntegrationAuthException. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-5-clickup-oauth-app:
-    status: backlog
+    status: ready-for-dev
     effort: '3 days'
     story_points: 8
-    notes: 'ClickUp OAuth App flow. POST /integrations/clickup/connect, OAuth callback, token storage, GET /user to capture bot_user_id.'
+    notes: 'ClickUp OAuth App flow. GET connect returns OAuth URL, GET callback exchanges code + upserts ProjectIntegration + captures bot_user_id. DELETE disconnect. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-6-connect-ui:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 5
     notes: 'Frontend: Connect PM tool UI. OAuth "Connect ClickUp" button, connection status, disconnect.'
   CS0-7-sync-settings-ui:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 5
-    notes: 'Frontend: PM sync settings — polling enable/disable toggle, polling interval, webhook URL display for PM to configure in ClickUp.'
+    notes: 'Frontend: PM sync settings — polling enable/disable toggle, polling interval, webhook URL display for PM to configure in ClickUp. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-8-provider-agnostic-polling:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 5
-    notes: 'Polling service uses IPMProvider.normalizeEvent. PM-configurable interval stored in ProjectIntegration. Per-project enable/disable.'
+    notes: 'PmPollingOrchestrator: @Cron every-minute loop, getUpdatedTasks on IPMProvider, publishes IRawTaskEvent to ticket-intake-queue, per-integration interval from ProjectIntegration. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-9-multi-tenant-webhook-routing:
     status: backlog
     effort: '1 day'
@@ -501,8 +501,11 @@ priority_sequence:
         reason: 'Provider-agnostic contract required before ClickUpProvider + factory.'
       - id: 'CS0-3'
         name: 'ClickUpProvider Implementation'
-      - id: 'CS0-4'
-        name: 'PMProviderFactory'
+      - id: CS0-4-pm-provider-factory
+        title: PMProviderFactory & Token Refresh Logic
+        status: ready-for-dev
+        description: Implement a factory to resolve PM providers and handle transparent OAuth token refresh.
+        dependencies: [CS0-2, CS0-3]
       - id: 'CS0-5'
         name: 'ClickUp OAuth App'
         reason: 'Replaces CLICKUP_API_KEY — required for multi-tenant bot identity.'
