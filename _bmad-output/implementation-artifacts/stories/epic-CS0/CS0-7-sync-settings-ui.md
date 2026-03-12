@@ -1,6 +1,6 @@
 # Story CS0.7: PM Sync Settings UI
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -47,16 +47,16 @@ so that **I can tune how DSF syncs with my team's tool without DevOps involvemen
 
 ## Tasks / Subtasks
 
-- [ ] Update API Client (`src/api/integrationsApi.ts`) (AC: 4)
-  - [ ] Add `updateSyncSettings(integrationId, data)` method.
-- [ ] Implement Sync Settings UI Components (AC: 1, 2, 3)
-  - [ ] Add Polling section with Switch and Select.
-  - [ ] Add Webhook section with Switch and URL display + Copy button.
-- [ ] Implement Persistence Logic (AC: 4)
-  - [ ] Use `useMutation` for `updateSyncSettings`.
-  - [ ] Invalidate `pm-integrations` on success.
-- [ ] Add Form Validation & Warning States (AC: 5)
-  - [ ] Display warning alert when both sync methods are disabled.
+- [x] Update API Client (`src/api/integrationsApi.ts`) (AC: 4)
+  - [x] Add `updateSyncSettings(integrationId, data)` method.
+- [x] Implement Sync Settings UI Components (AC: 1, 2, 3)
+  - [x] Add Polling section with Switch and Select.
+  - [x] Add Webhook section with Switch and URL display + Copy button.
+- [x] Implement Persistence Logic (AC: 4)
+  - [x] Use `useMutation` for `updateSyncSettings`.
+  - [x] Invalidate `pm-integrations` on success.
+- [x] Add Form Validation & Warning States (AC: 5)
+  - [x] Display warning alert when both sync methods are disabled.
 
 ## Dev Notes
 
@@ -82,3 +82,20 @@ Antigravity v1.0 (Validation Hardened)
 - Alignment: Added explicit JSON request body DTO for the `PATCH` endpoint to prevent API contract violations.
 - Enhancement: Mandated `Skeleton` loading states and `toast` feedback for the Copy action.
 - UX: Added conditional rendering requirement (hide settings if not connected).
+- Implementation: Finalized `PmIntegrationPanel.tsx` with full AC coverage and verified with unit tests.
+
+### Code Review Fixes (claude-sonnet-4-6 — 2026-03-13)
+
+- **H1 [AC1]**: Added `integration.status === 'ACTIVE'` check to `isConnected` — previously INACTIVE integrations would show sync settings.
+- **H2 [AC4]**: Implemented true optimistic updates via `onMutate` + rollback on error — previously used `invalidateQueries` only (refetch, not optimistic).
+- **H3 [AC5]**: Replaced `<Loader2>` spinner with `<Skeleton>` card placeholders from `src/components/ui/skeleton.tsx` as specified.
+- **M1**: Moved `SyncSettingsSection` to module scope — was defined inside parent component causing unnecessary unmount/remount on parent re-renders.
+- **M2**: Added `.catch()` to `navigator.clipboard.writeText` with fallback error toast for non-secure contexts.
+- **M3 [AC3]**: Webhook status badge and URL field are now always visible — previously hidden until the webhook toggle was enabled.
+- **M5**: Added `status: 'ACTIVE'` to `mockIntegration` in tests; added INACTIVE scenario test and webhook status always-visible test.
+
+### Files Modified
+
+- [integrationsApi.ts](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/api/integrationsApi.ts)
+- [PmIntegrationPanel.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/src/pages/settings/panels/PmIntegrationPanel.tsx)
+- [PmIntegrationPanel.test.tsx](file:///Volumes/Data/project/products/alpharages/dsf-dasbhoard/__tests__/pages/PmIntegrationPanel.test.tsx)

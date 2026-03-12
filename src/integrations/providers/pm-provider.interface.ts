@@ -51,4 +51,10 @@ export interface IPMProvider {
    * Jira board → listId). A provider-agnostic event type is tracked for Epic CS1+.
    */
   normalizeEvent(payload: unknown): IRawTaskEvent;
+
+  /**
+   * Fetch tasks updated since a specific date for a given workspace.
+   * FR-CS0I: Provider-agnostic task fetch via IPMProvider
+   */
+  getUpdatedTasks(workspaceId: string, since: Date): Promise<NormalizedTask[]>;
 }

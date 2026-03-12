@@ -249,15 +249,15 @@ development_status:
     story_points: 5
     notes: 'Frontend: Connect PM tool UI. OAuth "Connect ClickUp" button, connection status, disconnect. Code review fixes: OAuth callback route mismatch (C1), missing ProtectedRoute role guard (C2), wrong DELETE endpoint URL (C3), missing staleTime:60000 (H1), Badge added to callback (H2), null projectId guard (H3), per-provider mutation loading state (M1), invalid CSS variable classes (M2), File List added to Dev Agent Record (M3).'
   CS0-7-sync-settings-ui:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
-    notes: 'Frontend: PM sync settings — polling enable/disable toggle, polling interval, webhook URL display for PM to configure in ClickUp. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'Frontend: PM sync settings — polling enable/disable toggle, polling interval, webhook URL display for PM to configure in ClickUp. Code review fixes (3H+3M): INACTIVE status check, optimistic updates with onMutate rollback, Skeleton loading component, SyncSettingsSection moved to module scope, clipboard error handling, webhook status badge always visible.'
   CS0-8-provider-agnostic-polling:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
-    notes: 'PmPollingOrchestrator: @Cron every-minute loop, getUpdatedTasks on IPMProvider, publishes IRawTaskEvent to ticket-intake-queue, per-integration interval from ProjectIntegration. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'PmPollingOrchestrator: @Cron every-minute loop, getUpdatedTasks on IPMProvider, publishes ITaskEvent to ticket-intake-queue, per-integration interval from ProjectIntegration. Code review fixes (4C+8H+3L): injected ProjectIntegrationService for token decryption + updateIntegration, switched to RabbitMQService with proper envelope+headers, fixed since fallback 24h, added order_by param, fixed correlationId format, fixed metrics labels, added LoggerService, 8 AC11 tests.'
   CS0-9-multi-tenant-webhook-routing:
     status: ready-for-dev
     effort: '1 day'

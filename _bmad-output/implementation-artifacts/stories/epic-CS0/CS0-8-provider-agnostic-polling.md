@@ -1,6 +1,6 @@
 # Story CS0.8: Provider-Agnostic Polling Orchestrator
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -127,44 +127,44 @@ so that ClickUp, Jira, and Asana tasks are all polled through the same pipeline 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `POLLING` to `TaskTriggerSource` enum (AC: 9)
-  - [ ] Open `src/ticket-intake/dto/task-event.dto.ts`.
-  - [ ] Add `POLLING = 'POLLING'` to `TaskTriggerSource` enum after `WEBHOOK`.
+- [x] Task 1: Add `POLLING` to `TaskTriggerSource` enum (AC: 9)
+  - [x] Open `src/ticket-intake/dto/task-event.dto.ts`.
+  - [x] Add `POLLING = 'POLLING'` to `TaskTriggerSource` enum after `WEBHOOK`.
 
-- [ ] Task 2: Extend `IPMProvider` interface with `getUpdatedTasks` (AC: 2, 6)
-  - [ ] Open `src/integrations/providers/pm-provider.interface.ts` and add `getUpdatedTasks(workspaceId: string, since: Date): Promise<NormalizedTask[]>`.
-  - [ ] Verify `NormalizedTask` at `src/integrations/providers/dto/normalized-task.dto.ts` has `listId: string` — add if missing.
+- [x] Task 2: Extend `IPMProvider` interface with `getUpdatedTasks` (AC: 2, 6)
+  - [x] Open `src/integrations/providers/pm-provider.interface.ts` and add `getUpdatedTasks(workspaceId: string, since: Date): Promise<NormalizedTask[]>`.
+  - [x] Verify `NormalizedTask` at `src/integrations/providers/dto/normalized-task.dto.ts` has `listId: string` — add if missing.
 
-- [ ] Task 3: Implement `getUpdatedTasks` in `ClickUpProvider` (AC: 7)
-  - [ ] Open `src/integrations/providers/clickup/clickup.provider.ts` — read it fully first.
-  - [ ] Add `getUpdatedTasks(workspaceId: string, since: Date): Promise<NormalizedTask[]>`.
-  - [ ] Use `GET /team/{workspaceId}/task` with correct query params (see AC7).
-  - [ ] Map to `NormalizedTask[]`, ensuring `listId: task.list?.id || ''`.
-  - [ ] Wrap in existing `retryWithBackoff` helper.
+- [x] Task 3: Implement `getUpdatedTasks` in `ClickUpProvider` (AC: 7)
+  - [x] Open `src/integrations/providers/clickup/clickup.provider.ts` — read it fully first.
+  - [x] Add `getUpdatedTasks(workspaceId: string, since: Date): Promise<NormalizedTask[]>`.
+  - [x] Use `GET /team/{workspaceId}/task` with correct query params (see AC7).
+  - [x] Map to `NormalizedTask[]`, ensuring `listId: task.list?.id || ''`.
+  - [x] Wrap in existing `retryWithBackoff` helper.
 
-- [ ] Task 4: Create `PmPollingOrchestrator` service (AC: 1, 2, 3, 4, 5, 8)
-  - [ ] Create `src/integrations/polling/pm-polling-orchestrator.service.ts`.
-  - [ ] Inject: `PrismaService`, `ProjectIntegrationService`, `PMProviderFactory`, `RabbitMQService`, `MetricsService`, `SentryService`, `LoggerService`.
-  - [ ] Implement `@Cron('0 * * * * *') async pollDueIntegrations()`.
-  - [ ] Query integrations with `polling_enabled = true`, include `project { id, name }`.
-  - [ ] Per-integration: check due, decrypt tokens, get provider, call `getUpdatedTasks`, build `ITaskEvent` via `mapClickUpToTaskEvent(rawEvent, TaskTriggerSource.POLLING)`, publish, update timestamp.
-  - [ ] Per-integration error isolation with Sentry + metrics.
-  - [ ] Duration histogram via `MetricsService.recordHistogram('pm_polling_duration_seconds', ...)`.
+- [x] Task 4: Create `PmPollingOrchestrator` service (AC: 1, 2, 3, 4, 5, 8)
+  - [x] Create `src/integrations/polling/pm-polling-orchestrator.service.ts`.
+  - [x] Inject: `PrismaService`, `ProjectIntegrationService`, `PMProviderFactory`, `RabbitMQService`, `MetricsService`, `SentryService`, `LoggerService`.
+  - [x] Implement `@Cron('0 * * * * *') async pollDueIntegrations()`.
+  - [x] Query integrations with `polling_enabled = true`, include `project { id, name }`.
+  - [x] Per-integration: check due, decrypt tokens, get provider, call `getUpdatedTasks`, build `ITaskEvent` via `mapClickUpToTaskEvent(rawEvent, TaskTriggerSource.POLLING)`, publish, update timestamp.
+  - [x] Per-integration error isolation with Sentry + metrics.
+  - [x] Duration histogram via `MetricsService.recordHistogram('pm_polling_duration_seconds', ...)`.
 
-- [ ] Task 5: Create `PmPollingModule` (AC: 10)
-  - [ ] Create `src/integrations/polling/pm-polling.module.ts`.
-  - [ ] Imports: `IntegrationsModule`, `DatabaseModule`, `SentryModule`, `AppMetricsModule`, `LoggerModule`, `RabbitMQModule`.
-  - [ ] Providers: `[PmPollingOrchestrator]` only.
-  - [ ] Add `PmPollingModule` to `AppModule` imports array (NOT to `IntegrationsModule`).
+- [x] Task 5: Create `PmPollingModule` (AC: 10)
+  - [x] Create `src/integrations/polling/pm-polling.module.ts`.
+  - [x] Imports: `IntegrationsModule`, `DatabaseModule`, `SentryModule`, `AppMetricsModule`, `LoggerModule`, `RabbitMQModule`.
+  - [x] Providers: `[PmPollingOrchestrator]` only.
+  - [x] Add `PmPollingModule` to `AppModule` imports array (NOT to `IntegrationsModule`).
 
-- [ ] Task 6: Write unit tests (AC: 11)
-  - [ ] Create `src/integrations/polling/pm-polling-orchestrator.service.spec.ts`.
-  - [ ] All 8 test cases from AC11 (see Testing Strategy in Dev Notes).
-  - [ ] Verify test 4 asserts `triggerSource: 'POLLING'` in the published payload.
+- [x] Task 6: Write unit tests (AC: 11)
+  - [x] Create `src/integrations/polling/pm-polling-orchestrator.service.spec.ts`.
+  - [x] All 8 test cases from AC11 (see Testing Strategy in Dev Notes).
+  - [x] Verify test 4 asserts `triggerSource: 'POLLING'` in the published payload.
 
-- [ ] Task 7: Type check and lint (AC: 12)
-  - [ ] `pnpm typecheck` — zero errors.
-  - [ ] `pnpm lint` — zero violations.
+- [x] Task 7: Type check and lint (AC: 12)
+  - [x] `pnpm typecheck` — zero errors.
+  - [x] `pnpm lint` — zero violations.
 
 ## Dev Notes
 
@@ -789,4 +789,29 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- Initial implementation was missing `ProjectIntegrationService` injection; encrypted tokens were passed directly to `PMProviderFactory.getProvider()`. Fixed to call `getDecryptedIntegration()` first.
+- `polling_last_run_at` was updated via direct Prisma call; changed to `ProjectIntegrationService.updateIntegration()` per story requirement (no direct Prisma).
+- `since` fallback was 1 hour; corrected to 24 hours per AC2.
+- `order_by: 'updated'` param was missing from `ClickUpProvider.getUpdatedTasks`; added.
+- `correlationId` format fixed: `polling-{id}-{taskId}-{ts}` (was `poll-{id}-{ts}-{taskId}`).
+- RabbitMQ publish switched to `RabbitMQService` with proper envelope `{ messageId, correlationId, payload }` and options `{ persistent: true, headers: { 'x-source': 'polling' } }`.
+- `pm_polling_runs_total` was incremented once globally at cron start; fixed to per-integration with `{ provider, status }` labels.
+- `pm_polling_tasks_discovered_total` was missing `integration_id` label; added.
+- NestJS built-in `Logger` replaced with `LoggerService` from `@/common/logger`.
+- Cron expression changed from `CronExpression.EVERY_MINUTE` to literal `'0 * * * * *'`.
+- `mapClickUpToTaskEvent` now used for proper ITaskEvent building including status mapping.
+- `as any` types removed; introduced `IntegrationRow` type alias.
+- Unit tests expanded from 3 to 8 cases covering all AC11 requirements.
+- Unnecessary `exports: [PmPollingOrchestrator]` removed from `PmPollingModule`.
+
 ### File List
+
+- `src/integrations/polling/pm-polling-orchestrator.service.ts` (created)
+- `src/integrations/polling/pm-polling-orchestrator.service.spec.ts` (created)
+- `src/integrations/polling/pm-polling.module.ts` (created)
+- `src/ticket-intake/dto/task-event.dto.ts` (modified — added `POLLING` to `TaskTriggerSource`)
+- `src/integrations/providers/pm-provider.interface.ts` (modified — added `getUpdatedTasks`)
+- `src/integrations/providers/pm-provider.interface.spec.ts` (modified — `getUpdatedTasks` in mock)
+- `src/integrations/providers/dto/normalized-task.dto.ts` (modified — verified `listId: string`)
+- `src/integrations/providers/clickup/clickup.provider.ts` (modified — implemented `getUpdatedTasks` with `order_by: 'updated'`)
+- `src/app.module.ts` (modified — imported `PmPollingModule`)

@@ -15,4 +15,6 @@ export class NormalizedTask {
   dateCreated?: string | null;
   dateUpdated?: string | null;
   dateClosed?: string | null;
+  /** ClickUp list ID or equivalent project identifier. Required for DSF project lookup. */
+  listId!: string;
 }

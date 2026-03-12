@@ -19,6 +19,8 @@ export enum TaskTriggerSource {
   SYNC = 'SYNC',
   /** Webhook from provider */
   WEBHOOK = 'WEBHOOK',
+  /** Polling from provider */
+  POLLING = 'POLLING',
 }
 
 /** Internal actionable statuses after provider mapping */

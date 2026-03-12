@@ -27,6 +27,7 @@ class MockPMProvider implements IPMProvider {
       description: 'Test Description',
       status: { id: '1', name: 'Open', color: null, type: NormalizedStatusType.TODO },
       url: 'https://example.com/task/1',
+      listId: 'list-1',
     };
   }
 
@@ -71,6 +72,10 @@ class MockPMProvider implements IPMProvider {
       eventTimestamp: new Date().toISOString(),
       receivedAt: new Date().toISOString(),
     };
+  }
+
+  async getUpdatedTasks(_workspaceId: string, _since: Date): Promise<NormalizedTask[]> {
+    return [];
   }
 }
 

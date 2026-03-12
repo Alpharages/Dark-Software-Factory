@@ -50,6 +50,7 @@ import { NotificationsModule } from './notifications/notifications.module'; // S
 import { IntegrationsModule } from './integrations/integrations.module';
 import { ClickUpModule } from './clickup/clickup.module';
 import { ProjectModule } from './projects/project.module';
+import { PmPollingModule } from './integrations/polling/pm-polling.module';
 
 // Dependency Management
 import { DependenciesModule } from './dependencies/dependencies.module';
@@ -126,6 +127,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     IntegrationsModule,
     ClickUpModule,
     ProjectModule,
+    PmPollingModule,
 
     // Story 5.5: Client Communication Intelligence
     ConversationsModule,

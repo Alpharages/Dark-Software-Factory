@@ -66,6 +66,7 @@ interface ClickUpTask {
   date_created?: string;
   date_updated?: string;
   date_closed?: string;
+  list?: { id: string };
 }
 
 interface ClickUpWebhookPayload {
@@ -202,6 +203,23 @@ export class ClickUpProvider implements IPMProvider {
     await this.retryWithBackoff(() => this.client.delete(`/webhook/${webhookId}`));
   }
 
+  async getUpdatedTasks(teamId: string, since: Date): Promise<NormalizedTask[]> {
+    // ClickUp API expects Unix timestamp in milliseconds for date_updated_gt
+    const timestamp = since.getTime();
+    const response = await this.retryWithBackoff(() =>
+      this.client.get(`/team/${teamId}/task`, {
+        params: {
+          date_updated_gt: timestamp,
+          include_closed: true,
+          subtasks: true,
+          order_by: 'updated',
+        },
+      }),
+    );
+    const tasks: ClickUpTask[] = response.data.tasks || [];
+    return tasks.map((t) => this.mapTask(t));
+  }
+
   normalizeEvent(payload: unknown): IRawTaskEvent {
     const event = payload as ClickUpWebhookPayload;
     return {
@@ -255,6 +273,7 @@ export class ClickUpProvider implements IPMProvider {
       dateCreated: task.date_created,
       dateUpdated: task.date_updated,
       dateClosed: task.date_closed,
+      listId: task.list?.id || '',
     };
   }
 
