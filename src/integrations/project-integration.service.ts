@@ -160,6 +160,16 @@ export class ProjectIntegrationService {
     return this.decryptTokens(integration);
   }
 
+  async findByWebhookId(webhookId: string): Promise<ProjectIntegration | null> {
+    const integration = await this.prisma.projectIntegration.findFirst({
+      where: { webhook_id: webhookId },
+    });
+
+    if (!integration) return null;
+
+    return this.decryptTokens(integration);
+  }
+
   private decryptTokens(integration: ProjectIntegration): ProjectIntegration {
     try {
       return {

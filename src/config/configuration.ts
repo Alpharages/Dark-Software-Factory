@@ -100,6 +100,7 @@ export default () => {
       rateLimitPerUser: parseInt(process.env.RATE_LIMIT_PER_USER || '1000', 10),
       rateLimitPerIp: parseInt(process.env.RATE_LIMIT_PER_IP || '5000', 10),
       corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3001'],
+      publicUrl: process.env.DSF_PUBLIC_URL || process.env.FRONTEND_URL || 'http://localhost:3000',
       // Story 3.4: Security Scanning Configuration
       blockOnCritical: process.env.SECURITY_BLOCK_ON_CRITICAL !== 'false',
       blockOnHigh: process.env.SECURITY_BLOCK_ON_HIGH !== 'false',

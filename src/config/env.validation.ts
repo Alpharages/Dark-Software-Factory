@@ -419,6 +419,7 @@ export const envValidationSchema = Joi.object({
   FRONTEND_URL: Joi.string().uri().required().messages({
     'any.required': 'FRONTEND_URL is required for invitation links',
   }),
+  DSF_PUBLIC_URL: Joi.string().uri().optional(),
 
   // Email Configuration (SMTP)
   SMTP_HOST: Joi.string().required(),

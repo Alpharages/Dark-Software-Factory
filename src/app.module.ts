@@ -48,6 +48,7 @@ import { NotificationsModule } from './notifications/notifications.module'; // S
 
 // External integrations
 import { IntegrationsModule } from './integrations/integrations.module';
+import { PmWebhookModule } from './integrations/webhook/pm-webhook.module';
 import { ClickUpModule } from './clickup/clickup.module';
 import { ProjectModule } from './projects/project.module';
 import { PmPollingModule } from './integrations/polling/pm-polling.module';
@@ -56,9 +57,9 @@ import { PmPollingModule } from './integrations/polling/pm-polling.module';
 import { DependenciesModule } from './dependencies/dependencies.module';
 import { FileLocksModule } from './file-locks/file-locks.module';
 import { StorageModule } from './storage/storage.module';
-import { GitMirrorModule } from './git-mirror/git-mirror.module';
-import { DockerModule } from './docker/docker.module'; // Story 22.1
-import { CleanupModule } from './cleanup/cleanup.module'; // Story 23.2
+import { GitMirrorModule } from '@/git-mirror';
+import { DockerModule } from '@/docker'; // Story 22.1
+import { CleanupModule } from '@/cleanup'; // Story 23.2
 
 // Story 15.2
 import { SystemConfigModule } from './system-settings/system-config.module';
@@ -125,6 +126,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
 
     // External integrations
     IntegrationsModule,
+    PmWebhookModule,
     ClickUpModule,
     ProjectModule,
     PmPollingModule,

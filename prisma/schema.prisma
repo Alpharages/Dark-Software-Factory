@@ -1282,6 +1282,7 @@ model ProjectIntegration {
 
   @@unique([project_id, provider])
   @@index([project_id])
+  @@index([webhook_id])
   @@map("project_integrations")
 }
 

@@ -21,6 +21,7 @@ describe('ProjectIntegrationService', () => {
       update: jest.fn(),
       upsert: jest.fn(),
       delete: jest.fn(),
+      findFirst: jest.fn(),
     },
   };
 
@@ -315,6 +316,38 @@ describe('ProjectIntegrationService', () => {
       await expect(service.getDecryptedIntegration('pi-corrupt')).rejects.toThrow(
         'Failed to decrypt tokens for integration pi-corrupt',
       );
+    });
+    describe('findByWebhookId', () => {
+      it('should return decrypted integration when webhook_id matches', async () => {
+        mockPrismaService.projectIntegration.findFirst.mockResolvedValue({
+          id: 'pi-1',
+          project_id: 'proj-1',
+          provider: 'CLICKUP',
+          workspace_id: 'ws-1',
+          workspace_name: 'My Workspace',
+          access_token: 'encrypted_access',
+          refresh_token: 'encrypted_refresh',
+          webhook_secret: 'encrypted_webhook',
+          webhook_id: 'wh-abc',
+          webhook_enabled: true,
+        });
+
+        const result = await service.findByWebhookId('wh-abc');
+
+        expect(prismaService.projectIntegration.findFirst).toHaveBeenCalledWith({
+          where: { webhook_id: 'wh-abc' },
+        });
+        expect(result).not.toBeNull();
+        expect(result!.webhook_secret).toBe('webhook');
+      });
+
+      it('should return null when webhook_id not found', async () => {
+        mockPrismaService.projectIntegration.findFirst.mockResolvedValue(null);
+
+        const result = await service.findByWebhookId('nonexistent-wh');
+
+        expect(result).toBeNull();
+      });
     });
   });
 

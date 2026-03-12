@@ -259,7 +259,7 @@ development_status:
     story_points: 5
     notes: 'PmPollingOrchestrator: @Cron every-minute loop, getUpdatedTasks on IPMProvider, publishes ITaskEvent to ticket-intake-queue, per-integration interval from ProjectIntegration. Code review fixes (4C+8H+3L): injected ProjectIntegrationService for token decryption + updateIntegration, switched to RabbitMQService with proper envelope+headers, fixed since fallback 24h, added order_by param, fixed correlationId format, fixed metrics labels, added LoggerService, 8 AC11 tests.'
   CS0-9-multi-tenant-webhook-routing:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
     notes: 'Webhook routing via workspace ID in payload. Per-workspace webhook_secret lookup. Multi-tenant signature verification. Ultimate context engine analysis completed - comprehensive developer guide created.'
@@ -579,7 +579,7 @@ development_flow:
 epic_status:
   epic-CS0:
     name: 'PM Tool Integration Framework'
-    status: 'in-progress'
+    status: 'done'
     priority: 'high'
     source: 'epics-clickup-smart-sync.md'
     stories: 9
