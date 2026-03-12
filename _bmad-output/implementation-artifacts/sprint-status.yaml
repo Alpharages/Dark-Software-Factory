@@ -229,12 +229,12 @@ development_status:
     story_points: 5
     notes: 'Define IPMProvider interface: getSelf, getStatuses, updateStatus, addComment, assignTask, getRequiredFields, setFieldValue, registerWebhook, normalizeEvent. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-3-clickup-provider-implementation:
-    status: ready-for-dev
+    status: done
     effort: '3 days'
     story_points: 8
     notes: 'Implement ClickUpProvider implementing IPMProvider. Wraps existing ClickUp API calls. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-4-pm-provider-factory:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
     notes: 'PMProviderFactory resolves correct IPMProvider from ProjectIntegration.provider enum. Token refresh (5-min window) + UnsupportedProviderException + IntegrationAuthException. Ultimate context engine analysis completed - comprehensive developer guide created.'
@@ -503,7 +503,7 @@ priority_sequence:
         name: 'ClickUpProvider Implementation'
       - id: CS0-4-pm-provider-factory
         title: PMProviderFactory & Token Refresh Logic
-        status: ready-for-dev
+        status: done
         description: Implement a factory to resolve PM providers and handle transparent OAuth token refresh.
         dependencies: [CS0-2, CS0-3]
       - id: 'CS0-5'

@@ -113,6 +113,8 @@ export const envValidationSchema = Joi.object({
     'any.required': 'CLICKUP_WEBHOOK_SECRET is required for webhook signature verification',
     'string.min': 'CLICKUP_WEBHOOK_SECRET must be at least 16 characters',
   }),
+  CLICKUP_CLIENT_ID: Joi.string().optional().allow(''),
+  CLICKUP_CLIENT_SECRET: Joi.string().optional().allow(''),
 
   // Monitoring (optional but recommended)
   SENTRY_DSN: Joi.string().optional().allow(''),

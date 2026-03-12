@@ -1,6 +1,6 @@
 # Story CS0.4: PMProviderFactory — Token Refresh & Exception Hardening
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -96,18 +96,18 @@ so that all callers receive a ready-to-use `IPMProvider` without managing token 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `UnsupportedProviderException` (AC: 5)
-  - [ ] Create `src/common/exceptions/unsupported-provider.exception.ts`
-  - [ ] Extend `HttpException` with `HttpStatus.BAD_REQUEST`
-  - [ ] Constructor: `(provider: string)` → message template as specified
+- [x] Task 1: Create `UnsupportedProviderException` (AC: 5)
+  - [x] Create `src/common/exceptions/unsupported-provider.exception.ts`
+  - [x] Extend `HttpException` with `HttpStatus.BAD_REQUEST`
+  - [x] Constructor: `(provider: string)` → message template as specified
 
-- [ ] Task 2: Create `IntegrationAuthException` (AC: 6)
-  - [ ] Create `src/common/exceptions/integration-auth.exception.ts`
-  - [ ] Extend `HttpException` with `HttpStatus.UNAUTHORIZED`
-  - [ ] Constructor: `(integrationId: string, cause?: unknown)` → store `this.cause = cause`
+- [x] Task 2: Create `IntegrationAuthException` (AC: 6)
+  - [x] Create `src/common/exceptions/integration-auth.exception.ts`
+  - [x] Extend `HttpException` with `HttpStatus.UNAUTHORIZED`
+  - [x] Constructor: `(integrationId: string, cause?: unknown)` → structured body with `details` field
 
-- [ ] Task 3: Add ClickUp OAuth config entries (AC: 4, 7)
-  - [ ] In `src/config/configuration.ts`, extend the existing `clickup` block (add 2 lines only):
+- [x] Task 3: Add ClickUp OAuth config entries (AC: 4, 7)
+  - [x] In `src/config/configuration.ts`, extend the existing `clickup` block (add 2 lines only):
     ```typescript
     clickup: {
       apiKey: process.env.CLICKUP_API_KEY,
@@ -117,30 +117,29 @@ so that all callers receive a ready-to-use `IPMProvider` without managing token 
       clientSecret: process.env.CLICKUP_CLIENT_SECRET || '', // ← add
     },
     ```
-  - [ ] In `src/config/env.validation.ts`, add after the existing ClickUp block (do NOT touch `CLICKUP_API_KEY: Joi.string().required()`):
+  - [x] In `src/config/env.validation.ts`, add after the existing ClickUp block (do NOT touch `CLICKUP_API_KEY: Joi.string().required()`):
     ```typescript
     CLICKUP_CLIENT_ID: Joi.string().optional().allow(''),
     CLICKUP_CLIENT_SECRET: Joi.string().optional().allow(''),
     ```
 
-- [ ] Task 4: Extend `PMProviderFactory` (AC: 1, 2, 3, 4, 5, 6, 7, 8)
-  - [ ] **Read `src/integrations/providers/pm-provider.factory.ts` first** to understand CS0-3's state
-  - [ ] Add `import { ConfigService } from '@nestjs/config'` (globally available — no module import needed)
-  - [ ] Add `import axios from 'axios'` for the token refresh HTTP call
-  - [ ] Inject `ConfigService` in constructor alongside existing `ProjectIntegrationService`
-  - [ ] Add `private readonly logger = new Logger(PMProviderFactory.name)`
-  - [ ] Remove any redundant `getDecryptedIntegration()` call CS0-3 may have added (callers already pass decrypted integration)
-  - [ ] Implement `private async refreshTokens(integration: ProjectIntegration): Promise<ProjectIntegration>` — see full implementation in Dev Notes
-  - [ ] In `getProvider()`: add the refresh check + null guards + replace bare `throw new Error()` default with `throw new UnsupportedProviderException()`
+- [x] Task 4: Extend `PMProviderFactory` (AC: 1, 2, 3, 4, 5, 6, 7, 8)
+  - [x] Add `import { ConfigService } from '@nestjs/config'`
+  - [x] Add `import axios from 'axios'`
+  - [x] Inject `ConfigService` in constructor alongside `ProjectIntegrationService`
+  - [x] Add `private readonly logger = new Logger(PMProviderFactory.name)`
+  - [x] No redundant `getDecryptedIntegration()` call — caller passes decrypted integration
+  - [x] Implement `private async refreshTokens(integration: ProjectIntegration): Promise<ProjectIntegration>`
+  - [x] In `getProvider()`: refresh check, null guards, `UnsupportedProviderException` default case
 
-- [ ] Task 5: Write unit tests (AC: 9)
-  - [ ] Create `src/integrations/providers/pm-provider.factory.spec.ts`
-  - [ ] Use `jest.mock('axios')` at module level — then `(axios as jest.Mocked<typeof axios>).post`
-  - [ ] All 9 test cases from AC9 (see Testing Strategy in Dev Notes for full scaffold)
+- [x] Task 5: Write unit tests (AC: 9)
+  - [x] Create `src/integrations/providers/pm-provider.factory.spec.ts`
+  - [x] Use `jest.mock('axios')` at module level
+  - [x] All 9 test cases from AC9
 
-- [ ] Task 6: Type check and lint (AC: 10)
-  - [ ] `pnpm typecheck` — zero errors (no `!` assertions on nullable fields)
-  - [ ] `pnpm lint` — zero ESLint violations
+- [x] Task 6: Type check and lint (AC: 10)
+  - [x] `pnpm typecheck` — zero errors (no `!` assertions on nullable fields)
+  - [x] `pnpm lint` — zero ESLint violations
 
 ## Dev Notes
 
@@ -645,4 +644,13 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- Implementation complete. Code review (CS0-4) identified and fixed: exception structured body format, IntegrationProvider enum usage, factory file relocation to correct path, error log context, null guard order, missing AC9.8 test, and story record update.
+
 ### File List
+
+- src/common/exceptions/unsupported-provider.exception.ts
+- src/common/exceptions/integration-auth.exception.ts
+- src/integrations/providers/pm-provider.factory.ts
+- src/integrations/providers/pm-provider.factory.spec.ts
+- src/config/configuration.ts
+- src/config/env.validation.ts
