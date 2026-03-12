@@ -19,6 +19,8 @@ describe('ProjectIntegrationService', () => {
       create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      upsert: jest.fn(),
+      delete: jest.fn(),
     },
   };
 
@@ -312,6 +314,105 @@ describe('ProjectIntegrationService', () => {
 
       await expect(service.getDecryptedIntegration('pi-corrupt')).rejects.toThrow(
         'Failed to decrypt tokens for integration pi-corrupt',
+      );
+    });
+  });
+
+  describe('upsertIntegration', () => {
+    const baseRecord = {
+      id: 'pi-1',
+      project_id: 'proj-1',
+      provider: 'CLICKUP',
+      workspace_id: 'ws-1',
+      workspace_name: 'My Workspace',
+      access_token: 'encrypted_raw-token',
+      refresh_token: null,
+      token_expiry: null,
+      bot_user_id: null,
+      bot_username: null,
+      webhook_secret: null,
+      polling_enabled: false,
+      polling_interval_min: 15,
+      polling_last_run_at: null,
+      webhook_enabled: false,
+      webhook_id: null,
+      provider_config: {},
+      ai_trigger_status: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    it('creates new record and encrypts access_token', async () => {
+      const data = {
+        workspace_id: 'ws-1',
+        workspace_name: 'My Workspace',
+        access_token: 'raw-token',
+        refresh_token: null,
+        token_expiry: null,
+        bot_user_id: 'bot-1',
+        provider_config: { foo: 'bar' },
+      };
+
+      mockPrismaService.projectIntegration.upsert.mockResolvedValue({
+        ...baseRecord,
+        bot_user_id: 'bot-1',
+        provider_config: data.provider_config,
+      });
+
+      const result = await service.upsertIntegration('proj-1', 'CLICKUP' as any, data);
+
+      expect(prismaService.projectIntegration.upsert).toHaveBeenCalled();
+      expect(encryptionService.encrypt).toHaveBeenCalledWith('raw-token');
+      expect(result.access_token).toBe('raw-token');
+    });
+
+    it('updates existing record on upsert (token_expiry and refresh_token null)', async () => {
+      const data = {
+        workspace_id: 'ws-1',
+        workspace_name: 'My Workspace',
+        access_token: 'new-token',
+        refresh_token: null,
+        token_expiry: null,
+        provider_config: {},
+      };
+
+      mockPrismaService.projectIntegration.upsert.mockResolvedValue({
+        ...baseRecord,
+        access_token: 'encrypted_new-token',
+      });
+
+      const result = await service.upsertIntegration('proj-1', 'CLICKUP' as any, data);
+
+      expect(prismaService.projectIntegration.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { project_id_provider: { project_id: 'proj-1', provider: 'CLICKUP' } },
+        }),
+      );
+      expect(result.access_token).toBe('new-token');
+    });
+  });
+
+  describe('deleteIntegration', () => {
+    it('deletes record using composite unique key in a single query', async () => {
+      mockPrismaService.projectIntegration.delete.mockResolvedValue({});
+
+      await service.deleteIntegration('proj-1', 'CLICKUP' as any);
+
+      expect(prismaService.projectIntegration.delete).toHaveBeenCalledWith({
+        where: { project_id_provider: { project_id: 'proj-1', provider: 'CLICKUP' } },
+      });
+    });
+
+    it('throws NotFoundException on Prisma P2025 (record not found)', async () => {
+      const { Prisma } = jest.requireActual('@prisma/client') as typeof import('@prisma/client');
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '0.0.0',
+      });
+      mockPrismaService.projectIntegration.delete.mockRejectedValue(prismaError);
+
+      await expect(service.deleteIntegration('proj-1', 'CLICKUP' as any)).rejects.toThrow(
+        'No CLICKUP integration found for project proj-1',
       );
     });
   });

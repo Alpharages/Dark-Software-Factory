@@ -239,15 +239,15 @@ development_status:
     story_points: 3
     notes: 'PMProviderFactory resolves correct IPMProvider from ProjectIntegration.provider enum. Token refresh (5-min window) + UnsupportedProviderException + IntegrationAuthException. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-5-clickup-oauth-app:
-    status: ready-for-dev
+    status: done
     effort: '3 days'
     story_points: 8
     notes: 'ClickUp OAuth App flow. GET connect returns OAuth URL, GET callback exchanges code + upserts ProjectIntegration + captures bot_user_id. DELETE disconnect. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-6-connect-ui:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
-    notes: 'Frontend: Connect PM tool UI. OAuth "Connect ClickUp" button, connection status, disconnect.'
+    notes: 'Frontend: Connect PM tool UI. OAuth "Connect ClickUp" button, connection status, disconnect. Code review fixes: OAuth callback route mismatch (C1), missing ProtectedRoute role guard (C2), wrong DELETE endpoint URL (C3), missing staleTime:60000 (H1), Badge added to callback (H2), null projectId guard (H3), per-provider mutation loading state (M1), invalid CSS variable classes (M2), File List added to Dev Agent Record (M3).'
   CS0-7-sync-settings-ui:
     status: ready-for-dev
     effort: '2 days'

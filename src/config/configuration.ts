@@ -69,11 +69,12 @@ export default () => {
 
     // ClickUp Integration
     clickup: {
-      apiKey: process.env.CLICKUP_API_KEY,
+      apiKey: process.env.CLICKUP_API_KEY || '',
       apiUrl: process.env.CLICKUP_API_URL || 'https://api.clickup.com/api/v2',
-      webhookSecret: process.env.CLICKUP_WEBHOOK_SECRET,
+      webhookSecret: process.env.CLICKUP_WEBHOOK_SECRET || '',
       clientId: process.env.CLICKUP_CLIENT_ID || '',
       clientSecret: process.env.CLICKUP_CLIENT_SECRET || '',
+      redirectUri: process.env.CLICKUP_REDIRECT_URI || '',
     },
 
     // Monitoring

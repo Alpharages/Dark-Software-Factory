@@ -1,6 +1,6 @@
 # Story CS0.6: Connect PM Tool UI
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -37,17 +37,17 @@ To ensure consistency with the premium dashboard theme, the implementation MUST 
 
 ## Tasks / Subtasks
 
-- [ ] Implement API Client (`src/api/integrationsApi.ts`) (AC: 3, 5, 6)
-- [ ] Create PM Integration Settings Panel (AC: 1, 2, 7)
-  - [ ] Implement `PmIntegrationPanel.tsx` in `src/pages/settings/panels/`.
-  - [ ] Ensure `IntegrationProviderCard` matches the `glass-card` styling standard.
-- [ ] Implement OAuth Callback Handler (AC: 4)
-  - [ ] Files: `src/pages/settings/PmIntegrationCallback.tsx`.
-  - [ ] Apply `animate-pulse-glow` and `Loader2` during exchange.
-- [ ] UI Polish & Styling Verification
-  - [ ] Verify use of CSS variables over hex codes.
-  - [ ] Test dark/light theme switching compatibility.
-  - [ ] Verify hover transitions and container blurs.
+- [x] Implement API Client (`src/api/integrationsApi.ts`) (AC: 3, 5, 6)
+- [x] Create PM Integration Settings Panel (AC: 1, 2, 7)
+  - [x] Implement `PmIntegrationPanel.tsx` in `src/pages/settings/panels/`.
+  - [x] Ensure `IntegrationProviderCard` matches the `glass-card` styling standard.
+- [x] Implement OAuth Callback Handler (AC: 4)
+  - [x] Files: `src/pages/settings/PmIntegrationCallback.tsx`.
+  - [x] Apply `animate-pulse-glow` and `Loader2` during exchange.
+- [x] UI Polish & Styling Verification
+  - [x] Verify use of CSS variables over hex codes.
+  - [x] Test dark/light theme switching compatibility.
+  - [x] Verify hover transitions and container blurs.
 
 ## Dev Notes
 
@@ -66,6 +66,17 @@ To ensure consistency with the premium dashboard theme, the implementation MUST 
 ### Agent Model Used
 
 Antigravity v1.0 (Styling Hardened)
+
+### File List
+
+- `src/api/integrationsApi.ts` (created)
+- `src/pages/settings/panels/PmIntegrationPanel.tsx` (created)
+- `src/pages/settings/PmIntegrationCallback.tsx` (created)
+- `src/types/integrations.ts` (created)
+- `src/hooks/queries/useIntegrationHealth.ts` (modified — unrelated to this story)
+- `src/pages/settings/SettingsLayout.tsx` (modified — added projectPanels and PM Tool Integration nav entry)
+- `src/pages/settings/panels/AllPanels.tsx` (modified — re-exported PmIntegrationPanel)
+- `src/App.tsx` (modified — registered PmIntegrationCallback route and project settings integrations route)
 
 ### completion_notes_list
 

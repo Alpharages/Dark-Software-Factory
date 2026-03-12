@@ -1,6 +1,6 @@
 # Story CS0.5: ClickUp OAuth App Flow — Backend
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -174,66 +174,66 @@ CLICKUP_REDIRECT_URI: Joi.string().uri().optional().allow(''),
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `ProjectIntegrationService` (AC: 5, 6)
-  - [ ] Read `src/integrations/project-integration.service.ts` in full before editing
-  - [ ] Add `import { Prisma } from '@prisma/client'` to the existing `@prisma/client` import
+- [x] Task 1: Extend `ProjectIntegrationService` (AC: 5, 6)
+  - [x] Read `src/integrations/project-integration.service.ts` in full before editing
+  - [x] Add `import { Prisma } from '@prisma/client'` to the existing `@prisma/client` import
         (on same line or separate — keep existing `{ ProjectIntegration, IntegrationProvider }`)
-  - [ ] Add `import { NotFoundException } from '@nestjs/common'` if not already present
-  - [ ] Define `UpsertIntegrationData` interface above the class (see Dev Notes scaffold)
-  - [ ] Add `upsertIntegration(projectId, provider, data: UpsertIntegrationData)` — encrypt
+  - [x] Add `import { NotFoundException } from '@nestjs/common'` if not already present
+  - [x] Define `UpsertIntegrationData` interface above the class (see Dev Notes scaffold)
+  - [x] Add `upsertIntegration(projectId, provider, data: UpsertIntegrationData)` — encrypt
         tokens (only if string, null passes through), Prisma upsert on `project_id_provider` key,
         return decrypted result
-  - [ ] Add `deleteIntegration(projectId, provider)` — catch `P2025` → `NotFoundException`
+  - [x] Add `deleteIntegration(projectId, provider)` — catch `P2025` → `NotFoundException`
 
-- [ ] Task 2: Add config entry for `clickup.redirectUri` (AC: 7)
-  - [ ] Read `src/config/configuration.ts` — find the `clickup` block
-  - [ ] Add `redirectUri: process.env.CLICKUP_REDIRECT_URI || ''` (one line only)
-  - [ ] Read `src/config/env.validation.ts` — find the ClickUp OAuth section added by CS0-4
-  - [ ] Add `CLICKUP_REDIRECT_URI: Joi.string().uri().optional().allow('')` after
+- [x] Task 2: Add config entry for `clickup.redirectUri` (AC: 7)
+  - [x] Read `src/config/configuration.ts` — find the `clickup` block
+  - [x] Add `redirectUri: process.env.CLICKUP_REDIRECT_URI || ''` (one line only)
+  - [x] Read `src/config/env.validation.ts` — find the ClickUp OAuth section added by CS0-4
+  - [x] Add `CLICKUP_REDIRECT_URI: Joi.string().uri().optional().allow('')` after
         `CLICKUP_CLIENT_SECRET`
-  - [ ] **Do NOT add `FRONTEND_URL`** — it is already `required()` at line ~416
+  - [x] **Do NOT add `FRONTEND_URL`** — it is already `required()` at line ~416
 
-- [ ] Task 3: Create `ClickUpOAuthService` (AC: 1–6)
-  - [ ] Create `src/integrations/clickup-oauth.service.ts`
-  - [ ] Inject `ConfigService`, `ProjectIntegrationService`, `PrismaService`
-  - [ ] Implement `getConnectUrl(projectId: string): Promise<string>` — validate project exists
+- [x] Task 3: Create `ClickUpOAuthService` (AC: 1–6)
+  - [x] Create `src/integrations/clickup-oauth.service.ts`
+  - [x] Inject `ConfigService`, `ProjectIntegrationService`, `PrismaService`
+  - [x] Implement `getConnectUrl(projectId: string): Promise<string>` — validate project exists
         via `prisma.project.findUniqueOrThrow`, then build URL
-  - [ ] Implement `exchangeCode(code: string): Promise<ClickUpTokenResponse>` — query params,
+  - [x] Implement `exchangeCode(code: string): Promise<ClickUpTokenResponse>` — query params,
         no body, throws `IntegrationAuthException` on missing access_token
-  - [ ] Implement `getBotIdentity(accessToken: string)` — `ClickUpProvider.getSelf()` + GET
+  - [x] Implement `getBotIdentity(accessToken: string)` — `ClickUpProvider.getSelf()` + GET
         /team in parallel; warn-level log + fallback values on any error
-  - [ ] Implement `handleCallback(code: string, state: string): Promise<string>` — guards empty
+  - [x] Implement `handleCallback(code: string, state: string): Promise<string>` — guards empty
         inputs, orchestrates exchange → getBotIdentity → upsert → returns redirect URL; catches all
         errors and returns error redirect URL (never throws)
-  - [ ] See complete scaffold in Dev Notes
+  - [x] See complete scaffold in Dev Notes
 
-- [ ] Task 4: Create `ClickUpOAuthController` (AC: 1, 2, 6)
-  - [ ] Create `src/integrations/clickup-oauth.controller.ts`
-  - [ ] **No class-level guards** — per-method only (follows `github-auth-flow.controller.ts`)
-  - [ ] `GET connect` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)` + `@Roles(...)`,
+- [x] Task 4: Create `ClickUpOAuthController` (AC: 1, 2, 6)
+  - [x] Create `src/integrations/clickup-oauth.controller.ts`
+  - [x] **No class-level guards** — per-method only (follows `github-auth-flow.controller.ts`)
+  - [x] `GET connect` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)` + `@Roles(...)`,
         calls `oauthService.getConnectUrl(project_id)`, returns `{ url }`
-  - [ ] `GET callback` — `@Public()` (import from `@/common/decorators`) + no guards,
+  - [x] `GET callback` — `@Public()` (import from `@/common/decorators`) + no guards,
         `@Res() reply: FastifyReply`, calls `oauthService.handleCallback(code, state)`, then
         `reply.redirect(redirectUrl, 302)` — **never** use `@Redirect()` decorator
-  - [ ] `DELETE disconnect` — same guards as connect, calls
+  - [x] `DELETE disconnect` — same guards as connect, calls
         `integrationService.deleteIntegration(project_id, IntegrationProvider.CLICKUP)`, returns
         `{ message }`
-  - [ ] Add Swagger decorators (see scaffold in Dev Notes)
+  - [x] Add Swagger decorators (see scaffold in Dev Notes)
 
-- [ ] Task 5: Register in `IntegrationsModule` (AC: wiring)
-  - [ ] Read `src/integrations/integrations.module.ts` before editing
-  - [ ] Add `ClickUpOAuthController` to `controllers` array
-  - [ ] Add `ClickUpOAuthService` to `providers` array
-  - [ ] No new module `imports` needed (ConfigService is global, DatabaseModule already present)
+- [x] Task 5: Register in `IntegrationsModule` (AC: wiring)
+  - [x] Read `src/integrations/integrations.module.ts` before editing
+  - [x] Add `ClickUpOAuthController` to `controllers` array
+  - [x] Add `ClickUpOAuthService` to `providers` array
+  - [x] No new module `imports` needed (ConfigService is global, DatabaseModule already present)
 
-- [ ] Task 6: Write unit tests (AC: 8)
-  - [ ] Create `src/integrations/clickup-oauth.service.spec.ts` — 9 test cases (see scaffold)
-  - [ ] Create `src/integrations/clickup-oauth.controller.spec.ts` — 2 test cases
-  - [ ] Extend `src/integrations/project-integration.service.spec.ts` — 4 test cases
+- [x] Task 6: Write unit tests (AC: 8)
+  - [x] Create `src/integrations/clickup-oauth.service.spec.ts` — 9 test cases (see scaffold)
+  - [x] Create `src/integrations/clickup-oauth.controller.spec.ts` — 2 test cases
+  - [x] Extend `src/integrations/project-integration.service.spec.ts` — 4 test cases
 
-- [ ] Task 7: Type check and lint (AC: 9)
-  - [ ] `pnpm typecheck` — zero errors
-  - [ ] `pnpm lint` — zero violations
+- [x] Task 7: Type check and lint (AC: 9)
+  - [x] `pnpm typecheck` — zero errors
+  - [x] `pnpm lint` — zero violations
 
 ---
 
@@ -912,4 +912,18 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- Code review (2026-03-13): Fixed 10 critical + 5 medium issues. Key fixes: getConnectUrl made async with project validation + BadRequest guards; state format corrected to `projectId:CLICKUP`; class-level guards removed from controller; Fastify redirect pattern fixed to `reply.redirect(url, 302)`; redirect_uri added to token exchange; DELETE endpoint changed to query param; redirect URLs corrected to spec; getBotIdentity made resilient with try/catch and fallback values; Authorization header corrected; all 9 service test cases implemented; UpsertIntegrationData interface fixed (provider_config, nullable fields); deleteIntegration switched to single-query P2025 pattern.
+
 ### File List
+
+| File                                                   | Action   |
+| ------------------------------------------------------ | -------- |
+| `src/integrations/clickup-oauth.service.ts`            | Created  |
+| `src/integrations/clickup-oauth.controller.ts`         | Created  |
+| `src/integrations/clickup-oauth.service.spec.ts`       | Created  |
+| `src/integrations/clickup-oauth.controller.spec.ts`    | Created  |
+| `src/integrations/project-integration.service.ts`      | Modified |
+| `src/integrations/project-integration.service.spec.ts` | Modified |
+| `src/integrations/integrations.module.ts`              | Modified |
+| `src/config/configuration.ts`                          | Modified |
+| `src/config/env.validation.ts`                         | Modified |

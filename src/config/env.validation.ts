@@ -115,6 +115,7 @@ export const envValidationSchema = Joi.object({
   }),
   CLICKUP_CLIENT_ID: Joi.string().optional().allow(''),
   CLICKUP_CLIENT_SECRET: Joi.string().optional().allow(''),
+  CLICKUP_REDIRECT_URI: Joi.string().uri().optional().allow(''),
 
   // Monitoring (optional but recommended)
   SENTRY_DSN: Joi.string().optional().allow(''),
