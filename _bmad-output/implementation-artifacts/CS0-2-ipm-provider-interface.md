@@ -1,6 +1,6 @@
 # Story CS0.2: IPMProvider Interface & PMProviderFactory
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -30,14 +30,14 @@ so that Epics 1–3 never need to know which provider they are talking to. (Fact
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define Normalized DTOs (AC: 2)
-  - [ ] Create `src/integrations/providers/dto/normalized-task.dto.ts`
-  - [ ] Create `src/integrations/providers/dto/normalized-status.dto.ts`
-  - [ ] Create `src/integrations/providers/dto/normalized-field.dto.ts`
-- [ ] Task 2: Implement IPMProvider Interface (AC: 1)
-  - [ ] Define interface in `src/integrations/providers/pm-provider.interface.ts`
-  - [ ] Import and use normalized DTOs for method signatures
-- [ ] Task 3: Run `pnpm typecheck` (AC: 3)
+- [x] Task 1: Define Normalized DTOs (AC: 2)
+  - [x] Create `src/integrations/providers/dto/normalized-task.dto.ts`
+  - [x] Create `src/integrations/providers/dto/normalized-status.dto.ts`
+  - [x] Create `src/integrations/providers/dto/normalized-field.dto.ts`
+- [x] Task 2: Implement IPMProvider Interface (AC: 1)
+  - [x] Define interface in `src/integrations/providers/pm-provider.interface.ts`
+  - [x] Import and use normalized DTOs for method signatures
+- [x] Task 3: Run `pnpm typecheck` (AC: 3)
 
 ## Dev Notes
 
@@ -74,4 +74,26 @@ N/A
 
 ### Completion Notes List
 
+- Defined the `IPMProvider` interface with all required methods.
+- Created normalized DTOs for tasks, statuses, and fields.
+- Verified type safety via `tsc --noEmit`.
+- Added mock interface tests (Review Fix).
+- Code Review (2026-03-12): Fixed 2 HIGH + 5 MEDIUM issues:
+  - H1: Added `NormalizedSelf` and `WebhookRegistrationResult` DTOs; `getSelf` and `registerWebhook` now return named types (not inline anonymous objects).
+  - H2: Added JSDoc on `normalizeEvent` documenting IRawTaskEvent ClickUp-field coupling and CS1+ migration path.
+  - M1: Added barrel exports (`dto/index.ts`, `providers/index.ts`).
+  - M2: Expanded spec from 5 → 11 tests covering all interface methods; added email assertion to getSelf.
+  - M3: `NormalizedTask.customFields` changed to `Record<string, unknown>` (matches IRawTaskEvent.customFields directly).
+  - M4: `NormalizedTask` date fields changed from `Date` to `string | null` (matches PM API responses).
+  - M5: `NormalizedFieldValue.value` changed from `any` to `FieldValue` union type (`string | number | boolean | string[] | null`).
+
 ### File List
+
+- `src/integrations/providers/pm-provider.interface.ts`
+- `src/integrations/providers/dto/normalized-task.dto.ts`
+- `src/integrations/providers/dto/normalized-status.dto.ts`
+- `src/integrations/providers/dto/normalized-field.dto.ts`
+- `src/integrations/providers/dto/normalized-self.dto.ts`
+- `src/integrations/providers/dto/index.ts`
+- `src/integrations/providers/index.ts`
+- `src/integrations/providers/pm-provider.interface.spec.ts`

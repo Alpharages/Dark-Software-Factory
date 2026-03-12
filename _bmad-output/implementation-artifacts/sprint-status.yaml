@@ -224,7 +224,7 @@ development_status:
     story_points: 5
     notes: 'Replace ClickUpConnection with ProjectIntegration model. Provider enum (CLICKUP/JIRA/ASANA), encrypted OAuth tokens, polling config, webhook config, ai_trigger_status, bot_user_id. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-2-ipm-provider-interface:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
     notes: 'Define IPMProvider interface: getSelf, getStatuses, updateStatus, addComment, assignTask, getRequiredFields, setFieldValue, registerWebhook, normalizeEvent. Ultimate context engine analysis completed - comprehensive developer guide created.'
@@ -259,10 +259,10 @@ development_status:
     story_points: 5
     notes: 'PmPollingOrchestrator: @Cron every-minute loop, getUpdatedTasks on IPMProvider, publishes IRawTaskEvent to ticket-intake-queue, per-integration interval from ProjectIntegration. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS0-9-multi-tenant-webhook-routing:
-    status: backlog
+    status: ready-for-dev
     effort: '1 day'
     story_points: 3
-    notes: 'Webhook routing via workspace ID in payload. Per-workspace webhook_secret lookup. Multi-tenant signature verification.'
+    notes: 'Webhook routing via workspace ID in payload. Per-workspace webhook_secret lookup. Multi-tenant signature verification. Ultimate context engine analysis completed - comprehensive developer guide created.'
   epic-CS0-retrospective: optional
 
   # EPIC CS1 - PER-PROJECT WORKFLOW CONFIGURATION
