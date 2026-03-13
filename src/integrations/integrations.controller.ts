@@ -5,6 +5,7 @@ import {
   Query,
   UseGuards,
   NotFoundException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import {
@@ -21,6 +22,8 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/auth/constants/roles.enum';
 import { ClickUpService } from '@/clickup/clickup.service';
+import { PMStatusService } from './pm-status.service';
+import { ProjectIntegrationService } from './project-integration.service';
 
 @ApiTags('Integrations')
 @ApiBearerAuth()
@@ -29,7 +32,36 @@ import { ClickUpService } from '@/clickup/clickup.service';
 export class IntegrationsController {
   private readonly logger = new Logger(IntegrationsController.name);
 
-  constructor(private readonly clickupService: ClickUpService) {}
+  constructor(
+    private readonly clickupService: ClickUpService,
+    private readonly statusService: PMStatusService,
+    private readonly integrationService: ProjectIntegrationService,
+  ) {}
+
+  @Get(':id/statuses')
+  @Roles(Role.PM, Role.MANAGER, Role.ADMIN)
+  @ApiOperation({ summary: 'Get live workflow statuses for a PM tool integration' })
+  @ApiParam({ name: 'id', description: 'ProjectIntegration UUID' })
+  @ApiQuery({
+    name: 'containerId',
+    required: true,
+    description: 'List/board/project ID from the PM tool (for ClickUp: list ID)',
+  })
+  @ApiResponse({ status: 200, description: 'Array of workflow statuses (NormalizedStatus[])' })
+  @ApiResponse({ status: 400, description: 'containerId query param is required' })
+  @ApiResponse({ status: 404, description: 'Integration not found' })
+  async getStatuses(@Param('id') id: string, @Query('containerId') containerId?: string) {
+    if (!containerId) {
+      throw new BadRequestException('containerId query parameter is required');
+    }
+
+    const integration = await this.integrationService.getDecryptedIntegration(id);
+    if (!integration) {
+      throw new NotFoundException(`Integration with ID "${id}" not found`);
+    }
+
+    return this.statusService.getStatuses(integration, containerId);
+  }
 
   @Get(':provider/hierarchy')
   @Roles(Role.PM, Role.MANAGER, Role.ADMIN)

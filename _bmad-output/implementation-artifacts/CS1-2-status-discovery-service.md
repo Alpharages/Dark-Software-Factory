@@ -1,6 +1,6 @@
 # Story CS1.2: IPMProvider Status Discovery with Per-Provider Cache
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -64,35 +64,35 @@ so that every team's custom status names are discovered at runtime regardless of
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `PMStatusService` at `src/integrations/pm-status.service.ts` (AC1–AC4)
-  - [ ] Define in-memory cache `Map<string, { statuses: NormalizedStatus[]; expiresAt: number }>` with constant `private readonly CACHE_TTL_MS = 300_000`
-  - [ ] Implement `getStatuses(integration, containerId)` with 5-min TTL cache
-  - [ ] Implement stale fallback + Sentry capture on API error (AC3)
-  - [ ] Implement `resolveStatusId(integration, containerId, statusName)` with case-insensitive match (AC4)
-- [ ] Task 2: Register `PMStatusService` in `IntegrationsModule` (AC5)
-  - [ ] Add `PMStatusService` to `providers` and `exports` in `src/integrations/integrations.module.ts`
-- [ ] Task 3: Add `GET :id/statuses` endpoint to `IntegrationsController` (AC5)
-  - [ ] Inject `PMStatusService` and `ProjectIntegrationService` into the controller
-  - [ ] Add `@Get(':id/statuses')` handler with proper Swagger decorators
-  - [ ] Require `?containerId=` query param; throw `BadRequestException` if absent
-  - [ ] Call `getDecryptedIntegration(id)` before passing integration to `PMStatusService`
-  - [ ] Return `NormalizedStatus[]`
-- [ ] Task 4: Write `src/integrations/pm-status.service.spec.ts` (AC6)
-  - [ ] Test cache hit scenario
-  - [ ] Test cache miss scenario
-  - [ ] Test expired cache scenario
-  - [ ] Test API failure with stale cache (assert warn log + Sentry capture)
-  - [ ] Test API failure without cache (assert error re-thrown)
-  - [ ] Test `resolveStatusId` case-insensitive match
-  - [ ] Test `resolveStatusId` fallback with warn log
-- [ ] Task 5: Update `src/integrations/integrations.controller.spec.ts` for new endpoint (AC6)
-  - [ ] Add test for 200 response with statuses
-  - [ ] Add test for 404 when integration not found
-  - [ ] Add test for 400 when `containerId` query param is missing
-- [ ] Task 6: Verify build (AC7)
-  - [ ] `pnpm typecheck` — zero errors
-  - [ ] `pnpm lint` — zero errors
-  - [ ] `pnpm test` — all tests pass
+- [x] Task 1: Create `PMStatusService` at `src/integrations/pm-status.service.ts` (AC1–AC4)
+  - [x] Define in-memory cache `Map<string, { statuses: NormalizedStatus[]; expiresAt: number }>` with constant `private readonly CACHE_TTL_MS = 300_000`
+  - [x] Implement `getStatuses(integration, containerId)` with 5-min TTL cache
+  - [x] Implement stale fallback + Sentry capture on API error (AC3)
+  - [x] Implement `resolveStatusId(integration, containerId, statusName)` with case-insensitive match (AC4)
+- [x] Task 2: Register `PMStatusService` in `IntegrationsModule` (AC5)
+  - [x] Add `PMStatusService` to `providers` and `exports` in `src/integrations/integrations.module.ts`
+- [x] Task 3: Add `GET :id/statuses` endpoint to `IntegrationsController` (AC5)
+  - [x] Inject `PMStatusService` and `ProjectIntegrationService` into the controller
+  - [x] Add `@Get(':id/statuses')` handler with proper Swagger decorators
+  - [x] Require `?containerId=` query param; throw `BadRequestException` if absent
+  - [x] Call `getDecryptedIntegration(id)` before passing integration to `PMStatusService`
+  - [x] Return `NormalizedStatus[]`
+- [x] Task 4: Write `src/integrations/pm-status.service.spec.ts` (AC6)
+  - [x] Test cache hit scenario
+  - [x] Test cache miss scenario
+  - [x] Test expired cache scenario
+  - [x] Test API failure with stale cache (assert warn log + Sentry capture)
+  - [x] Test API failure without cache (assert error re-thrown)
+  - [x] Test `resolveStatusId` case-insensitive match
+  - [x] Test `resolveStatusId` fallback with warn log
+- [x] Task 5: Update `src/integrations/integrations.controller.spec.ts` for new endpoint (AC6)
+  - [x] Add test for 200 response with statuses
+  - [x] Add test for 404 when integration not found
+  - [x] Add test for 400 when `containerId` query param is missing
+- [x] Task 6: Verify build (AC7)
+  - [x] `pnpm typecheck` — zero errors
+  - [x] `pnpm lint` — zero errors
+  - [x] `pnpm test` — all tests pass
 
 ## Dev Notes
 
@@ -339,4 +339,15 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- All ACs implemented. `PMStatusService` uses 5-min in-memory TTL cache keyed by `{provider}:{containerId}`; stale fallback on API error with Sentry capture; `resolveStatusId` is case-insensitive with warn log fallback.
+- `SentryModule` explicitly imported in `IntegrationsModule` for clarity (it is `@Global()` but explicit import is consistent with other modules).
+- `ErrorCategory.NETWORK` used in Sentry capture instead of `ErrorCategory.CLICKUP` to maintain provider-agnostic semantics.
+- Code review (2026-03-13): Fixed `ErrorCategory.CLICKUP` → `ErrorCategory.NETWORK`, added explicit `SentryModule` import, added warn log assertion in stale-cache test, updated `@/` path aliases on imports in `pm-status.service.ts` and `integrations.module.ts`.
+
 ### File List
+
+- `src/integrations/pm-status.service.ts` — NEW: `PMStatusService` with 5-min TTL cache, stale fallback, Sentry capture
+- `src/integrations/pm-status.service.spec.ts` — NEW: unit tests (cache hit/miss/expiry/stale-fallback/re-throw, resolveStatusId)
+- `src/integrations/integrations.module.ts` — MODIFIED: added `PMStatusService` to providers/exports, added `SentryModule` import
+- `src/integrations/integrations.controller.ts` — MODIFIED: added `GET :id/statuses` endpoint with guards and Swagger decorators
+- `src/integrations/integrations.controller.spec.ts` — MODIFIED: added tests for 200/400/404 on new endpoint

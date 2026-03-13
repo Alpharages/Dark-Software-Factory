@@ -136,6 +136,7 @@ src/
 - **Prettier:** single quotes, trailing commas, 100 char width, 2-space indent, LF line endings
 - **ESLint:** strict TypeScript, security plugin, unused vars with `_` prefix allowed
 - **Pre-commit hooks:** Husky + lint-staged runs ESLint + Prettier on staged `.ts` files
+- **Imports:** Use `@/` path aliases (e.g. `@/common/logger`) — never relative paths (e.g. `../../common/logger`)
 - Follow existing NestJS patterns: modules, controllers, services, DTOs with class-validator
 
 ### API Documentation
