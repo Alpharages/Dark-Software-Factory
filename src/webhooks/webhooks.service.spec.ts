@@ -17,7 +17,6 @@ import { PrismaService } from '../database/prisma.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { WEBHOOK_METRICS, QUEUE_METRICS } from '../common/metrics/metrics.constants';
 import { IClickUpWebhookPayload } from './interfaces';
-import { TaskProviderType, TaskTriggerSource } from '../ticket-intake/dto/task-event.dto';
 import { StatusEvaluationService } from '../ticket-intake/services/status-evaluation.service';
 
 // Helper to generate metric tokens
@@ -129,10 +128,11 @@ describe('WebhooksService (Story 20.1)', () => {
         isDuplicate: false,
         source: 'redis',
       });
+      // CS1-1: evaluateStatus always returns non-actionable (pending CS1-3 ai_trigger_status gate)
       mockStatusEvaluationService.evaluateStatus.mockReturnValue({
-        isActionable: true,
-        internalStatus: 'AI_PROCESSING',
-        reason: 'Status is actionable',
+        isActionable: false,
+        internalStatus: 'QUEUED',
+        reason: 'legacy status evaluation removed — pending CS1-3 ai_trigger_status gate',
       });
     });
 
@@ -140,27 +140,16 @@ describe('WebhooksService (Story 20.1)', () => {
       jest.clearAllMocks();
     });
 
-    it('should process valid webhook and publish to queue (AC1, AC3)', async () => {
+    it('should process valid webhook but NOT queue (gated pending CS1-3)', async () => {
       const correlationId = 'corr-123';
 
       const result = await service.processWebhook(validPayload, correlationId);
 
       expect(result.success).toBe(true);
-      expect(result.willProcess).toBe(true);
+      expect(result.willProcess).toBe(false);
       expect(result.correlationId).toBe(correlationId);
       expect(mockPrisma.auditLog.create).toHaveBeenCalled();
-      expect(mockRabbitMQ.publishToQueue).toHaveBeenCalledWith(
-        'ticket-intake-queue',
-        expect.objectContaining({
-          externalId: 'task-456',
-          providerType: TaskProviderType.CLICKUP,
-          internalStatus: 'AI_PROCESSING',
-          triggerSource: TaskTriggerSource.WEBHOOK,
-          correlationId,
-          originalProviderStatus: 'in progress',
-        }),
-        expect.any(Object),
-      );
+      expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
     it('should deduplicate duplicate webhooks using Redis (AC2, AC6)', async () => {
@@ -178,19 +167,14 @@ describe('WebhooksService (Story 20.1)', () => {
       expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
-    it('should filter non-actionable statuses (AC4)', async () => {
+    it('should not queue any webhook (all statuses gated by CS1-3) (AC4)', async () => {
       const correlationId = 'corr-123';
-      mockStatusEvaluationService.evaluateStatus.mockReturnValue({
-        isActionable: false,
-        internalStatus: 'COMPLETED',
-        reason: 'Status is completed',
-      });
+      // Stub always returns isActionable: false — no override needed, using beforeEach default
 
       const result = await service.processWebhook(validPayload, correlationId);
 
       expect(result.success).toBe(true);
       expect(result.willProcess).toBe(false);
-      expect(result.message).toContain('completed');
       expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
@@ -208,7 +192,7 @@ describe('WebhooksService (Story 20.1)', () => {
       expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
-    it('should process taskUpdated events', async () => {
+    it('should process taskUpdated events (but not queue — gated pending CS1-3)', async () => {
       const updatedPayload: IClickUpWebhookPayload = {
         ...validPayload,
         webhook_id: 'wh-updated',
@@ -218,28 +202,17 @@ describe('WebhooksService (Story 20.1)', () => {
       const result = await service.processWebhook(updatedPayload, 'corr-updated');
 
       expect(result.success).toBe(true);
-      expect(result.willProcess).toBe(true);
+      expect(result.willProcess).toBe(false);
     });
 
-    it('should include correlation ID and headers in queue message', async () => {
+    it('should return correct correlationId and not publish (gated pending CS1-3)', async () => {
       const correlationId = 'corr-headers-test';
 
-      await service.processWebhook(validPayload, correlationId);
+      const result = await service.processWebhook(validPayload, correlationId);
 
-      expect(mockRabbitMQ.publishToQueue).toHaveBeenCalledWith(
-        'ticket-intake-queue',
-        expect.any(Object),
-        expect.objectContaining({
-          correlationId,
-          headers: expect.objectContaining({
-            'x-correlation-id': correlationId,
-            'x-event-type': 'AI_PROCESSING',
-            'x-task-id': 'task-456',
-            'x-provider-type': TaskProviderType.CLICKUP,
-            'x-trigger-source': TaskTriggerSource.WEBHOOK,
-          }),
-        }),
-      );
+      expect(result.success).toBe(true);
+      expect(result.correlationId).toBe(correlationId);
+      expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
     it('should handle missing task data gracefully', async () => {
@@ -250,82 +223,24 @@ describe('WebhooksService (Story 20.1)', () => {
         // No task object
       };
 
-      mockStatusEvaluationService.evaluateStatus.mockReturnValue({
-        isActionable: true,
-        internalStatus: 'QUEUED',
-        reason: 'Default to actionable',
-      });
-
       const result = await service.processWebhook(minimalPayload, 'corr-minimal');
 
       expect(result.success).toBe(true);
-      expect(result.willProcess).toBe(true);
+      expect(result.willProcess).toBe(false);
     });
 
-    it('should retry on queue publish failure and eventually send to DLQ (AC5)', async () => {
-      const correlationId = 'corr-retry';
-      mockRabbitMQ.publishToQueue
-        .mockRejectedValueOnce(new Error('Connection error'))
-        .mockRejectedValueOnce(new Error('Connection error'))
-        .mockRejectedValueOnce(new Error('Connection error'));
-
-      await expect(service.processWebhook(validPayload, correlationId)).rejects.toThrow(
-        'Failed to publish to queue after 3 attempts',
-      );
-
-      // Should have tried 3 times for ticket-intake-queue + 1 DLQ
-      expect(mockRabbitMQ.publishToQueue).toHaveBeenCalledTimes(4);
-
-      // Should have sent to DLQ (check the last call)
-      const lastCall = mockRabbitMQ.publishToQueue.mock.calls[3];
-      expect(lastCall[0]).toBe('webhook-dead-letter');
-      expect(lastCall[1]).toMatchObject({
-        originalEvent: validPayload,
-        correlationId,
-        retryCount: 3,
-      });
-      expect(lastCall[1].error).toContain('Connection error');
-    });
-
-    it('should succeed on retry after initial failure', async () => {
-      const correlationId = 'corr-retry-success';
-      mockRabbitMQ.publishToQueue
-        .mockRejectedValueOnce(new Error('Temporary error'))
-        .mockResolvedValueOnce(undefined);
+    it('should return gated result without publishing for any event (CS1-1)', async () => {
+      const correlationId = 'corr-normalize';
 
       const result = await service.processWebhook(validPayload, correlationId);
 
+      // CS1-1: All webhooks gated pending CS1-3 ai_trigger_status
       expect(result.success).toBe(true);
-      expect(mockRabbitMQ.publishToQueue).toHaveBeenCalledTimes(2);
+      expect(result.willProcess).toBe(false);
+      expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
-    it('should normalize to ITaskEvent format with correct structure', async () => {
-      const correlationId = 'corr-normalize';
-
-      await service.processWebhook(validPayload, correlationId);
-
-      const publishedEvent = mockRabbitMQ.publishToQueue.mock.calls[0][1];
-
-      // Verify ITaskEvent structure
-      expect(publishedEvent).toMatchObject({
-        externalId: expect.any(String),
-        providerType: TaskProviderType.CLICKUP,
-        internalStatus: expect.any(String),
-        title: expect.any(String),
-        description: expect.any(String),
-        triggerSource: TaskTriggerSource.WEBHOOK,
-        correlationId: expect.any(String),
-        projectIdentifier: expect.any(String),
-        taskUrl: expect.any(String),
-        tags: expect.any(Array),
-        customFields: expect.any(Object),
-        eventTimestamp: expect.any(String),
-        receivedAt: expect.any(String),
-        originalProviderStatus: expect.any(String),
-      });
-    });
-
-    it('should extract custom fields correctly', async () => {
+    it('should accept payloads with custom fields without error (gated, not published)', async () => {
       const payloadWithCustomFields: IClickUpWebhookPayload = {
         ...validPayload,
         webhook_id: 'wh-custom',
@@ -342,27 +257,15 @@ describe('WebhooksService (Story 20.1)', () => {
               hide_from_guests: false,
               required: false,
             },
-            {
-              id: 'cf-2',
-              name: 'Story Points',
-              type: 'number',
-              type_config: {},
-              value: 5,
-              date_created: '2025-01-01',
-              hide_from_guests: false,
-              required: false,
-            },
           ],
         },
       };
 
-      await service.processWebhook(payloadWithCustomFields, 'corr-custom');
+      const result = await service.processWebhook(payloadWithCustomFields, 'corr-custom');
 
-      const publishedEvent = mockRabbitMQ.publishToQueue.mock.calls[0][1];
-      expect(publishedEvent.customFields).toEqual({
-        Priority: 'High',
-        'Story Points': 5,
-      });
+      expect(result.success).toBe(true);
+      expect(result.willProcess).toBe(false);
+      expect(mockRabbitMQ.publishToQueue).not.toHaveBeenCalled();
     });
 
     it('should handle audit logging failures gracefully', async () => {
@@ -370,9 +273,9 @@ describe('WebhooksService (Story 20.1)', () => {
 
       const result = await service.processWebhook(validPayload, 'corr-audit-fail');
 
-      // Should still process successfully even if audit logging fails
+      // Should still return success even if audit logging fails (gated, not queued)
       expect(result.success).toBe(true);
-      expect(result.willProcess).toBe(true);
+      expect(result.willProcess).toBe(false);
     });
   });
 

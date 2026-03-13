@@ -131,17 +131,6 @@ export default () => {
     webhooks: {
       // Deduplication settings
       dedupTtlMs: parseInt(process.env.WEBHOOK_DEDUP_TTL_MS || '300000', 10), // 5 minutes
-      // Status-based actionability filtering
-      actionableStatuses: (
-        process.env.ACTIONABLE_STATUSES || 'in progress,ready for ai,ai processing,open'
-      )
-        .split(',')
-        .map((s) => s.trim().toLowerCase()),
-      nonActionableStatuses: (
-        process.env.NON_ACTIONABLE_STATUSES || 'done,closed,blocked,cancelled,archived'
-      )
-        .split(',')
-        .map((s) => s.trim().toLowerCase()),
       // Retry and DLQ settings
       maxRetries: parseInt(process.env.WEBHOOK_MAX_RETRIES || '3', 10),
       retryDelayMs: parseInt(process.env.WEBHOOK_RETRY_DELAY_MS || '1000', 10),

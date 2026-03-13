@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DeploymentStatus } from '@/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ClickUpService } from '../../clickup/clickup.service';
@@ -28,7 +27,6 @@ export class DeploymentStatusSync {
     private readonly metrics: MetricsService,
     private readonly auditLog: AuditLogService,
     private readonly sentry: SentryService,
-    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -126,10 +124,15 @@ export class DeploymentStatusSync {
       }
 
       const ticketId = execution.ticket.clickup_task_id;
-      const clickUpStatus = this.getClickUpStatusName(
-        typedDeployment.status,
-        typedDeployment.environment,
-      );
+      // CS2: These literals will be replaced by provider-agnostic IPMProvider status push
+      const clickUpStatus =
+        typedDeployment.status === 'COMPLETED'
+          ? 'Deployed'
+          : typedDeployment.status === 'FAILED'
+            ? 'Deployment Failed'
+            : typedDeployment.status === 'ROLLED_BACK'
+              ? 'Rolled Back'
+              : 'In Progress';
 
       // AC#1: Update ClickUp ticket status
       const statusUpdated = await this.clickUp.updateStatus(ticketId, clickUpStatus, {
@@ -228,32 +231,6 @@ export class DeploymentStatusSync {
         select: { environment: true },
       });
       this.recordMetrics(deployment?.environment || 'unknown', false, finalCorrelationId);
-    }
-  }
-
-  /**
-   * Get ClickUp status name based on deployment status
-   * AC#1: Environment-specific status mapping
-   *
-   * @param status - Deployment status
-   * @param environment - Deployment environment
-   * @returns ClickUp status name
-   */
-  private getClickUpStatusName(status: DeploymentStatus, environment: string): string {
-    switch (status) {
-      case 'COMPLETED':
-        // Use environment-specific status if configured
-        return this.config.get<string>('CLICKUP_STATUS_DEPLOYED', 'Deployed');
-
-      case 'FAILED':
-        return this.config.get<string>('CLICKUP_STATUS_DEPLOY_FAILED', 'Deployment Failed');
-
-      case 'ROLLED_BACK':
-        return this.config.get<string>('CLICKUP_STATUS_ROLLED_BACK', 'Rolled Back');
-
-      default:
-        this.logger.warn('Unknown deployment status, using default', { status, environment });
-        return 'In Progress';
     }
   }
 

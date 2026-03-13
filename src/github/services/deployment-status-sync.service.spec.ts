@@ -6,7 +6,7 @@ import { ClickUpService } from '../../clickup/clickup.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
-import { ConfigService } from '@nestjs/config';
+
 import { DeploymentStatus } from '@/prisma/client';
 
 describe('DeploymentStatusSync', () => {
@@ -91,19 +91,6 @@ describe('DeploymentStatusSync', () => {
             captureException: jest.fn(),
           },
         },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn((key: string, defaultValue?: any) => {
-              const config: Record<string, any> = {
-                CLICKUP_STATUS_DEPLOYED: 'Done',
-                CLICKUP_STATUS_DEPLOY_FAILED: 'Deployment Failed',
-                CLICKUP_STATUS_ROLLED_BACK: 'Rolled Back',
-              };
-              return config[key] ?? defaultValue;
-            }),
-          },
-        },
       ],
     }).compile();
 
@@ -130,7 +117,7 @@ describe('DeploymentStatusSync', () => {
 
       expect(clickUp.updateStatus).toHaveBeenCalledWith(
         'clickup-123',
-        'Done',
+        'Deployed',
         expect.objectContaining({ correlationId: expect.any(String) }),
       );
       expect(clickUp.addComment).toHaveBeenCalledWith(
@@ -215,34 +202,6 @@ describe('DeploymentStatusSync', () => {
         'deployment_status_sync_total',
         expect.objectContaining({ status: 'success' }),
       );
-    });
-  });
-
-  describe('getClickUpStatusName', () => {
-    it('should map COMPLETED to configured status', () => {
-      const status = (service as any).getClickUpStatusName(
-        DeploymentStatus.COMPLETED,
-        'production',
-      );
-      expect(status).toBe('Done');
-    });
-
-    it('should map FAILED to configured status', () => {
-      const status = (service as any).getClickUpStatusName(DeploymentStatus.FAILED, 'staging');
-      expect(status).toBe('Deployment Failed');
-    });
-
-    it('should map ROLLED_BACK to configured status', () => {
-      const status = (service as any).getClickUpStatusName(
-        DeploymentStatus.ROLLED_BACK,
-        'production',
-      );
-      expect(status).toBe('Rolled Back');
-    });
-
-    it('should return default for unknown status', () => {
-      const status = (service as any).getClickUpStatusName('UNKNOWN' as DeploymentStatus, 'dev');
-      expect(status).toBe('In Progress');
     });
   });
 

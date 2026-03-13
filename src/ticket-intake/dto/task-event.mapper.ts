@@ -5,15 +5,9 @@
  * Provider-specific mappers to convert raw provider events to ITaskEvent
  */
 
-import {
-  ITaskEvent,
-  TaskProviderType,
-  TaskTriggerSource,
-  InternalTaskStatus,
-} from './task-event.dto';
+import { ITaskEvent, TaskProviderType, TaskTriggerSource } from './task-event.dto';
 import { IRawTaskEvent } from '../interfaces/ticket-intake.interface';
-// Story 20.2: Import unified status maps
-import { CLICKUP_STATUS_MAP } from '../services/status-evaluation.service';
+// Story 20.2: Status mappings removed - replaced by runtime discovery (CS1-2)
 
 /**
  * Map ClickUp IRawTaskEvent to provider-agnostic ITaskEvent
@@ -30,7 +24,7 @@ export function mapClickUpToTaskEvent(
   return {
     externalId: rawEvent.taskId,
     providerType: TaskProviderType.CLICKUP,
-    internalStatus: mapClickUpStatusToInternal(rawEvent.taskStatus),
+    internalStatus: 'QUEUED', // CS1-2: replaced by runtime status discovery
     title: rawEvent.taskName,
     description: rawEvent.taskDescription,
     triggerSource,
@@ -44,42 +38,6 @@ export function mapClickUpToTaskEvent(
     receivedAt: rawEvent.receivedAt,
     originalProviderStatus: rawEvent.taskStatus,
   };
-}
-
-/**
- * Map ClickUp status strings to internal actionable statuses
- * AC#1, AC#2: Ensures consistent status mapping for both manual sync and webhook triggers
- *
- * @deprecated Use StatusEvaluationService.mapToInternalStatus() instead.
- * This function is maintained for backward compatibility and delegates to
- * the unified CLICKUP_STATUS_MAP from StatusEvaluationService.
- *
- * This mapping determines which tickets are actionable (e.g., AI_PROCESSING)
- * and which are not (e.g., COMPLETED, DEPLOYED)
- *
- * @param clickupStatus - ClickUp status string (case-insensitive)
- * @returns Internal status enum value
- */
-export function mapClickUpStatusToInternal(clickupStatus: string): InternalTaskStatus {
-  const normalized = clickupStatus.toLowerCase().trim();
-  // Story 20.2: Use unified status map from StatusEvaluationService
-  return CLICKUP_STATUS_MAP.get(normalized) || 'QUEUED';
-}
-
-/**
- * Check if an internal status is actionable for AI processing
- * AC#1/#AC2: Filter for statuses that should trigger AI execution
- *
- * @deprecated Use StatusEvaluationService.isActionable() instead.
- * This function is maintained for backward compatibility.
- *
- * @param status - Internal task status
- * @returns true if status should trigger AI processing
- */
-export function isActionableStatus(status: InternalTaskStatus): boolean {
-  // Story 20.2: Use same logic as StatusEvaluationService.isActionable()
-  const actionableStatuses: InternalTaskStatus[] = ['AI_PROCESSING', 'QUEUED', 'VALIDATED'];
-  return actionableStatuses.includes(status);
 }
 
 /**

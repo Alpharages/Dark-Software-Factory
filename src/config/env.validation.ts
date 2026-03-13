@@ -214,9 +214,6 @@ export const envValidationSchema = Joi.object({
   QG_SECURITY_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10min
 
   // Story 4.6: Deployment Status Synchronization (optional - has sensible defaults)
-  CLICKUP_STATUS_DEPLOYED: Joi.string().default('Deployed'),
-  CLICKUP_STATUS_DEPLOY_FAILED: Joi.string().default('Deployment Failed'),
-  CLICKUP_STATUS_ROLLED_BACK: Joi.string().default('Rolled Back'),
   CLICKUP_MAX_COMMENT_LENGTH: Joi.number().integer().min(1000).max(50000).default(20000),
   CLICKUP_RETRY_ATTEMPTS: Joi.number().integer().min(1).max(10).default(3),
   CLICKUP_RETRY_BACKOFF_MS: Joi.number().integer().min(100).max(5000).default(1000),

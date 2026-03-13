@@ -266,7 +266,7 @@ development_status:
   epic-CS0-retrospective: done
 
   # EPIC CS1 - PER-PROJECT WORKFLOW CONFIGURATION
-  epic-CS1: backlog
+  epic-CS1: in-progress
   epic-CS1-name: 'Per-Project Workflow Configuration'
   epic-CS1-phase: 'New Feature Sprint'
   epic-CS1-priority: high
@@ -275,30 +275,30 @@ development_status:
   epic-CS1-source: 'epics-clickup-smart-sync.md'
   epic-CS1-notes: 'Eliminate all hardcoded status maps. Replace with runtime discovery + per-project ai_trigger_status.'
   CS1-1-remove-hardcoded-status-maps:
-    status: backlog
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'Remove CLICKUP_STATUS_MAP, mapClickUpStatusToTicketStatus(), CLICKUP_STATUS_DEPLOYED env vars, actionableStatuses/nonActionableStatuses config. Remove all references.'
+    notes: 'All hardcoded status maps removed. evaluateStatus stubbed to isActionable:false. getClickUpStatusName inlined with Deployed/Deployment Failed/Rolled Back literals. isActionableStatus and mapClickUpStatusToInternal removed from mapper. project.service.ts uses inline actionable check. webhooks.service.spec.ts updated for gated behavior. Code review issues resolved.'
   CS1-2-status-discovery-service:
-    status: backlog
+    status: ready-for-dev
     effort: '3 days'
     story_points: 8
-    notes: 'StatusDiscoveryService: IPMProvider.getStatuses() per project list. TTL cache (15 min). Fallback to stored statuses on API failure.'
+    notes: 'StatusDiscoveryService: IPMProvider.getStatuses() per project list. TTL cache (15 min). Fallback to stored statuses on API failure. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS1-3-ai-trigger-status-field:
-    status: backlog
+    status: ready-for-dev
     effort: '1 day'
     story_points: 3
-    notes: 'ai_trigger_status field on ProjectIntegration. API: GET/PATCH /projects/:id/integration/sync-config. Replaces all global env-var status config.'
+    notes: 'ai_trigger_status field on ProjectIntegration. API: GET/PATCH /projects/:id/integration/sync-config. Replaces all global env-var status config. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS1-4-live-status-picker-ui:
-    status: backlog
+    status: ready-for-dev
     effort: '3 days'
     story_points: 5
-    notes: 'Frontend: Live status picker in project integration settings. Fetches live statuses, PM selects ai_trigger_status from dropdown.'
+    notes: 'Frontend: Live status picker in project integration settings. Fetches live statuses, PM selects ai_trigger_status from dropdown. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS1-5-auto-assign-bot-on-execution:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 5
-    notes: 'On execution start, auto-assign bot (bot_user_id from ProjectIntegration) to task via IPMProvider.assignTask(). No hardcoded user IDs.'
+    notes: 'On execution start, auto-assign bot (bot_user_id from ProjectIntegration) to task via IPMProvider.assignTask(). No hardcoded user IDs. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS1-6-development-gate-intake-filter:
     status: backlog
     effort: '2 days'
@@ -595,7 +595,7 @@ epic_status:
     notes: 'Prerequisite for CS1–CS3. Provider-agnostic layer: ProjectIntegration model, IPMProvider interface, ClickUpProvider, PMProviderFactory, OAuth, polling, multi-tenant webhooks.'
   epic-CS1:
     name: 'Per-Project Workflow Configuration'
-    status: 'backlog'
+    status: 'in-progress'
     priority: 'high'
     source: 'epics-clickup-smart-sync.md'
     stories: 6

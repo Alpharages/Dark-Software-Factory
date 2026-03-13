@@ -15,7 +15,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
 import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
-import { Project, TicketStatus } from '@/prisma/client';
+import { Project } from '@/prisma/client';
 import { ProjectProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -24,7 +24,7 @@ import { ConfigService } from '@nestjs/config';
 // Story 20.1: Provider-Agnostic Intake
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { QUEUE_NAMES } from '@/rabbitmq/rabbitmq.config';
-import { mapClickUpToTaskEvent, isActionableStatus, TaskTriggerSource } from '@/ticket-intake/dto';
+import { mapClickUpToTaskEvent, TaskTriggerSource, InternalTaskStatus } from '@/ticket-intake/dto';
 import { IRawTaskEvent } from '@/ticket-intake/interfaces/ticket-intake.interface';
 // Story 16-5: AI Decision Logging Module
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
@@ -452,7 +452,11 @@ export class ProjectService {
           );
 
           // Story 20.1 (AC#1, AC#2): Only process AI-actionable tasks
-          if (isActionableStatus(taskEvent.internalStatus)) {
+          if (
+            (['AI_PROCESSING', 'QUEUED', 'VALIDATED'] as InternalTaskStatus[]).includes(
+              taskEvent.internalStatus,
+            )
+          ) {
             try {
               // Publish to ticket-intake-queue for processing
               await this.rabbitMQPublisher.publishToQueue(
@@ -511,33 +515,6 @@ export class ProjectService {
       this.operationsCounter.inc({ operation: 'sync', status: 'error' });
       this.syncCounter.inc({ status: 'error' });
       throw _error;
-    }
-  }
-
-  private mapClickUpStatus(status: string): TicketStatus {
-    const s = status.toLowerCase();
-    switch (s) {
-      case 'open':
-      case 'to do':
-      case 'todo':
-        return TicketStatus.RECEIVED;
-      case 'in progress':
-      case 'doing':
-        return TicketStatus.AI_PROCESSING;
-      case 'review':
-      case 'qa':
-        return TicketStatus.QA_REVIEW;
-      case 'complete':
-      case 'completed':
-      case 'done':
-      case 'closed':
-        return TicketStatus.COMPLETED;
-      default:
-        // Try to match exact enum key
-        if (Object.values(TicketStatus).includes(status as TicketStatus)) {
-          return status as TicketStatus;
-        }
-        return TicketStatus.RECEIVED;
     }
   }
 }

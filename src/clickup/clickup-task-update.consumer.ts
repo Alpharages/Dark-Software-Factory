@@ -201,9 +201,7 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
             description: taskDescription, // Now includes fetched description
             acceptance_criteria: '',
             ticket_quality_score: 0, // Not validated through intake flow
-            status:
-              (this.mapClickUpStatusToTicketStatus(message.status) as TicketStatus) ||
-              TicketStatus.QUEUED,
+            status: TicketStatus.QUEUED,
           },
           include: { executions: true },
         });
@@ -279,44 +277,8 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
         return; // Skip status update for newly created tickets
       }
 
-      // Update ticket status based on ClickUp status
-      const newStatus = this.mapClickUpStatusToTicketStatus(message.status);
-
-      if (newStatus && ticket.status !== newStatus) {
-        const previousStatus = ticket.status;
-
-        await this.prisma.ticket.update({
-          where: { id: ticket.id },
-          data: { status: newStatus as TicketStatus },
-        });
-
-        this.loggerService.log('Updated ticket status from ClickUp', {
-          ticketId: ticket.id,
-          previousStatus,
-          newStatus,
-          clickUpTaskId: message.task_id,
-        });
-
-        // Audit log
-        await this.audit.log({
-          entityType: 'ticket',
-          entityId: ticket.id,
-          action: 'status_synced_from_clickup',
-          actorType: 'system',
-          beforeState: { status: previousStatus },
-          afterState: {
-            status: newStatus,
-            clickUpStatus: message.status,
-            source: message.source,
-          },
-        });
-
-        // Record metric
-        this.metrics.incrementCounter('clickup_task_sync_total', {
-          source: message.source,
-          status: 'success',
-        });
-      }
+      // Status synchronization disabled pending runtime status discovery (CS1-2)
+      // and project-level ai_trigger_status configuration (CS1-3)
 
       const duration = Date.now() - startTime;
       this.metrics.recordHistogram('clickup_task_sync_duration_seconds', duration / 1000, {
@@ -348,23 +310,5 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
       // Re-throw to trigger RabbitMQ retry
       throw _error;
     }
-  }
-
-  /**
-   * Map ClickUp status names to internal ticket status
-   * Customize based on your ClickUp workflow
-   */
-  private mapClickUpStatusToTicketStatus(clickUpStatus: string): string | null {
-    const statusMap = new Map<string, string>([
-      ['to do', 'QUEUED'],
-      ['in progress', 'AI_PROCESSING'],
-      ['review', 'QA_REVIEW'],
-      ['deployed', 'DEPLOYED'],
-      ['done', 'COMPLETED'],
-      ['closed', 'COMPLETED'],
-    ]);
-
-    const normalized = clickUpStatus.toLowerCase();
-    return statusMap.get(normalized) || null;
   }
 }
