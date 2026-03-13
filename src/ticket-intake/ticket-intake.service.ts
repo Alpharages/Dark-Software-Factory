@@ -49,7 +49,6 @@ const METRICS = {
 export class TicketIntakeService {
   private readonly logger = new Logger(TicketIntakeService.name);
   private readonly clickupApiUrl: string;
-  private readonly clickupApiKey: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -79,7 +78,6 @@ export class TicketIntakeService {
   ) {
     this.clickupApiUrl =
       this.configService.get<string>('clickup.apiUrl') || 'https://api.clickup.com/api/v2';
-    this.clickupApiKey = this.configService.get<string>('clickup.apiKey') || '';
   }
 
   /**
@@ -624,7 +622,9 @@ export class TicketIntakeService {
     comment: string,
     correlationId: string,
   ): Promise<void> {
-    if (!this.clickupApiKey) {
+    // CS1-7: clickup.apiKey removed from config — returns undefined → '' → falsy guard triggers
+    const apiKey = this.configService.get<string>('clickup.apiKey') || '';
+    if (!apiKey) {
       this.logger.warn(`[${correlationId}] ClickUp API key not configured - skipping comment`);
       return;
     }
@@ -633,7 +633,7 @@ export class TicketIntakeService {
       const response = await fetch(`${this.clickupApiUrl}/task/${taskId}/comment`, {
         method: 'POST',
         headers: {
-          Authorization: this.clickupApiKey,
+          Authorization: apiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

@@ -65,6 +65,7 @@ import { CleanupModule } from '@/cleanup'; // Story 23.2
 import { SystemConfigModule } from './system-settings/system-config.module';
 // Story 7.1
 import { ArchitectureReviewModule } from './architecture-review/architecture-review.module';
+import { StartupChecksModule } from './common/startup/startup-checks.module';
 
 // Common
 import { CorrelationIdMiddleware } from './common/middleware';
@@ -148,6 +149,8 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
 
     // Story 7.1: Architecture Review (ADR Generation)
     ArchitectureReviewModule,
+    // Story CS1-7: Startup Clinical Warnings
+    StartupChecksModule,
   ],
   controllers: [AppController],
   providers: [

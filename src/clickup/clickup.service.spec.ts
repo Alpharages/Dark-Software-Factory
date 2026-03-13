@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClickUpService } from './clickup.service';
 import { SentryService } from '../common/sentry/sentry.service';
@@ -58,8 +59,10 @@ describe('ClickUpService', () => {
   });
 
   describe('constructor', () => {
-    it('should throw error if CLICKUP_API_KEY is missing (C5 fix)', async () => {
-      // Mock ConfigService to return undefined for API key
+    it('should warn and set client to null when CLICKUP_API_KEY is missing (CS1-7 graceful degradation)', async () => {
+      // Spy on Logger.prototype.warn BEFORE module compile so the constructor call is captured
+      const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
       const mockConfig = {
         get: jest.fn((key: string) => {
           if (key === 'CLICKUP_API_KEY') return undefined;
@@ -67,15 +70,46 @@ describe('ClickUpService', () => {
         }),
       };
 
-      await expect(
-        Test.createTestingModule({
-          providers: [
-            ClickUpService,
-            { provide: ConfigService, useValue: mockConfig },
-            { provide: SentryService, useValue: { captureException: jest.fn() } },
-          ],
-        }).compile(),
-      ).rejects.toThrow('CLICKUP_API_KEY is required but not configured in environment');
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ClickUpService,
+          { provide: ConfigService, useValue: mockConfig },
+          { provide: SentryService, useValue: { captureException: jest.fn() } },
+        ],
+      }).compile();
+
+      const degradedService = module.get<ClickUpService>(ClickUpService);
+
+      expect(degradedService).toBeDefined();
+      expect((degradedService as any).client).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[CS1-7] CLICKUP_API_KEY not configured'),
+        ClickUpService.name,
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should throw Error when calling methods in degraded mode', async () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'CLICKUP_API_KEY') return undefined;
+          return 'default';
+        }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ClickUpService,
+          { provide: ConfigService, useValue: mockConfig },
+          { provide: SentryService, useValue: { captureException: jest.fn() } },
+        ],
+      }).compile();
+
+      const degradedService = module.get<ClickUpService>(ClickUpService);
+      await expect(degradedService.updateStatus('123', 'status')).rejects.toThrow(
+        'ClickUpService: no API key configured. Use ProjectIntegration OAuth via PMProviderFactory instead.',
+      );
     });
 
     it('should initialize axios client with correct config', () => {

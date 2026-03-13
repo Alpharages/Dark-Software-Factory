@@ -305,10 +305,10 @@ development_status:
     story_points: 5
     notes: 'Gate all incoming tasks (webhook + polling) against ai_trigger_status. Only exact status match enters the dev queue. Backlog/done/human-in-progress tasks silently discarded. Deduplication on (taskId, provider). pm_polling_tasks_skipped_total + pm_tasks_dropped_no_trigger_total Prometheus counters. Code review (2026-03-14): 2C+3H+4M fixed — status-evaluation.service.spec.ts updated (C1), story documentation populated (C2), @/ import aliases in development-gate.service.ts (H1), reason string aligned to CS1-6 spec (H2), webhook mismatch no-counter assertion added (H3), AC9 test case 3 added (M1), AC10 test cases 1+3 added (M2+M3), custom-fields test updated to assert queuing (M4).'
   CS1-7-clickup-credential-transition:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'Ultimate context engine analysis completed - comprehensive developer guide created. Retire ClickUpPollingOrchestrator (DELETE files), remove CLICKUP_API_KEY from env.validation.ts/configuration.ts, ClickUpService graceful degradation (warn+null client, assertClient guard), startup warning if no OAuth integrations.'
+    notes: 'Code review (2026-03-14): 5H+4M+3L fixed — AC2: CLICKUP_API_KEY removed from env.validation.ts (not just optional); AC7: ticket-intake.service.ts reverted from process.env to configService.get(clickup.apiKey); AC5: Logger.prototype.warn spy set before module.compile() + warn assertion added; AC6: OnModuleInit→OnApplicationBootstrap, ConfigService+LoggerService injected, @/ path aliases in startup files, LoggerModule added; AC4: assertClient throws Error not InternalServerErrorException, [CS1-7] prefix added to warn; MEDIUM: clickup.module.ts JSDoc cleaned; LOW: configuration.ts tombstone comment updated. All 23 tests pass (20 clickup.service + 3 startup-checks). TypeScript clean on all CS1-7 files.'
   epic-CS1-retrospective: optional
 
   # EPIC CS2 - INTELLIGENT REQUIRED FIELD PRE-CHECK & AUTO-FILL

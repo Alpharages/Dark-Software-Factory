@@ -107,8 +107,9 @@ export const envValidationSchema = Joi.object({
       'string.uri': 'GITHUB_DEFAULT_REPOSITORY must be a valid repository URL',
     }),
 
-  // ClickUp Integration (REQUIRED)
-  CLICKUP_API_KEY: Joi.string().required(),
+  // ClickUp Integration (Legacy — CLICKUP_API_KEY removed CS1-7; OAuth via ProjectIntegration CS0-5)
+  // CLICKUP_API_KEY was removed — no longer validated at startup
+  // OAuth client ID/secret/redirect remain for ClickUp OAuth app flow:
   CLICKUP_WEBHOOK_SECRET: Joi.string().min(16).required().messages({
     'any.required': 'CLICKUP_WEBHOOK_SECRET is required for webhook signature verification',
     'string.min': 'CLICKUP_WEBHOOK_SECRET must be at least 16 characters',

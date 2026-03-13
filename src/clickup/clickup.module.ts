@@ -1,6 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ClickUpService } from './clickup.service';
-import { ClickUpPollingOrchestrator } from './clickup-polling-orchestrator.service';
 import { ClickUpWebhookConsumer } from './clickup-webhook-consumer.service';
 import { ClickUpTaskUpdateConsumer } from './clickup-task-update.consumer';
 import { SentryModule } from '../common/sentry/sentry.module';
@@ -20,11 +19,11 @@ import { IntegrationsModule } from '../integrations/integrations.module';
  * - Feature flag: CLICKUP_USE_WEBHOOKS toggles mode
  *
  * Services:
- * - ClickUpService: API client for status updates, comments, and task fetching
- * - ClickUpPollingOrchestrator: Polls lists for task changes
+ * - ClickUpService: API client for status updates, comments, and task fetching (CS1-7: graceful degradation without API key)
  * - ClickUpWebhookConsumer: Processes webhook events
  * - ClickUpWebhookController: REST endpoint for webhooks
  * - ClickUpTaskUpdateConsumer: Processes task updates from queue
+ * Note: ClickUpPollingOrchestrator removed in CS1-7 — replaced by PmPollingOrchestrator (CS0-8)
  */
 @Module({
   imports: [
@@ -37,12 +36,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     forwardRef(() => IntegrationsModule),
   ],
   controllers: [],
-  providers: [
-    ClickUpService,
-    ClickUpPollingOrchestrator,
-    ClickUpWebhookConsumer,
-    ClickUpTaskUpdateConsumer,
-  ],
-  exports: [ClickUpService, ClickUpPollingOrchestrator, ClickUpWebhookConsumer],
+  providers: [ClickUpService, ClickUpWebhookConsumer, ClickUpTaskUpdateConsumer],
+  exports: [ClickUpService, ClickUpWebhookConsumer],
 })
 export class ClickUpModule {}

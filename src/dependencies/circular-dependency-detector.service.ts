@@ -154,9 +154,9 @@ export class CircularDependencyDetectorService {
           dependencies?: { task_id: string; type: 'waiting_on' | 'blocking' }[];
         };
         const clickUpTask: ClickUpTask = {
-          id: task.id,
-          name: task.name,
-          status: task.status,
+          id: task.id as string,
+          name: task.name as string,
+          status: task.status as { status: string },
           dependencies: fullTask.dependencies || [],
         };
 

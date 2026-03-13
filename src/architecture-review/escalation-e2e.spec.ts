@@ -43,7 +43,7 @@ const mockAuditLogger = {
 
 const mockConfigService = {
   get: jest.fn((key) => {
-    if (key === 'CLICKUP_API_KEY') return 'mock-key';
+    if (key === 'CLICKUP_API_KEY') return undefined; // Retired in CS1-7
     return null;
   }),
 };

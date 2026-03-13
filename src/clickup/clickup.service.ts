@@ -50,7 +50,7 @@ interface ClickUpTask {
 @Injectable()
 export class ClickUpService {
   private readonly logger = new Logger(ClickUpService.name);
-  private readonly client: AxiosInstance;
+  private readonly client: AxiosInstance | null;
   private readonly statusNameToIdCache = new Map<string, { id: string; expiresAt: Date }>();
   private readonly retryAttempts: number;
   private readonly retryBackoffMs: number;
@@ -61,9 +61,17 @@ export class ClickUpService {
   ) {
     const apiKey = this.config.get<string>('CLICKUP_API_KEY');
 
-    // C5: Validate CLICKUP_API_KEY is configured
+    this.retryAttempts = this.config.get<number>('CLICKUP_RETRY_ATTEMPTS', 3);
+    this.retryBackoffMs = this.config.get<number>('CLICKUP_RETRY_BACKOFF_MS', 1000);
+
     if (!apiKey) {
-      throw new Error('CLICKUP_API_KEY is required but not configured in environment');
+      this.logger.warn(
+        '[CS1-7] CLICKUP_API_KEY not configured — ClickUpService is in legacy mode. ' +
+          'All API calls will throw. Migrate to ProjectIntegration OAuth (CS0-5).',
+        ClickUpService.name,
+      );
+      this.client = null;
+      return;
     }
 
     const baseURL = this.config.get<string>(
@@ -79,9 +87,18 @@ export class ClickUpService {
       },
       timeout: 10000, // 10 second timeout
     });
+  }
 
-    this.retryAttempts = this.config.get<number>('CLICKUP_RETRY_ATTEMPTS', 3);
-    this.retryBackoffMs = this.config.get<number>('CLICKUP_RETRY_BACKOFF_MS', 1000);
+  /**
+   * Asserts that the ClickUp client is initialized.
+   * Throws if the service is in degraded mode (no API key configured).
+   */
+  private assertClient(): void {
+    if (!this.client) {
+      throw new Error(
+        'ClickUpService: no API key configured. Use ProjectIntegration OAuth via PMProviderFactory instead.',
+      );
+    }
   }
 
   /**
@@ -99,6 +116,7 @@ export class ClickUpService {
     statusName: string,
     options?: { correlationId?: string },
   ): Promise<boolean> {
+    this.assertClient();
     const correlationId = options?.correlationId || 'clickup-update-status';
 
     try {
@@ -155,6 +173,7 @@ export class ClickUpService {
     comment: string,
     options?: { correlationId?: string },
   ): Promise<boolean> {
+    this.assertClient();
     const correlationId = options?.correlationId || 'clickup-add-comment';
     const maxLength = this.config.get<number>('CLICKUP_MAX_COMMENT_LENGTH', 20000);
 
@@ -171,7 +190,7 @@ export class ClickUpService {
     }
 
     const operation = async () => {
-      const response = await this.client.post(`/task/${ticketId}/comment`, {
+      const response = await this.client!.post(`/task/${ticketId}/comment`, {
         comment_text: truncatedComment,
         notify_all: false, // Don't spam team with notifications
       });
@@ -223,7 +242,7 @@ export class ClickUpService {
   ): Promise<string> {
     try {
       // Get task details to find status ID
-      const response = await this.client.get<ClickUpTask>(`/task/${ticketId}`);
+      const response = await this.client!.get<ClickUpTask>(`/task/${ticketId}`);
       const task = response.data;
 
       // Find matching status in task's list
@@ -275,7 +294,7 @@ export class ClickUpService {
     correlationId: string,
   ): Promise<boolean> {
     const operation = async () => {
-      const response = await this.client.put(`/task/${ticketId}`, {
+      const response = await this.client!.put(`/task/${ticketId}`, {
         status: statusId,
       });
 
@@ -429,6 +448,7 @@ export class ClickUpService {
       space?: { id: string };
     }>;
   }> {
+    this.assertClient();
     try {
       const params: Record<string, string> = {
         order_by: options.order_by || 'updated',
@@ -448,7 +468,7 @@ export class ClickUpService {
         params.date_updated_gt = options.date_updated_gt.toString();
       }
 
-      const response = await this.client.get(`/list/${options.list_id}/task`, {
+      const response = await this.client!.get(`/list/${options.list_id}/task`, {
         params,
       });
 
@@ -491,34 +511,16 @@ export class ClickUpService {
    * @param taskId - ClickUp task ID
    * @returns Full task details
    */
-  async getTask(taskId: string): Promise<{
-    id: string;
-    name: string;
-    description: string;
-    status: { status: string };
-    text_content?: string;
-  }> {
+  async getTask(taskId: string): Promise<Record<string, unknown>> {
+    this.assertClient();
     try {
-      const response = await this.client.get(`/task/${taskId}`);
-
-      this.logger.debug('Fetched task details from ClickUp', {
-        taskId,
-        hasDescription: !!response.data.description,
-      });
-
-      return {
-        id: response.data.id,
-        name: response.data.name,
-        description: response.data.description || response.data.text_content || '',
-        status: response.data.status,
-        text_content: response.data.text_content,
-      };
+      const response = await this.client!.get(`/task/${taskId}`);
+      return response.data;
     } catch (_error) {
       this.logger.error('Failed to fetch task from ClickUp', {
         taskId,
         error: (_error as Error).message,
       });
-
       throw _error;
     }
   }
@@ -531,19 +533,19 @@ export class ClickUpService {
    * @returns List details or throws if not found
    */
   async getList(listId: string): Promise<{ id: string; name: string }> {
+    this.assertClient();
     try {
-      const response = await this.client.get(`/list/${listId}`);
+      const response = await this.client!.get(`/list/${listId}`);
       return {
         id: response.data.id,
         name: response.data.name,
       };
     } catch (_error) {
-      const msg = (_error as Error).message;
       this.logger.error('Failed to fetch list from ClickUp', {
         listId,
-        error: msg,
+        error: (_error as Error).message,
       });
-      throw new Error(`Failed to fetch ClickUp list ${listId}: ${msg}`);
+      throw new Error(`Failed to fetch ClickUp list ${listId}: ${(_error as Error).message}`);
     }
   }
 
@@ -568,10 +570,11 @@ export class ClickUpService {
     },
     options?: { correlationId?: string },
   ): Promise<ClickUpTask | null> {
+    this.assertClient();
     const correlationId = options?.correlationId || 'clickup-create-task';
 
     const operation = async () => {
-      const response = await this.client.post<ClickUpTask>(`/list/${listId}/task`, data);
+      const response = await this.client!.post<ClickUpTask>(`/list/${listId}/task`, data);
       return response.data;
     };
 
@@ -611,12 +614,13 @@ export class ClickUpService {
     teamId?: string;
     correlationId?: string;
   }): Promise<ClickUpHierarchy> {
+    this.assertClient();
     const correlationId = options?.correlationId || 'clickup-get-hierarchy';
     const requestTeamId = options?.teamId;
 
     try {
       // 1. Get Teams (Workspaces)
-      const teamsRes = await this.client.get('/team');
+      const teamsRes = await this.client!.get('/team');
       let teams = teamsRes.data.teams;
 
       if (!teams || teams.length === 0) {
@@ -648,7 +652,7 @@ export class ClickUpService {
         if (shouldFetchSpaces) {
           try {
             // Get Spaces for the Team
-            const spacesRes = await this.client.get(`/team/${team.id}/space`);
+            const spacesRes = await this.client!.get(`/team/${team.id}/space`);
             const spaces = spacesRes.data.spaces;
 
             // 3. For each Space, get Lists
@@ -656,14 +660,14 @@ export class ClickUpService {
               spaces.map(async (space: Record<string, unknown>) => {
                 try {
                   // Get Folderless Lists
-                  const folderlessListsRes = await this.client.get(`/space/${space.id}/list`);
+                  const folderlessListsRes = await this.client!.get(`/space/${space.id}/list`);
                   const lists = folderlessListsRes.data.lists.map((l: Record<string, unknown>) => ({
                     id: l.id,
                     name: l.name,
                   }));
 
                   // Get Folders and their lists
-                  const foldersRes = await this.client.get(`/space/${space.id}/folder`);
+                  const foldersRes = await this.client!.get(`/space/${space.id}/folder`);
                   for (const folder of foldersRes.data.folders) {
                     if (folder.lists) {
                       lists.push(

@@ -213,7 +213,8 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
         let taskDescription = '';
         try {
           const fullTask = await this.clickup.getTask(message.task_id);
-          taskDescription = fullTask.description || fullTask.text_content || '';
+          taskDescription =
+            (fullTask.description as string) || (fullTask.text_content as string) || '';
           this.loggerService.debug('Fetched full task details from ClickUp', {
             taskId: message.task_id,
             hasDescription: !!taskDescription,

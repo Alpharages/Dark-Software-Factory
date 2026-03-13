@@ -44,6 +44,7 @@ describe('CircularDependencyDetectorService', () => {
     status: { status: string };
     text_content: string;
     dependencies: { task_id: string; type: 'waiting_on' | 'blocking' }[];
+    [key: string]: unknown;
   }
 
   const toClickUpApiTask = (task: ClickUpTask): MockClickUpApiTask => ({

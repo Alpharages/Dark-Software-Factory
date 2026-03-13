@@ -74,7 +74,8 @@ export class DependencyManagerService {
 
         try {
           const depTask = await this.clickUpService.getTask(depId);
-          const isResolved = this.isStatusResolved(depTask.status?.status);
+          const depTaskStatus = depTask.status as { status?: string } | undefined;
+          const isResolved = this.isStatusResolved(depTaskStatus?.status);
 
           if (isResolved) {
             resolvedCount++;
