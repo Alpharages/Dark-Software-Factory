@@ -295,7 +295,7 @@ development_status:
     story_points: 5
     notes: 'Backend: DTOs extended to include container_id, ProjectController updated to merge it into provider_config JSONB. Validation enforces non-empty strings. Frontend: StatusConfigSection component implemented to fetch list statuses live and selection of ai_trigger_status. Integrated into PmIntegrationPanel. Code review (2026-03-14): toSyncConfigResponse double-cast fixed (M5), 404 ApiResponse added to PATCH endpoint (M4), Swagger summary updated (L1), NotFoundException test description fixed (L2), React imports consolidated (M3), error alert changed to Alert component (M2), react-hot-toast mock added (H2), 6 missing StatusConfigSection tests added (H3), story File List populated (M1).'
   CS1-5-auto-assign-bot-on-execution:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
     notes: 'On execution start, auto-assign bot (bot_user_id from ProjectIntegration) to task via IPMProvider.assignTask(). No hardcoded user IDs. Ultimate context engine analysis completed - comprehensive developer guide created.'

@@ -178,6 +178,14 @@ export class ProjectIntegrationService {
     return this.decryptTokens(integration);
   }
 
+  async findFirstByProject(projectId: string): Promise<ProjectIntegration | null> {
+    const integration = await this.prisma.projectIntegration.findFirst({
+      where: { project_id: projectId, bot_user_id: { not: null } },
+    });
+    if (!integration) return null;
+    return this.decryptTokens(integration);
+  }
+
   private decryptTokens(integration: ProjectIntegration): ProjectIntegration {
     try {
       return {

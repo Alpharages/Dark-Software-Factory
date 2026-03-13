@@ -349,6 +349,33 @@ describe('ProjectIntegrationService', () => {
         expect(result).toBeNull();
       });
     });
+
+    describe('findFirstByProject', () => {
+      it('should return the first integration with a bot_user_id', async () => {
+        mockPrismaService.projectIntegration.findFirst.mockResolvedValue({
+          id: 'pi-bot',
+          project_id: 'proj-1',
+          bot_user_id: 'bot-123',
+          access_token: 'encrypted_access',
+        });
+
+        const result = await service.findFirstByProject('proj-1');
+
+        expect(prismaService.projectIntegration.findFirst).toHaveBeenCalledWith({
+          where: { project_id: 'proj-1', bot_user_id: { not: null } },
+        });
+        expect(result!.bot_user_id).toBe('bot-123');
+        expect(result!.access_token).toBe('access');
+      });
+
+      it('should return null if no integration with bot_user_id exists', async () => {
+        mockPrismaService.projectIntegration.findFirst.mockResolvedValue(null);
+
+        const result = await service.findFirstByProject('proj-empty');
+
+        expect(result).toBeNull();
+      });
+    });
   });
 
   describe('upsertIntegration', () => {

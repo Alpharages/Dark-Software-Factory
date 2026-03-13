@@ -53,6 +53,7 @@ import { ExecutionOverrideRepository } from './repositories/execution-override.r
 import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
 // Audit Logging
 import { AuditLogService } from '../common/audit/audit-log.service';
+import { IntegrationsModule } from '../integrations/integrations.module';
 
 /**
  * Execution Module
@@ -85,6 +86,7 @@ import { AuditLogService } from '../common/audit/audit-log.service';
     // Story 13.3.1: Self-Healing with Progress Validation
     ProgressValidatorModule,
     ClickUpModule,
+    IntegrationsModule,
     AppMetricsModule,
     // Story 7.7: AI Capability Management & Limitations
     CapabilitiesModule,

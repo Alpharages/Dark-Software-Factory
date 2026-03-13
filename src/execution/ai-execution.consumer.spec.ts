@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { AIProvider, ExecutionStatus, Prisma } from '@/prisma/client';
@@ -13,6 +14,7 @@ import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
 import { SentryService } from '../common/sentry/sentry.service';
 import { ClickUpService } from '../clickup/clickup.service';
 import { AiCapabilityTrackerService } from '../architecture-review/capabilities/ai-capability-tracker.service';
+import { BotAssignmentService } from '../integrations/bot-assignment.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -24,6 +26,7 @@ describe('AIExecutionConsumer', () => {
   let _rabbitmqService: jest.Mocked<RabbitMQService>;
   let _orchestrator: jest.Mocked<OrchestratorService>;
   let _clickupService: jest.Mocked<ClickUpService>;
+  let _botAssignment: jest.Mocked<BotAssignmentService>;
 
   const _mockMessage = {
     messageId: 'msg-123',
@@ -109,6 +112,7 @@ describe('AIExecutionConsumer', () => {
       estimateCost: jest.fn().mockReturnValue(new Decimal(0.01)),
       calculateUSD: jest.fn().mockReturnValue(new Decimal(0.02)),
       logCost: jest.fn().mockResolvedValue({ id: 'cost-id' }),
+      checkBudgetAvailability: jest.fn().mockResolvedValue({ allowed: true }),
     };
     const mockCostOptimizer = {
       selectOptimalModel: jest.fn().mockReturnValue('gpt-4o'),
@@ -126,6 +130,10 @@ describe('AIExecutionConsumer', () => {
       trackExecution: jest.fn().mockResolvedValue(undefined),
     };
 
+    const mockBotAssignment = {
+      assignBotToTask: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIExecutionConsumer,
@@ -139,6 +147,7 @@ describe('AIExecutionConsumer', () => {
         { provide: SentryService, useValue: mockSentry },
         { provide: ClickUpService, useValue: mockClickUpService },
         { provide: AiCapabilityTrackerService, useValue: mockAiCapabilityTracker },
+        { provide: BotAssignmentService, useValue: mockBotAssignment },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_FAILED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_PROCESSING_DURATION_SECONDS', useValue: mockHistogram },
@@ -152,6 +161,7 @@ describe('AIExecutionConsumer', () => {
     _rabbitmqService = module.get(RabbitMQService);
     _orchestrator = module.get(OrchestratorService);
     _clickupService = module.get(ClickUpService);
+    _botAssignment = module.get(BotAssignmentService);
   });
 
   describe('getConsumerState', () => {
@@ -198,7 +208,7 @@ describe('AIExecutionConsumer', () => {
   describe('error classification', () => {
     it('should identify retryable errors', () => {
       // Access private method via type casting for testing
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const isRetryable = (consumer as any).isRetryableError;
 
       expect(isRetryable('TIMEOUT')).toBe(true);
@@ -208,7 +218,6 @@ describe('AIExecutionConsumer', () => {
     });
 
     it('should identify non-retryable errors', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const isRetryable = (consumer as any).isRetryableError;
 
       expect(isRetryable('INVALID_PROMPT')).toBe(false);
@@ -221,7 +230,6 @@ describe('AIExecutionConsumer', () => {
 
   describe('transient error handling', () => {
     it('should identify connection errors as requeue-able', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const shouldRequeue = (consumer as any).shouldRequeueOnError;
 
       expect(shouldRequeue(new Error('ECONNREFUSED'))).toBe(true);
@@ -231,7 +239,6 @@ describe('AIExecutionConsumer', () => {
     });
 
     it('should not requeue non-transient errors', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const shouldRequeue = (consumer as any).shouldRequeueOnError;
 
       expect(shouldRequeue(new Error('Invalid input'))).toBe(false);
@@ -257,7 +264,7 @@ describe('AIExecutionConsumer', () => {
     it('should block execution and alert PM when budget exceeded', async () => {
       // Mock checkBudgetAvailability to return allowed: false
       // Access via casting since it is private property in consumer but public in service
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const _costTracker = (consumer as any).aiCostTracker;
       _costTracker.checkBudgetAvailability = jest.fn().mockResolvedValue({
         allowed: false,
@@ -268,7 +275,7 @@ describe('AIExecutionConsumer', () => {
 
       // Call processExecution via private access or by simulating consume
       // Let's use private access for direct testing of logic
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const result = await (consumer as any).processExecution(_mockMessage);
 
       expect(result.success).toBe(false);
@@ -278,6 +285,20 @@ describe('AIExecutionConsumer', () => {
       expect(_clickupService.addComment).toHaveBeenCalledWith(
         'ticket-456',
         expect.stringContaining('Budget exceeded'),
+      );
+    });
+  });
+
+  describe('processExecution (Bot Assignment)', () => {
+    it('should call bot assignment service', async () => {
+      // Access via casting
+      const result = await (consumer as any).processExecution(_mockMessage);
+
+      expect(result.success).toBe(true);
+      expect(_botAssignment.assignBotToTask).toHaveBeenCalledWith(
+        'ticket-456',
+        'proj-123',
+        'corr-123',
       );
     });
   });

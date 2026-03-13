@@ -32,6 +32,7 @@ import { ErrorSeverity } from '@/common/sentry/sentry.constants';
 // Story 7.7: AI Capability Management & Limitations
 import { AiCapabilityTrackerService } from '@/architecture-review/capabilities/ai-capability-tracker.service';
 import { ClickUpService } from '@/clickup/clickup.service';
+import { BotAssignmentService } from '@/integrations/bot-assignment.service';
 import { Prisma } from '@/prisma/client';
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -93,6 +94,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly costOptimizer: CostOptimizerService,
     private readonly sentry: SentryService,
     private readonly clickup: ClickUpService,
+    private readonly botAssignment: BotAssignmentService,
     @InjectMetric('queue_messages_consumed_total')
     private readonly consumedCounter: Counter<string>,
     @InjectMetric('queue_messages_failed_total')
@@ -249,6 +251,9 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
 
       // 1. Mark execution as in-progress
       await this.executionTracker.markInProgress(executionId, correlationId);
+
+      // CS1-5: Auto-assign bot to task on execution start (FR-CS13)
+      await this.botAssignment.assignBotToTask(payload.ticketId, payload.projectId, correlationId);
 
       // Story 11.4: Log AI provider selection decision
       await this.aiDecisionLogger.logDecision({

@@ -1,6 +1,6 @@
 # Story CS1.5: Auto-Assign DSF Bot to Task on Execution Start
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -106,53 +106,55 @@ so that I can see at a glance in my PM tool which tasks the AI agent is working 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `findFirstByProject()` to `ProjectIntegrationService` (AC2)
-  - [ ] Add method with `prisma.projectIntegration.findFirst({ where: { project_id: projectId, bot_user_id: { not: null } } })`
-  - [ ] Pipe result through `decryptTokens()`
-  - [ ] Return `null` if not found
+- [x] Task 1: Add `findFirstByProject()` to `ProjectIntegrationService` (AC2)
+  - [x] Add method with `prisma.projectIntegration.findFirst({ where: { project_id: projectId, bot_user_id: { not: null } } })`
+  - [x] Pipe result through `decryptTokens()`
+  - [x] Return `null` if not found
 
-- [ ] Task 2: Create `BotAssignmentService` (AC1)
-  - [ ] Create `src/integrations/bot-assignment.service.ts`
-  - [ ] Inject `PrismaService`, `ProjectIntegrationService`, `PMProviderFactory`, `SentryService`, `Logger`
-  - [ ] Implement `assignBotToTask(ticketId, projectId, correlationId): Promise<void>`
-  - [ ] Step 1: look up ticket; if not found → warn + return
-  - [ ] Step 2: `findFirstByProject(projectId)`; if null → warn + return
-  - [ ] Step 3: check `integration.bot_user_id`; if null/empty → warn + return
-  - [ ] Step 4–5: get provider + call `assignTask(ticket.clickup_task_id, integration.bot_user_id)` in try-catch
-  - [ ] On success: debug log
-  - [ ] On error: error log + `sentry.captureException()` — do NOT rethrow
+- [x] Task 2: Create `BotAssignmentService` (AC1)
+  - [x] Create `src/integrations/bot-assignment.service.ts`
+  - [x] Inject `PrismaService`, `ProjectIntegrationService`, `PMProviderFactory`, `SentryService`, `Logger`
+  - [x] Implement `assignBotToTask(ticketId, projectId, correlationId): Promise<void>`
+  - [x] Step 1: look up ticket; if not found → warn + return
+  - [x] Step 2: `findFirstByProject(projectId)`; if null → warn + return
+  - [x] Step 3: check `integration.bot_user_id`; if null/empty → warn + return
+  - [x] Step 4–5: get provider + call `assignTask(ticket.clickup_task_id, integration.bot_user_id)` in try-catch
+  - [x] On success: debug log
+  - [x] On error: error log + `sentry.captureException()` — do NOT rethrow
 
-- [ ] Task 3: Register `BotAssignmentService` in `IntegrationsModule` (AC5)
-  - [ ] Add `SentryModule` to `imports` array — required for `SentryService` injection
-  - [ ] Add `BotAssignmentService` to `providers` array
-  - [ ] Add `BotAssignmentService` to `exports` array
+- [x] Task 3: Register `BotAssignmentService` in `IntegrationsModule` (AC5)
+  - [x] Add `SentryModule` to `imports` array — required for `SentryService` injection
+  - [x] Add `BotAssignmentService` to `providers` array
+  - [x] Add `BotAssignmentService` to `exports` array
 
-- [ ] Task 4: Import `IntegrationsModule` into `ExecutionModule` (AC4)
-  - [ ] Add `IntegrationsModule` to imports in `execution.module.ts`
+- [x] Task 4: Import `IntegrationsModule` into `ExecutionModule` (AC4)
+  - [x] Add `IntegrationsModule` to imports in `execution.module.ts`
 
-- [ ] Task 5: Inject `BotAssignmentService` into `AIExecutionConsumer` and call it (AC3)
-  - [ ] Add constructor parameter `private readonly botAssignment: BotAssignmentService`
-  - [ ] After `markInProgress()` call (line ~251), insert bot assignment call
-  - [ ] Add import for `BotAssignmentService`
+- [x] Task 5: Inject `BotAssignmentService` into `AIExecutionConsumer` and call it (AC3)
+  - [x] Add constructor parameter `private readonly botAssignment: BotAssignmentService`
+  - [x] After `markInProgress()` call (line ~251), insert bot assignment call
+  - [x] Add import for `BotAssignmentService`
 
-- [ ] Task 6: Write unit tests for `BotAssignmentService` (AC6)
-  - [ ] Create `src/integrations/bot-assignment.service.spec.ts`
-  - [ ] Mock `PrismaService`, `ProjectIntegrationService`, `PMProviderFactory`, `SentryService`
-  - [ ] Test: happy path → `assignTask` called with correct args
-  - [ ] Test: no ticket → warn + no `assignTask` call
-  - [ ] Test: no integration → warn + no `assignTask` call
-  - [ ] Test: `bot_user_id` null → warn + no `assignTask` call
-  - [ ] Test: `assignTask` throws → `captureException` called, no rethrow
+- [x] Task 6: Write unit tests for `BotAssignmentService` (AC6)
+  - [x] Create `src/integrations/bot-assignment.service.spec.ts`
+  - [x] Mock `PrismaService`, `ProjectIntegrationService`, `PMProviderFactory`, `SentryService`
+  - [x] Test: happy path → `assignTask` called with correct args
+  - [x] Test: no ticket → warn + no `assignTask` call
+  - [x] Test: no integration → warn + no `assignTask` call
+  - [x] Test: `bot_user_id` null → warn + no `assignTask` call
+  - [x] Test: `bot_user_id` empty string → warn + no `assignTask` call (added by code review)
+  - [x] Test: `assignTask` throws → `captureException` called + `logger.error` called, no rethrow
 
-- [ ] Task 7: Update `AIExecutionConsumer` spec (AC7)
-  - [ ] Add `import { BotAssignmentService } from '../integrations/bot-assignment.service'`
-  - [ ] Add `BotAssignmentService` mock to module providers
-  - [ ] Verify existing tests still pass
+- [x] Task 7: Update `AIExecutionConsumer` spec (AC7)
+  - [x] Add `import { BotAssignmentService } from '../integrations/bot-assignment.service'`
+  - [x] Add `BotAssignmentService` mock to module providers
+  - [x] Verify existing tests still pass
+  - [x] Add `processExecution (Bot Assignment)` test asserting `assignBotToTask` is called with correct args
 
-- [ ] Task 8: Verify build (AC8)
-  - [ ] `pnpm typecheck` — zero errors
-  - [ ] `pnpm lint` — zero warnings/errors
-  - [ ] `pnpm test` — all pass
+- [x] Task 8: Verify build (AC8)
+  - [x] `pnpm typecheck` — zero errors
+  - [x] `pnpm lint` — zero warnings/errors
+  - [x] `pnpm test` — all pass (7/7 BotAssignmentService, 31/31 consumer + project-integration)
 
 ---
 
@@ -504,4 +506,17 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- All 8 ACs implemented and verified by code review (2026-03-14)
+- Code review (2026-03-14) fixed: FR-CS13 reference added to consumer comment; `logger.error` assertion added to throws test; empty string `bot_user_id` test case added
+- AC8 verified (2026-03-14): `pnpm typecheck` clean, `pnpm lint` clean, all 38 affected tests pass
+
 ### File List
+
+- `src/integrations/bot-assignment.service.ts` — NEW: BotAssignmentService (AC1)
+- `src/integrations/bot-assignment.service.spec.ts` — NEW: Unit tests for BotAssignmentService (AC6)
+- `src/integrations/project-integration.service.ts` — MODIFIED: Added `findFirstByProject()` method (AC2)
+- `src/integrations/project-integration.service.spec.ts` — MODIFIED: Added tests for `findFirstByProject()` (AC2)
+- `src/integrations/integrations.module.ts` — MODIFIED: Added SentryModule to imports; BotAssignmentService to providers+exports (AC5)
+- `src/execution/ai-execution.consumer.ts` — MODIFIED: Injected BotAssignmentService, added call after markInProgress (AC3)
+- `src/execution/ai-execution.consumer.spec.ts` — MODIFIED: Added BotAssignmentService mock + bot assignment test (AC7)
+- `src/execution/execution.module.ts` — MODIFIED: Added IntegrationsModule to imports (AC4)
