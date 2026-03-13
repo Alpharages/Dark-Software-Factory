@@ -210,7 +210,7 @@ development_status:
   epic-26-retrospective: done
 
   # EPIC CS0 - PM TOOL INTEGRATION FRAMEWORK
-  epic-CS0: in-progress
+  epic-CS0: done
   epic-CS0-name: 'PM Tool Integration Framework'
   epic-CS0-phase: 'New Feature Sprint'
   epic-CS0-priority: high
@@ -263,7 +263,7 @@ development_status:
     effort: '1 day'
     story_points: 3
     notes: 'Webhook routing via workspace ID in payload. Per-workspace webhook_secret lookup. Multi-tenant signature verification. Ultimate context engine analysis completed - comprehensive developer guide created.'
-  epic-CS0-retrospective: optional
+  epic-CS0-retrospective: done
 
   # EPIC CS1 - PER-PROJECT WORKFLOW CONFIGURATION
   epic-CS1: backlog
@@ -304,6 +304,11 @@ development_status:
     effort: '2 days'
     story_points: 5
     notes: 'Gate all incoming tasks (webhook + polling) against ai_trigger_status. Only exact status match enters the dev queue. Backlog/done/human-in-progress tasks silently discarded. Deduplication on (taskId, provider). pm_polling_tasks_skipped_total + pm_tasks_dropped_no_trigger_total Prometheus counters.'
+  CS1-7-clickup-credential-transition:
+    status: backlog
+    effort: '1 day'
+    story_points: 3
+    notes: 'Added in CS0 retrospective (2026-03-13). Change CLICKUP_API_KEY from required() to optional() in env.validation.ts. Add startup warning log if only legacy key configured and no ProjectIntegration OAuth records exist. Update comments in configuration.ts. Retire ClickUpPollingOrchestrator (legacy). Dependency: CS0-4/CS0-5 OAuth config.'
   epic-CS1-retrospective: optional
 
   # EPIC CS2 - INTELLIGENT REQUIRED FIELD PRE-CHECK & AUTO-FILL
@@ -531,6 +536,9 @@ priority_sequence:
       - id: 'CS1-6'
         name: 'Development Gate — Task Intake Filter'
         reason: 'Critical: prevents backlog/done tasks from accidentally entering the dev queue.'
+      - id: 'CS1-7'
+        name: 'ClickUp Credential Transition'
+        reason: 'Added in CS0 retro: removes CLICKUP_API_KEY as required, retires legacy ClickUpPollingOrchestrator, ensures clean OAuth-only deployment path.'
       - id: 'CS2-1'
         name: 'Required Field Pre-Check'
       - id: 'CS2-2'
