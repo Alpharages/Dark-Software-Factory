@@ -7,7 +7,10 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Patch,
+  Body,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -24,6 +27,11 @@ import { Role } from '@/auth/constants/roles.enum';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { PMStatusService } from './pm-status.service';
 import { ProjectIntegrationService } from './project-integration.service';
+import { UpdateSyncSettingsDto } from './dto/update-sync-settings.dto';
+import {
+  toSyncConfigResponse,
+  SyncConfigResponseDto,
+} from '@/projects/dto/sync-config-response.dto';
 
 @ApiTags('Integrations')
 @ApiBearerAuth()
@@ -93,5 +101,23 @@ export class IntegrationsController {
     }
 
     throw new NotFoundException(`Provider "${provider}" not supported`);
+  }
+
+  @Patch(':id/sync-settings')
+  @Roles(Role.PM, Role.MANAGER, Role.ADMIN)
+  @ApiOperation({ summary: 'Update polling and webhook settings for an integration' })
+  @ApiParam({ name: 'id', description: 'ProjectIntegration UUID' })
+  @ApiResponse({ status: 200, type: SyncConfigResponseDto })
+  @ApiResponse({ status: 404, description: 'Integration not found' })
+  async updateSyncSettings(@Param('id') id: string, @Body() dto: UpdateSyncSettingsDto) {
+    try {
+      const updated = await this.integrationService.updateIntegration(id, dto);
+      return toSyncConfigResponse(updated);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`Integration ${id} not found`);
+      }
+      throw error;
+    }
   }
 }

@@ -10,6 +10,9 @@ import { RabbitMQConsumerBase } from '../rabbitmq/rabbitmq-consumer.base';
 import { TicketStatus } from '@/prisma/client';
 import { ClickUpService } from './clickup.service';
 import { ConfigService } from '@nestjs/config';
+import { Inject, forwardRef } from '@nestjs/common';
+import { IntegrationProvider } from '@/prisma/client';
+import { ProjectIntegrationService } from '../integrations/project-integration.service';
 // Story 20.1: Provider-Agnostic Intake
 import { mapClickUpToTaskEvent, TaskTriggerSource } from '@/ticket-intake/dto';
 import { IRawTaskEvent } from '@/ticket-intake/interfaces/ticket-intake.interface';
@@ -42,6 +45,8 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
     private readonly audit: AuditLogService,
     private readonly clickup: ClickUpService,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => ProjectIntegrationService))
+    private readonly integrationService: ProjectIntegrationService,
   ) {
     super();
   }
@@ -132,6 +137,66 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
         status: message.status,
       });
 
+      // Get repository URL from config fallback (temporary until Story 4.9)
+      const defaultRepository = this.config.get<string>(
+        'github.defaultRepository',
+        'https://github.com/default-org/default-repo',
+      );
+
+      // Resolve project_id: look up by github_repository_url, fall back to first active project
+      let project = await this.prisma.project.findFirst({
+        where: { github_repository_url: defaultRepository },
+        select: { id: true },
+      });
+
+      if (!project) {
+        project = await this.prisma.project.findFirst({
+          where: { is_active: true },
+          select: { id: true },
+          orderBy: { created_at: 'asc' },
+        });
+      }
+
+      if (!project) {
+        this.loggerService.warn(
+          'No project found for auto-creating ticket - skipping ticket creation',
+          {
+            taskId: message.task_id,
+            defaultRepository,
+          },
+        );
+        return;
+      }
+
+      // CS1-3: ai_trigger_status gate (FR-CS20) — place after project resolved, before ticket lookup
+      const integration = await this.integrationService.findByProjectAndProvider(
+        project.id,
+        IntegrationProvider.CLICKUP,
+      );
+
+      if (!integration) {
+        this.loggerService.warn('project has no CLICKUP integration — all tasks discarded', {
+          projectId: project.id,
+          taskId: message.task_id,
+        });
+        return;
+      }
+
+      if (!integration.ai_trigger_status) {
+        this.loggerService.warn(
+          'integration has no ai_trigger_status configured — all tasks skipped. PM must set the trigger status in project settings',
+          { projectId: project.id, taskId: message.task_id },
+        );
+        return;
+      }
+
+      if (message.status.toLowerCase() !== integration.ai_trigger_status.toLowerCase()) {
+        this.loggerService.debug(
+          `task ${message.task_id} status '${message.status}' — not at trigger '${integration.ai_trigger_status}', skipping`,
+        );
+        return;
+      }
+
       // Find ticket by ClickUp task ID
       let ticket = await this.prisma.ticket.findUnique({
         where: { clickup_task_id: message.task_id },
@@ -158,37 +223,6 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
             taskId: message.task_id,
             error: (_error as Error).message,
           });
-        }
-
-        // Get repository URL from config fallback (temporary until Story 4.9)
-        const defaultRepository = this.config.get<string>(
-          'github.defaultRepository',
-          'https://github.com/default-org/default-repo',
-        );
-
-        // Resolve project_id: look up by github_repository_url, fall back to first active project
-        let project = await this.prisma.project.findFirst({
-          where: { github_repository_url: defaultRepository },
-          select: { id: true },
-        });
-
-        if (!project) {
-          project = await this.prisma.project.findFirst({
-            where: { is_active: true },
-            select: { id: true },
-            orderBy: { created_at: 'asc' },
-          });
-        }
-
-        if (!project) {
-          this.loggerService.warn(
-            'No project found for auto-creating ticket - skipping ticket creation',
-            {
-              taskId: message.task_id,
-              defaultRepository,
-            },
-          );
-          return;
         }
 
         // Auto-create ticket for production polling workflow

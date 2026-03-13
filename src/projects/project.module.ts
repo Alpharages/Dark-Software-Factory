@@ -7,9 +7,15 @@ import { makeCounterProvider, makeGaugeProvider } from '@willsoto/nestjs-prometh
 
 import { ClickUpModule } from '@/clickup/clickup.module';
 import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
+import { IntegrationsModule } from '@/integrations/integrations.module';
 
 @Module({
-  imports: [DatabaseModule, forwardRef(() => ClickUpModule), AIDecisionLoggerModule],
+  imports: [
+    DatabaseModule,
+    forwardRef(() => ClickUpModule),
+    AIDecisionLoggerModule,
+    IntegrationsModule,
+  ],
   controllers: [ProjectController],
   providers: [
     ProjectService,

@@ -150,6 +150,14 @@ export class ProjectIntegrationService {
     return this.decryptTokens(integration);
   }
 
+  async findByProjectId(projectId: string): Promise<ProjectIntegration[]> {
+    const integrations = await this.prisma.projectIntegration.findMany({
+      where: { project_id: projectId },
+    });
+
+    return integrations.map((i) => this.decryptTokens(i));
+  }
+
   async getDecryptedIntegration(id: string): Promise<ProjectIntegration | null> {
     const integration = await this.prisma.projectIntegration.findUnique({
       where: { id },

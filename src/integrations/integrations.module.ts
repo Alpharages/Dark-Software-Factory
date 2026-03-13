@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { IntegrationsController } from './integrations.controller';
 import { ClickUpModule } from '@/clickup/clickup.module';
 import { ProjectIntegrationService } from './project-integration.service';
@@ -11,7 +11,7 @@ import { PMProviderFactory } from './providers/pm-provider.factory';
 import { PMStatusService } from './pm-status.service';
 
 @Module({
-  imports: [ClickUpModule, DatabaseModule, EncryptionModule, SentryModule],
+  imports: [forwardRef(() => ClickUpModule), DatabaseModule, EncryptionModule, SentryModule],
   controllers: [IntegrationsController, ClickUpOAuthController],
   providers: [ProjectIntegrationService, ClickUpOAuthService, PMProviderFactory, PMStatusService],
   exports: [ProjectIntegrationService, ClickUpOAuthService, PMProviderFactory, PMStatusService],

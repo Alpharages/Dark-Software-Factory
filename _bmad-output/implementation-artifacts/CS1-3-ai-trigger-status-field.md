@@ -1,6 +1,6 @@
 # Story CS1.3: ai_trigger_status Field and Sync-Config API
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -50,6 +50,7 @@ so that each team's workflow drives execution — not a global hardcoded value.
 - New endpoint `PATCH /api/v1/integrations/:id/sync-settings` added to `IntegrationsController`
 - `:id` is `ProjectIntegration.id` (UUID)
 - Accepts `UpdateSyncSettingsDto`:
+
   ```typescript
   {
     polling_enabled: boolean;
@@ -59,6 +60,7 @@ so that each team's workflow drives execution — not a global hardcoded value.
   ```
 
   - `polling_interval_min`: `@IsInt()`, `@Min(1)`, `@Max(1440)`
+
 - Updates via `ProjectIntegrationService.updateIntegration(id, dto)`
 - Returns the updated record mapped to `SyncConfigResponseDto` (no tokens in response)
 - Returns HTTP 404 if integration not found (catch Prisma `P2025` — see Dev Notes)
@@ -478,3 +480,17 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+- `src/projects/dto/update-sync-config.dto.ts` (new)
+- `src/projects/dto/sync-config-response.dto.ts` (new)
+- `src/projects/project.controller.ts` (modified)
+- `src/projects/project.module.ts` (modified)
+- `src/integrations/project-integration.service.ts` (modified)
+- `src/integrations/dto/update-sync-settings.dto.ts` (new)
+- `src/integrations/integrations.controller.ts` (modified)
+- `src/integrations/integrations.module.ts` (modified)
+- `src/clickup/clickup.module.ts` (modified)
+- `src/clickup/clickup-task-update.consumer.ts` (modified)
+- `src/projects/project.controller.spec.ts` (modified)
+- `src/integrations/integrations.controller.spec.ts` (modified)
+- `src/clickup/clickup-task-update.consumer.spec.ts` (new)

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ClickUpService } from './clickup.service';
 import { ClickUpPollingOrchestrator } from './clickup-polling-orchestrator.service';
 import { ClickUpWebhookConsumer } from './clickup-webhook-consumer.service';
@@ -9,6 +9,7 @@ import { LoggerModule } from '../common/logger/logger.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { DatabaseModule } from '../database/database.module';
 import { AuditLogModule } from '../common/audit/audit-log.module';
+import { IntegrationsModule } from '../integrations/integrations.module';
 
 /**
  * ClickUp API Integration Module
@@ -33,6 +34,7 @@ import { AuditLogModule } from '../common/audit/audit-log.module';
     LoggerModule,
     RabbitMQModule,
     AuditLogModule,
+    forwardRef(() => IntegrationsModule),
   ],
   controllers: [],
   providers: [

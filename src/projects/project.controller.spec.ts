@@ -1,16 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
+import { ProjectIntegrationService } from '@/integrations/project-integration.service';
+import { UpdateSyncConfigDto } from './dto/update-sync-config.dto';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma } from '@/prisma/client';
 import { ROLES_KEY } from '@/common/decorators/roles.decorator';
 import { Role } from '@/auth/constants/roles.enum';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 
 describe('ProjectController', () => {
   let controller: ProjectController;
   let service: jest.Mocked<ProjectService>;
+  let integrationService: jest.Mocked<ProjectIntegrationService>;
 
   const mockProject = {
     id: 'project-123',
@@ -30,6 +35,17 @@ describe('ProjectController', () => {
     updated_at: new Date(),
     is_active: true,
     deactivated_at: null,
+  };
+
+  const mockIntegration = {
+    id: 'int-123',
+    project_id: 'project-123',
+    provider: 'CLICKUP',
+    ai_trigger_status: 'In Review',
+    polling_enabled: true,
+    polling_interval_min: 15,
+    webhook_enabled: true,
+    webhook_id: 'wh-123',
   };
 
   beforeEach(async () => {
@@ -53,6 +69,14 @@ describe('ProjectController', () => {
             updateGithubRepo: jest.fn(),
           },
         },
+        {
+          provide: ProjectIntegrationService,
+          useValue: {
+            findByProjectId: jest.fn(),
+            findByProjectAndProvider: jest.fn(),
+            updateIntegration: jest.fn(),
+          },
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -65,6 +89,7 @@ describe('ProjectController', () => {
 
     controller = module.get<ProjectController>(ProjectController);
     service = module.get(ProjectService);
+    integrationService = module.get(ProjectIntegrationService);
   });
 
   it('should be defined', () => {
@@ -172,6 +197,78 @@ describe('ProjectController', () => {
       service.deleteProject.mockResolvedValue(mockProject);
       await controller.remove('project-123', true);
       expect(service.deleteProject).toHaveBeenCalledWith('project-123', true);
+    });
+  });
+
+  describe('getIntegrations', () => {
+    it('should return all integrations for a project', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      integrationService.findByProjectId.mockResolvedValue([mockIntegration as any]);
+      const result = await controller.getIntegrations('project-123');
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(mockIntegration.id);
+      expect(integrationService.findByProjectId).toHaveBeenCalledWith('project-123');
+    });
+
+    it('should return empty array when no integrations found', async () => {
+      integrationService.findByProjectId.mockResolvedValue([]);
+      const result = await controller.getIntegrations('project-123');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getSyncConfig', () => {
+    it('should return CLICKUP sync config', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
+      const result = await controller.getSyncConfig('project-123');
+      expect(result.ai_trigger_status).toBe('In Review');
+    });
+
+    it('should throw BadRequestException if no CLICKUP integration found', async () => {
+      integrationService.findByProjectAndProvider.mockResolvedValue(null);
+      await expect(controller.getSyncConfig('project-123')).rejects.toThrow(
+        'No CLICKUP integration found',
+      );
+    });
+  });
+
+  describe('updateSyncConfig', () => {
+    it('should update ai_trigger_status', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
+
+      integrationService.updateIntegration.mockResolvedValue({
+        ...mockIntegration,
+        ai_trigger_status: 'Ready',
+      } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      const result = await controller.updateSyncConfig('project-123', {
+        ai_trigger_status: 'Ready',
+      });
+      expect(result.ai_trigger_status).toBe('Ready');
+      expect(integrationService.updateIntegration).toHaveBeenCalledWith(mockIntegration.id, {
+        ai_trigger_status: 'Ready',
+      });
+    });
+
+    it('should clear ai_trigger_status when null is passed', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
+      integrationService.updateIntegration.mockResolvedValue({
+        ...mockIntegration,
+        ai_trigger_status: null,
+      } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      const result = await controller.updateSyncConfig('project-123', { ai_trigger_status: null });
+      expect(result.ai_trigger_status).toBeNull();
+    });
+
+    it('should reject empty ai_trigger_status string with a validation error', async () => {
+      const dto = plainToInstance(UpdateSyncConfigDto, { ai_trigger_status: '' });
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'ai_trigger_status')).toBe(true);
     });
   });
 });

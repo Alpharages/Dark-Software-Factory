@@ -285,10 +285,10 @@ development_status:
     story_points: 8
     notes: 'PMStatusService implemented with 5m TTL cache and stale fallback to Sentry. resolveStatusId handles case-insensitive name-to-id mapping. GET /integrations/:id/statuses endpoint exposed for live discovery. Code review (2026-03-13): ErrorCategory.NETWORK (not CLICKUP), explicit SentryModule import in IntegrationsModule, stale-cache warn log asserted in test, path aliases updated.'
   CS1-3-ai-trigger-status-field:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'ai_trigger_status field on ProjectIntegration. API: GET/PATCH /projects/:id/integration/sync-config. Replaces all global env-var status config. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'ai_trigger_status field on ProjectIntegration. API: GET/PATCH /projects/:id/integration/sync-config + GET :id/integrations + PATCH /integrations/:id/sync-settings. Status-based gate in ClickUpTaskUpdateConsumer. Code review (2026-03-13): BadRequestException→NotFoundException (H1), 4 IntegrationsController tests added (H2), UpdateSyncConfigDto @Transform removed to enforce empty-string 400 (H3), 3 ProjectController tests added (M1), case-insensitive consumer gate test added (M2), File List populated (M3).'
   CS1-4-live-status-picker-ui:
     status: ready-for-dev
     effort: '3 days'
@@ -305,10 +305,10 @@ development_status:
     story_points: 5
     notes: 'Gate all incoming tasks (webhook + polling) against ai_trigger_status. Only exact status match enters the dev queue. Backlog/done/human-in-progress tasks silently discarded. Deduplication on (taskId, provider). pm_polling_tasks_skipped_total + pm_tasks_dropped_no_trigger_total Prometheus counters. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS1-7-clickup-credential-transition:
-    status: backlog
+    status: ready-for-dev
     effort: '1 day'
     story_points: 3
-    notes: 'Added in CS0 retrospective (2026-03-13). Change CLICKUP_API_KEY from required() to optional() in env.validation.ts. Add startup warning log if only legacy key configured and no ProjectIntegration OAuth records exist. Update comments in configuration.ts. Retire ClickUpPollingOrchestrator (legacy). Dependency: CS0-4/CS0-5 OAuth config.'
+    notes: 'Ultimate context engine analysis completed - comprehensive developer guide created. Retire ClickUpPollingOrchestrator (DELETE files), remove CLICKUP_API_KEY from env.validation.ts/configuration.ts, ClickUpService graceful degradation (warn+null client, assertClient guard), startup warning if no OAuth integrations.'
   epic-CS1-retrospective: optional
 
   # EPIC CS2 - INTELLIGENT REQUIRED FIELD PRE-CHECK & AUTO-FILL

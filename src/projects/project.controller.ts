@@ -9,6 +9,7 @@ import {
   UseGuards,
   Logger,
   BadRequestException,
+  NotFoundException,
   Query,
 } from '@nestjs/common';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
@@ -21,6 +22,10 @@ import { ImportProjectDto } from './dto/import-project.dto';
 import { UpdateRepositoryDto } from './dto/update-repository.dto';
 import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
+import { SyncConfigResponseDto, toSyncConfigResponse } from './dto/sync-config-response.dto';
+import { UpdateSyncConfigDto } from './dto/update-sync-config.dto';
+import { ProjectIntegrationService } from '@/integrations/project-integration.service';
+import { IntegrationProvider } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -42,7 +47,10 @@ import { Role } from '@/auth/constants/roles.enum';
 export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);
 
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+    private readonly integrationService: ProjectIntegrationService,
+  ) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.MANAGER, Role.PM) // Changed to use Role enum for consistency with existing code
@@ -199,5 +207,53 @@ export class ProjectController {
     // Handle string 'true' from query param
     const forceDelete = force === true || String(force) === 'true';
     return this.projectService.deleteProject(id, forceDelete);
+  }
+
+  @Get(':id/integrations')
+  @Roles(Role.PM, Role.MANAGER, Role.ADMIN)
+  @ApiOperation({ summary: 'List project integrations' })
+  @ApiResponse({ status: 200, type: [SyncConfigResponseDto] })
+  async getIntegrations(@Param('id') id: string) {
+    const integrations = await this.integrationService.findByProjectId(id);
+    return integrations.map((i) => toSyncConfigResponse(i));
+  }
+
+  @Get(':id/integration/sync-config')
+  @Roles(Role.PM, Role.MANAGER, Role.ADMIN)
+  @ApiOperation({ summary: 'Get CLICKUP integration sync configuration' })
+  @ApiResponse({ status: 200, type: SyncConfigResponseDto })
+  @ApiResponse({ status: 404, description: 'No CLICKUP integration found' })
+  async getSyncConfig(@Param('id') id: string) {
+    const integration = await this.integrationService.findByProjectAndProvider(
+      id,
+      IntegrationProvider.CLICKUP,
+    );
+
+    if (!integration) {
+      throw new NotFoundException(`No CLICKUP integration found for project ${id}`);
+    }
+
+    return toSyncConfigResponse(integration);
+  }
+
+  @Patch(':id/integration/sync-config')
+  @Roles(Role.PM, Role.MANAGER, Role.ADMIN)
+  @ApiOperation({ summary: 'Update ai_trigger_status for CLICKUP integration' })
+  @ApiResponse({ status: 200, type: SyncConfigResponseDto })
+  async updateSyncConfig(@Param('id') id: string, @Body() dto: UpdateSyncConfigDto) {
+    const integration = await this.integrationService.findByProjectAndProvider(
+      id,
+      IntegrationProvider.CLICKUP,
+    );
+
+    if (!integration) {
+      throw new NotFoundException(`No CLICKUP integration found for project ${id}`);
+    }
+
+    const updated = await this.integrationService.updateIntegration(integration.id, {
+      ai_trigger_status: dto.ai_trigger_status,
+    });
+
+    return toSyncConfigResponse(updated);
   }
 }

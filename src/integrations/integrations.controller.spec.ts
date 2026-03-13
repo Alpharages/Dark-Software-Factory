@@ -4,7 +4,10 @@ import { ClickUpService } from '@/clickup/clickup.service';
 import { ProjectProvider } from '@/prisma/enums';
 import { PMStatusService } from './pm-status.service';
 import { ProjectIntegrationService } from './project-integration.service';
-import { IntegrationProvider } from '@prisma/client';
+import { UpdateSyncSettingsDto } from './dto/update-sync-settings.dto';
+import { IntegrationProvider, Prisma } from '@prisma/client';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
@@ -24,6 +27,7 @@ describe('IntegrationsController', () => {
 
   const mockIntegrationService = {
     getDecryptedIntegration: jest.fn(),
+    updateIntegration: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -115,6 +119,69 @@ describe('IntegrationsController', () => {
 
       await expect(controller.getStatuses(integrationId, containerId)).rejects.toThrow(
         `Integration with ID "${integrationId}" not found`,
+      );
+    });
+  });
+
+  describe('updateSyncSettings', () => {
+    const validDto: UpdateSyncSettingsDto = {
+      polling_enabled: true,
+      polling_interval_min: 15,
+      webhook_enabled: false,
+    };
+
+    const mockUpdatedIntegration = {
+      id: 'int-123',
+      provider: 'CLICKUP',
+      ai_trigger_status: null,
+      polling_enabled: true,
+      polling_interval_min: 15,
+      webhook_enabled: false,
+      webhook_id: null,
+    };
+
+    it('should return updated SyncConfigResponseDto for valid data', async () => {
+      mockIntegrationService.updateIntegration.mockResolvedValue(mockUpdatedIntegration);
+
+      const result = await controller.updateSyncSettings('int-123', validDto);
+
+      expect(result.polling_enabled).toBe(true);
+      expect(result.polling_interval_min).toBe(15);
+      expect(result.webhook_enabled).toBe(false);
+      expect(mockIntegrationService.updateIntegration).toHaveBeenCalledWith('int-123', validDto);
+    });
+
+    it('should reject polling_interval_min: 0 with a validation error', async () => {
+      const dto = plainToInstance(UpdateSyncSettingsDto, {
+        polling_enabled: true,
+        polling_interval_min: 0,
+        webhook_enabled: false,
+      });
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'polling_interval_min')).toBe(true);
+    });
+
+    it('should reject polling_interval_min: 1441 with a validation error', async () => {
+      const dto = plainToInstance(UpdateSyncSettingsDto, {
+        polling_enabled: true,
+        polling_interval_min: 1441,
+        webhook_enabled: false,
+      });
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'polling_interval_min')).toBe(true);
+    });
+
+    it('should throw NotFoundException for unknown integration id (P2025)', async () => {
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '5.0.0',
+      });
+      mockIntegrationService.updateIntegration.mockRejectedValue(p2025);
+
+      await expect(controller.updateSyncSettings('unknown-id', validDto)).rejects.toThrow(
+        'Integration unknown-id not found',
       );
     });
   });
