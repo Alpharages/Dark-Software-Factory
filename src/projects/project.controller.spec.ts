@@ -46,6 +46,7 @@ describe('ProjectController', () => {
     polling_interval_min: 15,
     webhook_enabled: true,
     webhook_id: 'wh-123',
+    provider_config: { workspaceId: 'ws-123' },
   };
 
   beforeEach(async () => {
@@ -225,7 +226,7 @@ describe('ProjectController', () => {
       expect(result.ai_trigger_status).toBe('In Review');
     });
 
-    it('should throw BadRequestException if no CLICKUP integration found', async () => {
+    it('should throw NotFoundException if no CLICKUP integration found', async () => {
       integrationService.findByProjectAndProvider.mockResolvedValue(null);
       await expect(controller.getSyncConfig('project-123')).rejects.toThrow(
         'No CLICKUP integration found',
@@ -269,6 +270,53 @@ describe('ProjectController', () => {
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.some((e) => e.property === 'ai_trigger_status')).toBe(true);
+    });
+
+    it('should merge container_id into provider_config', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
+      integrationService.updateIntegration.mockResolvedValue({
+        ...mockIntegration,
+        provider_config: { workspaceId: 'ws-123', containerId: 'list-456' },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+
+      const result = await controller.updateSyncConfig('project-123', {
+        container_id: 'list-456',
+      });
+
+      expect(result.container_id).toBe('list-456');
+      expect(integrationService.updateIntegration).toHaveBeenCalledWith(
+        mockIntegration.id,
+        expect.objectContaining({
+          provider_config: { workspaceId: 'ws-123', containerId: 'list-456' },
+        }),
+      );
+    });
+
+    it('should not touch provider_config when container_id is undefined', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      integrationService.updateIntegration.mockResolvedValue(mockIntegration as any);
+
+      await controller.updateSyncConfig('project-123', {
+        ai_trigger_status: 'Ready',
+      });
+
+      expect(integrationService.updateIntegration).toHaveBeenCalledWith(
+        mockIntegration.id,
+        expect.not.objectContaining({
+          provider_config: expect.anything(),
+        }),
+      );
+    });
+
+    it('should reject empty container_id string with a validation error', async () => {
+      const dto = plainToInstance(UpdateSyncConfigDto, { container_id: '' });
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'container_id')).toBe(true);
     });
   });
 });

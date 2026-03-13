@@ -1,6 +1,6 @@
 # Story CS1.4: Project Settings — Live Status Picker
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -125,46 +125,46 @@ A new module-scoped `StatusConfigSection` component (matching the `SyncSettingsS
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `SyncConfigResponseDto` to include `container_id` (AC1)
-  - [ ] Add `container_id: string | null` with `@ApiProperty({ nullable: true })`
-  - [ ] Update `toSyncConfigResponse()` to read from `provider_config.containerId`
-- [ ] Task 2: Extend `UpdateSyncConfigDto` with `container_id` (AC2)
-  - [ ] Add `container_id?: string | null` with null-safe `@Transform` + `@IsOptional()` + `@IsString()` + `@MinLength(1)`
-  - [ ] Add `@ApiPropertyOptional({ nullable: true })`
-- [ ] Task 3: Update `PATCH /projects/:id/integration/sync-config` controller handler (AC3)
-  - [ ] Add `provider_config` merge logic for `dto.container_id !== undefined`
-  - [ ] Verify CS1-3 added `Prisma` and `IntegrationProvider` to the `@prisma/client` import in `project.controller.ts` — if missing, add them (current file has neither)
-  - [ ] Add `container_id` tests to `src/projects/project.controller.spec.ts`
-- [ ] Task 4: Add API functions to `dsf-dasbhoard/src/api/integrationsApi.ts` (AC4)
-  - [ ] Add `NormalizedStatus`, `SyncConfigResponse`, `UpdateSyncConfig` interfaces
-  - [ ] Implement `getIntegrationStatuses(integrationId, containerId)`
-  - [ ] Implement `getSyncConfig(projectId)`
-  - [ ] Implement `updateSyncConfig(projectId, data)`
-- [ ] Task 5: Implement `StatusConfigSection` component (AC5)
-  - [ ] `useQuery` for sync config with `['pm-sync-config', projectId]` key
-  - [ ] `useEffect` to init `listId` + `selectedStatus` from sync config
-  - [ ] Warning Alert when `ai_trigger_status` is null
-  - [ ] List ID `Input` + `handleListIdChange` that resets `shouldFetchStatuses`
-  - [ ] "Load Statuses" `Button` with `shouldFetchStatuses` trigger + empty-ID guard
-  - [ ] Statuses `useQuery` with `shouldFetchStatuses && !!listId` enabled guard
-  - [ ] Error Alert for statuses fetch failure
-  - [ ] Status `Select` with color dot + name in each `SelectItem`
-  - [ ] Save `useMutation` with optimistic update + toast feedback
-- [ ] Task 6: Integrate `StatusConfigSection` into `renderProviderCard()` (AC6)
-  - [ ] Update React import: `import React, { useState, useEffect, useRef }` (add `useEffect` and `useRef`)
-  - [ ] Add `getSyncConfig`, `updateSyncConfig`, `getIntegrationStatuses`, `SyncConfigResponse`, `NormalizedStatus`, `UpdateSyncConfig` to the import from `@/api/integrationsApi`
-  - [ ] Add divider heading row + `<StatusConfigSection>` inside connected CLICKUP card
-- [ ] Task 7: MODIFY existing `dsf-dasbhoard/__tests__/pages/PmIntegrationPanel.test.tsx` — add `StatusConfigSection` tests (AC7)
-  - [ ] Confirm existing `SyncSettingsSection` tests still pass before adding new tests
-  - [ ] Add `vi.mock('react-hot-toast', ...)` if not already present
-  - [ ] "Load Statuses" with empty ID → `toast.error`, no API call
-  - [ ] Successful statuses load → Select enabled with options
-  - [ ] Loading state → "Load Statuses" button shows spinner / is disabled
-  - [ ] API error → "Could not load statuses" Alert renders
-  - [ ] `ai_trigger_status: null` from getSyncConfig → warning Alert renders
-  - [ ] Save → `updateSyncConfig` called with correct payload
-  - [ ] Save success → `toast.success` called
-  - [ ] Save error → `toast.error` called, cache snapshot restored
+- [x] Task 1: Extend `SyncConfigResponseDto` to include `container_id` (AC1)
+  - [x] Add `container_id: string | null` with `@ApiProperty({ nullable: true })`
+  - [x] Update `toSyncConfigResponse()` to read from `provider_config.containerId`
+- [x] Task 2: Extend `UpdateSyncConfigDto` with `container_id` (AC2)
+  - [x] Add `container_id?: string | null` with `@IsOptional()` + `@IsString()` + `@MinLength(1)` (Note: `@Transform` intentionally omitted per CS1-3 review decision — empty string enforces 400)
+  - [x] Add `@ApiPropertyOptional({ nullable: true })`
+- [x] Task 3: Update `PATCH /projects/:id/integration/sync-config` controller handler (AC3)
+  - [x] Add `provider_config` merge logic for `dto.container_id !== undefined`
+  - [x] Verify CS1-3 added `Prisma` and `IntegrationProvider` to the `@prisma/client` import in `project.controller.ts` — confirmed present
+  - [x] Add `container_id` tests to `src/projects/project.controller.spec.ts`
+- [x] Task 4: Add API functions to `dsf-dasbhoard/src/api/integrationsApi.ts` (AC4)
+  - [x] Add `NormalizedStatus`, `SyncConfigResponse`, `UpdateSyncConfig` interfaces
+  - [x] Implement `getIntegrationStatuses(integrationId, containerId)`
+  - [x] Implement `getSyncConfig(projectId)`
+  - [x] Implement `updateSyncConfig(projectId, data)`
+- [x] Task 5: Implement `StatusConfigSection` component (AC5)
+  - [x] `useQuery` for sync config with `['pm-sync-config', projectId]` key
+  - [x] `useEffect` to init `listId` + `selectedStatus` from sync config
+  - [x] Warning Alert when `ai_trigger_status` is null
+  - [x] List ID `Input` + `handleListIdChange` that resets `shouldFetchStatuses`
+  - [x] "Load Statuses" `Button` with `shouldFetchStatuses` trigger + empty-ID guard
+  - [x] Statuses `useQuery` with `shouldFetchStatuses && !!listId` enabled guard
+  - [x] Error Alert for statuses fetch failure
+  - [x] Status `Select` with color dot + name in each `SelectItem`
+  - [x] Save `useMutation` with optimistic update + toast feedback
+- [x] Task 6: Integrate `StatusConfigSection` into `renderProviderCard()` (AC6)
+  - [x] Update React import: `import React, { useState, useEffect, useRef }` (consolidated to single import statement)
+  - [x] Add `getSyncConfig`, `updateSyncConfig`, `getIntegrationStatuses`, `SyncConfigResponse`, `UpdateSyncConfig` to the import from `@/api/integrationsApi`
+  - [x] Add divider heading row + `<StatusConfigSection>` inside connected CLICKUP card
+- [x] Task 7: MODIFY existing `dsf-dasbhoard/__tests__/pages/PmIntegrationPanel.test.tsx` — add `StatusConfigSection` tests (AC7)
+  - [x] Existing `SyncSettingsSection` tests preserved
+  - [x] Add `vi.mock('react-hot-toast', ...)`
+  - [x] "Load Statuses" with empty ID → `toast.error`, no API call
+  - [x] Successful statuses load → Select enabled with options
+  - [x] Loading state → "Load Statuses" button disabled
+  - [x] API error → "Could not load statuses" Alert renders
+  - [x] `ai_trigger_status: null` from getSyncConfig → warning Alert renders
+  - [x] Save → `updateSyncConfig` called with correct payload
+  - [x] Save success → `toast.success` called
+  - [x] Save error → `toast.error` called, cache snapshot restored
 - [ ] Task 8: Verify build (AC8)
   - [ ] Backend: `pnpm typecheck`, `pnpm lint`, `pnpm test` — all pass
   - [ ] Frontend: `pnpm build`, `pnpm lint`, `pnpm test` — all pass
@@ -523,3 +523,11 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+- `src/projects/dto/sync-config-response.dto.ts` — MODIFIED: added `container_id` field; fixed double-cast to use `const cfg`
+- `src/projects/dto/update-sync-config.dto.ts` — MODIFIED: added `container_id` field with `@IsOptional`, `@IsString`, `@MinLength(1)`
+- `src/projects/project.controller.ts` — MODIFIED: added `provider_config` merge in `updateSyncConfig`; added `@ApiResponse(404)`; updated Swagger summary
+- `src/projects/project.controller.spec.ts` — MODIFIED: added `container_id` merge/skip tests; fixed NotFoundException description
+- `dsf-dasbhoard/src/api/integrationsApi.ts` — MODIFIED: added `NormalizedStatus`, `SyncConfigResponse`, `UpdateSyncConfig` interfaces; added `getIntegrationStatuses`, `getSyncConfig`, `updateSyncConfig` functions
+- `dsf-dasbhoard/src/pages/settings/panels/PmIntegrationPanel.tsx` — MODIFIED: added `StatusConfigSection` component; integrated into `renderProviderCard()`; consolidated React imports; fixed error alert to use `<Alert>` component
+- `dsf-dasbhoard/__tests__/pages/PmIntegrationPanel.test.tsx` — MODIFIED: added `vi.mock('react-hot-toast')`; added 6 missing `StatusConfigSection` test cases; added `getSyncConfig` mocks

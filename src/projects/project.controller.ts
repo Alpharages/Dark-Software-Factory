@@ -25,7 +25,7 @@ import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { SyncConfigResponseDto, toSyncConfigResponse } from './dto/sync-config-response.dto';
 import { UpdateSyncConfigDto } from './dto/update-sync-config.dto';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
-import { IntegrationProvider } from '@prisma/client';
+import { IntegrationProvider, Prisma } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -238,8 +238,9 @@ export class ProjectController {
 
   @Patch(':id/integration/sync-config')
   @Roles(Role.PM, Role.MANAGER, Role.ADMIN)
-  @ApiOperation({ summary: 'Update ai_trigger_status for CLICKUP integration' })
+  @ApiOperation({ summary: 'Update ai_trigger_status and/or container_id for CLICKUP integration' })
   @ApiResponse({ status: 200, type: SyncConfigResponseDto })
+  @ApiResponse({ status: 404, description: 'No CLICKUP integration found' })
   async updateSyncConfig(@Param('id') id: string, @Body() dto: UpdateSyncConfigDto) {
     const integration = await this.integrationService.findByProjectAndProvider(
       id,
@@ -250,9 +251,21 @@ export class ProjectController {
       throw new NotFoundException(`No CLICKUP integration found for project ${id}`);
     }
 
-    const updated = await this.integrationService.updateIntegration(integration.id, {
-      ai_trigger_status: dto.ai_trigger_status,
-    });
+    const updatePayload: Prisma.ProjectIntegrationUncheckedUpdateInput = {};
+
+    if (dto.ai_trigger_status !== undefined) {
+      updatePayload.ai_trigger_status = dto.ai_trigger_status;
+    }
+
+    if (dto.container_id !== undefined) {
+      const existingCfg = (integration.provider_config as Record<string, unknown>) ?? {};
+      updatePayload.provider_config = {
+        ...existingCfg,
+        containerId: dto.container_id,
+      } as Prisma.InputJsonValue;
+    }
+
+    const updated = await this.integrationService.updateIntegration(integration.id, updatePayload);
 
     return toSyncConfigResponse(updated);
   }

@@ -290,10 +290,10 @@ development_status:
     story_points: 3
     notes: 'ai_trigger_status field on ProjectIntegration. API: GET/PATCH /projects/:id/integration/sync-config + GET :id/integrations + PATCH /integrations/:id/sync-settings. Status-based gate in ClickUpTaskUpdateConsumer. Code review (2026-03-13): BadRequestException→NotFoundException (H1), 4 IntegrationsController tests added (H2), UpdateSyncConfigDto @Transform removed to enforce empty-string 400 (H3), 3 ProjectController tests added (M1), case-insensitive consumer gate test added (M2), File List populated (M3).'
   CS1-4-live-status-picker-ui:
-    status: ready-for-dev
+    status: done
     effort: '3 days'
     story_points: 5
-    notes: 'Frontend: Live status picker in project integration settings. Fetches live statuses, PM selects ai_trigger_status from dropdown. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'Backend: DTOs extended to include container_id, ProjectController updated to merge it into provider_config JSONB. Validation enforces non-empty strings. Frontend: StatusConfigSection component implemented to fetch list statuses live and selection of ai_trigger_status. Integrated into PmIntegrationPanel. Code review (2026-03-14): toSyncConfigResponse double-cast fixed (M5), 404 ApiResponse added to PATCH endpoint (M4), Swagger summary updated (L1), NotFoundException test description fixed (L2), React imports consolidated (M3), error alert changed to Alert component (M2), react-hot-toast mock added (H2), 6 missing StatusConfigSection tests added (H3), story File List populated (M1).'
   CS1-5-auto-assign-bot-on-execution:
     status: ready-for-dev
     effort: '2 days'

@@ -11,4 +11,15 @@ export class UpdateSyncConfigDto {
   @IsString()
   @MinLength(1, { message: 'ai_trigger_status must be a non-empty string or null' })
   ai_trigger_status?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Container ID (e.g., ClickUp list ID) used to fetch live statuses. Pass null to clear.',
+    example: '901234567',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(1, { message: 'container_id must be a non-empty string or null' })
+  container_id?: string | null;
 }
