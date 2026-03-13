@@ -4,6 +4,7 @@ import { PmWebhookRouterService } from './pm-webhook-router.service';
 import { ProjectIntegrationService } from '../project-integration.service';
 import { WebhooksService } from '@/webhooks/webhooks.service';
 import { LoggerService } from '@/common/logger/logger.service';
+import { DevelopmentGateService } from '@/ticket-intake/services/development-gate.service';
 import { IntegrationProvider } from '@prisma/client';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { createHmac } from 'crypto';
@@ -30,12 +31,14 @@ describe('PmWebhookRouterService', () => {
   let projectIntegrationService: jest.Mocked<Pick<ProjectIntegrationService, 'findByWebhookId'>>;
   let webhooksService: jest.Mocked<Pick<WebhooksService, 'processWebhook'>>;
   let logger: jest.Mocked<Pick<LoggerService, 'log' | 'warn' | 'error' | 'debug'>>;
+  let developmentGate: jest.Mocked<Pick<DevelopmentGateService, 'check'>>;
   let invalidSignatureCounter: { inc: jest.Mock };
 
   beforeEach(async () => {
     projectIntegrationService = { findByWebhookId: jest.fn() };
     webhooksService = { processWebhook: jest.fn().mockResolvedValue({ success: true }) };
     logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
+    developmentGate = { check: jest.fn().mockReturnValue({ allowed: true }) } as any;
     invalidSignatureCounter = { inc: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -44,6 +47,7 @@ describe('PmWebhookRouterService', () => {
         { provide: ProjectIntegrationService, useValue: projectIntegrationService },
         { provide: WebhooksService, useValue: webhooksService },
         { provide: LoggerService, useValue: logger },
+        { provide: DevelopmentGateService, useValue: developmentGate },
         {
           provide: getToken('pm_webhook_invalid_signature_total'),
           useValue: invalidSignatureCounter,
@@ -128,7 +132,53 @@ describe('PmWebhookRouterService', () => {
       await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
 
       expect(invalidSignatureCounter.inc).not.toHaveBeenCalled();
+      expect(developmentGate.check).not.toHaveBeenCalled();
       expect(webhooksService.processWebhook).not.toHaveBeenCalled();
+    });
+
+    // CS1-6: Development gate — discard when gate rejects
+    it('discards event silently when development gate rejects status', async () => {
+      const secret = 'my-secret';
+      const integration = makeIntegration({ webhook_secret: secret });
+      projectIntegrationService.findByWebhookId.mockResolvedValue(integration as any);
+      developmentGate.check.mockReturnValue({ allowed: false, reason: 'status_mismatch' });
+
+      const body = {
+        webhook_id: 'wh-abc',
+        event: 'taskUpdated',
+        task_id: 't1',
+        task: { status: { status: 'backlog' } },
+      };
+      const { rawBody, signature } = signBody(body, secret);
+      const headers = { 'x-signature': signature };
+
+      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+
+      expect(developmentGate.check).toHaveBeenCalled();
+      expect(webhooksService.processWebhook).not.toHaveBeenCalled();
+    });
+
+    // CS1-6: AC9 test case 3 — payload missing task.status → taskStatus resolves to '', gate runs normally
+    it('passes empty taskStatus to gate when payload has no task.status field', async () => {
+      const secret = 'my-secret';
+      const integration = makeIntegration({ webhook_secret: secret });
+      projectIntegrationService.findByWebhookId.mockResolvedValue(integration as any);
+      // No task.status in payload
+      const body = { webhook_id: 'wh-abc', event: 'taskUpdated', task_id: 't1' };
+      const { rawBody, signature } = signBody(body, secret);
+      const headers = { 'x-signature': signature };
+
+      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+
+      // Gate was called with empty taskStatus — allowed by default mock
+      expect(developmentGate.check).toHaveBeenCalledWith(
+        't1',
+        '',
+        expect.any(Object),
+        'webhook',
+        correlationId,
+      );
+      expect(webhooksService.processWebhook).toHaveBeenCalled();
     });
 
     // AC11 test 6 — valid ClickUp event: all guards pass → processWebhook called with correct payload
@@ -141,7 +191,8 @@ describe('PmWebhookRouterService', () => {
 
       await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
 
-      expect(webhooksService.processWebhook).toHaveBeenCalledWith(validBody, correlationId);
+      expect(developmentGate.check).toHaveBeenCalled();
+      expect(webhooksService.processWebhook).toHaveBeenCalled();
       expect(invalidSignatureCounter.inc).not.toHaveBeenCalled();
     });
 

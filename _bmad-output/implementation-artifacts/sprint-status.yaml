@@ -300,10 +300,10 @@ development_status:
     story_points: 5
     notes: 'On execution start, auto-assign bot (bot_user_id from ProjectIntegration) to task via IPMProvider.assignTask(). No hardcoded user IDs. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS1-6-development-gate-intake-filter:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
-    notes: 'Gate all incoming tasks (webhook + polling) against ai_trigger_status. Only exact status match enters the dev queue. Backlog/done/human-in-progress tasks silently discarded. Deduplication on (taskId, provider). pm_polling_tasks_skipped_total + pm_tasks_dropped_no_trigger_total Prometheus counters. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'Gate all incoming tasks (webhook + polling) against ai_trigger_status. Only exact status match enters the dev queue. Backlog/done/human-in-progress tasks silently discarded. Deduplication on (taskId, provider). pm_polling_tasks_skipped_total + pm_tasks_dropped_no_trigger_total Prometheus counters. Code review (2026-03-14): 2C+3H+4M fixed — status-evaluation.service.spec.ts updated (C1), story documentation populated (C2), @/ import aliases in development-gate.service.ts (H1), reason string aligned to CS1-6 spec (H2), webhook mismatch no-counter assertion added (H3), AC9 test case 3 added (M1), AC10 test cases 1+3 added (M2+M3), custom-fields test updated to assert queuing (M4).'
   CS1-7-clickup-credential-transition:
     status: ready-for-dev
     effort: '1 day'

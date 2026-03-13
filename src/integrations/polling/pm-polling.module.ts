@@ -6,6 +6,7 @@ import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { LoggerModule } from '@/common/logger';
 import { AppMetricsModule } from '@/common/metrics';
 import { SentryModule } from '@/common/sentry';
+import { DevelopmentGateModule } from '@/ticket-intake/services/development-gate.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { SentryModule } from '@/common/sentry';
     LoggerModule,
     AppMetricsModule,
     SentryModule,
+    DevelopmentGateModule,
   ],
   providers: [PmPollingOrchestrator],
 })

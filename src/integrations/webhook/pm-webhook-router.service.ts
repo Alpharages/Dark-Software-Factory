@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ProjectIntegrationService } from '../project-integration.service';
 import { WebhooksService } from '@/webhooks/webhooks.service';
 import { LoggerService } from '@/common/logger/logger.service';
+import { DevelopmentGateService } from '@/ticket-intake/services/development-gate.service';
 import { IntegrationProvider, ProjectIntegration } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
+import { IClickUpWebhookPayload } from '@/webhooks/interfaces';
 
 @Injectable()
 export class PmWebhookRouterService {
@@ -13,6 +15,7 @@ export class PmWebhookRouterService {
     private readonly projectIntegrationService: ProjectIntegrationService,
     private readonly webhooksService: WebhooksService,
     private readonly logger: LoggerService,
+    private readonly developmentGate: DevelopmentGateService,
     @InjectMetric('pm_webhook_invalid_signature_total')
     private readonly invalidSignatureCounter: Counter,
   ) {}
@@ -65,9 +68,33 @@ export class PmWebhookRouterService {
       return;
     }
 
+    // Step 2.5: CS1-6 Development Gate — check ai_trigger_status
+    // Parse once — reused for gate AND passed to processWebhook below
+    const parsedBody = JSON.parse(rawBody) as Record<string, unknown>;
+    const taskId = typeof parsedBody['task_id'] === 'string' ? parsedBody['task_id'] : 'unknown';
+    const taskStatusRaw = (parsedBody['task'] as Record<string, unknown> | undefined)?.['status'];
+    const taskStatus =
+      typeof taskStatusRaw === 'object' && taskStatusRaw !== null
+        ? (((taskStatusRaw as Record<string, unknown>)['status'] as string) ?? '')
+        : '';
+
+    const gateDecision = this.developmentGate.check(
+      taskId,
+      taskStatus,
+      integration,
+      'webhook',
+      correlationId,
+    );
+    if (!gateDecision.allowed) {
+      return; // silently discard — no error, no retry
+    }
+
     // Step 3: Route to existing WebhooksService — reuse deduplication, DLQ, and metrics (AC6)
     try {
-      await this.webhooksService.processWebhook(JSON.parse(rawBody), correlationId);
+      await this.webhooksService.processWebhook(
+        parsedBody as unknown as IClickUpWebhookPayload,
+        correlationId,
+      );
     } catch (err) {
       this.logger.error(
         `[${correlationId}] processWebhook threw for integration ${integration.id} — acknowledging to prevent webhook replay`,

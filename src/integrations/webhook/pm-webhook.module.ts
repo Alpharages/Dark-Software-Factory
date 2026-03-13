@@ -3,10 +3,11 @@ import { PmWebhookController } from './pm-webhook.controller';
 import { PmWebhookRouterService } from './pm-webhook-router.service';
 import { IntegrationsModule } from '../integrations.module';
 import { WebhooksModule } from '@/webhooks/webhooks.module';
+import { DevelopmentGateModule } from '@/ticket-intake/services/development-gate.module';
 import { makeCounterProvider } from '@willsoto/nestjs-prometheus';
 
 @Module({
-  imports: [IntegrationsModule, WebhooksModule],
+  imports: [IntegrationsModule, WebhooksModule, DevelopmentGateModule],
   controllers: [PmWebhookController],
   providers: [
     PmWebhookRouterService,

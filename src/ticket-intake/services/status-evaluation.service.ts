@@ -53,11 +53,12 @@ export class StatusEvaluationService {
     providerStatus: string,
     _providerType: TaskProviderType = TaskProviderType.CLICKUP,
   ): StatusEvaluationResult {
-    // CS1-3: This method is replaced by ai_trigger_status gate in ProjectIntegration
+    // CS1-6: This method is now downstream of the ai_trigger_status gate.
+    // By the time it reaches here, the task has already been validated against the trigger status.
     return {
-      isActionable: false,
+      isActionable: true,
       internalStatus: 'QUEUED',
-      reason: 'legacy status evaluation removed — pending CS1-3 ai_trigger_status gate',
+      reason: 'ai_trigger_status gate passed upstream (CS1-6)',
     };
   }
 

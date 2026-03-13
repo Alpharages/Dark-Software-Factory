@@ -27,20 +27,20 @@ describe('StatusEvaluationService', () => {
   });
 
   describe('evaluateStatus', () => {
-    it('should always return non-actionable QUEUED result (legacy stub)', () => {
+    it('should always return actionable QUEUED result (gate upstream CS1-6)', () => {
       const statuses = ['open', 'in progress', 'done', 'unknown'];
 
       for (const status of statuses) {
         const result = service.evaluateStatus(status, TaskProviderType.CLICKUP);
-        expect(result.isActionable).toBe(false);
+        expect(result.isActionable).toBe(true);
         expect(result.internalStatus).toBe('QUEUED');
-        expect(result.reason).toContain('legacy status evaluation removed');
+        expect(result.reason).toContain('CS1-6');
       }
     });
 
     it('should handle different provider types with same stub result', () => {
       const result = service.evaluateStatus('active', TaskProviderType.ASANA);
-      expect(result.isActionable).toBe(false);
+      expect(result.isActionable).toBe(true);
       expect(result.internalStatus).toBe('QUEUED');
     });
   });

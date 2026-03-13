@@ -11,6 +11,7 @@ import { SentryService } from '../../common/sentry/sentry.service';
 import { LoggerService } from '../../common/logger/logger.service';
 import { IRawTaskEvent } from '../../ticket-intake/interfaces/ticket-intake.interface';
 import { ITaskEvent, TaskTriggerSource, mapClickUpToTaskEvent } from '../../ticket-intake/dto';
+import { DevelopmentGateService } from '../../ticket-intake/services/development-gate.service';
 
 type IntegrationRow = ProjectIntegration & {
   project: { id: string; name: string };
@@ -26,6 +27,7 @@ export class PmPollingOrchestrator {
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
     private readonly logger: LoggerService,
+    private readonly developmentGate: DevelopmentGateService,
   ) {}
 
   @Cron('0 * * * * *') // every minute at second 0 — matches project cron convention
@@ -52,6 +54,18 @@ export class PmPollingOrchestrator {
 
         for (const task of tasks) {
           const messageId = `polling-${integration.id}-${task.id}-${Date.now()}`;
+
+          // CS1-6: Development gate — only tasks at trigger status enter the dev queue
+          const gateDecision = this.developmentGate.check(
+            task.id,
+            task.status.name,
+            integration,
+            'polling',
+            messageId,
+          );
+          if (!gateDecision.allowed) {
+            continue; // silently skip this task
+          }
 
           // Build IRawTaskEvent intermediary — NOT published directly
           const rawEvent: IRawTaskEvent = {

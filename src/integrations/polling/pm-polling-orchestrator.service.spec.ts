@@ -10,6 +10,7 @@ import { SentryService } from '../../common/sentry/sentry.service';
 import { LoggerService } from '../../common/logger/logger.service';
 import { IntegrationProvider } from '@prisma/client';
 import { TaskTriggerSource } from '../../ticket-intake/dto/task-event.dto';
+import { DevelopmentGateService } from '../../ticket-intake/services/development-gate.service';
 import { QUEUE_NAMES } from '../../rabbitmq/rabbitmq.config';
 
 const makeRawIntegration = (overrides: Record<string, unknown> = {}) => ({
@@ -49,6 +50,7 @@ describe('PmPollingOrchestrator', () => {
   let metrics: jest.Mocked<MetricsService>;
   let sentry: jest.Mocked<SentryService>;
   let logger: jest.Mocked<LoggerService>;
+  let developmentGate: jest.Mocked<DevelopmentGateService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -87,6 +89,10 @@ describe('PmPollingOrchestrator', () => {
           provide: LoggerService,
           useValue: { log: jest.fn(), error: jest.fn(), debug: jest.fn(), warn: jest.fn() },
         },
+        {
+          provide: DevelopmentGateService,
+          useValue: { check: jest.fn().mockReturnValue({ allowed: true }) },
+        },
       ],
     }).compile();
 
@@ -98,6 +104,7 @@ describe('PmPollingOrchestrator', () => {
     metrics = module.get(MetricsService);
     sentry = module.get(SentryService);
     logger = module.get(LoggerService);
+    developmentGate = module.get(DevelopmentGateService);
   });
 
   it('should be defined', () => {
@@ -175,6 +182,85 @@ describe('PmPollingOrchestrator', () => {
         headers: { 'x-source': 'polling' },
       }),
     );
+    expect(developmentGate.check).toHaveBeenCalled();
+  });
+
+  // CS1-6: AC10 test case 1 — gate blocks ALL tasks → publishToQueue never called
+  it('does not publish any tasks when development gate blocks all of them', async () => {
+    const raw = makeRawIntegration();
+    const task1 = makeTask({
+      id: 'task-1',
+      status: { id: '1', name: 'backlog', color: null, type: 'custom' },
+    });
+    const task2 = makeTask({
+      id: 'task-2',
+      status: { id: '2', name: 'in progress', color: null, type: 'custom' },
+    });
+
+    (prisma.projectIntegration.findMany as jest.Mock).mockResolvedValue([raw]);
+    integrationService.getDecryptedIntegration.mockResolvedValue(raw as any);
+    providerFactory.getProvider.mockResolvedValue({
+      getUpdatedTasks: jest.fn().mockResolvedValue([task1, task2]),
+    } as any);
+    integrationService.updateIntegration.mockResolvedValue(raw as any);
+
+    developmentGate.check.mockReturnValue({ allowed: false, reason: 'status_mismatch' });
+
+    await orchestrator.pollDueIntegrations();
+
+    expect(rabbitmq.publishToQueue).not.toHaveBeenCalled();
+    expect(developmentGate.check).toHaveBeenCalledTimes(2);
+  });
+
+  // CS1-6: AC10 test case 3 — gate blocks all tasks (trigger_not_configured) → publishToQueue never called
+  it('does not publish any tasks when gate returns trigger_not_configured for all tasks', async () => {
+    const raw = makeRawIntegration();
+    const task = makeTask({
+      status: { id: '1', name: 'ready for ai', color: null, type: 'custom' },
+    });
+
+    (prisma.projectIntegration.findMany as jest.Mock).mockResolvedValue([raw]);
+    integrationService.getDecryptedIntegration.mockResolvedValue(raw as any);
+    providerFactory.getProvider.mockResolvedValue({
+      getUpdatedTasks: jest.fn().mockResolvedValue([task]),
+    } as any);
+    integrationService.updateIntegration.mockResolvedValue(raw as any);
+
+    developmentGate.check.mockReturnValue({ allowed: false, reason: 'trigger_not_configured' });
+
+    await orchestrator.pollDueIntegrations();
+
+    expect(rabbitmq.publishToQueue).not.toHaveBeenCalled();
+  });
+
+  // CS1-6: Development gate — skips task when gate rejects
+  it('skips individual task when development gate rejects status during polling', async () => {
+    const raw = makeRawIntegration();
+    const taskAllowed = makeTask({ id: 'task-allowed', status: { name: 'ready for ai' } });
+    const taskRejected = makeTask({ id: 'task-rejected', status: { name: 'backlog' } });
+
+    (prisma.projectIntegration.findMany as jest.Mock).mockResolvedValue([raw]);
+    integrationService.getDecryptedIntegration.mockResolvedValue(raw as any);
+    providerFactory.getProvider.mockResolvedValue({
+      getUpdatedTasks: jest.fn().mockResolvedValue([taskAllowed, taskRejected]),
+    } as any);
+    integrationService.updateIntegration.mockResolvedValue(raw as any);
+
+    // Mock gate: allow first, reject second
+    developmentGate.check
+      .mockReturnValueOnce({ allowed: true, reason: 'allowed' })
+      .mockReturnValueOnce({ allowed: false, reason: 'status_mismatch' });
+
+    await orchestrator.pollDueIntegrations();
+
+    // Only one task should be published
+    expect(rabbitmq.publishToQueue).toHaveBeenCalledTimes(1);
+    expect(rabbitmq.publishToQueue).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ payload: expect.objectContaining({ externalId: 'task-allowed' }) }),
+      expect.any(Object),
+    );
+    expect(developmentGate.check).toHaveBeenCalledTimes(2);
   });
 
   // AC11 test case 5 — updates polling_last_run_at after successful poll
