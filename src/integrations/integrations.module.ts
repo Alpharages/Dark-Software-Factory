@@ -10,6 +10,7 @@ import { SentryModule } from '@/common/sentry';
 import { PMProviderFactory } from './providers/pm-provider.factory';
 import { PMStatusService } from './pm-status.service';
 import { BotAssignmentService } from './bot-assignment.service';
+import { PMFieldPreCheckService } from './pm-field-pre-check.service';
 
 @Module({
   imports: [forwardRef(() => ClickUpModule), DatabaseModule, EncryptionModule, SentryModule],
@@ -20,6 +21,7 @@ import { BotAssignmentService } from './bot-assignment.service';
     PMProviderFactory,
     PMStatusService,
     BotAssignmentService,
+    PMFieldPreCheckService,
   ],
   exports: [
     ProjectIntegrationService,
@@ -27,6 +29,7 @@ import { BotAssignmentService } from './bot-assignment.service';
     PMProviderFactory,
     PMStatusService,
     BotAssignmentService,
+    PMFieldPreCheckService,
   ],
 })
 export class IntegrationsModule {}

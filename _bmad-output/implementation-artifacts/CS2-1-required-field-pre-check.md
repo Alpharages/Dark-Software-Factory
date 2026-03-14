@@ -1,6 +1,6 @@
 # Story CS2.1: Required Field Pre-Check Before Status Push
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -122,38 +122,38 @@ interface FieldPreCheckResult {
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1**: Create `FieldPreCheckResult` interface and `PMFieldPreCheckService` (AC1, AC2, AC3)
-  - [ ] Create file `src/integrations/pm-field-pre-check.service.ts`
-  - [ ] Export `FieldPreCheckResult` interface from the same file
-  - [ ] Inject `PMProviderFactory` and `SentryService` (follow `BotAssignmentService` constructor pattern)
-  - [ ] Use `private readonly logger = new Logger(PMFieldPreCheckService.name)` (NestJS Logger, not LoggerService)
-  - [ ] Implement `checkRequiredFields(integration: ProjectIntegration, taskId: string, containerId: string, correlationId: string): Promise<FieldPreCheckResult>`
+- [x] **Task 1**: Create `FieldPreCheckResult` interface and `PMFieldPreCheckService` (AC1, AC2, AC3)
+  - [x] Create file `src/integrations/pm-field-pre-check.service.ts`
+  - [x] Export `FieldPreCheckResult` interface from the same file
+  - [x] Inject `PMProviderFactory` and `SentryService` (follow `BotAssignmentService` constructor pattern)
+  - [x] Use `private readonly logger = new Logger(PMFieldPreCheckService.name)` (NestJS Logger, not LoggerService)
+  - [x] Implement `checkRequiredFields(integration: ProjectIntegration, taskId: string, containerId: string, correlationId: string): Promise<FieldPreCheckResult>`
 
-- [ ] **Task 2**: Implement missing-field detection logic (AC4, AC5)
-  - [ ] Call `Promise.all([provider.getRequiredFields(containerId), provider.getTask(taskId)])`
-  - [ ] For each field in `requiredFields` (already filtered to required=true — no additional filter needed), check `task.customFields?.[field.id]` using optional chaining
-  - [ ] Missing conditions: absent key, `null`, `undefined`, `''`, or `[]` (empty array for LABELS)
-  - [ ] Present (not missing): `false`, `0`, any non-empty string/number/array
-  - [ ] Build `missingFields` array and set `allFilled = missingFields.length === 0`
+- [x] **Task 2**: Implement missing-field detection logic (AC4, AC5)
+  - [x] Call `Promise.all([provider.getRequiredFields(containerId), provider.getTask(taskId)])`
+  - [x] For each field in `requiredFields` (already filtered to required=true — no additional filter needed), check `task.customFields?.[field.id]` using optional chaining
+  - [x] Missing conditions: absent key, `null`, `undefined`, `''`, or `[]` (empty array for LABELS)
+  - [x] Present (not missing): `false`, `0`, any non-empty string/number/array
+  - [x] Build `missingFields` array and set `allFilled = missingFields.length === 0`
 
-- [ ] **Task 3**: Implement fail-open and empty-containerId guard (AC6, AC8)
-  - [ ] Early-return guard: if `!containerId` → warn + return fail-open result
-  - [ ] Wrap `Promise.all` in try/catch → warn + Sentry + return fail-open result
+- [x] **Task 3**: Implement fail-open and empty-containerId guard (AC6, AC8)
+  - [x] Early-return guard: if `!containerId` → warn + return fail-open result
+  - [x] Wrap `Promise.all` in try/catch → warn + Sentry + return fail-open result
 
-- [ ] **Task 4**: Register in `IntegrationsModule` (AC7)
-  - [ ] Add `PMFieldPreCheckService` to `providers: [...]` in `src/integrations/integrations.module.ts`
-  - [ ] Add `PMFieldPreCheckService` to `exports: [...]` in `src/integrations/integrations.module.ts`
+- [x] **Task 4**: Register in `IntegrationsModule` (AC7)
+  - [x] Add `PMFieldPreCheckService` to `providers: [...]` in `src/integrations/integrations.module.ts`
+  - [x] Add `PMFieldPreCheckService` to `exports: [...]` in `src/integrations/integrations.module.ts`
 
-- [ ] **Task 5**: Write unit tests (AC9)
-  - [ ] Create `src/integrations/pm-field-pre-check.service.spec.ts`
-  - [ ] Mock `PMProviderFactory.getProvider()` to return a mock `IPMProvider`
-  - [ ] Mock `SentryService.captureException()`
-  - [ ] Cover all 13 test cases T1–T13 mapped in AC9
+- [x] **Task 5**: Write unit tests (AC9)
+  - [x] Create `src/integrations/pm-field-pre-check.service.spec.ts`
+  - [x] Mock `PMProviderFactory.getProvider()` to return a mock `IPMProvider`
+  - [x] Mock `SentryService.captureException()`
+  - [x] Cover all 13 test cases T1–T13 mapped in AC9
 
-- [ ] **Task 6**: TypeScript + lint verification (AC10)
-  - [ ] `pnpm typecheck` — zero errors on CS2-1 files
-  - [ ] `pnpm lint` — zero warnings/errors
-  - [ ] `pnpm test -- --testPathPattern="pm-field-pre-check"` — all tests pass
+- [x] **Task 6**: TypeScript + lint verification (AC10)
+  - [x] `pnpm typecheck` — zero errors on CS2-1 files
+  - [x] `pnpm lint` — zero warnings/errors
+  - [x] `pnpm test -- --testPathPattern="pm-field-pre-check"` — all tests pass
 
 ---
 
@@ -449,17 +449,31 @@ From CS1-5 (`BotAssignmentService`):
 
 ---
 
-## Dev Agent Record
+### Dev Agent Record
 
-### Agent Model Used
+#### Agent Model Used
 
-claude-sonnet-4-6
+Antigravity (Advanced Agentic Coding)
 
-### Debug Log References
+#### Debug Log References
 
-### Completion Notes List
+- PMFieldPreCheckService initialized with FAIL_OPEN constant for AC6/AC8 consistency.
+- Promise.all implemented for parallel fetching (AC2).
+- isFieldMissing correctly identifies null, undefined, "", and [].
 
-### File List
+#### Completion Notes List
+
+- Service implemented at src/integrations/pm-field-pre-check.service.ts
+- Unit tests cover all 13 AC9 cases (PASS 14/14)
+- IntegrationsModule updated
+- Code review (CS2-1): 1 HIGH + 4 MEDIUM issues found and fixed
+  - H1: Added `eslint-disable security/detect-object-injection` on `customFields[fieldId]` access
+  - M1: T10 now asserts `Promise.all` was called via `jest.spyOn(Promise, 'all')`
+  - M2: `afterEach` now calls `jest.restoreAllMocks()` to prevent Logger prototype spy leakage
+  - M3: `FAIL_OPEN` now returned as shallow copy `{ ...PMFieldPreCheckService.FAIL_OPEN }` in both guard and catch
+  - M4: T1, T6, T7 now assert `preCheckFailed` is `undefined` in happy path
+
+#### File List
 
 - `src/integrations/pm-field-pre-check.service.ts` — NEW: `PMFieldPreCheckService` + `FieldPreCheckResult` interface (AC1–AC8)
 - `src/integrations/pm-field-pre-check.service.spec.ts` — NEW: unit tests (AC9)

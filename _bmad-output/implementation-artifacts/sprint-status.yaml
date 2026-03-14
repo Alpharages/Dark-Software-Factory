@@ -321,10 +321,10 @@ development_status:
   epic-CS2-source: 'epics-clickup-smart-sync.md'
   epic-CS2-notes: 'Pre-flight check for required fields before status push. AI auto-fill for factual + inferred fields. Eliminates silent automation failures.'
   CS2-1-required-field-pre-check:
-    status: ready-for-dev
+    status: done
     effort: '2 days'
     story_points: 5
-    notes: 'Before status push: IPMProvider.getRequiredFields() + current task field values in parallel. Build missing fields list. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'Before status push: IPMProvider.getRequiredFields() + current task field values in parallel. Build missing fields list. Code review (2026-03-15): 1H+4M fixed — eslint-disable for object-injection sink, Promise.all spy assertion in T10, restoreAllMocks in afterEach, FAIL_OPEN spread copy, preCheckFailed undefined assertions in T1/T6/T7.'
   CS2-2-factual-auto-fill:
     status: ready-for-dev
     effort: '2 days'
