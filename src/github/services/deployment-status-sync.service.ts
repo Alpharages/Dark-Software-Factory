@@ -10,6 +10,7 @@ import { PMFieldPreCheckService } from '@/integrations/pm-field-pre-check.servic
 import {
   PMFieldAutoFillService,
   ExecutionContext,
+  InferenceContext,
 } from '@/integrations/pm-field-auto-fill.service';
 
 /**
@@ -171,13 +172,45 @@ export class DeploymentStatusSync {
               branchName: typedDeployment.github_push.branch_name,
             };
 
-            await this.pmAutoFillService.fillFactualFields(
+            const factualResult = await this.pmAutoFillService.fillFactualFields(
               integration,
               ticketId,
               preCheckResult.missingFields,
               ctx,
               finalCorrelationId,
             );
+
+            // CS2-3: AI-Inferred Field Fill (AC#4)
+            if (factualResult.remainingFields.length > 0) {
+              const execData = execution as unknown as {
+                ticket: { title: string; description: string };
+                retry_count?: number;
+                files_changed?: string[] | number | Record<string, unknown>;
+              };
+
+              const rawFilesChanged = execData.files_changed;
+              const filesChangedCount = Array.isArray(rawFilesChanged)
+                ? rawFilesChanged.length
+                : typeof rawFilesChanged === 'number'
+                  ? rawFilesChanged
+                  : undefined;
+
+              const inferenceCtx: InferenceContext = {
+                ticketTitle: execData.ticket.title,
+                ticketDescription: execData.ticket.description,
+                executionDurationMinutes: ctx.executionDurationMinutes,
+                retryCount: execData.retry_count ?? 0,
+                filesChangedCount,
+              };
+
+              await this.pmAutoFillService.fillInferredFields(
+                integration,
+                ticketId,
+                factualResult.remainingFields,
+                inferenceCtx,
+                finalCorrelationId,
+              );
+            }
           }
         }
       } catch (pipelineError) {

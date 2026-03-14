@@ -331,7 +331,7 @@ development_status:
     story_points: 5
     notes: 'Auto-fill factual fields: execution duration → Estimated Time, PR link, start/end dates, commit count. Uses dropdown option_id mapping. Ultimate context engine analysis completed - comprehensive developer guide created. Code review (2026-03-15): 5 missing tests added (T4/T6/T7/T9/T14), T-DSS1/T-DSS2/T-DSS3 added, mockExecution timing fixture fixed. All 29 tests green.'
   CS2-3-ai-inferred-fill:
-    status: ready-for-dev
+    status: done
     effort: '3 days'
     story_points: 8
     notes: 'Claude-inferred fill: story points (complexity), priority, tags. Uses task context. Falls back to skip if confidence low. Ultimate context engine analysis completed - comprehensive developer guide created.'

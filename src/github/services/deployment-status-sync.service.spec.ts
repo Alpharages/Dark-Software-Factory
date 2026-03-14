@@ -48,11 +48,15 @@ describe('DeploymentStatusSync', () => {
   const mockExecution = {
     id: 'exec-789',
     ticket_id: 'ticket-001',
+    retry_count: 1,
+    files_changed: ['file1.js', 'file2.js'],
     started_at: new Date('2025-12-08T11:50:00Z'),
     completed_at: new Date('2025-12-08T12:00:00Z'),
     ticket: {
       project_id: 'proj-123',
       clickup_task_id: 'clickup-123',
+      title: 'Fix Bug',
+      description: 'The bug is here',
     },
   };
 
@@ -114,7 +118,10 @@ describe('DeploymentStatusSync', () => {
         {
           provide: PMFieldAutoFillService,
           useValue: {
-            fillFactualFields: jest.fn(),
+            fillFactualFields: jest
+              .fn()
+              .mockResolvedValue({ filledFields: [], remainingFields: [] }),
+            fillInferredFields: jest.fn().mockResolvedValue({ filledFields: [], manualFields: [] }),
           },
         },
       ],
@@ -307,6 +314,79 @@ describe('DeploymentStatusSync', () => {
         'clickup-123',
         'Deployed',
         expect.any(Object),
+      );
+    });
+
+    // T-DSS5: When factualResult.remainingFields is empty, fillInferredFields is NOT called
+    it('T-DSS5: skips fillInferredFields when factual fill leaves no remaining fields', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const autoFillService = module.get(PMFieldAutoFillService);
+
+      const mockIntegration = { id: 'int-1', provider_config: { containerId: 'list-123' } };
+      const missingFields = [{ id: 'f1', name: 'Duration', type: 'NUMBER', required: true }];
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (clickUp.addComment as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+      // Factual fill resolves all fields — no remaining
+      (autoFillService.fillFactualFields as jest.Mock).mockResolvedValue({
+        filledFields: [{ field: missingFields[0], value: 45, source: 'duration' }],
+        remainingFields: [],
+      });
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(autoFillService.fillInferredFields).not.toHaveBeenCalled();
+      expect(clickUp.updateStatus).toHaveBeenCalled();
+    });
+
+    // T-DSS4: Calls fillInferredFields when factual fill leaves remaining fields
+    it('T-DSS4: calls fillInferredFields when factual fill leaves remaining fields', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const autoFillService = module.get(PMFieldAutoFillService);
+
+      const mockIntegration = { id: 'int-1' };
+      const missingFields = [
+        { id: 'f1', name: 'Duration', type: 'NUMBER', required: true },
+        { id: 'f2', name: 'Story Points', type: 'NUMBER', required: true },
+      ];
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (clickUp.addComment as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+
+      // Factual fill fills f1, leaving f2
+      (autoFillService.fillFactualFields as jest.Mock).mockResolvedValue({
+        filledFields: [{ field: missingFields[0], value: 10, source: 'duration' }],
+        remainingFields: [missingFields[1]],
+      });
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(autoFillService.fillInferredFields).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        [missingFields[1]],
+        expect.objectContaining({
+          ticketTitle: 'Fix Bug',
+          retryCount: 1,
+          filesChangedCount: 2,
+        }),
+        expect.any(String),
       );
     });
   });

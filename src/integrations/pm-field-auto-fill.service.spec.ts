@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
-import { PMFieldAutoFillService, ExecutionContext } from './pm-field-auto-fill.service';
+import {
+  PMFieldAutoFillService,
+  ExecutionContext,
+  InferenceContext,
+} from './pm-field-auto-fill.service';
+import { ConfigService } from '@nestjs/config';
 import { PMProviderFactory } from './providers/pm-provider.factory';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { IPMProvider } from './providers/pm-provider.interface';
@@ -13,6 +18,8 @@ describe('PMFieldAutoFillService', () => {
   let providerFactory: jest.Mocked<PMProviderFactory>;
   let provider: jest.Mocked<IPMProvider>;
   let sentry: jest.Mocked<SentryService>;
+  let configService: jest.Mocked<ConfigService>;
+  let mockAnthropic: any;
 
   const mockIntegration: ProjectIntegration = {
     id: 'int-123',
@@ -57,15 +64,31 @@ describe('PMFieldAutoFillService', () => {
       captureException: jest.fn(),
     } as any;
 
+    configService = {
+      get: jest.fn().mockImplementation((key: string) => {
+        if (key === 'anthropic.apiKey') return 'fake-key';
+        return undefined;
+      }),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PMFieldAutoFillService,
         { provide: PMProviderFactory, useValue: providerFactory },
         { provide: SentryService, useValue: sentry },
+        { provide: ConfigService, useValue: configService },
       ],
     }).compile();
 
     service = module.get<PMFieldAutoFillService>(PMFieldAutoFillService);
+
+    // Mock Anthropic client
+    mockAnthropic = {
+      messages: {
+        create: jest.fn(),
+      },
+    };
+    (service as any).anthropic = mockAnthropic;
     // Disable logging for tests
     jest.spyOn(Logger.prototype, 'debug').mockImplementation(() => {});
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
@@ -352,5 +375,403 @@ describe('PMFieldAutoFillService', () => {
     expect(result.filledFields).toHaveLength(0);
     expect(result.remainingFields).toHaveLength(1);
     expect(result.fillFailed).toBe(true);
+  });
+
+  describe('fillInferredFields', () => {
+    const mockInferenceCtx: InferenceContext = {
+      ticketTitle: 'Test Title',
+      ticketDescription: 'Test Description',
+      executionDurationMinutes: 10,
+      retryCount: 0,
+      filesChangedCount: 3,
+    };
+
+    it('should return empty result if no remaining fields (AC11)', async () => {
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        [],
+        mockInferenceCtx,
+        'cid',
+      );
+      expect(result.filledFields).toHaveLength(0);
+      expect(result.manualFields).toHaveLength(0);
+    });
+
+    it('should move USER type fields to manualFields (AC2)', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'User Field', type: NormalizedFieldType.USER, required: true },
+      ];
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.manualFields).toHaveLength(1);
+      expect(result.manualFields[0].id).toBe('f1');
+      expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
+    });
+
+    it('should handle missing Anthropic client gracefully (AC3)', async () => {
+      (service as any).anthropic = null;
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
+      ];
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.manualFields).toHaveLength(1);
+      expect(result.inferFailed).toBe(true);
+    });
+
+    it('should successfully infer and fill fields (AC12, AC14, AC15)', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Story Points', type: NormalizedFieldType.NUMBER, required: true },
+        {
+          id: 'f2',
+          name: 'Priority',
+          type: NormalizedFieldType.DROPDOWN,
+          required: true,
+          options: [
+            { id: 'opt-high', label: 'High' },
+            { id: 'opt-low', label: 'Low' },
+          ],
+        },
+        { id: 'f3', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              f1: 5,
+              f2: 'High',
+              f3: 'true',
+            }),
+          },
+        ],
+      });
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.filledFields).toHaveLength(3);
+      expect(result.filledFields[0].value).toBe(5);
+      expect(result.filledFields[1].value).toBe('opt-high'); // option ID, not label
+      expect(result.filledFields[2].value).toBe(true);
+      expect(provider.setFieldValue).toHaveBeenCalledTimes(3);
+      expect(provider.setFieldValue).toHaveBeenCalledWith('taskId', 'f2', 'opt-high');
+    });
+
+    it('should handle AI timeout gracefully (AC13)', async () => {
+      jest.useFakeTimers();
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
+      ];
+
+      mockAnthropic.messages.create.mockReturnValue(new Promise(() => {})); // Never resolves
+
+      const resultPromise = service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      jest.advanceTimersByTime(11000);
+      const result = await resultPromise;
+
+      expect(result.inferFailed).toBe(true);
+      expect(result.manualFields).toHaveLength(1);
+      jest.useRealTimers();
+    });
+
+    it('should handle malformed AI response (AC14)', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: 'Not JSON at all',
+          },
+        ],
+      });
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.inferFailed).toBe(true);
+      expect(result.manualFields).toHaveLength(1);
+    });
+
+    it('should handle partial failures on provider.setFieldValue (AC15)', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
+        {
+          id: 'f2',
+          name: 'Priority',
+          type: NormalizedFieldType.DROPDOWN,
+          required: true,
+          options: [
+            { id: 'opt-low', label: 'Low' },
+            { id: 'opt-high', label: 'High' },
+          ],
+        },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ f1: 3, f2: 'Low' }),
+          },
+        ],
+      });
+
+      provider.setFieldValue
+        .mockRejectedValueOnce(new Error('Provider Error'))
+        .mockResolvedValueOnce(undefined);
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.filledFields).toHaveLength(1);
+      expect(result.filledFields[0].field.id).toBe('f2');
+      expect(result.filledFields[0].value).toBe('opt-low'); // option ID resolved
+      expect(result.manualFields).toHaveLength(1);
+      expect(result.manualFields[0].id).toBe('f1');
+      expect(result.inferFailed).toBe(true);
+    });
+
+    // T-I5 → AC7: DROPDOWN field — Claude returns label → matched to option ID, setFieldValue called with option.id
+    it('T-I5: DROPDOWN field with matching label — setFieldValue called with option ID', async () => {
+      const fields: NormalizedField[] = [
+        {
+          id: 'f1',
+          name: 'Priority',
+          type: NormalizedFieldType.DROPDOWN,
+          required: true,
+          options: [
+            { id: 'opt-high', label: 'High' },
+            { id: 'opt-low', label: 'Low' },
+          ],
+        },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ f1: 'High' }) }],
+      });
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.filledFields).toHaveLength(1);
+      expect(provider.setFieldValue).toHaveBeenCalledWith('taskId', 'f1', 'opt-high');
+      expect(result.manualFields).toHaveLength(0);
+    });
+
+    // T-I6 → AC7: DROPDOWN field — Claude returns unmatched label → field in manualFields
+    it('T-I6: DROPDOWN field with unmatched label — field in manualFields, no setFieldValue', async () => {
+      const fields: NormalizedField[] = [
+        {
+          id: 'f1',
+          name: 'Priority',
+          type: NormalizedFieldType.DROPDOWN,
+          required: true,
+          options: [
+            { id: 'opt-high', label: 'High' },
+            { id: 'opt-low', label: 'Low' },
+          ],
+        },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ f1: 'Critical' }) }],
+      });
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.filledFields).toHaveLength(0);
+      expect(provider.setFieldValue).not.toHaveBeenCalled();
+      expect(result.manualFields).toHaveLength(1);
+      expect(result.manualFields[0].id).toBe('f1');
+    });
+
+    // T-I8 → AC8: NUMBER field — Claude returns non-numeric string → field in manualFields
+    it('T-I8: NUMBER field with non-numeric AI value — field in manualFields', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Story Points', type: NormalizedFieldType.NUMBER, required: true },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ f1: 'high' }) }],
+      });
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.filledFields).toHaveLength(0);
+      expect(provider.setFieldValue).not.toHaveBeenCalled();
+      expect(result.manualFields).toHaveLength(1);
+      expect(result.manualFields[0].id).toBe('f1');
+    });
+
+    // T-I9 → AC8: CHECKBOX field — Claude returns "true" string → setFieldValue called with boolean true
+    it('T-I9: CHECKBOX field with "true" string — setFieldValue called with boolean true', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ f1: 'true' }) }],
+      });
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.filledFields).toHaveLength(1);
+      expect(provider.setFieldValue).toHaveBeenCalledWith('taskId', 'f1', true);
+    });
+
+    // T-I10 → AC8: CHECKBOX field — Claude returns "maybe" → field in manualFields
+    it('T-I10: CHECKBOX field with non-boolean string — field in manualFields', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ f1: 'maybe' }) }],
+      });
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.filledFields).toHaveLength(0);
+      expect(provider.setFieldValue).not.toHaveBeenCalled();
+      expect(result.manualFields).toHaveLength(1);
+      expect(result.manualFields[0].id).toBe('f1');
+    });
+
+    // T-I15 → AC5: Verify single Claude call regardless of field count
+    it('T-I15: single Claude call regardless of field count (not one per field)', async () => {
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Story Points', type: NormalizedFieldType.NUMBER, required: true },
+        {
+          id: 'f2',
+          name: 'Priority',
+          type: NormalizedFieldType.DROPDOWN,
+          required: true,
+          options: [{ id: 'opt-high', label: 'High' }],
+        },
+        { id: 'f3', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ f1: '5', f2: 'High', f3: 'true' }) }],
+      });
+
+      await service.fillInferredFields(mockIntegration, 'taskId', fields, mockInferenceCtx, 'cid');
+
+      expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('should include field options in prompt (AC12)', async () => {
+      const fields: NormalizedField[] = [
+        {
+          id: 'f1',
+          name: 'Priority',
+          type: NormalizedFieldType.DROPDOWN,
+          required: true,
+          options: [
+            { id: 'opt1', label: 'High' },
+            { id: 'opt2', label: 'Low' },
+          ],
+        },
+      ];
+
+      mockAnthropic.messages.create.mockResolvedValue({
+        content: [{ type: 'text', text: '{}' }],
+      });
+
+      await service.fillInferredFields(mockIntegration, 'taskId', fields, mockInferenceCtx, 'cid');
+
+      const prompt = mockAnthropic.messages.create.mock.calls[0][0].messages[0].content;
+      expect(prompt).toContain('High');
+      expect(prompt).toContain('Low');
+    });
+
+    it('should handle outer try/catch fail-open (AC16)', async () => {
+      mockAnthropic.messages.create.mockRejectedValue(new Error('Network Crash'));
+
+      const fields: NormalizedField[] = [
+        { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
+      ];
+
+      const result = await service.fillInferredFields(
+        mockIntegration,
+        'taskId',
+        fields,
+        mockInferenceCtx,
+        'cid',
+      );
+
+      expect(result.inferFailed).toBe(true);
+      expect(result.manualFields).toHaveLength(1);
+      expect(sentry.captureException).toHaveBeenCalled();
+    });
   });
 });
