@@ -1,6 +1,6 @@
 # Story CS2.4: Post Auto-Fill Verification Comment
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -236,38 +236,38 @@ private readonly pmVerificationService: PMVerificationCommentService,  // ADD
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1**: Create `PMVerificationCommentService` (AC1, AC2–AC8)
-  - [ ] Create `src/integrations/pm-verification-comment.service.ts`
-  - [ ] Inject `PMProviderFactory` and `SentryService` (same pattern as `BotAssignmentService`)
-  - [ ] Use `private readonly logger = new Logger(PMVerificationCommentService.name)`
-  - [ ] Implement `postVerificationComment()` method with AC2 fast-path guard
-  - [ ] Implement `buildComment()` private helper (AC3–AC6)
-  - [ ] Implement `formatFieldValue()` private helper (AC3 — source-specific formatting)
-  - [ ] Call `getProvider()` once then `addComment()` (AC7)
-  - [ ] Wrap provider calls in try/catch — fail-open (AC8)
+- [x] **Task 1**: Create `PMVerificationCommentService` (AC1, AC2–AC8)
+  - [x] Create `src/integrations/pm-verification-comment.service.ts`
+  - [x] Inject `PMProviderFactory` and `SentryService` (same pattern as `BotAssignmentService`)
+  - [x] Use `private readonly logger = new Logger(PMVerificationCommentService.name)`
+  - [x] Implement `postVerificationComment()` method with AC2 fast-path guard
+  - [x] Implement `buildComment()` private helper (AC3–AC6)
+  - [x] Implement `formatFieldValue()` private helper (AC3 — source-specific formatting)
+  - [x] Call `getProvider()` once then `addComment()` (AC7)
+  - [x] Wrap provider calls in try/catch — fail-open (AC8)
 
-- [ ] **Task 2**: Register in `IntegrationsModule` (AC9)
-  - [ ] Add `PMVerificationCommentService` to `providers: [...]`
-  - [ ] Add `PMVerificationCommentService` to `exports: [...]`
+- [x] **Task 2**: Register in `IntegrationsModule` (AC9)
+  - [x] Add `PMVerificationCommentService` to `providers: [...]`
+  - [x] Add `PMVerificationCommentService` to `exports: [...]`
 
-- [ ] **Task 3**: Wire into `DeploymentStatusSyncService` (AC10)
-  - [ ] Import `PMVerificationCommentService` from `@/integrations/pm-verification-comment.service`
-  - [ ] Import `InferredFillResult` from `@/integrations/pm-field-auto-fill.service` (for `let inferredResult` type)
-  - [ ] Add `private readonly pmVerificationService: PMVerificationCommentService` to constructor
-  - [ ] Modify CS2-3 block: declare `let inferredResult: InferredFillResult | undefined` before the `if (factualResult.remainingFields.length > 0)` guard, change `await` to `inferredResult = await`
-  - [ ] Add CS2-4 verification comment block after the CS2-3 block (inside the `if (!preCheckResult.allFilled)` guard)
-  - [ ] Update `deployment-status-sync.service.spec.ts`: add `PMVerificationCommentService` mock `{ provide: PMVerificationCommentService, useValue: { postVerificationComment: jest.fn().mockResolvedValue(undefined) } }`, update CS2-3 mock to return `InferredFillResult`, add T-DSS6/T-DSS7 tests
+- [x] **Task 3**: Wire into `DeploymentStatusSyncService` (AC10)
+  - [x] Import `PMVerificationCommentService` from `@/integrations/pm-verification-comment.service`
+  - [x] Import `InferredFillResult` from `@/integrations/pm-field-auto-fill.service` (for `let inferredResult` type)
+  - [x] Add `private readonly pmVerificationService: PMVerificationCommentService` to constructor
+  - [x] Modify CS2-3 block: declare `let inferredResult: InferredFillResult | undefined` before the `if (factualResult.remainingFields.length > 0)` guard, change `await` to `inferredResult = await`
+  - [x] Add CS2-4 verification comment block after the CS2-3 block (inside the `if (!preCheckResult.allFilled)` guard)
+  - [x] Update `deployment-status-sync.service.spec.ts`: add `PMVerificationCommentService` mock, update CS2-3 mock to return `InferredFillResult`, add T-DSS6/T-DSS7 tests
 
-- [ ] **Task 4**: Write unit tests (AC11)
-  - [ ] Create `src/integrations/pm-verification-comment.service.spec.ts`
-  - [ ] Mock `PMProviderFactory.getProvider()` → mock `IPMProvider` with `addComment: jest.fn()`
-  - [ ] Mock `SentryService.captureException()`
-  - [ ] Cover all 13 test cases T-V1 through T-V13
+- [x] **Task 4**: Write unit tests (AC11)
+  - [x] Create `src/integrations/pm-verification-comment.service.spec.ts`
+  - [x] Mock `PMProviderFactory.getProvider()` → mock `IPMProvider` with `addComment: jest.fn()`
+  - [x] Mock `SentryService.captureException()`
+  - [x] Cover all 13 test cases T-V1 through T-V13
 
-- [ ] **Task 5**: TypeScript + lint verification (AC12)
-  - [ ] `pnpm typecheck` — zero errors on CS2-4 modified files
-  - [ ] `pnpm lint` — zero warnings/errors
-  - [ ] `pnpm test -- --testPathPattern="pm-verification-comment"` — all tests pass
+- [x] **Task 5**: TypeScript + lint verification (AC12)
+  - [x] `pnpm typecheck` — zero errors on CS2-4 modified files
+  - [x] `pnpm lint` — zero warnings/errors
+  - [x] `pnpm test -- --testPathPattern="pm-verification-comment"` — all tests pass (15/15)
 
 ---
 
@@ -775,10 +775,18 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- Code review (2026-03-15): Fixed missing try/catch wrapper around CS2-4 block in `syncToClickUp` (AC10 spec compliance). Added missing T-V7 (AC6 header assertion) and T-V10 (AC7 addComment call validation) tests. Fixed import convention in spec (`@prisma/client` → `@/prisma/client`). Added 5 undocumented changed files to File List (DeploymentStatusSync rename cascade).
+- `pm-verification-comment.service.spec.ts` is untracked — must be staged and committed before CI runs.
+
 ### File List
 
 - `src/integrations/pm-verification-comment.service.ts` — NEW: `PMVerificationCommentService` + `buildComment()` + `formatFieldValue()` helpers (AC1–AC8)
-- `src/integrations/pm-verification-comment.service.spec.ts` — NEW: unit tests T-V1–T-V13 (AC11)
+- `src/integrations/pm-verification-comment.service.spec.ts` — NEW: unit tests T-V1–T-V13 + T-V7/T-V10 additions (AC11)
 - `src/integrations/integrations.module.ts` — MODIFY: add `PMVerificationCommentService` to providers + exports (AC9)
-- `src/github/services/deployment-status-sync.service.ts` — MODIFY: import `InferredFillResult` + `PMVerificationCommentService`; inject `pmVerificationService`; capture `inferredResult` from CS2-3 call; add CS2-4 verification comment block (AC10)
-- `src/github/services/deployment-status-sync.service.spec.ts` — MODIFY: add `PMVerificationCommentService` mock; update CS2-3 mock to return `InferredFillResult`; add T-DSS6/T-DSS7 (AC11)
+- `src/github/services/deployment-status-sync.service.ts` — MODIFY: import `InferredFillResult` + `PMVerificationCommentService`; inject `pmVerificationCommentService`; capture `inferredResult` from CS2-3 call; add CS2-4 verification comment block with try/catch wrapper (AC10)
+- `src/github/services/deployment-status-sync.service.spec.ts` — MODIFY: add `PMVerificationCommentService` mock; update CS2-3 mock to return `InferredFillResult`; add T-DSS6/T-DSS7/T-DSS8/T-DSS9 (AC11)
+- `src/github/github.module.ts` — MODIFY: rename `DeploymentStatusSync` → `DeploymentStatusSyncService` import/provider/export (CS2-4 prerequisite — Dev Notes)
+- `src/github/services/deployment-orchestrator.service.ts` — MODIFY: rename `DeploymentStatusSync` → `DeploymentStatusSyncService` import and constructor type (cascade from rename)
+- `src/github/services/deployment-orchestrator.service.spec.ts` — MODIFY: rename cascade
+- `src/github/services/deployment-health-monitor.service.ts` — MODIFY: rename `DeploymentStatusSync` → `DeploymentStatusSyncService` import and constructor type (cascade from rename)
+- `src/github/services/deployment-health-monitor.service.spec.ts` — MODIFY: rename cascade

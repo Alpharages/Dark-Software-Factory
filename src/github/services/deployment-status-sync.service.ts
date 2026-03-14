@@ -11,7 +11,10 @@ import {
   PMFieldAutoFillService,
   ExecutionContext,
   InferenceContext,
+  FactualFillResult,
+  InferredFillResult,
 } from '@/integrations/pm-field-auto-fill.service';
+import { PMVerificationCommentService } from '@/integrations/pm-verification-comment.service';
 
 /**
  * Deployment Status Synchronization Service
@@ -25,8 +28,8 @@ import {
  * - Comprehensive observability (metrics, audit logs, structured logging)
  */
 @Injectable()
-export class DeploymentStatusSync {
-  private readonly logger = new Logger(DeploymentStatusSync.name);
+export class DeploymentStatusSyncService {
+  private readonly logger = new Logger(DeploymentStatusSyncService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -37,6 +40,7 @@ export class DeploymentStatusSync {
     private readonly integrationService: ProjectIntegrationService,
     private readonly pmPreCheckService: PMFieldPreCheckService,
     private readonly pmAutoFillService: PMFieldAutoFillService,
+    private readonly pmVerificationCommentService: PMVerificationCommentService,
   ) {}
 
   /**
@@ -172,7 +176,7 @@ export class DeploymentStatusSync {
               branchName: typedDeployment.github_push.branch_name,
             };
 
-            const factualResult = await this.pmAutoFillService.fillFactualFields(
+            const factualResult: FactualFillResult = await this.pmAutoFillService.fillFactualFields(
               integration,
               ticketId,
               preCheckResult.missingFields,
@@ -181,6 +185,7 @@ export class DeploymentStatusSync {
             );
 
             // CS2-3: AI-Inferred Field Fill (AC#4)
+            let inferredResult: InferredFillResult | undefined;
             if (factualResult.remainingFields.length > 0) {
               const execData = execution as unknown as {
                 ticket: { title: string; description: string };
@@ -203,12 +208,40 @@ export class DeploymentStatusSync {
                 filesChangedCount,
               };
 
-              await this.pmAutoFillService.fillInferredFields(
+              try {
+                inferredResult = await this.pmAutoFillService.fillInferredFields(
+                  integration,
+                  ticketId,
+                  factualResult.remainingFields,
+                  inferenceCtx,
+                  finalCorrelationId,
+                );
+              } catch (error) {
+                const err = error as Error;
+                this.logger.warn(
+                  `[${finalCorrelationId}] AI inferred fill failed (fail-open): ${err.message}`,
+                  { deploymentId, taskId: ticketId },
+                );
+                this.sentry.captureException(err, {
+                  tags: { deploymentId, taskId: ticketId, operation: 'ai-inferred-fill' },
+                  extra: { correlationId: finalCorrelationId },
+                });
+              }
+            }
+
+            // CS2-4: Post-Fill Verification Comment
+            try {
+              await this.pmVerificationCommentService.postVerificationComment(
                 integration,
                 ticketId,
-                factualResult.remainingFields,
-                inferenceCtx,
+                factualResult.filledFields,
+                inferredResult?.filledFields ?? [],
+                inferredResult?.manualFields ?? factualResult.remainingFields,
                 finalCorrelationId,
+              );
+            } catch (_err) {
+              this.logger.warn(
+                `[${finalCorrelationId}] CS2-4: unexpected error in verification comment block — continuing`,
               );
             }
           }

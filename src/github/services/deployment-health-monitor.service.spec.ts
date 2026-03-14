@@ -5,7 +5,7 @@ import { GitHubService } from '../github.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service';
-import { DeploymentStatusSync } from './deployment-status-sync.service';
+import { DeploymentStatusSyncService } from './deployment-status-sync.service';
 import { LoggerService } from '../../common/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -16,7 +16,7 @@ describe('DeploymentHealthMonitorService', () => {
   let sentry: jest.Mocked<SentryService>;
   let metrics: jest.Mocked<MetricsService>;
   let auditLog: jest.Mocked<AIDecisionLoggerService>;
-  let deploymentStatusSync: jest.Mocked<DeploymentStatusSync>;
+  let deploymentStatusSync: jest.Mocked<DeploymentStatusSyncService>;
   let logger: jest.Mocked<LoggerService>;
   // config removed due to being unused
 
@@ -67,7 +67,7 @@ describe('DeploymentHealthMonitorService', () => {
           },
         },
         {
-          provide: DeploymentStatusSync,
+          provide: DeploymentStatusSyncService,
           useValue: {
             syncToClickUp: jest.fn(),
           },
@@ -105,7 +105,9 @@ describe('DeploymentHealthMonitorService', () => {
     sentry = module.get(SentryService) as jest.Mocked<SentryService>;
     metrics = module.get(MetricsService) as jest.Mocked<MetricsService>;
     auditLog = module.get(AIDecisionLoggerService) as jest.Mocked<AIDecisionLoggerService>;
-    deploymentStatusSync = module.get(DeploymentStatusSync) as jest.Mocked<DeploymentStatusSync>;
+    deploymentStatusSync = module.get(
+      DeploymentStatusSyncService,
+    ) as jest.Mocked<DeploymentStatusSyncService>;
     logger = module.get(LoggerService) as jest.Mocked<LoggerService>;
     // config assignment removed
   });
@@ -166,7 +168,7 @@ describe('DeploymentHealthMonitorService', () => {
             useValue: auditLog,
           },
           {
-            provide: DeploymentStatusSync,
+            provide: DeploymentStatusSyncService,
             useValue: deploymentStatusSync,
           },
           {

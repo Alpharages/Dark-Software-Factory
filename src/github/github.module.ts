@@ -9,7 +9,7 @@ import { GitHubPROrchestrator } from './services/github-pr-orchestrator.service'
 import { GitHubPushTriggerConsumer } from './services/github-push-trigger.consumer';
 import { DeploymentOrchestrator } from './services/deployment-orchestrator.service';
 import { DeploymentTriggerConsumer } from './services/deployment-trigger.consumer';
-import { DeploymentStatusSync } from './services/deployment-status-sync.service';
+import { DeploymentStatusSyncService } from './services/deployment-status-sync.service';
 import { GitHubErrorMonitor } from './services/github-error-monitor.service';
 import { DeploymentSuccessRateCalculator } from './services/deployment-success-rate-calculator.service';
 import { GitHubAuthFlowService } from './github-auth-flow.service';
@@ -68,7 +68,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     GitHubPushTriggerConsumer,
     DeploymentOrchestrator,
     DeploymentTriggerConsumer,
-    DeploymentStatusSync,
+    DeploymentStatusSyncService,
     DeploymentHealthMonitorService,
     GitHubErrorMonitor,
     DeploymentSuccessRateCalculator,
@@ -104,7 +104,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     GitHubCommitOrchestrator,
     GitHubPROrchestrator,
     DeploymentOrchestrator,
-    DeploymentStatusSync,
+    DeploymentStatusSyncService,
     DeploymentHealthMonitorService,
     GitHubErrorMonitor,
     DeploymentSuccessRateCalculator,

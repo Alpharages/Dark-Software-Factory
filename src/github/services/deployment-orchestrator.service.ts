@@ -9,7 +9,7 @@ import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { WebhooksService } from '../../webhooks/webhooks.service';
 import { GitHubService } from '../github.service';
-import { DeploymentStatusSync } from './deployment-status-sync.service';
+import { DeploymentStatusSyncService } from './deployment-status-sync.service';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { DeploymentSuccessRateCalculator } from './deployment-success-rate-calculator.service';
 import {
@@ -44,7 +44,7 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
     private readonly sentry: SentryService,
     private readonly logger: LoggerService,
     private readonly config: ConfigService,
-    private readonly deploymentStatusSync: DeploymentStatusSync,
+    private readonly deploymentStatusSync: DeploymentStatusSyncService,
     private readonly errorMonitor: GitHubErrorMonitor,
     private readonly successRateCalculator: DeploymentSuccessRateCalculator,
   ) {
@@ -622,9 +622,10 @@ export class DeploymentOrchestrator implements OnModuleDestroy {
 
       // Update ClickUp (AC#4) - Story 4.6 integration
       // Fire-and-forget: Do NOT await, do NOT block deployment updates
-      this.deploymentStatusSync.syncToClickUp(deploymentId).catch((_error) => {
+      this.deploymentStatusSync.syncToClickUp(deploymentId).catch((error) => {
+        const err = error as Error;
         // Logged to Sentry within syncToClickUp, just prevent unhandled rejection
-        this.logger.error('ClickUp sync failed (non-blocking)', _error.message, { deploymentId });
+        this.logger.error('ClickUp sync failed (non-blocking)', err.message, { deploymentId });
       });
     }
 

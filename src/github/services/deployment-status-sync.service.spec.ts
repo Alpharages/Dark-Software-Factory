@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
-import { DeploymentStatusSync } from './deployment-status-sync.service';
+import { DeploymentStatusSyncService } from './deployment-status-sync.service';
 import { PrismaService } from '../../database/prisma.service';
 import { ClickUpService } from '../../clickup/clickup.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
@@ -9,12 +9,13 @@ import { SentryService } from '../../common/sentry/sentry.service';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
 import { PMFieldPreCheckService } from '@/integrations/pm-field-pre-check.service';
 import { PMFieldAutoFillService } from '@/integrations/pm-field-auto-fill.service';
+import { PMVerificationCommentService } from '@/integrations/pm-verification-comment.service';
 
 import { DeploymentStatus } from '@/prisma/client';
 
-describe('DeploymentStatusSync', () => {
+describe('DeploymentStatusSyncService', () => {
   let module: TestingModule;
-  let service: DeploymentStatusSync;
+  let service: DeploymentStatusSyncService;
   let prisma: PrismaService;
   let clickUp: ClickUpService;
   let metrics: MetricsService;
@@ -63,7 +64,7 @@ describe('DeploymentStatusSync', () => {
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
-        DeploymentStatusSync,
+        DeploymentStatusSyncService,
         {
           provide: PrismaService,
           useValue: {
@@ -124,10 +125,16 @@ describe('DeploymentStatusSync', () => {
             fillInferredFields: jest.fn().mockResolvedValue({ filledFields: [], manualFields: [] }),
           },
         },
+        {
+          provide: PMVerificationCommentService,
+          useValue: {
+            postVerificationComment: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
-    service = module.get<DeploymentStatusSync>(DeploymentStatusSync);
+    service = module.get<DeploymentStatusSyncService>(DeploymentStatusSyncService);
     prisma = module.get<PrismaService>(PrismaService);
     clickUp = module.get<ClickUpService>(ClickUpService);
     metrics = module.get<MetricsService>(MetricsService);
@@ -386,6 +393,174 @@ describe('DeploymentStatusSync', () => {
           retryCount: 1,
           filesChangedCount: 2,
         }),
+        expect.any(String),
+      );
+    });
+
+    // T-DSS6: Calls postVerificationComment with correct arguments after auto-fill blocks
+    it('T-DSS6: calls postVerificationComment after successful auto-fill blocks', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const autoFillService = module.get(PMFieldAutoFillService);
+      const commentService = module.get(PMVerificationCommentService);
+
+      const mockIntegration = { id: 'int-1' };
+      const missingFields = [{ id: 'f1', name: 'Duration', type: 'NUMBER', required: true }];
+      const factualFilled = [{ field: missingFields[0], value: 45, source: 'duration' }];
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (clickUp.addComment as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+      (autoFillService.fillFactualFields as jest.Mock).mockResolvedValue({
+        filledFields: factualFilled,
+        remainingFields: [],
+      });
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(commentService.postVerificationComment).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        factualFilled,
+        [], // no inferred
+        [], // no manual/remaining
+        expect.any(String),
+      );
+    });
+
+    // T-DSS7: Ensures postVerificationComment is called even if fillFactualFields fails partially but does not throw
+    it('T-DSS7: calls postVerificationComment even if factual fill fails partially', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const autoFillService = module.get(PMFieldAutoFillService);
+      const commentService = module.get(PMVerificationCommentService);
+
+      const mockIntegration = { id: 'int-1' };
+      const missingFields = [{ id: 'f1', name: 'Duration', type: 'NUMBER', required: true }];
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+
+      // Factual fill fails partially (returns remaining fields)
+      (autoFillService.fillFactualFields as jest.Mock).mockResolvedValue({
+        filledFields: [],
+        remainingFields: missingFields,
+        fillFailed: true,
+      });
+
+      // Inferred fill also returns these as manual
+      (autoFillService.fillInferredFields as jest.Mock).mockResolvedValue({
+        filledFields: [],
+        manualFields: missingFields,
+      });
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(commentService.postVerificationComment).toHaveBeenCalled();
+      expect(commentService.postVerificationComment).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        [],
+        [],
+        missingFields,
+        expect.any(String),
+      );
+    });
+
+    // T-DSS8: fillInferredFields fail-open (AC#4 fix)
+    it('T-DSS8: continues to postVerificationComment even if fillInferredFields throws (fail-open)', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const autoFillService = module.get(PMFieldAutoFillService);
+      const commentService = module.get(PMVerificationCommentService);
+
+      const mockIntegration = { id: 'int-1' };
+      const missingFields = [{ id: 'f1', name: 'Points', type: 'NUMBER', required: true }];
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+
+      // Factual fill leaves fields for AI
+      (autoFillService.fillFactualFields as jest.Mock).mockResolvedValue({
+        filledFields: [],
+        remainingFields: missingFields,
+      });
+
+      // AI fill throws
+      (autoFillService.fillInferredFields as jest.Mock).mockRejectedValue(
+        new Error('AI Service Down'),
+      );
+
+      await service.syncToClickUp('deployment-123');
+
+      // Should still call comment service
+      expect(commentService.postVerificationComment).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        [],
+        [],
+        missingFields, // Fallback to factual remaining fields
+        expect.any(String),
+      );
+      expect(sentry.captureException).toHaveBeenCalled();
+    });
+
+    // T-DSS9: Nullish coalescing for manualFields (logical error fix)
+    it('T-DSS9: uses factual remaining fields if AI fill fails to provide manualFields (?? fallback)', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const autoFillService = module.get(PMFieldAutoFillService);
+      const commentService = module.get(PMVerificationCommentService);
+
+      const mockIntegration = { id: 'int-1' };
+      const missingFields = [{ id: 'f1', name: 'Points', type: 'NUMBER', required: true }];
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+
+      (autoFillService.fillFactualFields as jest.Mock).mockResolvedValue({
+        filledFields: [],
+        remainingFields: missingFields,
+      });
+
+      // AI fill returns valid empty arrays (not null/undefined)
+      (autoFillService.fillInferredFields as jest.Mock).mockResolvedValue({
+        filledFields: [],
+        manualFields: [],
+      });
+
+      await service.syncToClickUp('deployment-123');
+
+      // Should use empty array from AI, NOT fallback to missingFields
+      expect(commentService.postVerificationComment).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        [],
+        [],
+        [], // Should be empty because AI returned empty array
         expect.any(String),
       );
     });

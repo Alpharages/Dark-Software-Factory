@@ -8,7 +8,7 @@ import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { WebhooksService } from '../../webhooks/webhooks.service';
 import { GitHubService } from '../github.service';
-import { DeploymentStatusSync } from './deployment-status-sync.service';
+import { DeploymentStatusSyncService } from './deployment-status-sync.service';
 import { GitHubErrorMonitor } from './github-error-monitor.service';
 import { DeploymentSuccessRateCalculator } from './deployment-success-rate-calculator.service';
 
@@ -76,7 +76,7 @@ describe('DeploymentOrchestrator', () => {
         { provide: SentryService, useValue: mockSentry },
         { provide: LoggerService, useValue: mockLogger },
         { provide: ConfigService, useValue: mockConfig },
-        { provide: DeploymentStatusSync, useValue: mockDeploymentStatusSync },
+        { provide: DeploymentStatusSyncService, useValue: mockDeploymentStatusSync },
         { provide: GitHubErrorMonitor, useValue: mockGitHubErrorMonitor },
         {
           provide: DeploymentSuccessRateCalculator,

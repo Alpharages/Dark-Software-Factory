@@ -6,7 +6,7 @@ import { GitHubService } from '../github.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AIDecisionLoggerService } from '../../audit/ai-decision-logger.service';
-import { DeploymentStatusSync } from './deployment-status-sync.service';
+import { DeploymentStatusSyncService } from './deployment-status-sync.service';
 import { LoggerService } from '../../common/logger/logger.service';
 import { BaselineMetrics, RollbackReason } from '../interfaces/health-monitoring.interface';
 
@@ -26,7 +26,7 @@ export class DeploymentHealthMonitorService implements OnModuleDestroy {
     private readonly sentry: SentryService,
     private readonly metrics: MetricsService,
     private readonly auditLog: AIDecisionLoggerService,
-    private readonly deploymentStatusSync: DeploymentStatusSync,
+    private readonly deploymentStatusSync: DeploymentStatusSyncService,
     private readonly logger: LoggerService,
     private readonly config: ConfigService,
   ) {
