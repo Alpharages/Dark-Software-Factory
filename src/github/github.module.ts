@@ -36,6 +36,7 @@ import { DeploymentHealthMonitorService } from './services/deployment-health-mon
 import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
 import { ExecutionModule } from '../execution/execution.module';
 import { EncryptionModule } from '../common/encryption/encryption.module';
+import { IntegrationsModule } from '../integrations/integrations.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { EncryptionModule } from '../common/encryption/encryption.module';
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
     EncryptionModule,
+    IntegrationsModule,
     forwardRef(() => ExecutionModule),
   ],
   controllers: [GitHubAuthFlowController],

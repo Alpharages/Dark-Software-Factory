@@ -5,6 +5,12 @@ import { ClickUpService } from '../../clickup/clickup.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
+import { ProjectIntegrationService } from '@/integrations/project-integration.service';
+import { PMFieldPreCheckService } from '@/integrations/pm-field-pre-check.service';
+import {
+  PMFieldAutoFillService,
+  ExecutionContext,
+} from '@/integrations/pm-field-auto-fill.service';
 
 /**
  * Deployment Status Synchronization Service
@@ -27,6 +33,9 @@ export class DeploymentStatusSync {
     private readonly metrics: MetricsService,
     private readonly auditLog: AuditLogService,
     private readonly sentry: SentryService,
+    private readonly integrationService: ProjectIntegrationService,
+    private readonly pmPreCheckService: PMFieldPreCheckService,
+    private readonly pmAutoFillService: PMFieldAutoFillService,
   ) {}
 
   /**
@@ -65,6 +74,7 @@ export class DeploymentStatusSync {
               pr_url: true,
               pr_number: true,
               repository: true,
+              branch_name: true,
               execution_id: true,
               error_message: true,
             },
@@ -89,6 +99,7 @@ export class DeploymentStatusSync {
           pr_url: string | null;
           pr_number: number | null;
           repository: string;
+          branch_name: string | null;
           execution_id: string;
           error_message: string | null;
         };
@@ -124,6 +135,61 @@ export class DeploymentStatusSync {
       }
 
       const ticketId = execution.ticket.clickup_task_id;
+
+      // CS2-2: Pre-check + factual auto-fill pipeline
+      try {
+        const integration = await this.integrationService.findFirstByProject(
+          execution.ticket.project_id,
+        );
+        if (integration) {
+          const cfg = integration.provider_config as Record<string, unknown> | null;
+          const containerId = typeof cfg?.containerId === 'string' ? cfg.containerId : '';
+
+          const preCheckResult = await this.pmPreCheckService.checkRequiredFields(
+            integration,
+            ticketId,
+            containerId,
+            finalCorrelationId,
+          );
+
+          if (!preCheckResult.allFilled && preCheckResult.missingFields.length > 0) {
+            const execWithTiming = execution as typeof execution & {
+              started_at: Date | null;
+              completed_at: Date | null;
+            };
+
+            const durationMs =
+              execWithTiming?.started_at && execWithTiming?.completed_at
+                ? execWithTiming.completed_at.getTime() - execWithTiming.started_at.getTime()
+                : undefined;
+
+            const ctx: ExecutionContext = {
+              executionDurationMinutes:
+                durationMs !== undefined && isFinite(durationMs) ? durationMs / 60000 : undefined,
+              deployedAt: typedDeployment.deployed_at,
+              prUrl: typedDeployment.github_push.pr_url,
+              branchName: typedDeployment.github_push.branch_name,
+            };
+
+            await this.pmAutoFillService.fillFactualFields(
+              integration,
+              ticketId,
+              preCheckResult.missingFields,
+              ctx,
+              finalCorrelationId,
+            );
+          }
+        }
+      } catch (pipelineError) {
+        // Fail-open: pipeline failure must never block status push
+        this.logger.warn(
+          `[${finalCorrelationId}] CS2-2: pre-check/auto-fill pipeline failed (failing open): ${
+            (pipelineError as Error).message
+          }`,
+        );
+        this.sentry.captureException(pipelineError as Error);
+      }
+
       // CS2: These literals will be replaced by provider-agnostic IPMProvider status push
       const clickUpStatus =
         typedDeployment.status === 'COMPLETED'

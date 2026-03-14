@@ -11,6 +11,7 @@ import { PMProviderFactory } from './providers/pm-provider.factory';
 import { PMStatusService } from './pm-status.service';
 import { BotAssignmentService } from './bot-assignment.service';
 import { PMFieldPreCheckService } from './pm-field-pre-check.service';
+import { PMFieldAutoFillService } from './pm-field-auto-fill.service';
 
 @Module({
   imports: [forwardRef(() => ClickUpModule), DatabaseModule, EncryptionModule, SentryModule],
@@ -22,6 +23,7 @@ import { PMFieldPreCheckService } from './pm-field-pre-check.service';
     PMStatusService,
     BotAssignmentService,
     PMFieldPreCheckService,
+    PMFieldAutoFillService,
   ],
   exports: [
     ProjectIntegrationService,
@@ -30,6 +32,7 @@ import { PMFieldPreCheckService } from './pm-field-pre-check.service';
     PMStatusService,
     BotAssignmentService,
     PMFieldPreCheckService,
+    PMFieldAutoFillService,
   ],
 })
 export class IntegrationsModule {}

@@ -6,10 +6,14 @@ import { ClickUpService } from '../../clickup/clickup.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { SentryService } from '../../common/sentry/sentry.service';
+import { ProjectIntegrationService } from '@/integrations/project-integration.service';
+import { PMFieldPreCheckService } from '@/integrations/pm-field-pre-check.service';
+import { PMFieldAutoFillService } from '@/integrations/pm-field-auto-fill.service';
 
 import { DeploymentStatus } from '@/prisma/client';
 
 describe('DeploymentStatusSync', () => {
+  let module: TestingModule;
   let service: DeploymentStatusSync;
   let prisma: PrismaService;
   let clickUp: ClickUpService;
@@ -35,6 +39,7 @@ describe('DeploymentStatusSync', () => {
       pr_url: 'https://github.com/org/repo/pull/42',
       pr_number: 42,
       repository: 'org/repo',
+      branch_name: 'feature/factual',
       execution_id: 'exec-789',
       error_message: null,
     },
@@ -43,13 +48,16 @@ describe('DeploymentStatusSync', () => {
   const mockExecution = {
     id: 'exec-789',
     ticket_id: 'ticket-001',
+    started_at: new Date('2025-12-08T11:50:00Z'),
+    completed_at: new Date('2025-12-08T12:00:00Z'),
     ticket: {
+      project_id: 'proj-123',
       clickup_task_id: 'clickup-123',
     },
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         DeploymentStatusSync,
         {
@@ -89,6 +97,24 @@ describe('DeploymentStatusSync', () => {
           provide: SentryService,
           useValue: {
             captureException: jest.fn(),
+          },
+        },
+        {
+          provide: ProjectIntegrationService,
+          useValue: {
+            findFirstByProject: jest.fn(),
+          },
+        },
+        {
+          provide: PMFieldPreCheckService,
+          useValue: {
+            checkRequiredFields: jest.fn(),
+          },
+        },
+        {
+          provide: PMFieldAutoFillService,
+          useValue: {
+            fillFactualFields: jest.fn(),
           },
         },
       ],
@@ -201,6 +227,86 @@ describe('DeploymentStatusSync', () => {
       expect(metrics.incrementCounter).toHaveBeenCalledWith(
         'deployment_status_sync_total',
         expect.objectContaining({ status: 'success' }),
+      );
+    });
+
+    // T-DSS1: When findFirstByProject returns null, checkRequiredFields is NOT called
+    it('T-DSS1: skips pre-check pipeline when no integration found', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (clickUp.addComment as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(null);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(preCheckService.checkRequiredFields).not.toHaveBeenCalled();
+      expect(clickUp.updateStatus).toHaveBeenCalled();
+    });
+
+    // T-DSS2: When integration exists and allFilled === false, fillFactualFields IS called
+    it('T-DSS2: calls fillFactualFields when integration exists and fields are missing', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const autoFillService = module.get(PMFieldAutoFillService);
+
+      const mockIntegration = {
+        id: 'int-1',
+        provider_config: { containerId: 'list-123' },
+      };
+      const missingFields = [{ id: 'f1', name: 'Duration', type: 'NUMBER', required: true }];
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (clickUp.addComment as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+      (autoFillService.fillFactualFields as jest.Mock).mockResolvedValue({
+        filledFields: [],
+        remainingFields: missingFields,
+      });
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(autoFillService.fillFactualFields).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        missingFields,
+        expect.objectContaining({
+          deployedAt: mockDeployment.deployed_at,
+          prUrl: mockDeployment.github_push.pr_url,
+          branchName: mockDeployment.github_push.branch_name,
+        }),
+        expect.any(String),
+      );
+      expect(clickUp.updateStatus).toHaveBeenCalled();
+    });
+
+    // T-DSS3: When the pipeline block throws unexpectedly, clickUp.updateStatus() still runs
+    it('T-DSS3: updateStatus still runs when pipeline throws unexpectedly (fail-open)', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (clickUp.addComment as jest.Mock).mockResolvedValue(true);
+      (integrationService.findFirstByProject as jest.Mock).mockRejectedValue(
+        new Error('DB connection lost'),
+      );
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(clickUp.updateStatus).toHaveBeenCalledWith(
+        'clickup-123',
+        'Deployed',
+        expect.any(Object),
       );
     });
   });
