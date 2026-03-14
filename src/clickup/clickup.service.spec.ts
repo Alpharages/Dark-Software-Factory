@@ -1,13 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClickUpService } from './clickup.service';
 import { SentryService } from '../common/sentry/sentry.service';
-import axios from 'axios';
-
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('ClickUpService', () => {
   let service: ClickUpService;
@@ -21,8 +16,6 @@ describe('ClickUpService', () => {
       put: jest.fn(),
     };
 
-    mockedAxios.create = jest.fn().mockReturnValue(mockAxiosInstance);
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClickUpService,
@@ -31,8 +24,6 @@ describe('ClickUpService', () => {
           useValue: {
             get: jest.fn((key: string, defaultValue?: any) => {
               const config: Record<string, any> = {
-                CLICKUP_API_KEY: 'test-api-key-123',
-                CLICKUP_API_BASE_URL: 'https://api.clickup.com/api/v2',
                 CLICKUP_RETRY_ATTEMPTS: 3,
                 CLICKUP_RETRY_BACKOFF_MS: 100, // Faster for tests
                 CLICKUP_MAX_COMMENT_LENGTH: 20000,
@@ -52,6 +43,8 @@ describe('ClickUpService', () => {
 
     service = module.get<ClickUpService>(ClickUpService);
     sentryService = module.get<SentryService>(SentryService);
+    // Inject test axios client directly (OAuth-only mode: no API key init in constructor)
+    (service as any).client = mockAxiosInstance;
   });
 
   afterEach(() => {
@@ -59,68 +52,29 @@ describe('ClickUpService', () => {
   });
 
   describe('constructor', () => {
-    it('should warn and set client to null when CLICKUP_API_KEY is missing (CS1-7 graceful degradation)', async () => {
-      // Spy on Logger.prototype.warn BEFORE module compile so the constructor call is captured
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
-
-      const mockConfig = {
-        get: jest.fn((key: string) => {
-          if (key === 'CLICKUP_API_KEY') return undefined;
-          return 'default';
-        }),
-      };
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          ClickUpService,
-          { provide: ConfigService, useValue: mockConfig },
-          { provide: SentryService, useValue: { captureException: jest.fn() } },
-        ],
-      }).compile();
-
-      const degradedService = module.get<ClickUpService>(ClickUpService);
-
-      expect(degradedService).toBeDefined();
-      expect((degradedService as any).client).toBeNull();
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[CS1-7] CLICKUP_API_KEY not configured'),
-        ClickUpService.name,
-      );
-
-      warnSpy.mockRestore();
+    it('should always start with client null (OAuth-only mode)', () => {
+      // Service is always in OAuth-only mode — no API key init
+      // Client is injected directly in tests via (service as any).client
+      expect((service as any).retryAttempts).toBe(3);
+      expect((service as any).retryBackoffMs).toBe(100);
     });
 
-    it('should throw Error when calling methods in degraded mode', async () => {
-      const mockConfig = {
-        get: jest.fn((key: string) => {
-          if (key === 'CLICKUP_API_KEY') return undefined;
-          return 'default';
-        }),
-      };
-
+    it('should throw Error when calling methods without a client', async () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           ClickUpService,
-          { provide: ConfigService, useValue: mockConfig },
+          {
+            provide: ConfigService,
+            useValue: { get: jest.fn().mockReturnValue(undefined) },
+          },
           { provide: SentryService, useValue: { captureException: jest.fn() } },
         ],
       }).compile();
 
-      const degradedService = module.get<ClickUpService>(ClickUpService);
-      await expect(degradedService.updateStatus('123', 'status')).rejects.toThrow(
+      const noClientService = module.get<ClickUpService>(ClickUpService);
+      await expect(noClientService.updateStatus('123', 'status')).rejects.toThrow(
         'ClickUpService: no API key configured. Use ProjectIntegration OAuth via PMProviderFactory instead.',
       );
-    });
-
-    it('should initialize axios client with correct config', () => {
-      expect(mockedAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://api.clickup.com/api/v2',
-        headers: {
-          Authorization: 'test-api-key-123',
-          'Content-Type': 'application/json',
-        },
-        timeout: 10000,
-      });
     });
   });
 

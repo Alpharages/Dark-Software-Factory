@@ -154,7 +154,7 @@ Config is validated via Joi at startup. Copy `.env.example` to `.env`. Key vars:
 - `JWT_SECRET` / `ENCRYPTION_KEY` — Auth secrets
 - `ANTHROPIC_API_KEY` — Claude API key
 - `GITHUB_TOKEN` — GitHub access token
-- `CLICKUP_API_KEY` — ClickUp API key
+- `CLICKUP_CLIENT_ID` / `CLICKUP_CLIENT_SECRET` / `CLICKUP_REDIRECT_URI` — ClickUp OAuth app (per-project)
 - `SENTRY_DSN` — Error tracking (optional)
 
 ### Architecture Patterns

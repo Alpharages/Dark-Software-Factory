@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SentryService } from '../common/sentry/sentry.service';
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import { SentryService } from '@/common/sentry';
+import { AxiosInstance, AxiosError } from 'axios';
 
 interface ClickUpStatus {
   id: string;
@@ -59,34 +59,11 @@ export class ClickUpService {
     private readonly config: ConfigService,
     private readonly sentry: SentryService,
   ) {
-    const apiKey = this.config.get<string>('CLICKUP_API_KEY');
-
     this.retryAttempts = this.config.get<number>('CLICKUP_RETRY_ATTEMPTS', 3);
     this.retryBackoffMs = this.config.get<number>('CLICKUP_RETRY_BACKOFF_MS', 1000);
-
-    if (!apiKey) {
-      this.logger.warn(
-        '[CS1-7] CLICKUP_API_KEY not configured — ClickUpService is in legacy mode. ' +
-          'All API calls will throw. Migrate to ProjectIntegration OAuth (CS0-5).',
-        ClickUpService.name,
-      );
-      this.client = null;
-      return;
-    }
-
-    const baseURL = this.config.get<string>(
-      'CLICKUP_API_BASE_URL',
-      'https://api.clickup.com/api/v2',
-    );
-
-    this.client = axios.create({
-      baseURL,
-      headers: {
-        Authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000, // 10 second timeout
-    });
+    // OAuth-only mode (CS0-5): CLICKUP_API_KEY removed. All ClickUp calls must use
+    // PMProviderFactory → ClickUpProvider with per-project OAuth tokens.
+    this.client = null;
   }
 
   /**

@@ -6,7 +6,6 @@ process.env.JWT_SECRET = 'test-secret-at-least-32-characters-long-for-testing-pu
 process.env.AUTH_SERVICE_URL = 'http://localhost:4000';
 process.env.GITHUB_TOKEN = 'ghp_testtoken1234567890';
 process.env.GITHUB_DEFAULT_REPOSITORY = 'https://github.com/test-org/test-repo';
-process.env.CLICKUP_API_KEY = 'test-clickup-key';
 process.env.CLICKUP_WEBHOOK_SECRET = 'test-webhook-secret-16chars';
 process.env.FRONTEND_URL = 'http://localhost:3000';
 process.env.SMTP_HOST = 'smtp.test.com';
