@@ -10,6 +10,7 @@ import {
   NormalizedSelf,
   WebhookRegistrationResult,
   FieldValue,
+  PMProviderClientError,
 } from '../';
 import { IRawTaskEvent } from '../../../ticket-intake/interfaces/ticket-intake.interface';
 
@@ -337,15 +338,21 @@ export class ClickUpProvider implements IPMProvider {
         return await operation();
       } catch (error) {
         lastError = error;
-        const axiosError = error as AxiosError;
 
-        // Don't retry on 4xx except 429
-        if (
-          axiosError.response &&
-          axiosError.response.status >= 400 &&
-          axiosError.response.status < 500 &&
-          axiosError.response.status !== 429
-        ) {
+        // Wrap 4xx AxiosErrors into PMProviderClientError before classifying
+        if (error instanceof AxiosError && error.response) {
+          const status = error.response.status;
+          if (status >= 400 && status < 500 && status !== 429) {
+            const body = error.response.data as Record<string, unknown> | null | undefined;
+            throw new PMProviderClientError(
+              status,
+              typeof body?.ECODE === 'string' ? body.ECODE : undefined,
+              body,
+            );
+          }
+        }
+
+        if (!PMProviderClientError.isRetryable(error)) {
           throw error;
         }
 
@@ -355,6 +362,10 @@ export class ClickUpProvider implements IPMProvider {
         }
       }
     }
+    // NOTE: exhausted 5xx/network retries throw the raw AxiosError (not PMProviderClientError).
+    // Callers (e.g. DeploymentStatusSyncService in CS3-2) must handle both error types:
+    //   - PMProviderClientError → 4xx permanent failure
+    //   - AxiosError (5xx/network) → transient failure after all retries exhausted
     throw lastError;
   }
 }

@@ -345,7 +345,7 @@ development_status:
   epic-CS2-retrospective: done
 
   # EPIC CS3 - ACTIONABLE SYNC FAILURE HANDLING & DASHBOARD VISIBILITY
-  epic-CS3: backlog
+  epic-CS3: in-progress
   epic-CS3-name: 'Actionable Sync Failure Handling & Dashboard Visibility'
   epic-CS3-phase: 'New Feature Sprint'
   epic-CS3-priority: high
@@ -354,15 +354,15 @@ development_status:
   epic-CS3-source: 'epics-clickup-smart-sync.md'
   epic-CS3-notes: 'Fix silent 4xx pass-through. Add pm_synced field. Actionable failure comments. SYNC_PENDING dashboard state.'
   CS3-1-fix-4xx-5xx-classification:
-    status: backlog
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'isRetryableError(): 4xx = permanent failure (no retry), 5xx/network = transient (retry with backoff). Fixes silent 4xx swallowing.'
+    notes: 'isRetryableError(): 4xx = permanent failure (no retry), 5xx/network = transient (retry with backoff). Fixes silent 4xx swallowing. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS3-2-pm-synced-field:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 5
-    notes: 'pm_synced boolean on Ticket model. Set false on sync failure, true on success. Tracked independently from execution completion.'
+    notes: 'pm_synced boolean on Ticket model. Set false on sync failure, true on success. Tracked independently from execution completion. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS3-3-actionable-failure-comment:
     status: backlog
     effort: '2 days'
@@ -615,7 +615,7 @@ epic_status:
     notes: 'Required field pre-check before status push. Factual auto-fill + Claude-inferred fill. Verification comment posted to task.'
   epic-CS3:
     name: 'Actionable Sync Failure Handling & Dashboard Visibility'
-    status: 'backlog'
+    status: 'in-progress'
     priority: 'high'
     source: 'epics-clickup-smart-sync.md'
     stories: 4

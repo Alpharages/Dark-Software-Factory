@@ -1,9 +1,21 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { ClickUpProvider } from './clickup.provider';
-import { NormalizedStatusType, NormalizedFieldType } from '../';
+import { NormalizedStatusType, NormalizedFieldType, PMProviderClientError } from '../';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+function makeAxiosError(status: number, data?: unknown): AxiosError {
+  const error = new AxiosError('Request failed');
+  error.response = {
+    status,
+    data: data ?? {},
+    headers: {},
+    config: {} as AxiosError['config'],
+    statusText: String(status),
+  } as AxiosError['response'];
+  return error;
+}
 
 interface MockAxiosInstance {
   get: jest.Mock;
@@ -207,9 +219,67 @@ describe('ClickUpProvider', () => {
   });
 
   describe('retry logic', () => {
-    it('should retry on 500 errors', async () => {
-      const error = Object.assign(new Error('Server Error'), { response: { status: 500 } });
+    it('T-C5: should retry on 5xx errors up to 3 attempts', async () => {
+      const error = makeAxiosError(500);
 
+      mockAxiosInstance.get
+        .mockRejectedValueOnce(error)
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce({ data: { user: { id: 1, username: 'u', email: 'e' } } });
+
+      const result = await provider.getSelf();
+      expect(result.id).toBe('1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(3);
+    });
+
+    it('T-C4: should NOT retry on 404 errors', async () => {
+      const error = makeAxiosError(404);
+
+      mockAxiosInstance.get.mockRejectedValue(error);
+
+      await expect(provider.getSelf()).rejects.toThrow(PMProviderClientError);
+      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('T-C1: should throw PMProviderClientError on 4xx AxiosError', async () => {
+      const error = makeAxiosError(400);
+      mockAxiosInstance.get.mockRejectedValue(error);
+
+      try {
+        await provider.getSelf();
+        throw new Error('Should have thrown PMProviderClientError');
+      } catch (e) {
+        expect(e).toBeInstanceOf(PMProviderClientError);
+        expect((e as PMProviderClientError).httpStatus).toBe(400);
+      }
+    });
+
+    it('T-C2: should set providerErrorCode from ECODE in body', async () => {
+      expect.assertions(1);
+      const error = makeAxiosError(403, { ECODE: 'OAUTH_017' });
+      mockAxiosInstance.get.mockRejectedValue(error);
+
+      try {
+        await provider.getSelf();
+      } catch (e) {
+        expect((e as PMProviderClientError).providerErrorCode).toBe('OAUTH_017');
+      }
+    });
+
+    it('T-C3: should set providerErrorCode to undefined if no ECODE', async () => {
+      expect.assertions(1);
+      const error = makeAxiosError(400, { err: 'Some error' });
+      mockAxiosInstance.get.mockRejectedValue(error);
+
+      try {
+        await provider.getSelf();
+      } catch (e) {
+        expect((e as PMProviderClientError).providerErrorCode).toBeUndefined();
+      }
+    });
+
+    it('T-C6: should retry on 429 errors (rate limit)', async () => {
+      const error = makeAxiosError(429);
       mockAxiosInstance.get
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce({ data: { user: { id: 1, username: 'u', email: 'e' } } });
@@ -219,13 +289,15 @@ describe('ClickUpProvider', () => {
       expect(mockAxiosInstance.get).toHaveBeenCalledTimes(2);
     });
 
-    it('should not retry on 404 errors', async () => {
-      const error = Object.assign(new Error('Not Found'), { response: { status: 404 } });
+    it('T-C7: should return result on 2nd attempt after transient 5xx', async () => {
+      const error = makeAxiosError(503);
+      mockAxiosInstance.get
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce({ data: { user: { id: 1, username: 'u', email: 'e' } } });
 
-      mockAxiosInstance.get.mockRejectedValue(error);
-
-      await expect(provider.getSelf()).rejects.toThrow('Not Found');
-      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(1);
+      const result = await provider.getSelf();
+      expect(result.id).toBe('1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(2);
     });
   });
 });
