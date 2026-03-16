@@ -17,7 +17,6 @@ const MOCK_CONFIG: Record<string, string> = {
   'clickup.clientId': 'test-client-id',
   'clickup.clientSecret': 'test-client-secret',
   'clickup.redirectUri': 'https://api.example.com/api/v1/integrations/clickup/callback',
-  'clickup.apiUrl': 'https://api.clickup.com/api/v2',
   FRONTEND_URL: 'https://app.example.com',
 };
 

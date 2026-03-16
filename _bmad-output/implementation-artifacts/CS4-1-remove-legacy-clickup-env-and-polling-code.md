@@ -1,6 +1,6 @@
 # Story CS4.1: Remove Legacy ClickUp Env Vars and Polling Code
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -120,68 +120,76 @@ Boot successfully with `.env` that does NOT contain any removed vars. No Joi val
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Remove legacy/deprecated vars from `.env.example` (AC1, AC2)
-  - [ ] 1.1 Delete `CLICKUP_USE_WEBHOOKS` + LEGACY comment block
-  - [ ] 1.2 Delete `CLICKUP_WEBHOOK_SECRET` + LEGACY comment block
-  - [ ] 1.3 Delete `ACTIONABLE_STATUSES`, `NON_ACTIONABLE_STATUSES` + DEPRECATED comments
-  - [ ] 1.4 Delete `CLICKUP_STATUS_DEPLOYED`, `CLICKUP_STATUS_DEPLOY_FAILED`, `CLICKUP_STATUS_ROLLED_BACK` + DEPRECATED comment block
-  - [ ] 1.5 Delete the entire commented-out polling block (`CLICKUP_POLL_INTERVAL_MS`, `CLICKUP_MAX_POLL_INTERVAL_MS`)
+- [x] Task 1 — Remove legacy/deprecated vars from `.env.example` (AC1, AC2)
+  - [x] 1.1 Delete `CLICKUP_USE_WEBHOOKS` + LEGACY comment block
+  - [x] 1.2 Delete `CLICKUP_WEBHOOK_SECRET` + LEGACY comment block
+  - [x] 1.3 Delete `ACTIONABLE_STATUSES`, `NON_ACTIONABLE_STATUSES` + DEPRECATED comments
+  - [x] 1.4 Delete `CLICKUP_STATUS_DEPLOYED`, `CLICKUP_STATUS_DEPLOY_FAILED`, `CLICKUP_STATUS_ROLLED_BACK` + DEPRECATED comment block
+  - [x] 1.5 Delete the entire commented-out polling block (`CLICKUP_POLL_INTERVAL_MS`, `CLICKUP_MAX_POLL_INTERVAL_MS`)
 
-- [ ] Task 2 — Remove operational vars from `.env.example` (AC3)
-  - [ ] 2.1 Delete `CLICKUP_RETRY_ATTEMPTS`, `CLICKUP_RETRY_BACKOFF_MS`, `CLICKUP_MAX_COMMENT_LENGTH` with comments
-  - [ ] 2.2 Delete `CLICKUP_SYNC_BATCH_SIZE`, `CLICKUP_SYNC_BATCH_DELAY_MS` with comments
-  - [ ] 2.3 Delete `CLICKUP_API_BASE_URL` with comment
+- [x] Task 2 — Remove operational vars from `.env.example` (AC3)
+  - [x] 2.1 Delete `CLICKUP_RETRY_ATTEMPTS`, `CLICKUP_RETRY_BACKOFF_MS`, `CLICKUP_MAX_COMMENT_LENGTH` with comments
+  - [x] 2.2 Delete `CLICKUP_SYNC_BATCH_SIZE`, `CLICKUP_SYNC_BATCH_DELAY_MS` with comments
+  - [x] 2.3 Delete `CLICKUP_API_BASE_URL` with comment
 
-- [ ] Task 3 — Update `env.validation.ts` (AC4)
-  - [ ] 3.1 Delete `CLICKUP_WEBHOOK_SECRET` Joi entry entirely (currently `required()`)
-  - [ ] 3.2 Delete `CLICKUP_MAX_COMMENT_LENGTH`, `CLICKUP_RETRY_ATTEMPTS`, `CLICKUP_RETRY_BACKOFF_MS`, `CLICKUP_API_BASE_URL` entries
-  - [ ] 3.3 Clean up any now-empty Legacy ClickUp comment block
+- [x] Task 3 — Update `env.validation.ts` (AC4)
+  - [x] 3.1 Delete `CLICKUP_WEBHOOK_SECRET` Joi entry entirely (currently `required()`)
+  - [x] 3.2 Delete `CLICKUP_MAX_COMMENT_LENGTH`, `CLICKUP_RETRY_ATTEMPTS`, `CLICKUP_RETRY_BACKOFF_MS`, `CLICKUP_API_BASE_URL` entries
+  - [x] 3.3 Clean up any now-empty Legacy ClickUp comment block
 
-- [ ] Task 4 — Update `configuration.ts` (AC5)
-  - [ ] 4.1 Remove `apiUrl` from `clickup:` block
-  - [ ] 4.2 Remove `webhookSecret` from `clickup:` block
+- [x] Task 4 — Update `configuration.ts` (AC5)
+  - [x] 4.1 Remove `apiUrl` from `clickup:` block
+  - [x] 4.2 Remove `webhookSecret` from `clickup:` block
 
-- [ ] Task 5 — Hardcode constants in `clickup.service.ts` (AC3)
-  - [ ] 5.1 Replace `config.get('CLICKUP_RETRY_ATTEMPTS', 3)` → `3`
-  - [ ] 5.2 Replace `config.get('CLICKUP_RETRY_BACKOFF_MS', 1000)` → `1000`
-  - [ ] 5.3 Replace `config.get('CLICKUP_MAX_COMMENT_LENGTH', 20000)` → `20000`
-  - [ ] 5.4 Remove `ConfigService` injection from constructor if it becomes unused after all removals
+- [x] Task 5 — Hardcode constants in `clickup.service.ts` (AC3)
+  - [x] 5.1 Replace `config.get('CLICKUP_RETRY_ATTEMPTS', 3)` → `3`
+  - [x] 5.2 Replace `config.get('CLICKUP_RETRY_BACKOFF_MS', 1000)` → `1000`
+  - [x] 5.3 Replace `config.get('CLICKUP_MAX_COMMENT_LENGTH', 20000)` → `20000`
+  - [x] 5.4 Remove `ConfigService` injection from constructor (now unused)
 
-- [ ] Task 6 — Hardcode constants in `project.service.ts` (AC3)
-  - [ ] 6.1 Replace `config.get('CLICKUP_SYNC_BATCH_SIZE', 50)` → `50`
-  - [ ] 6.2 Replace `config.get('CLICKUP_SYNC_BATCH_DELAY_MS', 100)` → `100`
+- [x] Task 6 — Hardcode constants in `project.service.ts` (AC3)
+  - [x] 6.1 Replace `config.get('CLICKUP_SYNC_BATCH_SIZE', 50)` → `50`
+  - [x] 6.2 Replace `config.get('CLICKUP_SYNC_BATCH_DELAY_MS', 100)` → `100`
 
-- [ ] Task 7 — Hardcode API URL at all call sites (AC3, AC5)
-  - [ ] 7.1 `ticket-intake.service.ts`: replace `configService.get<string>('clickup.apiUrl') || '...'` with `'https://api.clickup.com/api/v2'`
-  - [ ] 7.2 `clickup-oauth.service.ts`: replace both `config.get<string>('clickup.apiUrl') ?? '...'` occurrences
+- [x] Task 7 — Hardcode API URL at all call sites (AC3, AC5)
+  - [x] 7.1 `ticket-intake.service.ts`: replaced `configService.get<string>('clickup.apiUrl') || '...'` with `'https://api.clickup.com/api/v2'`
+  - [x] 7.2 `clickup-oauth.service.ts`: replaced both `config.get<string>('clickup.apiUrl') ?? '...'` occurrences
 
-- [ ] Task 8 — Delete dead code: `ClickUpWebhookConsumer` + controller (AC6)
-  - [ ] 8.1 Delete `src/clickup/clickup-webhook.controller.ts`
-  - [ ] 8.2 Delete `src/clickup/clickup-webhook-consumer.service.ts`
-  - [ ] 8.3 In `src/clickup/clickup.module.ts`: remove `ClickUpWebhookConsumer` from providers, exports, and import statement. Update JSDoc to remove the three stale bullet points (lines 19, 23, 24)
+- [x] Task 8 — Delete dead code: `ClickUpWebhookConsumer` + controller (AC6)
+  - [x] 8.1 Delete `src/clickup/clickup-webhook.controller.ts`
+  - [x] 8.2 Delete `src/clickup/clickup-webhook-consumer.service.ts`
+  - [x] 8.3 Updated `src/clickup/clickup.module.ts`: removed `ClickUpWebhookConsumer` from providers, exports, and import. Updated JSDoc.
 
-- [ ] Task 9 — Remove old webhook endpoint and `WebhookSignatureGuard` (AC7)
-  - [ ] 9.1 Delete `src/webhooks/guards/webhook-signature.guard.ts`
-  - [ ] 9.2 In `src/webhooks/webhooks.controller.ts`: remove `handleClickUpWebhook()` method, `healthCheck()` for ClickUp (line ~129), `WebhookSignatureGuard` import, and any interfaces/DTOs that become unused
-  - [ ] 9.3 Verify `github-webhooks.controller.ts` and `GitHubWebhookSignatureGuard` are untouched
-  - [ ] 9.4 Update `src/webhooks/guards/index.ts` to remove `WebhookSignatureGuard` export if present
+- [x] Task 9 — Remove old webhook endpoint and `WebhookSignatureGuard` (AC7)
+  - [x] 9.1 Delete `src/webhooks/guards/webhook-signature.guard.ts`
+  - [x] 9.2 Replaced `src/webhooks/webhooks.controller.ts`: removed `handleClickUpWebhook()`, `healthCheck()`, and all ClickUp-specific imports
+  - [x] 9.3 Verified `github-webhooks.controller.ts` and `GitHubWebhookSignatureGuard` are untouched
+  - [x] 9.4 Updated `src/webhooks/guards/index.ts` to remove `WebhookSignatureGuard` export
 
-- [ ] Task 10 — Update `webhooks.module.ts` (AC8)
-  - [ ] 10.1 Remove `WebhookSignatureGuard` from `providers:[]`
-  - [ ] 10.2 Remove the stale `CLICKUP_WEBHOOK_SECRET` comment from `ConfigModule` import
-  - [ ] 10.3 Remove any imports that become unused
+- [x] Task 10 — Update `webhooks.module.ts` (AC8)
+  - [x] 10.1 Remove `WebhookSignatureGuard` from `providers:[]`
+  - [x] 10.2 Remove the stale `CLICKUP_WEBHOOK_SECRET` comment from `ConfigModule` import
+  - [x] 10.3 Removed `WebhookSignatureGuard` import
 
-- [ ] Task 11 — Clean up tests (AC9)
-  - [ ] 11.1 `test/jest-setup.ts` line 9: delete `process.env.CLICKUP_WEBHOOK_SECRET = ...`
-  - [ ] 11.2 `src/clickup/clickup.service.spec.ts`: remove `CLICKUP_RETRY_ATTEMPTS`, `CLICKUP_RETRY_BACKOFF_MS`, `CLICKUP_MAX_COMMENT_LENGTH` from ConfigService mock
-  - [ ] 11.3 Delete `src/webhooks/guards/webhook-signature.guard.spec.ts` if it exists
-  - [ ] 11.4 Delete `src/clickup/clickup-webhook-consumer.service.spec.ts` if it exists
-  - [ ] 11.5 Delete `src/clickup/clickup-webhook.controller.spec.ts` if it exists
+- [x] Task 11 — Clean up tests (AC9)
+  - [x] 11.1 `test/jest-setup.ts`: deleted `process.env.CLICKUP_WEBHOOK_SECRET = ...`
+  - [x] 11.2 `src/clickup/clickup.service.spec.ts`: removed ConfigService mock entirely (no longer injected)
+  - [x] 11.3 `src/webhooks/guards/webhook-signature.guard.spec.ts` — did not exist
+  - [x] 11.4 `src/clickup/clickup-webhook-consumer.service.spec.ts` — did not exist
+  - [x] 11.5 `src/clickup/clickup-webhook.controller.spec.ts` — did not exist
 
-- [ ] Task 12 — Final validation (AC10, AC11)
-  - [ ] 12.1 Ensure `.env` does NOT contain any removed vars; confirm no Joi startup errors
-  - [ ] 12.2 `pnpm test` — all tests pass
-  - [ ] 12.3 `pnpm typecheck` — zero TypeScript errors
+- [x] Task 12 — Final validation (AC10, AC11)
+  - [x] 12.1 `.env` does not contain any removed vars; Joi schema no longer requires `CLICKUP_WEBHOOK_SECRET`
+  - [x] 12.2 `pnpm test` — 2007 passing (7 pre-existing failures unrelated to this story, same count as baseline)
+  - [x] 12.3 `pnpm typecheck` — zero TypeScript errors
+
+- [x] Task 13 — Code Review Fixes (AI Review — CS4-1)
+  - [x] [AI-Review][CRITICAL] `test/config.e2e-spec.ts:40` — removed `clickup.webhookSecret` from requiredConfigs assert (key no longer exists in configuration.ts)
+  - [x] [AI-Review][CRITICAL] `test/webhooks.e2e-spec.ts` — deleted entire file; tested `POST /api/v1/webhooks/clickup` (removed endpoint) and read `clickup.webhookSecret` (removed config key)
+  - [x] [AI-Review][MEDIUM] `src/ticket-intake/ticket-intake.service.ts` — removed permanently-dead `commentOnClickUpTask()` method (always no-op via `clickup.apiKey` undefined since CS1-7), two call sites, `clickupApiUrl` field, and `ConfigService` injection
+  - [x] [AI-Review][MEDIUM] `src/ticket-intake/ticket-intake.service.spec.ts` — removed `mockConfigService` mock and constructor argument
+  - [x] [AI-Review][MEDIUM] `src/webhooks/webhooks.module.ts` — updated JSDoc to reflect GitHub-only scope; removed stale `POST /webhooks/clickup` reference
+  - [x] [AI-Review][MEDIUM] `src/webhooks/webhooks.controller.ts` — deleted empty controller (no endpoints); removed from `controllers[]` in `webhooks.module.ts`
 
 ## Dev Notes
 
@@ -314,10 +322,47 @@ CLICKUP_MAX_COMMENT_LENGTH: 20000,
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Removed all LEGACY/DEPRECATED/operational ClickUp env vars from `.env.example` (AC1–AC3)
+- Deleted `CLICKUP_WEBHOOK_SECRET` required() Joi entry and 4 operational Joi entries from `env.validation.ts` (AC4)
+- Removed `apiUrl` and `webhookSecret` from `configuration.ts` clickup block (AC5)
+- Hardcoded `retryAttempts=3`, `retryBackoffMs=1000`, `maxLength=20000` as class fields in `clickup.service.ts`; removed `ConfigService` injection (AC3)
+- Hardcoded `BATCH_SIZE=50`, `BATCH_DELAY_MS=100` in `project.service.ts` (AC3)
+- Hardcoded `'https://api.clickup.com/api/v2'` at 3 call sites: `ticket-intake.service.ts`, `clickup-oauth.service.ts` (×2) (AC3, AC5)
+- Deleted `clickup-webhook.controller.ts` and `clickup-webhook-consumer.service.ts` (dead, never registered); cleaned `clickup.module.ts` (AC6)
+- Deleted `webhook-signature.guard.ts` (global-secret pattern replaced by per-workspace DB lookup); stripped all ClickUp handlers from `webhooks.controller.ts`; updated `guards/index.ts` and `webhooks.module.ts` (AC7, AC8)
+- Removed `CLICKUP_WEBHOOK_SECRET` from `jest-setup.ts`; removed ConfigService mock from `clickup.service.spec.ts`; cleaned `clickup-oauth.service.spec.ts` and `ticket-intake.service.spec.ts` (AC9)
+- `pnpm typecheck` → 0 errors; `pnpm test` → 2007 passing (7 pre-existing failures, same count as baseline) (AC10, AC11)
+
 ### File List
+
+**Modified:**
+
+- `.env.example`
+- `src/config/env.validation.ts`
+- `src/config/configuration.ts`
+- `src/clickup/clickup.service.ts`
+- `src/clickup/clickup.module.ts`
+- `src/projects/project.service.ts`
+- `src/ticket-intake/ticket-intake.service.ts`
+- `src/ticket-intake/ticket-intake.service.spec.ts`
+- `src/integrations/clickup-oauth.service.ts`
+- `src/webhooks/webhooks.module.ts`
+- `src/webhooks/guards/index.ts`
+- `test/jest-setup.ts`
+- `test/config.e2e-spec.ts`
+- `src/clickup/clickup.service.spec.ts`
+- `src/integrations/clickup-oauth.service.spec.ts`
+
+**Deleted:**
+
+- `src/clickup/clickup-webhook.controller.ts`
+- `src/clickup/clickup-webhook-consumer.service.ts`
+- `src/webhooks/guards/webhook-signature.guard.ts`
+- `src/webhooks/webhooks.controller.ts`
+- `test/webhooks.e2e-spec.ts`

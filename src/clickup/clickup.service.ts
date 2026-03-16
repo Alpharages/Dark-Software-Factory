@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { SentryService } from '@/common/sentry';
 import { AxiosInstance, AxiosError } from 'axios';
 
@@ -52,15 +51,10 @@ export class ClickUpService {
   private readonly logger = new Logger(ClickUpService.name);
   private readonly client: AxiosInstance | null;
   private readonly statusNameToIdCache = new Map<string, { id: string; expiresAt: Date }>();
-  private readonly retryAttempts: number;
-  private readonly retryBackoffMs: number;
+  private readonly retryAttempts = 3;
+  private readonly retryBackoffMs = 1000;
 
-  constructor(
-    private readonly config: ConfigService,
-    private readonly sentry: SentryService,
-  ) {
-    this.retryAttempts = this.config.get<number>('CLICKUP_RETRY_ATTEMPTS', 3);
-    this.retryBackoffMs = this.config.get<number>('CLICKUP_RETRY_BACKOFF_MS', 1000);
+  constructor(private readonly sentry: SentryService) {
     // OAuth-only mode (CS0-5): CLICKUP_API_KEY removed. All ClickUp calls must use
     // PMProviderFactory → ClickUpProvider with per-project OAuth tokens.
     this.client = null;
@@ -152,7 +146,7 @@ export class ClickUpService {
   ): Promise<boolean> {
     this.assertClient();
     const correlationId = options?.correlationId || 'clickup-add-comment';
-    const maxLength = this.config.get<number>('CLICKUP_MAX_COMMENT_LENGTH', 20000);
+    const maxLength = 20000;
 
     // Truncate comment if too long
     const truncatedComment = comment.length > maxLength ? comment.substring(0, maxLength) : comment;

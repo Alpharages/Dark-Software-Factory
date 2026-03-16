@@ -367,7 +367,7 @@ export class ProjectService {
    * Story 20.1: Now uses provider-agnostic flow - publishes ITaskEvent to queue
    *
    * Uses batch processing with pagination to prevent memory issues with large projects.
-   * Configurable via CLICKUP_SYNC_BATCH_SIZE env var (default: 50).
+   * Batch size: 50 tasks, delay: 100ms between batches.
    */
   async syncFromClickUp(id: string): Promise<Project & { syncedTasksCount: number }> {
     const project = await this.findOne(id);
@@ -376,9 +376,8 @@ export class ProjectService {
       throw new BadRequestException('Project is not linked to ClickUp');
     }
 
-    // Configurable batch size to prevent memory issues
-    const BATCH_SIZE = this.config.get<number>('CLICKUP_SYNC_BATCH_SIZE', 50);
-    const BATCH_DELAY_MS = this.config.get<number>('CLICKUP_SYNC_BATCH_DELAY_MS', 100);
+    const BATCH_SIZE = 50;
+    const BATCH_DELAY_MS = 100;
 
     try {
       // 1. Sync List Details

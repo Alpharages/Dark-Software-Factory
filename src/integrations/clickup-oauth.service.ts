@@ -47,11 +47,18 @@ export class ClickUpOAuthService {
     const clientId = this.config.get<string>('clickup.clientId') ?? '';
     const clientSecret = this.config.get<string>('clickup.clientSecret') ?? '';
     const redirectUri = this.config.get<string>('clickup.redirectUri') ?? '';
-    const apiUrl = this.config.get<string>('clickup.apiUrl') ?? 'https://api.clickup.com/api/v2';
-
-    const response = await axios.post<ClickUpTokenResponse>(`${apiUrl}/oauth/token`, null, {
-      params: { client_id: clientId, client_secret: clientSecret, code, redirect_uri: redirectUri },
-    });
+    const response = await axios.post<ClickUpTokenResponse>(
+      'https://api.clickup.com/api/v2/oauth/token',
+      null,
+      {
+        params: {
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+          redirect_uri: redirectUri,
+        },
+      },
+    );
 
     if (!response.data.access_token) {
       throw new IntegrationAuthException(
@@ -69,15 +76,14 @@ export class ClickUpOAuthService {
     workspace_id: string;
     workspace_name: string;
   }> {
-    const apiUrl = this.config.get<string>('clickup.apiUrl') ?? 'https://api.clickup.com/api/v2';
-
     try {
       const provider = new ClickUpProvider(accessToken);
       const [self, teamsResponse] = await Promise.all([
         provider.getSelf(),
-        axios.get<{ teams: Array<{ id: number; name: string }> }>(`${apiUrl}/team`, {
-          headers: { Authorization: accessToken },
-        }),
+        axios.get<{ teams: Array<{ id: number; name: string }> }>(
+          'https://api.clickup.com/api/v2/team',
+          { headers: { Authorization: accessToken } },
+        ),
       ]);
 
       const teams = teamsResponse.data.teams;

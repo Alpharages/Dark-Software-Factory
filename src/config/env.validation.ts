@@ -108,12 +108,7 @@ export const envValidationSchema = Joi.object({
     }),
 
   // ClickUp Integration (Legacy — CLICKUP_API_KEY removed CS1-7; OAuth via ProjectIntegration CS0-5)
-  // CLICKUP_API_KEY was removed — no longer validated at startup
   // OAuth client ID/secret/redirect remain for ClickUp OAuth app flow:
-  CLICKUP_WEBHOOK_SECRET: Joi.string().min(16).required().messages({
-    'any.required': 'CLICKUP_WEBHOOK_SECRET is required for webhook signature verification',
-    'string.min': 'CLICKUP_WEBHOOK_SECRET must be at least 16 characters',
-  }),
   CLICKUP_CLIENT_ID: Joi.string().optional().allow(''),
   CLICKUP_CLIENT_SECRET: Joi.string().optional().allow(''),
   CLICKUP_REDIRECT_URI: Joi.string().uri().optional().allow(''),
@@ -213,12 +208,6 @@ export const envValidationSchema = Joi.object({
   QG_TESTING_TIMEOUT_MS: Joi.number().integer().min(30000).max(900000).default(300000), // 30s-15min
   QG_COVERAGE_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
   QG_SECURITY_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10min
-
-  // Story 4.6: Deployment Status Synchronization (optional - has sensible defaults)
-  CLICKUP_MAX_COMMENT_LENGTH: Joi.number().integer().min(1000).max(50000).default(20000),
-  CLICKUP_RETRY_ATTEMPTS: Joi.number().integer().min(1).max(10).default(3),
-  CLICKUP_RETRY_BACKOFF_MS: Joi.number().integer().min(100).max(5000).default(1000),
-  CLICKUP_API_BASE_URL: Joi.string().uri().default('https://api.clickup.com/api/v2'),
 
   // Story 13.4: Self-Healing Configuration
   SELF_HEALING_ENABLED: Joi.boolean()

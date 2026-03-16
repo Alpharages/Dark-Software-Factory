@@ -33,12 +33,7 @@ describe('Configuration (e2e)', () => {
   });
 
   it('should validate required configuration exists', () => {
-    const requiredConfigs = [
-      'database.url',
-      'auth.jwtSecret',
-      'github.token',
-      'clickup.webhookSecret',
-    ];
+    const requiredConfigs = ['database.url', 'auth.jwtSecret', 'github.token'];
 
     requiredConfigs.forEach((key) => {
       const value = configService.get(key);

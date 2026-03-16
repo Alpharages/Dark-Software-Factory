@@ -5,10 +5,9 @@ import {
   makeCounterProvider,
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
-import { WebhooksController } from './webhooks.controller';
 import { GitHubWebhooksController } from './github-webhooks.controller';
 import { WebhooksService } from './webhooks.service';
-import { WebhookSignatureGuard, GitHubWebhookSignatureGuard } from './guards';
+import { GitHubWebhookSignatureGuard } from './guards';
 import { WebhookDeduplicationService } from './services';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
@@ -20,20 +19,15 @@ import { FileLocksModule } from '@/file-locks/file-locks.module';
 /**
  * Webhooks Module
  *
- * Handles incoming webhook events from ClickUp.
- *
- * Per architecture.md:
- * - webhooks/ - ClickUp webhook ingestion (FR56-59)
- * - webhooks.controller.ts - POST /webhooks/clickup
- * - webhooks.service.ts - Parse and validate webhook payloads
- * - Rate limit: 100 requests/minute (handled by global throttler)
+ * Handles incoming webhook events from GitHub.
+ * ClickUp webhooks are handled by PmWebhookModule (CS0-9, per-workspace HMAC verification).
  *
  * Per NFR-O5: System must expose Prometheus-compatible metrics
  * Metrics are provided by the global AppMetricsModule
  */
 @Module({
   imports: [
-    ConfigModule, // Required for WebhookSignatureGuard (CLICKUP_WEBHOOK_SECRET)
+    ConfigModule,
     DatabaseModule, // For audit logging
     RabbitMQModule, // For queue publishing
     // Story 20.2: Import TicketIntakeModule for unified StatusEvaluationService
@@ -42,10 +36,9 @@ import { FileLocksModule } from '@/file-locks/file-locks.module';
     AppMetricsModule, // For Prometheus metrics
     FileLocksModule, // Story 12.3: Release locks on PR merge
   ],
-  controllers: [WebhooksController, GitHubWebhooksController],
+  controllers: [GitHubWebhooksController],
   providers: [
     WebhooksService,
-    WebhookSignatureGuard,
     GitHubWebhookSignatureGuard,
     // Story 20.1: Webhook reliability services
     WebhookDeduplicationService,

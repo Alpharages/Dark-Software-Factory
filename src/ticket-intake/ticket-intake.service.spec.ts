@@ -17,7 +17,6 @@ describe('TicketIntakeService', () => {
     execution: { findFirst: jest.Mock }; // Story 20.1: For idempotency check
   };
   let mockRabbitMQPublisher: { publishToQueue: jest.Mock };
-  let mockConfigService: { get: jest.Mock };
   let mockValidator: { validate: jest.Mock; formatErrorsForComment: jest.Mock };
   let mockQualityService: { calculateScore: jest.Mock };
   let mockIntakeCounter: { inc: jest.Mock };
@@ -94,14 +93,6 @@ describe('TicketIntakeService', () => {
       publishToQueue: jest.fn().mockResolvedValue(true),
     };
 
-    mockConfigService = {
-      get: jest.fn().mockImplementation((key: string) => {
-        if (key === 'clickup.apiUrl') return 'https://api.clickup.com/api/v2';
-        if (key === 'clickup.apiKey') return '';
-        return null;
-      }),
-    };
-
     const validResult = new ValidationResultDto();
     validResult.isValid = true;
     validResult.errors = [];
@@ -161,7 +152,6 @@ describe('TicketIntakeService', () => {
     service = new TicketIntakeService(
       mockPrisma as never,
       mockRabbitMQPublisher as never,
-      mockConfigService as never,
       mockValidator as unknown as TicketValidatorService,
       mockQualityService as unknown as TicketQualityService,
       mockProjectService as never, // Story 4.9

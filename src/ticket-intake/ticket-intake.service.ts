@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Counter, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { TicketStatus } from '@/prisma/client';
@@ -48,12 +47,10 @@ const METRICS = {
 @Injectable()
 export class TicketIntakeService {
   private readonly logger = new Logger(TicketIntakeService.name);
-  private readonly clickupApiUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly rabbitMQPublisher: RabbitMQPublisherService,
-    private readonly configService: ConfigService,
     private readonly validator: TicketValidatorService,
     private readonly qualityService: TicketQualityService,
     // Story 4.9: Project Mapping
@@ -75,10 +72,7 @@ export class TicketIntakeService {
     private readonly waitingCounter: Counter<string>,
     @InjectMetric(METRICS.CIRCULAR_DEPENDENCIES)
     private readonly circularCounter: Counter<string>,
-  ) {
-    this.clickupApiUrl =
-      this.configService.get<string>('clickup.apiUrl') || 'https://api.clickup.com/api/v2';
-  }
+  ) {}
 
   /**
    * Story 20.1: Backward-compatible adapter
@@ -315,19 +309,6 @@ export class TicketIntakeService {
           },
         });
 
-        // Comment on ClickUp with ETA (provider-specific, only for ClickUp)
-        if (event.providerType === 'CLICKUP') {
-          const etaMsg = depCheck.estimatedETA
-            ? `Waiting for ${depCheck.unresolvedDependencies.length} dependencies. Estimated start: ${depCheck.estimatedETA.toLocaleString()}`
-            : `Waiting for ${depCheck.unresolvedDependencies.length} dependencies.`;
-
-          await this.commentOnClickUpTask(
-            parsed.clickupTaskId,
-            `⏳ **Ticket Waiting:** ${etaMsg}`,
-            correlationId,
-          );
-        }
-
         return {
           success: false,
           status: TicketStatus.WAITING,
@@ -524,13 +505,6 @@ export class TicketIntakeService {
       },
     });
 
-    // Comment on ClickUp task with validation errors
-    await this.commentOnClickUpTask(
-      ticket.clickupTaskId,
-      this.validator.formatErrorsForComment(validation),
-      correlationId,
-    );
-
     // Log audit entry
     await this.logAudit(
       ticket.clickupTaskId,
@@ -612,44 +586,6 @@ export class TicketIntakeService {
     );
 
     this.logger.debug(`[${correlationId}] Routed ticket ${ticketId} to ${QUEUE_NAMES.AI_ROUTING}`);
-  }
-
-  /**
-   * Post comment on ClickUp task
-   */
-  private async commentOnClickUpTask(
-    taskId: string,
-    comment: string,
-    correlationId: string,
-  ): Promise<void> {
-    // CS1-7: clickup.apiKey removed from config — returns undefined → '' → falsy guard triggers
-    const apiKey = this.configService.get<string>('clickup.apiKey') || '';
-    if (!apiKey) {
-      this.logger.warn(`[${correlationId}] ClickUp API key not configured - skipping comment`);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${this.clickupApiUrl}/task/${taskId}/comment`, {
-        method: 'POST',
-        headers: {
-          Authorization: apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          comment_text: comment,
-          notify_all: true,
-        }),
-      });
-
-      if (!response.ok) {
-        this.logger.error(`[${correlationId}] ClickUp comment failed: ${response.status}`);
-      } else {
-        this.logger.debug(`[${correlationId}] Posted validation comment to ClickUp task ${taskId}`);
-      }
-    } catch (_error) {
-      this.logger.error(`[${correlationId}] ClickUp API error: ${(_error as Error).message}`);
-    }
   }
 
   /**

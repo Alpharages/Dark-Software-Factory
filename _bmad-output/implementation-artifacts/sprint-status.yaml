@@ -345,7 +345,7 @@ development_status:
   epic-CS2-retrospective: done
 
   # EPIC CS4 - LEGACY CLICKUP CLEANUP
-  epic-CS4: in-progress
+  epic-CS4: done
   epic-CS4-name: 'Legacy ClickUp Env Var & Dead Code Cleanup'
   epic-CS4-phase: 'Cleanup Sprint'
   epic-CS4-priority: medium
@@ -354,10 +354,10 @@ development_status:
   epic-CS4-source: 'epics-clickup-smart-sync.md'
   epic-CS4-notes: 'Remove all env vars labeled LEGACY/DEPRECATED in .env.example, eliminate global CLICKUP_WEBHOOK_SECRET guard, hardcode operational constants. CS0-CS3 completed — OAuth + per-project config is fully in place.'
   CS4-1-remove-legacy-clickup-env-and-polling-code:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 3
-    notes: 'Remove CLICKUP_USE_WEBHOOKS, CLICKUP_WEBHOOK_SECRET (global), ACTIONABLE_STATUSES, NON_ACTIONABLE_STATUSES, CLICKUP_STATUS_*, polling interval vars, and operational vars with hardcoded defaults. Remove WebhookSignatureGuard global-secret pattern. Update jest-setup + service specs.'
+    notes: 'Remove CLICKUP_USE_WEBHOOKS, CLICKUP_WEBHOOK_SECRET (global), ACTIONABLE_STATUSES, NON_ACTIONABLE_STATUSES, CLICKUP_STATUS_*, polling interval vars, and operational vars with hardcoded defaults. Remove WebhookSignatureGuard global-secret pattern. Update jest-setup + service specs. Code review (2026-03-16): 2C+3M fixed — deleted orphaned e2e specs (webhooks.e2e-spec.ts, config.e2e-spec.ts webhookSecret assert), removed permanently-dead commentOnClickUpTask() + ConfigService injection from ticket-intake.service.ts, updated webhooks.module.ts JSDoc, deleted empty WebhooksController.'
   epic-CS4-retrospective: optional
 
   # EPIC CS3 - ACTIONABLE SYNC FAILURE HANDLING & DASHBOARD VISIBILITY
@@ -640,7 +640,7 @@ epic_status:
     notes: 'Fix silent 4xx swallowing. pm_synced field on Ticket. Actionable failure comments. SYNC_PENDING amber dashboard state.'
   epic-CS4:
     name: 'Legacy ClickUp Env Var & Dead Code Cleanup'
-    status: 'in-progress'
+    status: 'done'
     priority: 'medium'
     source: 'epics-clickup-smart-sync.md'
     stories: 1

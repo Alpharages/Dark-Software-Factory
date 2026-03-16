@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { ClickUpService } from './clickup.service';
 import { SentryService } from '../common/sentry/sentry.service';
 
@@ -19,19 +18,6 @@ describe('ClickUpService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClickUpService,
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn((key: string, defaultValue?: any) => {
-              const config: Record<string, any> = {
-                CLICKUP_RETRY_ATTEMPTS: 3,
-                CLICKUP_RETRY_BACKOFF_MS: 100, // Faster for tests
-                CLICKUP_MAX_COMMENT_LENGTH: 20000,
-              };
-              return config[key] ?? defaultValue;
-            }),
-          },
-        },
         {
           provide: SentryService,
           useValue: {
@@ -56,17 +42,13 @@ describe('ClickUpService', () => {
       // Service is always in OAuth-only mode — no API key init
       // Client is injected directly in tests via (service as any).client
       expect((service as any).retryAttempts).toBe(3);
-      expect((service as any).retryBackoffMs).toBe(100);
+      expect((service as any).retryBackoffMs).toBe(1000);
     });
 
     it('should throw Error when calling methods without a client', async () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           ClickUpService,
-          {
-            provide: ConfigService,
-            useValue: { get: jest.fn().mockReturnValue(undefined) },
-          },
           { provide: SentryService, useValue: { captureException: jest.fn() } },
         ],
       }).compile();

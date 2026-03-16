@@ -70,8 +70,6 @@ export default () => {
     // ClickUp Integration
     clickup: {
       // CLICKUP_API_KEY removed in CS1-7 — auth via ProjectIntegration.access_token (CS0-5)
-      apiUrl: process.env.CLICKUP_API_BASE_URL || 'https://api.clickup.com/api/v2',
-      webhookSecret: process.env.CLICKUP_WEBHOOK_SECRET || '',
       clientId: process.env.CLICKUP_CLIENT_ID || '',
       clientSecret: process.env.CLICKUP_CLIENT_SECRET || '',
       redirectUri: process.env.CLICKUP_REDIRECT_URI || '',
