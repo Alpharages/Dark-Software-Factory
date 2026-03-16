@@ -71,6 +71,12 @@ export class TicketCountsDto {
 
   @ApiProperty()
   awaiting_approval!: number;
+
+  @ApiProperty({
+    description: 'Tickets with execution COMPLETED/DEPLOYED but pm_synced=false',
+    default: 0,
+  })
+  sync_pending!: number;
 }
 
 export class ProviderDistributionItemDto {
@@ -172,10 +178,12 @@ export class DashboardSummaryDto {
   qa_first_pass_rate!: number;
 
   @ApiProperty({
-    description: 'AI provider usage distribution for recent routing decisions',
     type: [ProviderDistributionItemDto],
   })
   provider_distribution!: ProviderDistributionItemDto[];
+
+  @ApiProperty({ description: 'Total tickets completed but not yet synced to PM tool', default: 0 })
+  sync_pending_tickets!: number;
 }
 
 export class FinancialSummaryDto {

@@ -344,8 +344,24 @@ development_status:
     notes: 'Post-fill: PMVerificationCommentService.postVerificationComment() with verification summary — what was auto-filled, what was inferred, what needs manual review. Integrated into DeploymentStatusSyncService. Code review (2026-03-15): 2H+4M fixed — try/catch wrapper around CS2-4 block in syncToClickUp, task checkboxes corrected, 5 undocumented files added to File List (DeploymentStatusSync rename cascade), T-V7/T-V10 tests added, @/prisma/client import fixed. All 36 tests green (15 service + 21 DSS).'
   epic-CS2-retrospective: done
 
+  # EPIC CS4 - LEGACY CLICKUP CLEANUP
+  epic-CS4: in-progress
+  epic-CS4-name: 'Legacy ClickUp Env Var & Dead Code Cleanup'
+  epic-CS4-phase: 'Cleanup Sprint'
+  epic-CS4-priority: medium
+  epic-CS4-dependencies: 'Epic CS0, CS1, CS2, CS3'
+  epic-CS4-estimated_effort: '1 day'
+  epic-CS4-source: 'epics-clickup-smart-sync.md'
+  epic-CS4-notes: 'Remove all env vars labeled LEGACY/DEPRECATED in .env.example, eliminate global CLICKUP_WEBHOOK_SECRET guard, hardcode operational constants. CS0-CS3 completed — OAuth + per-project config is fully in place.'
+  CS4-1-remove-legacy-clickup-env-and-polling-code:
+    status: ready-for-dev
+    effort: '1 day'
+    story_points: 3
+    notes: 'Remove CLICKUP_USE_WEBHOOKS, CLICKUP_WEBHOOK_SECRET (global), ACTIONABLE_STATUSES, NON_ACTIONABLE_STATUSES, CLICKUP_STATUS_*, polling interval vars, and operational vars with hardcoded defaults. Remove WebhookSignatureGuard global-secret pattern. Update jest-setup + service specs.'
+  epic-CS4-retrospective: optional
+
   # EPIC CS3 - ACTIONABLE SYNC FAILURE HANDLING & DASHBOARD VISIBILITY
-  epic-CS3: in-progress
+  epic-CS3: done
   epic-CS3-name: 'Actionable Sync Failure Handling & Dashboard Visibility'
   epic-CS3-phase: 'New Feature Sprint'
   epic-CS3-priority: high
@@ -369,10 +385,10 @@ development_status:
     story_points: 5
     notes: 'On permanent sync failure: IPMProvider.addComment() with actionable message listing exactly which fields need manual action + deep link to ClickUp task.'
   CS3-4-sync-pending-dashboard-state:
-    status: ready-for-dev
+    status: done
     effort: '3 days'
     story_points: 5
-    notes: 'SYNC_PENDING amber dashboard state distinct from red FAILED. Socket.IO pm-sync-failed event. Frontend banner on affected tickets. Ultimate context engine analysis completed - comprehensive developer guide created.'
+    notes: 'SYNC_PENDING amber dashboard state. Socket.IO pm-sync-failed event. Frontend badge + toast. Code review fixed: emission guard (ticketProjectId-only check), @/ import alias, separate toast useEffect in Dashboard, animate-pulse + ticket count on badge, T-SD1–T-SD3 labeled tests, ApiProperty descriptions.'
   epic-CS3-retrospective: optional
 
   # EPIC 27 - PLATFORM POLISH, GLOBAL UX & MOBILE NAVIGATION
@@ -615,13 +631,22 @@ epic_status:
     notes: 'Required field pre-check before status push. Factual auto-fill + Claude-inferred fill. Verification comment posted to task.'
   epic-CS3:
     name: 'Actionable Sync Failure Handling & Dashboard Visibility'
-    status: 'in-progress'
+    status: 'done'
     priority: 'high'
     source: 'epics-clickup-smart-sync.md'
     stories: 4
     estimated_effort: '8 days'
     dependencies: 'epic-CS0'
     notes: 'Fix silent 4xx swallowing. pm_synced field on Ticket. Actionable failure comments. SYNC_PENDING amber dashboard state.'
+  epic-CS4:
+    name: 'Legacy ClickUp Env Var & Dead Code Cleanup'
+    status: 'in-progress'
+    priority: 'medium'
+    source: 'epics-clickup-smart-sync.md'
+    stories: 1
+    estimated_effort: '1 day'
+    dependencies: 'epic-CS0, epic-CS1, epic-CS2, epic-CS3'
+    notes: 'Remove LEGACY/DEPRECATED env vars from .env.example plus associated code. Global CLICKUP_WEBHOOK_SECRET guard replaced by per-workspace DB lookup. Operational vars hardcoded as constants.'
   epic-15:
     name: 'v3 Configuration & Production Rollout'
     status: 'contexted'

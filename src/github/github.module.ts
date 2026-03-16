@@ -37,6 +37,7 @@ import { makeCounterProvider, makeHistogramProvider } from '@willsoto/nestjs-pro
 import { ExecutionModule } from '../execution/execution.module';
 import { EncryptionModule } from '../common/encryption/encryption.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { RealtimeModule } from '@/realtime/realtime.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     AIDecisionLoggerModule,
     EncryptionModule,
     IntegrationsModule,
+    RealtimeModule,
     forwardRef(() => ExecutionModule),
   ],
   controllers: [GitHubAuthFlowController],

@@ -104,13 +104,14 @@ describe('PmDashboardService', () => {
         {
           id: 'p1',
           name: 'Project 1',
+          client_name: 'Client A',
           pm_id: 'pm-1',
           status: 'active',
           updated_at: new Date(),
           created_at: new Date(),
           tickets: [
-            { id: 't1', status: 'AI_PROCESSING', updated_at: new Date() },
-            { id: 't2', status: 'DEPLOYED', updated_at: new Date() },
+            { status: 'AI_PROCESSING', pm_synced: true, updated_at: new Date() },
+            { status: 'DEPLOYED', pm_synced: true, updated_at: new Date() },
           ],
         },
       ];
@@ -125,6 +126,91 @@ describe('PmDashboardService', () => {
       expect(result.data[0].tickets.in_progress).toBe(1);
       expect(result.data[0].tickets.completed).toBe(1);
       expect(result.pagination.total).toBe(1);
+    });
+
+    it('T-SD1: should return sync_pending=1 for COMPLETED ticket with pm_synced=false', async () => {
+      mockPrismaService.project.findMany.mockResolvedValue([
+        {
+          id: 'p1',
+          name: 'Project 1',
+          client_name: 'Client A',
+          pm_id: 'pm-1',
+          status: 'active',
+          updated_at: new Date(),
+          created_at: new Date(),
+          tickets: [{ status: 'COMPLETED', pm_synced: false, updated_at: new Date() }],
+        },
+      ]);
+      mockPrismaService.project.count.mockResolvedValue(1);
+
+      const result = await service.getProjects('pm-1', 'PM', {});
+
+      expect(result.data[0].tickets.sync_pending).toBe(1);
+    });
+
+    it('T-SD2: should return sync_pending=0 for COMPLETED ticket with pm_synced=true', async () => {
+      mockPrismaService.project.findMany.mockResolvedValue([
+        {
+          id: 'p1',
+          name: 'Project 1',
+          client_name: 'Client A',
+          pm_id: 'pm-1',
+          status: 'active',
+          updated_at: new Date(),
+          created_at: new Date(),
+          tickets: [{ status: 'COMPLETED', pm_synced: true, updated_at: new Date() }],
+        },
+      ]);
+      mockPrismaService.project.count.mockResolvedValue(1);
+
+      const result = await service.getProjects('pm-1', 'PM', {});
+
+      expect(result.data[0].tickets.sync_pending).toBe(0);
+    });
+
+    it('T-SD3: should exclude non-terminal status tickets from sync_pending even when pm_synced=false', async () => {
+      mockPrismaService.project.findMany.mockResolvedValue([
+        {
+          id: 'p1',
+          name: 'Project 1',
+          client_name: 'Client A',
+          pm_id: 'pm-1',
+          status: 'active',
+          updated_at: new Date(),
+          created_at: new Date(),
+          tickets: [{ status: 'AI_PROCESSING', pm_synced: false, updated_at: new Date() }],
+        },
+      ]);
+      mockPrismaService.project.count.mockResolvedValue(1);
+
+      const result = await service.getProjects('pm-1', 'PM', {});
+
+      expect(result.data[0].tickets.sync_pending).toBe(0);
+    });
+
+    it('should calculate sync_pending count across mixed ticket states', async () => {
+      mockPrismaService.project.findMany.mockResolvedValue([
+        {
+          id: 'p1',
+          name: 'Project 1',
+          client_name: 'Client A',
+          pm_id: 'pm-1',
+          status: 'active',
+          updated_at: new Date(),
+          created_at: new Date(),
+          tickets: [
+            { status: 'COMPLETED', pm_synced: false, updated_at: new Date() }, // counted
+            { status: 'DEPLOYED', pm_synced: false, updated_at: new Date() }, // counted
+            { status: 'AI_PROCESSING', pm_synced: false, updated_at: new Date() }, // excluded: non-terminal
+            { status: 'DEPLOYED', pm_synced: true, updated_at: new Date() }, // excluded: synced
+          ],
+        },
+      ]);
+      mockPrismaService.project.count.mockResolvedValue(1);
+
+      const result = await service.getProjects('pm-1', 'PM', {});
+
+      expect(result.data[0].tickets.sync_pending).toBe(2);
     });
 
     it('should filter by pm_id for PM role', async () => {
@@ -187,6 +273,7 @@ describe('PmDashboardService', () => {
         { provider: 'CLAUDE_CODE', percentage: 60, count: 6 },
         { provider: 'CURSOR_HEADLESS', percentage: 40, count: 4 },
       ]);
+      mockPrismaService.ticket.count.mockResolvedValue(5); // sync_pending_tickets
 
       const result = await service.getSummary('pm-1', 'PM');
 
@@ -195,6 +282,7 @@ describe('PmDashboardService', () => {
       expect(result.total_tickets).toBe(2);
       expect(result.completed_tickets).toBe(1);
       expect(result.in_progress_tickets).toBe(1);
+      expect(result.sync_pending_tickets).toBe(5);
 
       // AI Execution KPI assertions
       expect(result.success_rate).toBeCloseTo(0.8); // 8/10

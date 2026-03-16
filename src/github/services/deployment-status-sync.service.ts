@@ -16,6 +16,7 @@ import {
 } from '@/integrations/pm-field-auto-fill.service';
 import { PMVerificationCommentService } from '@/integrations/pm-verification-comment.service';
 import { PMActionableFailureCommentService } from '@/integrations/pm-actionable-failure-comment.service';
+import { RealtimeService } from '@/realtime/realtime.service';
 import { ProjectIntegration } from '@/prisma/client';
 import { NormalizedField } from '@/integrations/providers/dto/normalized-field.dto';
 import { PMProviderClientError } from '@/integrations/providers/pm-provider-client.error';
@@ -46,6 +47,7 @@ export class DeploymentStatusSyncService {
     private readonly pmAutoFillService: PMFieldAutoFillService,
     private readonly pmVerificationCommentService: PMVerificationCommentService,
     private readonly pmFailureCommentService: PMActionableFailureCommentService,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   /**
@@ -72,6 +74,7 @@ export class DeploymentStatusSyncService {
     let integration: ProjectIntegration | null = null;
     let targetStatus: string | undefined;
     let lastMissingFields: NormalizedField[] = [];
+    let ticketProjectId: string | undefined;
 
     try {
       this.logger.log('Starting ClickUp deployment sync', {
@@ -131,8 +134,8 @@ export class DeploymentStatusSyncService {
       if (!typedDeployment.github_push) {
         this.logger.warn('Deployment missing github_push relation, skipping ClickUp sync', {
           deploymentId,
-          correlationId: finalCorrelationId,
         });
+
         return; // Graceful skip
       }
 
@@ -153,6 +156,7 @@ export class DeploymentStatusSyncService {
 
       ticketInternalId = execution.ticket.id;
       ticketClickupId = execution.ticket.clickup_task_id;
+      ticketProjectId = execution.ticket.project_id;
 
       const ticketId = execution.ticket.clickup_task_id;
 
@@ -349,6 +353,23 @@ export class DeploymentStatusSyncService {
           );
         }
 
+        // CS3-4: Emit pm-sync-failed Socket.IO event (best-effort)
+        try {
+          if (ticketProjectId) {
+            this.realtimeService.emitToRole('PM', 'pm-sync-failed', {
+              ticketId: ticketClickupId,
+              projectId: ticketProjectId,
+              provider: 'CLICKUP',
+              reason: 'ClickUp status update returned false — graceful degradation',
+              missingFields: lastMissingFields,
+            });
+          }
+        } catch (_socketErr) {
+          this.logger.warn(
+            `[${finalCorrelationId}] CS3-4: unexpected error emitting pm-sync-failed event (soft failure path)`,
+          );
+        }
+
         return;
       }
 
@@ -489,6 +510,23 @@ export class DeploymentStatusSyncService {
             `[${finalCorrelationId}] CS3-3: actionable failure comment failed (hard failure): ${errMsg}`,
           );
         }
+      }
+
+      // CS3-4: Emit pm-sync-failed Socket.IO event (best-effort, exception path)
+      try {
+        if (ticketProjectId) {
+          this.realtimeService.emitToRole('PM', 'pm-sync-failed', {
+            ticketId: ticketClickupId,
+            projectId: ticketProjectId,
+            provider: 'CLICKUP',
+            reason: _error instanceof Error ? _error.message : 'Unknown exception',
+            missingFields: [],
+          });
+        }
+      } catch (_socketErr) {
+        this.logger.warn(
+          `[${finalCorrelationId}] CS3-4: unexpected error emitting pm-sync-failed event (exception path)`,
+        );
       }
     }
   }

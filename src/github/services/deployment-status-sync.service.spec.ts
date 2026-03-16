@@ -12,6 +12,7 @@ import { PMFieldAutoFillService } from '@/integrations/pm-field-auto-fill.servic
 import { PMVerificationCommentService } from '@/integrations/pm-verification-comment.service';
 import { PMActionableFailureCommentService } from '@/integrations/pm-actionable-failure-comment.service';
 import { PMProviderClientError } from '@/integrations/providers/pm-provider-client.error';
+import { RealtimeService } from '@/realtime/realtime.service';
 import { DeploymentStatus } from '@/prisma/client';
 
 describe('DeploymentStatusSyncService', () => {
@@ -22,6 +23,9 @@ describe('DeploymentStatusSyncService', () => {
   let metrics: MetricsService;
   let auditLog: AuditLogService;
   let sentry: SentryService;
+  let realtimeService: RealtimeService;
+  let integrationService: ProjectIntegrationService;
+  let preCheckService: PMFieldPreCheckService;
 
   const mockDeployment = {
     id: 'deployment-123',
@@ -142,6 +146,12 @@ describe('DeploymentStatusSyncService', () => {
             postActionableFailureComment: jest.fn().mockResolvedValue(undefined),
           },
         },
+        {
+          provide: RealtimeService,
+          useValue: {
+            emitToRole: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -151,6 +161,9 @@ describe('DeploymentStatusSyncService', () => {
     metrics = module.get<MetricsService>(MetricsService);
     auditLog = module.get<AuditLogService>(AuditLogService);
     sentry = module.get<SentryService>(SentryService);
+    realtimeService = module.get<RealtimeService>(RealtimeService);
+    integrationService = module.get<ProjectIntegrationService>(ProjectIntegrationService);
+    preCheckService = module.get<PMFieldPreCheckService>(PMFieldPreCheckService);
   });
 
   afterEach(() => {
@@ -866,6 +879,122 @@ describe('DeploymentStatusSyncService', () => {
         }),
         expect.any(String),
       );
+    });
+
+    it('T-SE1: soft failure: realtimeService.emitToRole called with PM role and pm-sync-failed event', async () => {
+      const mockIntegration = { id: 'int-1' } as any;
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields: [],
+      });
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(realtimeService.emitToRole).toHaveBeenCalledWith(
+        'PM',
+        'pm-sync-failed',
+        expect.objectContaining({
+          ticketId: 'clickup-123',
+          projectId: 'proj-123',
+        }),
+      );
+    });
+
+    it('T-SE2: soft failure: payload includes provider, reason and missingFields', async () => {
+      const mockIntegration = { id: 'int-1' } as any;
+      const missingFields = [{ name: 'Priority' }];
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(realtimeService.emitToRole).toHaveBeenCalledWith(
+        'PM',
+        'pm-sync-failed',
+        expect.objectContaining({
+          provider: 'CLICKUP',
+          reason: expect.stringContaining('graceful degradation'),
+          missingFields,
+        }),
+      );
+    });
+
+    it('T-SE3: soft failure: emitToRole NOT called when ticketProjectId is undefined', async () => {
+      const mockIntegration = { id: 'int-1' } as any;
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue({
+        ...mockExecution,
+        ticket: { ...mockExecution.ticket, project_id: undefined },
+      });
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields: [],
+      });
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(realtimeService.emitToRole).not.toHaveBeenCalled();
+    });
+
+    it('T-SE4: soft failure: emitToRole throws → caught silently', async () => {
+      const mockIntegration = { id: 'int-1' } as any;
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields: [],
+      });
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+      (realtimeService.emitToRole as jest.Mock).mockImplementation(() => {
+        throw new Error('Socket crash');
+      });
+
+      // Should not throw
+      await expect(service.syncToClickUp('deployment-123')).resolves.not.toThrow();
+    });
+
+    it('T-SE5: exception path: emitToRole called when outer catch fires', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue(new Error('Hard crash'));
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(realtimeService.emitToRole).toHaveBeenCalledWith(
+        'PM',
+        'pm-sync-failed',
+        expect.objectContaining({
+          projectId: 'proj-123',
+          reason: 'Hard crash',
+          missingFields: [],
+        }),
+      );
+    });
+
+    it('T-SE6: exception path: emitToRole NOT called when ticketProjectId is undefined', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue({
+        ...mockExecution,
+        ticket: { ...mockExecution.ticket, project_id: undefined },
+      });
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue(new Error('Hard crash'));
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(realtimeService.emitToRole).not.toHaveBeenCalled();
     });
   });
 

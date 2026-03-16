@@ -154,6 +154,7 @@ export class PmDashboardService {
             select: {
               status: true,
               updated_at: true,
+              pm_synced: true, // AC6: required for sync_pending calculation
             },
           },
         },
@@ -163,7 +164,7 @@ export class PmDashboardService {
 
     const data: ProjectResponseDto[] = projects.map((p) => {
       const tickets = p.tickets;
-      const total = tickets.length;
+      const totalCount = tickets.length;
       const in_progress = tickets.filter((t) =>
         ['AI_PROCESSING', 'QA_REVIEW'].includes(t.status),
       ).length;
@@ -172,6 +173,11 @@ export class PmDashboardService {
         ['QA_FAILED', 'FAILED', 'BLOCKED_CIRCULAR'].includes(t.status),
       ).length;
       const awaiting_approval = tickets.filter((t) => t.status === 'AWAITING_APPROVAL').length;
+
+      // AC6: Sync pending = completed/deployed AND pm_synced is explicitly false
+      const sync_pending = tickets.filter(
+        (t) => ['DEPLOYED', 'COMPLETED'].includes(t.status) && t.pm_synced === false,
+      ).length;
 
       const last_activity =
         tickets.length > 0
@@ -188,11 +194,12 @@ export class PmDashboardService {
         status: p.status as ProjectStatus,
         last_activity,
         tickets: {
-          total,
+          total: totalCount,
           in_progress,
           completed,
           blocked,
           awaiting_approval,
+          sync_pending,
         },
       };
     });
@@ -239,6 +246,7 @@ export class PmDashboardService {
       activeProjectsCount,
       qaTotal,
       qaPassed,
+      syncPendingTicketsCount, // AC7
     ] = await Promise.all([
       this.prisma.project.aggregate({
         where: projectWhere,
@@ -286,6 +294,14 @@ export class PmDashboardService {
       }),
       this.prisma.qAResult.count({
         where: { execution: { ticket: ticketsWhere }, overall_passed: true },
+      }),
+      // AC7: count tickets in terminal state but not synced
+      this.prisma.ticket.count({
+        where: {
+          ...ticketsWhere,
+          status: { in: ['DEPLOYED', 'COMPLETED'] },
+          pm_synced: false,
+        },
       }),
     ]);
 
@@ -397,6 +413,7 @@ export class PmDashboardService {
       pr_merge_rate: prMergeRateStats.prMergeRate,
       qa_first_pass_rate: qaFirstPassStats.qaFirstPassRate,
       provider_distribution: providerDistributionStats,
+      sync_pending_tickets: syncPendingTicketsCount, // AC7
     };
 
     await this.cacheManager.set(cacheKey, result, 60 * 1000); // M2: 60s TTL matches frontend staleTime
