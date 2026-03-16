@@ -1,6 +1,6 @@
 # Story CS3.2: Track PM Sync State on Ticket Model
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -118,19 +118,19 @@ pm_synced   Boolean   @default(true)
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1**: Prisma schema + migration (AC1)
-  - [ ] Add `pm_synced  Boolean  @default(true)` to `Ticket` model in `prisma/schema.prisma`
-  - [ ] Run `pnpm db:migrate` — this creates the migration SQL, applies it to the DB, **and automatically regenerates the Prisma client** in one step (migration name suggestion: `add_pm_synced_to_ticket`)
-  - [ ] Do NOT run `pnpm db:generate` before `pnpm db:migrate` — generating before migrating would produce a client from an unapplied schema, causing runtime column-not-found errors
-  - [ ] Verify `@/prisma/client` types now include `pm_synced` on `Ticket`
+- [x] **Task 1**: Prisma schema + migration (AC1)
+  - [x]Add `pm_synced  Boolean  @default(true)` to `Ticket` model in `prisma/schema.prisma`
+  - [x]Run `pnpm db:migrate` — this creates the migration SQL, applies it to the DB, **and automatically regenerates the Prisma client** in one step (migration name suggestion: `add_pm_synced_to_ticket`)
+  - [x]Do NOT run `pnpm db:generate` before `pnpm db:migrate` — generating before migrating would produce a client from an unapplied schema, causing runtime column-not-found errors
+  - [x]Verify `@/prisma/client` types now include `pm_synced` on `Ticket`
 
-- [ ] **Task 2**: Scoped ticket ID variable (required for AC3/AC4 error paths)
-  - [ ] In `syncToClickUp()`, declare `let ticketInternalId: string | undefined` and `let ticketClickupId: string | undefined` **before** the outer try block
-  - [ ] After `execution.ticket` is confirmed (line ~142 in current service), assign: `ticketInternalId = execution.ticket.id; ticketClickupId = execution.ticket.clickup_task_id;`
-  - [ ] This allows the outer catch to reference the ticket even when exception occurred after ticket resolution
+- [x] **Task 2**: Scoped ticket ID variable (required for AC3/AC4 error paths)
+  - [x]In `syncToClickUp()`, declare `let ticketInternalId: string | undefined` and `let ticketClickupId: string | undefined` **before** the outer try block
+  - [x]After `execution.ticket` is confirmed (line ~142 in current service), assign: `ticketInternalId = execution.ticket.id; ticketClickupId = execution.ticket.clickup_task_id;`
+  - [x]This allows the outer catch to reference the ticket even when exception occurred after ticket resolution
 
-- [ ] **Task 3**: Success path — set `pm_synced = true` (AC2)
-  - [ ] In `syncToClickUp()`, place the pm_synced=true update **immediately after the `if (!statusUpdated)` block closes** (i.e. right after the graceful-degradation early-return), **before** the `addComment()` call — this ensures the status-push success is recorded even if the comment call throws:
+- [x] **Task 3**: Success path — set `pm_synced = true` (AC2)
+  - [x]In `syncToClickUp()`, place the pm_synced=true update **immediately after the `if (!statusUpdated)` block closes** (i.e. right after the graceful-degradation early-return), **before** the `addComment()` call — this ensures the status-push success is recorded even if the comment call throws:
 
     ```typescript
     // ← Here: statusUpdated is confirmed true, status push succeeded
@@ -148,20 +148,20 @@ pm_synced   Boolean   @default(true)
     // AC#2: Add formatted comment  ← addComment() follows AFTER
     ```
 
-  - [ ] **Do NOT** place this after `recordAuditLog()` (line ~315-324) — `addComment()` in between can throw and would bypass pm_synced=true
+  - [x]**Do NOT** place this after `recordAuditLog()` (line ~315-324) — `addComment()` in between can throw and would bypass pm_synced=true
 
-- [ ] **Task 4**: Soft failure path — set `pm_synced = false` (AC3)
-  - [ ] In the `if (!statusUpdated)` block (around line 274-293 in current service), add pm_synced=false update and dedicated pm_sync_failed audit log **before** the `return`
-  - [ ] Use the new `recordPmSyncFailedAuditLog()` private helper (created in Task 6)
-  - [ ] Wrap pm_synced update in try/catch so it never throws
+- [x] **Task 4**: Soft failure path — set `pm_synced = false` (AC3)
+  - [x]In the `if (!statusUpdated)` block (around line 274-293 in current service), add pm_synced=false update and dedicated pm_sync_failed audit log **before** the `return`
+  - [x]Use the new `recordPmSyncFailedAuditLog()` private helper (created in Task 6)
+  - [x]Wrap pm_synced update in try/catch so it never throws
 
-- [ ] **Task 5**: Exception path — set `pm_synced = false` (AC4)
-  - [ ] In the outer `catch (_error)` block (around line 345-366 in current service), after Sentry capture, add:
+- [x] **Task 5**: Exception path — set `pm_synced = false` (AC4)
+  - [x]In the outer `catch (_error)` block (around line 345-366 in current service), after Sentry capture, add:
     - If `ticketInternalId` is defined: update `pm_synced = false` + call `recordPmSyncFailedAuditLog()`
     - Wrap in try/catch
 
-- [ ] **Task 6**: `recordPmSyncFailedAuditLog()` private helper
-  - [ ] Add private method to `DeploymentStatusSyncService`:
+- [x] **Task 6**: `recordPmSyncFailedAuditLog()` private helper
+  - [x]Add private method to `DeploymentStatusSyncService`:
     ```typescript
     private async recordPmSyncFailedAuditLog(
       ticketInternalId: string,
@@ -188,15 +188,15 @@ pm_synced   Boolean   @default(true)
     }
     ```
 
-- [ ] **Task 7**: Update existing test fixture + add new tests (AC6)
-  - [ ] In `deployment-status-sync.service.spec.ts`, update `mockExecution.ticket` to include `id: 'ticket-001'`
-  - [ ] In prisma mock setup, add `ticket: { update: jest.fn().mockResolvedValue({ id: 'ticket-001', pm_synced: true }) }` to the `PrismaService` mock (use `.mockResolvedValue()` since Prisma's `update()` returns the updated record — explicit return value improves test clarity and avoids `undefined` resolution surprises)
-  - [ ] Add T-PS1 through T-PS8 test cases (see AC6 table)
+- [x] **Task 7**: Update existing test fixture + add new tests (AC6)
+  - [x]In `deployment-status-sync.service.spec.ts`, update `mockExecution.ticket` to include `id: 'ticket-001'`
+  - [x]In prisma mock setup, add `ticket: { update: jest.fn().mockResolvedValue({ id: 'ticket-001', pm_synced: true }) }` to the `PrismaService` mock (use `.mockResolvedValue()` since Prisma's `update()` returns the updated record — explicit return value improves test clarity and avoids `undefined` resolution surprises)
+  - [x]Add T-PS1 through T-PS8 test cases (see AC6 table)
 
-- [ ] **Task 8**: TypeScript + lint verification (AC7)
-  - [ ] `pnpm typecheck` — zero errors on CS3-2 modified files
-  - [ ] `pnpm lint` — zero warnings/errors on CS3-2 modified files
-  - [ ] `pnpm test -- --testPathPattern="deployment-status-sync"` — all tests pass
+- [x] **Task 8**: TypeScript + lint verification (AC7)
+  - [x]`pnpm typecheck` — zero errors on CS3-2 modified files
+  - [x]`pnpm lint` — zero warnings/errors on CS3-2 modified files
+  - [x]`pnpm test -- --testPathPattern="deployment-status-sync"` — all tests pass
 
 ## Dev Notes
 
@@ -404,3 +404,12 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+- `prisma/schema.prisma`
+- `prisma/migrations/20260316093024_add_pm_synced_to_ticket/migration.sql`
+- `src/github/services/deployment-status-sync.service.ts`
+- `src/github/services/deployment-status-sync.service.spec.ts`
+
+### Completion Notes List
+
+- Code review (2026-03-16): 2H+4M+4L fixed — addComment wrapped in try/catch so comment failures cannot reach the outer catch and corrupt pm_synced state (H1); T-PS8 assertion strengthened with not.toHaveBeenCalledWith pm_synced:false (H2); removed if(ticketClickupId) guard on audit log in soft failure path per AC3/NFR-CS5 (M1); story status updated to done + all task checkboxes marked (M2); migration file added to File List (M3); ticketInternalId! non-null assertions added for TypeScript safety (M4); relative ../../ imports replaced with @/ path aliases in both service and spec files (L3).

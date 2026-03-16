@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DeploymentStatus } from '@/prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { ClickUpService } from '../../clickup/clickup.service';
-import { MetricsService } from '../../common/metrics/metrics.service';
-import { AuditLogService } from '../../common/audit/audit-log.service';
-import { SentryService } from '../../common/sentry/sentry.service';
+import { PrismaService } from '@/database/prisma.service';
+import { ClickUpService } from '@/clickup/clickup.service';
+import { MetricsService } from '@/common/metrics/metrics.service';
+import { AuditLogService } from '@/common/audit/audit-log.service';
+import { SentryService } from '@/common/sentry/sentry.service';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
 import { PMFieldPreCheckService } from '@/integrations/pm-field-pre-check.service';
 import {
@@ -60,6 +60,8 @@ export class DeploymentStatusSyncService {
       this.generateCorrelationId();
 
     const startTime = Date.now();
+    let ticketInternalId: string | undefined;
+    let ticketClickupId: string | undefined;
 
     try {
       this.logger.log('Starting ClickUp deployment sync', {
@@ -138,6 +140,9 @@ export class DeploymentStatusSyncService {
         this.recordMetrics(typedDeployment.environment, false, `execution_${typedDeployment.id}`);
         return;
       }
+
+      ticketInternalId = execution.ticket.id;
+      ticketClickupId = execution.ticket.clickup_task_id;
 
       const ticketId = execution.ticket.clickup_task_id;
 
@@ -289,25 +294,68 @@ export class DeploymentStatusSyncService {
           false,
           finalCorrelationId,
         );
+
+        // CS3-2: Track sync failure
+        try {
+          await this.prisma.ticket.update({
+            where: { id: ticketInternalId! },
+            data: { pm_synced: false },
+          });
+        } catch (_err) {
+          const errMsg = _err instanceof Error ? _err.message : String(_err);
+          this.logger.warn(
+            `[${finalCorrelationId}] CS3-2: failed to set pm_synced=false on ticket ${ticketInternalId}: ${errMsg}`,
+          );
+        }
+
+        await this.recordPmSyncFailedAuditLog(
+          ticketInternalId!,
+          ticketClickupId ?? null,
+          'STATUS_UPDATE_RETURNED_FALSE',
+          finalCorrelationId,
+        );
+
         return;
       }
 
-      // AC#2: Add formatted comment
+      // CS3-2: Track sync success
+      try {
+        await this.prisma.ticket.update({
+          where: { id: ticketInternalId! },
+          data: { pm_synced: true },
+        });
+      } catch (_pmSyncUpdateErr) {
+        const errMsg =
+          _pmSyncUpdateErr instanceof Error ? _pmSyncUpdateErr.message : String(_pmSyncUpdateErr);
+        this.logger.warn(
+          `[${finalCorrelationId}] CS3-2: failed to set pm_synced=true on ticket ${ticketInternalId}: ${errMsg}`,
+        );
+      }
+
+      // AC#2: Add formatted comment (best-effort — must NOT affect pm_synced state)
       const comment =
         typedDeployment.github_push.commit_sha && typedDeployment.github_push.repository
           ? this.buildDeploymentComment(typedDeployment, typedDeployment.github_push)
           : `**Deployment ${typedDeployment.status}**\n\nEnvironment: ${typedDeployment.environment}\nNo commit SHA available`;
 
-      const commentAdded = await this.clickUp.addComment(ticketId, comment, {
-        correlationId: finalCorrelationId,
-      });
-
-      if (!commentAdded) {
-        this.logger.warn('ClickUp comment failed (status updated successfully)', {
-          deploymentId,
-          ticketId,
+      try {
+        const commentAdded = await this.clickUp.addComment(ticketId, comment, {
           correlationId: finalCorrelationId,
         });
+
+        if (!commentAdded) {
+          this.logger.warn('ClickUp comment failed (status updated successfully)', {
+            deploymentId,
+            ticketId,
+            correlationId: finalCorrelationId,
+          });
+        }
+      } catch (_commentErr) {
+        // Comment is best-effort: do NOT let this reach the outer catch and corrupt pm_synced
+        this.logger.warn(
+          `[${finalCorrelationId}] addComment threw unexpectedly (status push already confirmed): ${(_commentErr as Error).message}`,
+          { deploymentId, ticketId },
+        );
       }
 
       // AC#4: Record metrics and audit logs
@@ -363,6 +411,27 @@ export class DeploymentStatusSyncService {
         select: { environment: true },
       });
       this.recordMetrics(deployment?.environment || 'unknown', false, finalCorrelationId);
+
+      // CS3-2: Track sync failure in exception path
+      if (ticketInternalId) {
+        try {
+          await this.prisma.ticket.update({
+            where: { id: ticketInternalId },
+            data: { pm_synced: false },
+          });
+
+          await this.recordPmSyncFailedAuditLog(
+            ticketInternalId,
+            ticketClickupId ?? null,
+            _error instanceof Error ? _error.name : 'UNKNOWN_EXCEPTION',
+            finalCorrelationId,
+          );
+        } catch (_pmSyncErr) {
+          this.logger.warn(
+            `[${finalCorrelationId}] CS3-2: failed to record sync failure in exception path`,
+          );
+        }
+      }
     }
   }
 
@@ -633,6 +702,34 @@ ${prLine}**Deployment Logs:** [View Logs](${buildUrl})`;
         deploymentId,
         error: (_error as Error).message,
       });
+    }
+  }
+
+  /**
+   * Record PM sync failure audit log
+   * AC#3/4: Audit trail for sync failures
+   */
+  private async recordPmSyncFailedAuditLog(
+    ticketInternalId: string,
+    ticketClickupId: string | null,
+    errorCode: string,
+    correlationId: string,
+  ): Promise<void> {
+    try {
+      await this.auditLog.log({
+        entityType: 'ticket',
+        entityId: ticketInternalId,
+        action: 'pm_sync_failed',
+        actorType: 'system',
+        afterState: {
+          provider: 'CLICKUP',
+          errorCode,
+          correlationId,
+          ticketClickupId,
+        },
+      });
+    } catch (_err) {
+      this.logger.warn(`[${correlationId}] CS3-2: audit log for pm_sync_failed failed silently`);
     }
   }
 }

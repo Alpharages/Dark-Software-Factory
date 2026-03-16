@@ -47,6 +47,7 @@ model Ticket {
   ticket_quality_score Int
   epic_num             String?
   completion_date      DateTime?
+  pm_synced            Boolean              @default(true)
   status               TicketStatus         @default(RECEIVED)
   created_at           DateTime             @default(now())
   updated_at           DateTime             @updatedAt

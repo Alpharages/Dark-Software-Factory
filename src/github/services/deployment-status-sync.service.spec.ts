@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DeploymentStatusSyncService } from './deployment-status-sync.service';
-import { PrismaService } from '../../database/prisma.service';
-import { ClickUpService } from '../../clickup/clickup.service';
-import { MetricsService } from '../../common/metrics/metrics.service';
-import { AuditLogService } from '../../common/audit/audit-log.service';
-import { SentryService } from '../../common/sentry/sentry.service';
+import { PrismaService } from '@/database/prisma.service';
+import { ClickUpService } from '@/clickup/clickup.service';
+import { MetricsService } from '@/common/metrics/metrics.service';
+import { AuditLogService } from '@/common/audit/audit-log.service';
+import { SentryService } from '@/common/sentry/sentry.service';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
 import { PMFieldPreCheckService } from '@/integrations/pm-field-pre-check.service';
 import { PMFieldAutoFillService } from '@/integrations/pm-field-auto-fill.service';
@@ -54,6 +54,7 @@ describe('DeploymentStatusSyncService', () => {
     started_at: new Date('2025-12-08T11:50:00Z'),
     completed_at: new Date('2025-12-08T12:00:00Z'),
     ticket: {
+      id: 'ticket-001',
       project_id: 'proj-123',
       clickup_task_id: 'clickup-123',
       title: 'Fix Bug',
@@ -73,6 +74,9 @@ describe('DeploymentStatusSyncService', () => {
             },
             execution: {
               findUnique: jest.fn(),
+            },
+            ticket: {
+              update: jest.fn(),
             },
           },
         },
@@ -562,6 +566,131 @@ describe('DeploymentStatusSyncService', () => {
         [],
         [], // Should be empty because AI returned empty array
         expect.any(String),
+      );
+    });
+
+    it('T-PS1: success path sets pm_synced=true', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (prisma.ticket.update as jest.Mock).mockResolvedValue({ id: 'ticket-001', pm_synced: true });
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 'ticket-001' },
+        data: { pm_synced: true },
+      });
+    });
+
+    it('T-PS2/3: soft failure sets pm_synced=false and audits', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 'ticket-001' },
+        data: { pm_synced: false },
+      });
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: 'ticket',
+          action: 'pm_sync_failed',
+          afterState: expect.objectContaining({
+            errorCode: 'STATUS_UPDATE_RETURNED_FALSE',
+          }),
+        }),
+      );
+    });
+
+    it('T-PS4/5: exception path sets pm_synced=false and audits', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue(new Error('Network Error'));
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 'ticket-001' },
+        data: { pm_synced: false },
+      });
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: 'ticket',
+          action: 'pm_sync_failed',
+          afterState: expect.objectContaining({
+            errorCode: 'Error',
+          }),
+        }),
+      );
+    });
+
+    it('T-PS6: skips update if ticket resolution fails', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(prisma.ticket.update).not.toHaveBeenCalled();
+      expect(auditLog.log).not.toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'pm_sync_failed' }),
+      );
+    });
+
+    it('T-PS7: update failure does not block flow', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (prisma.ticket.update as jest.Mock).mockRejectedValue(new Error('Update failed'));
+
+      await service.syncToClickUp('deployment-123');
+
+      // Flow continues to completion recording
+      expect(metrics.incrementCounter).toHaveBeenCalledWith('deployment_status_sync_total', {
+        environment: 'production',
+        status: 'success',
+      });
+    });
+
+    it('T-PS8: comment failure does not affect pm_synced=true', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(true);
+      (clickUp.addComment as jest.Mock).mockRejectedValue(new Error('Comment failed'));
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 'ticket-001' },
+        data: { pm_synced: true },
+      });
+      // addComment throw must NOT reach the outer catch and overwrite pm_synced with false
+      expect(prisma.ticket.update).not.toHaveBeenCalledWith({
+        where: { id: 'ticket-001' },
+        data: { pm_synced: false },
+      });
+    });
+
+    it('T-PS9: exception path handles non-Error object throws safely', async () => {
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue('String Error Throw');
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(prisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 'ticket-001' },
+        data: { pm_synced: false },
+      });
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'pm_sync_failed',
+          afterState: expect.objectContaining({
+            errorCode: 'UNKNOWN_EXCEPTION',
+          }),
+        }),
       );
     });
   });
