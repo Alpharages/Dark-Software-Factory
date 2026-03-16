@@ -128,8 +128,9 @@ describe('ClickUpOAuthService', () => {
 
     it('returns connected URL on success', async () => {
       const url = await service.handleCallback('code', 'project-1:CLICKUP');
-      expect(url).toContain('/projects/project-1/settings');
-      expect(url).toContain('integration=connected&provider=clickup');
+      expect(url).toContain('/settings/pm-callback');
+      expect(url).toContain('integration=connected');
+      expect(url).toContain('state=project-1');
     });
 
     it('upserts with fallback bot fields when getSelf throws', async () => {

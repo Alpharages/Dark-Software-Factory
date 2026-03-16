@@ -102,7 +102,7 @@ describe('GitOperationsService', () => {
 
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['clone', 'https://github.com/test/repo.git', '/tmp/workspace'],
+        ['-c', 'safe.directory=*', 'clone', 'https://github.com/test/repo.git', '/tmp/workspace'],
         expect.objectContaining({ timeout: 120000 }),
         expect.any(Function),
       );
@@ -154,13 +154,13 @@ describe('GitOperationsService', () => {
       expect(mockExecFile).toHaveBeenCalledTimes(2);
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['config', 'user.name', 'Test User'],
+        ['-c', 'safe.directory=*', 'config', 'user.name', 'Test User'],
         expect.objectContaining({ cwd: '/tmp/workspace' }),
         expect.any(Function),
       );
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['config', 'user.email', 'test@example.com'],
+        ['-c', 'safe.directory=*', 'config', 'user.email', 'test@example.com'],
         expect.objectContaining({ cwd: '/tmp/workspace' }),
         expect.any(Function),
       );
@@ -175,7 +175,7 @@ describe('GitOperationsService', () => {
 
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['checkout', 'feature-branch'],
+        ['-c', 'safe.directory=*', 'checkout', 'feature-branch'],
         expect.objectContaining({ cwd: '/tmp/workspace' }),
         expect.any(Function),
       );
@@ -188,7 +188,7 @@ describe('GitOperationsService', () => {
 
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['checkout', '-b', 'new-branch'],
+        ['-c', 'safe.directory=*', 'checkout', '-b', 'new-branch'],
         expect.objectContaining({ cwd: '/tmp/workspace' }),
         expect.any(Function),
       );
@@ -275,13 +275,13 @@ describe('GitOperationsService', () => {
       expect(mockExecFile).toHaveBeenCalledTimes(2);
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['reset', '--hard', 'HEAD'],
+        ['-c', 'safe.directory=*', 'reset', '--hard', 'HEAD'],
         expect.objectContaining({ cwd: '/tmp/workspace' }),
         expect.any(Function),
       );
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['clean', '-fd'],
+        ['-c', 'safe.directory=*', 'clean', '-fd'],
         expect.objectContaining({ cwd: '/tmp/workspace' }),
         expect.any(Function),
       );
@@ -328,7 +328,14 @@ describe('GitOperationsService', () => {
       expect(mockExecFile).toHaveBeenCalledTimes(2);
       expect(mockExecFile).toHaveBeenCalledWith(
         'git',
-        ['remote', 'set-url', 'origin', 'https://github.com/test/repo.git'],
+        [
+          '-c',
+          'safe.directory=*',
+          'remote',
+          'set-url',
+          'origin',
+          'https://github.com/test/repo.git',
+        ],
         expect.objectContaining({ cwd: '/tmp/workspace' }),
         expect.any(Function),
       );
