@@ -55,7 +55,7 @@ development_status:
     story_points: 3
     notes: 'Staging deploy. 10% canary. Gradual to 100% over 1 week. Rollback procedures.'
   15-5-e2e-testing-validation:
-    status: ready-for-dev
+    status: in-progress
     effort: '2 days'
     story_points: 5
     notes: 'E2E test full v3 flow. Load test 100 concurrent tickets. Validate circular deps, file locks, metrics.'
@@ -364,15 +364,15 @@ development_status:
     story_points: 5
     notes: 'pm_synced boolean on Ticket model. Set false on sync failure, true on success. Tracked independently from execution completion. Ultimate context engine analysis completed - comprehensive developer guide created.'
   CS3-3-actionable-failure-comment:
-    status: backlog
+    status: done
     effort: '2 days'
     story_points: 5
     notes: 'On permanent sync failure: IPMProvider.addComment() with actionable message listing exactly which fields need manual action + deep link to ClickUp task.'
   CS3-4-sync-pending-dashboard-state:
-    status: backlog
+    status: ready-for-dev
     effort: '3 days'
     story_points: 5
-    notes: 'SYNC_PENDING amber dashboard state distinct from red FAILED. Socket.IO pm-sync-failed event. Frontend banner on affected tickets.'
+    notes: 'SYNC_PENDING amber dashboard state distinct from red FAILED. Socket.IO pm-sync-failed event. Frontend banner on affected tickets. Ultimate context engine analysis completed - comprehensive developer guide created.'
   epic-CS3-retrospective: optional
 
   # EPIC 27 - PLATFORM POLISH, GLOBAL UX & MOBILE NAVIGATION

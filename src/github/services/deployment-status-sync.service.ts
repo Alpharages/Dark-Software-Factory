@@ -15,6 +15,10 @@ import {
   InferredFillResult,
 } from '@/integrations/pm-field-auto-fill.service';
 import { PMVerificationCommentService } from '@/integrations/pm-verification-comment.service';
+import { PMActionableFailureCommentService } from '@/integrations/pm-actionable-failure-comment.service';
+import { ProjectIntegration } from '@/prisma/client';
+import { NormalizedField } from '@/integrations/providers/dto/normalized-field.dto';
+import { PMProviderClientError } from '@/integrations/providers/pm-provider-client.error';
 
 /**
  * Deployment Status Synchronization Service
@@ -41,6 +45,7 @@ export class DeploymentStatusSyncService {
     private readonly pmPreCheckService: PMFieldPreCheckService,
     private readonly pmAutoFillService: PMFieldAutoFillService,
     private readonly pmVerificationCommentService: PMVerificationCommentService,
+    private readonly pmFailureCommentService: PMActionableFailureCommentService,
   ) {}
 
   /**
@@ -62,6 +67,11 @@ export class DeploymentStatusSyncService {
     const startTime = Date.now();
     let ticketInternalId: string | undefined;
     let ticketClickupId: string | undefined;
+
+    // CS3-3: Scoped variables for actionable failure comments (AC6)
+    let integration: ProjectIntegration | null = null;
+    let targetStatus: string | undefined;
+    let lastMissingFields: NormalizedField[] = [];
 
     try {
       this.logger.log('Starting ClickUp deployment sync', {
@@ -148,9 +158,8 @@ export class DeploymentStatusSyncService {
 
       // CS2-2: Pre-check + factual auto-fill pipeline
       try {
-        const integration = await this.integrationService.findFirstByProject(
-          execution.ticket.project_id,
-        );
+        // Populate scoped integration (AC6)
+        integration = await this.integrationService.findFirstByProject(execution.ticket.project_id);
         if (integration) {
           const cfg = integration.provider_config as Record<string, unknown> | null;
           const containerId = typeof cfg?.containerId === 'string' ? cfg.containerId : '';
@@ -161,6 +170,9 @@ export class DeploymentStatusSyncService {
             containerId,
             finalCorrelationId,
           );
+
+          // Populate scoped missing fields (AC6)
+          lastMissingFields = preCheckResult.missingFields;
 
           if (!preCheckResult.allFilled && preCheckResult.missingFields.length > 0) {
             const execWithTiming = execution as typeof execution & {
@@ -271,6 +283,9 @@ export class DeploymentStatusSyncService {
               ? 'Rolled Back'
               : 'In Progress';
 
+      // Populate scoped target status (AC6)
+      targetStatus = clickUpStatus;
+
       // AC#1: Update ClickUp ticket status
       const statusUpdated = await this.clickUp.updateStatus(ticketId, clickUpStatus, {
         correlationId: finalCorrelationId,
@@ -314,6 +329,25 @@ export class DeploymentStatusSyncService {
           'STATUS_UPDATE_RETURNED_FALSE',
           finalCorrelationId,
         );
+
+        // CS3-3: Post actionable failure comment on soft failure (AC3)
+        try {
+          await this.pmFailureCommentService.postActionableFailureComment(
+            integration,
+            ticketId,
+            {
+              targetStatus: targetStatus ?? 'unknown',
+              failureReason: 'ClickUp status update returned false — graceful degradation',
+              missingFields: lastMissingFields,
+            },
+            finalCorrelationId,
+          );
+        } catch (_err) {
+          const errMsg = _err instanceof Error ? _err.message : String(_err);
+          this.logger.warn(
+            `[${finalCorrelationId}] CS3-3: actionable failure comment failed (soft failure): ${errMsg}`,
+          );
+        }
 
         return;
       }
@@ -429,6 +463,30 @@ export class DeploymentStatusSyncService {
         } catch (_pmSyncErr) {
           this.logger.warn(
             `[${finalCorrelationId}] CS3-2: failed to record sync failure in exception path`,
+          );
+        }
+      }
+
+      // CS3-3: Post actionable failure comment on hard failure (AC4)
+      if (ticketClickupId && integration) {
+        try {
+          const isProviderError = _error instanceof PMProviderClientError;
+          await this.pmFailureCommentService.postActionableFailureComment(
+            integration,
+            ticketClickupId,
+            {
+              targetStatus: targetStatus ?? 'unknown',
+              failureReason: _error instanceof Error ? _error.message : 'Unknown exception',
+              providerErrorCode: isProviderError ? _error.providerErrorCode : undefined,
+              providerErrorBody: isProviderError ? _error.providerErrorBody : undefined,
+              missingFields: [], // AC4: no pre-check context in exception path
+            },
+            finalCorrelationId,
+          );
+        } catch (_err) {
+          const errMsg = _err instanceof Error ? _err.message : String(_err);
+          this.logger.warn(
+            `[${finalCorrelationId}] CS3-3: actionable failure comment failed (hard failure): ${errMsg}`,
           );
         }
       }

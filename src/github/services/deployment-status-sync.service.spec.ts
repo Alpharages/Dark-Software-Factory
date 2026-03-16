@@ -10,7 +10,8 @@ import { ProjectIntegrationService } from '@/integrations/project-integration.se
 import { PMFieldPreCheckService } from '@/integrations/pm-field-pre-check.service';
 import { PMFieldAutoFillService } from '@/integrations/pm-field-auto-fill.service';
 import { PMVerificationCommentService } from '@/integrations/pm-verification-comment.service';
-
+import { PMActionableFailureCommentService } from '@/integrations/pm-actionable-failure-comment.service';
+import { PMProviderClientError } from '@/integrations/providers/pm-provider-client.error';
 import { DeploymentStatus } from '@/prisma/client';
 
 describe('DeploymentStatusSyncService', () => {
@@ -133,6 +134,12 @@ describe('DeploymentStatusSyncService', () => {
           provide: PMVerificationCommentService,
           useValue: {
             postVerificationComment: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: PMActionableFailureCommentService,
+          useValue: {
+            postActionableFailureComment: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -691,6 +698,173 @@ describe('DeploymentStatusSyncService', () => {
             errorCode: 'UNKNOWN_EXCEPTION',
           }),
         }),
+      );
+    });
+
+    it('T-FC1: calls postActionableFailureComment on soft failure (updateStatus=false)', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+
+      const mockIntegration = { id: 'int-1' } as any;
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(failureCommentService.postActionableFailureComment).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        expect.objectContaining({
+          targetStatus: 'Deployed',
+          failureReason: 'ClickUp status update returned false — graceful degradation',
+        }),
+        expect.any(String),
+      );
+    });
+
+    it('T-FC2: soft failure: context.targetStatus is "Deployed" for a COMPLETED deployment', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+
+      const mockIntegration = { id: 'int-1' } as any;
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment); // status: COMPLETED
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(failureCommentService.postActionableFailureComment).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ targetStatus: 'Deployed' }),
+        expect.any(String),
+      );
+    });
+
+    it('T-FC4: exception path: calls postActionableFailureComment when outer catch fires AND ticketClickupId known AND integration non-null', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+
+      const mockIntegration = { id: 'int-1' } as any;
+      const networkError = new PMProviderClientError(504, 'TIMEOUT_504', {
+        message: 'Upstream timeout',
+      });
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue(networkError);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(failureCommentService.postActionableFailureComment).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        expect.objectContaining({
+          targetStatus: 'Deployed',
+          failureReason: 'PM provider returned 504: TIMEOUT_504',
+          providerErrorCode: 'TIMEOUT_504',
+          providerErrorBody: { message: 'Upstream timeout' },
+        }),
+        expect.any(String),
+      );
+    });
+
+    it('T-FC3: soft failure: comment call throws → caught silently, method still returns without throwing', async () => {
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      (failureCommentService.postActionableFailureComment as jest.Mock).mockRejectedValue(
+        new Error('Comment Service Error'),
+      );
+
+      await expect(service.syncToClickUp('deployment-123')).resolves.not.toThrow();
+    });
+
+    it('T-FC3-extra: passes missingFields from preCheckResult to failure comment (soft failure)', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const preCheckService = module.get(PMFieldPreCheckService);
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+
+      const mockIntegration = { id: 'int-1' } as any;
+      const missingFields = [{ id: 'f1', name: 'Points', type: 'NUMBER', required: true }] as any;
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (preCheckService.checkRequiredFields as jest.Mock).mockResolvedValue({
+        allFilled: false,
+        missingFields,
+      });
+      (clickUp.updateStatus as jest.Mock).mockResolvedValue(false);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(failureCommentService.postActionableFailureComment).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ missingFields }),
+        expect.any(String),
+      );
+    });
+
+    it('T-FC5: exception path: comment skipped when ticketClickupId is undefined', async () => {
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      // Execution return ticket with null clickup_task_id
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue({
+        ...mockExecution,
+        ticket: { ...mockExecution.ticket, clickup_task_id: undefined },
+      });
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue(new Error('Hard crash'));
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(failureCommentService.postActionableFailureComment).not.toHaveBeenCalled();
+    });
+
+    it('T-FC6: exception path: comment skipped when integration is null', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(null);
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue(new Error('Hard crash'));
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(failureCommentService.postActionableFailureComment).not.toHaveBeenCalled();
+    });
+
+    it('T-FC7: exception path with PMProviderClientError: providerErrorCode and providerErrorBody passed through', async () => {
+      const integrationService = module.get(ProjectIntegrationService);
+      const failureCommentService = module.get(PMActionableFailureCommentService);
+
+      const mockIntegration = { id: 'int-1' } as any;
+      const providerError = new PMProviderClientError(401, 'OAUTH_017', { err: 'Token expired' });
+
+      (prisma.deployment.findUnique as jest.Mock).mockResolvedValue(mockDeployment);
+      (prisma.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
+      (integrationService.findFirstByProject as jest.Mock).mockResolvedValue(mockIntegration);
+      (clickUp.updateStatus as jest.Mock).mockRejectedValue(providerError);
+
+      await service.syncToClickUp('deployment-123');
+
+      expect(failureCommentService.postActionableFailureComment).toHaveBeenCalledWith(
+        mockIntegration,
+        'clickup-123',
+        expect.objectContaining({
+          providerErrorCode: 'OAUTH_017',
+          providerErrorBody: { err: 'Token expired' },
+          missingFields: [],
+        }),
+        expect.any(String),
       );
     });
   });

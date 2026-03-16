@@ -13,6 +13,7 @@ import { BotAssignmentService } from './bot-assignment.service';
 import { PMFieldPreCheckService } from './pm-field-pre-check.service';
 import { PMFieldAutoFillService } from './pm-field-auto-fill.service';
 import { PMVerificationCommentService } from './pm-verification-comment.service';
+import { PMActionableFailureCommentService } from './pm-actionable-failure-comment.service';
 
 @Module({
   imports: [forwardRef(() => ClickUpModule), DatabaseModule, EncryptionModule, SentryModule],
@@ -26,6 +27,7 @@ import { PMVerificationCommentService } from './pm-verification-comment.service'
     PMFieldPreCheckService,
     PMFieldAutoFillService,
     PMVerificationCommentService,
+    PMActionableFailureCommentService,
   ],
   exports: [
     ProjectIntegrationService,
@@ -36,6 +38,7 @@ import { PMVerificationCommentService } from './pm-verification-comment.service'
     PMFieldPreCheckService,
     PMFieldAutoFillService,
     PMVerificationCommentService,
+    PMActionableFailureCommentService,
   ],
 })
 export class IntegrationsModule {}
