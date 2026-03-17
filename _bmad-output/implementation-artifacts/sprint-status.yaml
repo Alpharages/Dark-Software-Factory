@@ -85,7 +85,7 @@ development_status:
     story_points: 5
 
   # EPIC CS5 - CONNECTED APPS (USER-LEVEL PROVIDER ACCOUNTS & IMPORT ONBOARDING)
-  epic-CS5: in-progress
+  epic-CS5: done
   epic-CS5-name: 'Connected Apps — User-Level Provider Accounts & Import Onboarding'
   epic-CS5-phase: 'Onboarding Sprint'
   epic-CS5-priority: high
@@ -123,7 +123,7 @@ development_status:
     effort: '2 days'
     story_points: 5
     notes: 'Implemented backend transaction for Project + ProjectIntegration creation, token re-encryption, and frontend success toast handling. Verified with 20 unit tests.'
-  epic-CS5-retrospective: optional
+  epic-CS5-retrospective: done
 
   # EPIC 24 - GITHUB MULTI-ACCOUNT
   epic-24: in-progress
