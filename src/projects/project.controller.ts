@@ -19,6 +19,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
+import { ImportProjectResponseDto } from './dto/import-project-response.dto';
 import { UpdateRepositoryDto } from './dto/update-repository.dto';
 import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
@@ -61,10 +62,19 @@ export class ProjectController {
   }
 
   @Post('import')
-  @Roles(Role.ADMIN, Role.MANAGER) // Changed to use Role enum for consistency with existing code
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PM)
   @ApiOperation({ summary: 'Import a project from a provider (e.g., ClickUp)' })
-  @ApiResponse({ status: 201, description: 'The project has been successfully imported.' })
-  importProject(@Body() importDto: ImportProjectDto, @CurrentUser() user: User) {
+  @ApiResponse({
+    status: 201,
+    description: 'The project has been successfully imported.',
+    type: ImportProjectResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - connected account not owned by user' })
+  @ApiResponse({ status: 404, description: 'Not Found - connected account or resource not found' })
+  importProject(
+    @Body() importDto: ImportProjectDto,
+    @CurrentUser() user: User,
+  ): Promise<ImportProjectResponseDto> {
     if (!user || !user.id) {
       throw new BadRequestException('User context required for import');
     }

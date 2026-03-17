@@ -1,13 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectService } from './project.service';
 import { ProjectRepository } from './project.repository';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ConfigService } from '@nestjs/config';
+import { PMProvider } from '@/prisma/enums';
+import { ConnectedAppsService } from '@/connected-apps/connected-apps.service';
+import { EncryptionService } from '@/common/encryption/encryption.service';
 
 describe('ProjectService', () => {
   let service: ProjectService;
@@ -41,7 +44,9 @@ describe('ProjectService', () => {
   const mockPrismaTx = {
     project: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
+      create: jest.fn(),
     },
     gitHubAccount: {
       findUnique: jest.fn(),
@@ -54,6 +59,12 @@ describe('ProjectService', () => {
     },
     ticket: {
       upsert: jest.fn(),
+    },
+    projectIntegration: {
+      create: jest.fn(),
+    },
+    connectedApp: {
+      findUnique: jest.fn(),
     },
   };
 
@@ -98,6 +109,15 @@ describe('ProjectService', () => {
       date_updated: '456',
     },
   ];
+
+  const mockConnectedAppsService = {
+    getDecrypted: jest.fn(),
+  };
+
+  const mockEncryptionService = {
+    encrypt: jest.fn((text) => `enc-${text}`),
+    decrypt: jest.fn((hash) => hash.replace('enc-', '')),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -156,6 +176,14 @@ describe('ProjectService', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: ConnectedAppsService,
+          useValue: mockConnectedAppsService,
+        },
+        {
+          provide: EncryptionService,
+          useValue: mockEncryptionService,
         },
       ],
     }).compile();
@@ -485,6 +513,149 @@ describe('ProjectService', () => {
         'Project is not linked to ClickUp',
       );
       expect(mockClickUpService.getList).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('importProject', () => {
+    const TEST_ACCOUNT_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
+    it('T2: should import project without accountId — only project created, no integration', async () => {
+      const listDetails = { id: 'list-123', name: 'Imported List' };
+      mockClickUpService.getList.mockResolvedValue(listDetails);
+      mockPrismaTx.project.findFirst.mockResolvedValue(null);
+
+      const createdProject = {
+        ...mockProject,
+        id: 'proj-new',
+        name: 'Imported List',
+        clickup_list_id: 'list-123',
+      };
+      mockPrismaTx.project.create.mockResolvedValue(createdProject);
+
+      const dto = { provider: PMProvider.CLICKUP, resourceId: 'list-123' };
+      const result = await service.importProject(dto, 'user-1');
+
+      expect(result.project).toEqual(createdProject);
+      expect(result.integrationCreated).toBe(false);
+      expect(mockPrismaTx.project.create).toHaveBeenCalled();
+      expect(mockPrismaTx.projectIntegration.create).not.toHaveBeenCalled();
+      expect(mockConnectedAppsService.getDecrypted).not.toHaveBeenCalled();
+    });
+
+    it('T1: should import project and auto-create integration when valid accountId is provided', async () => {
+      const listDetails = { id: 'list-123', name: 'Imported List' };
+      const decryptedModel = {
+        id: 'app-123',
+        user_id: 'user-1',
+        provider: 'CLICKUP',
+        workspace_id: 'ws-456',
+        workspace_name: 'Work',
+        access_token: 'plain-token',
+        refresh_token: 'plain-refresh',
+        token_expiry: null,
+        metadata: { botUserId: 'bot-123', botUsername: 'bot-name' },
+      };
+
+      mockClickUpService.getList.mockResolvedValue(listDetails);
+      mockConnectedAppsService.getDecrypted.mockResolvedValue(decryptedModel);
+      mockPrismaTx.project.findFirst.mockResolvedValue(null);
+
+      const createdProject = {
+        ...mockProject,
+        id: 'proj-new',
+        name: 'Imported List',
+        clickup_list_id: 'list-123',
+      };
+      mockPrismaTx.project.create.mockResolvedValue(createdProject);
+      mockPrismaTx.projectIntegration.create.mockResolvedValue({ id: 'int-123' });
+
+      const dto = {
+        provider: PMProvider.CLICKUP,
+        resourceId: 'list-123',
+        accountId: TEST_ACCOUNT_UUID,
+      };
+      const result = await service.importProject(dto, 'user-1');
+
+      expect(result.project).toEqual(createdProject);
+      expect(result.integrationCreated).toBe(true);
+      expect(mockConnectedAppsService.getDecrypted).toHaveBeenCalledWith(
+        TEST_ACCOUNT_UUID,
+        'user-1',
+      );
+      expect(mockPrismaTx.projectIntegration.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          project_id: 'proj-new',
+          workspace_id: 'ws-456',
+          access_token: 'enc-plain-token',
+          refresh_token: 'enc-plain-refresh',
+          bot_user_id: 'bot-123',
+          bot_username: 'bot-name',
+          polling_enabled: false,
+          webhook_enabled: false,
+          provider_config: {},
+          ai_trigger_status: null,
+        }),
+      });
+    });
+
+    it('T3: should propagate ForbiddenException when connected app belongs to another user', async () => {
+      mockConnectedAppsService.getDecrypted.mockRejectedValue(
+        new ForbiddenException('You do not have permission to access this connected app'),
+      );
+      const dto = {
+        provider: PMProvider.CLICKUP,
+        resourceId: 'list-123',
+        accountId: TEST_ACCOUNT_UUID,
+      };
+
+      await expect(service.importProject(dto, 'user-1')).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaTx.project.create).not.toHaveBeenCalled();
+    });
+
+    it('T4: should propagate error and rollback when ProjectIntegration insert fails', async () => {
+      const listDetails = { id: 'list-123', name: 'Imported List' };
+      const decryptedModel = {
+        id: 'app-123',
+        user_id: 'user-1',
+        provider: 'CLICKUP',
+        workspace_id: 'ws-456',
+        workspace_name: 'Work',
+        access_token: 'plain-token',
+        refresh_token: null,
+        token_expiry: null,
+        metadata: null,
+      };
+
+      mockClickUpService.getList.mockResolvedValue(listDetails);
+      mockConnectedAppsService.getDecrypted.mockResolvedValue(decryptedModel);
+      mockPrismaTx.project.findFirst.mockResolvedValue(null);
+      mockPrismaTx.project.create.mockResolvedValue({ ...mockProject, id: 'proj-new' });
+      mockPrismaTx.projectIntegration.create.mockRejectedValue(new Error('DB insert failed'));
+
+      const dto = {
+        provider: PMProvider.CLICKUP,
+        resourceId: 'list-123',
+        accountId: TEST_ACCOUNT_UUID,
+      };
+
+      await expect(service.importProject(dto, 'user-1')).rejects.toThrow('DB insert failed');
+      // Verify transaction was entered (project.create called) but integration insert caused the rollback
+      expect(mockPrismaTx.project.create).toHaveBeenCalled();
+      expect(mockPrismaTx.projectIntegration.create).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when connected app UUID is not found', async () => {
+      mockConnectedAppsService.getDecrypted.mockRejectedValue(
+        new NotFoundException('Connected app not found'),
+      );
+      const dto = {
+        provider: PMProvider.CLICKUP,
+        resourceId: 'list-123',
+        accountId: TEST_ACCOUNT_UUID,
+      };
+
+      await expect(service.importProject(dto, 'user-1')).rejects.toThrow(NotFoundException);
+      expect(mockPrismaTx.project.create).not.toHaveBeenCalled();
     });
   });
 });

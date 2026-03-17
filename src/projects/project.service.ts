@@ -28,6 +28,9 @@ import { mapClickUpToTaskEvent, TaskTriggerSource, InternalTaskStatus } from '@/
 import { IRawTaskEvent } from '@/ticket-intake/interfaces/ticket-intake.interface';
 // Story 16-5: AI Decision Logging Module
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
+import { ConnectedAppsService } from '@/connected-apps/connected-apps.service';
+import { EncryptionService } from '@/common/encryption/encryption.service';
+import { ImportProjectResponseDto } from './dto/import-project-response.dto';
 
 @Injectable()
 export class ProjectService {
@@ -51,6 +54,8 @@ export class ProjectService {
     private readonly rabbitMQPublisher: RabbitMQPublisherService,
     // Story 16-5: Inject AIDecisionLoggerService for audit logging
     private readonly aiDecisionLogger: AIDecisionLoggerService,
+    private readonly connectedAppsService: ConnectedAppsService,
+    private readonly encryptionService: EncryptionService,
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
@@ -191,45 +196,93 @@ export class ProjectService {
    * Import a project from an external provider
    * AC#3: Import API accepts provider and resourceId
    * Fetches list details from ClickUp and creates project record
+   * CS5-5: Automatically creates ProjectIntegration if accountId is provided.
    */
-  async importProject(importDto: ImportProjectDto, userId: string): Promise<Project> {
-    const { provider, resourceId } = importDto;
+  async importProject(
+    importDto: ImportProjectDto,
+    userId: string,
+  ): Promise<ImportProjectResponseDto> {
+    const { provider, resourceId, accountId } = importDto;
 
-    // Validate provider (currently on ClickUp supported per AC#2)
+    // Validate provider (currently only ClickUp supported per AC#2)
     if (provider !== PMProvider.CLICKUP) {
-      throw new Error(`Provider ${provider} import not yet supported`);
+      throw new BadRequestException(`Provider ${provider} import not yet supported`);
     }
 
     try {
-      // 1. Fetch details from provider to validate and get name
-      const listDetails = await this.clickupService.getList(resourceId);
+      // 1. If accountId provided, fetch and validate ConnectedApp upfront.
+      //    getDecrypted throws NotFoundException (404) or ForbiddenException (403) automatically.
+      const connectedApp = accountId
+        ? await this.connectedAppsService.getDecrypted(accountId, userId)
+        : null;
 
+      // 2. Fetch details from provider (ClickUp) to validate and get name
+      const listDetails = await this.clickupService.getList(resourceId);
       this.logger.log(`Importing ClickUp list: ${listDetails.name} (${listDetails.id})`);
 
-      // 2. Create Project Record
-      // Check if already exists first? repository.create might fail or we should check.
-      const existing = await this.repository.findByListId(resourceId);
-      if (existing) {
-        throw new ConflictException(
-          `A project has already been imported for ClickUp List ${resourceId}`,
-        );
-      }
+      // 3. Atomic Transaction: duplicate check + create Project + optionally create ProjectIntegration
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Duplicate check inside transaction to prevent TOCTOU race conditions
+        const existing = await tx.project.findFirst({
+          where: { clickup_list_id: resourceId },
+          select: { id: true },
+        });
+        if (existing) {
+          throw new ConflictException(
+            `A project has already been imported for ClickUp List ${resourceId}`,
+          );
+        }
 
-      const project = await this.repository.create({
-        name: listDetails.name, // Use list name as project name
-        clickup_list_id: listDetails.id,
-        github_repository_url: '', // Placeholder, user can update later? Or optional?
-        default_branch: 'main',
-        pm_id: userId,
-        status: 'active',
-        client_name: 'Internal', // Default
-        provider: PMProvider.CLICKUP,
-        monitor_tasks: true, // Auto-enable monitoring for imports
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+        const project = await tx.project.create({
+          data: {
+            name: listDetails.name,
+            clickup_list_id: listDetails.id,
+            github_repository_url: '',
+            default_branch: 'main',
+            pm_id: userId,
+            status: 'active',
+            client_name: 'Internal',
+            provider: PMProvider.CLICKUP,
+            monitor_tasks: true,
+          },
+        });
+
+        let integrationCreated = false;
+        if (connectedApp) {
+          const encryptedAccessToken = connectedApp.access_token
+            ? this.encryptionService.encrypt(connectedApp.access_token)
+            : null;
+          const encryptedRefreshToken = connectedApp.refresh_token
+            ? this.encryptionService.encrypt(connectedApp.refresh_token)
+            : null;
+
+          const metadata = (connectedApp.metadata as Record<string, unknown>) || {};
+
+          await tx.projectIntegration.create({
+            data: {
+              project_id: project.id,
+              provider: PMProvider.CLICKUP,
+              workspace_id: connectedApp.workspace_id,
+              workspace_name: connectedApp.workspace_name,
+              access_token: encryptedAccessToken,
+              refresh_token: encryptedRefreshToken,
+              token_expiry: connectedApp.token_expiry,
+              bot_user_id: (metadata.botUserId as string | null) ?? null,
+              bot_username: (metadata.botUsername as string | null) ?? null,
+              polling_enabled: false,
+              webhook_enabled: false,
+              provider_config: {},
+              ai_trigger_status: null,
+            },
+          });
+          integrationCreated = true;
+        }
+
+        return { project, integrationCreated };
+      });
 
       this.operationsCounter.inc({ operation: 'import', status: 'success' });
-      return project;
+      return result;
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'import', status: 'error' });
       const msg = _error instanceof Error ? _error.message : String(_error);

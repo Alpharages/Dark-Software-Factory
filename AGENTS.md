@@ -2,7 +2,7 @@
 
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Dark Software Factory** (5536 symbols, 14245 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **dsf-backend** (5552 symbols, 14301 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -18,7 +18,7 @@ This project is indexed by GitNexus as **Dark Software Factory** (5536 symbols, 
 
 1. `gitnexus_query({query: "<error or symptom>"})` — find execution flows related to the issue
 2. `gitnexus_context({name: "<suspect function>"})` — see all callers, callees, and process participation
-3. `READ gitnexus://repo/Dark Software Factory/process/{processName}` — trace the full execution flow step by step
+3. `READ gitnexus://repo/dsf-backend/process/{processName}` — trace the full execution flow step by step
 4. For regressions: `gitnexus_detect_changes({scope: "compare", base_ref: "main"})` — see what your branch changed
 
 ## When Refactoring
@@ -55,12 +55,12 @@ This project is indexed by GitNexus as **Dark Software Factory** (5536 symbols, 
 
 ## Resources
 
-| Resource                                               | Use for                                  |
-| ------------------------------------------------------ | ---------------------------------------- |
-| `gitnexus://repo/Dark Software Factory/context`        | Codebase overview, check index freshness |
-| `gitnexus://repo/Dark Software Factory/clusters`       | All functional areas                     |
-| `gitnexus://repo/Dark Software Factory/processes`      | All execution flows                      |
-| `gitnexus://repo/Dark Software Factory/process/{name}` | Step-by-step execution trace             |
+| Resource                                     | Use for                                  |
+| -------------------------------------------- | ---------------------------------------- |
+| `gitnexus://repo/dsf-backend/context`        | Codebase overview, check index freshness |
+| `gitnexus://repo/dsf-backend/clusters`       | All functional areas                     |
+| `gitnexus://repo/dsf-backend/processes`      | All execution flows                      |
+| `gitnexus://repo/dsf-backend/process/{name}` | Step-by-step execution trace             |
 
 ## Self-Check Before Finishing
 

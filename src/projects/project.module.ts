@@ -8,6 +8,8 @@ import { makeCounterProvider, makeGaugeProvider } from '@willsoto/nestjs-prometh
 import { ClickUpModule } from '@/clickup/clickup.module';
 import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
 import { IntegrationsModule } from '@/integrations/integrations.module';
+import { ConnectedAppsModule } from '@/connected-apps/connected-apps.module';
+import { EncryptionModule } from '@/common/encryption/encryption.module';
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { IntegrationsModule } from '@/integrations/integrations.module';
     forwardRef(() => ClickUpModule),
     AIDecisionLoggerModule,
     IntegrationsModule,
+    ConnectedAppsModule,
+    EncryptionModule,
   ],
   controllers: [ProjectController],
   providers: [
