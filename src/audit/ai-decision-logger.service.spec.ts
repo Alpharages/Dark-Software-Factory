@@ -326,7 +326,7 @@ describe('AIDecisionLoggerService', () => {
           },
         },
       ];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       prisma.aIDecisionLog.findMany.mockResolvedValue(mockTimeline as any);
 
       const result = await service.getDecisionTimeline('DSF-123');
@@ -377,7 +377,7 @@ describe('AIDecisionLoggerService', () => {
         { ...mockAIDecisionLog, id: '1', confidence: 0.4 },
         { ...mockAIDecisionLog, id: '2', confidence: 0.3 },
       ];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       prisma.aIDecisionLog.findMany.mockResolvedValue(mockLowConfidence as any);
       prisma.aIDecisionLog.count.mockResolvedValue(2);
       const result = await service.getLowConfidenceDecisions({

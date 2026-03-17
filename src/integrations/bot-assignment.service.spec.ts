@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { BotAssignmentService } from './bot-assignment.service';
 import { PrismaService } from '../database/prisma.service';

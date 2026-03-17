@@ -50,7 +50,6 @@ describe('DeploymentOrchestrator', () => {
   };
 
   const mockConfig = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get: jest.fn((key: string, defaultValue?: any) => {
       const config: Record<string, string | number> = {
         'github.defaultWorkflowId': 'deploy.yml',

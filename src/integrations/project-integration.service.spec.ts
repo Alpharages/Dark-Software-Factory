@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectIntegrationService } from './project-integration.service';
 import { EncryptionService } from '@/common/encryption/encryption.service';

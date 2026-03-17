@@ -8,9 +8,9 @@ jest.mock('dockerode');
 
 describe('ContainerControlService', () => {
   let service: ContainerControlService;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let mockContainer: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let mockDocker: any;
 
   beforeEach(async () => {

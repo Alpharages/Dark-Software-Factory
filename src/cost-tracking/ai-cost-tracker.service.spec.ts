@@ -185,7 +185,6 @@ describe('AICostTrackerService', () => {
 
       jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
         _sum: { cost_usd: new Decimal(85) }, // Budget is mocked at 100 in service
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       await service.logCost({
@@ -210,7 +209,6 @@ describe('AICostTrackerService', () => {
 
       jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
         _sum: { cost_usd: new Decimal(110) },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       await service.logCost({
@@ -236,7 +234,6 @@ describe('AICostTrackerService', () => {
       // Mock aggregate to return $50 spend (Budget $100)
       jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
         _sum: { cost_usd: new Decimal(50) },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await service.checkBudgetAvailability('ticket-1', new Decimal(10));
@@ -248,7 +245,6 @@ describe('AICostTrackerService', () => {
       // Mock aggregate to return $95 spend (Budget $100) + $10 estimate = $105
       jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
         _sum: { cost_usd: new Decimal(95) },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await service.checkBudgetAvailability('ticket-1', new Decimal(10));
@@ -261,7 +257,6 @@ describe('AICostTrackerService', () => {
       // Mock aggregate to return $105 spend (Budget $100)
       jest.spyOn(prisma.aICostLog, 'aggregate').mockResolvedValue({
         _sum: { cost_usd: new Decimal(105) },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await service.checkBudgetAvailability('ticket-1', new Decimal(1));

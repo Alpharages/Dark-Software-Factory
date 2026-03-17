@@ -145,9 +145,9 @@ describe('Dependency & Conflict Flow (e2e)', () => {
     routingService = app.get<AIRoutingService>(AIRoutingService);
 
     // Mock project in DB
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     jest.spyOn(prisma.project, 'findUnique').mockResolvedValue(mockProject as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     jest.spyOn(prisma.project, 'findFirst').mockResolvedValue(mockProject as any);
   });
 
@@ -334,10 +334,11 @@ describe('Dependency & Conflict Flow (e2e)', () => {
       const dependentId = 'dependent-456';
 
       // Mock DB finding dependent tickets
-      jest.spyOn(prisma.ticketDependency, 'findMany').mockResolvedValue([
-        { ticket_id: dependentId, depends_on: blockerId, status: 'WAITING' },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ] as any);
+      jest
+        .spyOn(prisma.ticketDependency, 'findMany')
+        .mockResolvedValue([
+          { ticket_id: dependentId, depends_on: blockerId, status: 'WAITING' },
+        ] as any);
 
       // Mock dependency check passing now
       jest.spyOn(app.get(DependencyManagerService), 'checkDependencies').mockResolvedValue({

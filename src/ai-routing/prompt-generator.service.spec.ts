@@ -267,7 +267,7 @@ describe('CursorPromptBuilder', () => {
         clickupTaskId: 'task-1',
         provider: AIProvider.CURSOR_HEADLESS,
         complexityScore: 8,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         complexityBreakdown: {} as any,
         title: 'Test Task',
         description: 'Test Description',

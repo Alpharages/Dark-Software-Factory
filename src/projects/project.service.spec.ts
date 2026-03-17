@@ -383,7 +383,7 @@ describe('ProjectService', () => {
       mockPrisma.gitHubAccount.findUnique.mockResolvedValue({
         id: 'acc-123',
         userId: 'user-1',
-      } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as unknown as any);
       repository.updateGithubRepo.mockResolvedValue(updatedProject);
 
       const result = await service.updateGithubRepo('project-123', dto, 'user-1');
@@ -407,7 +407,7 @@ describe('ProjectService', () => {
       mockPrisma.gitHubAccount.findUnique.mockResolvedValue({
         id: 'acc-123',
         userId: 'other-user',
-      } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as unknown as any);
 
       await expect(service.updateGithubRepo('project-123', dto, 'user-1')).rejects.toThrow(
         'Not your GitHub account',
@@ -478,7 +478,6 @@ describe('ProjectService', () => {
         ...mockProject,
         provider: 'JIRA' as const,
         clickup_list_id: null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
       repository.findById.mockResolvedValue(nonClickUpProject);
 

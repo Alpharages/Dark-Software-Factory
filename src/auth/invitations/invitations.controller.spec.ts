@@ -57,7 +57,6 @@ describe('InvitationsController', () => {
         invitedBy: { id: 'admin-id', email: 'admin@example.com', fullName: 'Admin' },
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest.spyOn(service, 'createInvitation').mockResolvedValue(serviceResult as any);
 
       expect(await controller.create('admin-id', dto)).toEqual(expectedResult);
@@ -68,7 +67,7 @@ describe('InvitationsController', () => {
     it('should revoke an invitation', async () => {
       jest
         .spyOn(service, 'revokeInvitation')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         .mockResolvedValue({ id: 'uuid', status: 'REVOKED' } as any);
 
       await controller.remove('uuid');

@@ -4,7 +4,6 @@
  *
  * Run: npx ts-node test/integration/validate-qa-ai-delegation.ts
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Test } from '@nestjs/testing';
 import { AiQaOrchestrator } from '../../src/qa-automation/ai-qa-orchestrator.service';

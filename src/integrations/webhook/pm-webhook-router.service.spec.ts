@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { PmWebhookRouterService } from './pm-webhook-router.service';
 import { ProjectIntegrationService } from '../project-integration.service';

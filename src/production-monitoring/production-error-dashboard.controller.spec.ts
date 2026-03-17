@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any*/
 /**
  * Production Error Dashboard Controller Tests
  * Story 9-U-5: Production Error Dashboard

@@ -51,7 +51,7 @@ describe('AnomalyDetectionController', () => {
   describe('resolveAnomaly', () => {
     it('should call service.resolveAnomaly with user ID', async () => {
       const dto = { status: AnomalyStatus.RESOLVED, notes: 'fixed' };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const req = { user: { sub: 'user-1' } } as any;
       await controller.resolveAnomaly('1', dto, req);
       expect(service.resolveAnomaly).toHaveBeenCalledWith('1', dto, 'user-1');
@@ -70,7 +70,7 @@ describe('AnomalyDetectionController', () => {
         thresholds: {} as Record<string, unknown>,
         notifications_enabled: true,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const req = { user: { sub: 'user-1' } } as any;
       await controller.updateConfig(dto, req);
       expect(service.updateAnomalyConfig).toHaveBeenCalledWith(dto, 'user-1');

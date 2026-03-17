@@ -177,7 +177,7 @@ describe('StorageManagerService', () => {
       ]);
 
       (fs.unlink as jest.Mock).mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (prisma.workspaceArchive.delete as jest.Mock).mockResolvedValue({} as any);
 
       await service.onModuleInit();
@@ -223,7 +223,7 @@ describe('StorageManagerService', () => {
         ]);
 
       (fs.unlink as jest.Mock).mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (prisma.workspaceArchive.delete as jest.Mock).mockResolvedValue({} as any);
 
       await service.onModuleInit();

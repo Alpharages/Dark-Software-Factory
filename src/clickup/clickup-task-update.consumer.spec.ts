@@ -93,7 +93,6 @@ describe('ClickUpTaskUpdateConsumer', () => {
     it('should discard task if no project is found', async () => {
       mockPrismaService.project.findFirst.mockResolvedValue(null);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await (consumer as any).handleTaskUpdate(mockMessage);
 
       expect(result).toBeUndefined();
@@ -107,7 +106,6 @@ describe('ClickUpTaskUpdateConsumer', () => {
       mockPrismaService.project.findFirst.mockResolvedValue(mockProject);
       mockIntegrationService.findByProjectAndProvider.mockResolvedValue(null);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (consumer as any).handleTaskUpdate(mockMessage);
 
       expect(mockLoggerService.warn).toHaveBeenCalledWith(
@@ -124,7 +122,6 @@ describe('ClickUpTaskUpdateConsumer', () => {
         ai_trigger_status: null,
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (consumer as any).handleTaskUpdate(mockMessage);
 
       expect(mockLoggerService.warn).toHaveBeenCalledWith(
@@ -140,7 +137,6 @@ describe('ClickUpTaskUpdateConsumer', () => {
         ai_trigger_status: 'Ready for AI',
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (consumer as any).handleTaskUpdate(mockMessage);
 
       expect(mockLoggerService.debug).toHaveBeenCalledWith(
@@ -158,7 +154,6 @@ describe('ClickUpTaskUpdateConsumer', () => {
 
       mockPrismaService.ticket.findUnique.mockResolvedValue({ id: 't1', executions: [] });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (consumer as any).handleTaskUpdate(mockMessage);
 
       expect(mockPrismaService.ticket.findUnique).toHaveBeenCalledWith({
@@ -176,7 +171,6 @@ describe('ClickUpTaskUpdateConsumer', () => {
 
       mockPrismaService.ticket.findUnique.mockResolvedValue({ id: 't1', executions: [] });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (consumer as any).handleTaskUpdate({ ...mockMessage, status: 'IN REVIEW' });
 
       expect(mockPrismaService.ticket.findUnique).toHaveBeenCalledWith({

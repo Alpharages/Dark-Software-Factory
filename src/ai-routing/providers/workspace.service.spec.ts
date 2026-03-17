@@ -147,7 +147,7 @@ describe('WorkspaceService', () => {
               if (where.id) {
                 // In create, we didn't explicitly set 'id', only 'workspace_id'. Prisma usually sets 'id' (int/uuid).
                 // Let's assume for this mock that 'workspace_id' is used as 'id' or we need to fix create to set 'id'.
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 idx = workspaces.findIndex((w) => (w as any).id === where.id);
               }
             }
@@ -176,7 +176,7 @@ describe('WorkspaceService', () => {
               // Create new
               const record = {
                 ...create,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 id: (create as any).workspace_id, // Hack to ensure ID exists for update later
                 created_at: new Date(),
                 updated_at: new Date(),

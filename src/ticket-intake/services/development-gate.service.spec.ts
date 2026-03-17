@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DevelopmentGateService } from './development-gate.service';
 import { LoggerService } from '@/common/logger/logger.service';

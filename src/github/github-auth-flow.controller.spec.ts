@@ -9,7 +9,7 @@ describe('GitHubAuthFlowController', () => {
   let service: jest.Mocked<GitHubAuthFlowService>;
 
   // Minimal req stub — only `user.id` is used by the controller
-  const mockReq = { user: { id: 'user-1' } } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const mockReq = { user: { id: 'user-1' } } as any;
 
   beforeEach(async () => {
     const mockService = {
@@ -145,7 +145,7 @@ describe('GitHubAuthFlowController', () => {
           updatedAt: new Date(),
         },
       ];
-      service.getConnectedAccounts.mockResolvedValue(accounts as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      service.getConnectedAccounts.mockResolvedValue(accounts as any);
 
       const result = await controller.getAccounts(mockReq);
 

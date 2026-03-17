@@ -92,18 +92,15 @@ describe('AdrMetricsService', () => {
 
       mockPrismaService.adr.count.mockResolvedValue(5); // Queue depth
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await service.trackReviewCompleted(adr as any, 'APPROVE');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(mockReviewsCounter.labels as any).toHaveBeenCalledWith('APPROVE', 'LOW', 'proj1');
       // Verify inc() was called on the result of labels()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((mockReviewsCounter.labels as any)().inc).toHaveBeenCalled();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(mockDurationHistogram.labels as any).toHaveBeenCalledWith('LOW');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       expect((mockDurationHistogram.labels as any)().observe).toHaveBeenCalledWith(120);
     });
   });

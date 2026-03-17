@@ -64,7 +64,11 @@ export class ConnectedAppsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get ClickUp OAuth URL for user-level connection' })
   @ApiQuery({ name: 'returnTo', required: false, description: 'URL to return to after OAuth' })
-  @ApiResponse({ status: 200, description: 'Returns { url }' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns OAuth URL',
+    schema: { type: 'object', properties: { url: { type: 'string' } }, required: ['url'] },
+  })
   async getClickUpConnectUrl(
     @CurrentUser('id') userId: string,
     @Query('returnTo') returnTo?: string,
@@ -80,7 +84,7 @@ export class ConnectedAppsController {
   @ApiQuery({ name: 'state', required: false })
   async clickUpCallback(
     @Query('code') code: string,
-    @Query('state') state: string,
+    @Query('state') state: string | undefined,
     @Res() reply: FastifyReply,
   ) {
     const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? '';
@@ -148,7 +152,15 @@ export class ConnectedAppsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Disconnect/Delete a connected app' })
   @ApiParam({ name: 'id', description: 'Connected App UUID' })
-  @ApiResponse({ status: 200, description: 'App disconnected' })
+  @ApiResponse({
+    status: 200,
+    description: 'App disconnected',
+    schema: {
+      type: 'object',
+      properties: { message: { type: 'string' } },
+      required: ['message'],
+    },
+  })
   async disconnect(@CurrentUser('id') userId: string, @Param('id') id: string) {
     await this.appsService.delete(id, userId);
     return { message: 'Connected app disconnected successfully' };

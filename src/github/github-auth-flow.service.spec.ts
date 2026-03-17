@@ -415,7 +415,7 @@ describe('GitHubAuthFlowService', () => {
         avatarUrl: '',
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as unknown as any);
 
       await expect(service.getReposForAccount('acc-1', 'user-1')).rejects.toThrow(
         ForbiddenException,
@@ -439,7 +439,7 @@ describe('GitHubAuthFlowService', () => {
         avatarUrl: '',
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as unknown as any);
 
       encryption.decrypt.mockReturnValue('decrypted-token');
 

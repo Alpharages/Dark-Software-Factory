@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClickUpService } from './clickup.service';
 import { SentryService } from '../common/sentry/sentry.service';

@@ -15,7 +15,7 @@ import { Subject } from 'rxjs';
 describe('ClaudeCodeProvider Workspace', () => {
   let provider: ClaudeCodeProvider;
   let workspaceService: jest.Mocked<WorkspaceService>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let ptyExecutionService: any;
 
   const mockInput: IAIExecutionInput = {

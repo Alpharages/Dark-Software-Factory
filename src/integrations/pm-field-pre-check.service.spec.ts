@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { PMFieldPreCheckService } from './pm-field-pre-check.service';
 import { PMProviderFactory } from './providers/pm-provider.factory';

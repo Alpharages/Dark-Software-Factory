@@ -13,7 +13,7 @@ describe('PMActionableFailureCommentService', () => {
   let service: PMActionableFailureCommentService;
   let providerFactory: PMProviderFactory;
   let sentryService: SentryService;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let mockProvider: any;
 
   const mockIntegration = { id: 'int-001', provider: 'CLICKUP' } as unknown as ProjectIntegration;

@@ -5,9 +5,9 @@ import { HTTP_METRICS } from '../metrics.constants';
 
 describe('HttpCollector', () => {
   let collector: HttpCollector;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let mockHistogram: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   let mockCounter: any;
 
   beforeEach(async () => {

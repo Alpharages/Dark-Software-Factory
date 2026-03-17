@@ -23,7 +23,6 @@ describe('ManualInterventionService', () => {
   let overrideRepository: jest.Mocked<ExecutionOverrideRepository>;
   let auditLogService: jest.Mocked<AuditLogService>;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockExecution: any = {
     id: 'exec-123',
     ticket_id: 'ticket-456',
@@ -37,13 +36,11 @@ describe('ManualInterventionService', () => {
     updated_at: new Date(),
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockPausedExecution: any = {
     ...mockExecution,
     status: ExecutionStatus.PAUSED,
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockEmergencyStoppedExecution: any = {
     ...mockExecution,
     status: ExecutionStatus.EMERGENCY_STOPPED,
@@ -293,7 +290,6 @@ describe('ManualInterventionService', () => {
         originalDecision: 'IN_PROGRESS',
         newDecision: 'APPROVE',
         reason: 'False positive',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await service.overrideDecision(
@@ -319,7 +315,6 @@ describe('ManualInterventionService', () => {
       executionRepository.findById.mockResolvedValue(mockExecution);
       overrideRepository.findMostRecentForExecution.mockResolvedValue({
         newDecision: 'REJECT',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       overrideRepository.create.mockResolvedValue({
         id: 'override-124',
@@ -328,7 +323,6 @@ describe('ManualInterventionService', () => {
         originalDecision: 'REJECT',
         newDecision: 'APPROVE',
         reason: 'Changed mind',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       await service.overrideDecision(

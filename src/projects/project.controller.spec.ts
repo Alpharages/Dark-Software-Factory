@@ -158,7 +158,7 @@ describe('ProjectController', () => {
     it('should update github account and repository url', async () => {
       service.updateGithubRepo.mockResolvedValue(mockProject);
       const dto = { githubAccountId: 'acc-123', repositoryFullName: 'test/repo' };
-      const reqUser = { id: 'pm-123' } as unknown as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      const reqUser = { id: 'pm-123' } as unknown as any;
 
       const result = await controller.updateGithubRepo('project-123', dto, reqUser);
 
@@ -203,7 +203,6 @@ describe('ProjectController', () => {
 
   describe('getIntegrations', () => {
     it('should return all integrations for a project', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       integrationService.findByProjectId.mockResolvedValue([mockIntegration as any]);
       const result = await controller.getIntegrations('project-123');
       expect(result).toHaveLength(1);
@@ -220,7 +219,6 @@ describe('ProjectController', () => {
 
   describe('getSyncConfig', () => {
     it('should return CLICKUP sync config', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
       const result = await controller.getSyncConfig('project-123');
       expect(result.ai_trigger_status).toBe('In Review');
@@ -236,13 +234,12 @@ describe('ProjectController', () => {
 
   describe('updateSyncConfig', () => {
     it('should update ai_trigger_status', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
 
       integrationService.updateIntegration.mockResolvedValue({
         ...mockIntegration,
         ai_trigger_status: 'Ready',
-      } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const result = await controller.updateSyncConfig('project-123', {
         ai_trigger_status: 'Ready',
@@ -254,12 +251,11 @@ describe('ProjectController', () => {
     });
 
     it('should clear ai_trigger_status when null is passed', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
       integrationService.updateIntegration.mockResolvedValue({
         ...mockIntegration,
         ai_trigger_status: null,
-      } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      } as any);
 
       const result = await controller.updateSyncConfig('project-123', { ai_trigger_status: null });
       expect(result.ai_trigger_status).toBeNull();
@@ -273,12 +269,10 @@ describe('ProjectController', () => {
     });
 
     it('should merge container_id into provider_config', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
       integrationService.updateIntegration.mockResolvedValue({
         ...mockIntegration,
         provider_config: { workspaceId: 'ws-123', containerId: 'list-456' },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await controller.updateSyncConfig('project-123', {
@@ -295,9 +289,8 @@ describe('ProjectController', () => {
     });
 
     it('should not touch provider_config when container_id is undefined', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       integrationService.updateIntegration.mockResolvedValue(mockIntegration as any);
 
       await controller.updateSyncConfig('project-123', {

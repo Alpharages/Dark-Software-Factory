@@ -32,7 +32,7 @@ describe('ProjectRepository', () => {
         github_repository_url: 'https://github.com/owner/repo',
       };
 
-      (prisma.project.update as jest.Mock).mockResolvedValue(mockUpdatedProject as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      (prisma.project.update as jest.Mock).mockResolvedValue(mockUpdatedProject as unknown as any);
 
       const result = await repository.updateGithubRepo(
         'project-1',

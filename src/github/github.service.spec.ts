@@ -157,17 +157,17 @@ describe('GitHubService', () => {
       const newCommitData = { sha: 'new-commit-sha' };
 
       mockOctokit.repos.get = jest.fn(); // Just in case
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (mockOctokit.git as any).getRef = jest.fn().mockResolvedValue({ data: refData });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (mockOctokit.git as any).getCommit = jest.fn().mockResolvedValue({ data: commitData });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (mockOctokit.git as any).createBlob = jest.fn().mockResolvedValue({ data: blobData });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (mockOctokit.git as any).createTree = jest.fn().mockResolvedValue({ data: treeData });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (mockOctokit.git as any).createCommit = jest.fn().mockResolvedValue({ data: newCommitData });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (mockOctokit.git as any).updateRef = jest.fn().mockResolvedValue({ data: {} });
 
       const files = [{ path: 'test.txt', content: 'test content' }];

@@ -122,7 +122,7 @@ describe('RetryHandlerService', () => {
         correlationId: 'corr-123',
         scheduledTime: new Date(),
         delayMs: 1000,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         context: {} as any,
       });
 

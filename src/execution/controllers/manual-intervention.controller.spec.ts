@@ -9,7 +9,7 @@ describe('ManualInterventionController', () => {
   let service: jest.Mocked<ManualInterventionService>;
 
   const mockUser = { userId: 'user-123' };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const mockRequest: any = { user: mockUser };
 
   beforeEach(async () => {
@@ -42,7 +42,6 @@ describe('ManualInterventionController', () => {
         execution: {
           id: 'exec-123',
           status: ExecutionStatus.PAUSED,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         containerControlSkipped: false,
       });
@@ -67,7 +66,6 @@ describe('ManualInterventionController', () => {
         execution: {
           id: 'exec-123',
           status: ExecutionStatus.IN_PROGRESS,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         containerControlSkipped: false,
       });
@@ -93,7 +91,6 @@ describe('ManualInterventionController', () => {
         execution: {
           id: 'exec-123',
           status: ExecutionStatus.IN_PROGRESS,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         containerControlSkipped: false,
       });
@@ -111,7 +108,6 @@ describe('ManualInterventionController', () => {
         execution: {
           id: 'exec-123',
           status: ExecutionStatus.EMERGENCY_STOPPED,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         containerKilled: true,
         containerControlSkipped: false,
@@ -139,7 +135,6 @@ describe('ManualInterventionController', () => {
         execution: {
           id: 'exec-123',
           status: ExecutionStatus.EMERGENCY_STOPPED,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
         containerKilled: false,
         containerControlSkipped: false,
@@ -159,7 +154,6 @@ describe('ManualInterventionController', () => {
   describe('overrideDecision', () => {
     it('should override decision to APPROVE', async () => {
       service.overrideDecision.mockResolvedValue({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         execution: { id: 'exec-123' } as any,
         overrideId: 'override-456',
       });
@@ -189,7 +183,6 @@ describe('ManualInterventionController', () => {
 
     it('should override decision to REJECT', async () => {
       service.overrideDecision.mockResolvedValue({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         execution: { id: 'exec-123' } as any,
         overrideId: 'override-457',
       });

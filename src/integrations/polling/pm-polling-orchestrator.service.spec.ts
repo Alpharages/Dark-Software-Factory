@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { PmPollingOrchestrator } from './pm-polling-orchestrator.service';
 import { PrismaService } from '../../database/prisma.service';
