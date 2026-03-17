@@ -106,18 +106,22 @@ development_status:
     story_points: 5
     notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
   CS5-3-connected-apps-settings-page:
+    status: done
+    completion_date: '2026-03-17T15:33:38Z'
+    effort: '2 days'
+    story_points: 5
+    notes: 'Implemented API client, hooks, UI panel, and routing. Verified with 14 unit tests.'
+  CS5-4-import-modal-account-selection:
+    status: done
+    completion_date: '2026-03-17T11:00:00Z'
+    effort: '2 days'
+    story_points: 5
+    notes: 'Implemented account-first selection flow, improved hierarchy navigation, and added comprehensive unit tests. Code review fixes applied: ProjectsSyncPage ?openImport=true handler, PmIntegrationCallback returnTo=import flow, loading/error states on step 0, single-account confirmed state, footer Back hidden on step 0, Next button gating, localStorage JSON format, HierarchyResponse type, enabled param on useAppHierarchy.'
+  CS5-5-auto-create-project-integration-on-import:
     status: ready-for-dev
     effort: '2 days'
     story_points: 5
     notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
-  CS5-4-import-modal-account-selection:
-    status: backlog
-    effort: '2 days'
-    story_points: 5
-  CS5-5-auto-create-project-integration-on-import:
-    status: backlog
-    effort: '2 days'
-    story_points: 5
   epic-CS5-retrospective: optional
 
   # EPIC 24 - GITHUB MULTI-ACCOUNT
