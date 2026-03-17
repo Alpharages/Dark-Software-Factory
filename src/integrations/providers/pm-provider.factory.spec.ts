@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { ClickUpProvider } from './clickup/clickup.provider';
 import { UnsupportedProviderException } from '../../common/exceptions/unsupported-provider.exception';
 import { IntegrationAuthException } from '../../common/exceptions/integration-auth.exception';
-import { IntegrationProvider, ProjectIntegration } from '@prisma/client';
+import { PMProvider, ProjectIntegration } from '@prisma/client';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -19,7 +19,7 @@ describe('PMProviderFactory', () => {
     ({
       id: 'integration-1',
       project_id: 'project-1',
-      provider: IntegrationProvider.CLICKUP,
+      provider: PMProvider.CLICKUP,
       access_token: 'decrypted-access-token',
       refresh_token: 'refresh-token',
       token_expiry: new Date(Date.now() + 30 * 60 * 1000), // 30 min ahead — no refresh
@@ -106,7 +106,7 @@ describe('PMProviderFactory', () => {
 
     it('throws UnsupportedProviderException for unknown provider', async () => {
       const integration = makeIntegration({
-        provider: 'JIRA' as IntegrationProvider,
+        provider: 'JIRA' as PMProvider,
         token_expiry: null,
       });
       await expect(factory.getProvider(integration)).rejects.toThrow(UnsupportedProviderException);

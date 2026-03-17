@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { IntegrationProvider, ProjectIntegration } from '@prisma/client';
+import { PMProvider, ProjectIntegration } from '@prisma/client';
 import { IPMProvider } from './pm-provider.interface';
 import { ClickUpProvider } from './clickup/clickup.provider';
 import { ProjectIntegrationService } from '../project-integration.service';
@@ -41,7 +41,7 @@ export class PMProviderFactory {
     }
 
     switch (activeIntegration.provider) {
-      case IntegrationProvider.CLICKUP:
+      case PMProvider.CLICKUP:
         return new ClickUpProvider(activeIntegration.access_token);
       default:
         throw new UnsupportedProviderException(String(activeIntegration.provider));
@@ -49,7 +49,7 @@ export class PMProviderFactory {
   }
 
   private async refreshTokens(integration: ProjectIntegration): Promise<ProjectIntegration> {
-    if (integration.provider !== IntegrationProvider.CLICKUP) {
+    if (integration.provider !== PMProvider.CLICKUP) {
       return integration;
     }
 

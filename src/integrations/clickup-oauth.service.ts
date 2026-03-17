@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { IntegrationProvider } from '@prisma/client';
+import { PMProvider } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { ProjectIntegrationService } from './project-integration.service';
 import { ClickUpProvider } from './providers/clickup/clickup.provider';
@@ -123,7 +123,7 @@ export class ClickUpOAuthService {
       const tokenData = await this.exchangeCode(code);
       const identity = await this.getBotIdentity(tokenData.access_token);
 
-      await this.integrationService.upsertIntegration(projectId, IntegrationProvider.CLICKUP, {
+      await this.integrationService.upsertIntegration(projectId, PMProvider.CLICKUP, {
         workspace_id: identity.workspace_id,
         workspace_name: identity.workspace_name,
         access_token: tokenData.access_token,

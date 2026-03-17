@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DevelopmentGateService } from './development-gate.service';
 import { LoggerService } from '@/common/logger/logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
-import { IntegrationProvider } from '@prisma/client';
+import { PMProvider } from '@prisma/client';
 
 describe('DevelopmentGateService', () => {
   let service: DevelopmentGateService;
@@ -13,7 +13,7 @@ describe('DevelopmentGateService', () => {
   const mockIntegration: any = {
     id: 'int-123',
     project_id: 'proj-1',
-    provider: IntegrationProvider.CLICKUP,
+    provider: PMProvider.CLICKUP,
     workspace_id: 'ws-1',
     webhook_id: 'wh-1',
     webhook_secret: 'secret',
@@ -86,7 +86,7 @@ describe('DevelopmentGateService', () => {
         expect.any(Object),
       );
       expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_tasks_dropped_no_trigger_total', {
-        provider: IntegrationProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
         project_id: 'proj-1',
       });
     });
@@ -113,7 +113,7 @@ describe('DevelopmentGateService', () => {
       service.check('task-1', 'backlog', mockIntegration as any, 'polling', 'corr-1');
 
       expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_polling_tasks_skipped_total', {
-        provider: IntegrationProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
         project_id: 'proj-1',
       });
     });
@@ -124,7 +124,7 @@ describe('DevelopmentGateService', () => {
       service.check('task-1', 'any', integrationNoTrigger as any, 'webhook', 'corr-1');
 
       expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_tasks_dropped_no_trigger_total', {
-        provider: IntegrationProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
         project_id: 'proj-1',
       });
     });
@@ -135,7 +135,7 @@ describe('DevelopmentGateService', () => {
       service.check('task-1', 'any', integrationNoTrigger as any, 'polling', 'corr-1');
 
       expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_tasks_dropped_no_trigger_total', {
-        provider: IntegrationProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
         project_id: 'proj-1',
       });
     });

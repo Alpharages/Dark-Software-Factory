@@ -49,7 +49,8 @@ import {
   QualityGateConfigHistory,
   QualityAnomaly,
   QualityAnomalyConfig,
-  ExecutionOverride
+  ExecutionOverride,
+  ConnectedApp
 } from '@prisma/client';
 
 export * from '@prisma/client';
@@ -108,4 +109,5 @@ export type QualityGateConfigHistoryModel = QualityGateConfigHistory;
 export type QualityAnomalyModel = QualityAnomaly;
 export type QualityAnomalyConfigModel = QualityAnomalyConfig;
 export type ExecutionOverrideModel = ExecutionOverride;
+export type ConnectedAppModel = ConnectedApp;
 

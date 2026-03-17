@@ -49,6 +49,7 @@ import { NotificationsModule } from './notifications/notifications.module'; // S
 // External integrations
 import { IntegrationsModule } from './integrations/integrations.module';
 import { PmWebhookModule } from './integrations/webhook/pm-webhook.module';
+import { ConnectedAppsModule } from './connected-apps/connected-apps.module';
 import { ClickUpModule } from './clickup/clickup.module';
 import { ProjectModule } from './projects/project.module';
 import { PmPollingModule } from './integrations/polling/pm-polling.module';
@@ -128,6 +129,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // External integrations
     IntegrationsModule,
     PmWebhookModule,
+    ConnectedAppsModule,
     ClickUpModule,
     ProjectModule,
     PmPollingModule,

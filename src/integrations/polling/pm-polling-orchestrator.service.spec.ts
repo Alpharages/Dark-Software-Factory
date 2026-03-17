@@ -8,7 +8,7 @@ import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { SentryService } from '../../common/sentry/sentry.service';
 import { LoggerService } from '../../common/logger/logger.service';
-import { IntegrationProvider } from '@prisma/client';
+import { PMProvider } from '@prisma/client';
 import { TaskTriggerSource } from '../../ticket-intake/dto/task-event.dto';
 import { DevelopmentGateService } from '../../ticket-intake/services/development-gate.service';
 import { QUEUE_NAMES } from '../../rabbitmq/rabbitmq.config';
@@ -16,7 +16,7 @@ import { QUEUE_NAMES } from '../../rabbitmq/rabbitmq.config';
 const makeRawIntegration = (overrides: Record<string, unknown> = {}) => ({
   id: 'int-1',
   project_id: 'proj-1',
-  provider: IntegrationProvider.CLICKUP,
+  provider: PMProvider.CLICKUP,
   workspace_id: 'ws-1',
   polling_enabled: true,
   polling_interval_min: 15,
@@ -323,7 +323,7 @@ describe('PmPollingOrchestrator', () => {
 
     expect(sentry.captureException).toHaveBeenCalledWith(providerError, expect.any(Object));
     expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_polling_errors_total', {
-      provider: IntegrationProvider.CLICKUP,
+      provider: PMProvider.CLICKUP,
     });
     expect(logger.error).toHaveBeenCalled();
   });

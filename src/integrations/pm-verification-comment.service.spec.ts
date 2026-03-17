@@ -6,7 +6,7 @@ import { PMProviderFactory } from './providers/pm-provider.factory';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { IPMProvider } from './providers/pm-provider.interface';
 import { NormalizedFieldType } from './providers/dto/normalized-field.dto';
-import { ProjectIntegration, IntegrationProvider } from '@/prisma/client';
+import { ProjectIntegration, PMProvider } from '@/prisma/client';
 
 describe('PMVerificationCommentService', () => {
   let service: PMVerificationCommentService;
@@ -17,7 +17,7 @@ describe('PMVerificationCommentService', () => {
   const mockIntegration: ProjectIntegration = {
     id: 'int-123',
     project_id: 'proj-123',
-    provider: IntegrationProvider.CLICKUP,
+    provider: PMProvider.CLICKUP,
     workspace_id: 'ws-123',
     workspace_name: 'WS',
     access_token: 'token',

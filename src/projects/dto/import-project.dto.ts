@@ -1,16 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsEnum, IsNumberString } from 'class-validator';
-import { ProjectProvider } from '@/prisma/enums';
+import { PMProvider } from '@/prisma/enums';
 
 export class ImportProjectDto {
   @ApiProperty({
     description: 'Integration provider source',
-    enum: ProjectProvider,
+    enum: PMProvider,
     example: 'CLICKUP',
   })
-  @IsEnum(ProjectProvider)
+  @IsEnum(PMProvider)
   @IsNotEmpty()
-  provider!: ProjectProvider;
+  provider!: PMProvider;
 
   @ApiProperty({
     description: 'Resource ID from the provider (e.g., ClickUp List ID)',

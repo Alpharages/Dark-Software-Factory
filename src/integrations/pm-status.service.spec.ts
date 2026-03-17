@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProjectIntegration, IntegrationProvider } from '@prisma/client';
+import { ProjectIntegration, PMProvider } from '@prisma/client';
 import { PMStatusService } from './pm-status.service';
 import { PMProviderFactory } from './providers/pm-provider.factory';
 import { SentryService } from '../common/sentry/sentry.service';
@@ -20,7 +20,7 @@ describe('PMStatusService', () => {
   const mockIntegration: ProjectIntegration = {
     id: 'int-123',
     project_id: 'proj-123',
-    provider: IntegrationProvider.CLICKUP,
+    provider: PMProvider.CLICKUP,
     workspace_id: 'ws-123',
     workspace_name: 'Test WS',
     access_token: 'token-123',

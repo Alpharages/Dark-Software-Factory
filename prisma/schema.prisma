@@ -19,7 +19,7 @@ model Project {
   status                String                 @default("active")
   client_name           String                 @default("Internal")
   monitor_tasks         Boolean                @default(false)
-  provider              ProjectProvider        @default(CLICKUP)
+  provider              PMProvider             @default(CLICKUP)
   sync_config           Json?
   deactivated_at        DateTime?
   is_active             Boolean                @default(true)
@@ -666,6 +666,7 @@ model User {
   notificationPreferences      NotificationPreference[]
   inAppNotifications           InAppNotification[]
   gitHubAccounts               GitHubAccount[]
+  connectedApps                ConnectedApp[]
 
   @@index([managed_by_id])
   @@index([role])
@@ -1046,21 +1047,25 @@ model ExecutionOverride {
   @@map("execution_overrides")
 }
 
-// IntegrationProvider: per-connection identity on ProjectIntegration.provider.
-// ProjectProvider: project-level PM tool selection on Project.provider.
-// Both intentionally share the same values and must be kept in sync.
-// They are kept separate so each can evolve independently (e.g. ProjectIntegration
-// may gain providers not yet supported at the Project configuration level).
-enum IntegrationProvider {
+// PMProvider: consolidated enum for Project-level and Integration-level PM tools.
+// Replaces IntegrationProvider and ProjectProvider.
+enum PMProvider {
   CLICKUP
   JIRA
   ASANA
 }
 
-enum ProjectProvider {
+// AppProvider: user-level OAuth providers for ConnectedApps.
+enum AppProvider {
   CLICKUP
   JIRA
   ASANA
+  GITHUB
+  GITLAB
+  BITBUCKET
+  GMAIL
+  GOOGLE_CALENDAR
+  SLACK
 }
 
 enum TicketStatus {
@@ -1261,7 +1266,7 @@ enum InvitationStatus {
 model ProjectIntegration {
   id                   String              @id @default(uuid())
   project_id           String
-  provider             IntegrationProvider
+  provider             PMProvider
   workspace_id         String
   workspace_name       String
   access_token         String?
@@ -1300,4 +1305,24 @@ model GitHubAccount {
   projects       Project[]
 
   @@map("github_accounts")
+}
+
+model ConnectedApp {
+  id             String      @id @default(uuid())
+  user_id        String
+  provider       AppProvider
+  workspace_id   String
+  workspace_name String
+  access_token   String? // AES-256-GCM encrypted via EncryptionService
+  refresh_token  String? // AES-256-GCM encrypted, nullable
+  token_expiry   DateTime? // null = non-expiring (e.g. ClickUp)
+  metadata       Json? // provider-specific extras
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, provider, workspace_id])
+  @@index([user_id, provider])
+  @@map("connected_apps")
 }

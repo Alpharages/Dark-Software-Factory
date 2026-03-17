@@ -3,7 +3,7 @@ import { ProjectIntegrationService } from '../project-integration.service';
 import { WebhooksService } from '@/webhooks/webhooks.service';
 import { LoggerService } from '@/common/logger/logger.service';
 import { DevelopmentGateService } from '@/ticket-intake/services/development-gate.service';
-import { IntegrationProvider, ProjectIntegration } from '@prisma/client';
+import { PMProvider, ProjectIntegration } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
@@ -21,7 +21,7 @@ export class PmWebhookRouterService {
   ) {}
 
   async handleWebhook(
-    provider: IntegrationProvider,
+    provider: PMProvider,
     rawBody: string,
     headers: Record<string, string | string[]>,
     correlationId: string,
@@ -104,11 +104,11 @@ export class PmWebhookRouterService {
     }
   }
 
-  private extractWebhookId(provider: IntegrationProvider, rawBody: string): string | null {
+  private extractWebhookId(provider: PMProvider, rawBody: string): string | null {
     try {
       const body = JSON.parse(rawBody) as Record<string, unknown>;
       switch (provider) {
-        case IntegrationProvider.CLICKUP:
+        case PMProvider.CLICKUP:
           return typeof body['webhook_id'] === 'string' ? body['webhook_id'] : null;
         default:
           return null;

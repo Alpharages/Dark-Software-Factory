@@ -11,7 +11,7 @@ import { TicketStatus } from '@/prisma/client';
 import { ClickUpService } from './clickup.service';
 import { ConfigService } from '@nestjs/config';
 import { Inject, forwardRef } from '@nestjs/common';
-import { IntegrationProvider } from '@/prisma/client';
+import { PMProvider } from '@/prisma/client';
 import { ProjectIntegrationService } from '../integrations/project-integration.service';
 // Story 20.1: Provider-Agnostic Intake
 import { mapClickUpToTaskEvent, TaskTriggerSource } from '@/ticket-intake/dto';
@@ -171,7 +171,7 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
       // CS1-3: ai_trigger_status gate (FR-CS20) — place after project resolved, before ticket lookup
       const integration = await this.integrationService.findByProjectAndProvider(
         project.id,
-        IntegrationProvider.CLICKUP,
+        PMProvider.CLICKUP,
       );
 
       if (!integration) {

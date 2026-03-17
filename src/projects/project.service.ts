@@ -16,7 +16,7 @@ import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
 import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { Project } from '@/prisma/client';
-import { ProjectProvider } from '@/prisma/enums';
+import { PMProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '@/database/prisma.service';
@@ -196,7 +196,7 @@ export class ProjectService {
     const { provider, resourceId } = importDto;
 
     // Validate provider (currently on ClickUp supported per AC#2)
-    if (provider !== ProjectProvider.CLICKUP) {
+    if (provider !== PMProvider.CLICKUP) {
       throw new Error(`Provider ${provider} import not yet supported`);
     }
 
@@ -223,7 +223,7 @@ export class ProjectService {
         pm_id: userId,
         status: 'active',
         client_name: 'Internal', // Default
-        provider: ProjectProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
         monitor_tasks: true, // Auto-enable monitoring for imports
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
@@ -372,7 +372,7 @@ export class ProjectService {
   async syncFromClickUp(id: string): Promise<Project & { syncedTasksCount: number }> {
     const project = await this.findOne(id);
 
-    if (project.provider !== ProjectProvider.CLICKUP || !project.clickup_list_id) {
+    if (project.provider !== PMProvider.CLICKUP || !project.clickup_list_id) {
       throw new BadRequestException('Project is not linked to ClickUp');
     }
 

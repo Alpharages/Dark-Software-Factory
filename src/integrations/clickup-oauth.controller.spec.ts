@@ -4,7 +4,7 @@ import { FastifyReply } from 'fastify';
 import { ClickUpOAuthController } from './clickup-oauth.controller';
 import { ClickUpOAuthService } from './clickup-oauth.service';
 import { ProjectIntegrationService } from './project-integration.service';
-import { IntegrationProvider } from '@prisma/client';
+import { PMProvider } from '@prisma/client';
 
 describe('ClickUpOAuthController', () => {
   let controller: ClickUpOAuthController;
@@ -69,7 +69,7 @@ describe('ClickUpOAuthController', () => {
       expect(result).toEqual({ message: 'ClickUp integration disconnected successfully' });
       expect(integrationService.deleteIntegration).toHaveBeenCalledWith(
         'proj-1',
-        IntegrationProvider.CLICKUP,
+        PMProvider.CLICKUP,
       );
     });
   });

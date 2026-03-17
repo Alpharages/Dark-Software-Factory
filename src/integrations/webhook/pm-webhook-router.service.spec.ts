@@ -5,14 +5,14 @@ import { ProjectIntegrationService } from '../project-integration.service';
 import { WebhooksService } from '@/webhooks/webhooks.service';
 import { LoggerService } from '@/common/logger/logger.service';
 import { DevelopmentGateService } from '@/ticket-intake/services/development-gate.service';
-import { IntegrationProvider } from '@prisma/client';
+import { PMProvider } from '@prisma/client';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { createHmac } from 'crypto';
 
 const makeIntegration = (overrides: Record<string, unknown> = {}) => ({
   id: 'pi-1',
   project_id: 'proj-1',
-  provider: IntegrationProvider.CLICKUP,
+  provider: PMProvider.CLICKUP,
   workspace_id: 'ws-123',
   webhook_id: 'wh-abc',
   webhook_secret: 'super-secret-key',
@@ -69,7 +69,7 @@ describe('PmWebhookRouterService', () => {
     // AC11 test 1 — unknown provider: unrecognized provider → silent return, no processing
     it('returns silently for unknown provider (no webhook_id extraction)', async () => {
       await service.handleWebhook(
-        'UNKNOWN' as IntegrationProvider,
+        'UNKNOWN' as PMProvider,
         JSON.stringify(validBody),
         {},
         correlationId,
@@ -84,7 +84,7 @@ describe('PmWebhookRouterService', () => {
       projectIntegrationService.findByWebhookId.mockResolvedValue(null);
       const rawBody = JSON.stringify(validBody);
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, {}, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, {}, correlationId);
 
       expect(projectIntegrationService.findByWebhookId).toHaveBeenCalledWith('wh-abc');
       expect(logger.warn).toHaveBeenCalled();
@@ -98,10 +98,10 @@ describe('PmWebhookRouterService', () => {
       const rawBody = JSON.stringify(validBody);
       const headers = { 'x-signature': 'deadbeefdeadbeef' };
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId);
 
       expect(invalidSignatureCounter.inc).toHaveBeenCalledWith({
-        provider: IntegrationProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
       });
       expect(webhooksService.processWebhook).not.toHaveBeenCalled();
     });
@@ -113,10 +113,10 @@ describe('PmWebhookRouterService', () => {
       const rawBody = JSON.stringify(validBody);
       const headers = { 'x-signature': 'any-sig' };
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId);
 
       expect(invalidSignatureCounter.inc).toHaveBeenCalledWith({
-        provider: IntegrationProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
       });
       expect(webhooksService.processWebhook).not.toHaveBeenCalled();
     });
@@ -129,7 +129,7 @@ describe('PmWebhookRouterService', () => {
       const { rawBody, signature } = signBody(validBody, secret);
       const headers = { 'x-signature': signature };
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId);
 
       expect(invalidSignatureCounter.inc).not.toHaveBeenCalled();
       expect(developmentGate.check).not.toHaveBeenCalled();
@@ -152,7 +152,7 @@ describe('PmWebhookRouterService', () => {
       const { rawBody, signature } = signBody(body, secret);
       const headers = { 'x-signature': signature };
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId);
 
       expect(developmentGate.check).toHaveBeenCalled();
       expect(webhooksService.processWebhook).not.toHaveBeenCalled();
@@ -168,7 +168,7 @@ describe('PmWebhookRouterService', () => {
       const { rawBody, signature } = signBody(body, secret);
       const headers = { 'x-signature': signature };
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId);
 
       // Gate was called with empty taskStatus — allowed by default mock
       expect(developmentGate.check).toHaveBeenCalledWith(
@@ -189,7 +189,7 @@ describe('PmWebhookRouterService', () => {
       const { rawBody, signature } = signBody(validBody, secret);
       const headers = { 'x-signature': signature };
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId);
 
       expect(developmentGate.check).toHaveBeenCalled();
       expect(webhooksService.processWebhook).toHaveBeenCalled();
@@ -221,18 +221,8 @@ describe('PmWebhookRouterService', () => {
       const { rawBody: raw2, signature: sig2 } = signBody(body2, secret2);
 
       await Promise.all([
-        service.handleWebhook(
-          IntegrationProvider.CLICKUP,
-          raw1,
-          { 'x-signature': sig1 },
-          'corr-7a',
-        ),
-        service.handleWebhook(
-          IntegrationProvider.CLICKUP,
-          raw2,
-          { 'x-signature': sig2 },
-          'corr-7b',
-        ),
+        service.handleWebhook(PMProvider.CLICKUP, raw1, { 'x-signature': sig1 }, 'corr-7a'),
+        service.handleWebhook(PMProvider.CLICKUP, raw2, { 'x-signature': sig2 }, 'corr-7b'),
       ]);
 
       expect(webhooksService.processWebhook).toHaveBeenCalledTimes(2);
@@ -247,10 +237,10 @@ describe('PmWebhookRouterService', () => {
       const rawBody = JSON.stringify(validBody);
       const headers = { 'x-signature': 'wrong-sig' };
 
-      await service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId);
 
       expect(invalidSignatureCounter.inc).toHaveBeenCalledWith({
-        provider: IntegrationProvider.CLICKUP,
+        provider: PMProvider.CLICKUP,
       });
     });
 
@@ -264,14 +254,14 @@ describe('PmWebhookRouterService', () => {
       const headers = { 'x-signature': signature };
 
       await expect(
-        service.handleWebhook(IntegrationProvider.CLICKUP, rawBody, headers, correlationId),
+        service.handleWebhook(PMProvider.CLICKUP, rawBody, headers, correlationId),
       ).resolves.toBeUndefined();
 
       expect(logger.error).toHaveBeenCalled();
     });
 
     it('returns early without processing when webhook body is invalid JSON', async () => {
-      await service.handleWebhook(IntegrationProvider.CLICKUP, 'not-valid-json', {}, correlationId);
+      await service.handleWebhook(PMProvider.CLICKUP, 'not-valid-json', {}, correlationId);
 
       expect(projectIntegrationService.findByWebhookId).not.toHaveBeenCalled();
       expect(webhooksService.processWebhook).not.toHaveBeenCalled();

@@ -84,6 +84,40 @@ development_status:
     effort: '2 days'
     story_points: 5
 
+  # EPIC CS5 - CONNECTED APPS (USER-LEVEL PROVIDER ACCOUNTS & IMPORT ONBOARDING)
+  epic-CS5: in-progress
+  epic-CS5-name: 'Connected Apps — User-Level Provider Accounts & Import Onboarding'
+  epic-CS5-phase: 'Onboarding Sprint'
+  epic-CS5-priority: high
+  epic-CS5-dependencies: 'Epic CS0'
+  epic-CS5-estimated_effort: '10 days'
+  epic-CS5-source: 'epics-connected-apps.md'
+  epic-CS5-notes: 'Resolves chicken-and-egg onboarding gap. Generic ConnectedApp model for all user-level OAuth connections. ClickUp first implementation.'
+  CS5-1-connected-app-model-service-infrastructure:
+    status: done
+    completion_date: '2026-03-17T09:19:02Z'
+    effort: '2 days'
+    story_points: 5
+    notes: 'PMProvider enum (renamed from IntegrationProvider), AppProvider enum (new), ConnectedApp model, ConnectedAppService with encryption pattern.'
+  CS5-2-clickup-oauth-for-user-accounts:
+    status: ready-for-dev
+    effort: '2 days'
+    story_points: 5
+    notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
+  CS5-3-connected-apps-settings-page:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+  CS5-4-import-modal-account-selection:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+  CS5-5-auto-create-project-integration-on-import:
+    status: backlog
+    effort: '2 days'
+    story_points: 5
+  epic-CS5-retrospective: optional
+
   # EPIC 24 - GITHUB MULTI-ACCOUNT
   epic-24: in-progress
   epic-24-name: 'GitHub Multi-Account Integration & Repository Selection'

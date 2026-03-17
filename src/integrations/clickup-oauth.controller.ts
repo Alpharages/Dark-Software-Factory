@@ -16,7 +16,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Public } from '@/common/decorators';
 import { Role } from '@/auth/constants/roles.enum';
-import { IntegrationProvider } from '@prisma/client';
+import { PMProvider } from '@prisma/client';
 import { ClickUpOAuthService } from './clickup-oauth.service';
 import { ProjectIntegrationService } from './project-integration.service';
 
@@ -66,7 +66,7 @@ export class ClickUpOAuthController {
   @ApiResponse({ status: 200, description: 'Integration disconnected' })
   @ApiResponse({ status: 404, description: 'Integration not found' })
   async disconnect(@Query('project_id') projectId: string) {
-    await this.integrationService.deleteIntegration(projectId, IntegrationProvider.CLICKUP);
+    await this.integrationService.deleteIntegration(projectId, PMProvider.CLICKUP);
     return { message: 'ClickUp integration disconnected successfully' };
   }
 }

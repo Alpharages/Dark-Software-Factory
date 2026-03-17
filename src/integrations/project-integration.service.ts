@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service';
-import { EncryptionService } from '../common/encryption/encryption.service';
-import { ProjectIntegration, IntegrationProvider, Prisma } from '@prisma/client';
+import { PrismaService } from '@/database/prisma.service';
+import { EncryptionService } from '@/common/encryption/encryption.service';
+import { ProjectIntegration, PMProvider, Prisma } from '@prisma/client';
 
 export interface UpsertIntegrationData {
   workspace_id: string;
@@ -72,7 +72,7 @@ export class ProjectIntegrationService {
 
   async upsertIntegration(
     projectId: string,
-    provider: IntegrationProvider,
+    provider: PMProvider,
     data: UpsertIntegrationData,
   ): Promise<ProjectIntegration> {
     const encryptedAccessToken =
@@ -124,7 +124,7 @@ export class ProjectIntegrationService {
     return this.decryptTokens(integration);
   }
 
-  async deleteIntegration(projectId: string, provider: IntegrationProvider): Promise<void> {
+  async deleteIntegration(projectId: string, provider: PMProvider): Promise<void> {
     try {
       await this.prisma.projectIntegration.delete({
         where: { project_id_provider: { project_id: projectId, provider } },
@@ -139,7 +139,7 @@ export class ProjectIntegrationService {
 
   async findByProjectAndProvider(
     projectId: string,
-    provider: IntegrationProvider,
+    provider: PMProvider,
   ): Promise<ProjectIntegration | null> {
     const integration = await this.prisma.projectIntegration.findUnique({
       where: { project_id_provider: { project_id: projectId, provider } },

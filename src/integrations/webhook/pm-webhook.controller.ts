@@ -2,7 +2,7 @@ import { Controller, Post, Param, Req, Headers, HttpCode, HttpStatus, Get } from
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { FastifyRequest } from 'fastify';
 import { PmWebhookRouterService } from './pm-webhook-router.service';
-import { IntegrationProvider } from '@prisma/client';
+import { PMProvider } from '@prisma/client';
 import { Public } from '@/common/decorators';
 import { CorrelationId } from '@/common/decorators/correlation-id.decorator';
 
@@ -48,10 +48,10 @@ export class PmWebhookController {
     return { status: 'ok', provider, timestamp: new Date().toISOString() };
   }
 
-  private mapProvider(provider: string): IntegrationProvider | null {
+  private mapProvider(provider: string): PMProvider | null {
     const upper = provider.toUpperCase();
-    if (Object.values(IntegrationProvider).includes(upper as IntegrationProvider)) {
-      return upper as IntegrationProvider;
+    if (Object.values(PMProvider).includes(upper as PMProvider)) {
+      return upper as PMProvider;
     }
     return null;
   }

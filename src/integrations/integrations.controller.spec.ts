@@ -1,11 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IntegrationsController } from './integrations.controller';
 import { ClickUpService } from '@/clickup/clickup.service';
-import { ProjectProvider } from '@/prisma/enums';
 import { PMStatusService } from './pm-status.service';
 import { ProjectIntegrationService } from './project-integration.service';
 import { UpdateSyncSettingsDto } from './dto/update-sync-settings.dto';
-import { IntegrationProvider, Prisma } from '@prisma/client';
+import { PMProvider, Prisma } from '@prisma/client';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
@@ -77,7 +76,7 @@ describe('IntegrationsController', () => {
       };
       mockClickUpService.getHierarchy.mockResolvedValue(mockHierarchy);
 
-      const result = await controller.getHierarchy(ProjectProvider.CLICKUP);
+      const result = await controller.getHierarchy(PMProvider.CLICKUP);
 
       expect(result).toEqual(mockHierarchy);
       expect(clickUpService.getHierarchy).toHaveBeenCalled();
@@ -94,7 +93,7 @@ describe('IntegrationsController', () => {
   describe('getStatuses', () => {
     const integrationId = 'int-123';
     const containerId = 'list-123';
-    const mockIntegration = { id: integrationId, provider: IntegrationProvider.CLICKUP };
+    const mockIntegration = { id: integrationId, provider: PMProvider.CLICKUP };
     const mockStatuses = [{ id: '1', name: 'Open' }];
 
     it('should return statuses for a valid integration and containerId', async () => {

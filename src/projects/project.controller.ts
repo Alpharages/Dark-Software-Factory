@@ -25,7 +25,7 @@ import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { SyncConfigResponseDto, toSyncConfigResponse } from './dto/sync-config-response.dto';
 import { UpdateSyncConfigDto } from './dto/update-sync-config.dto';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
-import { IntegrationProvider, Prisma } from '@prisma/client';
+import { PMProvider, Prisma } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -226,7 +226,7 @@ export class ProjectController {
   async getSyncConfig(@Param('id') id: string) {
     const integration = await this.integrationService.findByProjectAndProvider(
       id,
-      IntegrationProvider.CLICKUP,
+      PMProvider.CLICKUP,
     );
 
     if (!integration) {
@@ -244,7 +244,7 @@ export class ProjectController {
   async updateSyncConfig(@Param('id') id: string, @Body() dto: UpdateSyncConfigDto) {
     const integration = await this.integrationService.findByProjectAndProvider(
       id,
-      IntegrationProvider.CLICKUP,
+      PMProvider.CLICKUP,
     );
 
     if (!integration) {
