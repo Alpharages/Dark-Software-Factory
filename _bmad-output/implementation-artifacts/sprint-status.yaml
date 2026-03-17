@@ -100,14 +100,16 @@ development_status:
     story_points: 5
     notes: 'PMProvider enum (renamed from IntegrationProvider), AppProvider enum (new), ConnectedApp model, ConnectedAppService with encryption pattern.'
   CS5-2-clickup-oauth-for-user-accounts:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-03-17T14:52:00Z'
     effort: '2 days'
     story_points: 5
     notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
   CS5-3-connected-apps-settings-page:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 5
+    notes: 'Ultimate context engine analysis completed - comprehensive developer guide created'
   CS5-4-import-modal-account-selection:
     status: backlog
     effort: '2 days'

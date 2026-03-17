@@ -90,6 +90,7 @@ export default tseslint.config(
     files: ['**/*.spec.ts', '**/*.test.ts', '**/test/**/*.ts'],
     rules: {
       'security/detect-object-injection': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 );

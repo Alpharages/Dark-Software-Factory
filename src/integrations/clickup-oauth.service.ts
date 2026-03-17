@@ -1,7 +1,8 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { PMProvider } from '@prisma/client';
+import type { ClickUpHierarchy, ClickUpOrganization } from '@/clickup/clickup.service';
+import { PMProvider } from '@/prisma/enums';
 import { PrismaService } from '../database/prisma.service';
 import { ProjectIntegrationService } from './project-integration.service';
 import { ClickUpProvider } from './providers/clickup/clickup.provider';
@@ -35,6 +36,25 @@ export class ClickUpOAuthService {
     });
 
     const state = `${projectId}:CLICKUP`;
+    return (
+      `https://app.clickup.com/api` +
+      `?client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&state=${encodeURIComponent(state)}`
+    );
+  }
+
+  async getUserConnectUrl(userId: string, returnTo: string): Promise<string> {
+    const clientId = this.config.get<string>('clickup.clientId') ?? '';
+    const redirectUri = this.config.get<string>('clickup.redirectUri') ?? '';
+
+    if (!clientId) throw new BadRequestException('CLICKUP_CLIENT_ID is not configured');
+    if (!redirectUri) throw new BadRequestException('CLICKUP_REDIRECT_URI is not configured');
+
+    const state = Buffer.from(JSON.stringify({ type: 'user', userId, returnTo })).toString(
+      'base64url',
+    );
+
     return (
       `https://app.clickup.com/api` +
       `?client_id=${encodeURIComponent(clientId)}` +
@@ -104,6 +124,102 @@ export class ClickUpOAuthService {
         workspace_id: 'unknown',
         workspace_name: 'ClickUp Workspace',
       };
+    }
+  }
+
+  /**
+   * Fetches hierarchical ClickUp data with an access token
+   */
+  async getHierarchyWithToken(accessToken: string, teamId?: string): Promise<ClickUpHierarchy> {
+    const client = axios.create({
+      baseURL: 'https://api.clickup.com/api/v2',
+      headers: { Authorization: accessToken },
+      timeout: 10000,
+    });
+
+    try {
+      // 1. Get Teams (Workspaces)
+      const teamsRes = await client.get('/team');
+      let teams = teamsRes.data.teams;
+
+      if (!teams || teams.length === 0) {
+        throw new Error('No ClickUp teams found');
+      }
+
+      // Filter teams if teamId is provided
+      if (teamId) {
+        teams = teams.filter((t: { id: string }) => String(t.id) === teamId);
+        if (teams.length === 0) {
+          throw new Error(`ClickUp team ${teamId} not found`);
+        }
+      }
+
+      const organizations: ClickUpOrganization[] = [];
+
+      // 2. Process each team (Organization)
+      for (const team of teams) {
+        const organization: ClickUpOrganization = {
+          id: String(team.id),
+          name: team.name,
+          spaces: [],
+        };
+
+        try {
+          // Get Spaces for the Team
+          const spacesRes = await client.get(`/team/${team.id}/space`);
+          const spaces = spacesRes.data.spaces;
+
+          // 3. For each Space, get Folders and Lists in parallel
+          await Promise.all(
+            spaces.map(async (space: { id: string; name: string }) => {
+              try {
+                const [folderlessListsRes, foldersRes] = await Promise.all([
+                  client.get(`/space/${space.id}/list`),
+                  client.get(`/space/${space.id}/folder`),
+                ]);
+
+                const lists: Array<{ id: string; name: string }> = [
+                  ...folderlessListsRes.data.lists.map((l: { id: string; name: string }) => ({
+                    id: String(l.id),
+                    name: String(l.name),
+                  })),
+                  ...foldersRes.data.folders.flatMap(
+                    (folder: { name: string; lists?: Array<{ id: string; name: string }> }) =>
+                      (folder.lists ?? []).map((l) => ({
+                        id: String(l.id),
+                        name: `${folder.name} > ${l.name}`,
+                      })),
+                  ),
+                ];
+
+                organization.spaces.push({
+                  id: String(space.id),
+                  name: String(space.name),
+                  lists,
+                });
+              } catch (err) {
+                this.logger.warn(`Failed to fetch lists for space ${space.id}`, {
+                  error: err instanceof Error ? err.message : String(err),
+                  teamId: team.id,
+                });
+              }
+            }),
+          );
+        } catch (err) {
+          this.logger.warn(`Failed to fetch spaces for team ${team.id}`, {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+
+        organizations.push(organization);
+      }
+
+      return { organizations };
+    } catch (error) {
+      this.logger.error('Failed to fetch ClickUp hierarchy with token', {
+        error: error instanceof Error ? error.message : error,
+      });
+      throw error;
     }
   }
 

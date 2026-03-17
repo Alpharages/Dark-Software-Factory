@@ -1,6 +1,6 @@
 # Story CS5.2: ClickUp OAuth for User-Level Accounts
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -36,27 +36,27 @@ so that **I can use that account to import projects and manage multiple ClickUp 
 
 > **🚨 EXECUTION ORDER:** T1 → T2 → T3 → T4 → T5
 
-- [ ] **T1: Create `ConnectedAppsController`** (AC: 1, 2, 3, 4, 5, 6, 7)
-  - [ ] Create `src/connected-apps/connected-apps.controller.ts`
-  - [ ] Add `@ApiTags('connected-apps')` and `@Controller('apps')` (base path `/api/v1/apps`)
-  - [ ] **⚠️ Declaration order matters** — declare static routes (`/clickup/connect`, `/clickup/callback`, `/connected`) BEFORE param routes (`/:id`, `/:id/hierarchy`) to prevent NestJS routing collision (see Dev Notes — Route Order)
-  - [ ] **List endpoint (declare first):** `GET /connected` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@CurrentUser('id') userId: string` → `return this.connectedAppService.findByUser(userId)`
-  - [ ] **Connect endpoint:** `GET /clickup/connect` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@Query('returnTo') returnTo: string`, `@CurrentUser('id') userId: string` → `return { url: await this.oauthService.getUserConnectUrl(userId, returnTo) }`
-  - [ ] **Callback endpoint:** `@Public()`, `GET /clickup/callback` — `@Query('code') code: string`, `@Query('state') state: string`, `@Res() reply: FastifyReply` → inline callback logic (see Dev Notes — Callback Inline Pattern), `reply.redirect(url, 302)`
-  - [ ] **Disconnect endpoint:** `DELETE /:id` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@Param('id') id: string`, `@CurrentUser('id') userId: string` → `await this.connectedAppService.delete(id, userId)` → return `{ message: 'Connected app disconnected successfully' }`
-  - [ ] **Hierarchy endpoint (declare last):** `GET /:id/hierarchy` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@Param('id') id: string`, `@Query('teamId') teamId?: string`, `@CurrentUser('id') userId: string` → `getDecrypted` then `oauthService.getHierarchyWithToken(token, teamId)`
-  - [ ] Add Swagger decorators on all endpoints: `@ApiBearerAuth`, `@ApiOperation`, `@ApiResponse`, `@ApiQuery`, `@ApiParam`
-  - [ ] Import: `import { CurrentUser, Public } from '@/common/decorators';` (barrel — not individual file paths)
+- [x] **T1: Create `ConnectedAppsController`** (AC: 1, 2, 3, 4, 5, 6, 7)
+  - [x] Create `src/connected-apps/connected-apps.controller.ts`
+  - [x] Add `@ApiTags('connected-apps')` and `@Controller('apps')` (base path `/api/v1/apps`)
+  - [x] **⚠️ Declaration order matters** — declare static routes (`/clickup/connect`, `/clickup/callback`, `/connected`) BEFORE param routes (`/:id`, `/:id/hierarchy`) to prevent NestJS routing collision (see Dev Notes — Route Order)
+  - [x] **List endpoint (declare first):** `GET /connected` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@CurrentUser('id') userId: string` → `return this.connectedAppService.findByUser(userId)`
+  - [x] **Connect endpoint:** `GET /clickup/connect` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@Query('returnTo') returnTo: string`, `@CurrentUser('id') userId: string` → `return { url: await this.oauthService.getUserConnectUrl(userId, returnTo) }`
+  - [x] **Callback endpoint:** `@Public()`, `GET /clickup/callback` — `@Query('code') code: string`, `@Query('state') state: string`, `@Res() reply: FastifyReply` → inline callback logic (see Dev Notes — Callback Inline Pattern), `reply.redirect(url, 302)`
+  - [x] **Disconnect endpoint:** `DELETE /:id` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@Param('id') id: string`, `@CurrentUser('id') userId: string` → `await this.connectedAppService.delete(id, userId)` → return `{ message: 'Connected app disconnected successfully' }`
+  - [x] **Hierarchy endpoint (declare last):** `GET /:id/hierarchy` — `@UseGuards(JwtAuthGuard, RolesGuard, ThrottlerGuard)`, `@Roles(Role.PM, Role.MANAGER, Role.ADMIN)`, `@Param('id') id: string`, `@Query('teamId') teamId?: string`, `@CurrentUser('id') userId: string` → `getDecrypted` then `oauthService.getHierarchyWithToken(token, teamId)`
+  - [x] Add Swagger decorators on all endpoints: `@ApiBearerAuth`, `@ApiOperation`, `@ApiResponse`, `@ApiQuery`, `@ApiParam`
+  - [x] Import: `import { CurrentUser, Public } from '@/common/decorators';` (barrel — not individual file paths)
 
-- [ ] **T2: Add `getUserConnectUrl` and `getHierarchyWithToken` to `ClickUpOAuthService`** (AC: 1, 5, 8)
-  - [ ] Add `getUserConnectUrl(userId: string, returnTo: string): Promise<string>` — builds OAuth URL with base64url state (see Dev Notes — State Encoding)
-  - [ ] Add `getHierarchyWithToken(accessToken: string, teamId?: string): Promise<ClickUpHierarchy>` — create an ad-hoc axios client with `Authorization: accessToken` header and run the same traversal as `ClickUpService.getHierarchy()` (see Dev Notes — Hierarchy Reuse). Import `ClickUpHierarchy` type: `import type { ClickUpHierarchy } from '@/clickup/clickup.service'`
-  - [ ] Callback logic (upsert after exchange) stays **inline in the controller** — do NOT add `handleUserCallback` to `ClickUpOAuthService` (would create circular dependency; see Dev Notes — Dependency Design)
+- [x] **T2: Add `getUserConnectUrl` and `getHierarchyWithToken` to `ClickUpOAuthService`** (AC: 1, 5, 8)
+  - [x] Add `getUserConnectUrl(userId: string, returnTo: string): Promise<string>` — builds OAuth URL with base64url state (see Dev Notes — State Encoding)
+  - [x] Add `getHierarchyWithToken(accessToken: string, teamId?: string): Promise<ClickUpHierarchy>` — create an ad-hoc axios client with `Authorization: accessToken` header and run the same traversal as `ClickUpService.getHierarchy()` (see Dev Notes — Hierarchy Reuse). Import `ClickUpHierarchy` type: `import type { ClickUpHierarchy } from '@/clickup/clickup.service'`
+  - [x] Callback logic (upsert after exchange) stays **inline in the controller** — do NOT add `handleUserCallback` to `ClickUpOAuthService` (would create circular dependency; see Dev Notes — Dependency Design)
 
-- [ ] **T3: Update `ConnectedAppsModule`** (AC: 7)
-  - [ ] Add `ConnectedAppsController` to `controllers` array
-  - [ ] Add `IntegrationsModule` to `imports` array — this grants access to `ClickUpOAuthService` (already exported). No `forwardRef` needed.
-  - [ ] Final module shape:
+- [x] **T3: Update `ConnectedAppsModule`** (AC: 7)
+  - [x] Add `ConnectedAppsController` to `controllers` array
+  - [x] Add `IntegrationsModule` to `imports` array — this grants access to `ClickUpOAuthService` (already exported). No `forwardRef` needed.
+  - [x] Final module shape:
     ```typescript
     @Module({
       imports: [DatabaseModule, EncryptionModule, IntegrationsModule],
@@ -66,15 +66,15 @@ so that **I can use that account to import projects and manage multiple ClickUp 
     })
     ```
 
-- [ ] **T4: Unit tests for controller** (AC: 9)
-  - [ ] Create `src/connected-apps/connected-apps.controller.spec.ts`
-  - [ ] Mock both `ConnectedAppService` and `ClickUpOAuthService` via `useValue` (see Dev Notes — Test Cases)
-  - [ ] 8 test cases: connect, callback success, callback malformed-state error, list connected, disconnect own, disconnect 403, hierarchy own, hierarchy 403
-  - [ ] Run `pnpm typecheck` and `pnpm test` — zero errors, all pass
+- [x] **T4: Unit tests for controller** (AC: 9)
+  - [x] Create `src/connected-apps/connected-apps.controller.spec.ts`
+  - [x] Mock both `ConnectedAppService` and `ClickUpOAuthService` via `useValue` (see Dev Notes — Test Cases)
+  - [x] 8 test cases: connect, callback success, callback malformed-state error, list connected, disconnect own, disconnect 403, hierarchy own, hierarchy 403
+  - [x] Run `pnpm typecheck` and `pnpm test` — zero errors, all pass
 
-- [ ] **T5: Verify no regressions**
-  - [ ] Confirm `GET /integrations/:provider/hierarchy` (existing project-level endpoint) still works — it is NOT modified by this story
-  - [ ] Confirm `GET /integrations/clickup/connect` (existing project-level OAuth) still works — it is NOT modified by this story
+- [x] **T5: Verify no regressions**
+  - [x] Confirm `GET /integrations/:provider/hierarchy` (existing project-level endpoint) still works — it is NOT modified by this story
+  - [x] Confirm `GET /integrations/clickup/connect` (existing project-level OAuth) still works — it is NOT modified by this story
 
 ## Dev Notes
 
@@ -415,6 +415,12 @@ claude-sonnet-4-6
 ### Debug Log References
 
 ### Completion Notes List
+
+- Code review (2026-03-17): Fixed HIGH-1 — `ClickUpHierarchy`/`ClickUpOrganization` types now imported via `import type` from `@/clickup/clickup.service` in `clickup-oauth.service.ts`; `getHierarchyWithToken` return type updated to `Promise<ClickUpHierarchy>`.
+- Code review (2026-03-17): Fixed HIGH-2 — Added missing hierarchy not-own 403 test (`getDecrypted throws ForbiddenException`) to `connected-apps.controller.spec.ts`.
+- Code review (2026-03-17): Fixed MEDIUM-1 — Added `timeout: 10000` to axios client in `getHierarchyWithToken`.
+- Code review (2026-03-17): Fixed MEDIUM-2 — Changed sequential folder/list API calls to `Promise.all([folderlessListsRes, foldersRes])` for parallel fetching per space.
+- Code review (2026-03-17): Fixed MEDIUM-3 — Added `RolesGuard` override in test module setup.
 
 ### File List
 
