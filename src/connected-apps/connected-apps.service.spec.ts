@@ -110,7 +110,7 @@ describe('ConnectedAppsService', () => {
           workspace_name: 'My Workspace',
         }),
       });
-      expect(result.workspaceName).toBe('My Workspace');
+      expect(result.workspace_name).toBe('My Workspace');
     });
 
     it('should update existing record with re-encrypted tokens (update path)', async () => {
@@ -133,7 +133,7 @@ describe('ConnectedAppsService', () => {
           update: expect.objectContaining({ access_token: 'enc_updated-token' }),
         }),
       );
-      expect(result.workspaceName).toBe('Renamed Workspace');
+      expect(result.workspace_name).toBe('Renamed Workspace');
     });
   });
 
@@ -141,7 +141,7 @@ describe('ConnectedAppsService', () => {
     it('should return all connected apps for a user without token fields', async () => {
       mockPrismaService.connectedApp.findMany.mockResolvedValue([
         { ...baseApp, id: '1', provider: AppProvider.CLICKUP },
-        { ...baseApp, id: '2', provider: AppProvider.GITHUB },
+        { ...baseApp, id: '2', provider: AppProvider.JIRA },
       ]);
 
       const result = await service.findByUser('user-1');
@@ -151,8 +151,8 @@ describe('ConnectedAppsService', () => {
         orderBy: { created_at: 'desc' },
       });
       expect(result).toHaveLength(2);
-      expect(result[0].provider).toBe(AppProvider.CLICKUP);
-      expect(result[1].provider).toBe(AppProvider.GITHUB);
+      expect(result[0].provider).toBe('clickup');
+      expect(result[1].provider).toBe('jira');
       expect(result[0]).not.toHaveProperty('access_token');
     });
   });
@@ -168,7 +168,7 @@ describe('ConnectedAppsService', () => {
         orderBy: { created_at: 'desc' },
       });
       expect(result).toHaveLength(1);
-      expect(result[0].provider).toBe(AppProvider.CLICKUP);
+      expect(result[0].provider).toBe('clickup');
     });
   });
 

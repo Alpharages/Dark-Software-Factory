@@ -52,6 +52,23 @@ export class ClickUpOAuthController {
     @Query('state') state: string,
     @Res() reply: FastifyReply,
   ): Promise<void> {
+    // Detect user-level OAuth flow (state is base64url JSON with type: 'user')
+    // and forward to the ConnectedApps callback handler
+    try {
+      const decoded = JSON.parse(Buffer.from(state ?? '', 'base64url').toString('utf-8')) as {
+        type?: string;
+      };
+      if (decoded?.type === 'user') {
+        const qs = new URLSearchParams({
+          ...(code ? { code } : {}),
+          ...(state ? { state } : {}),
+        }).toString();
+        return reply.redirect(`/api/v1/apps/clickup/callback?${qs}`, 302);
+      }
+    } catch {
+      // Not a user-flow state — fall through to project-flow handling
+    }
+
     const redirectUrl = await this.oauthService.handleCallback(code ?? '', state ?? '');
     return reply.redirect(redirectUrl, 302);
   }

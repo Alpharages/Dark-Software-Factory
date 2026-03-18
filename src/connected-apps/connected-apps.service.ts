@@ -168,13 +168,15 @@ export class ConnectedAppsService {
   }
 
   private toResponseDto(app: ConnectedAppModel): ConnectedAppResponseDto {
+    const meta = app.metadata as Record<string, unknown> | null;
     return {
       id: app.id,
-      provider: app.provider as AppProvider,
-      workspaceId: app.workspace_id,
-      workspaceName: app.workspace_name,
-      metadata: app.metadata as Record<string, unknown> | null,
-      connectedAt: app.created_at.toISOString(),
+      provider: app.provider.toLowerCase(),
+      workspace_id: app.workspace_id,
+      workspace_name: app.workspace_name,
+      bot_user_id: (meta?.botUserId as string | null) ?? null,
+      bot_username: (meta?.botUsername as string | null) ?? null,
+      created_at: app.created_at.toISOString(),
     };
   }
 }
