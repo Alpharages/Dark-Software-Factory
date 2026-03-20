@@ -42,6 +42,7 @@ interface ClickUpFieldOption {
 
 interface ClickUpCustomField {
   id: string;
+  name?: string;
   value: unknown;
 }
 
@@ -67,8 +68,13 @@ interface ClickUpTask {
   date_created?: string;
   date_updated?: string;
   date_closed?: string;
+  due_date?: string | null;
   list?: { id: string };
+  creator?: { id: number; username: string; email: string };
+  space?: { id: string };
 }
+
+export type ClickUpListTask = ClickUpTask;
 
 interface ClickUpWebhookPayload {
   webhook_id: string;
@@ -157,15 +163,38 @@ export class ClickUpProvider implements IPMProvider {
   }
 
   async assignTask(taskId: string, userId: string): Promise<void> {
-    // ClickUp API v2 assignees update: use "assignees" field with array of IDs
-    // The requirement mentioned potentially checking the body format.
-    // Usually it's a PUT to /task/{task_id} with { "assignees": { "add": [userId] } } or similar for incremental,
-    // but a plain array often replaces. Based on standard v2:
     await this.retryWithBackoff(() =>
       this.client.put(`/task/${taskId}`, {
         assignees: [parseInt(userId, 10)],
       }),
     );
+  }
+
+  async prepareForTransition(
+    taskId: string,
+    opts: {
+      assigneeId?: string;
+      dueDateMs?: number;
+      timeEstimateMs?: number;
+    },
+  ): Promise<void> {
+    // Build a single PUT payload with all requested fields to minimise API calls
+    const body: Record<string, unknown> = {};
+
+    if (opts.assigneeId !== undefined) {
+      body.assignees = [parseInt(opts.assigneeId, 10)];
+    }
+    if (opts.dueDateMs !== undefined) {
+      body.due_date = opts.dueDateMs;
+      body.due_date_time = true; // include time component
+    }
+    if (opts.timeEstimateMs !== undefined) {
+      body.time_estimate = opts.timeEstimateMs;
+    }
+
+    if (Object.keys(body).length === 0) return;
+
+    await this.retryWithBackoff(() => this.client.put(`/task/${taskId}`, body));
   }
 
   async getRequiredFields(listId: string): Promise<NormalizedField[]> {
@@ -202,6 +231,29 @@ export class ClickUpProvider implements IPMProvider {
 
   async deregisterWebhook(webhookId: string): Promise<void> {
     await this.retryWithBackoff(() => this.client.delete(`/webhook/${webhookId}`));
+  }
+
+  async getList(listId: string): Promise<{ id: string; name: string }> {
+    const response = await this.retryWithBackoff(() => this.client.get(`/list/${listId}`));
+    return { id: response.data.id, name: response.data.name };
+  }
+
+  async getTasksFromList(
+    listId: string,
+    page: number = 0,
+    limit: number = 100,
+  ): Promise<{ tasks: ClickUpListTask[] }> {
+    const response = await this.retryWithBackoff(() =>
+      this.client.get(`/list/${listId}/task`, {
+        params: {
+          order_by: 'updated',
+          reverse: 'true',
+          page: page.toString(),
+          limit: limit.toString(),
+        },
+      }),
+    );
+    return { tasks: response.data.tasks || [] };
   }
 
   async getUpdatedTasks(teamId: string, since: Date): Promise<NormalizedTask[]> {
@@ -274,6 +326,7 @@ export class ClickUpProvider implements IPMProvider {
       dateCreated: task.date_created,
       dateUpdated: task.date_updated,
       dateClosed: task.date_closed,
+      dueDate: task.due_date ?? null,
       listId: task.list?.id || '',
     };
   }

@@ -15,6 +15,8 @@ export class NormalizedTask {
   dateCreated?: string | null;
   dateUpdated?: string | null;
   dateClosed?: string | null;
+  /** Due date as epoch ms string (null if no due date is set). */
+  dueDate?: string | null;
   /** ClickUp list ID or equivalent project identifier. Required for DSF project lookup. */
   listId!: string;
 }

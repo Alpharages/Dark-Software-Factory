@@ -9,6 +9,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ClickUpService } from '@/clickup/clickup.service';
+import { ClickUpProvider } from '@/integrations/providers/clickup/clickup.provider';
 import { ProjectRepository } from './project.repository';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -31,6 +32,7 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { ConnectedAppsService } from '@/connected-apps/connected-apps.service';
 import { EncryptionService } from '@/common/encryption/encryption.service';
 import { ImportProjectResponseDto } from './dto/import-project-response.dto';
+import { ProjectIntegrationService } from '@/integrations/project-integration.service';
 
 @Injectable()
 export class ProjectService {
@@ -56,6 +58,7 @@ export class ProjectService {
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     private readonly connectedAppsService: ConnectedAppsService,
     private readonly encryptionService: EncryptionService,
+    private readonly projectIntegrationService: ProjectIntegrationService,
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
@@ -210,14 +213,24 @@ export class ProjectService {
     }
 
     try {
-      // 1. If accountId provided, fetch and validate ConnectedApp upfront.
-      //    getDecrypted throws NotFoundException (404) or ForbiddenException (403) automatically.
-      const connectedApp = accountId
-        ? await this.connectedAppsService.getDecrypted(accountId, userId)
-        : null;
+      // 1. Require accountId — OAuth is the only supported auth path (no global API key).
+      if (!accountId) {
+        throw new BadRequestException(
+          'A connected ClickUp account is required to import projects. Please connect your ClickUp account first.',
+        );
+      }
 
-      // 2. Fetch details from provider (ClickUp) to validate and get name
-      const listDetails = await this.clickupService.getList(resourceId);
+      // getDecrypted throws NotFoundException (404) or ForbiddenException (403) automatically.
+      const connectedApp = await this.connectedAppsService.getDecrypted(accountId, userId);
+
+      // 2. Fetch list details via OAuth token — no global API key needed.
+      if (!connectedApp.access_token) {
+        throw new BadRequestException(
+          'Connected ClickUp account has no access token. Please re-connect your account.',
+        );
+      }
+      const clickupProvider = new ClickUpProvider(connectedApp.access_token);
+      const listDetails = await clickupProvider.getList(resourceId);
       this.logger.log(`Importing ClickUp list: ${listDetails.name} (${listDetails.id})`);
 
       // 3. Atomic Transaction: duplicate check + create Project + optionally create ProjectIntegration
@@ -247,36 +260,33 @@ export class ProjectService {
           },
         });
 
-        let integrationCreated = false;
-        if (connectedApp) {
-          const encryptedAccessToken = connectedApp.access_token
-            ? this.encryptionService.encrypt(connectedApp.access_token)
-            : null;
-          const encryptedRefreshToken = connectedApp.refresh_token
-            ? this.encryptionService.encrypt(connectedApp.refresh_token)
-            : null;
+        const encryptedAccessToken = connectedApp.access_token
+          ? this.encryptionService.encrypt(connectedApp.access_token)
+          : null;
+        const encryptedRefreshToken = connectedApp.refresh_token
+          ? this.encryptionService.encrypt(connectedApp.refresh_token)
+          : null;
 
-          const metadata = (connectedApp.metadata as Record<string, unknown>) || {};
+        const metadata = (connectedApp.metadata as Record<string, unknown>) || {};
 
-          await tx.projectIntegration.create({
-            data: {
-              project_id: project.id,
-              provider: PMProvider.CLICKUP,
-              workspace_id: connectedApp.workspace_id,
-              workspace_name: connectedApp.workspace_name,
-              access_token: encryptedAccessToken,
-              refresh_token: encryptedRefreshToken,
-              token_expiry: connectedApp.token_expiry,
-              bot_user_id: (metadata.botUserId as string | null) ?? null,
-              bot_username: (metadata.botUsername as string | null) ?? null,
-              polling_enabled: false,
-              webhook_enabled: false,
-              provider_config: {},
-              ai_trigger_status: null,
-            },
-          });
-          integrationCreated = true;
-        }
+        await tx.projectIntegration.create({
+          data: {
+            project_id: project.id,
+            provider: PMProvider.CLICKUP,
+            workspace_id: connectedApp.workspace_id,
+            workspace_name: connectedApp.workspace_name,
+            access_token: encryptedAccessToken,
+            refresh_token: encryptedRefreshToken,
+            token_expiry: connectedApp.token_expiry,
+            bot_user_id: (metadata.botUserId as string | null) ?? null,
+            bot_username: (metadata.botUsername as string | null) ?? null,
+            polling_enabled: false,
+            webhook_enabled: false,
+            provider_config: { containerId: resourceId },
+            ai_trigger_status: null,
+          },
+        });
+        const integrationCreated = true;
 
         return { project, integrationCreated };
       });
@@ -433,8 +443,20 @@ export class ProjectService {
     const BATCH_DELAY_MS = 100;
 
     try {
+      // Resolve OAuth token from ProjectIntegration
+      const integration = await this.projectIntegrationService.findByProjectAndProvider(
+        id,
+        PMProvider.CLICKUP,
+      );
+      if (!integration?.access_token) {
+        throw new BadRequestException(
+          'No ClickUp integration found for this project. Please reconnect via the PM Tool settings.',
+        );
+      }
+      const clickupProvider = new ClickUpProvider(integration.access_token);
+
       // 1. Sync List Details
-      const listDetails = await this.clickupService.getList(project.clickup_list_id);
+      const listDetails = await clickupProvider.getList(project.clickup_list_id);
 
       // Update name if changed
       const updated = await this.repository.update(id, {
@@ -451,11 +473,11 @@ export class ProjectService {
 
       while (hasMoreTasks) {
         // Fetch tasks in batches to prevent memory issues
-        const { tasks } = await this.clickupService.getTasks({
-          list_id: project.clickup_list_id,
+        const { tasks } = await clickupProvider.getTasksFromList(
+          project.clickup_list_id,
           page,
-          limit: BATCH_SIZE,
-        });
+          BATCH_SIZE,
+        );
 
         if (tasks.length === 0) {
           hasMoreTasks = false;
@@ -481,7 +503,7 @@ export class ProjectService {
             customFields:
               task.custom_fields?.reduce(
                 (acc, field) => {
-                  acc[field.name] = field.value;
+                  if (field.name) acc[field.name] = field.value;
                   return acc;
                 },
                 {} as Record<string, unknown>,

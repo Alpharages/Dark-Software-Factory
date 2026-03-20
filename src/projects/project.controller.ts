@@ -23,7 +23,11 @@ import { ImportProjectResponseDto } from './dto/import-project-response.dto';
 import { UpdateRepositoryDto } from './dto/update-repository.dto';
 import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
-import { SyncConfigResponseDto, toSyncConfigResponse } from './dto/sync-config-response.dto';
+import {
+  SyncConfigResponseDto,
+  toSyncConfigResponse,
+  toPmIntegrationResponse,
+} from './dto/sync-config-response.dto';
 import { UpdateSyncConfigDto } from './dto/update-sync-config.dto';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
 import { PMProvider, Prisma } from '@prisma/client';
@@ -225,7 +229,7 @@ export class ProjectController {
   @ApiResponse({ status: 200, type: [SyncConfigResponseDto] })
   async getIntegrations(@Param('id') id: string) {
     const integrations = await this.integrationService.findByProjectId(id);
-    return integrations.map((i) => toSyncConfigResponse(i));
+    return integrations.map((i) => toPmIntegrationResponse(i));
   }
 
   @Get(':id/integration/sync-config')

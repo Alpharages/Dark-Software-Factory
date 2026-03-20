@@ -33,6 +33,10 @@ import { ErrorSeverity } from '@/common/sentry/sentry.constants';
 import { AiCapabilityTrackerService } from '@/architecture-review/capabilities/ai-capability-tracker.service';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { BotAssignmentService } from '@/integrations/bot-assignment.service';
+import {
+  PMExecutionStatusService,
+  ExecutionPhase,
+} from '@/integrations/pm-execution-status.service';
 import { Prisma } from '@/prisma/client';
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -95,6 +99,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly sentry: SentryService,
     private readonly clickup: ClickUpService,
     private readonly botAssignment: BotAssignmentService,
+    private readonly pmExecutionStatus: PMExecutionStatusService,
     @InjectMetric('queue_messages_consumed_total')
     private readonly consumedCounter: Counter<string>,
     @InjectMetric('queue_messages_failed_total')
@@ -251,6 +256,14 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
 
       // 1. Mark execution as in-progress
       await this.executionTracker.markInProgress(executionId, correlationId);
+
+      // Update ClickUp task status → IN_PROGRESS (best-effort, never throws)
+      await this.pmExecutionStatus.updateByPhase(
+        payload.projectId,
+        payload.ticketId,
+        ExecutionPhase.STARTED,
+        correlationId,
+      );
 
       // CS1-5: Auto-assign bot to task on execution start (FR-CS13)
       await this.botAssignment.assignBotToTask(payload.ticketId, payload.projectId, correlationId);
@@ -419,6 +432,14 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             errorCode: 'BUDGET_EXCEEDED',
           };
           await this.executionTracker.failExecution(failure, correlationId);
+
+          // Update ClickUp task status → CANCELLED (best-effort)
+          await this.pmExecutionStatus.updateByPhase(
+            payload.projectId,
+            payload.ticketId,
+            ExecutionPhase.FAILED,
+            correlationId,
+          );
 
           return {
             success: false,
@@ -608,6 +629,14 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         // AIExecutionService.executeWithProvider() → ExecutionService.completeExecution().
         // Emitting here again would cause a duplicate QA check to be published.
 
+        // Update ClickUp task status → DONE (PR created, best-effort)
+        await this.pmExecutionStatus.updateByPhase(
+          payload.projectId,
+          payload.ticketId,
+          ExecutionPhase.COMPLETED,
+          correlationId,
+        );
+
         // Story 7.7: Track AI capability success (C2 fix)
         await this.capabilityTracker.trackExecution(true, payload.prompt);
 
@@ -646,6 +675,14 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         };
         await this.executionTracker.failExecution(failure, correlationId);
 
+        // Update ClickUp task status → CANCELLED (best-effort)
+        await this.pmExecutionStatus.updateByPhase(
+          payload.projectId,
+          payload.ticketId,
+          ExecutionPhase.FAILED,
+          correlationId,
+        );
+
         // Story 7.7: Track AI capability failure (C2 fix)
         await this.capabilityTracker.trackExecution(
           false,
@@ -673,6 +710,14 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         errorCode: err.code || 'EXECUTION_ERROR',
       };
       await this.executionTracker.failExecution(failure, correlationId);
+
+      // Update ClickUp task status → CANCELLED (best-effort)
+      await this.pmExecutionStatus.updateByPhase(
+        payload.projectId,
+        payload.ticketId,
+        ExecutionPhase.FAILED,
+        correlationId,
+      );
 
       return {
         success: false,

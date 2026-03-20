@@ -41,12 +41,23 @@ describe('ProjectController', () => {
     id: 'int-123',
     project_id: 'project-123',
     provider: 'CLICKUP',
+    workspace_id: 'ws-123',
+    workspace_name: 'Test Workspace',
+    bot_user_id: 'bot-1',
+    bot_username: 'dsf-bot',
     ai_trigger_status: 'In Review',
     polling_enabled: true,
     polling_interval_min: 15,
+    polling_last_run_at: null,
     webhook_enabled: true,
     webhook_id: 'wh-123',
+    webhook_secret: null,
+    access_token: null,
+    refresh_token: null,
+    token_expiry: null,
     provider_config: { workspaceId: 'ws-123' },
+    created_at: new Date('2026-01-01T00:00:00Z'),
+    updated_at: new Date('2026-01-01T00:00:00Z'),
   };
 
   beforeEach(async () => {

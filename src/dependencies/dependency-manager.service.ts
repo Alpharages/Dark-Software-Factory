@@ -30,7 +30,31 @@ export class DependencyManagerService {
       this.metricsService.incrementCounter('dependency_checks_total', { ticket_id: ticketId });
 
       // Step 1: Fetch task from ClickUp
-      const task = await this.clickUpService.getTask(ticketId);
+      // NOTE: ClickUpService requires a global API key (legacy pattern removed in CS4).
+      // If unavailable, skip dependency check and allow ticket to proceed — dependency
+      // checking is best-effort and must not block the intake pipeline.
+      let task: unknown;
+      try {
+        task = await this.clickUpService.getTask(ticketId);
+      } catch (fetchError: unknown) {
+        const err = fetchError as Error;
+        this.logger.warn(
+          `Skipping dependency check for ticket ${ticketId}: unable to fetch from ClickUp (${err.message}). ` +
+            `Dependency checking via ClickUpService requires OAuth via PMProviderFactory.`,
+        );
+        this.metricsService.recordHistogram(
+          'dependency_resolution_duration_seconds',
+          (Date.now() - startTime) / 1000,
+          { can_proceed: 'true' },
+        );
+        return {
+          canProceed: true,
+          unresolvedDependencies: [],
+          resolvedCount: 0,
+          totalCount: 0,
+          estimatedETA: null,
+        };
+      }
 
       // Step 2: Extract dependencies from ClickUp task
       // Cast to access the field (same pattern as Story 12.1)
@@ -185,8 +209,18 @@ export class DependencyManagerService {
       });
 
       // Step 2: Estimate complexity for the ticket (for future filtering)
-      const ticket = await this.clickUpService.getTask(ticketId);
-      const estimatedComplexity = this.estimateComplexity(ticket);
+      // Graceful fallback: if ClickUp API unavailable, use default complexity
+      let estimatedComplexity = 5;
+      try {
+        const ticket = await this.clickUpService.getTask(ticketId);
+        estimatedComplexity = this.estimateComplexity(
+          ticket as { name?: string; description?: string },
+        );
+      } catch {
+        this.logger.warn(
+          `Could not fetch task ${ticketId} for ETA complexity estimate, using default`,
+        );
+      }
 
       // Step 3: Calculate average execution duration
       let historicalAverage: number | null = null;

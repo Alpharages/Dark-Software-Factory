@@ -213,7 +213,11 @@ describe('DependencyManagerService', () => {
     it('should handle ClickUp API failures gracefully', async () => {
       (clickUpService.getTask as jest.Mock).mockRejectedValueOnce(new Error('ClickUp API timeout'));
 
-      await expect(service.checkDependencies('ticket-123')).rejects.toThrow('ClickUp API timeout');
+      // Should resolve with canProceed=true instead of throwing — dependency check is best-effort
+      const result = await service.checkDependencies('ticket-123');
+      expect(result.canProceed).toBe(true);
+      expect(result.unresolvedDependencies).toHaveLength(0);
+      expect(result.totalCount).toBe(0);
     });
 
     it('should handle missing dependencies (404) gracefully', async () => {

@@ -27,6 +27,21 @@ export interface IPMProvider {
   /** Assign a user to a task. */
   assignTask(taskId: string, userId: string): Promise<void>;
 
+  /**
+   * Set task prerequisites in a single call before a status transition.
+   * Used to satisfy workspace automation rules (e.g. "must have assignee before In Progress").
+   */
+  prepareForTransition(
+    taskId: string,
+    opts: {
+      assigneeId?: string;
+      /** Unix timestamp in milliseconds */
+      dueDateMs?: number;
+      /** Estimated time in milliseconds */
+      timeEstimateMs?: number;
+    },
+  ): Promise<void>;
+
   /** Get fields that are marked as required in the PM tool for a given context. */
   getRequiredFields(contextId: string): Promise<NormalizedField[]>;
 

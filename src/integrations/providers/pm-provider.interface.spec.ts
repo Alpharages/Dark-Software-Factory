@@ -34,6 +34,10 @@ class MockPMProvider implements IPMProvider {
   async updateStatus(_taskId: string, _statusId: string): Promise<void> {}
   async addComment(_taskId: string, _comment: string): Promise<void> {}
   async assignTask(_taskId: string, _userId: string): Promise<void> {}
+  async prepareForTransition(
+    _taskId: string,
+    _opts: { assigneeId?: string; dueDateMs?: number; timeEstimateMs?: number },
+  ): Promise<void> {}
 
   async getRequiredFields(_contextId: string): Promise<NormalizedField[]> {
     return [{ id: 'f1', name: 'Priority', type: NormalizedFieldType.DROPDOWN, required: true }];

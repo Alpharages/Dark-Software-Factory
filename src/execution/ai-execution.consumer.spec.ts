@@ -14,6 +14,7 @@ import { SentryService } from '../common/sentry/sentry.service';
 import { ClickUpService } from '../clickup/clickup.service';
 import { AiCapabilityTrackerService } from '../architecture-review/capabilities/ai-capability-tracker.service';
 import { BotAssignmentService } from '../integrations/bot-assignment.service';
+import { PMExecutionStatusService } from '../integrations/pm-execution-status.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -147,6 +148,10 @@ describe('AIExecutionConsumer', () => {
         { provide: ClickUpService, useValue: mockClickUpService },
         { provide: AiCapabilityTrackerService, useValue: mockAiCapabilityTracker },
         { provide: BotAssignmentService, useValue: mockBotAssignment },
+        {
+          provide: PMExecutionStatusService,
+          useValue: { updateByPhase: jest.fn().mockResolvedValue(undefined) },
+        },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_FAILED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_PROCESSING_DURATION_SECONDS', useValue: mockHistogram },

@@ -1,5 +1,29 @@
 # CLAUDE.md — Dark Software Factory
 
+## ⚠️ AI: Read Project Context First
+
+Before writing or editing any code, **you MUST read `docs/AI-CONTEXT.md`** first.
+
+It contains:
+
+- What has already been built (completed epics and stories)
+- The current sprint state (what's in-progress vs backlog)
+- Critical architecture patterns that must not be broken
+- Env vars that were intentionally removed (do NOT re-add them)
+- Common mistake patterns from past code reviews
+- The full document map (where to find PRDs, epics, retros)
+
+Also available:
+
+- `docs/CHANGELOG.md` — chronological history of all major decisions
+- `docs/INDEX.md` — complete index of all documentation
+- `docs/prd/README.md` — versioned PRD index
+- `docs/epics/README.md` — epic completion status
+
+**Why this matters:** DSF has 25+ completed epics. Many past bugs were caused by AI not knowing what was already built, re-implementing removed patterns, or conflicting with existing decisions. Reading AI-CONTEXT.md first prevents this.
+
+---
+
 ## Project Overview
 
 Dark Software Factory (DSF) is an AI-powered software development orchestration platform. This is the **backend** repository (NestJS API). The **frontend** dashboard lives at `/Volumes/Data/project/products/alpharages/dsf-dasbhoard`.

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectService } from './project.service';
 import { ProjectRepository } from './project.repository';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { ClickUpService } from '@/clickup/clickup.service';
@@ -11,6 +11,10 @@ import { ConfigService } from '@nestjs/config';
 import { PMProvider } from '@/prisma/enums';
 import { ConnectedAppsService } from '@/connected-apps/connected-apps.service';
 import { EncryptionService } from '@/common/encryption/encryption.service';
+import { ClickUpProvider } from '@/integrations/providers/clickup/clickup.provider';
+import { ProjectIntegrationService } from '@/integrations/project-integration.service';
+
+jest.mock('@/integrations/providers/clickup/clickup.provider');
 
 describe('ProjectService', () => {
   let service: ProjectService;
@@ -114,6 +118,10 @@ describe('ProjectService', () => {
     getDecrypted: jest.fn(),
   };
 
+  const mockProjectIntegrationService = {
+    findByProjectAndProvider: jest.fn(),
+  };
+
   const mockEncryptionService = {
     encrypt: jest.fn((text) => `enc-${text}`),
     decrypt: jest.fn((hash) => hash.replace('enc-', '')),
@@ -185,12 +193,19 @@ describe('ProjectService', () => {
           provide: EncryptionService,
           useValue: mockEncryptionService,
         },
+        {
+          provide: ProjectIntegrationService,
+          useValue: mockProjectIntegrationService,
+        },
       ],
     }).compile();
 
     service = module.get<ProjectService>(ProjectService);
     repository = module.get(ProjectRepository);
     jest.clearAllMocks();
+
+    // Reset ClickUpProvider mock — each test configures getList as needed
+    (ClickUpProvider as jest.Mock).mockClear();
   });
 
   it('should be defined', () => {
@@ -474,13 +489,25 @@ describe('ProjectService', () => {
   });
 
   describe('syncFromClickUp', () => {
+    const mockGetList = jest.fn();
+    const mockGetTasksFromList = jest.fn();
+
+    beforeEach(() => {
+      mockGetList.mockResolvedValue({ id: 'list-123', name: 'Updated Project Name' });
+      mockGetTasksFromList.mockResolvedValue({ tasks: mockTasks });
+      (ClickUpProvider as jest.Mock).mockImplementation(() => ({
+        getList: mockGetList,
+        getTasksFromList: mockGetTasksFromList,
+      }));
+      mockProjectIntegrationService.findByProjectAndProvider.mockResolvedValue({
+        access_token: 'token-abc',
+      });
+    });
+
     it('should sync project details and tasks from ClickUp', async () => {
-      const clickUpList = { id: 'list-123', name: 'Updated Project Name' };
       const syncedProject = { ...mockProject, name: 'Updated Project Name' };
 
       repository.findById.mockResolvedValue(mockProject);
-      mockClickUpService.getList.mockResolvedValue(clickUpList);
-      mockClickUpService.getTasks.mockResolvedValue({ tasks: mockTasks });
       repository.update.mockResolvedValue(syncedProject);
 
       const result = await service.syncFromClickUp('project-123');
@@ -488,17 +515,21 @@ describe('ProjectService', () => {
       expect(result.name).toBe('Updated Project Name');
       // CS1-1 fix: inline check allows QUEUED tasks through sync path (all tasks map to QUEUED)
       expect(result.syncedTasksCount).toBe(2);
-      expect(mockClickUpService.getList).toHaveBeenCalledWith('list-123');
-      expect(mockClickUpService.getTasks).toHaveBeenCalledWith({
-        list_id: 'list-123',
-        page: 0,
-        limit: 50,
-      });
+      expect(ClickUpProvider).toHaveBeenCalledWith('token-abc');
+      expect(mockGetList).toHaveBeenCalledWith('list-123');
+      expect(mockGetTasksFromList).toHaveBeenCalledWith('list-123', 0, 50);
 
       // Both tasks are QUEUED (actionable) — published to intake queue
       expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalledTimes(2);
 
       expect(mockCounter.inc).toHaveBeenCalledWith({ operation: 'sync', status: 'success' });
+    });
+
+    it('should throw BadRequestException when no integration found', async () => {
+      repository.findById.mockResolvedValue(mockProject);
+      mockProjectIntegrationService.findByProjectAndProvider.mockResolvedValue(null);
+
+      await expect(service.syncFromClickUp('project-123')).rejects.toThrow(BadRequestException);
     });
 
     it('should reject sync for non-ClickUp projects', async () => {
@@ -512,34 +543,17 @@ describe('ProjectService', () => {
       await expect(service.syncFromClickUp('project-123')).rejects.toThrow(
         'Project is not linked to ClickUp',
       );
-      expect(mockClickUpService.getList).not.toHaveBeenCalled();
     });
   });
 
   describe('importProject', () => {
     const TEST_ACCOUNT_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
-    it('T2: should import project without accountId — only project created, no integration', async () => {
-      const listDetails = { id: 'list-123', name: 'Imported List' };
-      mockClickUpService.getList.mockResolvedValue(listDetails);
-      mockPrismaTx.project.findFirst.mockResolvedValue(null);
-
-      const createdProject = {
-        ...mockProject,
-        id: 'proj-new',
-        name: 'Imported List',
-        clickup_list_id: 'list-123',
-      };
-      mockPrismaTx.project.create.mockResolvedValue(createdProject);
-
+    it('T2: should throw BadRequestException when no accountId is provided', async () => {
       const dto = { provider: PMProvider.CLICKUP, resourceId: 'list-123' };
-      const result = await service.importProject(dto, 'user-1');
-
-      expect(result.project).toEqual(createdProject);
-      expect(result.integrationCreated).toBe(false);
-      expect(mockPrismaTx.project.create).toHaveBeenCalled();
-      expect(mockPrismaTx.projectIntegration.create).not.toHaveBeenCalled();
+      await expect(service.importProject(dto, 'user-1')).rejects.toThrow(BadRequestException);
       expect(mockConnectedAppsService.getDecrypted).not.toHaveBeenCalled();
+      expect(mockPrismaTx.project.create).not.toHaveBeenCalled();
     });
 
     it('T1: should import project and auto-create integration when valid accountId is provided', async () => {
@@ -556,7 +570,8 @@ describe('ProjectService', () => {
         metadata: { botUserId: 'bot-123', botUsername: 'bot-name' },
       };
 
-      mockClickUpService.getList.mockResolvedValue(listDetails);
+      const mockGetList = jest.fn().mockResolvedValue(listDetails);
+      (ClickUpProvider as jest.Mock).mockImplementation(() => ({ getList: mockGetList }));
       mockConnectedAppsService.getDecrypted.mockResolvedValue(decryptedModel);
       mockPrismaTx.project.findFirst.mockResolvedValue(null);
 
@@ -592,7 +607,7 @@ describe('ProjectService', () => {
           bot_username: 'bot-name',
           polling_enabled: false,
           webhook_enabled: false,
-          provider_config: {},
+          provider_config: { containerId: 'list-123' },
           ai_trigger_status: null,
         }),
       });
@@ -626,7 +641,9 @@ describe('ProjectService', () => {
         metadata: null,
       };
 
-      mockClickUpService.getList.mockResolvedValue(listDetails);
+      (ClickUpProvider as jest.Mock).mockImplementation(() => ({
+        getList: jest.fn().mockResolvedValue(listDetails),
+      }));
       mockConnectedAppsService.getDecrypted.mockResolvedValue(decryptedModel);
       mockPrismaTx.project.findFirst.mockResolvedValue(null);
       mockPrismaTx.project.create.mockResolvedValue({ ...mockProject, id: 'proj-new' });
