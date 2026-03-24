@@ -47,6 +47,12 @@ Use this section to understand what already exists before making any changes.
 | ---- | --------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | CS5  | Connected Apps (User-Level OAuth) | ✅ done | ConnectedApp model, user ClickUp OAuth, Connected Apps settings page, import modal with account selection, auto-create ProjectIntegration |
 
+### OpenSandbox Migration Epics
+
+| Epic | Name                                   | Status   | Key Deliverable                                                                                          |
+| ---- | -------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| OS   | OpenSandbox Migration & Multi-Provider | 📝 draft | Replace DooD with OpenSandbox, add Gemini/Codex/Kimi providers, retire Cursor, clean up 27 dead env vars |
+
 ### QA Stabilization & Polish Epics
 
 | Epic | Name                             | Status  | Key Deliverable                                                        |
@@ -115,13 +121,14 @@ Use this section to understand what already exists before making any changes.
 
 ### Core Planning Docs
 
-| Document           | Path                                                                                                    | Description                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Main PRD v1.0      | `docs/prd/prd-v1.0-2025-11-20.md` → source: `_bmad-output/planning-artifacts/prd.md`                    | Primary product requirements |
-| Connected Apps PRD | `docs/prd/prd-connected-apps-v1.0.md` → source: `_bmad-output/planning-artifacts/prd-connected-apps.md` | CS5 requirements             |
-| Architecture       | `_bmad-output/planning-artifacts/architecture.md`                                                       | System architecture (126K)   |
-| UX Design          | `_bmad-output/planning-artifacts/ux-design-specification.md`                                            | UI/UX patterns               |
-| Sprint Status      | `_bmad-output/implementation-artifacts/sprint-status.yaml`                                              | Current sprint state         |
+| Document           | Path                                                                                                    | Description                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Main PRD v1.0      | `docs/prd/prd-v1.0-2025-11-20.md` → source: `_bmad-output/planning-artifacts/prd.md`                    | Primary product requirements                            |
+| Connected Apps PRD | `docs/prd/prd-connected-apps-v1.0.md` → source: `_bmad-output/planning-artifacts/prd-connected-apps.md` | CS5 requirements                                        |
+| OpenSandbox PRD    | `_bmad-output/planning-artifacts/prd-opensandbox-migration.md`                                          | Epic OS — DooD replacement, multi-provider, env cleanup |
+| Architecture       | `_bmad-output/planning-artifacts/architecture.md`                                                       | System architecture (126K)                              |
+| UX Design          | `_bmad-output/planning-artifacts/ux-design-specification.md`                                            | UI/UX patterns                                          |
+| Sprint Status      | `_bmad-output/implementation-artifacts/sprint-status.yaml`                                              | Current sprint state                                    |
 
 ### Epic Source Files
 

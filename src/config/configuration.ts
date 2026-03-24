@@ -26,7 +26,6 @@ export default () => {
     // Authentication
     auth: {
       jwtSecret: process.env.JWT_SECRET,
-      authServiceUrl: process.env.AUTH_SERVICE_URL,
     },
 
     // AI Providers (Story 2.3: Multi-Provider Strategy)
@@ -34,9 +33,6 @@ export default () => {
       providers: {
         cursorHeadless: {
           enabled: process.env.CURSOR_HEADLESS_ENABLED === 'true',
-          healthCheckUrl: process.env.CURSOR_HEADLESS_HEALTH_URL || '',
-          timeout: parseInt(process.env.CURSOR_HEADLESS_TIMEOUT || '300000', 10), // 5 min
-          maxConcurrent: parseInt(process.env.CURSOR_MAX_CONCURRENT || '3', 10),
         },
         claudeCode: {
           enabled: process.env.CLAUDE_CODE_ENABLED === 'true',
@@ -323,12 +319,11 @@ export default () => {
     },
 
     // Story 23.3: Sandbox Resource Limit Configuration
+    // Note: Will be replaced by opensandbox config block in Epic OS migration.
     sandbox: {
       resourceLimits: {
-        enabled: process.env.SANDBOX_ENABLE_RESOURCE_LIMITS !== 'false',
         defaultMemoryLimitMB: parseInt(process.env.SANDBOX_MEMORY_LIMIT_MB || '512', 10),
         defaultCpuLimitPercent: parseInt(process.env.SANDBOX_CPU_LIMIT_PERCENT || '100', 10),
-        defaultSwapLimitMB: parseInt(process.env.SANDBOX_MEMORY_SWAP_LIMIT_MB || '512', 10),
       },
       workspacesRoot: process.env.SANDBOX_WORKSPACES_ROOT || path.join(process.cwd(), 'workspaces'),
       logsRoot: process.env.SANDBOX_LOGS_ROOT || '/tmp/dsf-agent-logs',

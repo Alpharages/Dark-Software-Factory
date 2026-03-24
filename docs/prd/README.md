@@ -2,10 +2,11 @@
 
 ## Current Active PRDs
 
-| Version               | File                                                          | Date       | Scope                         | Status    |
-| --------------------- | ------------------------------------------------------------- | ---------- | ----------------------------- | --------- |
-| v1.0                  | `../../_bmad-output/planning-artifacts/prd.md`                | 2025-11-20 | Full platform PRD             | ✅ Active |
-| v1.1 (Connected Apps) | `../../_bmad-output/planning-artifacts/prd-connected-apps.md` | 2026-03-11 | Connected Apps (CS5) addendum | ✅ Active |
+| Version               | File                                                                 | Date       | Scope                                              | Status    |
+| --------------------- | -------------------------------------------------------------------- | ---------- | -------------------------------------------------- | --------- |
+| v1.0                  | `../../_bmad-output/planning-artifacts/prd.md`                       | 2025-11-20 | Full platform PRD                                  | ✅ Active |
+| v1.1 (Connected Apps) | `../../_bmad-output/planning-artifacts/prd-connected-apps.md`        | 2026-03-11 | Connected Apps (CS5) addendum                      | ✅ Active |
+| v1.2 (OpenSandbox)    | `../../_bmad-output/planning-artifacts/prd-opensandbox-migration.md` | 2026-03-21 | OpenSandbox migration, multi-provider, env cleanup | 📝 Draft  |
 
 ## Version History
 

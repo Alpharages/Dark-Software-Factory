@@ -33,13 +33,9 @@ export const envValidationSchema = Joi.object({
     'any.required': 'JWT_SECRET is required. Generate with: openssl rand -base64 32',
     'string.min': 'JWT_SECRET must be at least 32 characters for security',
   }),
-  AUTH_SERVICE_URL: Joi.string().uri().required(),
 
   // AI Providers (Story 2.3)
   CURSOR_HEADLESS_ENABLED: Joi.boolean().default(false),
-  CURSOR_HEADLESS_HEALTH_URL: Joi.string().allow('').optional(),
-  CURSOR_HEADLESS_TIMEOUT: Joi.number().default(300000),
-  CURSOR_MAX_CONCURRENT: Joi.number().default(3),
 
   CLAUDE_CODE_ENABLED: Joi.boolean().default(false),
   // ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {
@@ -330,9 +326,8 @@ export const envValidationSchema = Joi.object({
     .description('Background cleanup frequency (default: every 5 minutes)'),
 
   // Story 23.3: Resource Limit Enforcement Configuration
-  SANDBOX_ENABLE_RESOURCE_LIMITS: Joi.boolean()
-    .default(true)
-    .description('Master switch to enable/disable sandbox resource limits'),
+  // Note: SANDBOX_ENABLE_RESOURCE_LIMITS and SANDBOX_MEMORY_SWAP_LIMIT_MB removed — unused.
+  // These will be fully replaced by OPENSANDBOX_DEFAULT_MEMORY_LIMIT in Epic OS.
   SANDBOX_MEMORY_LIMIT_MB: Joi.number()
     .integer()
     .min(64)
@@ -345,14 +340,6 @@ export const envValidationSchema = Joi.object({
     .max(400)
     .default(100)
     .description('CPU limit as percentage of single core (default: 100% = 1 core)'),
-  SANDBOX_MEMORY_SWAP_LIMIT_MB: Joi.number()
-    .integer()
-    .min(-1)
-    .max(8192)
-    .default(512)
-    .description(
-      'Swap limit per container in MB (0 to disable swap, -1 for unlimited, default: 512MB)',
-    ),
 
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
