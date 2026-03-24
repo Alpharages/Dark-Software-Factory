@@ -1,5 +1,8 @@
 import { Injectable, OnModuleInit, Logger, Optional, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron } from '@nestjs/schedule';
+import { Counter, Histogram, Gauge } from 'prom-client';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import {
   SandboxManager,
   SandboxInfo,
@@ -10,18 +13,30 @@ import {
 import { AgentCommandOptions } from './interfaces/agent-command-options.interface';
 import { AgentCommandResult } from './interfaces/agent-command-result.interface';
 import { ExecutionGateway } from '@/execution/gateways/execution.gateway';
+import { Semaphore } from '@/common/utils/semaphore.util';
+import { SANDBOX_METRICS } from '@/common/metrics/metrics.constants';
 
 @Injectable()
 export class SandboxService implements OnModuleInit {
   private readonly logger = new Logger(SandboxService.name);
   private manager!: SandboxManager;
   private connectionConfigOptions!: ConnectionConfigOptions;
+  private semaphore!: Semaphore;
+  private maxConcurrent = 10;
 
   constructor(
     private readonly config: ConfigService,
     @Optional()
     @Inject(forwardRef(() => ExecutionGateway))
     private readonly executionGateway: ExecutionGateway | null,
+    @InjectMetric(SANDBOX_METRICS.EXECUTIONS_TOTAL)
+    private readonly executionsCounter: Counter<string>,
+    @InjectMetric(SANDBOX_METRICS.EXECUTION_DURATION_SECONDS)
+    private readonly durationHistogram: Histogram<string>,
+    @InjectMetric(SANDBOX_METRICS.ACTIVE_SANDBOXES)
+    private readonly activeSandboxesGauge: Gauge<string>,
+    @InjectMetric(SANDBOX_METRICS.CONCURRENCY_QUEUE_DEPTH)
+    private readonly queueDepthGauge: Gauge<string>,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -39,6 +54,10 @@ export class SandboxService implements OnModuleInit {
     this.manager = SandboxManager.create({
       connectionConfig: this.connectionConfigOptions,
     });
+
+    this.maxConcurrent = this.config.get<number>('opensandbox.maxConcurrent', 10);
+    this.semaphore = new Semaphore(this.maxConcurrent);
+    this.logger.log(`SandboxService: concurrency limit set to ${this.maxConcurrent}`);
 
     const isProd = process.env.NODE_ENV === 'production';
 
@@ -61,12 +80,20 @@ export class SandboxService implements OnModuleInit {
 
   /** Used by onModuleInit and isHealthy(). Throws on failure. */
   private async pingServer(): Promise<void> {
-    await Promise.race([
-      this.manager.listSandboxInfos({ pageSize: 1 }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('OpenSandbox health ping timed out after 10s')), 10_000),
-      ),
-    ]);
+    let timeoutId: NodeJS.Timeout | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('OpenSandbox health ping timed out after 10s'));
+      }, 10_000);
+    });
+
+    try {
+      await Promise.race([this.manager.listSandboxInfos({ pageSize: 1 }), timeoutPromise]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
   }
 
   /** Called by providers (e.g. ClaudeCodeProvider.isHealthy()) to check connectivity. Never throws. */
@@ -100,8 +127,30 @@ export class SandboxService implements OnModuleInit {
       );
     }
 
-    const startTime = Date.now();
     const providerName = options.metadata?.providerName ?? 'unknown';
+
+    // NFR-OS4: Enforce concurrency limit — queue if at max, never reject
+    const queueLength = this.semaphore.getQueueLength();
+    const availablePermits = this.semaphore.getAvailablePermits();
+
+    if (availablePermits === 0) {
+      this.logger.warn(
+        `SandboxService: concurrency limit reached (max=${this.maxConcurrent}), ` +
+          `queuing execution executionId=${options.executionId}, ` +
+          `provider=${providerName}, queue depth=${queueLength + 1}`,
+      );
+    }
+
+    // Update queue depth gauge before acquiring (reflects waiting callers)
+    this.queueDepthGauge.set(queueLength + (availablePermits === 0 ? 1 : 0));
+
+    await this.semaphore.acquire();
+
+    // Reset queue depth after slot acquired (one less waiter)
+    this.queueDepthGauge.set(this.semaphore.getQueueLength());
+
+    const startTime = Date.now();
+    let executionStatus: 'success' | 'failed' | 'timeout' = 'success';
 
     // NFR-OS5: Redact API keys from logs — NEVER log raw env
     this.logger.debug(
@@ -178,6 +227,11 @@ export class SandboxService implements OnModuleInit {
         /timed? out|timeout/i.test(execResult.error?.value ?? '');
 
       const durationMs = Date.now() - startTime;
+      const durationSeconds = durationMs / 1000;
+      executionStatus = timedOut ? 'timeout' : 'success';
+
+      this.executionsCounter.inc({ provider: providerName, status: executionStatus });
+      this.durationHistogram.observe({ provider: providerName }, durationSeconds);
 
       // NFR-OS9: Log execution summary — NEVER log stdout/stderr content
       this.logger.log(
@@ -199,13 +253,19 @@ export class SandboxService implements OnModuleInit {
       };
     } catch (err) {
       const durationMs = Date.now() - startTime;
+      const durationSeconds = durationMs / 1000;
       const error = err as Error;
       const message = error.message ?? '';
+
       // Check both error class name (consistent with happy-path TimeoutError detection) AND message regex
       timedOut =
         error.name === 'TimeoutError' ||
         error.constructor?.name === 'TimeoutError' ||
         /timed? out|timeout/i.test(message);
+
+      executionStatus = timedOut ? 'timeout' : 'failed';
+      this.executionsCounter.inc({ provider: providerName, status: executionStatus });
+      this.durationHistogram.observe({ provider: providerName }, durationSeconds);
 
       this.logger.error(
         `Sandbox execution failed: executionId=${options.executionId}, ` +
@@ -235,11 +295,77 @@ export class SandboxService implements OnModuleInit {
           );
         }
       }
+      this.semaphore.release();
+      this.queueDepthGauge.set(this.semaphore.getQueueLength());
+    }
+  }
+
+  /**
+   * NFR-OS3: Background leak prevention — runs every 5 minutes.
+   * Kills any sandbox running longer than OPENSANDBOX_SANDBOX_TIMEOUT_S * 1.5 seconds.
+   * Also updates the active sandboxes Prometheus gauge.
+   */
+  @Cron('0 */5 * * * *')
+  async checkForLeakedSandboxes(): Promise<void> {
+    this.logger.debug('SandboxService: running leak prevention check');
+
+    if (!this.manager) {
+      this.logger.debug('SandboxService: manager not initialized, skipping leak check');
+      return;
+    }
+
+    try {
+      const activeSandboxes = await this.listActiveSandboxes();
+      this.activeSandboxesGauge.set(activeSandboxes.length);
+
+      const sandboxTimeoutS = this.config.get<number>('opensandbox.sandboxTimeoutS', 3600) ?? 3600;
+      const timeoutThresholdMs = sandboxTimeoutS * 1.5 * 1000;
+
+      const now = Date.now();
+      let killedCount = 0;
+
+      for (const sandbox of activeSandboxes) {
+        // NFR-OS3: Check sandbox age. Verified SDK field: createdAt (Date)
+        if (!sandbox.createdAt) {
+          this.logger.warn(
+            `SandboxService: skipping sandbox sandboxId=${sandbox.id} — createdAt field missing from SDK response`,
+          );
+          continue;
+        }
+        const startedAt = new Date(sandbox.createdAt).getTime();
+        const ageMs = now - startedAt;
+
+        if (ageMs > timeoutThresholdMs) {
+          this.logger.warn(
+            `SandboxService: killing leaked sandbox sandboxId=${sandbox.id}, ` +
+              `ageMs=${ageMs}, threshold=${timeoutThresholdMs}`,
+          );
+          try {
+            await this.killSandbox(sandbox.id);
+            killedCount++;
+          } catch (killErr) {
+            this.logger.warn(
+              `SandboxService: failed to kill leaked sandbox sandboxId=${sandbox.id}: ` +
+                `${(killErr as Error).message}`,
+            );
+          }
+        }
+      }
+
+      if (killedCount > 0) {
+        this.logger.log(`SandboxService: leak prevention killed ${killedCount} sandbox(es)`);
+        // Update gauge after kills
+        const remaining = await this.listActiveSandboxes();
+        this.activeSandboxesGauge.set(remaining.length);
+      }
+    } catch (err) {
+      this.logger.error(`SandboxService: leak prevention check failed: ${(err as Error).message}`);
     }
   }
 
   /** NFR-OS5: Redact sensitive values from env before logging */
-  private redactEnvForLogging(env: Record<string, string>): Record<string, string> {
+  private redactEnvForLogging(env?: Record<string, string>): Record<string, string> {
+    if (!env) return {};
     const SENSITIVE = /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i;
     const result: Record<string, string> = {};
     for (const [key, value] of Object.entries(env)) {

@@ -4,6 +4,10 @@ import configuration from '../config/configuration';
 import { SandboxService } from './sandbox.service';
 import { SandboxManager, Sandbox } from '@alibaba-group/opensandbox';
 import { ExecutionGateway } from '@/execution/gateways/execution.gateway';
+import { SANDBOX_METRICS } from '@/common/metrics/metrics.constants';
+
+// Helper to generate metric tokens (consistent with other specs in this project)
+const getMetricToken = (name: string): string => `PROM_METRIC_${name.toUpperCase()}`;
 
 jest.mock('@alibaba-group/opensandbox', () => {
   return {
@@ -21,6 +25,10 @@ describe('SandboxService', () => {
   let mockConfigService: jest.Mocked<ConfigService>;
   let mockManager: any;
   let mockExecutionGateway: any;
+  let mockExecutionsCounter: any;
+  let mockDurationHistogram: any;
+  let mockActiveSandboxesGauge: any;
+  let mockQueueDepthGauge: any;
 
   const originalEnv = process.env;
 
@@ -48,17 +56,41 @@ describe('SandboxService', () => {
       emitLog: jest.fn(),
     };
 
+    mockExecutionsCounter = { inc: jest.fn() };
+    mockDurationHistogram = { observe: jest.fn() };
+    mockActiveSandboxesGauge = { set: jest.fn() };
+    mockQueueDepthGauge = { set: jest.fn() };
+
     (SandboxManager.create as jest.Mock).mockReturnValue(mockManager);
 
+    const sharedProviders = [
+      SandboxService,
+      { provide: ConfigService, useValue: mockConfigService },
+      { provide: ExecutionGateway, useValue: mockExecutionGateway },
+      {
+        provide: getMetricToken(SANDBOX_METRICS.EXECUTIONS_TOTAL),
+        useValue: mockExecutionsCounter,
+      },
+      {
+        provide: getMetricToken(SANDBOX_METRICS.EXECUTION_DURATION_SECONDS),
+        useValue: mockDurationHistogram,
+      },
+      {
+        provide: getMetricToken(SANDBOX_METRICS.ACTIVE_SANDBOXES),
+        useValue: mockActiveSandboxesGauge,
+      },
+      {
+        provide: getMetricToken(SANDBOX_METRICS.CONCURRENCY_QUEUE_DEPTH),
+        useValue: mockQueueDepthGauge,
+      },
+    ];
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SandboxService,
-        { provide: ConfigService, useValue: mockConfigService },
-        { provide: ExecutionGateway, useValue: mockExecutionGateway },
-      ],
+      providers: sharedProviders,
     }).compile();
 
     service = module.get<SandboxService>(SandboxService);
+    (service as any).sharedProviders = sharedProviders; // Store for T10-guard
     // Suppress logger out in tests
     const loggerMock = { log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
     (service as any).logger = loggerMock;
@@ -218,11 +250,7 @@ describe('SandboxService', () => {
     it('T10-guard: should throw if manager is not initialized (guard check)', async () => {
       // Create a fresh service that has NOT had onModuleInit called
       const freshModule = await Test.createTestingModule({
-        providers: [
-          SandboxService,
-          { provide: ConfigService, useValue: mockConfigService },
-          { provide: ExecutionGateway, useValue: mockExecutionGateway },
-        ],
+        providers: (service as any).sharedProviders,
       }).compile();
       const freshService = freshModule.get<SandboxService>(SandboxService);
       // Suppress logger
@@ -400,6 +428,186 @@ describe('SandboxService', () => {
       const config = configuration();
       expect(config.opensandbox.agentImage).toBe('opensandbox/code-interpreter:v1.0.2');
       process.env.OPENSANDBOX_AGENT_IMAGE = originalEnv;
+    });
+  });
+
+  describe('Story OS-1.4: Metrics & Concurrency (T20–T27)', () => {
+    let mockSandbox: any;
+
+    beforeEach(async () => {
+      mockManager.listSandboxInfos.mockResolvedValue({ items: [] });
+      await service.onModuleInit();
+
+      mockSandbox = {
+        id: 'sbx-123',
+        kill: jest.fn().mockResolvedValue(undefined),
+        close: jest.fn().mockResolvedValue(undefined),
+        commands: { run: jest.fn().mockResolvedValue({}) },
+      };
+      (Sandbox.create as jest.Mock).mockResolvedValue(mockSandbox);
+    });
+
+    it('T20: should increment executionsCounter on success', async () => {
+      await service.runAgentCommand({ executionId: 'e1', image: 'i1', command: 'ls' } as any);
+      expect(mockExecutionsCounter.inc).toHaveBeenCalledWith({
+        provider: 'unknown',
+        status: 'success',
+      });
+    });
+
+    it('T21: should increment executionsCounter with "timeout" on Command timeout', async () => {
+      mockSandbox.commands.run.mockResolvedValue({
+        error: { name: 'TimeoutError', value: 'timed out' },
+      });
+      await service.runAgentCommand({ executionId: 'e1' } as any);
+      expect(mockExecutionsCounter.inc).toHaveBeenCalledWith({
+        provider: 'unknown',
+        status: 'timeout',
+      });
+    });
+
+    it('T22: should increment executionsCounter with "failed" on catchable error', async () => {
+      mockSandbox.commands.run.mockRejectedValue(new Error('crash'));
+      await expect(service.runAgentCommand({ executionId: 'e1' } as any)).rejects.toThrow();
+      expect(mockExecutionsCounter.inc).toHaveBeenCalledWith({
+        provider: 'unknown',
+        status: 'failed',
+      });
+    });
+
+    it('T23: should observe duration in durationHistogram', async () => {
+      await service.runAgentCommand({ executionId: 'e1' } as any);
+      expect(mockDurationHistogram.observe).toHaveBeenCalledWith(
+        { provider: 'unknown' },
+        expect.any(Number),
+      );
+    });
+
+    it('T24: should acquire and release semaphore permit', async () => {
+      const acquireSpy = jest.spyOn((service as any).semaphore, 'acquire');
+      const releaseSpy = jest.spyOn((service as any).semaphore, 'release');
+
+      await service.runAgentCommand({ executionId: 'e1' } as any);
+
+      expect(acquireSpy).toHaveBeenCalled();
+      expect(releaseSpy).toHaveBeenCalled();
+    });
+
+    it('T25: should update queueDepthGauge during runAgentCommand life-cycle', async () => {
+      await service.runAgentCommand({ executionId: 'e1' } as any);
+      // set() is called before acquire, after acquire, and in finally
+      expect(mockQueueDepthGauge.set).toHaveBeenCalledTimes(3);
+    });
+
+    it('T26: should queue second request when concurrency limit is reached', async () => {
+      // Mock maxConcurrent = 1
+      mockConfigService.get.mockImplementation((key: string, def: any) => {
+        if (key === 'opensandbox.maxConcurrent') return 1;
+        return def;
+      });
+      await service.onModuleInit();
+
+      // Block the first execution
+      let releaseFirst: any;
+      const firstExecutionStarted = new Promise((resolve) => {
+        mockSandbox.commands.run.mockImplementationOnce(() => {
+          resolve(true);
+          return new Promise((res) => {
+            releaseFirst = res;
+          });
+        });
+      });
+      // Second call should proceed once first releases
+      mockSandbox.commands.run.mockResolvedValueOnce({});
+
+      const firstCall = service.runAgentCommand({ executionId: 'e1' } as any);
+      await firstExecutionStarted;
+
+      // Second call should be queued
+      let secondCallFinished = false;
+      const secondCall = service.runAgentCommand({ executionId: 'e2' } as any).then(() => {
+        secondCallFinished = true;
+      });
+
+      // Assert second call hasn't finished (it's queued)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(secondCallFinished).toBe(false);
+
+      // Release first, second should proceed
+      releaseFirst({});
+      await firstCall;
+      await secondCall;
+      expect(secondCallFinished).toBe(true);
+    });
+
+    it('T27: should release semaphore even if execution fails', async () => {
+      mockSandbox.commands.run.mockRejectedValue(new Error('crash'));
+      const releaseSpy = jest.spyOn((service as any).semaphore, 'release');
+
+      await expect(service.runAgentCommand({ executionId: 'e1' } as any)).rejects.toThrow();
+      expect(releaseSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('Story OS-1.4: Leak Prevention (T28–T31)', () => {
+    beforeEach(async () => {
+      mockManager.listSandboxInfos.mockResolvedValue({ items: [] });
+      await service.onModuleInit();
+      mockConfigService.get.mockImplementation((key: string, def: any) => {
+        if (key === 'opensandbox.sandboxTimeoutS') return 60; // threshold = 90s
+        return def;
+      });
+    });
+
+    it('T28: checkForLeakedSandboxes should kill sandboxes older than threshold', async () => {
+      const now = Date.now();
+      const oldDate = new Date(now - 100_000); // 100s old (> 90s)
+      const youngDate = new Date(now - 10_000); // 10s old
+
+      mockManager.listSandboxInfos.mockResolvedValue({
+        items: [
+          { id: 'sbx-old', createdAt: oldDate },
+          { id: 'sbx-young', createdAt: youngDate },
+        ],
+      });
+
+      await service.checkForLeakedSandboxes();
+
+      expect(mockManager.killSandbox).toHaveBeenCalledWith('sbx-old');
+      expect(mockManager.killSandbox).not.toHaveBeenCalledWith('sbx-young');
+    });
+
+    it('T29: should update activeSandboxesGauge count', async () => {
+      mockManager.listSandboxInfos.mockResolvedValue({
+        items: [
+          { id: 's1', createdAt: new Date() },
+          { id: 's2', createdAt: new Date() },
+        ],
+      });
+
+      await service.checkForLeakedSandboxes();
+
+      expect(mockActiveSandboxesGauge.set).toHaveBeenCalledWith(2);
+    });
+
+    it('T30: should handle errors during leak prevention without crashing', async () => {
+      mockManager.listSandboxInfos.mockRejectedValue(new Error('SDK error'));
+      await expect(service.checkForLeakedSandboxes()).resolves.not.toThrow();
+      expect((service as any).logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('leak prevention check failed'),
+      );
+    });
+
+    it('T31: should re-update gauge after killing leaked sandboxes', async () => {
+      const oldDate = new Date(Date.now() - 200_000);
+      mockManager.listSandboxInfos
+        .mockResolvedValueOnce({ items: [{ id: 'sbx-leak', createdAt: oldDate }] }) // first call
+        .mockResolvedValueOnce({ items: [] }); // call after kill
+
+      await service.checkForLeakedSandboxes();
+
+      expect(mockActiveSandboxesGauge.set).toHaveBeenCalledWith(1);
+      expect(mockActiveSandboxesGauge.set).toHaveBeenCalledWith(0);
     });
   });
 });
