@@ -11,4 +11,6 @@ export interface AgentCommandOptions {
     egressRules?: Array<{ target: string }>;
   };
   metadata?: Record<string, string>; // Attached to sandbox for observability
+  /** Optional: correlates sandbox execution to the parent ticket in ExecutionGateway log payloads */
+  ticketId?: string;
 }

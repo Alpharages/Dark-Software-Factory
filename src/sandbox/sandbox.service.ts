@@ -1,28 +1,43 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Optional, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SandboxManager, SandboxInfo } from '@alibaba-group/opensandbox';
+import {
+  SandboxManager,
+  SandboxInfo,
+  Sandbox,
+  ConnectionConfigOptions,
+  OutputMessage,
+} from '@alibaba-group/opensandbox';
 import { AgentCommandOptions } from './interfaces/agent-command-options.interface';
 import { AgentCommandResult } from './interfaces/agent-command-result.interface';
+import { ExecutionGateway } from '@/execution/gateways/execution.gateway';
 
 @Injectable()
 export class SandboxService implements OnModuleInit {
   private readonly logger = new Logger(SandboxService.name);
   private manager!: SandboxManager;
+  private connectionConfigOptions!: ConnectionConfigOptions;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @Optional()
+    @Inject(forwardRef(() => ExecutionGateway))
+    private readonly executionGateway: ExecutionGateway | null,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     const domain = this.config.get<string>('opensandbox.domain', 'localhost:8080');
 
+    this.connectionConfigOptions = {
+      domain,
+      apiKey: this.config.get<string>('opensandbox.apiKey', ''),
+      protocol: this.config.get<'http' | 'https'>('opensandbox.protocol', 'http'),
+      requestTimeoutSeconds: Math.floor(
+        this.config.get<number>('opensandbox.requestTimeoutMs', 60000) / 1000,
+      ),
+    };
+
     this.manager = SandboxManager.create({
-      connectionConfig: {
-        domain,
-        apiKey: this.config.get<string>('opensandbox.apiKey', ''),
-        protocol: this.config.get<'http' | 'https'>('opensandbox.protocol', 'http'),
-        requestTimeoutSeconds: Math.floor(
-          this.config.get<number>('opensandbox.requestTimeoutMs', 60000) / 1000,
-        ),
-      },
+      connectionConfig: this.connectionConfigOptions,
     });
 
     const isProd = process.env.NODE_ENV === 'production';
@@ -77,7 +92,160 @@ export class SandboxService implements OnModuleInit {
     return response.items || [];
   }
 
-  async runAgentCommand(_options: AgentCommandOptions): Promise<AgentCommandResult> {
-    throw new Error('[OS-1.3] runAgentCommand not yet implemented — awaiting streaming support');
+  async runAgentCommand(options: AgentCommandOptions): Promise<AgentCommandResult> {
+    if (!this.manager) {
+      throw new Error(
+        'SandboxService.runAgentCommand() called before onModuleInit() completed. ' +
+          'Ensure SandboxModule is initialized before calling runAgentCommand().',
+      );
+    }
+
+    const startTime = Date.now();
+    const providerName = options.metadata?.providerName ?? 'unknown';
+
+    // NFR-OS5: Redact API keys from logs — NEVER log raw env
+    this.logger.debug(
+      `Starting sandbox execution: executionId=${options.executionId}, ` +
+        `image=${options.image}, provider=${providerName}, ` +
+        `env=${JSON.stringify(this.redactEnvForLogging(options.env))}`,
+    );
+
+    let sandbox: Sandbox | null = null;
+    let sandboxId: string | null = null;
+    let stdoutBuffer = '';
+    let stderrBuffer = '';
+    let timedOut = false;
+    let exitCode = 1;
+
+    try {
+      sandbox = await Sandbox.create({
+        image: options.image,
+        env: options.env,
+        resource: {
+          cpu: options.cpuLimit,
+          memory: options.memoryLimit,
+        },
+        networkPolicy: options.networkPolicy
+          ? {
+              defaultAction: options.networkPolicy.defaultAction.toLowerCase() as 'allow' | 'deny',
+              egress: options.networkPolicy.egressRules?.map((r) => ({
+                action: 'allow' as const,
+                target: r.target,
+              })),
+            }
+          : undefined,
+        metadata: options.metadata,
+        connectionConfig: this.connectionConfigOptions,
+      });
+
+      sandboxId = sandbox.id;
+
+      this.logger.debug(
+        `Sandbox created: sandboxId=${sandboxId}, executionId=${options.executionId}`,
+      );
+
+      const execResult = await sandbox.commands.run(
+        options.command,
+        {
+          timeoutSeconds: options.timeoutSeconds,
+        },
+        {
+          onStdout: (msg: OutputMessage) => {
+            stdoutBuffer += msg.text;
+            this.executionGateway?.emitLog(
+              options.executionId,
+              options.ticketId ?? '',
+              msg.text,
+              'stdout',
+            );
+          },
+          onStderr: (msg: OutputMessage) => {
+            stderrBuffer += msg.text;
+            this.executionGateway?.emitLog(
+              options.executionId,
+              options.ticketId ?? '',
+              msg.text,
+              'stderr',
+            );
+          },
+        },
+      );
+
+      // Infer exit code from the execResult
+      exitCode = execResult.error ? 1 : 0;
+      timedOut =
+        execResult.error?.name === 'TimeoutError' ||
+        /timed? out|timeout/i.test(execResult.error?.value ?? '');
+
+      const durationMs = Date.now() - startTime;
+
+      // NFR-OS9: Log execution summary — NEVER log stdout/stderr content
+      this.logger.log(
+        `Sandbox execution complete: sandboxId=${sandboxId}, ` +
+          `executionId=${options.executionId}, providerName=${providerName}, ` +
+          `durationMs=${durationMs}, exitCode=${exitCode}, ` +
+          `timedOut=${timedOut}, ` +
+          `stdoutBytes=${Buffer.byteLength(stdoutBuffer)}, ` +
+          `stderrBytes=${Buffer.byteLength(stderrBuffer)}`,
+      );
+
+      return {
+        sandboxId,
+        stdout: stdoutBuffer,
+        stderr: stderrBuffer,
+        exitCode,
+        durationMs,
+        timedOut,
+      };
+    } catch (err) {
+      const durationMs = Date.now() - startTime;
+      const error = err as Error;
+      const message = error.message ?? '';
+      // Check both error class name (consistent with happy-path TimeoutError detection) AND message regex
+      timedOut =
+        error.name === 'TimeoutError' ||
+        error.constructor?.name === 'TimeoutError' ||
+        /timed? out|timeout/i.test(message);
+
+      this.logger.error(
+        `Sandbox execution failed: executionId=${options.executionId}, ` +
+          `sandboxId=${sandboxId ?? 'N/A'}, ` +
+          `providerName=${providerName}, durationMs=${durationMs}, ` +
+          `timedOut=${timedOut}, error=${message}`,
+      );
+
+      throw err;
+    } finally {
+      // NFR-OS2: Always kill AND close
+      if (sandbox) {
+        try {
+          await sandbox.kill();
+        } catch (killErr) {
+          this.logger.warn(
+            `Failed to kill sandbox (executionId=${options.executionId}): ` +
+              `${(killErr as Error).message}`,
+          );
+        }
+        try {
+          await sandbox.close();
+        } catch (closeErr) {
+          this.logger.warn(
+            `Failed to close sandbox (executionId=${options.executionId}): ` +
+              `${(closeErr as Error).message}`,
+          );
+        }
+      }
+    }
+  }
+
+  /** NFR-OS5: Redact sensitive values from env before logging */
+  private redactEnvForLogging(env: Record<string, string>): Record<string, string> {
+    const SENSITIVE = /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i;
+    const result: Record<string, string> = {};
+    for (const [key, value] of Object.entries(env)) {
+      // eslint-disable-next-line security/detect-object-injection
+      result[key] = SENSITIVE.test(key) ? '[REDACTED]' : value;
+    }
+    return result;
   }
 }

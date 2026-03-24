@@ -493,7 +493,12 @@ development_status:
     effort: '2 days'
     story_points: 5
     notes: 'Implemented SandboxModule, SandboxService, startup health ping, config schemas, and full test suite. Auto-fixes applied to code review findings.'
-  os-1-3-sandbox-command-execution-real-time-log-streaming: ready-for-dev
+  os-1-3-sandbox-command-execution-real-time-log-streaming:
+    status: done
+    completion_date: '2026-03-24T20:52:00+05:00'
+    effort: '2 days'
+    story_points: 5
+    notes: 'Implemented runAgentCommand with full streaming to ExecutionGateway, mapped NetworkPolicy, and parsed exitCode/timedOut from OpenSandbox SDK Execution result. 22 tests passing. Code review: 5 patches fixed (timedOut detection unified, missing guard test added, networkPolicy edge case test added, sandboxId in catch log, T14 negative assertions). 2 deferred (egress action hardcoded, API key cached in field).'
   os-1-4-sandbox-prometheus-metrics-concurrency-leak-prevention: ready-for-dev
   epic-os-1-retrospective: optional
 

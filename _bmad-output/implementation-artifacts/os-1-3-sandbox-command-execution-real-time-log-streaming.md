@@ -1,6 +1,6 @@
 # Story OS-1.3: Sandbox Command Execution with Real-Time Log Streaming
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -28,47 +28,47 @@ So that execution logs appear on the dashboard as the agent works and sandbox le
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Verify OpenSandbox SDK Streaming API (AC: #1)
-  - [ ] 1.1 **MANDATORY before writing any code:** Inspect `node_modules/@alibaba-group/opensandbox/dist/index.d.ts` (or equivalent) after OS-1.2 installs the SDK
-  - [ ] 1.2 Confirm the exact: `Sandbox.create()` static method signature, constructor/options shape, how to get `sandboxId` from the instance, command execution method (`sandbox.run()` vs `sandbox.exec()` vs other), streaming callback names (`onStdout`/`onStderr` vs `stdout`/`stderr` vs event emitters), timeout handling (option vs `Promise.race`), return type of the run/exec method (`exitCode`, `timedOut` fields), kill/close method names
-  - [ ] 1.3 Document any discrepancies between this story and actual SDK API in Dev Agent Record
+- [x] Task 1: Verify OpenSandbox SDK Streaming API (AC: #1)
+  - [x] 1.1 **MANDATORY before writing any code:** Inspect `node_modules/@alibaba-group/opensandbox/dist/index.d.ts` (or equivalent) after OS-1.2 installs the SDK
+  - [x] 1.2 Confirm the exact: `Sandbox.create()` static method signature, constructor/options shape, how to get `sandboxId` from the instance, command execution method (`sandbox.run()` vs `sandbox.exec()` vs other), streaming callback names (`onStdout`/`onStderr` vs `stdout`/`stderr` vs event emitters), timeout handling (option vs `Promise.race`), return type of the run/exec method (`exitCode`, `timedOut` fields), kill/close method names
+  - [x] 1.3 Document any discrepancies between this story and actual SDK API in Dev Agent Record
 
-- [ ] Task 2: Update `AgentCommandOptions` interface (AC: #1, #4)
-  - [ ] 2.1 Open `src/sandbox/interfaces/agent-command-options.interface.ts` (created in OS-1.2)
-  - [ ] 2.2 Add optional field: `ticketId?: string;` — comment: `// Optional: correlates sandbox execution with the parent ticket in ExecutionGateway log payloads`
-  - [ ] 2.3 Update the barrel `src/sandbox/index.ts` if needed (no change expected — `AgentCommandOptions` is already re-exported)
+- [x] Task 2: Update `AgentCommandOptions` interface (AC: #1, #4)
+  - [x] 2.1 Open `src/sandbox/interfaces/agent-command-options.interface.ts` (created in OS-1.2)
+  - [x] 2.2 Add optional field: `ticketId?: string;` — comment: `// Optional: correlates sandbox execution with the parent ticket in ExecutionGateway log payloads`
+  - [x] 2.3 Update the barrel `src/sandbox/index.ts` if needed (no change expected — `AgentCommandOptions` is already re-exported)
 
-- [ ] Task 3: Update `SandboxModule` to import `ExecutionModule` (AC: #1)
-  - [ ] 3.1 Open `src/sandbox/sandbox.module.ts`
-  - [ ] 3.2 Add `forwardRef(() => ExecutionModule)` to the `imports` array — **REQUIRED to prevent circular dep in OS-2** when `AiRoutingModule` imports `SandboxModule`
-  - [ ] 3.3 Import `ExecutionModule` from `@/execution/execution.module` using `@/` alias and wrap in `forwardRef`
-  - [ ] 3.4 `SandboxModule` must remain `@Global()` — do NOT remove that decorator
+- [x] Task 3: Update `SandboxModule` to import `ExecutionModule` (AC: #1)
+  - [x] 3.1 Open `src/sandbox/sandbox.module.ts`
+  - [x] 3.2 Add `forwardRef(() => ExecutionModule)` to the `imports` array — **REQUIRED to prevent circular dep in OS-2** when `AiRoutingModule` imports `SandboxModule`
+  - [x] 3.3 Import `ExecutionModule` from `@/execution/execution.module` using `@/` alias and wrap in `forwardRef`
+  - [x] 3.4 `SandboxModule` must remain `@Global()` — do NOT remove that decorator
 
-- [ ] Task 4: Inject `ExecutionGateway` into `SandboxService` (AC: #1, #3)
-  - [ ] 4.1 Open `src/sandbox/sandbox.service.ts`
-  - [ ] 4.2 Add `@Optional() @Inject(forwardRef(() => ExecutionGateway)) private readonly executionGateway: ExecutionGateway | null` to constructor
-  - [ ] 4.3 Import `ExecutionGateway` from `@/execution/gateways/execution.gateway`
-  - [ ] 4.4 Import `Optional, Inject, forwardRef` from `@nestjs/common` (add to existing import)
-  - [ ] 4.5 `@Optional()` is **required** — `ExecutionGateway` might not be available in unit test context without full module wiring; service must gracefully handle `null`
+- [x] Task 4: Inject `ExecutionGateway` into `SandboxService` (AC: #1, #3)
+  - [x] 4.1 Open `src/sandbox/sandbox.service.ts`
+  - [x] 4.2 Add `@Optional() @Inject(forwardRef(() => ExecutionGateway)) private readonly executionGateway: ExecutionGateway | null` to constructor
+  - [x] 4.3 Import `ExecutionGateway` from `@/execution/gateways/execution.gateway`
+  - [x] 4.4 Import `Optional, Inject, forwardRef` from `@nestjs/common` (add to existing import)
+  - [x] 4.5 `@Optional()` is **required** — `ExecutionGateway` might not be available in unit test context without full module wiring; service must gracefully handle `null`
 
-- [ ] Task 5: Replace stub `runAgentCommand()` with full implementation (AC: #1, #2, #3, #4)
-  - [ ] 5.1 Remove the stub (which throws `[OS-1.3]` error) added in OS-1.2
-  - [ ] 5.2 Add `private redactEnvForLogging(env: Record<string, string>): Record<string, string>` — redacts any env key matching `/KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i`
-  - [ ] 5.3 Implement `runAgentCommand()` following the skeleton in Dev Notes below
-  - [ ] 5.4 Import `Sandbox` from `@alibaba-group/opensandbox` — verify exact export name from SDK types
-  - [ ] 5.5 Ensure `try/finally` structure is correct — `sandbox.kill()` AND `sandbox.close()` must both be called in `finally`, each wrapped in its own `try/catch` to prevent one failure from skipping the other
+- [x] Task 5: Replace stub `runAgentCommand()` with full implementation (AC: #1, #2, #3, #4)
+  - [x] 5.1 Remove the stub (which throws `[OS-1.3]` error) added in OS-1.2
+  - [x] 5.2 Add `private redactEnvForLogging(env: Record<string, string>): Record<string, string>` — redacts any env key matching `/KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i`
+  - [x] 5.3 Implement `runAgentCommand()` following the skeleton in Dev Notes below
+  - [x] 5.4 Import `Sandbox` from `@alibaba-group/opensandbox` — verify exact export name from SDK types
+  - [x] 5.5 Ensure `try/finally` structure is correct — `sandbox.kill()` AND `sandbox.close()` must both be called in `finally`, each wrapped in its own `try/catch` to prevent one failure from skipping the other
 
-- [ ] Task 6: Write unit tests (AC: #1, #2, #3, #4)
-  - [ ] 6.1 Open `src/sandbox/sandbox.service.spec.ts` (created in OS-1.2)
-  - [ ] 6.2 Extend the existing mock for `@alibaba-group/opensandbox` to also mock `Sandbox.create()` as a static method returning a mock sandbox instance with `run`/`exec`, `kill`, `close` methods
-  - [ ] 6.3 Add mock for `ExecutionGateway` — `jest.fn()` for `emitLog` method
-  - [ ] 6.4 Write **9 new tests** (see Dev Notes for exact test cases T11–T19)
+- [x] Task 6: Write unit tests (AC: #1, #2, #3, #4)
+  - [x] 6.1 Open `src/sandbox/sandbox.service.spec.ts` (created in OS-1.2)
+  - [x] 6.2 Extend the existing mock for `@alibaba-group/opensandbox` to also mock `Sandbox.create()` as a static method returning a mock sandbox instance with `run`/`exec`, `kill`, `close` methods
+  - [x] 6.3 Add mock for `ExecutionGateway` — `jest.fn()` for `emitLog` method
+  - [x] 6.4 Write **9 new tests** (see Dev Notes for exact test cases T11–T19)
 
-- [ ] Task 7: Verify the build (AC: #1, #2, #3, #4)
-  - [ ] 7.1 Run `pnpm typecheck` — zero errors
-  - [ ] 7.2 Run `pnpm lint` — zero errors
-  - [ ] 7.3 Run `pnpm test -- sandbox.service` — all tests green (10 from OS-1.2 minus T8 stub + 9 new = **18 total**)
-  - [ ] 7.4 Run `pnpm build` — zero compilation errors
+- [x] Task 7: Verify the build (AC: #1, #2, #3, #4)
+  - [x] 7.1 Run `pnpm typecheck` — zero errors
+  - [x] 7.2 Run `pnpm lint` — zero errors
+  - [x] 7.3 Run `pnpm test -- sandbox.service` — all tests green (10 from OS-1.2 minus T8 stub + 9 new = **18 total**)
+  - [x] 7.4 Run `pnpm build` — zero compilation errors
 
 ## Dev Notes
 
@@ -606,10 +606,33 @@ Use the same mocking patterns from OS-1.2:
 
 ### Agent Model Used
 
-claude-sonnet-4-6
+antigravity
 
 ### Debug Log References
 
+- Type checking, unit testing, and linting successfully passed for `SandboxService`.
+
 ### Completion Notes List
 
+- Verified and adapted `SandboxService.runAgentCommand` to match the exact OpenSandbox SDK API:
+  - `Sandbox.create(options)` takes 1 argument. Passed `connectionConfig` extracted from `SandboxManager`.
+  - Used `sandbox.commands.run(command, { timeoutSeconds }, { onStdout, onStderr })` for streaming capabilities instead of `sandbox.run()`.
+  - Reconstructed `exitCode` and `timedOut` based on the `.error` payload inside `CommandExecution` result.
+- Overrode network policy handling since SDK uses `'allow'`/`'deny'` instead of uppercase `'ALLOW'`/`'DENY'`.
+
 ### File List
+
+- `src/sandbox/interfaces/agent-command-options.interface.ts`
+- `src/sandbox/sandbox.module.ts`
+- `src/sandbox/sandbox.service.ts`
+- `src/sandbox/sandbox.service.spec.ts`
+
+## Review Findings
+
+- [x] [Review][Patch] Inconsistent `timedOut` detection — catch block uses regex; happy path uses `error.name === 'TimeoutError'`. If SDK throws a timeout exception with message that doesn't match `/timed? out|timeout/i` (e.g., `"Operation aborted after deadline"`), `timedOut` will be wrongly `false` in the error path. Unify by also checking the exception's constructor name or a specific error type. [`sandbox.service.ts:192`] — **Fixed**: now checks `error.name === 'TimeoutError' || error.constructor?.name === 'TimeoutError' || regex`
+- [x] [Review][Patch] Missing test for `runAgentCommand()` guard — the manager-not-initialized guard at L90 has no test coverage. Add a test that calls `runAgentCommand()` without `onModuleInit()` and asserts the guard error message is thrown. [`sandbox.service.spec.ts`] — **Fixed**: T10-guard added
+- [x] [Review][Patch] `networkPolicy` with `egressRules: undefined` untested — `sandbox.commands.run` is not tested when `networkPolicy.egressRules` is omitted (expected to pass `egress: undefined` to SDK). Add a test case for a policy with `defaultAction: 'DENY'` and no `egressRules` to confirm SDK doesn't reject `egress: undefined`. [`sandbox.service.spec.ts`] — **Fixed**: T17b added
+- [x] [Review][Patch] Error log in `catch` block omits `sandboxId` — when `sandbox.commands.run()` throws after sandbox creation, the `catch` log (L194-198) does not include the `sandboxId`, even though it's in scope via the closure variable. Update the catch log to include `sandboxId` (or `'N/A'` if sandbox was never created). Aligns with AC4 completeness. [`sandbox.service.ts:194`] — **Fixed**: `sandboxId` hoisted to outer scope, catch log includes `sandboxId ?? 'N/A'`
+- [x] [Review][Patch] T14 doesn't assert cleanup skipped on creation failure — test T14 asserts that rejection propagates when `Sandbox.create()` fails, but does not assert that `mockSandbox.kill` and `mockSandbox.close` were NOT called (they shouldn't be since `sandbox` is null). Add `expect(mockSandbox.kill).not.toHaveBeenCalled()` and similar. [`sandbox.service.spec.ts`] — **Fixed**: negative assertions added to T14
+- [x] [Review][Defer] All egress rules hardcode `action: 'allow'` — `egressRules` in `AgentCommandOptions` only has `target` (no `action` field), so per-rule deny is architecturally impossible in the current interface. Tracked for OS-2 when network policy requirements are refined. [`sandbox.service.ts:123-127`] — deferred, pre-existing interface constraint
+- [x] [Review][Defer] `connectionConfigOptions` caches API key as class field — the plaintext API key lives as a class-level field for the service lifetime. If key rotation is needed, the server must restart. Tracked for OS-1.4 or a future secrets-management story. [`sandbox.service.ts:12`] — deferred, pre-existing config pattern
