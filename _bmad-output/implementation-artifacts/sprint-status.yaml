@@ -1,6 +1,6 @@
-# generated: 2026-02-20
+# generated: 2026-03-24
 # project: Dark Software Factory
-# project_key: DSF
+# project_key: NOKEY
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
 
@@ -29,9 +29,9 @@
 # - SM typically drafts next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
-generated: 2026-02-20
+generated: 2026-03-24
 project: Dark Software Factory
-project_key: DSF
+project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
@@ -477,9 +477,101 @@ development_status:
     notes: 'UI-8 — null render during auth re-evaluation + enabled:!!user guards. QA-NFR5. Code review fixes (2H+4M): enabled guard bypass via ...options spread fixed in 8 hooks; ProtectedRoute test rewritten for correct redirect assertion; AuthProvider/SocketProvider mocked in AppContent test; useApprovals nested closure test added; duplicate task entries removed; Dev Agent Record File List filled.'
   epic-27-retrospective: done
 
+  # EPIC OS-1 - SECURE SANDBOX INFRASTRUCTURE
+  epic-os-1: backlog
+  epic-os-1-name: 'Secure Sandbox Infrastructure'
+  epic-os-1-phase: 'OpenSandbox Migration Sprint'
+  epic-os-1-priority: critical
+  epic-os-1-dependencies: none
+  epic-os-1-estimated_effort: '5 days'
+  epic-os-1-source: 'epics.md'
+  epic-os-1-notes: 'Foundation epic. Deploy standalone OpenSandbox server + SandboxService. Must complete before OS-2.'
+  os-1-1-opensandbox-server-deployment-ops-documentation: backlog
+  os-1-2-sandbox-module-service-startup-health-validation: backlog
+  os-1-3-sandbox-command-execution-real-time-log-streaming: backlog
+  os-1-4-sandbox-prometheus-metrics-concurrency-leak-prevention: backlog
+  epic-os-1-retrospective: optional
+
+  # EPIC OS-2 - CLAUDE CODE MIGRATED TO OPENSANDBOX
+  epic-os-2: backlog
+  epic-os-2-name: 'Claude Code Migrated to OpenSandbox'
+  epic-os-2-phase: 'OpenSandbox Migration Sprint'
+  epic-os-2-priority: critical
+  epic-os-2-dependencies: 'Epic OS-1'
+  epic-os-2-estimated_effort: '4 days'
+  epic-os-2-source: 'epics.md'
+  epic-os-2-notes: 'First E2E validation. ICodingAgentProvider interface + ClaudeCode rewrite. Critical path milestone.'
+  os-2-1-coding-agent-provider-interface-resource-profile-service: backlog
+  os-2-2-claude-code-provider-rewrite-sandbox-service: backlog
+  os-2-3-provider-fallback-health-circuit-breaker-compatibility: backlog
+  epic-os-2-retrospective: optional
+
+  # EPIC OS-3 - DOOD ELIMINATION — ZERO DOCKER DEPENDENCY
+  epic-os-3: backlog
+  epic-os-3-name: 'DooD Elimination — Zero Docker Dependency'
+  epic-os-3-phase: 'OpenSandbox Migration Sprint'
+  epic-os-3-priority: critical
+  epic-os-3-dependencies: 'Epic OS-1, OS-2'
+  epic-os-3-estimated_effort: '2 days'
+  epic-os-3-source: 'epics.md'
+  epic-os-3-notes: 'Security milestone. Delete all DooD code + packages. All 7 grep checks (CURSOR_HEADLESS deferred to OS-5) must return zero.'
+  os-3-1-delete-dood-files-remove-docker-module: backlog
+  os-3-2-remove-legacy-dood-metrics-cleanup-service-verify: backlog
+  epic-os-3-retrospective: optional
+
+  # EPIC OS-4 - MULTI-PROVIDER AI ROUTING (GEMINI, CODEX, KIMI)
+  epic-os-4: backlog
+  epic-os-4-name: 'Multi-Provider AI Routing (Gemini, Codex, Kimi)'
+  epic-os-4-phase: 'OpenSandbox Migration Sprint'
+  epic-os-4-priority: high
+  epic-os-4-dependencies: 'Epic OS-1, OS-2, OS-3'
+  epic-os-4-estimated_effort: '5 days'
+  epic-os-4-source: 'epics.md'
+  epic-os-4-notes: 'Retire Cursor Headless. Add 3 new providers dark-deployed. Full complexity-based routing across 4 providers.'
+  os-4-1-retire-cursor-headless-provider-data-migration: backlog
+  os-4-2-gemini-cli-provider: backlog
+  os-4-3-openai-codex-kimi-cli-providers: backlog
+  os-4-4-multi-provider-ai-routing-service-complexity-strategy: backlog
+  epic-os-4-retrospective: optional
+
+  # EPIC OS-5 - CONFIGURATION CLEANUP & PRODUCTION HARDENING
+  epic-os-5: backlog
+  epic-os-5-name: 'Configuration Cleanup & Production Hardening'
+  epic-os-5-phase: 'OpenSandbox Migration Sprint'
+  epic-os-5-priority: high
+  epic-os-5-dependencies: 'Epic OS-1, OS-2, OS-3, OS-4'
+  epic-os-5-estimated_effort: '2 days'
+  epic-os-5-source: 'epics.md'
+  epic-os-5-notes: 'Final cleanup. Zero dead env vars. All 8 grep checks (incl. CURSOR_HEADLESS) pass. pnpm check green.'
+  os-5-1-env-validation-configuration-module-cleanup: backlog
+  os-5-2-env-example-regeneration-final-production-audit: backlog
+  epic-os-5-retrospective: optional
+
 priority_sequence:
-  last_updated: '2026-03-10T00:00:00+05:00'
-  updated_by: 'PM Tool Integration planning 2026-03-10 — Epics CS0, CS1, CS2, CS3 added'
+  last_updated: '2026-03-24T00:00:00+05:00'
+  updated_by: 'OpenSandbox Migration sprint planning 2026-03-24 — Epics OS-1 through OS-5 added'
+
+  opensandbox_p0:
+    description: 'CRITICAL — OpenSandbox Migration. Security prerequisite: remove DooD Docker socket exposure.'
+    stories:
+      - id: 'os-1-1'
+        name: 'OpenSandbox Server Deployment & Ops Documentation'
+        reason: 'Ops prerequisite. No code changes until standalone server is running and reachable.'
+      - id: 'os-1-2'
+        name: 'SandboxModule and SandboxService with Startup Health Validation'
+        reason: 'Core SDK abstraction. All providers depend on this.'
+      - id: 'os-1-3'
+        name: 'Sandbox Command Execution with Real-Time Log Streaming'
+        reason: 'runAgentCommand() is the critical execution path.'
+      - id: 'os-1-4'
+        name: 'Sandbox Prometheus Metrics, Concurrency Enforcement, Leak Prevention'
+        reason: 'Required for safe production operation.'
+      - id: 'os-2-2'
+        name: 'ClaudeCodeProvider Rewrite Using SandboxService'
+        reason: 'First E2E validation milestone. Confirms full migration path works.'
+      - id: 'os-3-1'
+        name: 'Delete DooD Files and Remove DockerModule'
+        reason: 'Security milestone. Removes Docker socket mount permanently.'
 
   critical_p0:
     description: 'CRITICAL - QA Stabilization. Must fix before any new feature work.'
