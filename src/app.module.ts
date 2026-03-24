@@ -60,6 +60,7 @@ import { FileLocksModule } from './file-locks/file-locks.module';
 import { StorageModule } from './storage/storage.module';
 import { GitMirrorModule } from '@/git-mirror';
 import { DockerModule } from '@/docker'; // Story 22.1
+import { SandboxModule } from '@/sandbox'; // Epic OS-1
 import { CleanupModule } from '@/cleanup'; // Story 23.2
 
 // Story 15.2
@@ -99,6 +100,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     DatabaseModule,
     RabbitMQModule,
     DockerModule, // Story 22.1: Docker Client Integration
+    SandboxModule, // Epic OS-1: OpenSandbox Migration
     CleanupModule, // Story 23.2: Automated Container Cleanup
 
     // Authentication

@@ -1,6 +1,6 @@
 # Story OS-1.2: SandboxModule and SandboxService with Startup Health Validation
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -54,17 +54,17 @@ _(Required by OS-2.2: `ClaudeCodeProvider.isHealthy()` calls this method per FR-
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Install the OpenSandbox SDK (AC: #1)
-  - [ ] 1.1 Run `pnpm add @alibaba-group/opensandbox@^0.1.5`
-  - [ ] 1.2 Verify it appears in `package.json` `dependencies` (not devDependencies)
-  - [ ] 1.3 Run `pnpm install` to update the lockfile
-  - [ ] 1.4 **Verify SDK API surface before writing any code:** run `ls node_modules/@alibaba-group/opensandbox/` and inspect the TypeScript declarations (e.g., `cat node_modules/@alibaba-group/opensandbox/dist/index.d.ts` or equivalent). Confirm the exact: constructor signature of `SandboxManager`, method names (`listSandboxInfos` vs `listSandboxes`), how to kill a sandbox (`sandbox.kill()` vs `manager.killSandbox()`), and the `SandboxInfo` type shape. Document any discrepancies from the PRD in Dev Agent Record completion notes.
+- [x] Task 1: Install the OpenSandbox SDK (AC: #1)
+  - [x] 1.1 Run `pnpm add @alibaba-group/opensandbox@^0.1.5`
+  - [x] 1.2 Verify it appears in `package.json` `dependencies` (not devDependencies)
+  - [x] 1.3 Run `pnpm install` to update the lockfile
+  - [x] 1.4 **Verify SDK API surface before writing any code:** run `ls node_modules/@alibaba-group/opensandbox/` and inspect the TypeScript declarations (e.g., `cat node_modules/@alibaba-group/opensandbox/dist/index.d.ts` or equivalent). Confirm the exact: constructor signature of `SandboxManager`, method names (`listSandboxInfos` vs `listSandboxes`), how to kill a sandbox (`sandbox.kill()` vs `manager.killSandbox()`), and the `SandboxInfo` type shape. Document any discrepancies from the PRD in Dev Agent Record completion notes.
 
-- [ ] Task 2: Create the `src/sandbox/` module structure (AC: #1, #5, #6)
-  - [ ] 2.1 Create directory `src/sandbox/` and `src/sandbox/interfaces/`
-  - [ ] 2.2 Create `src/sandbox/interfaces/agent-command-options.interface.ts` with the `AgentCommandOptions` interface (all fields per AC #5)
-  - [ ] 2.3 Create `src/sandbox/interfaces/agent-command-result.interface.ts` with the `AgentCommandResult` interface (all fields per AC #5)
-  - [ ] 2.4 Create `src/sandbox/sandbox.service.ts` implementing `OnModuleInit` with:
+- [x] Task 2: Create the `src/sandbox/` module structure (AC: #1, #5, #6)
+  - [x] 2.1 Create directory `src/sandbox/` and `src/sandbox/interfaces/`
+  - [x] 2.2 Create `src/sandbox/interfaces/agent-command-options.interface.ts` with the `AgentCommandOptions` interface (all fields per AC #5)
+  - [x] 2.3 Create `src/sandbox/interfaces/agent-command-result.interface.ts` with the `AgentCommandResult` interface (all fields per AC #5)
+  - [x] 2.4 Create `src/sandbox/sandbox.service.ts` implementing `OnModuleInit` with:
     - Class field `private readonly logger = new Logger(SandboxService.name)` (NOT injected `LoggerService`)
     - Constructor injecting only `ConfigService`
     - `onModuleInit()` — initializes SDK manager, runs health ping with production-fail / dev-warn branching (AC: #2, #3)
@@ -74,21 +74,21 @@ _(Required by OS-2.2: `ClaudeCodeProvider.isHealthy()` calls this method per FR-
     - `listActiveSandboxes(): Promise<SandboxInfo[]>` — delegates to SDK
     - `runAgentCommand(options: AgentCommandOptions): Promise<AgentCommandResult>` — stubbed; throws `new Error('[OS-1.3] runAgentCommand not yet implemented — awaiting streaming support')` — full implementation in OS-1.3
     - `private async pingServer(): Promise<void>` — extracted health ping logic reused by both `onModuleInit` and `isHealthy`
-  - [ ] 2.5 Create `src/sandbox/sandbox.module.ts` as a `@Global()` `@Module()` exporting `SandboxService`
-  - [ ] 2.6 Create `src/sandbox/index.ts` barrel re-exporting `SandboxModule`, `SandboxService`, and both interfaces
+  - [x] 2.5 Create `src/sandbox/sandbox.module.ts` as a `@Global()` `@Module()` exporting `SandboxService`
+  - [x] 2.6 Create `src/sandbox/index.ts` barrel re-exporting `SandboxModule`, `SandboxService`, and both interfaces
 
-- [ ] Task 3: Register `SandboxModule` in `AppModule` (AC: #1)
-  - [ ] 3.1 Add `SandboxModule` import to `src/app.module.ts`
-  - [ ] 3.2 Do **NOT** remove `DockerModule` — it stays until Epic OS-3
-  - [ ] 3.3 Verify `pnpm typecheck` passes after this change
+- [x] Task 3: Register `SandboxModule` in `AppModule` (AC: #1)
+  - [x] 3.1 Add `SandboxModule` import to `src/app.module.ts`
+  - [x] 3.2 Do **NOT** remove `DockerModule` — it stays until Epic OS-3
+  - [x] 3.3 Verify `pnpm typecheck` passes after this change
 
-- [ ] Task 4: Add OpenSandbox env vars to config (AC: #7)
-  - [ ] 4.1 In `src/config/env.validation.ts`, add Joi schemas for all 11 new OPENSANDBOX\_\* vars (see Dev Notes for exact schemas)
-  - [ ] 4.2 In `src/config/configuration.ts`, add an `opensandbox:` config block below the existing `sandbox:` block (do NOT replace the legacy block — that is removed in OS-3)
-  - [ ] 4.3 In `.env.example`, add a new `# OpenSandbox Server (Epic OS-1)` section with all 11 OPENSANDBOX\_\* vars. Insert it after the existing `# AI Providers` block (which contains `CLAUDE_CODE_ENABLED`, `ANTHROPIC_API_KEY`, etc.) and before any `# Monitoring` section.
+- [x] Task 4: Add OpenSandbox env vars to config (AC: #7)
+  - [x] 4.1 In `src/config/env.validation.ts`, add Joi schemas for all 11 new OPENSANDBOX\_\* vars (see Dev Notes for exact schemas)
+  - [x] 4.2 In `src/config/configuration.ts`, add an `opensandbox:` config block below the existing `sandbox:` block (do NOT replace the legacy block — that is removed in OS-3)
+  - [x] 4.3 In `.env.example`, add a new `# OpenSandbox Server (Epic OS-1)` section with all 11 OPENSANDBOX\_\* vars. Insert it after the existing `# AI Providers` block (which contains `CLAUDE_CODE_ENABLED`, `ANTHROPIC_API_KEY`, etc.) and before any `# Monitoring` section.
 
-- [ ] Task 5: Write unit tests (AC: #9)
-  - [ ] 5.1 Create `src/sandbox/sandbox.service.spec.ts` with:
+- [x] Task 5: Write unit tests (AC: #9)
+  - [x] 5.1 Create `src/sandbox/sandbox.service.spec.ts` with:
     - T1: `onModuleInit()` in production — when health ping throws → `onModuleInit` re-throws (startup fails)
     - T2: `onModuleInit()` in development — when health ping throws → logs warning, does NOT throw
     - T3: `onModuleInit()` in test env — when health ping throws → logs warning, does NOT throw
@@ -100,11 +100,11 @@ _(Required by OS-2.2: `ClaudeCodeProvider.isHealthy()` calls this method per FR-
     - T9: Default image — when `OPENSANDBOX_AGENT_IMAGE` not set, `config.opensandbox.agentImage` equals `opensandbox/code-interpreter:v1.0.2`
     - T10: `isHealthy()` — returns `true` when ping succeeds; returns `false` (does NOT throw) when ping fails
 
-- [ ] Task 6: Verify the build (AC: #8)
-  - [ ] 6.1 Run `pnpm typecheck` — zero errors
-  - [ ] 6.2 Run `pnpm lint` — zero errors
-  - [ ] 6.3 Run `pnpm test -- sandbox.service` — all tests green
-  - [ ] 6.4 Run `pnpm build` — zero compilation errors
+- [x] Task 6: Verify the build (AC: #8)
+  - [x] 6.1 Run `pnpm typecheck` — zero errors
+  - [x] 6.2 Run `pnpm lint` — zero errors
+  - [x] 6.3 Run `pnpm test -- sandbox.service` — all tests green
+  - [x] 6.4 Run `pnpm build` — zero compilation errors
 
 ## Dev Notes
 
@@ -117,7 +117,7 @@ _(Required by OS-2.2: `ClaudeCodeProvider.isHealthy()` calls this method per FR-
 - Do not implement `runAgentCommand()` for real — that is OS-1.3 (streaming) scope
 - Do not implement `SandboxResourceProfileService` — that is OS-2.1 scope
 - Do not define or implement `ICodingAgentProvider` — that is OS-2.1 scope
-- Do not remove any existing SANDBOX*\*, DOCKER*_, or CURSOR\__ env vars from `env.validation.ts` or `configuration.ts` — those legacy vars are still consumed by `DockerService` and `WorkspaceService` until OS-3 removes those files
+- Do not remove any existing SANDBOX*\*, DOCKER*\_, or CURSOR\_\_ env vars from `env.validation.ts` or `configuration.ts` — those legacy vars are still consumed by `DockerService` and `WorkspaceService` until OS-3 removes those files
 - Do not add Prometheus metrics counters/histograms/gauges for sandbox execution — that is OS-1.4 scope
 - Do not add the background job (semaphore / leak cleanup) — that is OS-1.4 scope
 - Do not update `OPENSANDBOX_DOMAIN` format from the OS-1.1 ops doc (which uses `host:port`) — the config must accept the domain string and construct the full URL internally using `OPENSANDBOX_PROTOCOL`
@@ -492,10 +492,30 @@ describe('onModuleInit — development', () => {
 
 ### Agent Model Used
 
-claude-sonnet-4-6
+claude-sonnet-4-6 (Initial Implementation)
+gemini-2.5-pro (Code Review & Fixes)
 
 ### Debug Log References
 
+Fixed missing environment variables and updated SDK versions during code review. SDK 0.1.5 was unavailable, reverted to 0.1.4.
+
 ### Completion Notes List
 
+- SandboxModule and SandboxService created and globalized
+- Connected app to OpenSandbox, ping validates healthy on startup
+- Config schema updated with 11 OpenSandbox env vars
+- Unit tests cover all required branches including fallback images
+
 ### File List
+
+- src/sandbox/sandbox.module.ts
+- src/sandbox/sandbox.service.ts
+- src/sandbox/sandbox.service.spec.ts
+- src/sandbox/interfaces/agent-command-options.interface.ts
+- src/sandbox/interfaces/agent-command-result.interface.ts
+- src/sandbox/index.ts
+- src/app.module.ts
+- src/config/configuration.ts
+- src/config/env.validation.ts
+- .env.example
+- package.json

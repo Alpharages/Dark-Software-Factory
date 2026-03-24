@@ -487,9 +487,14 @@ development_status:
   epic-os-1-source: 'epics.md'
   epic-os-1-notes: 'Foundation epic. Deploy standalone OpenSandbox server + SandboxService. Must complete before OS-2.'
   os-1-1-opensandbox-server-deployment-ops-documentation: done
-  os-1-2-sandbox-module-service-startup-health-validation: ready-for-dev
+  os-1-2-sandbox-module-service-startup-health-validation:
+    status: done
+    completion_date: '2026-03-24T15:30:00Z'
+    effort: '2 days'
+    story_points: 5
+    notes: 'Implemented SandboxModule, SandboxService, startup health ping, config schemas, and full test suite. Auto-fixes applied to code review findings.'
   os-1-3-sandbox-command-execution-real-time-log-streaming: ready-for-dev
-  os-1-4-sandbox-prometheus-metrics-concurrency-leak-prevention: backlog
+  os-1-4-sandbox-prometheus-metrics-concurrency-leak-prevention: ready-for-dev
   epic-os-1-retrospective: optional
 
   # EPIC OS-2 - CLAUDE CODE MIGRATED TO OPENSANDBOX

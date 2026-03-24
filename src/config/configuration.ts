@@ -331,5 +331,20 @@ export default () => {
       containerExecutionEnabled: process.env.ENABLE_CONTAINER_EXECUTION === 'true',
       maxConcurrent: parseInt(process.env.DOCKER_MAX_CONCURRENT || '10', 10),
     },
+
+    // Epic OS-1: OpenSandbox server connection config
+    opensandbox: {
+      domain: process.env.OPENSANDBOX_DOMAIN || 'localhost:8080',
+      apiKey: process.env.OPENSANDBOX_API_KEY || '',
+      protocol: process.env.OPENSANDBOX_PROTOCOL || 'http',
+      requestTimeoutMs: parseInt(process.env.OPENSANDBOX_REQUEST_TIMEOUT_MS || '60000', 10),
+      agentImage: process.env.OPENSANDBOX_AGENT_IMAGE || 'opensandbox/code-interpreter:v1.0.2',
+      sandboxTimeoutS: parseInt(process.env.OPENSANDBOX_SANDBOX_TIMEOUT_S || '3600', 10),
+      maxConcurrent: parseInt(process.env.OPENSANDBOX_MAX_CONCURRENT || '10', 10),
+      defaultCpuLimit: process.env.OPENSANDBOX_DEFAULT_CPU_LIMIT || '1',
+      defaultMemoryLimit: process.env.OPENSANDBOX_DEFAULT_MEMORY_LIMIT || '512Mi',
+      secureRuntime: process.env.OPENSANDBOX_SECURE_RUNTIME || '',
+      networkDefaultAction: process.env.OPENSANDBOX_NETWORK_DEFAULT_ACTION || 'ALLOW',
+    },
   };
 };

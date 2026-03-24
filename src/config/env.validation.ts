@@ -404,4 +404,57 @@ export const envValidationSchema = Joi.object({
   SMTP_FROM: Joi.string().email().required().messages({
     'any.required': 'SMTP_FROM is required. Example: noreply@dsf.com',
   }),
+
+  // Epic OS-1: OpenSandbox server connection
+  OPENSANDBOX_DOMAIN: Joi.string()
+    .default('localhost:8080')
+    .description('OpenSandbox server address (host:port, no scheme)'),
+  OPENSANDBOX_API_KEY: Joi.string()
+    .allow('')
+    .default('')
+    .description('API key for OpenSandbox server authentication (required in production)'),
+  OPENSANDBOX_PROTOCOL: Joi.string()
+    .valid('http', 'https')
+    .default('http')
+    .description('Protocol for OpenSandbox server communication'),
+  OPENSANDBOX_REQUEST_TIMEOUT_MS: Joi.number()
+    .integer()
+    .min(1000)
+    .max(300000)
+    .default(60000)
+    .description('HTTP request timeout for sandbox management calls (ms)'),
+  OPENSANDBOX_AGENT_IMAGE: Joi.string()
+    .default('opensandbox/code-interpreter:v1.0.2')
+    .description('Docker image for sandbox executions'),
+  OPENSANDBOX_SANDBOX_TIMEOUT_S: Joi.number()
+    .integer()
+    .min(60)
+    .max(7200)
+    .default(3600)
+    .description('Maximum sandbox lifetime in seconds (default: 1 hour)'),
+  OPENSANDBOX_MAX_CONCURRENT: Joi.number()
+    .integer()
+    .min(1)
+    .max(50)
+    .default(10)
+    .description('Maximum number of sandboxes running simultaneously'),
+  OPENSANDBOX_DEFAULT_CPU_LIMIT: Joi.string()
+    .default('1')
+    .description(
+      'Default CPU limit for medium resource profile (Kubernetes-style: "0.5", "1", "2")',
+    ),
+  OPENSANDBOX_DEFAULT_MEMORY_LIMIT: Joi.string()
+    .default('512Mi')
+    .description('Default memory limit for medium resource profile (e.g., "512Mi", "1Gi")'),
+  OPENSANDBOX_SECURE_RUNTIME: Joi.string()
+    .allow('')
+    .valid('', 'gvisor', 'kata-qemu', 'firecracker')
+    .default('')
+    .description(
+      'Secure container runtime ("" = standard Docker, "gvisor", "kata-qemu", "firecracker")',
+    ),
+  OPENSANDBOX_NETWORK_DEFAULT_ACTION: Joi.string()
+    .valid('ALLOW', 'DENY')
+    .default('ALLOW')
+    .description('Default egress policy for sandboxes'),
 });
