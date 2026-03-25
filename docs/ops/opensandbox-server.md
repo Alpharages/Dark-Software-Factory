@@ -43,6 +43,7 @@ port = 8080
 
 [runtime]
 type = "docker"
+execd_image = "opensandbox/execd:v1.0.9"
 
 [docker]
 network_mode = "bridge"   # Each sandbox gets an isolated bridge network
