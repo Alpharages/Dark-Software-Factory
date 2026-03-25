@@ -5,6 +5,7 @@ import {
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
 import { SandboxService } from './sandbox.service';
+import { SandboxResourceProfileService } from './sandbox-resource-profile.service';
 import { ExecutionModule } from '@/execution/execution.module';
 import { AppMetricsModule } from '@/common/metrics/metrics.module';
 import { SANDBOX_METRICS } from '@/common/metrics/metrics.constants';
@@ -34,7 +35,7 @@ const sandboxMetricProviders = [
 @Global()
 @Module({
   imports: [AppMetricsModule, forwardRef(() => ExecutionModule)],
-  providers: [SandboxService, ...sandboxMetricProviders],
-  exports: [SandboxService],
+  providers: [SandboxService, SandboxResourceProfileService, ...sandboxMetricProviders],
+  exports: [SandboxService, SandboxResourceProfileService],
 })
 export class SandboxModule {}

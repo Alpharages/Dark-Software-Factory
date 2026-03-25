@@ -1,0 +1,4 @@
+export enum ProviderName {
+  CLAUDE_CODE = 'CLAUDE_CODE',
+  CURSOR_HEADLESS = 'CURSOR_HEADLESS',
+}

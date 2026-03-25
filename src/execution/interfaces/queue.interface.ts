@@ -55,6 +55,9 @@ export interface IAIExecutionPayload {
 
   /** Optional: Allow provider fallback */
   allowFallback?: boolean;
+
+  /** Complexity score (0-10) for sandbox resource profile selection */
+  complexityScore?: number;
 }
 
 /**
