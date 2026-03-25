@@ -478,7 +478,7 @@ development_status:
   epic-27-retrospective: done
 
   # EPIC OS-1 - SECURE SANDBOX INFRASTRUCTURE
-  epic-os-1: in-progress
+  epic-os-1: done
   epic-os-1-name: 'Secure Sandbox Infrastructure'
   epic-os-1-phase: 'OpenSandbox Migration Sprint'
   epic-os-1-priority: critical
@@ -500,7 +500,7 @@ development_status:
     story_points: 5
     notes: 'Implemented runAgentCommand with full streaming to ExecutionGateway, mapped NetworkPolicy, and parsed exitCode/timedOut from OpenSandbox SDK Execution result. 22 tests passing. Code review: 5 patches fixed (timedOut detection unified, missing guard test added, networkPolicy edge case test added, sandboxId in catch log, T14 negative assertions). 2 deferred (egress action hardcoded, API key cached in field).'
   os-1-4-sandbox-prometheus-metrics-concurrency-leak-prevention: done
-  epic-os-1-retrospective: optional
+  epic-os-1-retrospective: done
 
   # EPIC OS-2 - CLAUDE CODE MIGRATED TO OPENSANDBOX
   epic-os-2: backlog
@@ -819,3 +819,11 @@ epic_status:
     stories: 7
     estimated_effort: '6 days'
     notes: 'Can run in parallel with Epic 26. Mobile nav, 404 page, document titles, integration health.'
+  epic-os-1:
+    name: 'Secure Sandbox Infrastructure'
+    status: 'done'
+    priority: 'critical'
+    source: 'epics.md'
+    stories: 4
+    estimated_effort: '5 days'
+    notes: 'Standalone OpenSandbox server deployed. DooD socket removed. SandboxModule and SandboxService with Prometheus, concurrency, and leak prevention implemented. Retrospective completed.'
