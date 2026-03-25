@@ -64,6 +64,12 @@ export interface IOrchestrationInput extends IAIExecutionInput {
   /** Optional provider override (bypasses selection) */
   providerOverride?: AIProvider;
 
+  /** Project ID — passed from AIExecutionConsumer for ICodingAgentProvider path */
+  projectId?: string;
+
+  /** Complexity score (0-10) — pre-fetched from DB for sandbox resource profile selection */
+  complexityScore?: number;
+
   /** Complexity score (if pre-calculated) */
   preCalculatedComplexity?: number;
 

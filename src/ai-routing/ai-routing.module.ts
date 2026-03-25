@@ -176,32 +176,6 @@ import { AIProvidersController } from './ai-providers.controller';
       labelNames: ['operation', 'status'],
     }),
 
-    // Story 2.7: Claude Code Metrics
-    makeCounterProvider({
-      name: 'claude_executions_total',
-      help: 'Total Claude API executions',
-      labelNames: ['status'],
-    }),
-    makeHistogramProvider({
-      name: 'claude_execution_duration_seconds',
-      help: 'Claude execution duration in seconds',
-      labelNames: ['status'],
-      buckets: [5, 15, 30, 60, 90, 120],
-    }),
-    makeGaugeProvider({
-      name: 'claude_active_executions',
-      help: 'Currently active Claude executions',
-    }),
-    makeCounterProvider({
-      name: 'claude_tokens_total',
-      help: 'Total tokens used',
-      labelNames: ['type'], // input, output
-    }),
-    makeGaugeProvider({
-      name: 'claude_cost_cents',
-      help: 'Estimated cost in cents',
-    }),
-
     // Story 2.8: Orchestration Metrics
     makeCounterProvider({
       name: 'orchestrator_executions_total',

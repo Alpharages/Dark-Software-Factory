@@ -517,7 +517,7 @@ development_status:
     effort: '0.5 days'
     story_points: 3
     notes: 'ICodingAgentProvider interface + ProviderName enum + SandboxResourceProfileService with complexity-based CPU/memory tiers. Code review: NaN guard added to getProfile(), T6/T7 hardened with not.toHaveBeenCalled(), T9+T10 edge cases added. 10 tests green.'
-  os-2-2-claude-code-provider-rewrite-sandbox-service: ready-for-dev
+  os-2-2-claude-code-provider-rewrite-sandbox-service: done
   os-2-3-provider-fallback-health-circuit-breaker-compatibility: ready-for-dev
   epic-os-2-retrospective: optional
 
@@ -563,8 +563,8 @@ development_status:
   epic-os-5-retrospective: optional
 
 priority_sequence:
-  last_updated: '2026-03-26T00:00:00+05:00'
-  updated_by: 'OS-2.2 story created ready-for-dev 2026-03-26'
+  last_updated: '2026-03-26'
+  updated_by: 'OS-2.2 code review complete — all patches applied, story done'
 
   opensandbox_p0:
     description: 'CRITICAL — OpenSandbox Migration. Security prerequisite: remove DooD Docker socket exposure.'

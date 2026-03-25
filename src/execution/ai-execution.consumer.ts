@@ -497,6 +497,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         ticketId: payload.ticketId,
         prompt,
         repositoryUrl,
+        projectId: payload.projectId,
+        complexityScore: existing?.complexity_score ?? undefined,
         allowFallback: payload.allowFallback ?? true,
         selectedModel, // Story 13.3: Pass selected model to orchestrator
         providerOverride: payload.aiProvider, // Respect the routing service's decision

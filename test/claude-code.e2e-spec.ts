@@ -13,25 +13,6 @@ import { ConfigModule } from '@nestjs/config';
 import { AIExecutionService } from '../src/ai-routing/ai-execution.service';
 import { ClaudeCodeProvider } from '../src/ai-routing/providers';
 
-// Mock Anthropic SDK for e2e tests
-jest.mock('@anthropic-ai/sdk', () => {
-  return {
-    default: jest.fn().mockImplementation(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          id: 'msg_123',
-          type: 'message',
-          role: 'assistant',
-          content: [{ type: 'text', text: 'Task completed' }],
-          model: 'claude-sonnet-4-20250514',
-          stop_reason: 'end_turn',
-          usage: { input_tokens: 100, output_tokens: 50 },
-        }),
-      },
-    })),
-  };
-});
-
 describe('Claude Code Provider (e2e)', () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let app: INestApplication;
@@ -66,20 +47,10 @@ describe('Claude Code Provider (e2e)', () => {
           provide: ClaudeCodeProvider,
           useFactory: () => {
             return {
-              provider: AIProvider.CLAUDE_CODE,
-              maxConcurrent: 20,
-              defaultTimeoutMs: 120000,
-              checkHealth: jest.fn().mockResolvedValue({
-                provider: AIProvider.CLAUDE_CODE,
-                isHealthy: true,
-                circuitState: 'CLOSED',
-                activeExecutions: 0,
-                consecutiveFailures: 0,
-                lastSuccessAt: null,
-                lastFailureAt: null,
-              }),
+              providerName: 'claude-code',
+              isEnabled: true,
+              isHealthy: jest.fn().mockResolvedValue(true),
               execute: jest.fn(),
-              cancel: jest.fn(),
             };
           },
         },
@@ -89,21 +60,26 @@ describe('Claude Code Provider (e2e)', () => {
             const providers = new Map();
             providers.set(AIProvider.CLAUDE_CODE, claudeProvider);
             return {
-              getProviderHealth: jest.fn().mockImplementation((provider: AIProvider) => {
+              getProviderHealth: jest.fn().mockImplementation(async (provider: AIProvider) => {
                 const p = providers.get(provider);
-                return p?.checkHealth();
+                const isHealthy = await p?.isHealthy();
+                return { provider, isHealthy, circuitState: isHealthy ? 'CLOSED' : 'OPEN' } as any;
               }),
               getAllProvidersHealth: jest.fn().mockImplementation(async () => {
                 const health = [];
                 for (const p of providers.values()) {
-                  health.push(await p.checkHealth());
+                  const isHealthy = await p.isHealthy();
+                  health.push({
+                    provider: AIProvider.CLAUDE_CODE,
+                    isHealthy,
+                    circuitState: isHealthy ? 'CLOSED' : 'OPEN',
+                  } as any);
                 }
                 return health;
               }),
               isProviderAvailable: jest.fn().mockImplementation(async (provider: AIProvider) => {
                 const p = providers.get(provider);
-                const health = await p?.checkHealth();
-                return health?.isHealthy ?? false;
+                return (await p?.isHealthy()) ?? false;
               }),
             };
           },
@@ -141,17 +117,13 @@ describe('Claude Code Provider (e2e)', () => {
 
   describe('Provider Health', () => {
     it('should report correct health status', async () => {
-      const health = await claudeProvider.checkHealth();
-
-      expect(health.circuitState).toMatch(/CLOSED|OPEN|HALF_OPEN/);
-      expect(typeof health.activeExecutions).toBe('number');
-      expect(typeof health.consecutiveFailures).toBe('number');
+      const isHealthy = await claudeProvider.isHealthy();
+      expect(typeof isHealthy).toBe('boolean');
     });
 
     it('should report provider as healthy when configured', async () => {
-      const health = await claudeProvider.checkHealth();
-
-      expect(health.isHealthy).toBe(true);
+      const isHealthy = await claudeProvider.isHealthy();
+      expect(isHealthy).toBe(true);
     });
   });
 
@@ -167,15 +139,11 @@ describe('Claude Code Provider (e2e)', () => {
 
   describe('Provider Properties', () => {
     it('should have correct provider identifier', () => {
-      expect(claudeProvider.provider).toBe(AIProvider.CLAUDE_CODE);
+      expect(claudeProvider.providerName).toBe('claude-code');
     });
 
-    it('should have correct max concurrent setting', () => {
-      expect(claudeProvider.maxConcurrent).toBe(20);
-    });
-
-    it('should have correct default timeout', () => {
-      expect(claudeProvider.defaultTimeoutMs).toBe(120000);
+    it('should be enabled initially', () => {
+      expect(claudeProvider.isEnabled).toBe(true);
     });
   });
 });
@@ -206,18 +174,9 @@ describe('Claude Code Provider - Error Handling', () => {
           provide: ClaudeCodeProvider,
           useFactory: () => {
             return {
-              provider: AIProvider.CLAUDE_CODE,
-              maxConcurrent: 20,
-              defaultTimeoutMs: 120000,
-              checkHealth: jest.fn().mockResolvedValue({
-                provider: AIProvider.CLAUDE_CODE,
-                isHealthy: false,
-                circuitState: 'CLOSED',
-                activeExecutions: 0,
-                consecutiveFailures: 0,
-                lastSuccessAt: null,
-                lastFailureAt: null,
-              }),
+              providerName: 'claude-code',
+              isEnabled: true,
+              isHealthy: jest.fn().mockResolvedValue(false),
               execute: jest.fn().mockResolvedValue({
                 success: false,
                 codeDiff: null,
@@ -231,7 +190,6 @@ describe('Claude Code Provider - Error Handling', () => {
                   isRetryable: false,
                 },
               }),
-              cancel: jest.fn(),
             };
           },
         },
@@ -248,19 +206,20 @@ describe('Claude Code Provider - Error Handling', () => {
   });
 
   it('should report unhealthy when API key is missing', async () => {
-    const health = await claudeProvider.checkHealth();
-
-    expect(health.isHealthy).toBe(false);
+    const isHealthy = await claudeProvider.isHealthy();
+    expect(isHealthy).toBe(false);
   });
 
   it('should return failed result when executing without API key', async () => {
     const result = await claudeProvider.execute({
-      correlationId: 'test-corr',
-      executionId: 'test-exec',
       ticketId: 'test-ticket',
+      executionId: 'test-exec',
+      aiProvider: AIProvider.CLAUDE_CODE,
+      priority: 1,
       prompt: 'Test prompt',
       repositoryUrl: 'https://github.com/test/repo.git',
-      baseBranch: 'main',
+      projectId: 'proj',
+      complexityScore: 1,
     });
 
     expect(result.success).toBe(false);

@@ -35,9 +35,45 @@ export class AIExecutionService {
     private readonly executionService: ExecutionService,
     private readonly costTracker: AICostTrackerService,
   ) {
-    // Register providers
+    // Register Cursor Headless
     this.providers.set(AIProvider.CURSOR_HEADLESS, this.cursorProvider);
-    this.providers.set(AIProvider.CLAUDE_CODE, this.claudeProvider);
+
+    // Adapt new ClaudeCodeProvider (ICodingAgentProvider) to legacy IAIProvider interface
+    this.providers.set(AIProvider.CLAUDE_CODE, {
+      provider: AIProvider.CLAUDE_CODE,
+      maxConcurrent: 5,
+      defaultTimeoutMs: 3600 * 1000,
+      execute: async (input: IAIExecutionInput) => {
+        // Build basic payload from input for legacy compatibility
+        return this.claudeProvider.execute({
+          ticketId: input.ticketId,
+          executionId: input.executionId,
+          aiProvider: AIProvider.CLAUDE_CODE,
+          priority: 1,
+          prompt: input.prompt,
+          repositoryUrl: input.repositoryUrl,
+          projectId: '',
+          targetBranch: input.baseBranch,
+          targetFiles: input.targetFiles,
+          complexityScore: 5, // Default complexity
+        });
+      },
+      checkHealth: async () => {
+        const isHealthy = await this.claudeProvider.isHealthy();
+        return {
+          provider: AIProvider.CLAUDE_CODE,
+          isHealthy,
+          lastSuccessAt: isHealthy ? new Date() : null,
+          lastFailureAt: isHealthy ? null : new Date(),
+          consecutiveFailures: isHealthy ? 0 : 1,
+          circuitState: isHealthy ? 'CLOSED' : 'OPEN',
+          activeExecutions: 0,
+        };
+      },
+      cancel: async () => {
+        this.logger.log(`Cancel requested for Claude execution, not supported in legacy adapter`);
+      },
+    } as IAIProvider);
   }
 
   /**

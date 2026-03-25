@@ -1,6 +1,6 @@
 # Story OS-2.2: ClaudeCodeProvider Rewrite Using SandboxService
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -117,6 +117,25 @@ so that tickets processed by Claude Code run in an isolated, secure sandbox envi
   - [ ] Open `src/ai-routing/provider-factory.service.spec.ts`
   - [ ] Add test: `getCodingProvider(ProviderName.CLAUDE_CODE)` returns the `ClaudeCodeProvider` instance
   - [ ] Add test: `getCodingProvider('UNKNOWN' as ProviderName)` returns `undefined`
+
+### Review Findings
+
+- [x] [Review][Decision] `filesChanged: []` always empty — accepted: empty array is fine, logging degradation only, no functional consumers broken — `ClaudeCodeProvider.execute()` hardcodes `filesChanged: []` for all outcomes. Downstream consumers (`orchestrator.consumer.ts:143`, `orchestrator.service.ts:177`) log the count; post-execution GitHub push / commit services use this list. **Is it acceptable for the sandbox path to return empty and have those consumers degrade gracefully, or must `filesChanged` be parsed from `result.stdout`?** [claude-code.provider.ts:72]
+- [x] [Review][Decision] `baseBranch → targetBranch` mapping — intentional: baseBranch is the checkout source; sandbox manages its own push branching; stacked tickets must set baseBranch correctly at dispatch time — Both `buildExecutionPayload` and the legacy adapter in `ai-execution.service.ts` map `input.baseBranch` to `IAIExecutionPayload.targetBranch`. `baseBranch` is the source branch; `targetBranch` is where the agent pushes its output. Mapping source to destination means the agent would push to `main` (or whatever base branch is). The comment acknowledges this is non-obvious but does not flag it as a potential bug. **Is this intentional (sandbox uses its own branch management and `targetBranch` is ignored) or is there a bug here?** [orchestrator.service.ts:97, ai-execution.service.ts:58]
+- [x] [Review][Patch] Shell injection — fixed: prompt passed via CLAUDE_PROMPT env var; command is now `claude "$CLAUDE_PROMPT"` [claude-code.provider.ts] — Only `"` → `\"` is escaped. Shell metacharacters `$()`, backticks, `$VARIABLE`, and newlines remain unescaped. If `SandboxService.runAgentCommand` passes `command` to a shell via `sh -c`, a crafted prompt can execute arbitrary commands inside the container. Fix: escape the full set of shell metacharacters, or pass the prompt via an env var (e.g., `CLAUDE_PROMPT`) and change the command to `claude "$CLAUDE_PROMPT"` — this prevents command substitution since the variable is already expanded before the shell sees the command string, OR use `--print` flag with stdin redirection.
+- [x] [Review][Patch] `startTime` unused variable — fixed: removed [claude-code.provider.ts] — `const startTime = Date.now();` is declared but `durationMs` is taken from `result.durationMs`. Remove the variable or prefix it `_startTime`.
+- [x] [Review][Patch] `let executionResult: any` — fixed: typed as `IFallbackExecutionResult` [orchestrator.service.ts] — Replace with the actual union type of `FallbackStrategyService.executeWithFallback`'s return value (e.g., `IFallbackExecutionResult`) or extract a shared interface.
+- [x] [Review][Patch] Missing test T2: `isEnabled` returns `false` — added `describe('isEnabled')` block [claude-code.provider.spec.ts]
+- [x] [Review][Patch] Missing test T4: `isHealthy()` returns `false` — added second case in `isHealthy` describe [claude-code.provider.spec.ts]
+- [x] [Review][Patch] Missing test T12: `ANTHROPIC_BASE_URL` omitted when config empty — added [claude-code.provider.spec.ts]
+- [x] [Review][Patch] T7 partial `durationMs` — assertion added [claude-code.provider.spec.ts]
+- [x] [Review][Patch] Stale `@anthropic-ai/sdk` mock — removed [test/claude-code.e2e-spec.ts]
+- [x] [Review][Defer] Prometheus metrics removed (5 counters/gauges) for Claude — intentional per spec Task 6; `SandboxService` owns execution metrics now. Deferred, pre-existing.
+- [x] [Review][Defer] Empty API key classified as `PROCESS_CRASH` (retryable) — retry classification is pre-existing; fix requires retry-policy change. Deferred, pre-existing.
+- [x] [Review][Defer] `complexityScore` / `preCalculatedComplexity` dual fields in `IOrchestrationInput` — `input.complexityScore` is populated by consumer but orchestrator uses `selection.complexityScore`; confusing but spec-mandated. Deferred, pre-existing.
+- [x] [Review][Defer] Legacy adapter `complexityScore: 5` hardcoded — known limitation of compatibility shim; acceptable for legacy path. Deferred, pre-existing.
+- [x] [Review][Defer] `cancel()` no-op in legacy adapter — sandbox container runs until timeout; cancel was unsupported in the old PTY path too. Deferred, pre-existing.
+- [x] [Review][Defer] AC5 e2e does not exercise the real pipeline — requires full OpenSandbox infra; beyond unit/integration test scope. Deferred, pre-existing.
 
 ## Dev Notes
 

@@ -10,6 +10,8 @@ import { ProviderFactoryService } from './provider-factory.service';
 import { AIExecutionService } from './ai-execution.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderSelectionReason, ComplexityGrade, IOrchestrationInput } from './interfaces';
+import { ClaudeCodeProvider } from './providers/claude-code.provider';
+import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 
 describe('ProviderFactoryService', () => {
   let service: ProviderFactoryService;
@@ -49,6 +51,10 @@ describe('ProviderFactoryService', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: AIExecutionService, useValue: mockAIExecution },
         { provide: ComplexityScorerService, useValue: mockComplexityScorer },
+        {
+          provide: ClaudeCodeProvider,
+          useValue: { providerName: ProviderName.CLAUDE_CODE, isEnabled: true },
+        },
         {
           provide: 'PROM_METRIC_ORCHESTRATOR_PROVIDER_SELECTIONS_TOTAL',
           useValue: mockMetrics,
@@ -287,6 +293,18 @@ describe('ProviderFactoryService', () => {
       expect(availability[0].isAvailable).toBe(false);
       expect(availability[0].circuitState).toBe('OPEN');
       expect(availability[0].unavailableReason).toBe('Provider unhealthy');
+    });
+  });
+  describe('getCodingProvider', () => {
+    it('should return the provider if registered', () => {
+      const provider = service.getCodingProvider(ProviderName.CLAUDE_CODE);
+      expect(provider).toBeDefined();
+      expect(provider?.providerName).toBe(ProviderName.CLAUDE_CODE);
+    });
+
+    it('should return undefined for unregistered provider', () => {
+      const provider = service.getCodingProvider('UNKNOWN_PROVIDER' as ProviderName);
+      expect(provider).toBeUndefined();
     });
   });
 });

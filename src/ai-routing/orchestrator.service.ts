@@ -22,11 +22,13 @@ import {
   IAIPromptExecutor,
 } from './interfaces';
 import { ProviderFactoryService } from './provider-factory.service';
-import { FallbackStrategyService } from './fallback-strategy.service';
+import { FallbackStrategyService, IFallbackExecutionResult } from './fallback-strategy.service';
 import { AIExecutionService } from './ai-execution.service'; // Story 5.6
-import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service'; // Story 11.4
+import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
+import { IAIExecutionPayload } from '@/execution/interfaces';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service'; // Story 11.4
 import { AdrParserService } from './adr-parser.service'; // Story 7.1
-import { AdrService } from '../architecture-review/adr.service'; // Story 7.1
+import { AdrService } from '@/architecture-review/adr.service'; // Story 7.1
 
 @Injectable()
 export class OrchestratorService {
@@ -63,6 +65,38 @@ export class OrchestratorService {
     private readonly adrCreationCounter: Counter<string>,
   ) {}
 
+  // Map Prisma AIProvider → new ProviderName
+  private mapAIProviderToProviderName(provider: AIProvider): ProviderName | undefined {
+    const map: Partial<Record<string, ProviderName>> = {
+      [AIProvider.CLAUDE_CODE]: ProviderName.CLAUDE_CODE,
+      // CURSOR_HEADLESS added in OS-4
+    };
+    // eslint-disable-next-line security/detect-object-injection
+    return map[provider];
+  }
+
+  // Build IAIExecutionPayload from IOrchestrationInput (for ICodingAgentProvider.execute())
+  private buildExecutionPayload(
+    input: IOrchestrationInput,
+    complexityScore: number,
+  ): IAIExecutionPayload {
+    return {
+      ticketId: input.ticketId,
+      executionId: input.executionId,
+      aiProvider: (input.providerOverride as AIProvider) ?? AIProvider.CLAUDE_CODE,
+      priority: 1,
+      prompt: input.prompt,
+      repositoryUrl: input.repositoryUrl,
+      projectId: input.projectId ?? '',
+      // NOTE: IAIExecutionInput uses `baseBranch` (source branch to start from),
+      // IAIExecutionPayload uses `targetBranch` (branch to push changes to).
+      targetBranch: input.baseBranch,
+      targetFiles: input.targetFiles,
+      allowFallback: input.allowFallback,
+      complexityScore,
+    };
+  }
+
   /**
    * Execute AI code generation with intelligent orchestration
    */
@@ -84,12 +118,32 @@ export class OrchestratorService {
           `reason=${selection.reason}`,
       );
 
-      // 2. Execute with fallback strategy
-      const executionResult = await this.fallbackStrategy.executeWithFallback(
-        selection.primary,
-        selection.fallback,
-        input,
-      );
+      let executionResult: IFallbackExecutionResult;
+
+      // Check for ICodingAgentProvider path (OS-2.2+)
+      const providerName = this.mapAIProviderToProviderName(selection.primary);
+      const codingProvider = providerName
+        ? this.providerFactory.getCodingProvider(providerName)
+        : undefined;
+
+      if (codingProvider?.isEnabled) {
+        // New sandbox path: directly execute via ICodingAgentProvider
+        const payload = this.buildExecutionPayload(input, selection.complexityScore);
+        const execResult = await codingProvider.execute(payload);
+        executionResult = {
+          result: execResult,
+          executedBy: selection.primary,
+          usedFallback: false,
+          fallbackAttempts: [],
+        };
+      } else {
+        // Old path: Cursor/DooD via FallbackStrategyService
+        executionResult = await this.fallbackStrategy.executeWithFallback(
+          selection.primary,
+          selection.fallback,
+          input,
+        );
+      }
 
       // 3. Track metrics
       const totalDurationMs = Date.now() - startTime;

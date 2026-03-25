@@ -43,6 +43,7 @@ describe('OrchestratorService', () => {
     const mockProviderFactory = {
       selectProvider: jest.fn(),
       getAllProvidersAvailability: jest.fn(),
+      getCodingProvider: jest.fn(),
     };
 
     const mockFallbackStrategy = {
@@ -246,26 +247,26 @@ describe('OrchestratorService', () => {
         complexityGrade: ComplexityGrade.MEDIUM,
       });
 
-      fallbackStrategy.executeWithFallback.mockResolvedValue({
-        result: {
+      providerFactory.getCodingProvider.mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn().mockResolvedValue({
           success: true,
           codeDiff: 'diff --git ...',
           filesChanged: ['src/index.ts'],
           confidenceScore: 0.9,
           durationMs: 20000,
           workspacePath: '/tmp/workspace',
-        },
-        executedBy: AIProvider.CLAUDE_CODE,
-        usedFallback: false,
-        fallbackAttempts: [],
-      });
+        }),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
 
       const result = await service.execute(inputWithOverride);
 
       expect(result.success).toBe(true);
       expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
       expect(providerFactory.selectProvider).toHaveBeenCalledWith(inputWithOverride);
-      expect(fallbackStrategy.executeWithFallback).toHaveBeenCalled();
+      expect(fallbackStrategy.executeWithFallback).not.toHaveBeenCalled();
     });
   });
 

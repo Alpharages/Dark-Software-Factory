@@ -23,6 +23,9 @@ import {
 import { AIExecutionService } from './ai-execution.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { IRoutingRequest } from './interfaces/ai-routing.interface';
+import { ICodingAgentProvider } from './interfaces/coding-agent-provider.interface';
+import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
+import { ClaudeCodeProvider } from './providers/claude-code.provider';
 
 @Injectable()
 export class ProviderFactoryService {
@@ -31,6 +34,7 @@ export class ProviderFactoryService {
   /** Complexity thresholds */
   private readonly HIGH_COMPLEXITY_THRESHOLD: number;
   private readonly MEDIUM_COMPLEXITY_THRESHOLD: number;
+  private readonly codingProviders: Map<ProviderName, ICodingAgentProvider>;
 
   constructor(
     private readonly config: ConfigService,
@@ -38,6 +42,7 @@ export class ProviderFactoryService {
     private readonly complexityScorer: ComplexityScorerService,
     @InjectMetric('orchestrator_provider_selections_total')
     private readonly selectionsCounter: Counter<string>,
+    private readonly claudeCodeProvider: ClaudeCodeProvider,
   ) {
     this.HIGH_COMPLEXITY_THRESHOLD = this.config.get<number>(
       'orchestrator.complexityThresholdHigh',
@@ -47,6 +52,13 @@ export class ProviderFactoryService {
       'orchestrator.complexityThresholdMedium',
       5,
     );
+    this.codingProviders = new Map<ProviderName, ICodingAgentProvider>([
+      [ProviderName.CLAUDE_CODE, claudeCodeProvider],
+    ]);
+  }
+
+  getCodingProvider(name: ProviderName): ICodingAgentProvider | undefined {
+    return this.codingProviders.get(name);
   }
 
   /**

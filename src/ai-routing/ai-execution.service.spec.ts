@@ -63,12 +63,10 @@ describe('AIExecutionService', () => {
     };
 
     const mockClaudeProvider = {
-      provider: AIProvider.CLAUDE_CODE,
-      maxConcurrent: 20,
-      defaultTimeoutMs: 120000,
+      providerName: 'claude-code',
+      isEnabled: true,
       execute: jest.fn(),
-      checkHealth: jest.fn(),
-      cancel: jest.fn(),
+      isHealthy: jest.fn(),
     };
 
     const mockExecutionService = {
@@ -214,15 +212,7 @@ describe('AIExecutionService', () => {
         activeExecutions: 0,
       });
 
-      claudeProvider.checkHealth.mockResolvedValue({
-        provider: AIProvider.CLAUDE_CODE,
-        isHealthy: true,
-        lastSuccessAt: new Date(),
-        lastFailureAt: null,
-        consecutiveFailures: 0,
-        circuitState: 'CLOSED',
-        activeExecutions: 0,
-      });
+      claudeProvider.isHealthy.mockResolvedValue(true);
 
       const health = await service.getAllProvidersHealth();
 
