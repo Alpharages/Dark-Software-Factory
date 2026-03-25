@@ -14,6 +14,15 @@
 - **`cancel()` no-op in legacy adapter** — Calling `cancel()` on the Claude legacy adapter logs a message but does not stop the sandbox container. Container runs until `sandboxTimeoutS`. Fix by storing the sandbox ID returned by `runAgentCommand` and calling `SandboxService.killSandbox()` in a future story. [`ai-execution.service.ts`]
 - **AC5 e2e tests do not exercise the real pipeline** — `test/claude-code.e2e-spec.ts` mocks `ClaudeCodeProvider` with a plain object; state machine transitions and OpenSandbox container execution are never tested end-to-end. Requires a full integration test environment with a running OpenSandbox instance. Deferred to OS-5 integration testing story.
 
+## Deferred from: code review of os-2-3-provider-fallback-health-circuit-breaker-compatibility (2026-03-26)
+
+- **Missing `CURSOR_HEADLESS` in `mapAIProviderToProviderName`** — `orchestrator.service.ts` maps only `AIProvider.CLAUDE_CODE`; CURSOR_HEADLESS returns `undefined` and falls through to the old path. Pre-existing from OS-2.2. Revisit when CURSOR_HEADLESS is promoted to the coding-provider path.
+- **`estimateCost` retains hardcoded switch over AIProvider values** — New providers (GEMINI, CODEX) silently return 0 cost. Pre-existing. Fix when additional providers are onboarded.
+- **Metrics labels use `ProviderName` strings instead of `AIProvider` enum values** — `fallbackCounter`, `fallbackDuration`, `fallbackSuccessCounter` emit `ProviderName` strings (e.g., `CLAUDE_CODE`) rather than the canonical Prisma `AIProvider` enum. Pre-existing architectural pattern across old and new paths.
+- **`providerUsage` spread cast `as Record<AIProvider, number>` is a type lie** — Callers of `getStats()` may assume all `AIProvider` keys are present; missing keys return `undefined` at runtime. Pre-existing pattern.
+- **No test for `primary.execute` throwing (rejecting promise) in `executeWithFallbackCodingProvider`** — Method has no try/catch; a thrown exception bypasses fallback entirely. Deferred — out of scope for OS-2.3.
+- **`calculateAvgExecutionTimes` default estimate changed for CURSOR_HEADLESS (120_000 ms → 60_000 ms)** — Minor behavioral regression in scheduling estimates for CURSOR_HEADLESS when no execution data exists. Accept or restore per-provider defaults when needed.
+
 ## Deferred from: code review of os-1-4-sandbox-prometheus-metrics-concurrency-leak-prevention (2026-03-24)
 
 - **T26 semaphore concurrency test is timing-dependent** — Uses `setTimeout(resolve, 50)` to assert queued state; flaky under CI load. Should hook into semaphore queue state directly via spy. [`sandbox.service.spec.ts:533`]

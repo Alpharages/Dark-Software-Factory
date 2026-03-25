@@ -39,14 +39,8 @@ export class OrchestratorService {
   private successfulExecutions = 0;
   private fallbackTriggers = 0;
   private fallbackSuccesses = 0;
-  private providerUsage: Record<AIProvider, number> = {
-    [AIProvider.CURSOR_HEADLESS]: 0,
-    [AIProvider.CLAUDE_CODE]: 0,
-  };
-  private executionTimes: Record<AIProvider, number[]> = {
-    [AIProvider.CURSOR_HEADLESS]: [],
-    [AIProvider.CLAUDE_CODE]: [],
-  };
+  private providerUsage: Partial<Record<AIProvider, number>> = {};
+  private executionTimes: Partial<Record<AIProvider, number[]>> = {};
 
   constructor(
     private readonly providerFactory: ProviderFactoryService,
@@ -129,12 +123,42 @@ export class OrchestratorService {
       if (codingProvider?.isEnabled) {
         // New sandbox path: directly execute via ICodingAgentProvider
         const payload = this.buildExecutionPayload(input, selection.complexityScore);
-        const execResult = await codingProvider.execute(payload);
-        executionResult = {
-          result: execResult,
-          executedBy: selection.primary,
-          usedFallback: false,
-          fallbackAttempts: [],
+
+        // Resolve fallback ICodingAgentProvider if available (FR-OS29)
+        const fallbackProviderName = selection.fallback
+          ? this.mapAIProviderToProviderName(selection.fallback)
+          : undefined;
+        const fallbackCodingProvider = fallbackProviderName
+          ? (this.providerFactory.getCodingProvider(fallbackProviderName) ?? null)
+          : null;
+        // Only use fallback if it's both registered AND enabled
+        const enabledFallback = fallbackCodingProvider?.isEnabled ? fallbackCodingProvider : null;
+
+        // Use FallbackStrategyService for unified fallback behavior (OS-2.3)
+        const fallbackResult = await this.fallbackStrategy.executeWithFallbackCodingProvider(
+          codingProvider,
+          enabledFallback,
+          payload,
+        );
+
+        const totalDurationMs = Date.now() - startTime;
+        this.trackExecution(fallbackResult, totalDurationMs);
+
+        return {
+          success: fallbackResult.result.success,
+          executedBy: fallbackResult.executedBy,
+          usedFallback: fallbackResult.usedFallback,
+          codeDiff: fallbackResult.result.codeDiff,
+          filesChanged: fallbackResult.result.filesChanged,
+          confidenceScore: fallbackResult.result.confidenceScore,
+          durationMs: fallbackResult.result.durationMs,
+          totalDurationMs,
+          workspacePath: fallbackResult.result.workspacePath,
+          fallbackAttempts: fallbackResult.fallbackAttempts,
+          estimatedCostCents: this.estimateCost(fallbackResult.executedBy, totalDurationMs),
+          error: fallbackResult.result.error,
+          tokensInput: fallbackResult.result.tokensInput,
+          tokensOutput: fallbackResult.result.tokensOutput,
         };
       } else {
         // Old path: Cursor/DooD via FallbackStrategyService
@@ -258,7 +282,7 @@ export class OrchestratorService {
       fallbackTriggers: this.fallbackTriggers,
       fallbackSuccessRate:
         this.fallbackTriggers > 0 ? this.fallbackSuccesses / this.fallbackTriggers : 0,
-      providerUsage: { ...this.providerUsage },
+      providerUsage: { ...this.providerUsage } as Record<AIProvider, number>,
       avgExecutionTimeMs: this.calculateAvgExecutionTimes(),
     };
   }
@@ -274,14 +298,16 @@ export class OrchestratorService {
     },
     totalDurationMs: number,
   ): void {
-    this.providerUsage[result.executedBy]++;
+    this.providerUsage[result.executedBy] = (this.providerUsage[result.executedBy] ?? 0) + 1;
 
-    this.executionTimes[result.executedBy].push(result.result.durationMs);
+    if (!this.executionTimes[result.executedBy]) {
+      this.executionTimes[result.executedBy] = [];
+    }
+    this.executionTimes[result.executedBy]!.push(result.result.durationMs);
 
     // Keep only last 100 execution times for average calculation
-
-    if (this.executionTimes[result.executedBy].length > 100) {
-      this.executionTimes[result.executedBy].shift();
+    if (this.executionTimes[result.executedBy]!.length > 100) {
+      this.executionTimes[result.executedBy]!.shift();
     }
 
     if (result.usedFallback) {
@@ -298,27 +324,13 @@ export class OrchestratorService {
    * Calculate average execution times for each provider
    */
   private calculateAvgExecutionTimes(): Record<AIProvider, number> {
-    // Use Map for safe iteration and storage
-    const timesMap = new Map(Object.entries(this.executionTimes));
-    const avgTimesMap = new Map<AIProvider, number>();
-
-    for (const [provider, times] of timesMap.entries()) {
-      const typedProvider = provider as AIProvider;
-      if (times.length > 0) {
-        avgTimesMap.set(typedProvider, times.reduce((a, b) => a + b, 0) / times.length);
-      } else {
-        // Default estimates when no data available
-        avgTimesMap.set(
-          typedProvider,
-          typedProvider === AIProvider.CURSOR_HEADLESS ? 120_000 : 60_000,
-        );
-      }
+    const entries = Object.entries(this.executionTimes) as [AIProvider, number[]][];
+    const result = new Map<AIProvider, number>();
+    for (const [provider, times] of entries) {
+      const t = times ?? [];
+      result.set(provider, t.length > 0 ? t.reduce((a, b) => a + b, 0) / t.length : 60_000);
     }
-
-    return {
-      [AIProvider.CURSOR_HEADLESS]: avgTimesMap.get(AIProvider.CURSOR_HEADLESS) ?? 120_000,
-      [AIProvider.CLAUDE_CODE]: avgTimesMap.get(AIProvider.CLAUDE_CODE) ?? 60_000,
-    };
+    return Object.fromEntries(result) as Record<AIProvider, number>;
   }
 
   /**

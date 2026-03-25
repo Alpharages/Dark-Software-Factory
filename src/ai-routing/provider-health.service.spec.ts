@@ -11,7 +11,6 @@ describe('ProviderHealthService', () => {
 
   const mockConfigService = {
     get: jest.fn((key: string, defaultValue?: unknown) => {
-      console.log(`[MOCK CONFIG] Requesting key: ${key}`);
       const config: Record<string, unknown> = {
         'ai.providers.cursorHeadless.enabled': true,
         'ai.providers.cursorHeadless.maxConcurrent': 3,
@@ -20,9 +19,7 @@ describe('ProviderHealthService', () => {
         'ai.providers.claudeCode.maxConcurrent': 5,
         'ai.providers.claudeCode.timeout': 180000,
       };
-      const val = config[key] ?? defaultValue;
-      console.log(`[MOCK CONFIG] Returning: ${val}`);
-      return val;
+      return config[key] ?? defaultValue;
     }),
   };
 
@@ -38,7 +35,6 @@ describe('ProviderHealthService', () => {
       },
     };
 
-    console.log('[TEST SETUP] AIProvider:', AIProvider);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProviderHealthService,
@@ -59,6 +55,46 @@ describe('ProviderHealthService', () => {
     if (service) {
       service.onModuleDestroy();
     }
+  });
+
+  describe('providerConfigKey', () => {
+    it('should convert SCREAMING_SNAKE_CASE to camelCase', () => {
+      expect((service as any).providerConfigKey(AIProvider.CLAUDE_CODE)).toBe('claudeCode');
+      expect((service as any).providerConfigKey(AIProvider.CURSOR_HEADLESS)).toBe('cursorHeadless');
+    });
+  });
+
+  describe('isProviderEnabled', () => {
+    it('should query config service using camelCase key', () => {
+      mockConfigService.get.mockClear();
+      (service as any).isProviderEnabled(AIProvider.CURSOR_HEADLESS);
+      expect(mockConfigService.get).toHaveBeenCalledWith(
+        'ai.providers.cursorHeadless.enabled',
+        false,
+      );
+
+      mockConfigService.get.mockClear();
+      (service as any).isProviderEnabled(AIProvider.CLAUDE_CODE);
+      expect(mockConfigService.get).toHaveBeenCalledWith('ai.providers.claudeCode.enabled', false);
+    });
+  });
+
+  describe('getMaxConcurrent', () => {
+    it('should query config service using camelCase key for maxConcurrent', () => {
+      mockConfigService.get.mockClear();
+      (service as any).getMaxConcurrent(AIProvider.CURSOR_HEADLESS);
+      expect(mockConfigService.get).toHaveBeenCalledWith(
+        'ai.providers.cursorHeadless.maxConcurrent',
+        3,
+      );
+
+      mockConfigService.get.mockClear();
+      (service as any).getMaxConcurrent(AIProvider.CLAUDE_CODE);
+      expect(mockConfigService.get).toHaveBeenCalledWith(
+        'ai.providers.claudeCode.maxConcurrent',
+        3,
+      );
+    });
   });
 
   describe('getProviderHealth', () => {
@@ -138,6 +174,22 @@ describe('ProviderHealthService', () => {
       const result = await service.getAvailableProvider();
 
       expect(result).toBeNull();
+    });
+
+    it('should check all providers dynamically based on enum values', async () => {
+      const healthSpy = jest.spyOn(service, 'getProviderHealth').mockResolvedValue({
+        isHealthy: false,
+        provider: AIProvider.CLAUDE_CODE,
+        activeExecutions: 0,
+        maxConcurrent: 3,
+        currentLoad: 0,
+        lastChecked: new Date(),
+      });
+
+      await service.getAvailableProvider();
+
+      const checkedProviders = healthSpy.mock.calls.map((args) => args[0]);
+      expect(checkedProviders).toEqual(Object.values(AIProvider));
     });
   });
 

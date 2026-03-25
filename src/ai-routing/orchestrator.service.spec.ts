@@ -48,6 +48,7 @@ describe('OrchestratorService', () => {
 
     const mockFallbackStrategy = {
       executeWithFallback: jest.fn(),
+      executeWithFallbackCodingProvider: jest.fn(),
       shouldFallback: jest.fn(),
       getMaxFallbackAttempts: jest.fn().mockReturnValue(2),
     };
@@ -250,16 +251,23 @@ describe('OrchestratorService', () => {
       providerFactory.getCodingProvider.mockReturnValue({
         providerName: 'claude-code',
         isEnabled: true,
-        execute: jest.fn().mockResolvedValue({
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+
+      fallbackStrategy.executeWithFallbackCodingProvider.mockResolvedValue({
+        result: {
           success: true,
           codeDiff: 'diff --git ...',
           filesChanged: ['src/index.ts'],
           confidenceScore: 0.9,
           durationMs: 20000,
           workspacePath: '/tmp/workspace',
-        }),
-        isHealthy: jest.fn().mockResolvedValue(true),
-      } as any);
+        },
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        fallbackAttempts: [],
+      });
 
       const result = await service.execute(inputWithOverride);
 
@@ -267,6 +275,7 @@ describe('OrchestratorService', () => {
       expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
       expect(providerFactory.selectProvider).toHaveBeenCalledWith(inputWithOverride);
       expect(fallbackStrategy.executeWithFallback).not.toHaveBeenCalled();
+      expect(fallbackStrategy.executeWithFallbackCodingProvider).toHaveBeenCalled();
     });
   });
 
@@ -310,6 +319,24 @@ describe('OrchestratorService', () => {
       const metrics = service.getMetrics();
       expect(metrics.totalExecutions).toBeGreaterThanOrEqual(1);
       expect(metrics.providerUsage[AIProvider.CURSOR_HEADLESS]).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should not throw when trackExecution is called with an unknown provider (lazy init)', () => {
+      const unknownProvider = 'GEMINI' as AIProvider;
+      expect(() =>
+        (service as any).trackExecution(
+          {
+            result: { success: true, durationMs: 5000 },
+            executedBy: unknownProvider,
+            usedFallback: false,
+            fallbackAttempts: [],
+          },
+          5000,
+        ),
+      ).not.toThrow();
+
+      const metrics = service.getMetrics();
+      expect(metrics.providerUsage[unknownProvider]).toBe(1);
     });
   });
 

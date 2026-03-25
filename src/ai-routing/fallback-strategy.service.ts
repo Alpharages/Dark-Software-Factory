@@ -20,6 +20,8 @@ import {
   AIErrorCode,
 } from './interfaces';
 import { AIExecutionService } from './ai-execution.service';
+import { ICodingAgentProvider } from './interfaces/coding-agent-provider.interface';
+import { IAIExecutionPayload } from '@/execution/interfaces';
 
 /**
  * Result from fallback execution
@@ -174,6 +176,114 @@ export class FallbackStrategyService {
     return {
       result: fallbackResult,
       executedBy: fallback,
+      usedFallback: true,
+      fallbackAttempts,
+    };
+  }
+
+  /**
+   * Execute with fallback for ICodingAgentProvider implementations (FR-OS29)
+   * No provider-specific logic — works with any ICodingAgentProvider.
+   */
+  async executeWithFallbackCodingProvider(
+    primary: ICodingAgentProvider,
+    fallback: ICodingAgentProvider | null,
+    payload: IAIExecutionPayload,
+  ): Promise<IFallbackExecutionResult> {
+    const fallbackAttempts: IFallbackAttempt[] = [];
+    const startTime = Date.now();
+
+    this.logger.log(
+      `[${payload.executionId}] Executing with coding provider: ${primary.providerName}`,
+    );
+
+    const primaryResult = await primary.execute(payload);
+
+    if (primaryResult.success) {
+      return {
+        result: primaryResult,
+        executedBy: primary.providerName as unknown as AIProvider,
+        usedFallback: false,
+        fallbackAttempts: [],
+      };
+    }
+
+    if (payload.allowFallback === false || !fallback) {
+      this.logger.warn(
+        `[${payload.executionId}] Coding provider failed, no fallback available or allowed`,
+      );
+      return {
+        result: primaryResult,
+        executedBy: primary.providerName as unknown as AIProvider,
+        usedFallback: false,
+        fallbackAttempts: [],
+      };
+    }
+
+    const isRetryable = primaryResult.error?.isRetryable ?? false;
+
+    if (!isRetryable) {
+      this.logger.warn(`[${payload.executionId}] Coding provider failed with non-retryable error`);
+      return {
+        result: primaryResult,
+        executedBy: primary.providerName as unknown as AIProvider,
+        usedFallback: false,
+        fallbackAttempts: [],
+      };
+    }
+
+    fallbackAttempts.push({
+      provider: primary.providerName as unknown as AIProvider,
+      error: primaryResult.error?.message || 'Unknown error',
+      wasRetryable: isRetryable,
+      durationMs: primaryResult.durationMs,
+      timestamp: new Date(),
+    });
+
+    this.fallbackCounter.inc({
+      from_provider: primary.providerName,
+      to_provider: fallback.providerName,
+      reason: primaryResult.error?.code || 'UNKNOWN',
+    });
+
+    if (this.fallbackDelayMs > 0) {
+      await this.delay(this.fallbackDelayMs);
+    }
+
+    this.logger.log(
+      `[${payload.executionId}] Falling back to coding provider: ${fallback.providerName}`,
+    );
+
+    const fallbackResult = await fallback.execute(payload);
+
+    const totalDuration = (Date.now() - startTime) / 1000;
+    this.fallbackDuration.observe(
+      { from_provider: primary.providerName, to_provider: fallback.providerName },
+      totalDuration,
+    );
+
+    if (fallbackResult.success) {
+      this.fallbackSuccessCounter.inc({
+        from_provider: primary.providerName,
+        to_provider: fallback.providerName,
+      });
+      this.logger.log(`[${payload.executionId}] Fallback successful with ${fallback.providerName}`);
+    } else {
+      fallbackAttempts.push({
+        provider: fallback.providerName as unknown as AIProvider,
+        error: fallbackResult.error?.message || 'Unknown error',
+        wasRetryable: fallbackResult.error?.isRetryable ?? false,
+        durationMs: fallbackResult.durationMs,
+        timestamp: new Date(),
+      });
+      this.logger.error(
+        `[${payload.executionId}] Both coding providers failed - escalating to DLQ`,
+      );
+    }
+
+    return {
+      result: fallbackResult,
+      executedBy: fallback.providerName as unknown as AIProvider,
       usedFallback: true,
       fallbackAttempts,
     };

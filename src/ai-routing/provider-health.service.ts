@@ -132,9 +132,7 @@ export class ProviderHealthService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Try all providers in priority order
-    const providers = [AIProvider.CURSOR_HEADLESS, AIProvider.CLAUDE_CODE];
-
-    for (const provider of providers) {
+    for (const provider of Object.values(AIProvider)) {
       if (provider === preferredProvider) continue; // Already checked
 
       const health = await this.getProviderHealth(provider);
@@ -172,9 +170,7 @@ export class ProviderHealthService implements OnModuleInit, OnModuleDestroy {
    * Check all providers periodically
    */
   private async checkAllProviders(): Promise<void> {
-    const providers = [AIProvider.CURSOR_HEADLESS, AIProvider.CLAUDE_CODE];
-
-    for (const provider of providers) {
+    for (const provider of Object.values(AIProvider)) {
       try {
         await this.getProviderHealth(provider);
       } catch (_error) {
@@ -184,30 +180,28 @@ export class ProviderHealthService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Convert AIProvider SCREAMING_SNAKE_CASE to camelCase config key segment.
+   * CLAUDE_CODE → claudeCode, CURSOR_HEADLESS → cursorHeadless, GEMINI → gemini
+   */
+  private providerConfigKey(provider: AIProvider): string {
+    return String(provider)
+      .toLowerCase()
+      .replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase());
+  }
+
+  /**
    * Check if provider is enabled in configuration
    */
   private isProviderEnabled(provider: AIProvider): boolean {
-    const p = String(provider);
-    if (p == 'CURSOR_HEADLESS') {
-      return this.configService.get<boolean>('ai.providers.cursorHeadless.enabled', false);
-    }
-    if (p == 'CLAUDE_CODE') {
-      return this.configService.get<boolean>('ai.providers.claudeCode.enabled', false);
-    }
-    return false;
+    const configKey = this.providerConfigKey(provider);
+    return this.configService.get<boolean>(`ai.providers.${configKey}.enabled`, false);
   }
 
   /**
    * Get max concurrent executions for provider
    */
   private getMaxConcurrent(provider: AIProvider): number {
-    const p = String(provider);
-    if (p == 'CURSOR_HEADLESS') {
-      return this.configService.get<number>('ai.providers.cursorHeadless.maxConcurrent', 3);
-    }
-    if (p == 'CLAUDE_CODE') {
-      return this.configService.get<number>('ai.providers.claudeCode.maxConcurrent', 5);
-    }
-    return 0;
+    const configKey = this.providerConfigKey(provider);
+    return this.configService.get<number>(`ai.providers.${configKey}.maxConcurrent`, 3);
   }
 }

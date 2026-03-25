@@ -257,6 +257,167 @@ describe('FallbackStrategyService', () => {
     });
   });
 
+  describe('executeWithFallbackCodingProvider', () => {
+    let mockPrimary: any;
+    let mockFallback: any;
+    const basePayload: any = {
+      executionId: 'exec-test-123',
+      correlationId: 'corr-123',
+      allowFallback: true,
+      ticket: { prompt: 'test' },
+      repository: { url: 'https://test.git' },
+    };
+
+    beforeEach(() => {
+      mockPrimary = {
+        isEnabled: true,
+        execute: jest.fn(),
+      };
+      mockFallback = {
+        isEnabled: true,
+        execute: jest.fn(),
+      };
+    });
+
+    it('should succeed with primary provider without fallback', async () => {
+      mockPrimary.execute.mockResolvedValue({
+        success: true,
+        codeDiff: 'diff',
+        filesChanged: ['file.ts'],
+        confidenceScore: 0.9,
+        durationMs: 30000,
+        workspacePath: '/tmp/workspace',
+        executedBy: AIProvider.CLAUDE_CODE,
+      });
+
+      const result = await service.executeWithFallbackCodingProvider(
+        mockPrimary,
+        mockFallback,
+        basePayload,
+      );
+
+      expect(result.result.success).toBe(true);
+      expect(result.usedFallback).toBe(false);
+      expect(result.fallbackAttempts).toHaveLength(0);
+      expect(mockPrimary.execute).toHaveBeenCalledTimes(1);
+      expect(mockFallback.execute).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to secondary when primary fails with retryable error', async () => {
+      mockPrimary.execute.mockResolvedValue({
+        success: false,
+        durationMs: 30000,
+        executedBy: AIProvider.CLAUDE_CODE,
+        error: { code: AIErrorCode.TIMEOUT, message: 'Timeout', isRetryable: true },
+      });
+      mockFallback.execute.mockResolvedValue({
+        success: true,
+        codeDiff: 'diff',
+        filesChanged: ['file.ts'],
+        confidenceScore: 0.9,
+        durationMs: 40000,
+        executedBy: AIProvider.CURSOR_HEADLESS,
+      });
+
+      const result = await service.executeWithFallbackCodingProvider(
+        mockPrimary,
+        mockFallback,
+        basePayload,
+      );
+
+      expect(result.result.success).toBe(true);
+      expect(result.usedFallback).toBe(true);
+      expect(result.fallbackAttempts).toHaveLength(1);
+      expect(mockPrimary.execute).toHaveBeenCalledTimes(1);
+      expect(mockFallback.execute).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not fallback when primary fails with non-retryable error', async () => {
+      mockPrimary.execute.mockResolvedValue({
+        success: false,
+        durationMs: 3000,
+        executedBy: AIProvider.CLAUDE_CODE,
+        error: { code: AIErrorCode.INVALID_PROMPT, message: 'Invalid', isRetryable: false },
+      });
+
+      const result = await service.executeWithFallbackCodingProvider(
+        mockPrimary,
+        mockFallback,
+        basePayload,
+      );
+
+      expect(result.result.success).toBe(false);
+      expect(result.usedFallback).toBe(false);
+      expect(mockPrimary.execute).toHaveBeenCalledTimes(1);
+      expect(mockFallback.execute).not.toHaveBeenCalled();
+    });
+
+    it('should not fallback when allowFallback is false in payload', async () => {
+      mockPrimary.execute.mockResolvedValue({
+        success: false,
+        durationMs: 3000,
+        executedBy: AIProvider.CLAUDE_CODE,
+        error: { code: AIErrorCode.TIMEOUT, message: 'Timeout', isRetryable: true },
+      });
+
+      const result = await service.executeWithFallbackCodingProvider(mockPrimary, mockFallback, {
+        ...basePayload,
+        allowFallback: false,
+      });
+
+      expect(result.result.success).toBe(false);
+      expect(result.usedFallback).toBe(false);
+      expect(mockPrimary.execute).toHaveBeenCalledTimes(1);
+      expect(mockFallback.execute).not.toHaveBeenCalled();
+    });
+
+    it('should not fallback when fallback provider is null', async () => {
+      mockPrimary.execute.mockResolvedValue({
+        success: false,
+        durationMs: 3000,
+        executedBy: AIProvider.CLAUDE_CODE,
+        error: { code: AIErrorCode.TIMEOUT, message: 'Timeout', isRetryable: true },
+      });
+
+      const result = await service.executeWithFallbackCodingProvider(
+        mockPrimary,
+        null,
+        basePayload,
+      );
+
+      expect(result.result.success).toBe(false);
+      expect(result.usedFallback).toBe(false);
+      expect(mockPrimary.execute).toHaveBeenCalledTimes(1);
+    });
+
+    it('should record both failures when both providers fail', async () => {
+      mockPrimary.execute.mockResolvedValue({
+        success: false,
+        durationMs: 3000,
+        executedBy: AIProvider.CLAUDE_CODE,
+        error: { code: AIErrorCode.TIMEOUT, message: 'Timeout', isRetryable: true },
+      });
+      mockFallback.execute.mockResolvedValue({
+        success: false,
+        durationMs: 3000,
+        executedBy: AIProvider.CURSOR_HEADLESS,
+        error: { code: AIErrorCode.PROCESS_CRASH, message: 'Crash', isRetryable: false },
+      });
+
+      const result = await service.executeWithFallbackCodingProvider(
+        mockPrimary,
+        mockFallback,
+        basePayload,
+      );
+
+      expect(result.result.success).toBe(false);
+      expect(result.usedFallback).toBe(true);
+      expect(result.fallbackAttempts).toHaveLength(2);
+      expect(mockPrimary.execute).toHaveBeenCalledTimes(1);
+      expect(mockFallback.execute).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('shouldFallback', () => {
     it('should return true for retryable timeout error', () => {
       const result = service.shouldFallback({
