@@ -7,12 +7,21 @@ import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '@/rabbitmq/rabbitmq.c
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
 import { PromptGeneratorService } from './prompt-generator.service';
-import { IRoutingRequest, IRoutingDecision, IRoutingResult, RoutingReason } from './interfaces';
+import {
+  IRoutingRequest,
+  IRoutingDecision,
+  IRoutingResult,
+  IProviderSelection,
+  RoutingReason,
+  ProviderSelectionReason,
+  ComplexityGrade,
+} from './interfaces';
 // Story 12.5: V3 Services
 import { FileLockManagerService } from '@/file-locks/file-lock-manager.service';
 import { BranchStrategistService } from '@/github/services/branch-strategist.service';
 import { Counter, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { ProviderFactoryService } from './provider-factory.service';
 
 /**
  * AI Routing Service
@@ -42,6 +51,8 @@ export class AIRoutingService {
     private readonly branchStrategist: BranchStrategistService,
     @InjectMetric('dsf_ticket_waiting_locks_total')
     private readonly waitingLocksCounter: Counter<string>,
+    // Story OS-4.4: Multi-Provider Routing
+    private readonly providerFactory: ProviderFactoryService,
   ) {}
 
   /**
@@ -54,36 +65,7 @@ export class AIRoutingService {
     try {
       this.logger.log(`[${correlationId}] Starting routing for ticket ${ticketId}`);
 
-      // 1. Calculate complexity score
-      const complexityBreakdown = this.complexityScorer.calculateComplexity(request, correlationId);
-      const complexityScore = complexityBreakdown.totalScore;
-
-      // Record complexity score
-      this.complexityHisto.observe(
-        { grade: this.getComplexityGrade(complexityScore) },
-        complexityScore,
-      );
-
-      // 2. Determine preferred provider based on enabled providers
-      const claudeEnabled = this.configService.get<boolean>(
-        'ai.providers.claudeCode.enabled',
-        false,
-      );
-
-      // Validate that at least one provider is enabled
-      if (!claudeEnabled) {
-        this.logger.error(
-          `[${correlationId}] CRITICAL: No AI providers enabled in configuration. ` +
-            `Set CLAUDE_CODE_ENABLED=true in .env`,
-        );
-        throw new Error('No AI providers enabled in configuration');
-      }
-
-      // Simplified for OS-4.1 — always use Claude Code
-      const preferredProvider = AIProvider.CLAUDE_CODE;
-      this.logger.log(`[${correlationId}] Using CLAUDE_CODE (primary provider)`);
-
-      // RECORD PROJECT FOR USE IN PREDICTION
+      // 1. Fetch project early to get repository URL for provider factory
       const project = await this.prisma.project.findUnique({
         where: { id: request.projectId },
       });
@@ -96,6 +78,35 @@ export class AIRoutingService {
           `Project not found: ${request.projectId}. Cannot route ticket without valid project.`,
         );
       }
+
+      // 2. Calculate complexity once — used for both routing decision and DB persistence
+      const complexityBreakdown = this.complexityScorer.calculateComplexity(request, correlationId);
+
+      // 3. Select preferred provider, passing pre-calculated score to avoid double computation
+      const selection = await this.providerFactory.selectProvider({
+        correlationId,
+        ticketId,
+        executionId: '', // Placeholder for selection phase
+        prompt: request.description,
+        repositoryUrl: project.github_repository_url,
+        title: request.title,
+        acceptanceCriteria: request.acceptanceCriteria,
+        tags: request.tags,
+        preCalculatedComplexity: complexityBreakdown.totalScore,
+      });
+
+      const preferredProvider = selection.primary;
+      const complexityScore = complexityBreakdown.totalScore;
+
+      this.logger.log(
+        `[${correlationId}] Strategy selected ${preferredProvider} (score=${complexityScore}, reason=${selection.reason})`,
+      );
+
+      // Record complexity score
+      this.complexityHisto.observe(
+        { grade: this.getComplexityGrade(complexityScore) },
+        complexityScore,
+      );
 
       // 2a. Create Initial Execution Record (Required for File Locks)
       // We create this early to satisfy foreign key constraints in file_lock_queue
@@ -165,7 +176,7 @@ export class AIRoutingService {
       // 4. Determine routing reason and fallback status
       const { provider } = availableProvider;
       const fallbackUsed = provider !== preferredProvider;
-      const routingReason = this.determineRoutingReason(complexityScore, fallbackUsed);
+      const routingReason = this.mapProviderSelectionToRoutingReason(selection, fallbackUsed);
 
       // AC#8: Intelligent Branch Selection
       const dependencies = await this.prisma.ticketDependency.findMany({
@@ -342,7 +353,13 @@ export class AIRoutingService {
     this.logger.warn(`[${correlationId}] Ticket ${ticketId} queued for retry in 5 minutes`);
 
     // Check if we should alert
-    for (const provider of [AIProvider.CLAUDE_CODE]) {
+    const providersToMonitor = [
+      AIProvider.CLAUDE_CODE,
+      AIProvider.GEMINI,
+      AIProvider.CODEX,
+      AIProvider.KIMI,
+    ];
+    for (const provider of providersToMonitor) {
       if (this.providerHealth.shouldAlert(provider)) {
         this.logger.error(
           `[${correlationId}] ALERT: Provider ${provider} unavailable for extended period`,
@@ -360,15 +377,30 @@ export class AIRoutingService {
   }
 
   /**
-   * Determine routing reason
+   * Map provider selection to routing reason
    */
-  private determineRoutingReason(complexityScore: number, fallbackUsed: boolean): RoutingReason {
+  private mapProviderSelectionToRoutingReason(
+    selection: IProviderSelection,
+    fallbackUsed: boolean,
+  ): RoutingReason {
     if (fallbackUsed) {
       return RoutingReason.PRIMARY_UNAVAILABLE;
     }
 
-    // Simplified for OS-4.1 - default to complexity-based reasons
-    return complexityScore >= 10 ? RoutingReason.COMPLEXITY_HIGH : RoutingReason.COMPLEXITY_LOW;
+    if (selection.reason === ProviderSelectionReason.OVERRIDE) {
+      return RoutingReason.EXPLICIT_OVERRIDE;
+    }
+
+    switch (selection.complexityGrade) {
+      case ComplexityGrade.LOW:
+        return RoutingReason.COMPLEXITY_LOW;
+      case ComplexityGrade.MEDIUM:
+        return RoutingReason.COMPLEXITY_MEDIUM;
+      case ComplexityGrade.HIGH:
+        return RoutingReason.COMPLEXITY_HIGH;
+      default:
+        return RoutingReason.COMPLEXITY_MEDIUM;
+    }
   }
 
   /**

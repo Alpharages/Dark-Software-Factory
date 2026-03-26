@@ -49,6 +49,7 @@ export default () => {
         },
       },
       routing: {
+        primaryProvider: process.env.AI_PRIMARY_PROVIDER,
         complexityThreshold: parseInt(process.env.AI_COMPLEXITY_THRESHOLD || '10', 10),
         retryDelayMinutes: parseInt(process.env.AI_RETRY_DELAY_MINUTES || '5', 10),
         alertThresholdMinutes: parseInt(process.env.AI_ALERT_THRESHOLD_MINUTES || '15', 10),

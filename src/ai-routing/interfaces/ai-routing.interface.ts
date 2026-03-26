@@ -73,6 +73,7 @@ export interface IRoutingDecision {
  */
 export enum RoutingReason {
   COMPLEXITY_HIGH = 'complexity_high', // Score >= threshold (favors high-capacity providers)
+  COMPLEXITY_MEDIUM = 'complexity_medium', // 5 <= Score < 10 (favors mid-capacity providers)
   COMPLEXITY_LOW = 'complexity_low', // Score < threshold (favors autonomous providers)
   COST_OPTIMIZATION = 'cost_optimization', // Cheaper provider for simple task
   PRIMARY_UNAVAILABLE = 'primary_unavailable', // Fallback to secondary

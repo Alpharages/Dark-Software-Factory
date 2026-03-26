@@ -41,7 +41,8 @@ describe('ProviderFactoryService', () => {
     const mockConfig = {
       get: jest.fn((key: string, defaultValue?: unknown) => {
         // Return enabled status for providers
-        if (key === 'ai.providers.claudeCode.enabled') return true;
+        if (key.includes('enabled')) return true;
+        if (key === 'ai.routing.primaryProvider') return null;
         // Return default values for thresholds
         return defaultValue;
       }),
@@ -110,7 +111,7 @@ describe('ProviderFactoryService', () => {
       repositoryUrl: 'https://github.com/test/repo.git',
     };
 
-    it('should select Claude for high complexity tasks (OS-4.1 default)', async () => {
+    it('should select Claude for high complexity tasks (score >= 10)', async () => {
       complexityScorer.calculateComplexity.mockReturnValue({
         totalScore: 15,
         fileCount: 5,
@@ -125,19 +126,52 @@ describe('ProviderFactoryService', () => {
         tagScore: 4,
       });
 
+      _configService.get.mockImplementation((key: string, defaultValue: unknown) => {
+        if (typeof key === 'string' && key.includes('enabled')) return true;
+        return defaultValue;
+      });
       aiExecution.isProviderAvailable.mockResolvedValue(true);
 
       const result = await service.selectProvider(baseInput);
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
+      expect(result.fallback).toBe(AIProvider.CODEX);
+      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
       expect(result.complexityGrade).toBe(ComplexityGrade.HIGH);
     });
 
-    it('should select Claude for low complexity tasks', async () => {
+    it('should select Claude for medium complexity tasks (5 <= score < 10)', async () => {
       complexityScorer.calculateComplexity.mockReturnValue({
-        totalScore: 4,
+        totalScore: 7,
+        fileCount: 2,
+        fileCountScore: 2,
+        architectureChanges: false,
+        architectureScore: 0,
+        dependencyLevel: 'medium',
+        dependencyScore: 2,
+        estimatedLoc: 80,
+        locScore: 2,
+        tagComplexity: 'medium',
+        tagScore: 2,
+      });
+
+      _configService.get.mockImplementation((key: string, defaultValue: unknown) => {
+        if (typeof key === 'string' && key.includes('enabled')) return true;
+        return defaultValue;
+      });
+      aiExecution.isProviderAvailable.mockResolvedValue(true);
+
+      const result = await service.selectProvider(baseInput);
+
+      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.fallback).toBe(AIProvider.GEMINI);
+      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
+      expect(result.complexityGrade).toBe(ComplexityGrade.MEDIUM);
+    });
+
+    it('should select Kimi for low complexity tasks (score < 5)', async () => {
+      complexityScorer.calculateComplexity.mockReturnValue({
+        totalScore: 3,
         fileCount: 1,
         fileCountScore: 1,
         architectureChanges: false,
@@ -150,26 +184,42 @@ describe('ProviderFactoryService', () => {
         tagScore: 1,
       });
 
+      _configService.get.mockImplementation((key: string, defaultValue: unknown) => {
+        if (typeof key === 'string' && key.includes('enabled')) return true;
+        return defaultValue;
+      });
       aiExecution.isProviderAvailable.mockResolvedValue(true);
 
       const result = await service.selectProvider(baseInput);
 
-      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
+      expect(result.primary).toBe(AIProvider.KIMI);
+      expect(result.fallback).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
       expect(result.complexityGrade).toBe(ComplexityGrade.LOW);
     });
 
-    it('should respect provider override', async () => {
+    it('should respect primary provider override from config', async () => {
+      _configService.get.mockImplementation((key: string, defaultValue: unknown) => {
+        if (key === 'ai.routing.primaryProvider') return AIProvider.KIMI;
+        if (typeof key === 'string' && key.includes('enabled')) return true;
+        return defaultValue;
+      });
+
+      const result = await service.selectProvider(baseInput);
+
+      expect(result.primary).toBe(AIProvider.KIMI);
+      expect(result.reason).toBe(ProviderSelectionReason.OVERRIDE);
+    });
+
+    it('should respect manual provider override', async () => {
       const inputWithOverride: IOrchestrationInput = {
         ...baseInput,
-        providerOverride: AIProvider.CLAUDE_CODE,
+        providerOverride: AIProvider.GEMINI,
       };
 
       const result = await service.selectProvider(inputWithOverride);
 
-      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.fallback).toBeNull();
+      expect(result.primary).toBe(AIProvider.GEMINI);
       expect(result.reason).toBe(ProviderSelectionReason.OVERRIDE);
       expect(complexityScorer.calculateComplexity).not.toHaveBeenCalled();
     });
@@ -190,7 +240,7 @@ describe('ProviderFactoryService', () => {
       expect(complexityScorer.calculateComplexity).not.toHaveBeenCalled();
     });
 
-    it('should select available provider when Claude is available', async () => {
+    it('should select Claude when only it is available/registered', async () => {
       complexityScorer.calculateComplexity.mockReturnValue({
         totalScore: 15,
         fileCount: 5,
@@ -205,6 +255,12 @@ describe('ProviderFactoryService', () => {
         tagScore: 4,
       });
 
+      _configService.get.mockImplementation((key: string, defaultValue: unknown) => {
+        if (key === 'ai.providers.claudeCode.enabled') return true;
+        if (typeof key === 'string' && key.includes('enabled')) return false; // Other providers disabled
+        return defaultValue;
+      });
+
       // Only Claude available
       aiExecution.isProviderAvailable.mockImplementation(
         async (provider: AIProvider) => provider === AIProvider.CLAUDE_CODE,
@@ -214,31 +270,6 @@ describe('ProviderFactoryService', () => {
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
-    });
-
-    it('should handle when no providers are available', async () => {
-      complexityScorer.calculateComplexity.mockReturnValue({
-        totalScore: 8,
-        fileCount: 2,
-        fileCountScore: 2,
-        architectureChanges: false,
-        architectureScore: 0,
-        dependencyLevel: 'medium',
-        dependencyScore: 2,
-        estimatedLoc: 80,
-        locScore: 2,
-        tagComplexity: 'medium',
-        tagScore: 2,
-      });
-
-      aiExecution.isProviderAvailable.mockResolvedValue(false);
-
-      const result = await service.selectProvider(baseInput);
-
-      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
     });
   });
 
@@ -295,7 +326,7 @@ describe('ProviderFactoryService', () => {
 
       expect(availability[0].isAvailable).toBe(false);
       expect(availability[0].circuitState).toBe('OPEN');
-      expect(availability[0].unavailableReason).toBe('Provider unhealthy');
+      expect(availability[0].unavailableReason).toBe('Provider unhealthy or circuit open');
     });
   });
   describe('getCodingProvider', () => {

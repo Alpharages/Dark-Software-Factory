@@ -1,6 +1,6 @@
 # Story OS-4.4: Multi-Provider AIRoutingService with Complexity-Based Strategy
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -660,3 +660,13 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+### Review Findings
+
+- [x] [Review][Patch] Double complexity calculation — `routeTicket()` calls `this.complexityScorer.calculateComplexity(request, correlationId)` a second time after `providerFactory.selectProvider()` already computed it internally. Fixed: compute breakdown once before `selectProvider`, pass `preCalculatedComplexity: complexityBreakdown.totalScore`, use `complexityBreakdown.totalScore` as canonical score. [`ai-routing.service.ts:75`]
+- [x] [Review][Patch] Missing `claudeEnabled` guard in `selectByComplexityAndAvailability` — Re-added `if (!claudeEnabled) throw` at the top of the method. [`provider-factory.service.ts:179`]
+- [x] [Review][Patch] Pre-existing `routeTicket()` tests broken — Added `mockProviderFactory.selectProvider.mockResolvedValue(...)` to "should handle fallback when provider is unhealthy" and "should queue for delayed retry when no provider is available". [`ai-routing.service.spec.ts`]
+- [x] [Review][Patch] Missing test case: low complexity + KIMI disabled → CLAUDE_CODE — Added "should route low complexity ticket (score < 5) with KIMI disabled to CLAUDE_CODE". [`ai-routing.service.spec.ts`]
+- [x] [Review][Patch] `mapProviderSelectionToRoutingReason` parameter typed as `any` — Changed to `selection: IProviderSelection`. Added `IProviderSelection` to interface imports. [`ai-routing.service.ts:380`]
+- [x] [Review][Patch] `AI_PRIMARY_PROVIDER` Joi schema missing `.allow('')` — Added `.allow('')` after `.optional()`. [`env.validation.ts:64`]
+- [x] [Review][Defer] Override path uses hardcoded `MEDIUM` grade for `getFallbackFor` [`provider-factory.service.ts:92`] — deferred, pre-existing design gap; override mode bypasses complexity routing by spec intent, addressing grade-aware fallback in override mode requires interface changes out of scope for this story

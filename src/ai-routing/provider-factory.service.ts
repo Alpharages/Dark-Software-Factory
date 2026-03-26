@@ -76,17 +76,20 @@ export class ProviderFactoryService {
   async selectProvider(input: IOrchestrationInput): Promise<IProviderSelection> {
     const { correlationId, providerOverride, preCalculatedComplexity } = input;
 
-    // Handle manual override
-    if (providerOverride) {
-      this.logger.log(`[${correlationId}] Provider override: ${providerOverride}`);
+    // Handle configuration override (Story OS-4.4)
+    const configOverride = this.config.get<AIProvider | undefined>('ai.routing.primaryProvider');
+    const finalOverride = providerOverride || configOverride;
+
+    if (finalOverride) {
+      this.logger.log(`[${correlationId}] Provider override: ${finalOverride}`);
       this.selectionsCounter.inc({
         reason: ProviderSelectionReason.OVERRIDE,
-        provider: providerOverride,
+        provider: finalOverride,
       });
 
       return {
-        primary: providerOverride,
-        fallback: this.getFallbackFor(providerOverride),
+        primary: finalOverride,
+        fallback: this.getFallbackFor(finalOverride, ComplexityGrade.MEDIUM),
         reason: ProviderSelectionReason.OVERRIDE,
         complexityScore: preCalculatedComplexity ?? 0,
         complexityGrade: ComplexityGrade.MEDIUM,
@@ -172,30 +175,67 @@ export class ProviderFactoryService {
     correlationId: string,
     score: number,
     grade: ComplexityGrade,
-    _claudeAvailable: boolean,
+    claudeAvailable: boolean,
   ): IProviderSelection {
-    // Check which providers are ENABLED in configuration
     const claudeEnabled = this.config.get<boolean>('ai.providers.claudeCode.enabled', false);
-
-    // Neither enabled - return error case
     if (!claudeEnabled) {
       this.logger.error(`[${correlationId}] No providers ENABLED in configuration!`);
       throw new Error('No AI providers enabled. Set CLAUDE_CODE_ENABLED=true');
     }
 
-    // Simplified for OS-4.1 — full routing in OS-4.4
+    const geminiEnabled = this.config.get<boolean>('ai.providers.gemini.enabled', false);
+    const codexEnabled = this.config.get<boolean>('ai.providers.codex.enabled', false);
+    const kimiEnabled = this.config.get<boolean>('ai.providers.kimi.enabled', false);
+
+    // Tier 1: Low Complexity (< 5)
+    if (grade === ComplexityGrade.LOW && kimiEnabled) {
+      return {
+        primary: AIProvider.KIMI,
+        fallback: claudeAvailable ? AIProvider.CLAUDE_CODE : null,
+        reason: ProviderSelectionReason.COMPLEXITY,
+        complexityScore: score,
+        complexityGrade: grade,
+      };
+    }
+
+    // Tier 3: High Complexity (>= 10)
+    if (grade === ComplexityGrade.HIGH) {
+      return {
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: codexEnabled ? AIProvider.CODEX : null,
+        reason: ProviderSelectionReason.COMPLEXITY,
+        complexityScore: score,
+        complexityGrade: grade,
+      };
+    }
+
+    // Tier 2: Medium (5 <= score < 10) or Fallback for Tier 1
     return {
       primary: AIProvider.CLAUDE_CODE,
-      fallback: null,
-      reason: ProviderSelectionReason.SINGLE_PROVIDER,
+      fallback: geminiEnabled ? AIProvider.GEMINI : null,
+      reason: ProviderSelectionReason.COMPLEXITY,
       complexityScore: score,
       complexityGrade: grade,
     };
   }
 
-  private getFallbackFor(_provider: AIProvider): AIProvider | null {
-    // Current simplified fallback logic - always null for now as only Claude is active
-    return null;
+  private getFallbackFor(provider: AIProvider, grade: ComplexityGrade): AIProvider | null {
+    const geminiEnabled = this.config.get<boolean>('ai.providers.gemini.enabled', false);
+    const codexEnabled = this.config.get<boolean>('ai.providers.codex.enabled', false);
+
+    switch (provider) {
+      case AIProvider.KIMI:
+        return AIProvider.CLAUDE_CODE;
+      case AIProvider.GEMINI:
+      case AIProvider.CODEX:
+        return AIProvider.CLAUDE_CODE;
+      case AIProvider.CLAUDE_CODE:
+        if (grade === ComplexityGrade.HIGH && codexEnabled) return AIProvider.CODEX;
+        if (grade === ComplexityGrade.MEDIUM && geminiEnabled) return AIProvider.GEMINI;
+        return null;
+      default:
+        return null;
+    }
   }
 
   /**
@@ -216,7 +256,11 @@ export class ProviderFactoryService {
       availability.push({
         provider,
         isAvailable: health?.isHealthy ?? false,
-        unavailableReason: health?.isHealthy ? undefined : 'Provider unhealthy',
+        unavailableReason: health?.isHealthy
+          ? undefined
+          : health
+            ? 'Provider unhealthy or circuit open'
+            : 'Provider status unknown',
         circuitState: health?.circuitState ?? 'OPEN',
         queueDepth: health?.activeExecutions ?? 0,
         estimatedWaitMs: this.estimateWaitTime(health?.activeExecutions ?? 0),

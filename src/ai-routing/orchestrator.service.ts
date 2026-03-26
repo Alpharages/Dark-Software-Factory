@@ -61,8 +61,11 @@ export class OrchestratorService {
 
   // Map Prisma AIProvider → new ProviderName
   private mapAIProviderToProviderName(provider: AIProvider): ProviderName | undefined {
-    const map: Partial<Record<string, ProviderName>> = {
+    const map: Record<AIProvider, ProviderName> = {
       [AIProvider.CLAUDE_CODE]: ProviderName.CLAUDE_CODE,
+      [AIProvider.GEMINI]: ProviderName.GEMINI,
+      [AIProvider.CODEX]: ProviderName.CODEX,
+      [AIProvider.KIMI]: ProviderName.KIMI,
     };
     // eslint-disable-next-line security/detect-object-injection
     return map[provider];
@@ -72,11 +75,12 @@ export class OrchestratorService {
   private buildExecutionPayload(
     input: IOrchestrationInput,
     complexityScore: number,
+    resolvedProvider: AIProvider,
   ): IAIExecutionPayload {
     return {
       ticketId: input.ticketId,
       executionId: input.executionId,
-      aiProvider: (input.providerOverride as AIProvider) ?? AIProvider.CLAUDE_CODE,
+      aiProvider: resolvedProvider,
       priority: 1,
       prompt: input.prompt,
       repositoryUrl: input.repositoryUrl,
@@ -121,7 +125,11 @@ export class OrchestratorService {
 
       if (codingProvider?.isEnabled) {
         // New sandbox path: directly execute via ICodingAgentProvider
-        const payload = this.buildExecutionPayload(input, selection.complexityScore);
+        const payload = this.buildExecutionPayload(
+          input,
+          selection.complexityScore,
+          selection.primary,
+        );
 
         // Resolve fallback ICodingAgentProvider if available (FR-OS29)
         const fallbackProviderName = selection.fallback
@@ -331,11 +339,16 @@ export class OrchestratorService {
    * Estimate cost based on provider and duration
    */
   private estimateCost(provider: AIProvider, _durationMs: number): number {
-    // Rough cost estimates in cents
+    // Rough cost estimates in cents (optimized for Story OS-4.4)
     switch (provider) {
       case AIProvider.CLAUDE_CODE:
-        // Claude: ~$0.20 per execution (token-based, avg estimate)
-        return 20;
+        return 20; // Sonnet 3.5 avg
+      case AIProvider.GEMINI:
+        return 5; // Gemini 2.5 Pro avg
+      case AIProvider.CODEX:
+        return 12; // OpenAI Codex estimate
+      case AIProvider.KIMI:
+        return 2; // Kimi-k2 (cheap tier)
       default:
         return 0;
     }

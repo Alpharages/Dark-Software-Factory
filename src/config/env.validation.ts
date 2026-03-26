@@ -61,6 +61,11 @@ export const envValidationSchema = Joi.object({
   AI_COMPLEXITY_THRESHOLD: Joi.number().default(10),
   AI_RETRY_DELAY_MINUTES: Joi.number().default(5),
   AI_ALERT_THRESHOLD_MINUTES: Joi.number().default(15),
+  AI_PRIMARY_PROVIDER: Joi.string()
+    .valid('CLAUDE_CODE', 'GEMINI', 'CODEX', 'KIMI')
+    .optional()
+    .allow('')
+    .description('Force routing all tickets to this provider, bypassing complexity scoring'),
 
   // Story 11.2: AI Decision Audit Configuration
   AI_CONFIDENCE_THRESHOLD: Joi.number()

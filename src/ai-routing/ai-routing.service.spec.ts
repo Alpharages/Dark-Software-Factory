@@ -8,9 +8,15 @@ import { ProviderHealthService } from './provider-health.service';
 import { PromptGeneratorService } from './prompt-generator.service';
 import { AIProvider } from '@/prisma/client';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
-import { IRoutingRequest, RoutingReason } from './interfaces';
 import { FileLockManagerService } from '../file-locks/file-lock-manager.service';
 import { BranchStrategistService } from '../github/services/branch-strategist.service';
+import { ProviderFactoryService } from './provider-factory.service';
+import {
+  IRoutingRequest,
+  RoutingReason,
+  ProviderSelectionReason,
+  ComplexityGrade,
+} from './interfaces';
 
 describe('AIRoutingService', () => {
   let service: AIRoutingService;
@@ -22,6 +28,8 @@ describe('AIRoutingService', () => {
     get: jest.fn((key: string, defaultValue: unknown) => {
       // Handle provider enabled checks
       if (key === 'ai.providers.claudeCode.enabled') return true;
+      if (key === 'ai.providers.kimi.enabled') return true;
+      if (key === 'ai.routing.primaryProvider') return null; // Default: no override
       // For all other config values, return default
       return defaultValue;
     }),
@@ -52,6 +60,10 @@ describe('AIRoutingService', () => {
 
   const mockPromptGenerator = {
     generatePrompt: jest.fn(),
+  };
+
+  const mockProviderFactory = {
+    selectProvider: jest.fn(),
   };
 
   const mockCounter = { inc: jest.fn() };
@@ -112,6 +124,7 @@ describe('AIRoutingService', () => {
           },
         },
         { provide: 'PROM_METRIC_DSF_TICKET_WAITING_LOCKS_TOTAL', useValue: mockCounter },
+        { provide: ProviderFactoryService, useValue: mockProviderFactory },
       ],
     }).compile();
 
@@ -125,9 +138,15 @@ describe('AIRoutingService', () => {
     jest.clearAllMocks();
   });
 
-  it('should route high complexity ticket to CLAUDE_CODE', async () => {
+  it('should route high complexity ticket (score >= 10) to CLAUDE_CODE', async () => {
     mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 15 });
-    mockConfigService.get.mockReturnValue(10); // Threshold
+    mockProviderFactory.selectProvider.mockResolvedValue({
+      primary: AIProvider.CLAUDE_CODE,
+      fallback: AIProvider.CODEX,
+      reason: ProviderSelectionReason.COMPLEXITY,
+      complexityScore: 15,
+      complexityGrade: ComplexityGrade.HIGH,
+    });
     mockProviderHealth.getAvailableProvider.mockResolvedValue({
       provider: AIProvider.CLAUDE_CODE,
       health: { isHealthy: true },
@@ -145,9 +164,78 @@ describe('AIRoutingService', () => {
     );
   });
 
-  it('should route low complexity ticket to CLAUDE_CODE', async () => {
-    mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 5 });
-    mockConfigService.get.mockReturnValue(10);
+  it('should route medium complexity ticket (5 <= score < 10) to CLAUDE_CODE', async () => {
+    mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 7 });
+    mockProviderFactory.selectProvider.mockResolvedValue({
+      primary: AIProvider.CLAUDE_CODE,
+      fallback: AIProvider.GEMINI,
+      reason: ProviderSelectionReason.COMPLEXITY,
+      complexityScore: 7,
+      complexityGrade: ComplexityGrade.MEDIUM,
+    });
+    mockProviderHealth.getAvailableProvider.mockResolvedValue({
+      provider: AIProvider.CLAUDE_CODE,
+      health: { isHealthy: true },
+    });
+    mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });
+
+    const decision = await service.routeTicket(mockRequest);
+
+    expect(decision.selectedProvider).toBe(AIProvider.CLAUDE_CODE);
+    expect(decision.routingReason).toBe(RoutingReason.COMPLEXITY_MEDIUM);
+  });
+
+  it('should route low complexity ticket (score < 5) to KIMI', async () => {
+    mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 3 });
+    mockProviderFactory.selectProvider.mockResolvedValue({
+      primary: AIProvider.KIMI,
+      fallback: AIProvider.CLAUDE_CODE,
+      reason: ProviderSelectionReason.COMPLEXITY,
+      complexityScore: 3,
+      complexityGrade: ComplexityGrade.LOW,
+    });
+    mockProviderHealth.getAvailableProvider.mockResolvedValue({
+      provider: AIProvider.KIMI,
+      health: { isHealthy: true },
+    });
+    mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });
+
+    const decision = await service.routeTicket(mockRequest);
+
+    expect(decision.selectedProvider).toBe(AIProvider.KIMI);
+    expect(decision.routingReason).toBe(RoutingReason.COMPLEXITY_LOW);
+  });
+
+  it('should honor primary provider override from factory/config', async () => {
+    mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 15 });
+    mockProviderFactory.selectProvider.mockResolvedValue({
+      primary: AIProvider.GEMINI,
+      fallback: null,
+      reason: ProviderSelectionReason.OVERRIDE,
+      complexityScore: 15,
+      complexityGrade: ComplexityGrade.HIGH,
+    });
+    mockProviderHealth.getAvailableProvider.mockResolvedValue({
+      provider: AIProvider.GEMINI,
+      health: { isHealthy: true },
+    });
+    mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });
+
+    const decision = await service.routeTicket(mockRequest);
+
+    expect(decision.selectedProvider).toBe(AIProvider.GEMINI);
+    expect(decision.routingReason).toBe(RoutingReason.EXPLICIT_OVERRIDE);
+  });
+
+  it('should route low complexity ticket (score < 5) with KIMI disabled to CLAUDE_CODE', async () => {
+    mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 3 });
+    mockProviderFactory.selectProvider.mockResolvedValue({
+      primary: AIProvider.CLAUDE_CODE,
+      fallback: null,
+      reason: ProviderSelectionReason.COMPLEXITY,
+      complexityScore: 3,
+      complexityGrade: ComplexityGrade.LOW,
+    });
     mockProviderHealth.getAvailableProvider.mockResolvedValue({
       provider: AIProvider.CLAUDE_CODE,
       health: { isHealthy: true },
@@ -162,6 +250,13 @@ describe('AIRoutingService', () => {
 
   it('should handle fallback when provider is unhealthy', async () => {
     mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 15 });
+    mockProviderFactory.selectProvider.mockResolvedValue({
+      primary: AIProvider.CLAUDE_CODE,
+      fallback: null,
+      reason: ProviderSelectionReason.COMPLEXITY,
+      complexityScore: 15,
+      complexityGrade: ComplexityGrade.HIGH,
+    });
     mockProviderHealth.getAvailableProvider.mockResolvedValue(null); // All unhealthy
     mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });
 
@@ -172,6 +267,13 @@ describe('AIRoutingService', () => {
 
   it('should queue for delayed retry when no provider is available', async () => {
     mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 10 });
+    mockProviderFactory.selectProvider.mockResolvedValue({
+      primary: AIProvider.CLAUDE_CODE,
+      fallback: null,
+      reason: ProviderSelectionReason.COMPLEXITY,
+      complexityScore: 10,
+      complexityGrade: ComplexityGrade.HIGH,
+    });
     mockProviderHealth.getAvailableProvider.mockResolvedValue(null); // No provider
     mockProviderHealth.shouldAlert.mockReturnValue(false);
     mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });

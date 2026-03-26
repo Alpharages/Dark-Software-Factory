@@ -143,18 +143,21 @@ describe('OrchestratorService', () => {
     it('should fallback when primary fails with retryable error', async () => {
       providerFactory.selectProvider.mockResolvedValue({
         primary: AIProvider.CLAUDE_CODE,
-        fallback: null,
+        fallback: AIProvider.GEMINI,
         reason: ProviderSelectionReason.COMPLEXITY,
-        complexityScore: 12,
-        complexityGrade: ComplexityGrade.HIGH,
+        complexityScore: 7,
+        complexityGrade: ComplexityGrade.MEDIUM,
       });
 
-      providerFactory.getCodingProvider.mockReturnValue({
-        providerName: 'claude-code',
-        isEnabled: true,
-        execute: jest.fn(),
-        isHealthy: jest.fn().mockResolvedValue(true),
-      } as any);
+      providerFactory.getCodingProvider.mockImplementation(
+        (name) =>
+          ({
+            providerName: name,
+            isEnabled: true,
+            execute: jest.fn(),
+            isHealthy: jest.fn().mockResolvedValue(true),
+          }) as any,
+      );
 
       fallbackStrategy.executeWithFallbackCodingProvider.mockResolvedValue({
         result: {
@@ -165,14 +168,14 @@ describe('OrchestratorService', () => {
           durationMs: 45000,
           workspacePath: '/tmp/workspace',
         },
-        executedBy: AIProvider.CLAUDE_CODE,
+        executedBy: AIProvider.GEMINI,
         usedFallback: true,
         fallbackAttempts: [
           {
-            provider: AIProvider.GEMINI,
+            provider: AIProvider.CLAUDE_CODE,
             error: 'Timeout',
             wasRetryable: true,
-            durationMs: 300000,
+            durationMs: 30000,
             timestamp: new Date(),
           },
         ],
@@ -181,10 +184,50 @@ describe('OrchestratorService', () => {
       const result = await service.execute(mockInput);
 
       expect(result.success).toBe(true);
-      expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.executedBy).toBe(AIProvider.GEMINI);
       expect(result.usedFallback).toBe(true);
       expect(result.fallbackAttempts).toHaveLength(1);
-      expect(result.fallbackAttempts[0].provider).toBe(AIProvider.GEMINI);
+      expect(result.fallbackAttempts[0].provider).toBe(AIProvider.CLAUDE_CODE);
+    });
+
+    it('should execute with KIMI for low complexity tasks', async () => {
+      providerFactory.selectProvider.mockResolvedValue({
+        primary: AIProvider.KIMI,
+        fallback: AIProvider.CLAUDE_CODE,
+        reason: ProviderSelectionReason.COMPLEXITY,
+        complexityScore: 3,
+        complexityGrade: ComplexityGrade.LOW,
+      });
+
+      providerFactory.getCodingProvider.mockImplementation(
+        (name) =>
+          ({
+            providerName: name,
+            isEnabled: true,
+            execute: jest.fn(),
+            isHealthy: jest.fn().mockResolvedValue(true),
+          }) as any,
+      );
+
+      fallbackStrategy.executeWithFallbackCodingProvider.mockResolvedValue({
+        result: {
+          success: true,
+          codeDiff: 'diff',
+          filesChanged: ['src/feat.ts'],
+          confidenceScore: 0.9,
+          durationMs: 10000,
+          workspacePath: '/tmp/ws',
+        },
+        executedBy: AIProvider.KIMI,
+        usedFallback: false,
+        fallbackAttempts: [],
+      });
+
+      const result = await service.execute(mockInput);
+
+      expect(result.success).toBe(true);
+      expect(result.executedBy).toBe(AIProvider.KIMI);
+      expect(result.usedFallback).toBe(false);
     });
 
     it('should handle complete failure when both providers fail', async () => {

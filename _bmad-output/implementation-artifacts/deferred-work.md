@@ -70,3 +70,7 @@
 ## Deferred from: code review of os-4-3-openai-codex-kimi-cli-providers (2026-03-26)
 
 - **Story 5.5 `OPENAI_API_KEY` Joi description silently dropped** — The original Joi definition (line ~347 of `env.validation.ts`) included `.messages()` and `.description()` documenting its use for Whisper transcription and GPT-4 analysis (Story 5.5). The new definition added by OS-4.3 is functionally equivalent but loses that context. The env var is now shared between two features (Codex provider and Conversations). Document intent and consolidate in OS-5.1 config cleanup. [`src/config/env.validation.ts`]
+
+## Deferred from: code review of os-4-4-multi-provider-ai-routing-service-complexity-strategy (2026-03-27)
+
+- **Override path uses hardcoded `MEDIUM` grade for `getFallbackFor`** — When `AI_PRIMARY_PROVIDER` overrides routing, `getFallbackFor(provider, ComplexityGrade.MEDIUM)` is called regardless of actual ticket complexity. A `CLAUDE_CODE` override on a HIGH-complexity ticket gets `GEMINI` as fallback instead of `CODEX`. Addressing this requires surfacing complexity grade into the override path, which would require interface changes out of scope for OS-4. Consider in OS-5 config/routing cleanup. [`src/ai-routing/provider-factory.service.ts:92`]
