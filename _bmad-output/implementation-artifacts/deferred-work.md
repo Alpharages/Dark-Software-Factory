@@ -74,3 +74,7 @@
 ## Deferred from: code review of os-4-4-multi-provider-ai-routing-service-complexity-strategy (2026-03-27)
 
 - **Override path uses hardcoded `MEDIUM` grade for `getFallbackFor`** — When `AI_PRIMARY_PROVIDER` overrides routing, `getFallbackFor(provider, ComplexityGrade.MEDIUM)` is called regardless of actual ticket complexity. A `CLAUDE_CODE` override on a HIGH-complexity ticket gets `GEMINI` as fallback instead of `CODEX`. Addressing this requires surfacing complexity grade into the override path, which would require interface changes out of scope for OS-4. Consider in OS-5 config/routing cleanup. [`src/ai-routing/provider-factory.service.ts:92`]
+
+## Deferred from: code review of os-4-5-ai-routing-config-global-and-project-overrides (2026-03-27)
+
+- **Unrelated seed change — `CURSOR_HEADLESS` → `CLAUDE_CODE` in sample execution/cost records** — This change is outside OS-4.5 scope and modifies sample data seeded for demonstration. Should be reviewed and reconciled in a dedicated seed cleanup story or OS-5.1 config cleanup. [`prisma/seed.ts:66,82`]

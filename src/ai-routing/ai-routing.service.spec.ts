@@ -6,6 +6,7 @@ import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
 import { PromptGeneratorService } from './prompt-generator.service';
+import { AiRoutingConfigService } from './ai-routing-config.service';
 import { AIProvider } from '@/prisma/client';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { FileLockManagerService } from '../file-locks/file-lock-manager.service';
@@ -64,6 +65,20 @@ describe('AIRoutingService', () => {
 
   const mockProviderFactory = {
     selectProvider: jest.fn(),
+  };
+
+  const mockAiRoutingConfig = {
+    getEffectiveConfig: jest.fn().mockResolvedValue({
+      primaryProviderOverride: null,
+      complexityThresholdMedium: 10,
+      complexityThresholdHigh: 40,
+      tierLowPrimary: AIProvider.KIMI,
+      tierLowFallback: AIProvider.CLAUDE_CODE,
+      tierMediumPrimary: AIProvider.CLAUDE_CODE,
+      tierMediumFallback: AIProvider.GEMINI,
+      tierHighPrimary: AIProvider.CLAUDE_CODE,
+      tierHighFallback: AIProvider.CODEX,
+    }),
   };
 
   const mockCounter = { inc: jest.fn() };
@@ -125,6 +140,7 @@ describe('AIRoutingService', () => {
         },
         { provide: 'PROM_METRIC_DSF_TICKET_WAITING_LOCKS_TOTAL', useValue: mockCounter },
         { provide: ProviderFactoryService, useValue: mockProviderFactory },
+        { provide: AiRoutingConfigService, useValue: mockAiRoutingConfig },
       ],
     }).compile();
 

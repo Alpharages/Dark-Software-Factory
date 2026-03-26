@@ -27,6 +27,7 @@ model Project {
   coverage_baseline     CoverageBaseline?
   coverage_config       ProjectCoverageConfig?
   quality_gate_config   QualityGateConfig?
+  ai_routing_config     AiRoutingConfig?
   reports               Report[]
   tickets               Ticket[]
   github_account_id     String?                @map("github_account_id")
@@ -656,6 +657,7 @@ model User {
   quality_gate_history         QualityGateConfigHistory[]
   quality_gate_configs_created QualityGateConfig[]        @relation("QualityGateConfigCreatedBy")
   quality_gate_configs_updated QualityGateConfig[]        @relation("QualityGateConfigUpdatedBy")
+  ai_routing_configs_updated   AiRoutingConfig[]          @relation("AiRoutingConfigUpdatedBy")
   refreshTokens                RefreshToken[]
   invitations                  UserInvitation[]           @relation("InvitedBy")
   manager                      User?                      @relation("ManagerTeam", fields: [managed_by_id], references: [id])
@@ -986,6 +988,30 @@ model QualityGateConfigHistory {
   @@index([projectId])
   @@index([changedAt])
   @@map("quality_gate_config_history")
+}
+
+model AiRoutingConfig {
+  id                        String      @id @default(uuid())
+  projectId                 String?     @unique
+  // Null projectId = global singleton. Non-null = project-level override.
+  // All routing fields are nullable: null means "inherit from global / use hardcoded default".
+  primaryProviderOverride   AIProvider?
+  complexityThresholdMedium Int?
+  complexityThresholdHigh   Int?
+  tierLowPrimary            AIProvider?
+  tierLowFallback           AIProvider?
+  tierMediumPrimary         AIProvider?
+  tierMediumFallback        AIProvider?
+  tierHighPrimary           AIProvider?
+  tierHighFallback          AIProvider?
+  updatedById               String
+  createdAt                 DateTime    @default(now())
+  updatedAt                 DateTime    @updatedAt
+  project                   Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  updatedBy                 User        @relation("AiRoutingConfigUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([projectId])
+  @@map("ai_routing_configs")
 }
 
 model QualityAnomaly {

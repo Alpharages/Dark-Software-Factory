@@ -6,6 +6,7 @@ import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service'
 import { QUEUE_NAMES, ROUTING_KEYS, EXCHANGE_NAMES } from '@/rabbitmq/rabbitmq.config';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
+import { AiRoutingConfigService } from './ai-routing-config.service';
 import { PromptGeneratorService } from './prompt-generator.service';
 import {
   IRoutingRequest,
@@ -53,6 +54,8 @@ export class AIRoutingService {
     private readonly waitingLocksCounter: Counter<string>,
     // Story OS-4.4: Multi-Provider Routing
     private readonly providerFactory: ProviderFactoryService,
+    // Story OS-4.5: AI Routing Configuration
+    private readonly aiRoutingConfigService: AiRoutingConfigService,
   ) {}
 
   /**
@@ -79,7 +82,10 @@ export class AIRoutingService {
         );
       }
 
-      // 2. Calculate complexity once — used for both routing decision and DB persistence
+      // 2. Fetch effective AI routing configuration
+      const routingConfig = await this.aiRoutingConfigService.getEffectiveConfig(request.projectId);
+
+      // 3. Calculate complexity once — used for both routing decision and DB persistence
       const complexityBreakdown = this.complexityScorer.calculateComplexity(request, correlationId);
 
       // 3. Select preferred provider, passing pre-calculated score to avoid double computation
@@ -93,6 +99,7 @@ export class AIRoutingService {
         acceptanceCriteria: request.acceptanceCriteria,
         tags: request.tags,
         preCalculatedComplexity: complexityBreakdown.totalScore,
+        routingConfig,
       });
 
       const preferredProvider = selection.primary;

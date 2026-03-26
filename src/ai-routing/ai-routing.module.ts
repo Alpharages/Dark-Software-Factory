@@ -8,6 +8,8 @@ import {
 import { AIRoutingService } from './ai-routing.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
+import { AiRoutingConfigService } from './ai-routing-config.service';
+import { AiRoutingConfigController } from './ai-routing-config.controller';
 import { AIRoutingConsumer } from './ai-routing.consumer';
 // Story 2.4: Prompt generation imports
 import { PromptGeneratorService } from './prompt-generator.service';
@@ -58,12 +60,13 @@ import { AIProvidersController } from './ai-providers.controller';
     forwardRef(() => ExecutionModule),
     SystemConfigModule,
   ],
-  controllers: [AIProvidersController],
+  controllers: [AIProvidersController, AiRoutingConfigController],
   providers: [
     // Story 2.3: Routing services
     AIRoutingService,
     ComplexityScorerService,
     ProviderHealthService,
+    AiRoutingConfigService,
     AIRoutingConsumer,
 
     // Story 2.4: Prompt generation services
@@ -200,6 +203,7 @@ import { AIProvidersController } from './ai-providers.controller';
     AIRoutingService,
     ComplexityScorerService,
     ProviderHealthService,
+    AiRoutingConfigService,
     // Story 2.4: Prompt generation exports
     PromptGeneratorService,
     ClaudeCodePromptBuilder,

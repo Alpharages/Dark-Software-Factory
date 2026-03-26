@@ -23,6 +23,7 @@ import {
 import { AIExecutionService } from './ai-execution.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { IRoutingRequest } from './interfaces/ai-routing.interface';
+import { EffectiveAiRoutingConfigDto } from './dto/ai-routing-config.dto';
 import { ICodingAgentProvider } from './interfaces/coding-agent-provider.interface';
 import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 import { ClaudeCodeProvider } from './providers/claude-code.provider';
@@ -109,18 +110,19 @@ export class ProviderFactoryService {
       complexityScore = complexityResult.totalScore;
     }
 
-    // Determine grade
-    const grade = this.getComplexityGrade(complexityScore);
+    // Determine grade using dynamic thresholds if available
+    const grade = this.getComplexityGrade(complexityScore, input.routingConfig);
 
     // Check provider availability
     const claudeAvailable = await this.aiExecution.isProviderAvailable(AIProvider.CLAUDE_CODE);
 
-    // Select based on availability and complexity
+    // Select based on availability, complexity, and dynamic config
     const selection = this.selectByComplexityAndAvailability(
       correlationId,
       complexityScore,
       grade,
       claudeAvailable,
+      input.routingConfig,
     );
 
     this.logger.log(
@@ -158,11 +160,14 @@ export class ProviderFactoryService {
   /**
    * Determine complexity grade from score
    */
-  private getComplexityGrade(score: number): ComplexityGrade {
-    if (score >= this.HIGH_COMPLEXITY_THRESHOLD) {
+  private getComplexityGrade(score: number, config?: EffectiveAiRoutingConfigDto): ComplexityGrade {
+    const highThreshold = config?.complexityThresholdHigh ?? this.HIGH_COMPLEXITY_THRESHOLD;
+    const mediumThreshold = config?.complexityThresholdMedium ?? this.MEDIUM_COMPLEXITY_THRESHOLD;
+
+    if (score >= highThreshold) {
       return ComplexityGrade.HIGH;
     }
-    if (score >= this.MEDIUM_COMPLEXITY_THRESHOLD) {
+    if (score >= mediumThreshold) {
       return ComplexityGrade.MEDIUM;
     }
     return ComplexityGrade.LOW;
@@ -176,6 +181,7 @@ export class ProviderFactoryService {
     score: number,
     grade: ComplexityGrade,
     claudeAvailable: boolean,
+    config?: EffectiveAiRoutingConfigDto,
   ): IProviderSelection {
     const claudeEnabled = this.config.get<boolean>('ai.providers.claudeCode.enabled', false);
     if (!claudeEnabled) {
@@ -187,32 +193,39 @@ export class ProviderFactoryService {
     const codexEnabled = this.config.get<boolean>('ai.providers.codex.enabled', false);
     const kimiEnabled = this.config.get<boolean>('ai.providers.kimi.enabled', false);
 
-    // Tier 1: Low Complexity (< 5)
-    if (grade === ComplexityGrade.LOW && kimiEnabled) {
+    // Tier 1: Low Complexity
+    if (grade === ComplexityGrade.LOW) {
+      const primary =
+        config?.tierLowPrimary ?? (kimiEnabled ? AIProvider.KIMI : AIProvider.CLAUDE_CODE);
+      const fallback = config?.tierLowFallback ?? (claudeAvailable ? AIProvider.CLAUDE_CODE : null);
       return {
-        primary: AIProvider.KIMI,
-        fallback: claudeAvailable ? AIProvider.CLAUDE_CODE : null,
+        primary,
+        fallback,
         reason: ProviderSelectionReason.COMPLEXITY,
         complexityScore: score,
         complexityGrade: grade,
       };
     }
 
-    // Tier 3: High Complexity (>= 10)
+    // Tier 3: High Complexity
     if (grade === ComplexityGrade.HIGH) {
+      const primary = config?.tierHighPrimary ?? AIProvider.CLAUDE_CODE;
+      const fallback = config?.tierHighFallback ?? (codexEnabled ? AIProvider.CODEX : null);
       return {
-        primary: AIProvider.CLAUDE_CODE,
-        fallback: codexEnabled ? AIProvider.CODEX : null,
+        primary,
+        fallback,
         reason: ProviderSelectionReason.COMPLEXITY,
         complexityScore: score,
         complexityGrade: grade,
       };
     }
 
-    // Tier 2: Medium (5 <= score < 10) or Fallback for Tier 1
+    // Tier 2: Medium (or default fallback)
+    const primary = config?.tierMediumPrimary ?? AIProvider.CLAUDE_CODE;
+    const fallback = config?.tierMediumFallback ?? (geminiEnabled ? AIProvider.GEMINI : null);
     return {
-      primary: AIProvider.CLAUDE_CODE,
-      fallback: geminiEnabled ? AIProvider.GEMINI : null,
+      primary,
+      fallback,
       reason: ProviderSelectionReason.COMPLEXITY,
       complexityScore: score,
       complexityGrade: grade,

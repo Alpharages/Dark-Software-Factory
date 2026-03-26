@@ -7,6 +7,7 @@
 
 import { AIProvider } from '@/prisma/client';
 import { IAIExecutionInput, IAIExecutionResult } from './ai-provider.interface';
+import { EffectiveAiRoutingConfigDto } from '../dto/ai-routing-config.dto';
 
 /**
  * Provider selection result
@@ -87,6 +88,9 @@ export interface IOrchestrationInput extends IAIExecutionInput {
 
   /** Acceptance criteria text */
   acceptanceCriteria?: string;
+
+  /** Dynamic Routing Configuration (OS-4.5) */
+  routingConfig?: EffectiveAiRoutingConfigDto;
 }
 
 /**

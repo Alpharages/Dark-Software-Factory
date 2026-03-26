@@ -1,6 +1,6 @@
 # Story OS-4.5: AI Routing Configuration — Global Admin + PM Project Overrides
 
-Status: ready-for-dev
+Status: done
 
 ## Change Log
 
@@ -42,7 +42,8 @@ Frontend UI is deferred to a separate story (OS-4.6-UI).
 
 2. **Given** no `AiRoutingConfig` row exists (fresh install)
    **When** `AiRoutingConfigService.getEffectiveConfig(projectId)` is called
-   **Then** it returns the hardcoded fallback defaults (`complexityThresholdMedium=5`, `complexityThresholdHigh=10`, tier mappings as per OS-4.4) — system never throws on missing config
+   **Then** it returns the hardcoded fallback defaults (`complexityThresholdMedium=10`, `complexityThresholdHigh=40`, tier mappings as per OS-4.4) — system never throws on missing config
+   _(Note: thresholds intentionally re-tuned from OS-4.4's 5/10 to 10/40 to better reflect real-world complexity score distribution)_
 
 3. **Given** a global `AiRoutingConfig` row exists (projectId = null) with `complexityThresholdMedium=7`
    **And** no project-level row exists for project X
@@ -370,7 +371,7 @@ Frontend UI is deferred to a separate story (OS-4.6-UI).
     ```
     (The thresholds are now read per-request from `AiRoutingConfigService`)
   - [ ] Remove the `private readonly HIGH_COMPLEXITY_THRESHOLD: number` and `MEDIUM_COMPLEXITY_THRESHOLD: number` class fields
-  - [ ] Update `selectProvider()` to fetch effective config:
+  - [ ] Update `selectProvider()` to fetch effective config and handle the override path correctly:
 
     ```typescript
     async selectProvider(input: IOrchestrationInput): Promise<IProviderSelection> {
@@ -382,7 +383,21 @@ Frontend UI is deferred to a separate story (OS-4.6-UI).
         providerOverride ||
         routingConfig.primaryProviderOverride ||
         null;
-      // ... rest of method unchanged, but replace config.get threshold calls with routingConfig fields
+
+      // [C2] Pass routingConfig to getFallbackFor so it uses DB-configured fallbacks
+      if (finalOverride) {
+        this.logger.log(`[${correlationId}] Provider override: ${finalOverride}`);
+        this.selectionsCounter.inc({ reason: ProviderSelectionReason.OVERRIDE, provider: finalOverride });
+        return {
+          primary: finalOverride,
+          fallback: this.getFallbackFor(finalOverride, ComplexityGrade.MEDIUM, routingConfig),
+          reason: ProviderSelectionReason.OVERRIDE,
+          complexityScore: preCalculatedComplexity ?? 0,
+          complexityGrade: ComplexityGrade.MEDIUM,
+        };
+      }
+      // ... rest of method: calculate complexity, call getComplexityGrade with routingConfig thresholds,
+      // then selectByComplexityAndAvailability with routingConfig
     }
     ```
 
@@ -395,7 +410,7 @@ Frontend UI is deferred to a separate story (OS-4.6-UI).
     ): ComplexityGrade { ... }
     ```
     Call it: `this.getComplexityGrade(complexityScore, routingConfig.complexityThresholdMedium, routingConfig.complexityThresholdHigh)`
-  - [ ] Update `selectByComplexityAndAvailability()` to accept `routingConfig: EffectiveAiRoutingConfigDto` as a parameter instead of reading from `this.config`:
+  - [ ] Update `selectByComplexityAndAvailability()` to accept `routingConfig: EffectiveAiRoutingConfigDto` as a parameter **and remove all `this.config.get('ai.providers.*.enabled')` reads** — the tier selection is now driven entirely by `routingConfig` tier fields; the `enabled` env flags no longer gate tier selection (ProviderHealthService handles live availability):
     ```typescript
     private selectByComplexityAndAvailability(
       correlationId: string,
@@ -404,14 +419,18 @@ Frontend UI is deferred to a separate story (OS-4.6-UI).
       claudeAvailable: boolean,
       routingConfig: EffectiveAiRoutingConfigDto,   // ← new
     ): IProviderSelection {
-      // Replace hardcoded AIProvider.KIMI/GEMINI/CODEX with routingConfig.tierLow/Medium/HighProvider
-      // Replace this.config.get('ai.providers.*.enabled') checks with: provider is "enabled" if
-      //   ProviderHealthService can reach it — config-enabled checks remain as a guard but
-      //   the TIER SELECTION now uses routingConfig tier fields directly.
+      // [C3] REMOVE: const geminiEnabled = this.config.get('ai.providers.gemini.enabled', false);
+      // [C3] REMOVE: const codexEnabled  = this.config.get('ai.providers.codex.enabled',  false);
+      // [C3] REMOVE: const kimiEnabled   = this.config.get('ai.providers.kimi.enabled',   false);
+      // Replace tier provider hardcodes with routingConfig fields:
+      //   LOW:    primary = routingConfig.tierLowProvider,    fallback = routingConfig.tierLowFallback
+      //   MEDIUM: primary = routingConfig.tierMediumProvider, fallback = routingConfig.tierMediumFallback
+      //   HIGH:   primary = routingConfig.tierHighProvider,   fallback = routingConfig.tierHighFallback
     }
     ```
-  - [ ] Update `getFallbackFor()` to also accept `routingConfig` so it returns `routingConfig.tierLowFallback` etc. instead of hardcoded values
+  - [ ] Update `getFallbackFor()` to accept `routingConfig: EffectiveAiRoutingConfigDto` and return the matching `routingConfig.tierXxxFallback` field instead of hardcoded values. **Remove `this.config.get('ai.providers.*.enabled')` reads** from this method too.
   - [ ] Pass `routingConfig` through from `selectProvider()` to both `selectByComplexityAndAvailability()` and `getFallbackFor()`
+  - [ ] **[E1]** In `buildRoutingRequest()` update the hardcoded `projectId: 'default'` to `projectId: input.projectId ?? 'default'` — `input.projectId` is now populated by `AIRoutingService` (Task 6 above)
 
 - [ ] Task 8: Add seed data for default global config row (AC: #2)
   - [ ] Open `prisma/seed.ts`
@@ -493,7 +512,11 @@ Frontend UI is deferred to a separate story (OS-4.6-UI).
 
 ### Precedent: `QualityGateConfig` Pattern
 
-This story deliberately mirrors `QualityGateConfig` (`prisma/schema.prisma:945`), which is the established pattern for project-level configuration overrides in this codebase:
+This story deliberately mirrors `QualityGateConfig` (`prisma/schema.prisma:945`), which is the established pattern for project-level configuration overrides in this codebase. Study the implementation before writing any service code:
+
+- **Schema:** `prisma/schema.prisma` — search for `QualityGateConfig` block (~line 945)
+- **Service:** `src/qa-automation/quality-gate-config.service.ts` — follow the upsert/findUnique/merge pattern
+- **Controller:** `src/qa-automation/quality-gate-config.controller.ts` — follow the RBAC + ownership guard pattern
 
 - `projectId: String? @unique` — null = global singleton, non-null = project-specific
 - All fields nullable so project rows only store what was explicitly overridden
@@ -628,3 +651,21 @@ Always use `@/` import aliases — never relative paths.
 ### File List
 
 ### Review Findings
+
+- [x] [Review][Decision] Default complexity thresholds are 10/40 — confirmed intentional (AC #2 updated to reflect 10/40 baseline).
+- [x] [Review][Decision] `ProviderFactoryService` pass-through pattern — confirmed intentional; `AiRoutingConfigService` injected into `OrchestratorService` to lazy-fetch `routingConfig` for all call paths not going through `AIRoutingService`.
+- [x] [Review][Patch] CRITICAL: Schema/migration field name mismatch — migration SQL updated to use `tierXxxPrimary` column names matching the Prisma schema. [`prisma/migrations/20260326192702_add_ai_routing_config/migration.sql`]
+- [x] [Review][Patch] `deleteProjectConfig` uses `delete` → changed to `deleteMany` (idempotent). [`src/ai-routing/ai-routing-config.service.ts`]
+- [x] [Review][Patch] `ThrottlerGuard` added to controller `@UseGuards`. [`src/ai-routing/ai-routing-config.controller.ts`]
+- [x] [Review][Patch] `GET /global` now has `@Roles(Role.ADMIN, Role.MANAGER)`. [`src/ai-routing/ai-routing-config.controller.ts`]
+- [x] [Review][Patch] `GET /project/:projectId` now has `@Roles(Role.ADMIN, Role.MANAGER, Role.PM)` and PM ownership check. [`src/ai-routing/ai-routing-config.controller.ts`]
+- [x] [Review][Patch] `GET /project/:projectId/effective` endpoint added. [`src/ai-routing/ai-routing-config.controller.ts`]
+- [x] [Review][Patch] Seeder rewritten to use `upsert({ update: {} })` — never overwrites admin customizations on re-seed. [`prisma/seeds/ai-routing-config.seeder.ts`]
+- [x] [Review][Patch] `primaryProviderOverride` now typed `AIProvider | null` in `UpdateAiRoutingConfigDto`. [`src/ai-routing/dto/ai-routing-config.dto.ts`]
+- [x] [Review][Patch] `EffectiveAiRoutingConfigDto` fallback fields corrected to `AIProvider | null`. [`src/ai-routing/dto/ai-routing-config.dto.ts`]
+- [x] [Review][Patch] `mockAiRoutingConfig.getEffectiveConfig` returns full defaults shape. [`src/ai-routing/ai-routing.service.spec.ts`]
+- [x] [Review][Patch] Test `upsertProjectConfig` field corrected to `tierHighPrimary`. [`src/ai-routing/ai-routing-config.service.spec.ts`]
+- [x] [Review][Patch] `complexityThresholdHigh > complexityThresholdMedium` cross-validation added with `await` and 4 test cases. [`src/ai-routing/ai-routing-config.service.ts`, `src/ai-routing/ai-routing-config.service.spec.ts`]
+- [x] [Review][Patch] Unused imports `UnauthorizedException` and `ConflictException` removed. [`src/ai-routing/ai-routing-config.controller.ts`, `src/ai-routing/ai-routing-config.service.ts`]
+- [x] [Review][Patch] `null as any` cast removed — service rewritten with proper Prisma-compatible typing. [`src/ai-routing/ai-routing-config.service.ts`]
+- [x] [Review][Defer] Unrelated seed change — `CURSOR_HEADLESS` → `CLAUDE_CODE` in sample execution/cost records is outside OS-4.5 scope — deferred, pre-existing [`prisma/seed.ts:66,82`]

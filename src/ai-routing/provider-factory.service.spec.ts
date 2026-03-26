@@ -271,6 +271,27 @@ describe('ProviderFactoryService', () => {
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(result.fallback).toBeNull();
     });
+
+    it('should respect thresholds and provider mappings from routingConfig if provided', async () => {
+      const inputWithConfig: IOrchestrationInput = {
+        ...baseInput,
+        routingConfig: {
+          complexityThresholdHigh: 50,
+          complexityThresholdMedium: 20,
+          tierHighPrimary: AIProvider.GEMINI,
+          tierMediumPrimary: AIProvider.CLAUDE_CODE,
+          tierLowPrimary: AIProvider.KIMI,
+        } as any,
+      };
+
+      complexityScorer.calculateComplexity.mockReturnValue({ totalScore: 45 } as any);
+      aiExecution.isProviderAvailable.mockResolvedValue(true);
+
+      const result = await service.selectProvider(inputWithConfig);
+
+      expect(result.complexityGrade).toBe(ComplexityGrade.MEDIUM);
+      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
+    });
   });
 
   describe('getAllProvidersAvailability', () => {

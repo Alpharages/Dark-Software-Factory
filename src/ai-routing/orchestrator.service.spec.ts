@@ -12,6 +12,7 @@ import { AIExecutionService } from './ai-execution.service';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { AdrParserService } from './adr-parser.service';
 import { AdrService } from '../architecture-review/adr.service';
+import { AiRoutingConfigService } from './ai-routing-config.service';
 import {
   IOrchestrationInput,
   ProviderSelectionReason,
@@ -70,6 +71,20 @@ describe('OrchestratorService', () => {
       create: jest.fn(),
     };
 
+    const mockAiRoutingConfigService = {
+      getEffectiveConfig: jest.fn().mockResolvedValue({
+        primaryProviderOverride: null,
+        complexityThresholdMedium: 10,
+        complexityThresholdHigh: 40,
+        tierLowPrimary: AIProvider.KIMI,
+        tierLowFallback: AIProvider.CLAUDE_CODE,
+        tierMediumPrimary: AIProvider.CLAUDE_CODE,
+        tierMediumFallback: AIProvider.GEMINI,
+        tierHighPrimary: AIProvider.CLAUDE_CODE,
+        tierHighFallback: AIProvider.CODEX,
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrchestratorService,
@@ -79,6 +94,7 @@ describe('OrchestratorService', () => {
         { provide: AIDecisionLoggerService, useValue: mockAIDecisionLoggerService },
         { provide: AdrParserService, useValue: mockAdrParserService },
         { provide: AdrService, useValue: mockAdrService },
+        { provide: AiRoutingConfigService, useValue: mockAiRoutingConfigService },
         { provide: 'PROM_METRIC_ORCHESTRATOR_EXECUTIONS_TOTAL', useValue: mockMetrics },
         {
           provide: 'PROM_METRIC_ORCHESTRATOR_EXECUTION_DURATION_SECONDS',
@@ -136,7 +152,9 @@ describe('OrchestratorService', () => {
       expect(result.usedFallback).toBe(false);
       expect(result.filesChanged).toEqual(['src/utils.ts']);
       expect(result.confidenceScore).toBe(0.85);
-      expect(providerFactory.selectProvider).toHaveBeenCalledWith(mockInput);
+      expect(providerFactory.selectProvider).toHaveBeenCalledWith(
+        expect.objectContaining(mockInput),
+      );
       expect(fallbackStrategy.executeWithFallbackCodingProvider).toHaveBeenCalled();
     });
 
@@ -337,7 +355,9 @@ describe('OrchestratorService', () => {
 
       expect(result.success).toBe(true);
       expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
-      expect(providerFactory.selectProvider).toHaveBeenCalledWith(inputWithOverride);
+      expect(providerFactory.selectProvider).toHaveBeenCalledWith(
+        expect.objectContaining(inputWithOverride),
+      );
       expect(fallbackStrategy.executeWithFallbackCodingProvider).toHaveBeenCalled();
     });
   });

@@ -10,6 +10,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { AIProvider } from '@/prisma/client';
+import { AiRoutingConfigService } from './ai-routing-config.service';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import {
@@ -49,6 +50,7 @@ export class OrchestratorService {
     private readonly aiDecisionLogger: AIDecisionLoggerService, // Story 11.4
     private readonly adrParser: AdrParserService, // Story 7.1
     private readonly adrService: AdrService, // Story 7.1
+    private readonly aiRoutingConfigService: AiRoutingConfigService, // Story OS-4.5
     @InjectMetric('orchestrator_executions_total')
     private readonly executionsCounter: Counter<string>,
     @InjectMetric('orchestrator_execution_duration_seconds')
@@ -106,8 +108,13 @@ export class OrchestratorService {
     this.logger.log(`[${correlationId}] Orchestrating AI execution for ticket ${ticketId}`);
 
     try {
-      // 1. Select provider via AI routing (Delegate to factory which handles overrides & fallbacks)
-      const selection = await this.providerFactory.selectProvider(input);
+      // 1. Ensure routingConfig is resolved — callers that don't pre-fetch it get it here (OS-4.5)
+      const routingConfig =
+        input.routingConfig ??
+        (await this.aiRoutingConfigService.getEffectiveConfig(input.projectId || undefined));
+
+      // 2. Select provider via AI routing (Delegate to factory which handles overrides & fallbacks)
+      const selection = await this.providerFactory.selectProvider({ ...input, routingConfig });
 
       this.logger.log(
         `[${correlationId}] Provider selected: primary=${selection.primary}, ` +

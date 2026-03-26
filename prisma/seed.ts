@@ -1,6 +1,7 @@
 import { PrismaClient, TicketStatus, AIProvider, ExecutionStatus } from '@prisma/client';
 import { seedAdminUser } from './seeds/admin.seeder';
 import { seedSystemConfig } from './seeds/system-config.seeder';
+import { seedAiRoutingConfig } from './seeds/ai-routing-config.seeder';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
@@ -20,6 +21,9 @@ async function main() {
 
     // Seed System Configs
     await seedSystemConfig(prisma);
+
+    // Seed AI Routing Configs
+    await seedAiRoutingConfig(prisma, admin.id);
 
     // Create sample project (idempotent)
     await prisma.project.upsert({
@@ -59,7 +63,7 @@ async function main() {
         const execution = await prisma.execution.create({
             data: {
                 ticket_id: ticket.id,
-                ai_provider: AIProvider.CURSOR_HEADLESS,
+                ai_provider: AIProvider.CLAUDE_CODE,
                 prompt: 'Implement JWT authentication...',
                 status: ExecutionStatus.COMPLETED,
                 confidence_score: 0.92,
@@ -75,7 +79,7 @@ async function main() {
         const costRecord = await prisma.costRecord.create({
             data: {
                 ticket_id: ticket.id,
-                ai_provider: AIProvider.CURSOR_HEADLESS,
+                ai_provider: AIProvider.CLAUDE_CODE,
                 operation_type: 'code_generation',
                 tokens_used: 1500,
                 api_calls: 1,
