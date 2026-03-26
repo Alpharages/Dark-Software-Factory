@@ -63,7 +63,6 @@ export class OrchestratorService {
   private mapAIProviderToProviderName(provider: AIProvider): ProviderName | undefined {
     const map: Partial<Record<string, ProviderName>> = {
       [AIProvider.CLAUDE_CODE]: ProviderName.CLAUDE_CODE,
-      // CURSOR_HEADLESS added in OS-4
     };
     // eslint-disable-next-line security/detect-object-injection
     return map[provider];
@@ -135,38 +134,32 @@ export class OrchestratorService {
         const enabledFallback = fallbackCodingProvider?.isEnabled ? fallbackCodingProvider : null;
 
         // Use FallbackStrategyService for unified fallback behavior (OS-2.3)
-        const fallbackResult = await this.fallbackStrategy.executeWithFallbackCodingProvider(
+        executionResult = await this.fallbackStrategy.executeWithFallbackCodingProvider(
           codingProvider,
           enabledFallback,
           payload,
         );
-
-        const totalDurationMs = Date.now() - startTime;
-        this.trackExecution(fallbackResult, totalDurationMs);
-
-        return {
-          success: fallbackResult.result.success,
-          executedBy: fallbackResult.executedBy,
-          usedFallback: fallbackResult.usedFallback,
-          codeDiff: fallbackResult.result.codeDiff,
-          filesChanged: fallbackResult.result.filesChanged,
-          confidenceScore: fallbackResult.result.confidenceScore,
-          durationMs: fallbackResult.result.durationMs,
-          totalDurationMs,
-          workspacePath: fallbackResult.result.workspacePath,
-          fallbackAttempts: fallbackResult.fallbackAttempts,
-          estimatedCostCents: this.estimateCost(fallbackResult.executedBy, totalDurationMs),
-          error: fallbackResult.result.error,
-          tokensInput: fallbackResult.result.tokensInput,
-          tokensOutput: fallbackResult.result.tokensOutput,
-        };
       } else {
-        // Old path: Cursor/DooD via FallbackStrategyService
-        executionResult = await this.fallbackStrategy.executeWithFallback(
-          selection.primary,
-          selection.fallback,
-          input,
-        );
+        // No suitable provider found or enabled
+        const totalDurationMs = Date.now() - startTime;
+        return {
+          success: false,
+          executedBy: selection.primary,
+          usedFallback: false,
+          codeDiff: null,
+          filesChanged: [],
+          confidenceScore: 0,
+          durationMs: totalDurationMs,
+          totalDurationMs,
+          workspacePath: '',
+          fallbackAttempts: [],
+          estimatedCostCents: 0,
+          error: {
+            code: AIErrorCode.UNKNOWN,
+            message: 'No suitable provider found or enabled',
+            isRetryable: true,
+          },
+        };
       }
 
       // 3. Track metrics
@@ -187,8 +180,9 @@ export class OrchestratorService {
         fallbackAttempts: executionResult.fallbackAttempts,
         estimatedCostCents: this.estimateCost(executionResult.executedBy, totalDurationMs),
         error: executionResult.result.error,
+        tokensInput: executionResult.result.tokensInput,
+        tokensOutput: executionResult.result.tokensOutput,
       };
-
       if (result.success) {
         this.successfulExecutions++;
         this.executionsCounter.inc({
@@ -253,7 +247,7 @@ export class OrchestratorService {
 
       return {
         success: false,
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
         usedFallback: false,
         codeDiff: null,
         filesChanged: [],
@@ -336,12 +330,9 @@ export class OrchestratorService {
   /**
    * Estimate cost based on provider and duration
    */
-  private estimateCost(provider: AIProvider, durationMs: number): number {
+  private estimateCost(provider: AIProvider, _durationMs: number): number {
     // Rough cost estimates in cents
     switch (provider) {
-      case AIProvider.CURSOR_HEADLESS:
-        // Cursor: ~$0.05 per minute of execution
-        return Math.ceil((durationMs / 60_000) * 5);
       case AIProvider.CLAUDE_CODE:
         // Claude: ~$0.20 per execution (token-based, avg estimate)
         return 20;

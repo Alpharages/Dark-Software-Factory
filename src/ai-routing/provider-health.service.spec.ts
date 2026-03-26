@@ -12,12 +12,12 @@ describe('ProviderHealthService', () => {
   const mockConfigService = {
     get: jest.fn((key: string, defaultValue?: unknown) => {
       const config: Record<string, unknown> = {
-        'ai.providers.cursorHeadless.enabled': true,
-        'ai.providers.cursorHeadless.maxConcurrent': 3,
-        'ai.providers.cursorHeadless.timeout': 300000,
         'ai.providers.claudeCode.enabled': true,
         'ai.providers.claudeCode.maxConcurrent': 5,
         'ai.providers.claudeCode.timeout': 180000,
+        'ai.providers.gemini.enabled': true,
+        'ai.providers.gemini.maxConcurrent': 3,
+        'ai.providers.gemini.timeout': 300000,
       };
       return config[key] ?? defaultValue;
     }),
@@ -60,40 +60,34 @@ describe('ProviderHealthService', () => {
   describe('providerConfigKey', () => {
     it('should convert SCREAMING_SNAKE_CASE to camelCase', () => {
       expect((service as any).providerConfigKey(AIProvider.CLAUDE_CODE)).toBe('claudeCode');
-      expect((service as any).providerConfigKey(AIProvider.CURSOR_HEADLESS)).toBe('cursorHeadless');
+      expect((service as any).providerConfigKey(AIProvider.GEMINI)).toBe('gemini');
     });
   });
 
   describe('isProviderEnabled', () => {
     it('should query config service using camelCase key', () => {
       mockConfigService.get.mockClear();
-      (service as any).isProviderEnabled(AIProvider.CURSOR_HEADLESS);
-      expect(mockConfigService.get).toHaveBeenCalledWith(
-        'ai.providers.cursorHeadless.enabled',
-        false,
-      );
-
-      mockConfigService.get.mockClear();
       (service as any).isProviderEnabled(AIProvider.CLAUDE_CODE);
       expect(mockConfigService.get).toHaveBeenCalledWith('ai.providers.claudeCode.enabled', false);
+
+      mockConfigService.get.mockClear();
+      (service as any).isProviderEnabled(AIProvider.GEMINI);
+      expect(mockConfigService.get).toHaveBeenCalledWith('ai.providers.gemini.enabled', false);
     });
   });
 
   describe('getMaxConcurrent', () => {
     it('should query config service using camelCase key for maxConcurrent', () => {
       mockConfigService.get.mockClear();
-      (service as any).getMaxConcurrent(AIProvider.CURSOR_HEADLESS);
-      expect(mockConfigService.get).toHaveBeenCalledWith(
-        'ai.providers.cursorHeadless.maxConcurrent',
-        3,
-      );
-
-      mockConfigService.get.mockClear();
       (service as any).getMaxConcurrent(AIProvider.CLAUDE_CODE);
       expect(mockConfigService.get).toHaveBeenCalledWith(
         'ai.providers.claudeCode.maxConcurrent',
         3,
       );
+
+      mockConfigService.get.mockClear();
+      (service as any).getMaxConcurrent(AIProvider.GEMINI);
+      expect(mockConfigService.get).toHaveBeenCalledWith('ai.providers.gemini.maxConcurrent', 3);
     });
   });
 
@@ -104,7 +98,7 @@ describe('ProviderHealthService', () => {
       jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
       mockPrisma.execution.count.mockResolvedValue(1); // 1 active execution
 
-      const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+      const health = await service.getProviderHealth(AIProvider.CLAUDE_CODE);
 
       expect(health.isHealthy).toBe(true);
       expect(health.activeExecutions).toBe(1);
@@ -118,7 +112,7 @@ describe('ProviderHealthService', () => {
       jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
       mockPrisma.execution.count.mockResolvedValue(3); // At max concurrent
 
-      const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+      const health = await service.getProviderHealth(AIProvider.CLAUDE_CODE);
 
       expect(health.isHealthy).toBe(false);
       expect(health.currentLoad).toBe(100);
@@ -127,7 +121,7 @@ describe('ProviderHealthService', () => {
     it('should return unhealthy when provider disabled', async () => {
       jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(false);
 
-      const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+      const health = await service.getProviderHealth(AIProvider.CLAUDE_CODE);
 
       expect(health.isHealthy).toBe(false);
       expect(health.errorMessage).toContain('disabled');
@@ -141,28 +135,28 @@ describe('ProviderHealthService', () => {
       jest.spyOn(service as any, 'getMaxConcurrent').mockReturnValue(3);
       mockPrisma.execution.count.mockResolvedValue(1);
 
-      const result = await service.getAvailableProvider(AIProvider.CURSOR_HEADLESS);
+      const result = await service.getAvailableProvider(AIProvider.CLAUDE_CODE);
 
       expect(result).not.toBeNull();
-      expect(result?.provider).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(result?.provider).toBe(AIProvider.CLAUDE_CODE);
     });
 
     it('should fallback to secondary when primary unavailable', async () => {
       jest.spyOn(service as any, 'isProviderEnabled').mockReturnValue(true);
 
       jest.spyOn(service as any, 'getMaxConcurrent').mockImplementation((provider) => {
-        return String(provider) == 'CURSOR_HEADLESS' ? 3 : 5;
+        return String(provider) === 'CLAUDE_CODE' ? 3 : 5;
       });
 
-      // Cursor full (3), Claude available (2)
+      // Claude full (3), Gemini available (2)
 
       mockPrisma.execution.count.mockImplementation((args: any) => {
-        return Promise.resolve(args.where.ai_provider === AIProvider.CURSOR_HEADLESS ? 3 : 2);
+        return Promise.resolve(args.where.ai_provider === AIProvider.CLAUDE_CODE ? 3 : 2);
       });
 
-      const result = await service.getAvailableProvider(AIProvider.CURSOR_HEADLESS);
+      const result = await service.getAvailableProvider(AIProvider.CLAUDE_CODE);
 
-      expect(result?.provider).toBe(AIProvider.CLAUDE_CODE);
+      expect(result?.provider).toBe(AIProvider.GEMINI);
     });
 
     it('should return null when no provider available', async () => {
@@ -189,13 +183,13 @@ describe('ProviderHealthService', () => {
       await service.getAvailableProvider();
 
       const checkedProviders = healthSpy.mock.calls.map((args) => args[0]);
-      expect(checkedProviders).toEqual(Object.values(AIProvider));
+      expect(checkedProviders).toEqual(expect.arrayContaining(Object.values(AIProvider)));
     });
   });
 
   describe('getUnavailableDuration', () => {
     it('should return null for healthy provider', () => {
-      const duration = service.getUnavailableDuration(AIProvider.CURSOR_HEADLESS);
+      const duration = service.getUnavailableDuration(AIProvider.CLAUDE_CODE);
       expect(duration).toBeNull();
     });
   });

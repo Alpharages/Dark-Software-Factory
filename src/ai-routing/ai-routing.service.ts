@@ -64,49 +64,24 @@ export class AIRoutingService {
         complexityScore,
       );
 
-      // 2. Determine preferred provider based on enabled providers and complexity
-      const cursorEnabled = this.configService.get<boolean>(
-        'ai.providers.cursorHeadless.enabled',
-        false,
-      );
+      // 2. Determine preferred provider based on enabled providers
       const claudeEnabled = this.configService.get<boolean>(
         'ai.providers.claudeCode.enabled',
         false,
       );
-      const complexityThreshold = this.configService.get<number>(
-        'ai.routing.complexityThreshold',
-        10,
-      );
 
       // Validate that at least one provider is enabled
-      if (!cursorEnabled && !claudeEnabled) {
+      if (!claudeEnabled) {
         this.logger.error(
           `[${correlationId}] CRITICAL: No AI providers enabled in configuration. ` +
-            `Set CURSOR_HEADLESS_ENABLED=true or CLAUDE_CODE_ENABLED=true in .env`,
+            `Set CLAUDE_CODE_ENABLED=true in .env`,
         );
         throw new Error('No AI providers enabled in configuration');
       }
 
-      let preferredProvider: AIProvider;
-
-      // If only one provider is enabled, use it regardless of complexity
-      if (cursorEnabled && !claudeEnabled) {
-        preferredProvider = AIProvider.CURSOR_HEADLESS;
-        this.logger.log(`[${correlationId}] Using CURSOR_HEADLESS (only enabled provider)`);
-      } else if (!cursorEnabled && claudeEnabled) {
-        preferredProvider = AIProvider.CLAUDE_CODE;
-        this.logger.log(`[${correlationId}] Using CLAUDE_CODE (only enabled provider)`);
-      } else {
-        // Both providers enabled - use complexity-based routing
-        preferredProvider =
-          complexityScore >= complexityThreshold
-            ? AIProvider.CURSOR_HEADLESS
-            : AIProvider.CLAUDE_CODE;
-        this.logger.log(
-          `[${correlationId}] Complexity-based routing: ${preferredProvider} ` +
-            `(score=${complexityScore}, threshold=${complexityThreshold})`,
-        );
-      }
+      // Simplified for OS-4.1 — always use Claude Code
+      const preferredProvider = AIProvider.CLAUDE_CODE;
+      this.logger.log(`[${correlationId}] Using CLAUDE_CODE (primary provider)`);
 
       // RECORD PROJECT FOR USE IN PREDICTION
       const project = await this.prisma.project.findUnique({
@@ -190,11 +165,7 @@ export class AIRoutingService {
       // 4. Determine routing reason and fallback status
       const { provider } = availableProvider;
       const fallbackUsed = provider !== preferredProvider;
-      const routingReason = this.determineRoutingReason(
-        complexityScore,
-        complexityThreshold,
-        fallbackUsed,
-      );
+      const routingReason = this.determineRoutingReason(complexityScore, fallbackUsed);
 
       // AC#8: Intelligent Branch Selection
       const dependencies = await this.prisma.ticketDependency.findMany({
@@ -371,7 +342,7 @@ export class AIRoutingService {
     this.logger.warn(`[${correlationId}] Ticket ${ticketId} queued for retry in 5 minutes`);
 
     // Check if we should alert
-    for (const provider of [AIProvider.CURSOR_HEADLESS, AIProvider.CLAUDE_CODE]) {
+    for (const provider of [AIProvider.CLAUDE_CODE]) {
       if (this.providerHealth.shouldAlert(provider)) {
         this.logger.error(
           `[${correlationId}] ALERT: Provider ${provider} unavailable for extended period`,
@@ -391,24 +362,13 @@ export class AIRoutingService {
   /**
    * Determine routing reason
    */
-  private determineRoutingReason(
-    complexityScore: number,
-    threshold: number,
-    fallbackUsed: boolean,
-  ): RoutingReason {
+  private determineRoutingReason(complexityScore: number, fallbackUsed: boolean): RoutingReason {
     if (fallbackUsed) {
       return RoutingReason.PRIMARY_UNAVAILABLE;
     }
 
-    if (complexityScore >= threshold) {
-      return RoutingReason.COMPLEXITY_HIGH;
-    }
-
-    if (complexityScore < threshold) {
-      return RoutingReason.COMPLEXITY_LOW;
-    }
-
-    return RoutingReason.COST_OPTIMIZATION;
+    // Simplified for OS-4.1 - default to complexity-based reasons
+    return complexityScore >= 10 ? RoutingReason.COMPLEXITY_HIGH : RoutingReason.COMPLEXITY_LOW;
   }
 
   /**

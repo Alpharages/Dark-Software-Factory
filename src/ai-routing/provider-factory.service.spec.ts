@@ -38,7 +38,6 @@ describe('ProviderFactoryService', () => {
     const mockConfig = {
       get: jest.fn((key: string, defaultValue?: unknown) => {
         // Return enabled status for providers
-        if (key === 'ai.providers.cursorHeadless.enabled') return true;
         if (key === 'ai.providers.claudeCode.enabled') return true;
         // Return default values for thresholds
         return defaultValue;
@@ -81,7 +80,7 @@ describe('ProviderFactoryService', () => {
       repositoryUrl: 'https://github.com/test/repo.git',
     };
 
-    it('should select Cursor for high complexity tasks', async () => {
+    it('should select Claude for high complexity tasks (OS-4.1 default)', async () => {
       complexityScorer.calculateComplexity.mockReturnValue({
         totalScore: 15,
         fileCount: 5,
@@ -100,13 +99,13 @@ describe('ProviderFactoryService', () => {
 
       const result = await service.selectProvider(baseInput);
 
-      expect(result.primary).toBe(AIProvider.CURSOR_HEADLESS);
-      expect(result.fallback).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.fallback).toBeNull();
       expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
       expect(result.complexityGrade).toBe(ComplexityGrade.HIGH);
     });
 
-    it('should select Claude for low complexity tasks (cost optimization)', async () => {
+    it('should select Claude for low complexity tasks', async () => {
       complexityScorer.calculateComplexity.mockReturnValue({
         totalScore: 4,
         fileCount: 1,
@@ -126,26 +125,26 @@ describe('ProviderFactoryService', () => {
       const result = await service.selectProvider(baseInput);
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.fallback).toBe(AIProvider.CURSOR_HEADLESS);
-      expect(result.reason).toBe(ProviderSelectionReason.COST_OPTIMIZATION);
+      expect(result.fallback).toBeNull();
+      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
       expect(result.complexityGrade).toBe(ComplexityGrade.LOW);
     });
 
     it('should respect provider override', async () => {
       const inputWithOverride: IOrchestrationInput = {
         ...baseInput,
-        providerOverride: AIProvider.CURSOR_HEADLESS,
+        providerOverride: AIProvider.CLAUDE_CODE,
       };
 
       const result = await service.selectProvider(inputWithOverride);
 
-      expect(result.primary).toBe(AIProvider.CURSOR_HEADLESS);
-      expect(result.fallback).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.fallback).toBeNull();
       expect(result.reason).toBe(ProviderSelectionReason.OVERRIDE);
       expect(complexityScorer.calculateComplexity).not.toHaveBeenCalled();
     });
 
-    it('should use pre-calculated complexity when provided', async () => {
+    it('should use pre-calculated complexity and return Claude', async () => {
       const inputWithComplexity: IOrchestrationInput = {
         ...baseInput,
         preCalculatedComplexity: 12,
@@ -157,38 +156,11 @@ describe('ProviderFactoryService', () => {
 
       expect(result.complexityScore).toBe(12);
       expect(result.complexityGrade).toBe(ComplexityGrade.HIGH);
-      expect(result.primary).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(complexityScorer.calculateComplexity).not.toHaveBeenCalled();
     });
 
-    it('should select available provider when only Cursor is available', async () => {
-      complexityScorer.calculateComplexity.mockReturnValue({
-        totalScore: 5,
-        fileCount: 2,
-        fileCountScore: 2,
-        architectureChanges: false,
-        architectureScore: 0,
-        dependencyLevel: 'low',
-        dependencyScore: 1,
-        estimatedLoc: 50,
-        locScore: 1,
-        tagComplexity: 'medium',
-        tagScore: 2,
-      });
-
-      // Only Cursor available
-      aiExecution.isProviderAvailable.mockImplementation(
-        async (provider: AIProvider) => provider === AIProvider.CURSOR_HEADLESS,
-      );
-
-      const result = await service.selectProvider(baseInput);
-
-      expect(result.primary).toBe(AIProvider.CURSOR_HEADLESS);
-      expect(result.fallback).toBe(AIProvider.CLAUDE_CODE); // Both enabled, Claude is fallback
-      expect(result.reason).toBe(ProviderSelectionReason.AVAILABILITY);
-    });
-
-    it('should select available provider when only Claude is available', async () => {
+    it('should select available provider when Claude is available', async () => {
       complexityScorer.calculateComplexity.mockReturnValue({
         totalScore: 15,
         fileCount: 5,
@@ -211,8 +183,8 @@ describe('ProviderFactoryService', () => {
       const result = await service.selectProvider(baseInput);
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.fallback).toBe(AIProvider.CURSOR_HEADLESS); // Both enabled, Cursor is fallback
-      expect(result.reason).toBe(ProviderSelectionReason.AVAILABILITY);
+      expect(result.fallback).toBeNull();
+      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
     });
 
     it('should handle when no providers are available', async () => {
@@ -234,17 +206,16 @@ describe('ProviderFactoryService', () => {
 
       const result = await service.selectProvider(baseInput);
 
-      // Both are enabled but neither is available - should return CURSOR as first enabled
-      expect(result.primary).toBe(AIProvider.CURSOR_HEADLESS);
-      expect(result.fallback).toBe(AIProvider.CLAUDE_CODE);
-      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
+      expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
+      expect(result.fallback).toBeNull();
+      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
     });
   });
 
   describe('getAllProvidersAvailability', () => {
     it('should return availability for all providers', async () => {
       aiExecution.getProviderHealth.mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         isHealthy: true,
         lastSuccessAt: new Date(),
         lastFailureAt: null,
@@ -255,14 +226,13 @@ describe('ProviderFactoryService', () => {
 
       const availability = await service.getAllProvidersAvailability();
 
-      expect(availability).toHaveLength(2);
-      expect(availability.find((a) => a.provider === AIProvider.CURSOR_HEADLESS)).toBeDefined();
+      expect(availability).toHaveLength(1);
       expect(availability.find((a) => a.provider === AIProvider.CLAUDE_CODE)).toBeDefined();
     });
 
     it('should calculate estimated wait time based on queue depth', async () => {
       aiExecution.getProviderHealth.mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         isHealthy: true,
         lastSuccessAt: new Date(),
         lastFailureAt: null,
@@ -279,7 +249,7 @@ describe('ProviderFactoryService', () => {
 
     it('should mark provider unavailable when health check fails', async () => {
       aiExecution.getProviderHealth.mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         isHealthy: false,
         lastSuccessAt: null,
         lastFailureAt: new Date(),

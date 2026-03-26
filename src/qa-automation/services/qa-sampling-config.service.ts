@@ -29,7 +29,7 @@ const DEFAULT_RISK_RULES: IRiskRules = {
     mediumMultiplier: 1.5,
   },
   aiProvider: {
-    cursorMultiplier: 1.2,
+    geminiMultiplier: 1.2,
     claudeMultiplier: 1.0,
   },
 };
@@ -210,8 +210,8 @@ export class QaSamplingConfigService {
           rules.complexity?.mediumMultiplier ?? DEFAULT_RISK_RULES.complexity.mediumMultiplier,
       },
       aiProvider: {
-        cursorMultiplier:
-          rules.aiProvider?.cursorMultiplier ?? DEFAULT_RISK_RULES.aiProvider.cursorMultiplier,
+        geminiMultiplier:
+          rules.aiProvider?.geminiMultiplier ?? DEFAULT_RISK_RULES.aiProvider.geminiMultiplier,
         claudeMultiplier:
           rules.aiProvider?.claudeMultiplier ?? DEFAULT_RISK_RULES.aiProvider.claudeMultiplier,
       },

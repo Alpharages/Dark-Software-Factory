@@ -16,7 +16,7 @@ describe('PRRiskAssessorService', () => {
 
   const mockExecution = {
     id: 'exec-123',
-    ai_provider: 'CURSOR_HEADLESS',
+    ai_provider: 'CLAUDE_CODE',
     ticket: {
       id: 'ticket-123',
       clickup_task_id: 'DSF-123',
@@ -54,7 +54,7 @@ describe('PRRiskAssessorService', () => {
           provide: AIExecutionService,
           useValue: {
             getProvider: jest.fn().mockImplementation((provider) => {
-              if (provider === 'CURSOR_HEADLESS') {
+              if (provider === 'CLAUDE_CODE') {
                 const mockProvider = {
                   executePrompt: jest.fn().mockResolvedValue({
                     success: true,

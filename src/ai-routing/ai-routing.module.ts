@@ -11,7 +11,6 @@ import { ProviderHealthService } from './provider-health.service';
 import { AIRoutingConsumer } from './ai-routing.consumer';
 // Story 2.4: Prompt generation imports
 import { PromptGeneratorService } from './prompt-generator.service';
-import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
 // Story 2.6: AI Execution imports
 import { AIExecutionService } from './ai-execution.service';
@@ -63,7 +62,6 @@ import { AIProvidersController } from './ai-providers.controller';
 
     // Story 2.4: Prompt generation services
     PromptGeneratorService,
-    CursorPromptBuilder,
     ClaudeCodePromptBuilder,
 
     // Story 2.6: AI Execution services
@@ -191,7 +189,6 @@ import { AIProvidersController } from './ai-providers.controller';
     ProviderHealthService,
     // Story 2.4: Prompt generation exports
     PromptGeneratorService,
-    CursorPromptBuilder,
     ClaudeCodePromptBuilder,
     // Story 2.6: AI Execution exports
     AIExecutionService,

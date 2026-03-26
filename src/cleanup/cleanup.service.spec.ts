@@ -13,7 +13,7 @@ describe('CleanupService', () => {
   const mockExecution: Execution = {
     id: 'exec-123',
     ticket_id: 'ticket-123',
-    ai_provider: AIProvider.CURSOR_HEADLESS,
+    ai_provider: AIProvider.CLAUDE_CODE,
     prompt: 'test prompt',
     status: ExecutionStatus.COMPLETED,
     confidence_score: null,

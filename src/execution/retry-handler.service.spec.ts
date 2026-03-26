@@ -131,7 +131,7 @@ describe('RetryHandlerService', () => {
         'corr-123',
         'TIMEOUT',
         'Execution timed out',
-        AIProvider.CURSOR_HEADLESS,
+        AIProvider.CLAUDE_CODE,
         30000,
       );
 
@@ -166,7 +166,7 @@ describe('RetryHandlerService', () => {
         'corr-123',
         'INVALID_PROMPT',
         'Prompt is invalid',
-        AIProvider.CURSOR_HEADLESS,
+        AIProvider.CLAUDE_CODE,
         5000,
       );
 
@@ -202,7 +202,7 @@ describe('RetryHandlerService', () => {
         'corr-123',
         'TIMEOUT',
         'Execution timed out',
-        AIProvider.CURSOR_HEADLESS,
+        AIProvider.CLAUDE_CODE,
         30000,
       );
 
@@ -237,7 +237,7 @@ describe('RetryHandlerService', () => {
         'corr-123',
         'AUTHENTICATION_ERROR',
         'Auth failed',
-        AIProvider.CURSOR_HEADLESS,
+        AIProvider.CLAUDE_CODE,
         1000,
       );
 

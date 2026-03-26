@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, IsISO8601 } from 'class-validator';
+import { AIProvider } from '@/prisma/client';
 
 /**
  * Query parameters for model efficiency endpoint
@@ -44,10 +45,10 @@ export class ModelMetricsDto {
 
   @ApiProperty({
     description: 'AI provider',
-    example: 'CURSOR_HEADLESS',
-    enum: ['CURSOR_HEADLESS', 'CLAUDE_CODE'],
+    example: 'CLAUDE_CODE',
+    enum: AIProvider,
   })
-  provider!: string;
+  provider!: AIProvider;
 
   @ApiProperty({
     description: 'Total cost in USD',
@@ -110,7 +111,7 @@ export class ModelRecommendationDto {
 
   @ApiProperty({
     description: 'Potential cost savings',
-    example: '15-20% if migrating all CURSOR tasks to CLAUDE',
+    example: '15-20% if migrating all GEMINI tasks to CLAUDE',
   })
   potentialSavings!: string;
 }

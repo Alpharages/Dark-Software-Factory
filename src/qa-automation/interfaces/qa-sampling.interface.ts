@@ -8,7 +8,7 @@ import { RiskLevel } from '@/prisma/client';
 /**
  * AI Provider type
  */
-export type AIProvider = 'CURSOR_HEADLESS' | 'CLAUDE_CODE';
+export type AIProvider = 'CLAUDE_CODE' | 'GEMINI' | 'CODEX' | 'KIMI';
 
 /**
  * Sampling configuration from database
@@ -54,8 +54,8 @@ export interface IComplexityRiskRule {
  * AI Provider risk rule configuration
  */
 export interface IAIProviderRiskRule {
-  cursorMultiplier: number; // Cursor headless = 1.2x (default: 1.2)
   claudeMultiplier: number; // Claude Code = 1.0x (default: 1.0)
+  geminiMultiplier: number; // Gemini = 1.0x (default: 1.0)
 }
 
 /**

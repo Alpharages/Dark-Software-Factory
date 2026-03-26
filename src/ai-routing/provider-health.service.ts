@@ -9,11 +9,10 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 /**
  * Provider Health Monitoring Service
  *
- * Tracks availability and load of AI providers:
- * - Cursor CLI Headless (primary)
- * - Claude Code (secondary)
+ * Tracks availability and load of AI providers
+ * Supporting multi-provider failover and health tracking.
  *
- * Per architecture: Auto-fallback when primary unavailable
+ * Per architecture: Auto-fallback to healthy providers.
  */
 @Injectable()
 export class ProviderHealthService implements OnModuleInit, OnModuleDestroy {
@@ -181,7 +180,7 @@ export class ProviderHealthService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Convert AIProvider SCREAMING_SNAKE_CASE to camelCase config key segment.
-   * CLAUDE_CODE → claudeCode, CURSOR_HEADLESS → cursorHeadless, GEMINI → gemini
+   * CLAUDE_CODE → claudeCode, GEMINI → gemini, CODEX → codex, KIMI → kimi
    */
   private providerConfigKey(provider: AIProvider): string {
     return String(provider)

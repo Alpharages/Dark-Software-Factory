@@ -22,7 +22,7 @@ export class ProviderCostDto {
   @ApiProperty({
     description: 'AI provider name',
     enum: AIProvider,
-    example: 'CURSOR_HEADLESS',
+    example: 'CLAUDE_CODE',
   })
   provider!: AIProvider;
 

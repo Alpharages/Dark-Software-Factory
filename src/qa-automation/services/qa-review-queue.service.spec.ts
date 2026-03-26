@@ -206,7 +206,7 @@ describe('QaReviewQueueService', () => {
           sampling_strategy: SamplingStrategy.RISK_BASED,
           created_at: new Date(),
           execution: {
-            ai_provider: 'CURSOR_HEADLESS',
+            ai_provider: 'CLAUDE_CODE',
             complexity_score: 12,
             files_changed: ['file1.ts'],
             ticket: { title: 'Ticket 1' },
@@ -234,7 +234,7 @@ describe('QaReviewQueueService', () => {
         status: 'PENDING',
         riskLevel: 'HIGH',
         projectId: 'proj-123',
-        aiProvider: 'cursor',
+        aiProvider: 'claude_code',
       });
 
       expect(mockPrisma.qaReviewQueue.findMany).toHaveBeenCalledWith(
@@ -244,7 +244,7 @@ describe('QaReviewQueueService', () => {
             risk_level: 'HIGH',
             project_id: 'proj-123',
             execution: {
-              ai_provider: 'CURSOR',
+              ai_provider: 'CLAUDE_CODE',
             },
           }),
         }),

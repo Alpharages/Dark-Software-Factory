@@ -16,7 +16,7 @@ describe('buildPRDescription', () => {
       'JWT tokens are generated',
       'Passwords are hashed with bcrypt',
     ],
-    aiProvider: 'CURSOR_HEADLESS',
+    aiProvider: 'CLAUDE_CODE',
     complexityScore: 75,
     confidenceScore: 92,
     executionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -79,7 +79,7 @@ describe('buildPRDescription', () => {
   it('should include AI metadata', () => {
     const result = buildPRDescription(baseContext);
 
-    expect(result).toContain('**Provider:** CURSOR_HEADLESS');
+    expect(result).toContain('**Provider:** CLAUDE_CODE');
     expect(result).toContain('**Complexity Score:** 75/100');
     expect(result).toContain('**Confidence:** 92%');
     expect(result).toContain('**Execution ID:** 123e4567-e89b-12d3-a456-426614174000');

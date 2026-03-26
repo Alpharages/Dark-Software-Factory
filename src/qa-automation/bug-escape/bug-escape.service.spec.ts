@@ -176,8 +176,8 @@ describe('BugEscapeService', () => {
   describe('compareProviders', () => {
     it('should compare providers', async () => {
       const escapes = [
-        { ai_provider: 'CURSOR_HEADLESS', _count: { id: 10 } },
-        { ai_provider: 'CLAUDE_CODE', _count: { id: 5 } },
+        { ai_provider: 'CLAUDE_CODE', _count: { id: 10 } },
+        { ai_provider: 'GEMINI', _count: { id: 5 } },
       ];
       prisma.bugEscape.groupBy.mockResolvedValue(escapes);
 
@@ -185,7 +185,7 @@ describe('BugEscapeService', () => {
 
       expect(prisma.bugEscape.groupBy).toHaveBeenCalled();
       expect(result).toHaveLength(2);
-      expect(result[0].provider).toBe('CURSOR_HEADLESS');
+      expect(result[0].provider).toBe('CLAUDE_CODE');
       expect(result[0].escapes).toBe(10);
     });
   });

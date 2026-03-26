@@ -21,7 +21,6 @@ interface AIProvidersResponseDto {
 }
 
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
-  CURSOR_HEADLESS: 'Cursor CLI',
   CLAUDE_CODE: 'Antigravity',
 };
 
@@ -59,7 +58,7 @@ export class AIProvidersController {
 
     const providers: AIProviderDto[] = [];
 
-    for (const provider of [AIProvider.CURSOR_HEADLESS, AIProvider.CLAUDE_CODE]) {
+    for (const provider of [AIProvider.CLAUDE_CODE]) {
       const health = await this.providerHealthService.getProviderHealth(provider);
 
       let status: AIProviderDto['status'];

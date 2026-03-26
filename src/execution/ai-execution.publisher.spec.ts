@@ -18,7 +18,7 @@ describe('AIExecutionPublisher', () => {
   const mockExecution = {
     id: 'exec-123',
     ticket_id: 'ticket-456',
-    ai_provider: AIProvider.CURSOR_HEADLESS,
+    ai_provider: AIProvider.CLAUDE_CODE,
     prompt: 'Test prompt',
     status: 'QUEUED',
     created_at: new Date(),
@@ -90,11 +90,11 @@ describe('AIExecutionPublisher', () => {
       );
     });
 
-    it('should use CURSOR_HEADLESS as default provider', async () => {
+    it('should use CLAUDE_CODE as default provider', async () => {
       await publisher.publishExecution(validDto);
 
       const callArg = executionTracker.startExecution.mock.calls[0][0];
-      expect(callArg.provider).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(callArg.provider).toBe(AIProvider.CLAUDE_CODE);
     });
 
     it('should use preferred provider when specified', async () => {

@@ -45,11 +45,11 @@ export interface IProjectContext {
 }
 
 /**
- * Relevant file with content for Claude prompts
+ * Relevant file with content for prompt enrichment
  */
 export interface IRelevantFile {
   path: string;
-  content?: string; // Only populated for Claude Code (inline context)
+  content?: string; // Content for inline context providers (e.g. Claude Code)
   description?: string; // What this file does
   linesOfCode?: number;
 }

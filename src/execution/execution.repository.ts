@@ -297,15 +297,19 @@ export class ExecutionRepository {
       _count: true,
     });
 
-    // Initialize with zeros
+    // Initialize with zeros for all valid AIProvider values
     const counts: Record<AIProvider, number> = {
-      [AIProvider.CURSOR_HEADLESS]: 0,
       [AIProvider.CLAUDE_CODE]: 0,
+      [AIProvider.GEMINI]: 0,
+      [AIProvider.CODEX]: 0,
+      [AIProvider.KIMI]: 0,
     } as Record<AIProvider, number>;
 
     // Fill in actual counts
     for (const result of results) {
-      counts[result.ai_provider] = result._count;
+      if (result.ai_provider in counts) {
+        counts[result.ai_provider] = result._count;
+      }
     }
 
     return counts;

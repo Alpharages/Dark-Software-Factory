@@ -80,7 +80,7 @@ describe('AiQaOrchestrator', () => {
           warningCount: 0,
           issues: [],
         }),
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 
@@ -88,7 +88,7 @@ describe('AiQaOrchestrator', () => {
 
       expect(result.status).toBe('PASSED');
       expect(result.checkType).toBe('linting');
-      expect(result.aiProvider).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(result.aiProvider).toBe(AIProvider.CLAUDE_CODE);
     });
 
     it('should handle AI provider failure with fallback', async () => {
@@ -104,12 +104,12 @@ describe('AiQaOrchestrator', () => {
       const invalidResponse = {
         success: true,
         codeDiff: 'invalid json',
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
       };
       const validResponse = {
         success: true,
         codeDiff: JSON.stringify({ status: 'PASSED', errorCount: 0 }),
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
       };
 
       orchestratorService.execute
@@ -133,7 +133,7 @@ describe('AiQaOrchestrator', () => {
           passedCount: 10,
           failedCount: 0,
         }),
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 
@@ -152,7 +152,7 @@ describe('AiQaOrchestrator', () => {
           status: 'PASSED',
           vulnerabilities: [],
         }),
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 
@@ -171,7 +171,7 @@ describe('AiQaOrchestrator', () => {
           status: 'PASSED',
           overall: 85.5,
         }),
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
       };
       orchestratorService.execute.mockResolvedValue(mockAiResponse as never);
 

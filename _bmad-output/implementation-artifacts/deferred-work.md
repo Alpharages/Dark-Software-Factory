@@ -56,3 +56,7 @@
 - **`checkForLeakedSandboxes()` makes two `listActiveSandboxes()` SDK calls when sandboxes are killed** — Could optimise to `activeSandboxes.length - killedCount` to avoid the second paginated list call. Acceptable at current scale. [`sandbox.service.ts:352–353`]
 - **`Semaphore` has no guard against `maxConcurrent ≤ 0` or `NaN`** — Both values deadlock all executions (acquire() queues forever, release() count < max guard always false for NaN). Joi startup validation in OS-1.2 is the only guard. Add `Math.max(1, maxConcurrent)` clamp in onModuleInit() for defense-in-depth. [`sandbox.service.ts:58–59`]
 - **`?? 3600` does not protect against NaN `sandboxTimeoutS`** — NaN is not null/undefined so `NaN ?? 3600 = NaN`; `ageMs > NaN` is always false, silently disabling leak prevention. Protected by Joi validation but `Number.isFinite()` check would be safer. [`sandbox.service.ts:321`]
+
+## Deferred from: code review of os-4-1-retire-cursor-headless-provider-data-migration (2026-03-26)
+
+- **Hardcoded threshold `10` in `determineRoutingReason`** — `src/ai-routing/ai-routing.service.ts` uses `complexityScore >= 10` instead of reading from config. Acknowledged as intentional simplification for OS-4.1; full routing reinstated in OS-4.4.

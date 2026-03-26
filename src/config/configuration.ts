@@ -31,15 +31,21 @@ export default () => {
     // AI Providers (Story 2.3: Multi-Provider Strategy)
     ai: {
       providers: {
-        cursorHeadless: {
-          enabled: process.env.CURSOR_HEADLESS_ENABLED === 'true',
-        },
         claudeCode: {
           enabled: process.env.CLAUDE_CODE_ENABLED === 'true',
           apiKey: process.env.ANTHROPIC_API_KEY || '',
           healthCheckUrl: 'https://api.anthropic.com/v1/messages',
           timeout: parseInt(process.env.CLAUDE_CODE_TIMEOUT || '180000', 10), // 3 min
           maxConcurrent: parseInt(process.env.CLAUDE_MAX_CONCURRENT || '5', 10),
+        },
+        gemini: {
+          enabled: process.env.GEMINI_ENABLED === 'true',
+        },
+        codex: {
+          enabled: process.env.CODEX_ENABLED === 'true',
+        },
+        kimi: {
+          enabled: process.env.KIMI_ENABLED === 'true',
         },
       },
       routing: {
@@ -144,22 +150,7 @@ export default () => {
       autoApproveAfterQa: process.env.FEATURE_AUTO_APPROVE_AFTER_QA === 'true',
     },
 
-    // Story 2.6: Cursor CLI Headless Configuration
-    cursor: {
-      // Cursor docs recommend `cursor-agent` for headless automation:
-      // https://cursor.com/docs/cli/headless
-      cliPath: process.env.CURSOR_CLI_PATH || 'cursor-agent',
-      headlessTimeoutMs: parseInt(process.env.CURSOR_HEADLESS_TIMEOUT_MS || '300000', 10),
-      workspacesRoot: process.env.CURSOR_WORKSPACES_ROOT || '/tmp/cursor-workspaces',
-      maxConcurrentWorkspaces: parseInt(process.env.CURSOR_MAX_CONCURRENT_WORKSPACES || '10', 10),
-      preserveFailedWorkspaces: process.env.CURSOR_PRESERVE_FAILED_WORKSPACES === 'true',
-      workspaceCleanupAgeMs: parseInt(
-        process.env.CURSOR_WORKSPACE_CLEANUP_AGE_MS || String(7 * 24 * 60 * 60 * 1000),
-        10,
-      ),
-      gitUserName: process.env.CURSOR_GIT_USER_NAME || 'Dark Factory',
-      gitUserEmail: process.env.CURSOR_GIT_USER_EMAIL || 'bot@darkfactory.ai',
-    },
+    // Story 2.6: Reserved for future provider configuration
 
     // Story 2.7: Anthropic Claude API Configuration (updated OS-3.2: stale refs removed)
     // Model: claude-sonnet-4-20250514 is the latest Sonnet model as of implementation
@@ -182,7 +173,7 @@ export default () => {
       maxFallbackAttempts: parseInt(process.env.ORCHESTRATOR_MAX_FALLBACK_ATTEMPTS || '2', 10),
       // Delay in milliseconds before attempting fallback
       fallbackDelayMs: parseInt(process.env.ORCHESTRATOR_FALLBACK_DELAY_MS || '1000', 10),
-      // Complexity score threshold for HIGH (routes to Cursor)
+      // Complexity score threshold for HIGH (routes to heavy coding tools)
       complexityThresholdHigh: parseInt(
         process.env.ORCHESTRATOR_COMPLEXITY_THRESHOLD_HIGH || '10',
         10,

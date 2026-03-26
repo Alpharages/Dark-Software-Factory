@@ -25,7 +25,7 @@ describe('ManualInterventionService', () => {
     id: 'exec-123',
     ticket_id: 'ticket-456',
     status: ExecutionStatus.IN_PROGRESS,
-    ai_provider: AIProvider.CURSOR_HEADLESS,
+    ai_provider: AIProvider.CLAUDE_CODE,
     container_id: 'container-789',
     prompt: 'test prompt',
     retry_count: 0,

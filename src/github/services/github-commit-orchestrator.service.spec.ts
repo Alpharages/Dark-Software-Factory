@@ -33,7 +33,7 @@ describe('GitHubCommitOrchestrator', () => {
   const mockExecution = {
     id: 'exec-123',
     ticket_id: 'ticket-123',
-    ai_provider: AIProvider.CURSOR_HEADLESS,
+    ai_provider: AIProvider.CLAUDE_CODE,
     complexity_score: 75,
     code_output: JSON.stringify({
       files_changed: [{ path: 'src/auth/user.service.ts', operation: 'modify' }],
@@ -217,7 +217,7 @@ describe('GitHubCommitOrchestrator', () => {
       expect(metricsService.incrementGitHubCommitsCreated).toHaveBeenCalledWith(
         'success',
         'owner/repo',
-        AIProvider.CURSOR_HEADLESS,
+        AIProvider.CLAUDE_CODE,
       );
     });
   });

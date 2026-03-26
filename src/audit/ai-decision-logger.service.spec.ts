@@ -454,18 +454,16 @@ describe('AIDecisionLoggerService', () => {
 
   describe('getProviderDistributionStats', () => {
     it('should return normalized provider percentages', async () => {
-      // Now uses execution.groupBy (DB aggregate) instead of aIDecisionLog.findMany
       prisma.execution.groupBy.mockResolvedValue([
-        { ai_provider: 'CURSOR_HEADLESS', _count: { _all: 1 } },
-        { ai_provider: 'CLAUDE_CODE', _count: { _all: 2 } },
+        { ai_provider: 'CLAUDE_CODE', _count: { _all: 3 } },
       ]);
 
       const result = await service.getProviderDistributionStats();
 
       expect(result).toEqual([
-        { provider: 'CLAUDE', percentage: 66.67, count: 2 },
-        { provider: 'CURSOR', percentage: 33.33, count: 1 },
-        { provider: 'WINDSURF', percentage: 0, count: 0 },
+        { provider: 'CLAUDE', percentage: 100, count: 3 },
+        { provider: 'GEMINI', percentage: 0, count: 0 },
+        { provider: 'CODEX', percentage: 0, count: 0 },
       ]);
     });
 
@@ -476,8 +474,8 @@ describe('AIDecisionLoggerService', () => {
 
       expect(result).toEqual([
         { provider: 'CLAUDE', percentage: 0, count: 0 },
-        { provider: 'CURSOR', percentage: 0, count: 0 },
-        { provider: 'WINDSURF', percentage: 0, count: 0 },
+        { provider: 'GEMINI', percentage: 0, count: 0 },
+        { provider: 'CODEX', percentage: 0, count: 0 },
       ]);
     });
 

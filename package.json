@@ -20,9 +20,10 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
+    "test": "jest --maxWorkers=2",
+    "test:watch": "jest --watch --maxWorkers=1",
+    "test:cov": "jest --coverage --maxWorkers=2",
+    "test:safe": "jest --runInBand",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:migrate": "npx prisma migrate dev",
@@ -191,6 +192,7 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "workerIdleMemoryLimit": "512MB",
     "setupFilesAfterEnv": [
       "<rootDir>/../test/jest-setup.ts"
     ],

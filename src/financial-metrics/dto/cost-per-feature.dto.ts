@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, IsISO8601 } from 'class-validator';
+import { AIProvider } from '@/prisma/client';
 
 /**
  * Query parameters for cost-per-feature endpoint
@@ -93,10 +94,10 @@ export class StoryCostDto {
 export class ProviderBreakdownDto {
   @ApiProperty({
     description: 'AI provider name',
-    example: 'CURSOR_HEADLESS',
-    enum: ['CURSOR_HEADLESS', 'CLAUDE_CODE'],
+    example: 'CLAUDE_CODE',
+    enum: AIProvider,
   })
-  provider!: string;
+  provider!: AIProvider;
 
   @ApiProperty({
     description: 'Total cost in USD',

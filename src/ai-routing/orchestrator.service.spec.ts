@@ -101,14 +101,21 @@ describe('OrchestratorService', () => {
   describe('execute', () => {
     it('should execute successfully with primary provider', async () => {
       providerFactory.selectProvider.mockResolvedValue({
-        primary: AIProvider.CURSOR_HEADLESS,
-        fallback: AIProvider.CLAUDE_CODE,
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: null,
         reason: ProviderSelectionReason.COMPLEXITY,
         complexityScore: 12,
         complexityGrade: ComplexityGrade.HIGH,
       });
 
-      fallbackStrategy.executeWithFallback.mockResolvedValue({
+      providerFactory.getCodingProvider.mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+
+      fallbackStrategy.executeWithFallbackCodingProvider.mockResolvedValue({
         result: {
           success: true,
           codeDiff: 'diff --git ...',
@@ -117,7 +124,7 @@ describe('OrchestratorService', () => {
           durationMs: 30000,
           workspacePath: '/tmp/workspace',
         },
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
         usedFallback: false,
         fallbackAttempts: [],
       });
@@ -125,24 +132,31 @@ describe('OrchestratorService', () => {
       const result = await service.execute(mockInput);
 
       expect(result.success).toBe(true);
-      expect(result.executedBy).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
       expect(result.usedFallback).toBe(false);
       expect(result.filesChanged).toEqual(['src/utils.ts']);
       expect(result.confidenceScore).toBe(0.85);
       expect(providerFactory.selectProvider).toHaveBeenCalledWith(mockInput);
-      expect(fallbackStrategy.executeWithFallback).toHaveBeenCalled();
+      expect(fallbackStrategy.executeWithFallbackCodingProvider).toHaveBeenCalled();
     });
 
     it('should fallback when primary fails with retryable error', async () => {
       providerFactory.selectProvider.mockResolvedValue({
-        primary: AIProvider.CURSOR_HEADLESS,
-        fallback: AIProvider.CLAUDE_CODE,
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: null,
         reason: ProviderSelectionReason.COMPLEXITY,
         complexityScore: 12,
         complexityGrade: ComplexityGrade.HIGH,
       });
 
-      fallbackStrategy.executeWithFallback.mockResolvedValue({
+      providerFactory.getCodingProvider.mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+
+      fallbackStrategy.executeWithFallbackCodingProvider.mockResolvedValue({
         result: {
           success: true,
           codeDiff: 'diff --git ...',
@@ -155,7 +169,7 @@ describe('OrchestratorService', () => {
         usedFallback: true,
         fallbackAttempts: [
           {
-            provider: AIProvider.CURSOR_HEADLESS,
+            provider: AIProvider.GEMINI,
             error: 'Timeout',
             wasRetryable: true,
             durationMs: 300000,
@@ -170,19 +184,26 @@ describe('OrchestratorService', () => {
       expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
       expect(result.usedFallback).toBe(true);
       expect(result.fallbackAttempts).toHaveLength(1);
-      expect(result.fallbackAttempts[0].provider).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(result.fallbackAttempts[0].provider).toBe(AIProvider.GEMINI);
     });
 
     it('should handle complete failure when both providers fail', async () => {
       providerFactory.selectProvider.mockResolvedValue({
-        primary: AIProvider.CURSOR_HEADLESS,
-        fallback: AIProvider.CLAUDE_CODE,
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: null,
         reason: ProviderSelectionReason.COMPLEXITY,
         complexityScore: 12,
         complexityGrade: ComplexityGrade.HIGH,
       });
 
-      fallbackStrategy.executeWithFallback.mockResolvedValue({
+      providerFactory.getCodingProvider.mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+
+      fallbackStrategy.executeWithFallbackCodingProvider.mockResolvedValue({
         result: {
           success: false,
           codeDiff: null,
@@ -200,7 +221,7 @@ describe('OrchestratorService', () => {
         usedFallback: true,
         fallbackAttempts: [
           {
-            provider: AIProvider.CURSOR_HEADLESS,
+            provider: AIProvider.GEMINI,
             error: 'Timeout',
             wasRetryable: true,
             durationMs: 300000,
@@ -274,7 +295,6 @@ describe('OrchestratorService', () => {
       expect(result.success).toBe(true);
       expect(result.executedBy).toBe(AIProvider.CLAUDE_CODE);
       expect(providerFactory.selectProvider).toHaveBeenCalledWith(inputWithOverride);
-      expect(fallbackStrategy.executeWithFallback).not.toHaveBeenCalled();
       expect(fallbackStrategy.executeWithFallbackCodingProvider).toHaveBeenCalled();
     });
   });
@@ -293,14 +313,21 @@ describe('OrchestratorService', () => {
 
     it('should track provider usage after executions', async () => {
       providerFactory.selectProvider.mockResolvedValue({
-        primary: AIProvider.CURSOR_HEADLESS,
-        fallback: AIProvider.CLAUDE_CODE,
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: null,
         reason: ProviderSelectionReason.COMPLEXITY,
         complexityScore: 12,
         complexityGrade: ComplexityGrade.HIGH,
       });
 
-      fallbackStrategy.executeWithFallback.mockResolvedValue({
+      providerFactory.getCodingProvider.mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+
+      fallbackStrategy.executeWithFallbackCodingProvider.mockResolvedValue({
         result: {
           success: true,
           codeDiff: 'diff',
@@ -309,7 +336,7 @@ describe('OrchestratorService', () => {
           durationMs: 30000,
           workspacePath: '/tmp/ws',
         },
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
         usedFallback: false,
         fallbackAttempts: [],
       });
@@ -318,7 +345,7 @@ describe('OrchestratorService', () => {
 
       const metrics = service.getMetrics();
       expect(metrics.totalExecutions).toBeGreaterThanOrEqual(1);
-      expect(metrics.providerUsage[AIProvider.CURSOR_HEADLESS]).toBeGreaterThanOrEqual(1);
+      expect(metrics.providerUsage[AIProvider.CLAUDE_CODE]).toBeGreaterThanOrEqual(1);
     });
 
     it('should not throw when trackExecution is called with an unknown provider (lazy init)', () => {
@@ -343,13 +370,6 @@ describe('OrchestratorService', () => {
   describe('getProviderAvailability', () => {
     it('should return availability from provider factory', async () => {
       const mockAvailability = [
-        {
-          provider: AIProvider.CURSOR_HEADLESS,
-          isAvailable: true,
-          circuitState: 'CLOSED' as const,
-          queueDepth: 0,
-          estimatedWaitMs: 0,
-        },
         {
           provider: AIProvider.CLAUDE_CODE,
           isAvailable: true,

@@ -10,7 +10,7 @@ import { AIExecutionService } from './ai-execution.service';
 import { ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '@/execution/execution.service';
 import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
-import { IAIExecutionInput, IAIExecutionResult, AIErrorCode } from './interfaces';
+import { IAIExecutionInput } from './interfaces';
 
 describe('AIExecutionService', () => {
   let service: AIExecutionService;
@@ -26,29 +26,6 @@ describe('AIExecutionService', () => {
     prompt: 'Test prompt',
     repositoryUrl: 'https://github.com/test/repo.git',
     baseBranch: 'main',
-  };
-
-  const mockSuccessResult: IAIExecutionResult = {
-    success: true,
-    codeDiff: 'diff --git a/file.ts b/file.ts\n...',
-    filesChanged: ['src/file.ts'],
-    confidenceScore: 0.85,
-    durationMs: 30000,
-    workspacePath: '/tmp/cursor-workspaces/ticket-789-1234567890',
-  };
-
-  const mockFailedResult: IAIExecutionResult = {
-    success: false,
-    codeDiff: null,
-    filesChanged: [],
-    confidenceScore: 0,
-    durationMs: 5000,
-    workspacePath: '/tmp/cursor-workspaces/ticket-789-1234567890',
-    error: {
-      code: AIErrorCode.TIMEOUT,
-      message: 'Execution timed out',
-      isRetryable: true,
-    },
   };
 
   beforeEach(async () => {
@@ -100,70 +77,6 @@ describe('AIExecutionService', () => {
     claudeProvider = module.get(ClaudeCodeProvider);
     executionService = module.get(ExecutionService);
     _costTrackerService = module.get(AICostTrackerService);
-  });
-
-  describe('executeWithProvider', () => {
-    it('should execute successfully with Claude provider', async () => {
-      claudeProvider.execute.mockResolvedValue(mockSuccessResult);
-
-      const result = await service.executeWithProvider(AIProvider.CLAUDE_CODE, mockInput);
-
-      expect(result.success).toBe(true);
-      expect(result.filesChanged).toEqual(['src/file.ts']);
-      expect(executionService.markInProgress).toHaveBeenCalledWith(
-        mockInput.executionId,
-        mockInput.correlationId,
-      );
-      expect(executionService.completeExecution).toHaveBeenCalledWith(
-        expect.objectContaining({
-          executionId: mockInput.executionId,
-          filesChanged: mockSuccessResult.filesChanged,
-          confidenceScore: mockSuccessResult.confidenceScore,
-        }),
-        mockInput.correlationId,
-      );
-    });
-
-    it('should handle failed execution', async () => {
-      claudeProvider.execute.mockResolvedValue(mockFailedResult);
-
-      const result = await service.executeWithProvider(AIProvider.CLAUDE_CODE, mockInput);
-
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
-      expect(executionService.failExecution).toHaveBeenCalledWith(
-        expect.objectContaining({
-          executionId: mockInput.executionId,
-          errorMessage: 'Execution timed out',
-        }),
-        mockInput.correlationId,
-        true, // isRetryable
-      );
-    });
-
-    it('should throw for unregistered provider', async () => {
-      await expect(service.executeWithProvider('UNKNOWN' as AIProvider, mockInput)).rejects.toThrow(
-        'Provider not registered',
-      );
-    });
-
-    it('should handle unexpected errors', async () => {
-      claudeProvider.execute.mockRejectedValue(new Error('Unexpected failure'));
-
-      await expect(service.executeWithProvider(AIProvider.CLAUDE_CODE, mockInput)).rejects.toThrow(
-        'Unexpected failure',
-      );
-
-      expect(executionService.failExecution).toHaveBeenCalledWith(
-        expect.objectContaining({
-          executionId: mockInput.executionId,
-          errorMessage: 'Unexpected failure',
-          errorCode: AIErrorCode.UNKNOWN,
-        }),
-        mockInput.correlationId,
-        true,
-      );
-    });
   });
 
   describe('getProviderHealth', () => {

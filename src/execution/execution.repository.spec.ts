@@ -11,7 +11,7 @@ describe('ExecutionRepository', () => {
   const mockExecution = {
     id: 'exec-123',
     ticket_id: 'ticket-123',
-    ai_provider: AIProvider.CURSOR_HEADLESS,
+    ai_provider: AIProvider.CLAUDE_CODE,
     prompt: 'test prompt',
     status: ExecutionStatus.QUEUED,
     confidence_score: null,
@@ -81,7 +81,7 @@ describe('ExecutionRepository', () => {
 
       const result = await repository.create({
         ticketId: 'ticket-123',
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         prompt: 'test prompt',
         status: ExecutionStatus.QUEUED,
         maxRetries: 3,
@@ -92,7 +92,7 @@ describe('ExecutionRepository', () => {
       expect(prisma.execution.create).toHaveBeenCalledWith({
         data: {
           ticket_id: 'ticket-123',
-          ai_provider: AIProvider.CURSOR_HEADLESS,
+          ai_provider: AIProvider.CLAUDE_CODE,
           prompt: 'test prompt',
           status: ExecutionStatus.QUEUED,
           max_retries: 3,
@@ -359,14 +359,14 @@ describe('ExecutionRepository', () => {
       (prisma.execution.findMany as jest.Mock).mockResolvedValue([mockExecution]);
 
       await repository.findByStatus(ExecutionStatus.IN_PROGRESS, {
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         limit: 10,
       });
 
       expect(prisma.execution.findMany).toHaveBeenCalledWith({
         where: {
           status: ExecutionStatus.IN_PROGRESS,
-          ai_provider: AIProvider.CURSOR_HEADLESS,
+          ai_provider: AIProvider.CLAUDE_CODE,
         },
         take: 10,
         orderBy: { created_at: 'asc' },
@@ -377,15 +377,17 @@ describe('ExecutionRepository', () => {
   describe('getActiveCountByProvider', () => {
     it('should return active count per provider', async () => {
       (prisma.execution.groupBy as jest.Mock).mockResolvedValue([
-        { ai_provider: AIProvider.CURSOR_HEADLESS, _count: 5 },
-        { ai_provider: AIProvider.CLAUDE_CODE, _count: 3 },
+        { ai_provider: AIProvider.CLAUDE_CODE, _count: 5 },
+        { ai_provider: AIProvider.GEMINI, _count: 3 },
       ]);
 
       const result = await repository.getActiveCountByProvider();
 
       expect(result).toEqual({
-        [AIProvider.CURSOR_HEADLESS]: 5,
-        [AIProvider.CLAUDE_CODE]: 3,
+        [AIProvider.CLAUDE_CODE]: 5,
+        [AIProvider.GEMINI]: 3,
+        [AIProvider.CODEX]: 0,
+        [AIProvider.KIMI]: 0,
       });
     });
 
@@ -395,8 +397,10 @@ describe('ExecutionRepository', () => {
       const result = await repository.getActiveCountByProvider();
 
       expect(result).toEqual({
-        [AIProvider.CURSOR_HEADLESS]: 0,
         [AIProvider.CLAUDE_CODE]: 0,
+        [AIProvider.GEMINI]: 0,
+        [AIProvider.CODEX]: 0,
+        [AIProvider.KIMI]: 0,
       });
     });
   });

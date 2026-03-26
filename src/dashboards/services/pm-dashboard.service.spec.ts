@@ -271,7 +271,7 @@ describe('PmDashboardService', () => {
       });
       mockAiDecisionLoggerService.getProviderDistributionStats.mockResolvedValue([
         { provider: 'CLAUDE_CODE', percentage: 60, count: 6 },
-        { provider: 'CURSOR_HEADLESS', percentage: 40, count: 4 },
+        { provider: 'GEMINI', percentage: 40, count: 4 },
       ]);
       mockPrismaService.ticket.count.mockResolvedValue(5); // sync_pending_tickets
 
@@ -294,7 +294,7 @@ describe('PmDashboardService', () => {
       expect(result.qa_first_pass_rate).toBeCloseTo(0.6);
       expect(result.provider_distribution).toEqual([
         { provider: 'CLAUDE_CODE', percentage: 60, count: 6 },
-        { provider: 'CURSOR_HEADLESS', percentage: 40, count: 4 },
+        { provider: 'GEMINI', percentage: 40, count: 4 },
       ]);
     });
   });

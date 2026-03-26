@@ -2,14 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AIProvider } from '@/prisma/client';
 import { getToken } from '@willsoto/nestjs-prometheus';
 import { PromptGeneratorService } from './prompt-generator.service';
-import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
 import { IPromptGenerationInput, IProjectContext } from './interfaces';
 import { ArchitectureConstraintsService } from '@/architecture-review/architecture-constraints.service';
 
 describe('PromptGeneratorService', () => {
   let service: PromptGeneratorService;
-  let _cursorBuilder: CursorPromptBuilder;
   let _claudeBuilder: ClaudeCodePromptBuilder;
 
   const mockMetrics = {
@@ -82,7 +80,6 @@ describe('PromptGeneratorService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PromptGeneratorService,
-        CursorPromptBuilder,
         ClaudeCodePromptBuilder,
         { provide: getToken('prompt_generation_total'), useValue: mockMetrics },
         { provide: getToken('prompt_tokens_histogram'), useValue: mockMetrics },
@@ -92,7 +89,6 @@ describe('PromptGeneratorService', () => {
     }).compile();
 
     service = module.get<PromptGeneratorService>(PromptGeneratorService);
-    _cursorBuilder = module.get<CursorPromptBuilder>(CursorPromptBuilder);
     _claudeBuilder = module.get<ClaudeCodePromptBuilder>(ClaudeCodePromptBuilder);
 
     // Initialize the service
@@ -103,7 +99,7 @@ describe('PromptGeneratorService', () => {
 
   describe('generatePrompt', () => {
     it('should inject architecture constraints into context', async () => {
-      const input = createInput({ provider: AIProvider.CURSOR_HEADLESS });
+      const input = createInput({ provider: AIProvider.CLAUDE_CODE });
       // Assume context is created by default if not provided, or provided one gets enriched
       const context = createContext();
 
@@ -132,20 +128,6 @@ describe('PromptGeneratorService', () => {
       expect(result.metadata.estimatedTokens).toBeGreaterThan(0);
     });
 
-    it('should generate Cursor prompt without inline file contents', async () => {
-      const input = createInput({ provider: AIProvider.CURSOR_HEADLESS });
-      const context = createContext();
-
-      const result = await service.generatePrompt(input, context);
-
-      expect(result.provider).toBe(AIProvider.CURSOR_HEADLESS);
-      expect(result.prompt).toContain(input.title);
-      // Cursor prompts include file paths but not content
-      expect(result.prompt).toContain(context.relevantFiles[0].path);
-      // Should not have inline TypeScript code blocks from file content
-      expect(result.metadata.contextFilesIncluded).toBe(false);
-    });
-
     it('should NOT include inline file contents for Claude Code', async () => {
       const input = createInput({ provider: AIProvider.CLAUDE_CODE });
       const context = createContext();
@@ -162,14 +144,13 @@ describe('PromptGeneratorService', () => {
       // So the prompt won't have the content.
     });
 
-    it('should skip architecture constraints loading for Claude Code', async () => {
+    it('should load architecture constraints for Claude Code if context provided', async () => {
       const input = createInput({ provider: AIProvider.CLAUDE_CODE });
-      // We don't pass context, so it would normally fetch default + constraints
-      // But for Claude it should skip.
+      const context = createContext();
 
-      await service.generatePrompt(input);
+      await service.generatePrompt(input, context);
 
-      expect(mockConstraintsService.findAll).not.toHaveBeenCalled();
+      expect(mockConstraintsService.findAll).toHaveBeenCalled();
     });
 
     it('should work without project context', async () => {
@@ -248,39 +229,6 @@ describe('PromptGeneratorService', () => {
       expect(context.techStack).toContain('NestJS');
       expect(context.techStack).toContain('Prisma');
       expect(context.codingStandards.length).toBeGreaterThan(0);
-    });
-  });
-});
-
-describe('CursorPromptBuilder', () => {
-  let builder: CursorPromptBuilder;
-
-  beforeEach(() => {
-    builder = new CursorPromptBuilder();
-  });
-
-  describe('build', () => {
-    it('should create structured prompt with all sections', () => {
-      const input: IPromptGenerationInput = {
-        correlationId: 'test',
-        ticketId: 'ticket-1',
-        clickupTaskId: 'task-1',
-        provider: AIProvider.CURSOR_HEADLESS,
-        complexityScore: 8,
-
-        complexityBreakdown: {} as any,
-        title: 'Test Task',
-        description: 'Test Description',
-        acceptanceCriteria: 'Test AC',
-        projectId: 'proj-1',
-        tags: [],
-        routedAt: new Date().toISOString(),
-      };
-
-      const result = builder.build(input);
-      expect(result).toContain('# Task: Test Task');
-      expect(result).toContain('## Description');
-      expect(result).toContain('Test Description');
     });
   });
 });

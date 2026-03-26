@@ -20,7 +20,7 @@ export class CostLogDto {
   @ApiProperty({
     description: 'AI provider used',
     enum: AIProvider,
-    example: 'CURSOR_HEADLESS',
+    example: 'CLAUDE_CODE',
   })
   aiProvider!: AIProvider;
 

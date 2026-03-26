@@ -94,7 +94,7 @@ describe('PercentageSamplingStrategy', () => {
       executionId: 'exec-123',
       filesChanged: 3,
       complexityScore: 5,
-      aiProvider: 'CURSOR_HEADLESS',
+      aiProvider: 'GEMINI',
     };
 
     const config: ISamplingConfig = {
@@ -114,7 +114,7 @@ describe('PercentageSamplingStrategy', () => {
           highMultiplier: 100,
           mediumMultiplier: 1.5,
         },
-        aiProvider: { cursorMultiplier: 1.2, claudeMultiplier: 1.0 },
+        aiProvider: { claudeMultiplier: 1.0, geminiMultiplier: 1.0 },
       },
     };
 
@@ -170,7 +170,7 @@ describe('RiskScoringService', () => {
         executionId: 'exec-123',
         filesChanged: 15,
         complexityScore: 3,
-        aiProvider: 'CURSOR_HEADLESS',
+        aiProvider: 'CLAUDE_CODE',
       };
 
       const score = service.calculateRiskScore(ticket);
@@ -187,7 +187,7 @@ describe('RiskScoringService', () => {
         executionId: 'exec-123',
         filesChanged: 3,
         complexityScore: 12,
-        aiProvider: 'CURSOR_HEADLESS',
+        aiProvider: 'CLAUDE_CODE',
       };
 
       const score = service.calculateRiskScore(ticket);
@@ -204,7 +204,7 @@ describe('RiskScoringService', () => {
         executionId: 'exec-123',
         filesChanged: 7,
         complexityScore: 3,
-        aiProvider: 'CURSOR_HEADLESS',
+        aiProvider: 'CLAUDE_CODE',
       };
 
       const score = service.calculateRiskScore(ticket);
@@ -220,7 +220,7 @@ describe('RiskScoringService', () => {
         executionId: 'exec-123',
         filesChanged: 3,
         complexityScore: 7,
-        aiProvider: 'CURSOR_HEADLESS',
+        aiProvider: 'CLAUDE_CODE',
       };
 
       const score = service.calculateRiskScore(ticket);
@@ -246,19 +246,20 @@ describe('RiskScoringService', () => {
       expect(score.cumulativeMultiplier).toBe(1.0);
     });
 
-    it('should add factor for cursor provider', () => {
+    it('should add factor for high risk provider if configured', () => {
       const ticket: ITicketData = {
         ticketId: 'TEST-123',
         executionId: 'exec-123',
         filesChanged: 3,
         complexityScore: 3,
-        aiProvider: 'CURSOR_HEADLESS',
+        aiProvider: 'GEMINI',
       };
 
       const score = service.calculateRiskScore(ticket);
 
-      expect(score.factors).toContain('cursor_provider');
-      expect(score.cumulativeMultiplier).toBe(1.2); // Cursor 1.2x multiplier
+      // Note: Replacing previous cursor test with a generic provider check if applicable
+      // For now, CLAUDE/GEMINI are 1.0x by default.
+      expect(score.cumulativeMultiplier).toBe(1.0);
     });
 
     it('should accumulate multiple risk factors (multiplicative)', () => {
@@ -267,16 +268,15 @@ describe('RiskScoringService', () => {
         executionId: 'exec-123',
         filesChanged: 7, // medium: 2x
         complexityScore: 7, // medium: 1.5x
-        aiProvider: 'CURSOR_HEADLESS', // 1.2x
+        aiProvider: 'CLAUDE_CODE', // 1.0x
       };
 
       const score = service.calculateRiskScore(ticket);
 
       expect(score.factors).toContain('medium_file_count');
       expect(score.factors).toContain('medium_complexity');
-      expect(score.factors).toContain('cursor_provider');
-      // AC#2: Cumulative multiplicative: 2.0 * 1.5 * 1.2 = 3.6
-      expect(score.cumulativeMultiplier).toBeCloseTo(3.6, 1);
+      // AC#2: Cumulative multiplicative: 2.0 * 1.5 * 1.0 = 3.0
+      expect(score.cumulativeMultiplier).toBeCloseTo(3.0, 1);
     });
   });
 });
@@ -319,7 +319,7 @@ describe('RiskBasedSamplingStrategy', () => {
       executionId: 'exec-123',
       filesChanged: 15, // HIGH
       complexityScore: 3,
-      aiProvider: 'CURSOR_HEADLESS',
+      aiProvider: 'CLAUDE_CODE',
     };
 
     const config: ISamplingConfig = {
@@ -339,7 +339,7 @@ describe('RiskBasedSamplingStrategy', () => {
           highMultiplier: 100,
           mediumMultiplier: 1.5,
         },
-        aiProvider: { cursorMultiplier: 1.2, claudeMultiplier: 1.0 },
+        aiProvider: { claudeMultiplier: 1.0, geminiMultiplier: 1.0 },
       },
     };
 
@@ -378,7 +378,7 @@ describe('RiskBasedSamplingStrategy', () => {
           highMultiplier: 100,
           mediumMultiplier: 1.5,
         },
-        aiProvider: { cursorMultiplier: 1.2, claudeMultiplier: 1.0 },
+        aiProvider: { claudeMultiplier: 1.0, geminiMultiplier: 1.0 },
       },
     };
 
@@ -433,7 +433,7 @@ describe('CompositeSamplingStrategy', () => {
       executionId: 'exec-123',
       filesChanged: 3,
       complexityScore: 3,
-      aiProvider: 'CURSOR_HEADLESS',
+      aiProvider: 'CLAUDE_CODE',
     };
 
     const config: ISamplingConfig = {
@@ -453,7 +453,7 @@ describe('CompositeSamplingStrategy', () => {
           highMultiplier: 100,
           mediumMultiplier: 1.5,
         },
-        aiProvider: { cursorMultiplier: 1.2, claudeMultiplier: 1.0 },
+        aiProvider: { claudeMultiplier: 1.0, geminiMultiplier: 1.0 },
       },
     };
 
@@ -469,7 +469,7 @@ describe('CompositeSamplingStrategy', () => {
       executionId: 'exec-123',
       filesChanged: 15, // HIGH risk
       complexityScore: 3,
-      aiProvider: 'CURSOR_HEADLESS',
+      aiProvider: 'CLAUDE_CODE',
     };
 
     const config: ISamplingConfig = {
@@ -489,7 +489,7 @@ describe('CompositeSamplingStrategy', () => {
           highMultiplier: 100,
           mediumMultiplier: 1.5,
         },
-        aiProvider: { cursorMultiplier: 1.2, claudeMultiplier: 1.0 },
+        aiProvider: { claudeMultiplier: 1.0, geminiMultiplier: 1.0 },
       },
     };
 

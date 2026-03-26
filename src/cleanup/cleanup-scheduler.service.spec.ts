@@ -20,7 +20,7 @@ describe('CleanupSchedulerService', () => {
     {
       id: 'exec-1',
       ticket_id: 'ticket-1',
-      ai_provider: AIProvider.CURSOR_HEADLESS,
+      ai_provider: AIProvider.CLAUDE_CODE,
       prompt: 'test',
       status: ExecutionStatus.COMPLETED,
       container_id: 'container-1',

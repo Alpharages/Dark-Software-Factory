@@ -156,7 +156,7 @@ export class FinancialMetricsService {
         ([provider, cost]) => {
           const providerCost = parseFloat(cost.toString());
           return {
-            provider,
+            provider: provider as ProviderBreakdownDto['provider'],
             costUsd: cost.toString(),
             percentage: totalCostNum > 0 ? (providerCost / totalCostNum) * 100 : 0,
           };

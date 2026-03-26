@@ -132,7 +132,7 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
 
     // Default mock setup
     mockRepository.getActiveCountByProvider.mockResolvedValue({
-      [AIProvider.CURSOR_HEADLESS]: 0,
+      [AIProvider.CLAUDE_CODE]: 0,
     });
   });
 
@@ -147,7 +147,7 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
       const mockExecution = {
         id: executionId,
         ticket_id: 'ticket-1',
-        ai_provider: AIProvider.CURSOR_HEADLESS,
+        ai_provider: AIProvider.CLAUDE_CODE,
         status: ExecutionStatus.QUEUED,
         complexity_score: 5,
         ticket: { project_id: 'proj-1' },
@@ -170,7 +170,7 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
         'execution.started',
         expect.objectContaining({
           executionId,
-          aiProvider: AIProvider.CURSOR_HEADLESS,
+          aiProvider: AIProvider.CLAUDE_CODE,
         }),
       );
 
@@ -192,7 +192,7 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
       const mockExecution = {
         id: executionId,
         ticket_id: 'ticket-1',
-        ai_provider: AIProvider.CURSOR_HEADLESS,
+        ai_provider: AIProvider.CLAUDE_CODE,
         status: ExecutionStatus.QUEUED,
         ticket: null, // No ticket info linked yet or lookup failed part
       };
@@ -263,7 +263,7 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
       const mockExecution = {
         id: executionId,
         ticket_id: 'ticket-1',
-        ai_provider: AIProvider.CURSOR_HEADLESS,
+        ai_provider: AIProvider.CLAUDE_CODE,
         status: ExecutionStatus.IN_PROGRESS,
         retry_count: 1,
         max_retries: 3,

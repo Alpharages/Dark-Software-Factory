@@ -72,8 +72,8 @@ export interface IRoutingDecision {
  * Why a provider was selected
  */
 export enum RoutingReason {
-  COMPLEXITY_HIGH = 'complexity_high', // Score >= threshold → Cursor
-  COMPLEXITY_LOW = 'complexity_low', // Score < threshold → Claude Code
+  COMPLEXITY_HIGH = 'complexity_high', // Score >= threshold (favors high-capacity providers)
+  COMPLEXITY_LOW = 'complexity_low', // Score < threshold (favors autonomous providers)
   COST_OPTIMIZATION = 'cost_optimization', // Cheaper provider for simple task
   PRIMARY_UNAVAILABLE = 'primary_unavailable', // Fallback to secondary
   EXPLICIT_OVERRIDE = 'explicit_override', // Manual override via tag

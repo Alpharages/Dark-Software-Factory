@@ -78,7 +78,7 @@ describe('CommitMessageContext', () => {
         scope: 'auth',
         description: 'add jwt token refresh',
         ticketId: 'DSF-245',
-        aiProvider: 'CURSOR_HEADLESS',
+        aiProvider: 'CLAUDE_CODE',
         executionId: '550e8400-e29b-41d4-a716-446655440000',
         complexityScore: 72,
       };
@@ -87,7 +87,7 @@ describe('CommitMessageContext', () => {
 
       expect(message).toContain('feat(auth): add jwt token refresh');
       expect(message).toContain('Implements: DSF-245');
-      expect(message).toContain('AI-Generated: CURSOR_HEADLESS');
+      expect(message).toContain('AI-Generated: CLAUDE_CODE');
       expect(message).toContain('Execution-ID: 550e8400-e29b-41d4-a716-446655440000');
       expect(message).toContain('Complexity: 72/100');
     });
@@ -121,7 +121,7 @@ describe('CommitMessageContext', () => {
         'Add JWT token refresh mechanism',
         'Implements automatic token refresh',
         ['src/auth/refresh-token.service.ts'],
-        'CURSOR_HEADLESS',
+        'CLAUDE_CODE',
         '550e8400-e29b-41d4-a716-446655440000',
         72,
       );
@@ -130,7 +130,7 @@ describe('CommitMessageContext', () => {
       expect(context.scope).toBe('auth');
       expect(context.description).toContain('jwt token refresh');
       expect(context.ticketId).toBe('DSF-245');
-      expect(context.aiProvider).toBe('CURSOR_HEADLESS');
+      expect(context.aiProvider).toBe('CLAUDE_CODE');
       expect(context.executionId).toBe('550e8400-e29b-41d4-a716-446655440000');
       expect(context.complexityScore).toBe(72);
     });

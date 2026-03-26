@@ -93,7 +93,7 @@ describe('ExecutionGateway', () => {
         ticketId: 'ticket-123',
         status: ExecutionStatus.IN_PROGRESS as ExecutionStatus,
         timestamp: new Date().toISOString(),
-        aiProvider: AIProvider.CURSOR_HEADLESS as AIProvider,
+        aiProvider: AIProvider.CLAUDE_CODE as AIProvider,
       };
 
       gateway.emitProgress(payload);

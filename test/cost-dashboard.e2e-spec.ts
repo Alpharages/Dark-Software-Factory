@@ -22,7 +22,7 @@ describe('Cost Dashboard (e2e)', () => {
     {
       id: 'log-1',
       timestamp: new Date(),
-      ai_provider: AIProvider.CURSOR_HEADLESS,
+      ai_provider: AIProvider.CLAUDE_CODE,
       model_name: 'gpt-4o',
       operation_type: 'code_generation',
       tokens_input: 1000,
@@ -32,7 +32,7 @@ describe('Cost Dashboard (e2e)', () => {
       execution: {
         id: 'exec-1',
         status: 'COMPLETED',
-        ai_provider: AIProvider.CURSOR_HEADLESS,
+        ai_provider: AIProvider.CLAUDE_CODE,
         selected_model: 'gpt-4o',
       },
     },
@@ -88,9 +88,7 @@ describe('Cost Dashboard (e2e)', () => {
 
   describe('Endpoints Logic', () => {
     it('GET /api/costs/summary/:period should return aggregated data', async () => {
-      const providerData = [
-        { ai_provider: 'CURSOR_HEADLESS', _sum: { cost_usd: '1.5' }, _count: 10 },
-      ];
+      const providerData = [{ ai_provider: 'CLAUDE_CODE', _sum: { cost_usd: '1.5' }, _count: 10 }];
       const modelData = [{ model_name: 'gpt-4o', _sum: { cost_usd: '1.5' }, _count: 10 }];
       const totalData = {
         _sum: { cost_usd: '1.5', tokens_input: 100, tokens_output: 50 },

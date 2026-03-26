@@ -10,7 +10,7 @@ import {
   IPromptMetadata,
   PromptSection,
 } from './interfaces';
-import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
+
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
 import { ArchitectureConstraintsService } from '@/architecture-review/architecture-constraints.service';
 
@@ -33,7 +33,6 @@ export class PromptGeneratorService implements OnModuleInit {
   private readonly builders: Map<AIProvider, IPromptBuilder> = new Map();
 
   constructor(
-    private readonly cursorBuilder: CursorPromptBuilder,
     private readonly claudeBuilder: ClaudeCodePromptBuilder,
     @InjectMetric('prompt_generation_total')
     private readonly promptCounter: Counter<string>,
@@ -46,7 +45,6 @@ export class PromptGeneratorService implements OnModuleInit {
 
   onModuleInit(): void {
     // Register prompt builders
-    this.builders.set(AIProvider.CURSOR_HEADLESS, this.cursorBuilder);
     this.builders.set(AIProvider.CLAUDE_CODE, this.claudeBuilder);
 
     this.logger.log(
@@ -72,60 +70,10 @@ export class PromptGeneratorService implements OnModuleInit {
 
     try {
       // 1. Context Strategy
-      // Story 19-2: Skip expensive context loading for Claude Code (autonomous discovery)
+      // Story 19-2: Claude Code uses autonomous discovery, skip expensive context loading
+      // Context strategy will be re-evaluated for GEMINI/CODEX in OS-4.4
       if (provider !== AIProvider.CLAUDE_CODE) {
-        // Enforce default context if missing
-        if (!context) {
-          context = this.getDefaultProjectContext();
-        }
-
-        try {
-          // Fetch all applicable constraints (Global + Project specific if applicable)
-          // findAll logic: if projectId provided, it fetches specific + global. If not, just global.
-          const constraints = input.projectId
-            ? await this.architectureConstraintsService.findAll(input.projectId)
-            : await this.architectureConstraintsService.findAll();
-
-          if (constraints.length > 0) {
-            context.architectureConstraints = constraints.map(
-              (c: { type: string; rules: unknown; scope: string }) => {
-                const rulesStr = JSON.stringify(c.rules);
-                return `${c.type}: ${rulesStr} (${c.scope})`;
-              },
-            );
-          }
-        } catch (err) {
-          this.logger.warn(`Failed to fetch architecture constraints: ${(err as Error).message}`);
-        }
-
-        // Story 7.6 AC#5: Fetch TL guidance from previous escalations for this ticket
-        if (input.ticketId) {
-          try {
-            // Query ADR table for most recent GUIDANCE_PROVIDED or RESOLVED ADR for this ticket
-            const adrsWithGuidance = await this.architectureConstraintsService[
-              'prisma'
-            ].adr.findFirst({
-              where: {
-                ticket_id: input.ticketId,
-                status: { in: ['GUIDANCE_PROVIDED', 'RESOLVED'] },
-                tl_guidance: { not: null },
-              },
-              orderBy: { guidance_provided_at: 'desc' },
-              select: { tl_guidance: true },
-            });
-
-            if (adrsWithGuidance?.tl_guidance) {
-              context.previousEscalationGuidance = adrsWithGuidance.tl_guidance;
-              this.logger.log(
-                `[${correlationId}] Injecting TL guidance into prompt for ticket ${input.ticketId}`,
-              );
-            }
-          } catch (err) {
-            this.logger.warn(
-              `Failed to fetch TL guidance for ticket ${input.ticketId}: ${(err as Error).message}`,
-            );
-          }
-        }
+        // Placeholder for future providers that might need pre-loaded context
       }
 
       // 2. Get appropriate builder

@@ -35,7 +35,7 @@ describe('AIExecutionConsumer', () => {
     payload: {
       ticketId: 'ticket-456',
       executionId: 'exec-789',
-      aiProvider: AIProvider.CURSOR_HEADLESS,
+      aiProvider: AIProvider.CLAUDE_CODE,
       priority: 3,
       prompt: 'Fix the bug',
       repositoryUrl: 'https://github.com/test/repo',
@@ -93,7 +93,7 @@ describe('AIExecutionConsumer', () => {
         codeDiff: '// Generated code',
         filesChanged: ['src/test.ts'],
         confidenceScore: 0.95,
-        executedBy: AIProvider.CURSOR_HEADLESS,
+        executedBy: AIProvider.CLAUDE_CODE,
       }),
     };
 

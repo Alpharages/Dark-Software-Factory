@@ -116,10 +116,6 @@ export const PROVIDER_COST_RATES: Record<string, ProviderCostRates> = {
     inputTokenRate: 300, // $3.00 per 1M tokens = 300 cents
     outputTokenRate: 1500, // $15.00 per 1M tokens = 1500 cents
   },
-  CURSOR_HEADLESS: {
-    inputTokenRate: 0, // Cursor uses subscription model
-    outputTokenRate: 0,
-  },
 };
 
 // Map-based cost rates lookup for type-safe access

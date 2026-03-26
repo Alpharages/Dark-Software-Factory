@@ -23,7 +23,7 @@ describe('ExecutionService', () => {
   const mockExecution = {
     id: 'exec-123',
     ticket_id: 'ticket-123',
-    ai_provider: AIProvider.CURSOR_HEADLESS,
+    ai_provider: AIProvider.CLAUDE_CODE,
     prompt: 'test prompt',
     status: ExecutionStatus.QUEUED,
     confidence_score: null,
@@ -136,7 +136,7 @@ describe('ExecutionService', () => {
         correlationId: 'corr-123',
         ticketId: 'ticket-123',
         clickupTaskId: 'cu-123',
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         prompt: 'test prompt',
         complexityScore: 50,
         promptMetadata: {
@@ -164,7 +164,7 @@ describe('ExecutionService', () => {
         correlationId: 'corr-123',
         ticketId: 'ticket-123',
         clickupTaskId: 'cu-123',
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         prompt: 'test prompt',
         complexityScore: 50,
         promptMetadata: {

@@ -21,7 +21,6 @@ describe('AIRoutingService', () => {
   const mockConfigService = {
     get: jest.fn((key: string, defaultValue: unknown) => {
       // Handle provider enabled checks
-      if (key === 'ai.providers.cursorHeadless.enabled') return true;
       if (key === 'ai.providers.claudeCode.enabled') return true;
       // For all other config values, return default
       return defaultValue;
@@ -126,18 +125,18 @@ describe('AIRoutingService', () => {
     jest.clearAllMocks();
   });
 
-  it('should route high complexity ticket to CURSOR_HEADLESS', async () => {
+  it('should route high complexity ticket to CLAUDE_CODE', async () => {
     mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 15 });
     mockConfigService.get.mockReturnValue(10); // Threshold
     mockProviderHealth.getAvailableProvider.mockResolvedValue({
-      provider: AIProvider.CURSOR_HEADLESS,
+      provider: AIProvider.CLAUDE_CODE,
       health: { isHealthy: true },
     });
     mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });
 
     const decision = await service.routeTicket(mockRequest);
 
-    expect(decision.selectedProvider).toBe(AIProvider.CURSOR_HEADLESS);
+    expect(decision.selectedProvider).toBe(AIProvider.CLAUDE_CODE);
     expect(decision.routingReason).toBe(RoutingReason.COMPLEXITY_HIGH);
     expect(mockRabbitMQ.publishToQueue).toHaveBeenCalledWith(
       QUEUE_NAMES.AI_EXECUTION,
@@ -161,19 +160,14 @@ describe('AIRoutingService', () => {
     expect(decision.routingReason).toBe(RoutingReason.COMPLEXITY_LOW);
   });
 
-  it('should handle fallback when preferred provider is unavailable', async () => {
-    mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 15 }); // Prefers Cursor
-    mockProviderHealth.getAvailableProvider.mockResolvedValue({
-      provider: AIProvider.CLAUDE_CODE, // Returns Claude instead
-      health: { isHealthy: true },
-    });
+  it('should handle fallback when provider is unhealthy', async () => {
+    mockComplexityScorer.calculateComplexity.mockReturnValue({ totalScore: 15 });
+    mockProviderHealth.getAvailableProvider.mockResolvedValue(null); // All unhealthy
     mockPrisma.execution.create.mockResolvedValue({ id: 'exec-1' });
 
-    const decision = await service.routeTicket(mockRequest);
-
-    expect(decision.selectedProvider).toBe(AIProvider.CLAUDE_CODE);
-    expect(decision.fallbackUsed).toBe(true);
-    expect(decision.routingReason).toBe(RoutingReason.PRIMARY_UNAVAILABLE);
+    await expect(service.routeTicket(mockRequest)).rejects.toThrow(
+      'No AI provider currently available',
+    );
   });
 
   it('should queue for delayed retry when no provider is available', async () => {

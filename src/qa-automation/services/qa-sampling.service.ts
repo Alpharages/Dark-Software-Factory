@@ -32,7 +32,7 @@ import {
  * - Files changed 5-10: MEDIUM risk (2x sampling probability)
  * - Complexity score ≥ 10: HIGH risk (always include)
  * - Complexity score 5-9: MEDIUM risk (1.5x sampling probability)
- * - AI Provider = Cursor (headless): MEDIUM risk (1.2x sampling probability)
+ * - AI Provider = Gemini: MEDIUM risk (1.2x sampling probability)
  */
 const DEFAULT_RISK_RULES: IRiskRules = {
   fileCount: {
@@ -48,7 +48,7 @@ const DEFAULT_RISK_RULES: IRiskRules = {
     mediumMultiplier: 1.5, // 1.5x probability
   },
   aiProvider: {
-    cursorMultiplier: 1.2, // 1.2x probability
+    geminiMultiplier: 1.2, // 1.2x probability
     claudeMultiplier: 1.0,
   },
 };
@@ -187,9 +187,9 @@ export class RiskScoringService {
     factors: string[],
   ): number {
     const providerLower = provider.toLowerCase();
-    if (providerLower.includes('cursor')) {
-      factors.push('cursor_provider');
-      return rules.cursorMultiplier; // 1.2x multiplier for Cursor
+    if (providerLower.includes('gemini')) {
+      factors.push('gemini_provider');
+      return rules.geminiMultiplier; // 1.2x multiplier for Gemini
     }
     return rules.claudeMultiplier; // 1.0x for Claude
   }
@@ -224,7 +224,7 @@ export class RiskBasedSamplingStrategy implements ISamplingStrategy {
     // Risk factors are multiplicative:
     // - File count 5-10: 2x
     // - Complexity 5-9: 1.5x
-    // - Cursor provider: 1.2x
+    // - Gemini provider: 1.2x
     // Combined: 2.0 * 1.5 * 1.2 = 3.6x maximum
     const baseProbability = config.percentage / 100;
     const finalProbability = Math.min(baseProbability * riskScore.cumulativeMultiplier, 1.0);

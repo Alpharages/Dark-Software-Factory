@@ -1133,8 +1133,10 @@ enum TaskType {
 }
 
 enum AIProvider {
-  CURSOR_HEADLESS
   CLAUDE_CODE
+  GEMINI
+  CODEX
+  KIMI
 }
 
 enum ExecutionStatus {

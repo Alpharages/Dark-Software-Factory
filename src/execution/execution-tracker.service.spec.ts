@@ -17,7 +17,7 @@ describe('ExecutionTrackerService', () => {
   const mockExecution = {
     id: 'exec-123',
     ticket_id: 'ticket-123',
-    ai_provider: AIProvider.CURSOR_HEADLESS,
+    ai_provider: AIProvider.CLAUDE_CODE,
     prompt: 'test prompt',
     status: ExecutionStatus.QUEUED,
     confidence_score: null,
@@ -161,8 +161,10 @@ describe('ExecutionTrackerService', () => {
 
     // Default mocks
     repository.getActiveCountByProvider.mockResolvedValue({
-      [AIProvider.CURSOR_HEADLESS]: 0,
       [AIProvider.CLAUDE_CODE]: 0,
+      [AIProvider.GEMINI]: 0,
+      [AIProvider.CODEX]: 0,
+      [AIProvider.KIMI]: 0,
     });
   });
 
@@ -179,7 +181,7 @@ describe('ExecutionTrackerService', () => {
       correlationId: 'corr-123',
       ticketId: 'ticket-123',
       clickupTaskId: 'cu-123',
-      provider: AIProvider.CURSOR_HEADLESS,
+      provider: AIProvider.CLAUDE_CODE,
       prompt: 'test prompt',
       promptMetadata: {
         promptLength: 100,
@@ -200,7 +202,7 @@ describe('ExecutionTrackerService', () => {
       expect(result).toEqual(mockExecution);
       expect(repository.create).toHaveBeenCalledWith({
         ticketId: 'ticket-123',
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         prompt: 'test prompt',
         status: ExecutionStatus.QUEUED,
         complexityScore: 50,
@@ -248,7 +250,7 @@ describe('ExecutionTrackerService', () => {
       await service.startExecution(startInput);
 
       expect(mockMetricCounter.inc).toHaveBeenCalledWith({
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         status: 'started',
       });
     });
@@ -357,7 +359,7 @@ describe('ExecutionTrackerService', () => {
       await service.completeExecution(completionData, 'corr-123');
 
       expect(mockMetricHistogram.observe).toHaveBeenCalledWith(
-        { provider: AIProvider.CURSOR_HEADLESS, status: 'completed' },
+        { provider: AIProvider.CLAUDE_CODE, status: 'completed' },
         expect.any(Number),
       );
     });
@@ -514,7 +516,7 @@ describe('ExecutionTrackerService', () => {
       await service.timeoutExecution(timeoutData, 'corr-123');
 
       expect(mockMetricHistogram.observe).toHaveBeenCalledWith(
-        { provider: AIProvider.CURSOR_HEADLESS, status: 'timeout' },
+        { provider: AIProvider.CLAUDE_CODE, status: 'timeout' },
         300,
       );
     });
@@ -542,7 +544,7 @@ describe('ExecutionTrackerService', () => {
 
       expect(result.newStatus).toBe(ExecutionStatus.CANCELLED);
       expect(mockMetricCounter.inc).toHaveBeenCalledWith({
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         status: 'cancelled',
       });
     });
@@ -588,7 +590,7 @@ describe('ExecutionTrackerService', () => {
           correlationId: 'corr-123',
           ticketId: 'ticket-123',
           clickupTaskId: 'cu-123',
-          provider: AIProvider.CURSOR_HEADLESS,
+          provider: AIProvider.CLAUDE_CODE,
           prompt: 'test',
           promptMetadata: {
             promptLength: 100,

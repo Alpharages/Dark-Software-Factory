@@ -18,11 +18,7 @@ import { ComplexityScorerService } from '../src/ai-routing/complexity-scorer.ser
 import { AIDecisionLoggerService } from '../src/audit/ai-decision-logger.service';
 import { AdrParserService } from '../src/ai-routing/adr-parser.service';
 import { AdrService } from '../src/architecture-review/adr.service';
-import {
-  ProviderSelectionReason,
-  ComplexityGrade,
-  AIErrorCode,
-} from '../src/ai-routing/interfaces';
+import { ProviderSelectionReason, ComplexityGrade } from '../src/ai-routing/interfaces';
 // Prometheus metric providers not needed - using mock values directly
 import configuration from '../src/config/configuration';
 
@@ -30,14 +26,14 @@ describe('Orchestrator (e2e)', () => {
   let app: INestApplication;
   let orchestrator: OrchestratorService;
   let providerFactory: ProviderFactoryService;
-  let aiExecution: jest.Mocked<AIExecutionService>;
+  let fallbackStrategy: FallbackStrategyService;
+  let _aiExecution: jest.Mocked<AIExecutionService>;
 
   beforeAll(async () => {
     const mockAIExecution = {
-      executeWithProvider: jest.fn(),
       isProviderAvailable: jest.fn().mockResolvedValue(true),
       getProviderHealth: jest.fn().mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
+        provider: AIProvider.CLAUDE_CODE,
         isHealthy: true,
         lastSuccessAt: new Date(),
         lastFailureAt: null,
@@ -111,7 +107,8 @@ describe('Orchestrator (e2e)', () => {
 
     orchestrator = app.get<OrchestratorService>(OrchestratorService);
     providerFactory = app.get<ProviderFactoryService>(ProviderFactoryService);
-    aiExecution = app.get(AIExecutionService);
+    fallbackStrategy = app.get<FallbackStrategyService>(FallbackStrategyService);
+    _aiExecution = app.get(AIExecutionService);
   });
 
   afterAll(async () => {
@@ -123,7 +120,7 @@ describe('Orchestrator (e2e)', () => {
   });
 
   describe('Provider Selection', () => {
-    it('should select Cursor for high complexity tasks', async () => {
+    it('should select Claude for high complexity tasks', async () => {
       const selection = await providerFactory.selectProvider({
         correlationId: 'test-corr-1',
         executionId: 'exec-1',
@@ -138,9 +135,9 @@ describe('Orchestrator (e2e)', () => {
         estimatedFilesCount: 8,
       });
 
-      expect(selection.primary).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(selection.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(selection.complexityGrade).toBe(ComplexityGrade.HIGH);
-      expect(selection.fallback).toBe(AIProvider.CLAUDE_CODE);
+      expect(selection.fallback).toBe(AIProvider.GEMINI);
     });
 
     it('should select Claude for low complexity tasks', async () => {
@@ -158,7 +155,7 @@ describe('Orchestrator (e2e)', () => {
 
       expect(selection.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(selection.reason).toBe(ProviderSelectionReason.COST_OPTIMIZATION);
-      expect(selection.fallback).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(selection.fallback).toBe(AIProvider.GEMINI);
     });
 
     it('should respect provider override', async () => {
@@ -168,10 +165,10 @@ describe('Orchestrator (e2e)', () => {
         ticketId: 'ticket-3',
         prompt: 'Simple task',
         repositoryUrl: 'https://github.com/test/repo.git',
-        providerOverride: AIProvider.CURSOR_HEADLESS,
+        providerOverride: AIProvider.GEMINI,
       });
 
-      expect(selection.primary).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(selection.primary).toBe(AIProvider.GEMINI);
       expect(selection.reason).toBe(ProviderSelectionReason.OVERRIDE);
     });
   });
@@ -182,25 +179,36 @@ describe('Orchestrator (e2e)', () => {
 
       expect(availability).toHaveLength(2);
 
-      const cursor = availability.find((a) => a.provider === AIProvider.CURSOR_HEADLESS);
+      const gemini = availability.find((a) => a.provider === AIProvider.GEMINI);
       const claude = availability.find((a) => a.provider === AIProvider.CLAUDE_CODE);
 
-      expect(cursor).toBeDefined();
+      expect(gemini).toBeDefined();
       expect(claude).toBeDefined();
-      expect(cursor?.isAvailable).toBe(true);
+      expect(claude?.isAvailable).toBe(true);
     });
   });
 
   describe('Full Orchestration Flow', () => {
     it('should execute successfully with primary provider', async () => {
-      aiExecution.executeWithProvider.mockResolvedValue({
-        success: true,
-        codeDiff: 'diff --git a/src/utils.ts b/src/utils.ts\n+export function hello() {}',
-        filesChanged: ['src/utils.ts'],
-        confidenceScore: 0.9,
-        durationMs: 30000,
-        workspacePath: '/tmp/workspace',
-      });
+      jest.spyOn(providerFactory, 'getCodingProvider').mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+      jest.spyOn(fallbackStrategy, 'executeWithFallbackCodingProvider').mockResolvedValue({
+        result: {
+          success: true,
+          codeDiff: 'diff --git a/src/utils.ts b/src/utils.ts\n+export function hello() {}',
+          filesChanged: ['src/utils.ts'],
+          confidenceScore: 0.9,
+          durationMs: 30000,
+          workspacePath: '/tmp/workspace',
+        },
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        fallbackAttempts: [],
+      } as any);
 
       const result = await orchestrator.execute({
         correlationId: 'test-corr-4',
@@ -218,14 +226,25 @@ describe('Orchestrator (e2e)', () => {
     });
 
     it('should track metrics after execution', async () => {
-      aiExecution.executeWithProvider.mockResolvedValue({
-        success: true,
-        codeDiff: 'diff',
-        filesChanged: ['file.ts'],
-        confidenceScore: 0.85,
-        durationMs: 25000,
-        workspacePath: '/tmp/ws',
-      });
+      jest.spyOn(providerFactory, 'getCodingProvider').mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+      jest.spyOn(fallbackStrategy, 'executeWithFallbackCodingProvider').mockResolvedValue({
+        result: {
+          success: true,
+          codeDiff: 'diff',
+          filesChanged: ['file.ts'],
+          confidenceScore: 0.85,
+          durationMs: 25000,
+          workspacePath: '/tmp/ws',
+        },
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        fallbackAttempts: [],
+      } as any);
 
       await orchestrator.execute({
         correlationId: 'test-corr-5',
@@ -259,29 +278,33 @@ describe('Orchestrator (e2e)', () => {
 
   describe('Fallback Scenarios', () => {
     it('should fallback when primary provider fails', async () => {
-      // First call fails, second succeeds
-      aiExecution.executeWithProvider
-        .mockResolvedValueOnce({
-          success: false,
-          codeDiff: null,
-          filesChanged: [],
-          confidenceScore: 0,
-          durationMs: 300000,
-          workspacePath: '/tmp/ws1',
-          error: {
-            code: AIErrorCode.TIMEOUT,
-            message: 'Execution timed out',
-            isRetryable: true,
-          },
-        })
-        .mockResolvedValueOnce({
+      jest.spyOn(providerFactory, 'getCodingProvider').mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+      jest.spyOn(fallbackStrategy, 'executeWithFallbackCodingProvider').mockResolvedValue({
+        result: {
           success: true,
           codeDiff: 'diff --git ...',
           filesChanged: ['src/main.ts'],
           confidenceScore: 0.8,
           durationMs: 45000,
           workspacePath: '/tmp/ws2',
-        });
+        },
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: true,
+        fallbackAttempts: [
+          {
+            provider: AIProvider.CLAUDE_CODE,
+            error: 'Execution timed out',
+            wasRetryable: true,
+            durationMs: 300000,
+            timestamp: new Date(),
+          },
+        ],
+      } as any);
 
       const result = await orchestrator.execute({
         correlationId: 'test-corr-6',

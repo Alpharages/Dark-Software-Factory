@@ -103,7 +103,7 @@ export class QaSamplingConfigController {
           highMultiplier: number;
           mediumMultiplier: number;
         };
-        aiProvider: { cursorMultiplier: number; claudeMultiplier: number };
+        aiProvider: { geminiMultiplier: number; claudeMultiplier: number };
       },
       randomSeed: dto.randomSeed,
     });
@@ -164,7 +164,7 @@ export class QaReviewQueueController {
   })
   @ApiQuery({ name: 'riskLevel', required: false, enum: ['LOW', 'MEDIUM', 'HIGH'] })
   @ApiQuery({ name: 'projectId', required: false, type: String })
-  @ApiQuery({ name: 'aiProvider', required: false, enum: ['cursor', 'claude'] })
+  @ApiQuery({ name: 'aiProvider', required: false, enum: ['gemini', 'claude'] })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['risk_level', 'created_at'] })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -463,7 +463,7 @@ export class QaReviewSamplesController {
   })
   @ApiQuery({ name: 'riskLevel', required: false, enum: ['LOW', 'MEDIUM', 'HIGH'] })
   @ApiQuery({ name: 'projectId', required: false, type: String })
-  @ApiQuery({ name: 'aiProvider', required: false, enum: ['cursor', 'claude'] })
+  @ApiQuery({ name: 'aiProvider', required: false, enum: ['gemini', 'claude'] })
   @ApiQuery({ name: 'sortBy', required: false, enum: ['risk_level', 'created_at'] })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiQuery({ name: 'page', required: false, type: Number })

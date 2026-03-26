@@ -58,8 +58,8 @@ export class AIExecutionPublisher {
     const corrId = correlationId || uuidv4();
     const messageId = uuidv4();
 
-    // Determine AI provider (default to CURSOR_HEADLESS per Prisma enum)
-    const aiProvider = dto.preferredProvider || AIProvider.CURSOR_HEADLESS;
+    // Determine AI provider (default to CLAUDE_CODE per Prisma enum)
+    const aiProvider = dto.preferredProvider || AIProvider.CLAUDE_CODE;
     const priority = dto.priority || 3; // Default medium priority
 
     try {

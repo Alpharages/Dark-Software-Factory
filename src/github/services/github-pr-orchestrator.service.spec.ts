@@ -31,7 +31,7 @@ describe('GitHubPROrchestrator', () => {
   const mockExecution = {
     id: 'exec-123',
     ticket_id: 'ticket-456',
-    ai_provider: 'CURSOR_HEADLESS',
+    ai_provider: 'CLAUDE_CODE',
     complexity_score: 75,
     confidence_score: 92,
     ticket: {

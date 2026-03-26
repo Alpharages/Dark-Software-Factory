@@ -48,7 +48,7 @@ describe('CostDashboardService', () => {
     it('should return aggregated cost summary for a day', async () => {
       const providerData = [
         {
-          ai_provider: AIProvider.CURSOR_HEADLESS,
+          ai_provider: AIProvider.CLAUDE_CODE,
           _sum: { cost_usd: new Prisma.Decimal('10.5'), tokens_input: 1000, tokens_output: 500 },
           _count: 5,
         },
@@ -76,7 +76,7 @@ describe('CostDashboardService', () => {
       expect(result.totalCostUsd).toBe('10.5');
       expect(result.invocationCount).toBe(5);
       expect(result.byProvider).toHaveLength(1);
-      expect(result.byProvider[0].provider).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(result.byProvider[0].provider).toBe(AIProvider.CLAUDE_CODE);
       expect(result.byModel).toHaveLength(1);
       expect(result.byModel[0].model).toBe('gpt-4o');
     });
@@ -99,7 +99,7 @@ describe('CostDashboardService', () => {
         {
           id: 'log-1',
           timestamp: new Date(),
-          ai_provider: AIProvider.CURSOR_HEADLESS,
+          ai_provider: AIProvider.CLAUDE_CODE,
           model_name: 'gpt-4o',
           operation_type: 'code_gen',
           tokens_input: 100,
@@ -108,7 +108,7 @@ describe('CostDashboardService', () => {
           execution: {
             id: 'exec-1',
             status: 'SUCCESS',
-            ai_provider: 'CURSOR_HEADLESS',
+            ai_provider: 'CLAUDE_CODE',
             selected_model: 'gpt-4o',
           },
         },
@@ -168,7 +168,7 @@ describe('CostDashboardService', () => {
     it('should group by agent/operation correcty', async () => {
       const mockBreakdown = [
         {
-          ai_provider: AIProvider.CURSOR_HEADLESS,
+          ai_provider: AIProvider.CLAUDE_CODE,
           operation_type: 'generate_tests',
           _sum: { cost_usd: new Prisma.Decimal('20.0'), tokens_input: 2000, tokens_output: 1000 },
           _count: 5,
@@ -185,7 +185,7 @@ describe('CostDashboardService', () => {
         limit: 10,
       });
 
-      expect(result.data[0].groupKey).toBe(`${AIProvider.CURSOR_HEADLESS} (generate tests)`);
+      expect(result.data[0].groupKey).toBe(`${AIProvider.CLAUDE_CODE} (generate tests)`);
     });
 
     it('should throw error when database query fails in breakdown', async () => {

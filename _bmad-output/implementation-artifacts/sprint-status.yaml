@@ -30,6 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
+last_updated: 2026-03-26
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -522,7 +523,7 @@ development_status:
   epic-os-2-retrospective: done
 
   # EPIC OS-3 - DOOD ELIMINATION — ZERO DOCKER DEPENDENCY
-  epic-os-3: in-progress
+  epic-os-3: done
   epic-os-3-name: 'DooD Elimination — Zero Docker Dependency'
   epic-os-3-phase: 'OpenSandbox Migration Sprint'
   epic-os-3-priority: critical
@@ -532,10 +533,10 @@ development_status:
   epic-os-3-notes: 'Security milestone. Delete all DooD code + packages. All 7 grep checks (CURSOR_HEADLESS deferred to OS-5) must return zero.'
   os-3-1-delete-dood-files-remove-docker-module: done
   os-3-2-remove-legacy-dood-metrics-cleanup-service-verify: done
-  epic-os-3-retrospective: optional
+  epic-os-3-retrospective: done
 
   # EPIC OS-4 - MULTI-PROVIDER AI ROUTING (GEMINI, CODEX, KIMI)
-  epic-os-4: backlog
+  epic-os-4: in-progress
   epic-os-4-name: 'Multi-Provider AI Routing (Gemini, Codex, Kimi)'
   epic-os-4-phase: 'OpenSandbox Migration Sprint'
   epic-os-4-priority: high
@@ -543,10 +544,10 @@ development_status:
   epic-os-4-estimated_effort: '5 days'
   epic-os-4-source: 'epics.md'
   epic-os-4-notes: 'Retire Cursor Headless. Add 3 new providers dark-deployed. Full complexity-based routing across 4 providers.'
-  os-4-1-retire-cursor-headless-provider-data-migration: backlog
-  os-4-2-gemini-cli-provider: backlog
-  os-4-3-openai-codex-kimi-cli-providers: backlog
-  os-4-4-multi-provider-ai-routing-service-complexity-strategy: backlog
+  os-4-1-retire-cursor-headless-provider-data-migration: done
+  os-4-2-gemini-cli-provider: ready-for-dev
+  os-4-3-openai-codex-kimi-cli-providers: ready-for-dev
+  os-4-4-multi-provider-ai-routing-service-complexity-strategy: ready-for-dev
   epic-os-4-retrospective: optional
 
   # EPIC OS-5 - CONFIGURATION CLEANUP & PRODUCTION HARDENING
