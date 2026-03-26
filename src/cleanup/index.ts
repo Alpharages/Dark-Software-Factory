@@ -6,9 +6,4 @@ export { CleanupService } from './cleanup.service';
 export { CleanupSchedulerService } from './cleanup-scheduler.service';
 export { CleanupOptions } from './interfaces/cleanup-options.interface';
 export { CleanupResult, CleanupError } from './interfaces/cleanup-result.interface';
-export {
-  CleanupException,
-  ContainerCleanupError,
-  WorkspaceCleanupError,
-  CleanupTimeoutError,
-} from './exceptions/cleanup.exceptions';
+export { CleanupException, CleanupTimeoutError } from './exceptions/cleanup.exceptions';

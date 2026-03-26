@@ -161,8 +161,7 @@ export default () => {
       gitUserEmail: process.env.CURSOR_GIT_USER_EMAIL || 'bot@darkfactory.ai',
     },
 
-    // Story 2.7: Anthropic Claude API Configuration
-    // Note: Claude provider reuses WorkspaceService from Story 2.6 (shared workspace management)
+    // Story 2.7: Anthropic Claude API Configuration (updated OS-3.2: stale refs removed)
     // Model: claude-sonnet-4-20250514 is the latest Sonnet model as of implementation
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -172,7 +171,7 @@ export default () => {
       commitMessageModel: process.env.ANTHROPIC_COMMIT_MESSAGE_MODEL || 'claude-3-haiku-20240307',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
       timeoutMs: parseInt(process.env.ANTHROPIC_TIMEOUT_MS || '300000', 10),
-      // Reserved for future provider-specific workspace isolation (currently uses shared WorkspaceService)
+      // Reserved for future provider-specific workspace isolation (OpenSandbox handles workspace lifecycle)
       workspacesRoot: process.env.CLAUDE_WORKSPACES_ROOT || '/tmp/claude-workspaces',
     },
 

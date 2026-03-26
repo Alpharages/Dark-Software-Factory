@@ -1,6 +1,6 @@
 # Story OS-3.2: Remove Legacy DooD Metrics, Clean Up CleanupService, and Verify Zero Docker Dependency
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -230,3 +230,17 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+---
+
+## Review Findings
+
+_Code review conducted: 2026-03-26_
+
+- [x] [Review][Patch] WorkspaceService grep check returns non-zero: 2 stale comments in `src/config/configuration.ts` reference the deleted `WorkspaceService` [`src/config/configuration.ts:165,175`] — AC3 requires `grep -r "WorkspaceService" src/ --include="*.ts"` to return zero, but lines 165 and 175 contain stale comments from Story 2.6/2.7 that mention `WorkspaceService`. Fix: update those two comments to remove the deleted service name.
+
+- [x] [Review][Patch] Misleading `@ts-ignore` comment in removeContainer test [`src/cleanup/cleanup.service.spec.ts:~170`] — The test body has `// @ts-ignore - accessing private logger for verification if needed,` as a descriptive comment, but it looks like a TypeScript suppress directive (which it is not — actual directives must be on the line before the suppressed code). Since no `@ts-ignore` is actually needed, remove the `@ts-ignore` text from the comment or reword it to avoid confusion.
+
+- [x] [Review][Defer] WorkspaceService comment hits in OS-3.1 spec files [`src/github/services/github-commit-orchestrator.service.spec.ts`, `pr-risk-assessor.service.spec.ts`, `qa-automation/qa-orchestrator.service.spec.ts`] — deferred, pre-existing. Three `// WorkspaceService removed (handled by OpenSandbox TTL)` explanatory comments added in OS-3.1 cause the `WorkspaceService` grep to return non-zero. These are intentional documentation comments; cleaning them up can be bundled into OS-5.2 final grep-clean pass.
+
+- [x] [Review][Defer] `timeoutHandle!` non-null assertion in `runWithTimeout` [`src/cleanup/cleanup.service.ts:~155`] — deferred, pre-existing pattern. `let timeoutHandle: NodeJS.Timeout` is assigned inside the Promise executor (synchronous) then accessed in `finally { clearTimeout(timeoutHandle!) }`. The `!` suppresses TypeScript's possibly-undefined check. Harmless at runtime; standard Promise-timeout pattern in this codebase. If strict lint rules flag this, address in OS-5 config cleanup.

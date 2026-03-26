@@ -45,6 +45,11 @@
 - **Stale model name `claude-3-5-sonnet-20240620` hardcoded in AIExecutionService** — `ai-execution.service.ts:~120` falls back to `'claude-3-5-sonnet-20240620'` when `result.model` is absent. This model name is outdated. Update when model naming policy is reviewed.
 - **`ClaudeCodeProvider.cancel()` behavior untested** — `ai-execution.service.spec.ts:~242` has the cancel-provider assertion commented out. If/when `ClaudeCodeProvider` gains a `cancel()` method, add a coverage assertion here.
 
+## Deferred from: code review of os-3-2-remove-legacy-dood-metrics-cleanup-service-verify (2026-03-26)
+
+- **WorkspaceService grep check returns 5 comment-only hits** — `src/config/configuration.ts:165,175` have stale Story 2.6 comments referencing `WorkspaceService`; three spec files from OS-3.1 (`github-commit-orchestrator.service.spec.ts`, `pr-risk-assessor.service.spec.ts`, `qa-orchestrator.service.spec.ts`) have `// WorkspaceService removed` documentation comments. All are comment-only (no actual imports or calls) but technically fail the AC3 zero-result grep check. Clean up in OS-5.2 final grep-clean pass.
+- **`timeoutHandle!` non-null assertion in `runWithTimeout`** — `src/cleanup/cleanup.service.ts:~155` uses `clearTimeout(timeoutHandle!)` in the `finally` block; TypeScript can't prove the executor ran synchronously but it always does. Standard pattern; harmless at runtime. If strict linting is tightened in OS-5, add a `: NodeJS.Timeout | undefined` annotation and guard.
+
 ## Deferred from: code review of os-1-4-sandbox-prometheus-metrics-concurrency-leak-prevention (2026-03-24)
 
 - **T26 semaphore concurrency test is timing-dependent** — Uses `setTimeout(resolve, 50)` to assert queued state; flaky under CI load. Should hook into semaphore queue state directly via spy. [`sandbox.service.spec.ts:533`]

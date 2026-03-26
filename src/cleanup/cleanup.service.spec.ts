@@ -165,5 +165,16 @@ describe('CleanupService', () => {
     });
   });
 
-  // DooD Elimination: removeContainer and cleanupWorkspaceFolder methods are no-op stubs
+  describe('removeContainer', () => {
+    it('should return without throwing (no-op)', async () => {
+      await expect(service.removeContainer('container-123')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('cleanupWorkspaceFolder', () => {
+    it('should return 0 (no-op)', async () => {
+      const result = await service.cleanupWorkspaceFolder('exec-123');
+      expect(result).toBe(0);
+    });
+  });
 });

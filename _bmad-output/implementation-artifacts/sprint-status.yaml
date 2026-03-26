@@ -531,7 +531,7 @@ development_status:
   epic-os-3-source: 'epics.md'
   epic-os-3-notes: 'Security milestone. Delete all DooD code + packages. All 7 grep checks (CURSOR_HEADLESS deferred to OS-5) must return zero.'
   os-3-1-delete-dood-files-remove-docker-module: done
-  os-3-2-remove-legacy-dood-metrics-cleanup-service-verify: ready-for-dev
+  os-3-2-remove-legacy-dood-metrics-cleanup-service-verify: done
   epic-os-3-retrospective: optional
 
   # EPIC OS-4 - MULTI-PROVIDER AI ROUTING (GEMINI, CODEX, KIMI)

@@ -11,24 +11,6 @@ export class CleanupException extends InfrastructureException {
 }
 
 /**
- * Container Cleanup Error
- */
-export class ContainerCleanupError extends CleanupException {
-  constructor(containerId: string, originalError: string) {
-    super(`Failed to cleanup container ${containerId}: ${originalError}`, originalError);
-  }
-}
-
-/**
- * Workspace Cleanup Error
- */
-export class WorkspaceCleanupError extends CleanupException {
-  constructor(workspacePath: string, originalError: string) {
-    super(`Failed to cleanup workspace at ${workspacePath}: ${originalError}`, originalError);
-  }
-}
-
-/**
  * Cleanup Timeout Error
  */
 export class CleanupTimeoutError extends CleanupException {

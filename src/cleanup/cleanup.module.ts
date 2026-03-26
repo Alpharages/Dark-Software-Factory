@@ -7,7 +7,6 @@ import {
   makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
 import { ExecutionModule } from '@/execution/execution.module';
-import { AiRoutingModule } from '@/ai-routing/ai-routing.module';
 import { LoggerModule } from '@/common/logger/logger.module';
 import { CleanupService } from './cleanup.service';
 import { CleanupSchedulerService } from './cleanup-scheduler.service';
@@ -45,13 +44,12 @@ const cleanupMetricProviders = [
 
 /**
  * Cleanup Module
- * Story 23.2: Automated Container Cleanup
+ * Story 23.2: Automated Container Cleanup -> OS-3.2: Final DooD Elimination
  *
- * Provides automated cleanup of Docker containers and workspaces
- * after AI execution completion.
+ * Provides automated cleanup of resources after AI execution completion.
  */
 @Module({
-  imports: [ConfigModule, LoggerModule, ScheduleModule.forRoot(), ExecutionModule, AiRoutingModule],
+  imports: [ConfigModule, LoggerModule, ScheduleModule.forRoot(), ExecutionModule],
   providers: [
     CleanupService,
     CleanupSchedulerService,
