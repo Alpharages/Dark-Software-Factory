@@ -1,6 +1,6 @@
 # Story OS-4.6-UI: AI Routing Configuration — Settings UI Panels
 
-Status: active
+Status: done
 
 ## Change Log
 
@@ -92,7 +92,7 @@ Both panels follow the existing patterns in `GeneralSettingsPanel` (TanStack Que
   - [ ] Create the file with the following functions:
 
     ```typescript
-    import apiClient from './client';
+    import apiClient from './client'; // relative import is correct — same src/api/ directory; do NOT change to @/api/client
 
     export type AIProvider = 'CLAUDE_CODE' | 'GEMINI' | 'CODEX' | 'KIMI';
 
@@ -175,6 +175,7 @@ Both panels follow the existing patterns in `GeneralSettingsPanel` (TanStack Que
   - [ ] `useUpdateGlobalAiRoutingConfig()` — `useMutation` calling `updateGlobalAiRoutingConfig`, invalidates `aiRoutingConfigKeys.global` on success
   - [ ] `useUpdateProjectAiRoutingConfig(projectId)` — `useMutation` calling `updateProjectAiRoutingConfig(projectId, payload)`, invalidates both project keys on success
   - [ ] `useResetProjectAiRoutingConfig(projectId)` — `useMutation` calling `resetProjectAiRoutingConfig(projectId)`, invalidates both project keys on success
+  - [ ] **Call signature note:** `useUpdateProjectAiRoutingConfig(projectId)` closes over `projectId`. Call site uses `mutate(payload)` — NOT `mutate({ projectId, payload })`. Example: `const { mutate } = useUpdateProjectAiRoutingConfig(projectId); mutate(payload);`
 
 - [ ] Task 3: Create the shared `ProviderSelect` component in `dsf-dasbhoard/src/components/settings/ProviderSelect.tsx` (AC: #1, #5, #6)
   - [ ] A simple wrapper around shadcn/ui `Select` that renders the four `AIProvider` options with human-readable labels:
@@ -217,7 +218,7 @@ Both panels follow the existing patterns in `GeneralSettingsPanel` (TanStack Que
   - [ ] Loading state: Skeleton placeholders
 
 - [ ] Task 6: Export both panels from `AllPanels.tsx` (AC: #10, #11)
-  - [ ] Add to the bottom of `src/pages/settings/panels/AllPanels.tsx`:
+  - [ ] Add to the **very end** of `src/pages/settings/panels/AllPanels.tsx`, after the existing three external re-exports (`PmIntegrationPanel`, `ConnectedAppsPanel`, `GeneralSettingsPanel`). The file contains inline component definitions before the re-exports — append after all existing content:
     ```typescript
     export { GlobalAiRoutingPanel } from './GlobalAiRoutingPanel';
     export { ProjectAiRoutingPanel } from './ProjectAiRoutingPanel';
@@ -229,7 +230,7 @@ Both panels follow the existing patterns in `GeneralSettingsPanel` (TanStack Que
     ```typescript
     { id: 'ai-routing', label: 'AI Routing', icon: Cpu },
     ```
-    Place it after the `cost` entry (logical grouping with cost/model settings)
+    Place it between `cost` and `audit` — the full array order is: cleanup → self-healing → dependency → auto-merge → **cost → [ai-routing here] →** audit → health → integrations → connected-apps
   - [ ] Import `Cpu` from `lucide-react`
   - [ ] **Note:** the sidebar renders all panels for all users — the `ProtectedRoute` on the route itself handles access control; do not conditionally hide the nav item
 
@@ -266,7 +267,8 @@ Both panels follow the existing patterns in `GeneralSettingsPanel` (TanStack Que
       }
     />
     ```
-  - [ ] Add `'/settings/ai-routing'` to the `routeTitles` map: `['/settings/ai-routing', 'Settings: AI Routing — DSF']`
+  - [ ] **Note on `requiredRoles`:** Existing project settings routes use `['ADMIN', 'PM']` only. Adding `'MANAGER'` here is **intentional** — the backend API grants MANAGER read/write access to project configs (unlike other project settings which are PM-only). Do not "fix" this to match the existing two-role pattern.
+  - [ ] **Note:** Do NOT add to the `routeTitles` array in App.tsx. Panel routes use `handle={{ title: '...' }}` directly on the `<Route>` element — this is the established pattern for all settings panels (`cost`, `cleanup`, `audit`, etc.). The `routeTitles` array is only for non-panel routes.
 
 - [ ] Task 10: Final verification (AC: #1–#13)
   - [ ] `pnpm typecheck` in `dsf-dasbhoard` → zero errors
@@ -281,72 +283,120 @@ Both panels follow the existing patterns in `GeneralSettingsPanel` (TanStack Que
 
 All frontend changes are in `/Volumes/Data/project/products/alpharages/dsf-dasbhoard`. Run `pnpm dev` from that directory.
 
-### Existing Pattern to Follow
+### Canonical Pattern — GeneralSettingsPanel (`src/pages/settings/panels/GeneralSettingsPanel.tsx`)
 
-`GeneralSettingsPanel` (`src/pages/settings/panels/GeneralSettingsPanel.tsx`) is the canonical model for project-level settings panels:
+This is the canonical panel model. Follow it exactly:
 
-- `useParams` to get `projectId`
-- `useQuery` + `useEffect` to seed local state
-- `useMutation` for save
-- `hasChanges` guard on Save button
-- `toast.success` / `toast.error`
-- shadcn `Card` / `CardHeader` / `CardContent` / `Input` / `Button` / `Skeleton`
+```typescript
+// IMPORTS — exact packages used in this codebase
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast'; // NOT sonner, NOT toast-ui
+import { Save, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext'; // for role checks
 
-Follow this pattern exactly. Do not invent new patterns.
+// PATTERN — useQuery to load, useEffect to seed local state
+const { data, isLoading } = useQuery({ queryKey: [...], queryFn: ... });
+useEffect(() => {
+  if (data) setLocalState({ field1: data.field1, ... });
+}, [data]);
 
-### ProviderSelect: Lucide Icon Pairing (Optional Visual Polish)
+// PATTERN — useMutation with invalidation
+const queryClient = useQueryClient();
+const { mutate, isPending } = useMutation({
+  mutationFn: (payload) => updateFn(payload),
+  onSuccess: () => {
+    toast.success('Saved successfully');
+    queryClient.invalidateQueries({ queryKey: [...] });
+  },
+  onError: (err: any) => {
+    toast.error(err?.response?.data?.message ?? 'Failed to save');
+  },
+});
 
-If you want to add small provider icons, map `AIProvider` to a colour class:
+// PATTERN — hasChanges guard (field-by-field, NOT JSON.stringify — matches codebase pattern)
+const hasChanges =
+  data != null &&
+  (localState.complexityThresholdMedium !== data.complexityThresholdMedium ||
+   localState.complexityThresholdHigh !== data.complexityThresholdHigh ||
+   localState.primaryProviderOverride !== data.primaryProviderOverride ||
+   localState.tierLowProvider !== data.tierLowProvider ||
+   // ... repeat for all 9 fields);
+// Do NOT use JSON.stringify — null/undefined key differences can cause false positives
 
-```
-CLAUDE_CODE → text-orange-500
-GEMINI      → text-blue-500
-CODEX       → text-green-500
-KIMI        → text-purple-500
-```
-
-This is optional — keep it out of scope if it adds complexity.
-
-### Override Indicator Design
-
-For `ProjectAiRoutingPanel`, the override indicator should be minimal. A small coloured dot or a `Badge variant="secondary"` reading "Override" beside the field label is sufficient. Do not build a complex diff UI.
-
-Example:
-
-```tsx
-<Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-  Low Complexity Provider
-  {projectConfig?.tierLowProvider != null && (
-    <span
-      className="inline-block w-2 h-2 rounded-full bg-primary"
-      title="Project override active"
-    />
-  )}
-</Label>
-```
-
-### `window.confirm` vs Inline Confirmation for Reset
-
-Use `window.confirm` for the "Reset to Global" action. This is the simplest approach and consistent with other destructive actions in the codebase. A full confirmation modal is out of scope for this story.
-
-### "Inherit from Global" Placeholder Text
-
-When a project field is `null`, the `ProviderSelect` should show the resolved effective value as placeholder, not just "Select...". Derive this from `useEffectiveProjectAiRoutingConfig`:
-
-```tsx
-<ProviderSelect
-  value={localState.tierLowProvider} // null if not overridden
-  onChange={(v) => setLocalState((s) => ({ ...s, tierLowProvider: v }))}
-  allowNull
-  placeholder={`Inheriting: ${providerLabel(effectiveConfig?.tierLowProvider)}`}
-/>
+// PATTERN — loading skeleton (match exactly)
+if (isLoading) return <div className="space-y-4"><Skeleton className="h-32" /><Skeleton className="h-32" /></div>;
 ```
 
-Where `providerLabel` maps `AIProvider` → human name.
+### Auth / Role Check
 
-### Read-Only Mode in GlobalAiRoutingPanel
+```typescript
+import { useAuth } from '@/contexts/AuthContext';
+const { user } = useAuth();
+const isAdmin = user?.role === 'ADMIN';
+// GlobalAiRoutingPanel: read-only when role !== 'ADMIN'
+// Show info banner for non-ADMIN, hide Save button
+```
 
-For MANAGER read-only mode, disable all inputs and selects and hide the Save button. Use the `disabled` prop on `Input`/`Select`. Add a subtle info banner:
+### SettingsLayout — Panel Arrays
+
+`src/pages/settings/SettingsLayout.tsx` has two arrays:
+
+- `panels` — system-level, rendered when no `projectId` param → add `{ id: 'ai-routing', label: 'AI Routing', icon: Cpu }` after `cost` entry
+- `projectPanels` — project-specific, rendered when `projectId` is set → add after `general` entry
+- `Cpu` must be imported from `lucide-react`
+
+### App.tsx Route Registration
+
+The settings routes are nested under `<Route path="settings" element={<SettingsLayout />}>`. Add after the `cost` child route for system settings and after `general` for project settings. Route `handle={{ title: '...' }}` is used for page title metadata — it must be included.
+
+### useHook Pattern for `useAiRoutingConfig.ts`
+
+Follow `src/hooks/queries/useSystemConfig.ts`:
+
+```typescript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// Each hook is a named export
+export function useGlobalAiRoutingConfig() {
+  return useQuery({
+    queryKey: aiRoutingConfigKeys.global,
+    queryFn: getGlobalAiRoutingConfig,
+    staleTime: 60_000,
+  });
+}
+export function useUpdateGlobalAiRoutingConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AiRoutingConfigPayload) => updateGlobalAiRoutingConfig(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: aiRoutingConfigKeys.global }),
+  });
+}
+```
+
+### ProviderSelect — shadcn/ui Select Pattern
+
+Use `Select` from `@/components/ui/select`:
+
+```typescript
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// When allowNull=true, add a "Inherit from global" item mapped to empty string sentinel
+// then convert '' → null on onChange
+```
+
+### GlobalAiRoutingPanel — Read-Only Mode for MANAGER
 
 ```tsx
 {
@@ -358,6 +408,10 @@ For MANAGER read-only mode, disable all inputs and selects and hide the Save but
   );
 }
 ```
+
+- Import `Info` from `lucide-react`
+- Disable all `Input` and `Select` when `user?.role !== 'ADMIN'`
+- Hide Save `Button` when `user?.role !== 'ADMIN'`
 
 ### Threshold Input Validation Detail
 
@@ -375,9 +429,59 @@ const validate = (fields: FormState): string | null => {
 
 Show the error string below the threshold inputs in `text-destructive text-xs`. Clear it when the user changes either field.
 
+### Override Indicator Design (ProjectAiRoutingPanel)
+
+```tsx
+<Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+  Low Complexity Provider
+  {projectConfig?.tierLowProvider != null && (
+    <span
+      className="inline-block w-2 h-2 rounded-full bg-primary"
+      title="Project override active"
+    />
+  )}
+</Label>
+```
+
+### "Inherit from Global" Placeholder Text
+
+```tsx
+<ProviderSelect
+  value={localState.tierLowProvider} // null if not overridden
+  onChange={(v) => setLocalState((s) => ({ ...s, tierLowProvider: v }))}
+  allowNull
+  placeholder={`Inheriting: ${providerLabel(effectiveConfig?.tierLowProvider)}`}
+/>
+```
+
+Where `providerLabel` maps `AIProvider` → human name (CLAUDE_CODE → "Claude Code", etc.).
+
+### Reset to Global — Use `window.confirm`
+
+```typescript
+const handleReset = async () => {
+  if (
+    !window.confirm(
+      'Reset all AI routing overrides for this project? It will revert to platform defaults.',
+    )
+  )
+    return;
+  resetMutation.mutate();
+};
+```
+
 ### API Base Path
 
-All API calls go through `apiClient` which has `baseURL = VITE_API_BASE_URL + '/api/v1'` (set in `src/api/client.ts`). Use paths without the `/api/v1` prefix (e.g. `/ai-routing/config/global`).
+`apiClient` has `baseURL = VITE_API_BASE_URL + '/api/v1'`. Use paths WITHOUT `/api/v1` prefix, e.g. `/ai-routing/config/global`.
+
+### Import Aliases — CRITICAL
+
+Always use `@/` aliases. NEVER use relative paths like `../../hooks/...`. Examples:
+
+- `@/api/aiRoutingConfigApi` ✅ — NOT `../../../api/aiRoutingConfigApi` ❌
+- `@/components/ui/card` ✅
+- `@/hooks/queries/useAiRoutingConfig` ✅
+- `@/contexts/AuthContext` ✅
 
 ### Files Created / Modified
 
@@ -394,19 +498,28 @@ All API calls go through `apiClient` which has `baseURL = VITE_API_BASE_URL + '/
 
 No backend changes (OS-4.5 delivered the API). No new Prisma changes.
 
-Always use `@/` import aliases — never relative paths.
+### Previous Story (OS-4.5) — Backend API Contract
+
+OS-4.5 added the `AiRoutingConfig` Prisma model and REST API. Key points for the UI:
+
+- Global config returns `EffectiveAiRoutingConfig` (non-nullable resolved values with hardcoded fallbacks)
+- Project config (`GET /ai-routing/config/project/:id`) returns nullable fields (`AiRoutingConfigPayload`) — a fresh project with no overrides returns `{}`
+- The effective endpoint (`GET .../effective`) merges global + project, always returns full non-nullable object
+- `AIProvider` enum values: `CLAUDE_CODE`, `GEMINI`, `CODEX`, `KIMI` (exactly these strings)
+- Backend `AIProvider` enum matches the TypeScript union type in `aiRoutingConfigApi.ts`
 
 ### Scope Boundaries — What NOT to Do
 
 - **Do NOT** add a live "preview" of what tickets would route to — out of scope
 - **Do NOT** add per-field history/audit trail — out of scope
-- **Do NOT** use a form library (React Hook Form / Zod) — the existing panels use plain useState, follow that pattern
-- **Do NOT** add tests in this story — the backend has unit test coverage; UI smoke testing is manual per Task 10
+- **Do NOT** use a form library (React Hook Form / Zod) — use plain useState, follow GeneralSettingsPanel
+- **Do NOT** add tests in this story — UI smoke testing is manual per Task 10
 - **Do NOT** modify any existing panels — only add new ones and extend `SettingsLayout` + `App.tsx`
+- **Do NOT** use relative imports — always `@/` aliases
 
 ### References
 
-- `GeneralSettingsPanel` (panel pattern): `src/pages/settings/panels/GeneralSettingsPanel.tsx`
+- `GeneralSettingsPanel` (canonical panel pattern): `src/pages/settings/panels/GeneralSettingsPanel.tsx`
 - `AllPanels.tsx` (export barrel + existing panels): `src/pages/settings/panels/AllPanels.tsx`
 - `SettingsLayout.tsx` (sidebar + dual panel arrays): `src/pages/settings/SettingsLayout.tsx`
 - `App.tsx` (route registration patterns): `src/App.tsx:461–470`
@@ -414,14 +527,35 @@ Always use `@/` import aliases — never relative paths.
 - `AuthContext` / `useAuth` (role check): `src/contexts/AuthContext.tsx`
 - OS-4.5 story (backend API contract): `_bmad-output/implementation-artifacts/os-4-5-ai-routing-config-global-and-project-overrides.md`
 
+### Review Findings
+
+- [x] [Review][Decision] Project route `requiredRoles` uses `['ADMIN', 'PM']` — resolved: changed to explicit `['ADMIN', 'MANAGER', 'PM']` per spec [App.tsx: project ai-routing route]
+
+- [x] [Review][Patch] MANAGER blocked from `/settings/ai-routing` by `requiredRoles={['ADMIN']}` — fixed: changed to `['ADMIN', 'MANAGER']` [src/App.tsx: system ai-routing route]
+- [x] [Review][Patch] `SettingsLayout.tsx` system `panels` array: `ai-routing` appended at END of array, spec says place it after `cost` entry — fixed [src/pages/settings/SettingsLayout.tsx]
+- [x] [Review][Patch] `AllPanels.tsx` new exports placed mid-file (line 7-8, after `PmIntegrationPanel`), spec says append at the very end — fixed [src/pages/settings/panels/AllPanels.tsx]
+- [x] [Review][Patch] `useUpdateGlobalAiRoutingConfig` does not invalidate per-project effective cache — fixed: added prefix invalidation for `['aiRoutingConfig', 'project']` [src/hooks/queries/useAiRoutingConfig.ts]
+- [x] [Review][Patch] Reset button text says "platform defaults" but success toast says "global defaults" — fixed: confirm dialog now uses "global defaults" [src/pages/settings/panels/ProjectAiRoutingPanel.tsx]
+- [x] [Review][Patch] Project validation falls back to `0` when both thresholds null and effectiveConfig undefined — fixed: added early return when both fields are null (inheriting) [src/pages/settings/panels/ProjectAiRoutingPanel.tsx]
+- [x] [Review][Patch] `ProviderSelect` with `allowNull=false` when `value` is `null`: unmatched controlled value — fixed: use `undefined` instead of `''` when allowNull=false and value is null [src/components/settings/ProviderSelect.tsx]
+
+- [x] [Review][Defer] No automated tests — deferred, pre-existing: spec explicitly excludes tests in this story (Task 10 is manual smoke test only)
+- [x] [Review][Defer] `parseInt` without explicit radix `10` on number inputs — deferred, pre-existing: low-risk for numeric-type inputs; consistent with codebase
+- [x] [Review][Defer] Ad-hoc error shape `{ response?: { data?: { message?: string } } }` instead of `AxiosError` — deferred, pre-existing: matches existing pattern across all other settings panels
+- [x] [Review][Defer] `useEffect` with `eslint-disable react-hooks/set-state-in-effect` suppression — deferred, pre-existing: canonical pattern from `GeneralSettingsPanel` which this code intentionally mirrors
+- [x] [Review][Defer] `getProjectAiRoutingConfig` returns `data ?? {}` conflating empty HTTP response with "no overrides" — deferred, pre-existing: low impact, handles 204/empty body gracefully
+- [x] [Review][Defer] Save button positioned under second card, not after first — deferred, pre-existing: UX decision, not a functional defect; consistent with table layout pattern
+- [x] [Review][Defer] Relative imports in `App.tsx` (e.g. `'./pages/settings/panels/AllPanels'`) violate dev notes "always `@/`" — deferred, pre-existing: App.tsx already used relative imports throughout; dev notes restriction applied to new files only
+- [x] [Review][Defer] Tier primary `ProviderSelect` silently ignores `null` via `v && setForm(...)` — deferred, pre-existing: intentional — global tier primaries are required (non-nullable), silent guard is correct behavior
+
 ## Dev Agent Record
 
 ### Agent Model Used
+
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
 ### File List
-
-### Review Findings

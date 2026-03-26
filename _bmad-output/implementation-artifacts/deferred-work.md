@@ -78,3 +78,14 @@
 ## Deferred from: code review of os-4-5-ai-routing-config-global-and-project-overrides (2026-03-27)
 
 - **Unrelated seed change — `CURSOR_HEADLESS` → `CLAUDE_CODE` in sample execution/cost records** — This change is outside OS-4.5 scope and modifies sample data seeded for demonstration. Should be reviewed and reconciled in a dedicated seed cleanup story or OS-5.1 config cleanup. [`prisma/seed.ts:66,82`]
+
+## Deferred from: code review of os-4-6-ui-ai-routing-config-settings-panels (2026-03-27)
+
+- **No automated tests for new UI panels** — Spec explicitly excludes tests in this story (manual smoke only). Hook unit tests (mutation invalidation paths) and panel role-gate tests should be added in a dedicated test story. [`src/hooks/queries/useAiRoutingConfig.ts`, `src/pages/settings/panels/*`]
+- **`parseInt` without explicit radix on number inputs** — `parseInt(e.target.value) || 0` omits radix 10. Low risk for `type="number"` inputs in modern browsers but not technically correct. [`GlobalAiRoutingPanel.tsx`, `ProjectAiRoutingPanel.tsx`]
+- **Ad-hoc error shape instead of `AxiosError`** — Mutation `onError` handlers use hand-rolled `{ response?: { data?: { message?: string } } }` instead of the Axios error type. Matches existing codebase pattern but will drop non-message error payloads. [`GlobalAiRoutingPanel.tsx`, `ProjectAiRoutingPanel.tsx`]
+- **`useEffect` for seeding form state from query data** — Uses `eslint-disable react-hooks/set-state-in-effect`. Mirrors the canonical `GeneralSettingsPanel` pattern intentionally; revisit if React upgrades this to a hard error. [`GlobalAiRoutingPanel.tsx`, `ProjectAiRoutingPanel.tsx`]
+- **`getProjectAiRoutingConfig` returns `data ?? {}`** — Conflates empty HTTP response with "no overrides". Downstream code treats `{}` as valid config. Consider returning `data ?? null` and handling null explicitly. [`src/api/aiRoutingConfigApi.ts:getProjectAiRoutingConfig`]
+- **Save button positioned under second card** — "Save Strategy" lives inside the Provider Tier Mapping card, not after both cards. Admin editing only threshold fields may not visually associate Save with their changes. [`GlobalAiRoutingPanel.tsx`]
+- **Relative imports in `App.tsx`** — Dev notes mandate `@/` aliases. `App.tsx` pre-exists with relative imports throughout; the new imports follow existing convention. Standardize as part of a future import cleanup pass. [`src/App.tsx`]
+- **Tier primary `ProviderSelect` silently drops null via `v && setForm(...)`** — If Radix Select emits a null/falsy for a required tier-primary field (not possible under current allowNull=false config but possible after future refactor), the update is silently ignored. [`GlobalAiRoutingPanel.tsx`]
