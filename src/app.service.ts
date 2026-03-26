@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DockerService } from './docker/docker.service';
+import { SandboxService } from './sandbox/sandbox.service';
 import { IntegrationHealthResponseDto } from './common/dto';
 
 @Injectable()
 export class AppService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly dockerService: DockerService,
+    private readonly sandboxService: SandboxService,
   ) {}
 
   getHello(): string {
@@ -15,15 +15,15 @@ export class AppService {
   }
 
   async getIntegrationHealth(): Promise<IntegrationHealthResponseDto> {
-    let dockerHealthy = false;
+    let sandboxHealthy = false;
     try {
-      dockerHealthy = await this.dockerService.isHealthy();
+      sandboxHealthy = await this.sandboxService.isHealthy();
     } catch {
-      dockerHealthy = false;
+      sandboxHealthy = false;
     }
 
     return {
-      docker: dockerHealthy,
+      sandbox: sandboxHealthy,
       sendgrid: !!this.configService.get('SENDGRID_API_KEY'),
       openai: !!this.configService.get('OPENAI_API_KEY'),
       slack: !!this.configService.get('SLACK_BOT_TOKEN'),

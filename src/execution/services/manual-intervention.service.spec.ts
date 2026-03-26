@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { ExecutionStatus, AIProvider } from '@/prisma/client';
 import { ManualInterventionService } from './manual-intervention.service';
-import { ContainerControlService } from './container-control.service';
 import { ExecutionRepository } from '../execution.repository';
 import { ExecutionTrackerService } from '../execution-tracker.service';
 import { ExecutionStateMachine } from '../state-machine';
@@ -19,7 +18,6 @@ describe('ManualInterventionService', () => {
   let executionRepository: jest.Mocked<ExecutionRepository>;
   let executionTracker: jest.Mocked<ExecutionTrackerService>;
   let stateMachine: jest.Mocked<ExecutionStateMachine>;
-  let containerControl: jest.Mocked<ContainerControlService>;
   let overrideRepository: jest.Mocked<ExecutionOverrideRepository>;
   let auditLogService: jest.Mocked<AuditLogService>;
 
@@ -70,15 +68,6 @@ describe('ManualInterventionService', () => {
           },
         },
         {
-          provide: ContainerControlService,
-          useValue: {
-            pauseContainer: jest.fn(),
-            resumeContainer: jest.fn(),
-            emergencyKillContainer: jest.fn(),
-            gracefulStopContainer: jest.fn(),
-          },
-        },
-        {
           provide: ExecutionOverrideRepository,
           useValue: {
             create: jest.fn(),
@@ -126,7 +115,6 @@ describe('ManualInterventionService', () => {
     executionRepository = module.get(ExecutionRepository);
     executionTracker = module.get(ExecutionTrackerService);
     stateMachine = module.get(ExecutionStateMachine);
-    containerControl = module.get(ContainerControlService);
     overrideRepository = module.get(ExecutionOverrideRepository);
     auditLogService = module.get(AuditLogService);
   });
@@ -140,14 +128,12 @@ describe('ManualInterventionService', () => {
       executionRepository.findById.mockResolvedValue(mockExecution);
       stateMachine.isTerminal.mockReturnValue(false);
       stateMachine.canTransition.mockReturnValue(true);
-      containerControl.pauseContainer.mockResolvedValue(true);
       executionTracker.updateStatus.mockResolvedValue(mockPausedExecution);
 
       const result = await service.pauseExecution('exec-123', 'user-1', 'Investigating issue');
 
       expect(result.execution.status).toBe(ExecutionStatus.PAUSED);
-      expect(result.containerControlSkipped).toBe(false);
-      expect(containerControl.pauseContainer).toHaveBeenCalledWith('container-789');
+      expect(result.containerControlSkipped).toBe(true);
       expect(executionTracker.updateStatus).toHaveBeenCalledWith(
         'exec-123',
         ExecutionStatus.PAUSED,
@@ -165,7 +151,6 @@ describe('ManualInterventionService', () => {
       const result = await service.pauseExecution('exec-123', 'user-1', 'Investigating issue');
 
       expect(result.containerControlSkipped).toBe(true);
-      expect(containerControl.pauseContainer).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if execution not found', async () => {
@@ -198,14 +183,12 @@ describe('ManualInterventionService', () => {
   describe('resumeExecution', () => {
     it('should resume a PAUSED execution successfully', async () => {
       executionRepository.findById.mockResolvedValue(mockPausedExecution);
-      containerControl.resumeContainer.mockResolvedValue(true);
       executionTracker.updateStatus.mockResolvedValue(mockExecution);
 
       const result = await service.resumeExecution('exec-123', 'user-1', 'Issue resolved');
 
       expect(result.execution.status).toBe(ExecutionStatus.IN_PROGRESS);
-      expect(result.containerControlSkipped).toBe(false);
-      expect(containerControl.resumeContainer).toHaveBeenCalledWith('container-789');
+      expect(result.containerControlSkipped).toBe(true);
       expect(executionTracker.updateStatus).toHaveBeenCalledWith(
         'exec-123',
         ExecutionStatus.IN_PROGRESS,
@@ -228,7 +211,6 @@ describe('ManualInterventionService', () => {
       const result = await service.resumeExecution('exec-123', 'user-1');
 
       expect(result.containerControlSkipped).toBe(true);
-      expect(containerControl.resumeContainer).not.toHaveBeenCalled();
     });
   });
 
@@ -236,26 +218,23 @@ describe('ManualInterventionService', () => {
     it('should emergency stop an execution with kill flag', async () => {
       executionRepository.findById.mockResolvedValue(mockExecution);
       stateMachine.isTerminal.mockReturnValue(false);
-      containerControl.emergencyKillContainer.mockResolvedValue(true);
       executionTracker.updateStatus.mockResolvedValue(mockEmergencyStoppedExecution);
 
       const result = await service.emergencyStop('exec-123', 'user-1', 'Critical error', true);
 
       expect(result.execution.status).toBe(ExecutionStatus.EMERGENCY_STOPPED);
-      expect(result.containerKilled).toBe(true);
-      expect(containerControl.emergencyKillContainer).toHaveBeenCalledWith('container-789');
+      expect(result.containerControlSkipped).toBe(true);
     });
 
     it('should emergency stop an execution with graceful stop', async () => {
       executionRepository.findById.mockResolvedValue(mockExecution);
       stateMachine.isTerminal.mockReturnValue(false);
-      containerControl.gracefulStopContainer.mockResolvedValue(true);
       executionTracker.updateStatus.mockResolvedValue(mockEmergencyStoppedExecution);
 
       const result = await service.emergencyStop('exec-123', 'user-1', 'Stop needed', false);
 
       expect(result.execution.status).toBe(ExecutionStatus.EMERGENCY_STOPPED);
-      expect(containerControl.gracefulStopContainer).toHaveBeenCalledWith('container-789', 30);
+      expect(result.containerControlSkipped).toBe(true);
     });
 
     it('should skip container control if container_id is null', async () => {

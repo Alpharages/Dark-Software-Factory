@@ -2,16 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { CleanupService } from './cleanup.service';
-import { DockerService } from '@/docker/docker.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
-import { WorkspaceService } from '@/ai-routing/providers/workspace.service';
 import { ExecutionStatus, Execution, AIProvider } from '@/prisma/client';
 
 describe('CleanupService', () => {
   let service: CleanupService;
-  let dockerService: jest.Mocked<DockerService>;
   let executionTracker: jest.Mocked<ExecutionTrackerService>;
-  let workspaceService: jest.Mocked<WorkspaceService>;
   let configService: jest.Mocked<ConfigService>;
 
   const mockExecution: Execution = {
@@ -67,26 +63,9 @@ describe('CleanupService', () => {
   } as unknown as jest.Mocked<Gauge<string>>;
 
   beforeEach(async () => {
-    const mockDockerService = {
-      removeContainer: jest.fn().mockResolvedValue(undefined),
-      killContainer: jest.fn().mockResolvedValue(undefined),
-    };
-
     const mockExecutionTracker = {
       getExecution: jest.fn().mockResolvedValue(mockExecution),
       assignContainer: jest.fn().mockResolvedValue(undefined),
-    };
-
-    const mockWorkspaceService = {
-      getWorkspace: jest.fn().mockResolvedValue({
-        id: 'ws-123',
-        execution_id: 'exec-123',
-        path: '/tmp/workspace/exec-123',
-        status: 'READY',
-        created_at: new Date(),
-        updated_at: new Date(),
-      }),
-      cleanupWorkspace: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockConfigService = {
@@ -99,9 +78,7 @@ describe('CleanupService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CleanupService,
-        { provide: DockerService, useValue: mockDockerService },
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
-        { provide: WorkspaceService, useValue: mockWorkspaceService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: 'PROM_METRIC_CLEANUP_DURATION_SECONDS', useValue: mockMetricHistogram },
         { provide: 'PROM_METRIC_CLEANUP_CONTAINERS_TOTAL', useValue: mockMetricCounter },
@@ -112,22 +89,19 @@ describe('CleanupService', () => {
     }).compile();
 
     service = module.get<CleanupService>(CleanupService);
-    dockerService = module.get(DockerService);
     executionTracker = module.get(ExecutionTrackerService);
-    workspaceService = module.get(WorkspaceService);
     configService = module.get(ConfigService);
   });
 
   describe('cleanupAfterExecution', () => {
-    it('should cleanup container and workspace successfully', async () => {
+    it('should report successful cleanup (no-op)', async () => {
       const result = await service.cleanupAfterExecution('exec-123');
 
       expect(result.executionId).toBe('exec-123');
       expect(result.containerRemoved).toBe(true);
       expect(result.workspaceCleaned).toBe(true);
       expect(result.errors).toHaveLength(0);
-      expect(dockerService.removeContainer).toHaveBeenCalledWith('container-abc123', false);
-      expect(workspaceService.cleanupWorkspace).toHaveBeenCalledWith('exec-123', true);
+      expect(executionTracker.assignContainer).toHaveBeenCalledWith('exec-123', '');
     });
 
     it('should skip cleanup when auto-cleanup is disabled', async () => {
@@ -137,10 +111,9 @@ describe('CleanupService', () => {
 
       expect(result.containerRemoved).toBe(false);
       expect(result.workspaceCleaned).toBe(false);
-      expect(dockerService.removeContainer).not.toHaveBeenCalled();
     });
 
-    it('should preserve workspace when debug_mode is true', async () => {
+    it('should report success even in debug_mode', async () => {
       executionTracker.getExecution.mockResolvedValue({
         ...mockExecution,
         debug_mode: true,
@@ -149,16 +122,10 @@ describe('CleanupService', () => {
       const result = await service.cleanupAfterExecution('exec-123');
 
       expect(result.containerRemoved).toBe(true);
-      expect(result.workspaceCleaned).toBe(false); // Preserved
-      expect(workspaceService.cleanupWorkspace).not.toHaveBeenCalled();
+      expect(result.workspaceCleaned).toBe(true);
     });
 
-    it('should force kill container when force option is true', async () => {
-      await service.cleanupAfterExecution('exec-123', { forceContainerRemove: true });
-
-      expect(dockerService.killContainer).toHaveBeenCalledWith('container-abc123', 'SIGKILL');
-      expect(dockerService.removeContainer).toHaveBeenCalledWith('container-abc123', true);
-    });
+    // DooD Elimination: removeContainer is now a no-op
 
     it('should handle execution not found gracefully', async () => {
       executionTracker.getExecution.mockResolvedValue(null);
@@ -170,16 +137,19 @@ describe('CleanupService', () => {
       expect(result.workspaceCleaned).toBe(false);
     });
 
-    it('should handle container removal failure gracefully', async () => {
-      dockerService.removeContainer.mockRejectedValue(new Error('Container not found'));
-
+    it('should report successful no-op cleanup regardless of prior state', async () => {
+      // In DooD, the no-op cleanup always reports success unless execution not found
       const result = await service.cleanupAfterExecution('exec-123');
+      expect(result.containerRemoved).toBe(true);
+    });
 
-      expect(result.containerRemoved).toBe(false);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].type).toBe('container');
-      // Workspace should still be cleaned
+    it('should report successful no-op cleanup when forceContainerRemove is true', async () => {
+      const result = await service.cleanupAfterExecution('exec-123', {
+        forceContainerRemove: true,
+      });
+      expect(result.containerRemoved).toBe(true);
       expect(result.workspaceCleaned).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
 
     it('should handle missing container_id gracefully', async () => {
@@ -190,55 +160,10 @@ describe('CleanupService', () => {
 
       const result = await service.cleanupAfterExecution('exec-123');
 
-      expect(result.containerRemoved).toBe(false);
+      expect(result.containerRemoved).toBe(true);
       expect(result.workspaceCleaned).toBe(true);
-      expect(dockerService.removeContainer).not.toHaveBeenCalled();
     });
   });
 
-  describe('removeContainer', () => {
-    it('should remove container successfully', async () => {
-      await service.removeContainer('container-123', false);
-
-      expect(dockerService.removeContainer).toHaveBeenCalledWith('container-123', false);
-    });
-
-    it('should kill and remove when force is true', async () => {
-      await service.removeContainer('container-123', true);
-
-      expect(dockerService.killContainer).toHaveBeenCalledWith('container-123', 'SIGKILL');
-      expect(dockerService.removeContainer).toHaveBeenCalledWith('container-123', true);
-    });
-
-    it('should handle container not found gracefully (idempotent)', async () => {
-      const error = new Error('No such container: container-123');
-      dockerService.removeContainer.mockRejectedValue(error);
-
-      await expect(service.removeContainer('container-123')).resolves.not.toThrow();
-    });
-  });
-
-  describe('cleanupWorkspaceFolder', () => {
-    it('should return 0 bytes when preserve is true', async () => {
-      const bytes = await service.cleanupWorkspaceFolder('exec-123', true);
-
-      expect(bytes).toBe(0);
-      expect(workspaceService.cleanupWorkspace).not.toHaveBeenCalled();
-    });
-
-    it('should cleanup workspace when preserve is false', async () => {
-      await service.cleanupWorkspaceFolder('exec-123', false);
-
-      expect(workspaceService.cleanupWorkspace).toHaveBeenCalledWith('exec-123', true);
-    });
-
-    it('should return 0 when workspace not found', async () => {
-      workspaceService.getWorkspace.mockResolvedValue(undefined);
-
-      const bytes = await service.cleanupWorkspaceFolder('exec-123', false);
-
-      expect(bytes).toBe(0);
-      expect(workspaceService.cleanupWorkspace).not.toHaveBeenCalled();
-    });
-  });
+  // DooD Elimination: removeContainer and cleanupWorkspaceFolder methods are no-op stubs
 });

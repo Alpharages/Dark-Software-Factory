@@ -7,7 +7,6 @@ import { GitHubPROrchestrator } from './github-pr-orchestrator.service';
 import { EXCHANGE_NAMES, ROUTING_KEYS } from '../../rabbitmq/rabbitmq.config';
 import * as amqp from 'amqplib';
 import { ExecutionTrackerService } from '../../execution/execution-tracker.service';
-import { WorkspaceService } from '../../ai-routing/providers/workspace.service';
 
 interface GitHubPushTriggerMessage {
   executionId: string;
@@ -47,7 +46,6 @@ export class GitHubPushTriggerConsumer
     private readonly commitOrchestrator: GitHubCommitOrchestrator,
     private readonly prOrchestrator: GitHubPROrchestrator,
     private readonly executionTracker: ExecutionTrackerService,
-    private readonly workspaceService: WorkspaceService,
   ) {
     super();
   }
@@ -148,14 +146,16 @@ export class GitHubPushTriggerConsumer
       // Get the actual branch name from the workspace record (created during workspace setup)
       // The workspace creates the branch as `feature/ticket-{ticketId}` — we must use
       // the SAME branch name here, or the push will fail with "src refspec does not match any"
-      const workspace = await this.workspaceService.getWorkspace(message.executionId);
-      const branchName = workspace?.branchName || `feature/ticket-${message.ticketId}`;
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { execution_id: message.executionId },
+      });
+      const branchName = workspace?.branch_name || `feature/ticket-${message.ticketId}`;
 
       this.logger.log(`[${correlationId}] Resolved push parameters`, {
         executionId: message.executionId,
         repositoryUrl,
         branchName,
-        branchSource: workspace?.branchName ? 'workspace_record' : 'fallback',
+        branchSource: workspace?.branch_name ? 'workspace_record' : 'fallback',
       });
 
       const githubPush = await this.prisma.gitHubPush.create({
@@ -248,19 +248,10 @@ export class GitHubPushTriggerConsumer
       // Note: GitHubPROrchestrator already publishes deployment trigger event
       // No additional event publishing needed here
 
-      // CLEANUP: Now that code is safely pushed to GitHub, clean up the workspace.
-      // The workspace was preserved during execution.completed specifically for this push.
-      try {
-        await this.workspaceService.cleanupWorkspace(message.executionId, true);
-        this.logger.log(
-          `[${correlationId}] Workspace cleaned up after successful GitHub push for ${message.executionId}`,
-        );
-      } catch (cleanupError) {
-        // Non-blocking — code is already pushed, workspace cleanup failure is not critical
-        this.logger.warn(
-          `[${correlationId}] Workspace cleanup failed after push (non-blocking): ${(cleanupError as Error).message}`,
-        );
-      }
+      // CLEANUP: DooD Elimination — Workspace cleanup is handled by OpenSandbox TTL
+      this.logger.debug(
+        `[${correlationId}] Skip workspace cleanup for ${message.executionId}, handled by OpenSandbox TTL`,
+      );
     } catch (_error) {
       const err = _error as Error;
       this.logger.error(

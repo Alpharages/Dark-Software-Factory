@@ -7,7 +7,6 @@ import { AIExecutionService } from '@/ai-routing/ai-execution.service';
 import { PromptGeneratorService } from '@/ai-routing/prompt-generator.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { GitHubService } from '../github.service';
-import { WorkspaceService } from '@/ai-routing/providers';
 
 describe('PRRiskAssessorService', () => {
   let service: PRRiskAssessorService;
@@ -37,6 +36,9 @@ describe('PRRiskAssessorService', () => {
             execution: {
               findUnique: jest.fn().mockResolvedValue(mockExecution),
               update: jest.fn().mockResolvedValue({}),
+            },
+            workspace: {
+              findUnique: jest.fn().mockResolvedValue({ workspace_path: '/tmp/workspace' }),
             },
           },
         },
@@ -86,12 +88,7 @@ describe('PRRiskAssessorService', () => {
             getPullRequestDiff: jest.fn().mockResolvedValue('diff content'),
           },
         },
-        {
-          provide: WorkspaceService,
-          useValue: {
-            getWorkspace: jest.fn().mockResolvedValue({ path: '/tmp/workspace' }),
-          },
-        },
+        // WorkspaceService removed (handled by OpenSandbox TTL)
       ],
     }).compile();
 

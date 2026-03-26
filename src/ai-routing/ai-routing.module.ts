@@ -9,19 +9,13 @@ import { AIRoutingService } from './ai-routing.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderHealthService } from './provider-health.service';
 import { AIRoutingConsumer } from './ai-routing.consumer';
-import { PtyExecutionService } from './services/pty-execution.service';
 // Story 2.4: Prompt generation imports
 import { PromptGeneratorService } from './prompt-generator.service';
 import { CursorPromptBuilder } from './prompt-templates/cursor-prompt.template';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
 // Story 2.6: AI Execution imports
 import { AIExecutionService } from './ai-execution.service';
-import {
-  WorkspaceService,
-  GitOperationsService,
-  CursorHeadlessProvider,
-  ClaudeCodeProvider,
-} from './providers';
+import { GitOperationsService, ClaudeCodeProvider } from './providers';
 // Story 2.8: Orchestration imports
 import { OrchestratorService } from './orchestrator.service';
 import { ProviderFactoryService } from './provider-factory.service';
@@ -38,7 +32,6 @@ import { ArchitectureReviewModule } from '@/architecture-review/architecture-rev
 import { EventBusModule } from '@/common/event-bus.module';
 import { CostTrackingModule } from '@/cost-tracking/cost-tracking.module';
 
-import { DockerModule } from '@/docker/docker.module';
 import { ExecutionModule } from '@/execution/execution.module';
 import { SystemConfigModule } from '@/system-settings/system-config.module';
 import { AIProvidersController } from './ai-providers.controller';
@@ -57,7 +50,6 @@ import { AIProvidersController } from './ai-providers.controller';
     EventBusModule,
     CostTrackingModule,
     CostTrackingModule,
-    DockerModule,
     forwardRef(() => ExecutionModule),
     SystemConfigModule,
   ],
@@ -68,7 +60,6 @@ import { AIProvidersController } from './ai-providers.controller';
     ComplexityScorerService,
     ProviderHealthService,
     AIRoutingConsumer,
-    PtyExecutionService,
 
     // Story 2.4: Prompt generation services
     PromptGeneratorService,
@@ -77,9 +68,7 @@ import { AIProvidersController } from './ai-providers.controller';
 
     // Story 2.6: AI Execution services
     AIExecutionService,
-    WorkspaceService,
     GitOperationsService,
-    CursorHeadlessProvider,
 
     // Story 2.7: Claude Code Provider
     ClaudeCodeProvider,
@@ -150,32 +139,6 @@ import { AIProvidersController } from './ai-providers.controller';
       buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5],
     }),
 
-    // Story 2.6: Cursor Headless Metrics
-    makeCounterProvider({
-      name: 'cursor_executions_total',
-      help: 'Total Cursor CLI executions',
-      labelNames: ['status'],
-    }),
-    makeHistogramProvider({
-      name: 'cursor_execution_duration_seconds',
-      help: 'Cursor execution duration in seconds',
-      labelNames: ['status'],
-      buckets: [10, 30, 60, 120, 180, 240, 300, 600],
-    }),
-    makeGaugeProvider({
-      name: 'cursor_active_executions',
-      help: 'Currently active Cursor executions',
-    }),
-    makeGaugeProvider({
-      name: 'cursor_workspaces_active',
-      help: 'Currently active workspaces',
-    }),
-    makeCounterProvider({
-      name: 'cursor_workspace_operations_total',
-      help: 'Workspace operations count',
-      labelNames: ['operation', 'status'],
-    }),
-
     // Story 2.8: Orchestration Metrics
     makeCounterProvider({
       name: 'orchestrator_executions_total',
@@ -226,16 +189,13 @@ import { AIProvidersController } from './ai-providers.controller';
     AIRoutingService,
     ComplexityScorerService,
     ProviderHealthService,
-    PtyExecutionService,
     // Story 2.4: Prompt generation exports
     PromptGeneratorService,
     CursorPromptBuilder,
     ClaudeCodePromptBuilder,
     // Story 2.6: AI Execution exports
     AIExecutionService,
-    WorkspaceService,
     GitOperationsService,
-    CursorHeadlessProvider,
     // Story 2.7: Claude Code exports
     ClaudeCodeProvider,
     // Story 2.8: Orchestration exports

@@ -6,7 +6,6 @@ import { PrismaService } from '@/database/prisma.service';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { AuditLogService } from '@/common/audit/audit-log.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
-import { WorkspaceService } from '@/ai-routing/providers';
 import { GitOperationsService } from '@/ai-routing/providers/git-operations.service';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
@@ -37,7 +36,6 @@ export class GitHubCommitOrchestrator {
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
     private readonly logger: LoggerService,
-    private readonly workspaceService: WorkspaceService,
     private readonly gitOps: GitOperationsService,
     private readonly config: ConfigService,
     // Story 11.4: AI Decision Audit Logging
@@ -60,7 +58,7 @@ export class GitHubCommitOrchestrator {
    * Follows the same architecture pattern as GitHubPROrchestrator:
    *  1. Resolves the AI provider from the execution's ai_provider field
    *  2. Builds a prompt instructing the AI to stage, commit, and push
-   *  3. Calls executePrompt() on the provider (ClaudeCodeProvider / CursorHeadlessProvider)
+   *  3. Calls executePrompt() on the provider (ClaudeCodeProvider)
    *  4. Parses the AI's response for commit SHA
    *
    * Fallback: If executePrompt() fails, falls back to direct GitOperationsService
@@ -96,9 +94,9 @@ export class GitHubCommitOrchestrator {
         throw new Error(`GitHub push record not found for execution ${executionId}`);
       }
 
-      // Get existing workspace
-      const workspace = await this.workspaceService.getWorkspace(executionId);
-
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { execution_id: executionId },
+      });
       if (!workspace) {
         throw new Error(
           `Workspace not found for execution ${executionId}. It may have been cleaned up before the push could complete.`,
@@ -113,10 +111,10 @@ export class GitHubCommitOrchestrator {
         executionId,
         targetBranch: githubPush.branch_name,
       });
-      await this.gitOps.ensureBranch(workspace.path, githubPush.branch_name);
+      await this.gitOps.ensureBranch(workspace.workspace_path, githubPush.branch_name);
 
       // Resolve per-project GitHub token once (used by both push paths below)
-      const repositoryUrl = workspace.repositoryUrl || githubPush.repository;
+      const repositoryUrl = workspace.repository_url || githubPush.repository;
       let pushUrl = repositoryUrl;
       if (execution.ticket?.project_id) {
         const resolvedAuth = await this.tokenResolver.resolveForProject(
@@ -127,22 +125,22 @@ export class GitHubCommitOrchestrator {
       }
 
       // Check if there are changes to commit
-      const hasChanges = await this.gitOps.hasChanges(workspace.path);
+      const hasChanges = await this.gitOps.hasChanges(workspace.workspace_path);
 
       if (!hasChanges) {
         this.logger.warn(
           'No uncommitted changes found in workspace, checking for unpushed commits',
           {
             executionId,
-            workspacePath: workspace.path,
+            workspacePath: workspace.workspace_path,
           },
         );
 
         // Even if there are no uncommitted changes, there may be unpushed commits
         // (e.g., the AI already committed during code generation)
         try {
-          await this.gitOps.push(workspace.path, pushUrl, githubPush.branch_name);
-          const currentSha = await this.gitOps.getCurrentCommitSha(workspace.path);
+          await this.gitOps.push(workspace.workspace_path, pushUrl, githubPush.branch_name);
+          const currentSha = await this.gitOps.getCurrentCommitSha(workspace.workspace_path);
 
           this.logger.log('Pushed existing commits successfully', {
             executionId,
@@ -303,7 +301,7 @@ export class GitHubCommitOrchestrator {
       ticket: { id: string; clickup_task_id: string; title: string; description: string | null };
     },
     githubPush: { id: string; repository: string; branch_name: string },
-    workspace: { path: string; repositoryUrl?: string },
+    workspace: { workspace_path: string; repository_url?: string | null },
     pushUrl: string,
     _correlationId?: string,
   ): Promise<CommitOrchestrationResult> {
@@ -313,11 +311,10 @@ export class GitHubCommitOrchestrator {
       branch: githubPush.branch_name,
     });
 
-    // 1. Get changed files for commit message context
-    const changedFiles = await this.gitOps.getChangedFiles(workspace.path);
+    const changedFiles = await this.gitOps.getChangedFiles(workspace.workspace_path);
 
     // 2. Get git diff stat for commit body
-    const diffStat = await this.gitOps.getDiff(workspace.path);
+    const diffStat = await this.gitOps.getDiff(workspace.workspace_path);
 
     // 3. Generate commit message — AI first, deterministic fallback
     let commitMessage: string;
@@ -360,7 +357,7 @@ export class GitHubCommitOrchestrator {
     }
 
     // 4. Commit with --no-verify
-    const commitSha = await this.gitOps.commit(workspace.path, commitMessage);
+    const commitSha = await this.gitOps.commit(workspace.workspace_path, commitMessage);
 
     this.logger.log('Git commit created successfully', {
       executionId: execution.id,
@@ -370,7 +367,7 @@ export class GitHubCommitOrchestrator {
     });
 
     // 5. Push with --no-verify
-    await this.gitOps.push(workspace.path, pushUrl, githubPush.branch_name);
+    await this.gitOps.push(workspace.workspace_path, pushUrl, githubPush.branch_name);
 
     this.logger.log('Git push completed successfully', {
       executionId: execution.id,

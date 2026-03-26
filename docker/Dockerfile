@@ -11,9 +11,6 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-# Install build tools for native modules (node-pty requires python3, make, g++)
-RUN apk add --no-cache python3 make g++ libgcc libstdc++
-
 # Enable pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -45,8 +42,8 @@ RUN npx tsc --module commonjs --moduleResolution node --esModuleInterop --resolv
 # ---- Production Stage ----
 FROM node:22-alpine AS production
 
-# Install runtime dependencies for node-pty and git (required by OrchestratorService for workspace cloning)
-RUN apk add --no-cache libgcc libstdc++ bash git
+# Install runtime dependencies for git
+RUN apk add --no-cache bash git
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

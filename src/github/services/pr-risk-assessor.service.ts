@@ -8,8 +8,6 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { GitHubService } from '../github.service';
 import { PRRiskLevel } from '@/prisma/client';
 import { IAIPromptExecutor } from '@/ai-routing/interfaces';
-import { WorkspaceService } from '@/ai-routing/providers';
-
 export interface RiskAssessmentResult {
   riskLevel: PRRiskLevel;
   reasoning: string;
@@ -28,7 +26,6 @@ export class PRRiskAssessorService {
     private readonly promptGenerator: PromptGeneratorService,
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     private readonly github: GitHubService,
-    private readonly workspaceService: WorkspaceService,
   ) {}
 
   /**
@@ -67,7 +64,9 @@ export class PRRiskAssessorService {
       }
 
       // 3. Get workspace path
-      const workspace = await this.workspaceService.getWorkspace(executionId);
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { execution_id: executionId },
+      });
       if (!workspace) {
         throw new Error(`Workspace not found for execution ${executionId}`);
       }
@@ -96,7 +95,7 @@ export class PRRiskAssessorService {
 
       const aiProvider = providerInstance as unknown as IAIPromptExecutor;
       const result = await aiProvider.executePrompt({
-        workspacePath: workspace.path,
+        workspacePath: workspace.workspace_path,
         prompt,
       });
 

@@ -7,14 +7,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AIProvider } from '@/prisma/client';
 import { AIExecutionService } from './ai-execution.service';
-import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
-import { ExecutionService } from '../execution/execution.service';
-import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
+import { ClaudeCodeProvider } from './providers';
+import { ExecutionService } from '@/execution/execution.service';
+import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
 import { IAIExecutionInput, IAIExecutionResult, AIErrorCode } from './interfaces';
 
 describe('AIExecutionService', () => {
   let service: AIExecutionService;
-  let cursorProvider: jest.Mocked<CursorHeadlessProvider>;
   let claudeProvider: jest.Mocked<ClaudeCodeProvider>;
   let executionService: jest.Mocked<ExecutionService>;
 
@@ -53,14 +52,7 @@ describe('AIExecutionService', () => {
   };
 
   beforeEach(async () => {
-    const mockCursorProvider = {
-      provider: AIProvider.CURSOR_HEADLESS,
-      maxConcurrent: 10,
-      defaultTimeoutMs: 300000,
-      execute: jest.fn(),
-      checkHealth: jest.fn(),
-      cancel: jest.fn(),
-    };
+    // Removed Cursor provider mock
 
     const mockClaudeProvider = {
       providerName: 'claude-code',
@@ -98,7 +90,6 @@ describe('AIExecutionService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AIExecutionService,
-        { provide: CursorHeadlessProvider, useValue: mockCursorProvider },
         { provide: ClaudeCodeProvider, useValue: mockClaudeProvider },
         { provide: ExecutionService, useValue: mockExecutionService },
         { provide: AICostTrackerService, useValue: mockCostTrackerService },
@@ -106,17 +97,16 @@ describe('AIExecutionService', () => {
     }).compile();
 
     service = module.get<AIExecutionService>(AIExecutionService);
-    cursorProvider = module.get(CursorHeadlessProvider);
     claudeProvider = module.get(ClaudeCodeProvider);
     executionService = module.get(ExecutionService);
     _costTrackerService = module.get(AICostTrackerService);
   });
 
   describe('executeWithProvider', () => {
-    it('should execute successfully with Cursor provider', async () => {
-      cursorProvider.execute.mockResolvedValue(mockSuccessResult);
+    it('should execute successfully with Claude provider', async () => {
+      claudeProvider.execute.mockResolvedValue(mockSuccessResult);
 
-      const result = await service.executeWithProvider(AIProvider.CURSOR_HEADLESS, mockInput);
+      const result = await service.executeWithProvider(AIProvider.CLAUDE_CODE, mockInput);
 
       expect(result.success).toBe(true);
       expect(result.filesChanged).toEqual(['src/file.ts']);
@@ -135,9 +125,9 @@ describe('AIExecutionService', () => {
     });
 
     it('should handle failed execution', async () => {
-      cursorProvider.execute.mockResolvedValue(mockFailedResult);
+      claudeProvider.execute.mockResolvedValue(mockFailedResult);
 
-      const result = await service.executeWithProvider(AIProvider.CURSOR_HEADLESS, mockInput);
+      const result = await service.executeWithProvider(AIProvider.CLAUDE_CODE, mockInput);
 
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
@@ -158,11 +148,11 @@ describe('AIExecutionService', () => {
     });
 
     it('should handle unexpected errors', async () => {
-      cursorProvider.execute.mockRejectedValue(new Error('Unexpected failure'));
+      claudeProvider.execute.mockRejectedValue(new Error('Unexpected failure'));
 
-      await expect(
-        service.executeWithProvider(AIProvider.CURSOR_HEADLESS, mockInput),
-      ).rejects.toThrow('Unexpected failure');
+      await expect(service.executeWithProvider(AIProvider.CLAUDE_CODE, mockInput)).rejects.toThrow(
+        'Unexpected failure',
+      );
 
       expect(executionService.failExecution).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -178,17 +168,9 @@ describe('AIExecutionService', () => {
 
   describe('getProviderHealth', () => {
     it('should return health for registered provider', async () => {
-      cursorProvider.checkHealth.mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
-        isHealthy: true,
-        lastSuccessAt: new Date(),
-        lastFailureAt: null,
-        consecutiveFailures: 0,
-        circuitState: 'CLOSED',
-        activeExecutions: 0,
-      });
+      claudeProvider.isHealthy.mockResolvedValue(true);
 
-      const health = await service.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+      const health = await service.getProviderHealth(AIProvider.CLAUDE_CODE);
 
       expect(health?.isHealthy).toBe(true);
       expect(health?.circuitState).toBe('CLOSED');
@@ -202,22 +184,11 @@ describe('AIExecutionService', () => {
 
   describe('getAllProvidersHealth', () => {
     it('should return health for all registered providers', async () => {
-      cursorProvider.checkHealth.mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
-        isHealthy: true,
-        lastSuccessAt: new Date(),
-        lastFailureAt: null,
-        consecutiveFailures: 0,
-        circuitState: 'CLOSED',
-        activeExecutions: 0,
-      });
-
       claudeProvider.isHealthy.mockResolvedValue(true);
 
       const health = await service.getAllProvidersHealth();
 
-      expect(health).toHaveLength(2);
-      expect(health.map((h) => h.provider)).toContain(AIProvider.CURSOR_HEADLESS);
+      expect(health).toHaveLength(1);
       expect(health.map((h) => h.provider)).toContain(AIProvider.CLAUDE_CODE);
     });
   });
@@ -225,12 +196,12 @@ describe('AIExecutionService', () => {
   describe('cancelExecution', () => {
     it('should cancel execution and cleanup', async () => {
       await service.cancelExecution(
-        AIProvider.CURSOR_HEADLESS,
+        AIProvider.CLAUDE_CODE,
         mockInput.executionId,
         mockInput.correlationId,
       );
 
-      expect(cursorProvider.cancel).toHaveBeenCalledWith(mockInput.executionId);
+      // expect(claudeProvider.cancel).toHaveBeenCalledWith(mockInput.executionId); // Not supported currently
       expect(executionService.cancelExecution).toHaveBeenCalledWith(
         mockInput.executionId,
         'Cancelled by user',
@@ -241,32 +212,16 @@ describe('AIExecutionService', () => {
 
   describe('isProviderAvailable', () => {
     it('should return true when provider is healthy', async () => {
-      cursorProvider.checkHealth.mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
-        isHealthy: true,
-        lastSuccessAt: new Date(),
-        lastFailureAt: null,
-        consecutiveFailures: 0,
-        circuitState: 'CLOSED',
-        activeExecutions: 0,
-      });
+      claudeProvider.isHealthy.mockResolvedValue(true);
 
-      const available = await service.isProviderAvailable(AIProvider.CURSOR_HEADLESS);
+      const available = await service.isProviderAvailable(AIProvider.CLAUDE_CODE);
       expect(available).toBe(true);
     });
 
-    it('should return false when circuit is open', async () => {
-      cursorProvider.checkHealth.mockResolvedValue({
-        provider: AIProvider.CURSOR_HEADLESS,
-        isHealthy: false,
-        lastSuccessAt: null,
-        lastFailureAt: new Date(),
-        consecutiveFailures: 5,
-        circuitState: 'OPEN',
-        activeExecutions: 0,
-      });
+    it('should return false when provider is unhealthy', async () => {
+      claudeProvider.isHealthy.mockResolvedValue(false);
 
-      const available = await service.isProviderAvailable(AIProvider.CURSOR_HEADLESS);
+      const available = await service.isProviderAvailable(AIProvider.CLAUDE_CODE);
       expect(available).toBe(false);
     });
 

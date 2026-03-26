@@ -7,7 +7,6 @@ import { EXCHANGE_NAMES, ROUTING_KEYS, QUEUE_NAMES } from '../rabbitmq/rabbitmq.
 import { QualityGatesService } from './quality-gates.service';
 import { QaMetricsService } from './qa-metrics.service';
 import { AiQaOrchestrator } from './ai-qa-orchestrator.service'; // Story 3.10
-import { WorkspaceService } from '../ai-routing/providers/workspace.service'; // For workspace paths
 // Story 3.10: Deleted services - replaced by AI delegation
 // import { LinterService } from './linter.service';
 // import { TestRunnerService } from './test-runner.service';
@@ -74,8 +73,6 @@ export class QaOrchestratorService {
     private readonly qualityGatesService: QualityGatesService,
     // Story 3.10: AiQaOrchestrator replaces deleted services
     private readonly aiQaOrchestrator: AiQaOrchestrator,
-    @Inject(forwardRef(() => WorkspaceService))
-    private readonly workspaceService: WorkspaceService, // For getting workspace paths
     // Story 3.10: Temporarily commented - will be replaced with AiQaOrchestrator
     // private readonly linterService: LinterService,
     // private readonly testRunnerService: TestRunnerService,
@@ -295,20 +292,10 @@ export class QaOrchestratorService {
           `[${correlationId}] Ticket ${ticketId} failed QA checks (status: QA_FAILED)`,
         );
 
-        // Cleanup workspace on QA failure - no GitHub push will happen
-        try {
-          if (this.workspaceService) {
-            await this.workspaceService.cleanupWorkspace(executionId, true);
-            this.logger.log(
-              `[${correlationId}] Workspace cleaned up after QA failure: ${executionId}`,
-            );
-          }
-        } catch (cleanupError) {
-          const err = cleanupError as Error;
-          this.logger.warn(
-            `[${correlationId}] Failed to cleanup workspace after QA failure: ${err.message}`,
-          );
-        }
+        // DooD Elimination: Workspace cleanup is handled by OpenSandbox TTL
+        this.logger.debug(
+          `[${correlationId}] Skip workspace cleanup for ${executionId}, handled by OpenSandbox TTL`,
+        );
       }
 
       this.logger.log(
@@ -1002,8 +989,9 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // Get workspace path from WorkspaceService (stored in DB, not memory)
-      const workspace = await this.workspaceService.getWorkspace(message.executionId);
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { execution_id: message.executionId },
+      });
       if (!workspace) {
         throw new Error('Workspace not found for execution');
       }
@@ -1012,7 +1000,7 @@ export class QaOrchestratorService {
       const result = await this.aiQaOrchestrator.executeLintCheck(
         message.ticketId,
         message.executionId,
-        workspace.path,
+        workspace.workspace_path,
       );
 
       // SKIPPED and NOT_CONFIGURED are treated as non-blocking (passed)
@@ -1066,8 +1054,9 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // Get workspace path from WorkspaceService (stored in DB, not memory)
-      const workspace = await this.workspaceService.getWorkspace(message.executionId);
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { execution_id: message.executionId },
+      });
       if (!workspace) {
         throw new Error('Workspace not found for execution');
       }
@@ -1075,7 +1064,7 @@ export class QaOrchestratorService {
       const result = await this.aiQaOrchestrator.executeTestRun(
         message.ticketId,
         message.executionId,
-        workspace.path,
+        workspace.workspace_path,
       );
 
       // SKIPPED and NOT_CONFIGURED are treated as non-blocking (passed)
@@ -1132,8 +1121,9 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // Get workspace path from WorkspaceService (stored in DB, not memory)
-      const workspace = await this.workspaceService.getWorkspace(message.executionId);
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { execution_id: message.executionId },
+      });
       if (!workspace) {
         throw new Error('Workspace not found for execution');
       }
@@ -1141,7 +1131,7 @@ export class QaOrchestratorService {
       const result = await this.aiQaOrchestrator.executeCoverageAnalysis(
         message.ticketId,
         message.executionId,
-        workspace.path,
+        workspace.workspace_path,
       );
 
       // SKIPPED means retries exhausted — treat as passed to proceed
@@ -1195,8 +1185,9 @@ export class QaOrchestratorService {
     const startTime = Date.now();
 
     try {
-      // Get workspace path from WorkspaceService (stored in DB, not memory)
-      const workspace = await this.workspaceService.getWorkspace(message.executionId);
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { execution_id: message.executionId },
+      });
       if (!workspace) {
         throw new Error('Workspace not found for execution');
       }
@@ -1204,7 +1195,7 @@ export class QaOrchestratorService {
       const result = await this.aiQaOrchestrator.executeSecurityScan(
         message.ticketId,
         message.executionId,
-        workspace.path,
+        workspace.workspace_path,
       );
 
       // SKIPPED and NOT_CONFIGURED are treated as non-blocking (passed)

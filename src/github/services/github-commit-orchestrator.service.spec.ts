@@ -17,7 +17,6 @@ import { AuditLogService } from '@/common/audit/audit-log.service';
 import { MetricsService } from '@/common/metrics';
 import { SentryService } from '@/common/sentry';
 import { LoggerService } from '@/common/logger';
-import { WorkspaceService } from '@/ai-routing/providers';
 import { GitOperationsService } from '@/ai-routing/providers';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { AIProvider } from '@/prisma/client';
@@ -83,14 +82,7 @@ describe('GitHubCommitOrchestrator', () => {
             warn: jest.fn(),
           },
         },
-        {
-          provide: WorkspaceService,
-          useValue: {
-            getWorkspace: jest.fn().mockResolvedValue({ path: '/tmp/workspace' }),
-            createWorkspace: jest.fn(),
-            cleanupWorkspace: jest.fn(),
-          },
-        },
+        // WorkspaceService removed (handled by OpenSandbox TTL)
         {
           provide: GitOperationsService,
           useValue: {
@@ -122,6 +114,9 @@ describe('GitHubCommitOrchestrator', () => {
             gitHubPush: {
               findFirst: jest.fn(),
               update: jest.fn(),
+            },
+            workspace: {
+              findUnique: jest.fn(),
             },
           },
         },
@@ -205,6 +200,10 @@ describe('GitHubCommitOrchestrator', () => {
         ...mockGitHubPush,
         commit_sha: 'abc123...',
       });
+      (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
+        workspace_path: '/tmp/workspace',
+        repository_url: 'owner/repo',
+      });
 
       // Act
       const result = await service.commitAndPush('exec-123', 'corr-123');
@@ -254,6 +253,10 @@ describe('GitHubCommitOrchestrator', () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.gitHubPush.update as jest.Mock).mockResolvedValue(mockGitHubPush);
+      (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
+        workspace_path: '/tmp/workspace',
+        repository_url: 'owner/repo',
+      });
 
       // Act - should succeed with deterministic fallback commit message
       const result = await service.commitAndPush('exec-123');
@@ -271,6 +274,10 @@ describe('GitHubCommitOrchestrator', () => {
       (prismaService.execution.findUnique as jest.Mock).mockResolvedValue(mockExecution);
       (prismaService.gitHubPush.findFirst as jest.Mock).mockResolvedValue(mockGitHubPush);
       (prismaService.gitHubPush.update as jest.Mock).mockResolvedValue(mockGitHubPush);
+      (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
+        workspace_path: '/tmp/workspace',
+        repository_url: 'owner/repo',
+      });
 
       // Act
       await service.commitAndPush('exec-123');

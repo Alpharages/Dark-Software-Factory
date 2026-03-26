@@ -503,7 +503,7 @@ development_status:
   epic-os-1-retrospective: done
 
   # EPIC OS-2 - CLAUDE CODE MIGRATED TO OPENSANDBOX
-  epic-os-2: in-progress
+  epic-os-2: done
   epic-os-2-name: 'Claude Code Migrated to OpenSandbox'
   epic-os-2-phase: 'OpenSandbox Migration Sprint'
   epic-os-2-priority: critical
@@ -519,10 +519,10 @@ development_status:
     notes: 'ICodingAgentProvider interface + ProviderName enum + SandboxResourceProfileService with complexity-based CPU/memory tiers. Code review: NaN guard added to getProfile(), T6/T7 hardened with not.toHaveBeenCalled(), T9+T10 edge cases added. 10 tests green.'
   os-2-2-claude-code-provider-rewrite-sandbox-service: done
   os-2-3-provider-fallback-health-circuit-breaker-compatibility: done
-  epic-os-2-retrospective: optional
+  epic-os-2-retrospective: done
 
   # EPIC OS-3 - DOOD ELIMINATION — ZERO DOCKER DEPENDENCY
-  epic-os-3: backlog
+  epic-os-3: in-progress
   epic-os-3-name: 'DooD Elimination — Zero Docker Dependency'
   epic-os-3-phase: 'OpenSandbox Migration Sprint'
   epic-os-3-priority: critical
@@ -530,8 +530,8 @@ development_status:
   epic-os-3-estimated_effort: '2 days'
   epic-os-3-source: 'epics.md'
   epic-os-3-notes: 'Security milestone. Delete all DooD code + packages. All 7 grep checks (CURSOR_HEADLESS deferred to OS-5) must return zero.'
-  os-3-1-delete-dood-files-remove-docker-module: backlog
-  os-3-2-remove-legacy-dood-metrics-cleanup-service-verify: backlog
+  os-3-1-delete-dood-files-remove-docker-module: done
+  os-3-2-remove-legacy-dood-metrics-cleanup-service-verify: ready-for-dev
   epic-os-3-retrospective: optional
 
   # EPIC OS-4 - MULTI-PROVIDER AI ROUTING (GEMINI, CODEX, KIMI)
@@ -564,7 +564,7 @@ development_status:
 
 priority_sequence:
   last_updated: '2026-03-26'
-  updated_by: 'OS-2.2 code review complete — all patches applied, story done'
+  updated_by: 'OS-3.2 story created and marked ready-for-dev'
 
   opensandbox_p0:
     description: 'CRITICAL — OpenSandbox Migration. Security prerequisite: remove DooD Docker socket exposure.'

@@ -16,7 +16,7 @@ import {
   IProviderHealthStatus,
   AIErrorCode,
 } from './interfaces';
-import { CursorHeadlessProvider, ClaudeCodeProvider } from './providers';
+import { ClaudeCodeProvider } from './providers';
 import { ExecutionService } from '../execution/execution.service';
 import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
 import { CompleteExecutionDto, FailExecutionDto } from '../execution/dto';
@@ -30,15 +30,11 @@ export class AIExecutionService {
   private readonly providers: Map<AIProvider, IAIProvider> = new Map();
 
   constructor(
-    private readonly cursorProvider: CursorHeadlessProvider,
     private readonly claudeProvider: ClaudeCodeProvider,
     private readonly executionService: ExecutionService,
     private readonly costTracker: AICostTrackerService,
   ) {
-    // Register Cursor Headless
-    this.providers.set(AIProvider.CURSOR_HEADLESS, this.cursorProvider);
-
-    // Adapt new ClaudeCodeProvider (ICodingAgentProvider) to legacy IAIProvider interface
+    // Register Claude Code via adapter
     this.providers.set(AIProvider.CLAUDE_CODE, {
       provider: AIProvider.CLAUDE_CODE,
       maxConcurrent: 5,
@@ -120,9 +116,7 @@ export class AIExecutionService {
             executionId,
             ticketId,
             provider,
-            model:
-              result.model ||
-              (provider === AIProvider.CLAUDE_CODE ? 'claude-3-5-sonnet-20240620' : 'gpt-4o'),
+            model: result.model || 'claude-3-5-sonnet-20240620',
             inputTokens: result.tokensInput || 0,
             outputTokens: result.tokensOutput || 0,
             agentName: 'AIExecutionService', // Default agent name

@@ -5,14 +5,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './database/prisma.service';
 import { RabbitMQService } from './rabbitmq/rabbitmq.service';
-import { DockerService } from './docker/docker.service';
+import { SandboxService } from './sandbox/sandbox.service';
 
 describe('AppController', () => {
   let appController: AppController;
   // let appService: AppService;
   let prismaService: PrismaService;
   let rabbitMQService: RabbitMQService;
-  let dockerService: DockerService;
+  let sandboxService: SandboxService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
@@ -24,7 +24,7 @@ describe('AppController', () => {
             getHello: jest.fn().mockReturnValue('Hello World!'),
             getIntegrationHealth: jest
               .fn()
-              .mockResolvedValue({ docker: true, sendgrid: true, openai: false, slack: true }),
+              .mockResolvedValue({ sandbox: true, sendgrid: true, openai: false, slack: true }),
           },
         },
         {
@@ -40,7 +40,7 @@ describe('AppController', () => {
           },
         },
         {
-          provide: DockerService,
+          provide: SandboxService,
           useValue: {
             isHealthy: jest.fn().mockResolvedValue(true),
           },
@@ -51,7 +51,7 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
     prismaService = app.get<PrismaService>(PrismaService);
     rabbitMQService = app.get<RabbitMQService>(RabbitMQService);
-    dockerService = app.get<DockerService>(DockerService);
+    sandboxService = app.get<SandboxService>(SandboxService);
   });
 
   describe('root', () => {
@@ -70,7 +70,7 @@ describe('AppController', () => {
         services: {
           database: 'up',
           rabbitmq: 'up',
-          docker: 'up',
+          sandbox: 'up',
         },
       });
     });
@@ -87,8 +87,8 @@ describe('AppController', () => {
       await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
     });
 
-    it('should return unhealthy status when docker is down', async () => {
-      jest.spyOn(dockerService, 'isHealthy').mockResolvedValue(false);
+    it('should return unhealthy status when sandbox is down', async () => {
+      jest.spyOn(sandboxService, 'isHealthy').mockResolvedValue(false);
 
       await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
     });
@@ -96,7 +96,7 @@ describe('AppController', () => {
 
   describe('getIntegrationHealth', () => {
     it('should return integration health status', async () => {
-      const expectedHealth = { docker: true, sendgrid: true, openai: false, slack: true };
+      const expectedHealth = { sandbox: true, sendgrid: true, openai: false, slack: true };
       const result = await appController.getIntegrationHealth();
       expect(result).toEqual(expectedHealth);
     });
@@ -130,7 +130,7 @@ describe('Swagger Configuration', () => {
           },
         },
         {
-          provide: DockerService,
+          provide: SandboxService,
           useValue: {
             isHealthy: jest.fn().mockResolvedValue(true),
           },

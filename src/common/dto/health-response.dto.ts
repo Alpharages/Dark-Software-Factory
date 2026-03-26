@@ -8,7 +8,7 @@ export class ServiceStatusDto {
   rabbitmq!: 'up' | 'down';
 
   @ApiProperty({ example: 'up', enum: ['up', 'down'] })
-  docker!: 'up' | 'down';
+  sandbox!: 'up' | 'down';
 }
 
 export class HealthResponseDto {

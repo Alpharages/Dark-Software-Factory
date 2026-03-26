@@ -6,7 +6,6 @@ import {
   makeHistogramProvider,
   makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
-import { DockerModule } from '@/docker/docker.module';
 import { ExecutionModule } from '@/execution/execution.module';
 import { AiRoutingModule } from '@/ai-routing/ai-routing.module';
 import { LoggerModule } from '@/common/logger/logger.module';
@@ -52,14 +51,7 @@ const cleanupMetricProviders = [
  * after AI execution completion.
  */
 @Module({
-  imports: [
-    ConfigModule,
-    LoggerModule,
-    ScheduleModule.forRoot(),
-    DockerModule,
-    ExecutionModule,
-    AiRoutingModule,
-  ],
+  imports: [ConfigModule, LoggerModule, ScheduleModule.forRoot(), ExecutionModule, AiRoutingModule],
   providers: [
     CleanupService,
     CleanupSchedulerService,

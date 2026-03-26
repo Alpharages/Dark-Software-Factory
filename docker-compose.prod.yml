@@ -59,16 +59,6 @@ services:
 
     ports:
       - '${APP_PORT:-3000}:3000'
-    volumes:
-      # Docker socket for DooD pattern (Story 22.1) — no source mounts in production
-      - /var/run/docker.sock:/var/run/docker.sock
-      # Host bind mount for workspace root — MUST be same path on host and in container.
-      # DooD: dsf-app passes workspacePath to the host Docker daemon, which resolves it
-      # on the HOST. Sibling agent containers also bind the same host path.
-      # SANDBOX_WORKSPACES_ROOT must be a real host path (e.g. /opt/dsf-workspaces).
-      - ${SANDBOX_WORKSPACES_ROOT}:${SANDBOX_WORKSPACES_ROOT}:rw
-      # Logs root (for sibling container execution logs) must follow the exact same DooD rule
-      - ${SANDBOX_LOGS_ROOT}:${SANDBOX_LOGS_ROOT}:rw
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -101,9 +91,6 @@ services:
       options:
         max-size: '10m'
         max-file: '3'
-    # TTY support for node-pty (Epic 19)
-    tty: true
-    stdin_open: true
 
 # ===========================================
 # Networks

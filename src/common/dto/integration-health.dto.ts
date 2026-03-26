@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class IntegrationHealthResponseDto {
-  @ApiProperty({ example: true, description: 'Docker connectivity status' })
-  docker!: boolean;
+  @ApiProperty({ example: true, description: 'OpenSandbox connectivity status' })
+  sandbox!: boolean;
 
   @ApiProperty({ example: true, description: 'Presence of SendGrid API key' })
   sendgrid!: boolean;

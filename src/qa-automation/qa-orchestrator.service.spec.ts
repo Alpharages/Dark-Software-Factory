@@ -17,7 +17,6 @@ import { ConfigService } from '@nestjs/config';
 // import { CoverageService } from './coverage.service';
 // import { CodeReviewService } from './code-review.service';
 import { QaMetricsService } from './qa-metrics.service';
-import { WorkspaceService } from '../ai-routing/providers';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { SelfHealingOrchestratorService } from '../execution/self-healing-orchestrator.service';
 import { ExecutionTrackerService } from '../execution/execution-tracker.service';
@@ -97,11 +96,7 @@ describe('QaOrchestratorService', () => {
     executeSecurityScan: jest.fn(),
   };
 
-  const mockWorkspaceService = {
-    getWorkspace: jest.fn(),
-    createWorkspace: jest.fn(),
-    cleanupWorkspace: jest.fn(),
-  };
+  // WorkspaceService removed (handled by OpenSandbox TTL)
 
   const mockAIDecisionLogger = {
     logDecision: jest.fn(),
@@ -135,7 +130,6 @@ describe('QaOrchestratorService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: QualityGatesService, useValue: mockQualityGatesService },
         { provide: AiQaOrchestrator, useValue: mockAiQaOrchestrator },
-        { provide: WorkspaceService, useValue: mockWorkspaceService },
         { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
         { provide: SelfHealingOrchestratorService, useValue: mockSelfHealingOrchestrator },
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },

@@ -10,7 +10,6 @@ import type { Counter } from 'prom-client';
 import { ExecutionRepository } from '../execution.repository';
 import { ExecutionTrackerService } from '../execution-tracker.service';
 import { ExecutionStateMachine } from '../state-machine';
-import { ContainerControlService } from './container-control.service';
 import { ExecutionOverrideRepository } from '../repositories/execution-override.repository';
 import { RealtimeService } from '../../realtime/realtime.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
@@ -59,7 +58,6 @@ export class ManualInterventionService {
     private readonly executionRepository: ExecutionRepository,
     private readonly executionTracker: ExecutionTrackerService,
     private readonly stateMachine: ExecutionStateMachine,
-    private readonly containerControl: ContainerControlService,
     private readonly overrideRepository: ExecutionOverrideRepository,
     @Optional() private readonly realtimeService: RealtimeService | null,
     private readonly auditLogService: AuditLogService,
@@ -69,8 +67,6 @@ export class ManualInterventionService {
     private readonly emergencyStoppedCounter: Counter,
     @InjectMetric('execution_decision_overridden_total')
     private readonly decisionOverriddenCounter: Counter,
-    @InjectMetric('execution_container_control_failed_total')
-    private readonly containerControlFailedCounter: Counter,
   ) {}
 
   /**
@@ -111,21 +107,9 @@ export class ManualInterventionService {
       throw new BadRequestException(`Cannot pause execution from ${execution.status} state`);
     }
 
-    // Pause container if container_id exists (best effort - don't fail on container error)
-    let containerControlSkipped = false;
-    let containerPaused = false;
-    if (execution.container_id) {
-      containerPaused = await this.containerControl.pauseContainer(execution.container_id);
-      if (!containerPaused) {
-        this.containerControlFailedCounter.inc({
-          operation: 'pause',
-          execution_id: executionId,
-        });
-      }
-    } else {
-      containerControlSkipped = true;
-      this.logger.warn(`Execution ${executionId} has no container_id, skipping container pause`);
-    }
+    // Container pause delegated to OpenSandbox — no direct container control needed
+    const containerControlSkipped = true;
+    this.logger.debug(`Container pause delegated to OpenSandbox (executionId: ${executionId})`);
 
     // Update execution state
     const updatedExecution = await this.executionTracker.updateStatus(
@@ -199,21 +183,9 @@ export class ManualInterventionService {
       );
     }
 
-    // Resume container if container_id exists (best effort)
-    let containerControlSkipped = false;
-    let containerResumed = false;
-    if (execution.container_id) {
-      containerResumed = await this.containerControl.resumeContainer(execution.container_id);
-      if (!containerResumed) {
-        this.containerControlFailedCounter.inc({
-          operation: 'resume',
-          execution_id: executionId,
-        });
-      }
-    } else {
-      containerControlSkipped = true;
-      this.logger.warn(`Execution ${executionId} has no container_id, skipping container resume`);
-    }
+    // Container resume delegated to OpenSandbox — no direct container control needed
+    const containerControlSkipped = true;
+    this.logger.debug(`Container resume delegated to OpenSandbox (executionId: ${executionId})`);
 
     // Update execution state
     const updatedExecution = await this.executionTracker.updateStatus(
@@ -288,33 +260,10 @@ export class ManualInterventionService {
       throw new ConflictException(`Execution is already in terminal state: ${execution.status}`);
     }
 
-    // Stop/kill container if container_id exists (best effort)
-    let containerControlSkipped = false;
-    let containerKilled = false;
-    if (execution.container_id) {
-      if (killContainer) {
-        containerKilled = await this.containerControl.emergencyKillContainer(
-          execution.container_id,
-        );
-      } else {
-        containerKilled = !(await this.containerControl.gracefulStopContainer(
-          execution.container_id,
-          30,
-        ));
-        // If graceful stop returned false (failed), we consider container as killed for metrics
-        containerKilled = true;
-      }
-
-      if (!containerKilled && killContainer) {
-        this.containerControlFailedCounter.inc({
-          operation: 'kill',
-          execution_id: executionId,
-        });
-      }
-    } else {
-      containerControlSkipped = true;
-      this.logger.warn(`Execution ${executionId} has no container_id, skipping container stop`);
-    }
+    // Container stop delegated to OpenSandbox — no direct container control needed
+    const containerControlSkipped = true;
+    const containerKilled = false;
+    this.logger.debug(`Container stop delegated to OpenSandbox (executionId: ${executionId})`);
 
     // Update execution state to EMERGENCY_STOPPED
     const updatedExecution = await this.executionTracker.updateStatus(

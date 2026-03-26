@@ -47,7 +47,6 @@ import { ExecutionLogsController } from './controllers/execution-logs.controller
 // Story 10-U-5: Manual Intervention Circuit Breaker
 import { ManualInterventionService } from './services/manual-intervention.service';
 import { ManualInterventionController } from './controllers/manual-intervention.controller';
-import { ContainerControlService } from './services/container-control.service';
 import { ExecutionOverrideRepository } from './repositories/execution-override.repository';
 // Execution Activity Persistence
 import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
@@ -226,7 +225,6 @@ import { IntegrationsModule } from '../integrations/integrations.module';
 
     // Story 10-U-5: Manual Intervention Circuit Breaker
     ManualInterventionService,
-    ContainerControlService,
     ExecutionOverrideRepository,
     AuditLogService,
 

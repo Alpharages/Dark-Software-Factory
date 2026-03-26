@@ -17,9 +17,9 @@ import {
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
 import { AIExecutionService } from '../src/ai-routing/ai-execution.service';
-import { WorkspaceService } from '../src/ai-routing/providers/workspace.service';
+// WorkspaceService removed (handled by OpenSandbox TTL)
 import { GitOperationsService } from '../src/ai-routing/providers/git-operations.service';
-import { CursorHeadlessProvider, ClaudeCodeProvider } from '../src/ai-routing/providers';
+import { ClaudeCodeProvider } from '../src/ai-routing/providers';
 import { ExecutionService } from '../src/execution/execution.service';
 import { AICostTrackerService } from '../src/cost-tracking/ai-cost-tracker.service';
 import { StorageManagerService } from '../src/storage/storage-manager.service';
@@ -27,7 +27,7 @@ import { StorageManagerService } from '../src/storage/storage-manager.service';
 describe('AI Execution (e2e)', () => {
   let app: INestApplication;
   let aiExecutionService: AIExecutionService;
-  let workspaceService: WorkspaceService;
+  // WorkspaceService removed (handled by OpenSandbox TTL)
 
   // Mock services
   const mockExecutionService = {
@@ -47,6 +47,7 @@ describe('AI Execution (e2e)', () => {
 
   const mockClaudeProvider = {
     execute: jest.fn(),
+    isHealthy: jest.fn().mockResolvedValue(true),
     checkHealth: jest.fn().mockResolvedValue({ isHealthy: true }),
     cancel: jest.fn(),
   };
@@ -129,21 +130,12 @@ describe('AI Execution (e2e)', () => {
             () => ({
               ai: {
                 providers: {
-                  cursorHeadless: {
+                  claudeCode: {
                     enabled: true,
-                    workspacesRoot: '/tmp/test-cursor-workspaces',
                     maxConcurrent: 5,
                     timeout: 300000,
                   },
                 },
-              },
-              cursor: {
-                cliPath: '/bin/echo',
-                headlessTimeoutMs: 30000,
-                workspacesRoot: '/tmp/test-cursor-workspaces',
-                maxConcurrentWorkspaces: 5,
-                preserveFailedWorkspaces: false,
-                workspaceCleanupAgeMs: 3600000,
               },
             }),
           ],
@@ -151,8 +143,8 @@ describe('AI Execution (e2e)', () => {
       ],
       providers: [
         AIExecutionService,
-        WorkspaceService,
-        CursorHeadlessProvider,
+        // WorkspaceService removed (handled by OpenSandbox TTL)
+        // CursorHeadlessProvider removed
         { provide: ClaudeCodeProvider, useValue: mockClaudeProvider },
         { provide: GitOperationsService, useValue: mockGitService },
         { provide: PrismaService, useValue: mockPrismaService },
@@ -190,21 +182,11 @@ describe('AI Execution (e2e)', () => {
     await app.init();
 
     aiExecutionService = app.get<AIExecutionService>(AIExecutionService);
-    workspaceService = app.get<WorkspaceService>(WorkspaceService);
+    // WorkspaceService removed (handled by OpenSandbox TTL)
   });
 
   afterAll(async () => {
-    // Cleanup any remaining workspaces
-    if (workspaceService) {
-      try {
-        const workspaces = await workspaceService.getActiveWorkspaces();
-        for (const ws of workspaces) {
-          await workspaceService.cleanupWorkspace(ws.executionId, true);
-        }
-      } catch (_e) {
-        // Ignore cleanup errors in tests
-      }
-    }
+    // Workspace management handled by OpenSandbox SDK
     if (app) {
       await app.close();
     }
@@ -215,11 +197,11 @@ describe('AI Execution (e2e)', () => {
   });
 
   describe('Provider Health', () => {
-    it('should report Cursor provider health', async () => {
-      const health = await aiExecutionService.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+    it('should report Claude provider health', async () => {
+      const health = await aiExecutionService.getProviderHealth(AIProvider.CLAUDE_CODE);
 
       expect(health).toBeDefined();
-      expect(health?.provider).toBe(AIProvider.CURSOR_HEADLESS);
+      expect(health?.provider).toBe(AIProvider.CLAUDE_CODE);
       expect(health?.circuitState).toBeDefined();
     });
 
@@ -231,24 +213,12 @@ describe('AI Execution (e2e)', () => {
     });
 
     it('should check provider availability', async () => {
-      const isAvailable = await aiExecutionService.isProviderAvailable(AIProvider.CURSOR_HEADLESS);
+      const isAvailable = await aiExecutionService.isProviderAvailable(AIProvider.CLAUDE_CODE);
       expect(typeof isAvailable).toBe('boolean');
     });
   });
 
-  describe('Workspace Management', () => {
-    it('should track active workspace count', async () => {
-      const activeCount = await workspaceService.getActiveCount();
-      expect(typeof activeCount).toBe('number');
-      expect(activeCount).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should return empty workspaces list initially', async () => {
-      // After cleanup, should be empty
-      const workspaces = await workspaceService.getActiveWorkspaces();
-      expect(workspaces).toBeInstanceOf(Array);
-    });
-  });
+  // Workspace management handled by OpenSandbox SDK (TTL-based)
 
   describe('Execution Cancellation', () => {
     it('should cancel execution gracefully', async () => {
@@ -256,7 +226,7 @@ describe('AI Execution (e2e)', () => {
 
       await expect(
         aiExecutionService.cancelExecution(
-          AIProvider.CURSOR_HEADLESS,
+          AIProvider.CLAUDE_CODE,
           executionId,
           'test-correlation-id',
         ),
@@ -271,8 +241,8 @@ describe('AI Execution (e2e)', () => {
   });
 
   describe('Provider Registration', () => {
-    it('should have Cursor Headless provider registered', async () => {
-      const health = await aiExecutionService.getProviderHealth(AIProvider.CURSOR_HEADLESS);
+    it('should have Claude Code provider registered', async () => {
+      const health = await aiExecutionService.getProviderHealth(AIProvider.CLAUDE_CODE);
       expect(health).not.toBeNull();
     });
 
