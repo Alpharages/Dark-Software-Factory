@@ -5,5 +5,6 @@
 
 export * from './git-operations.service';
 export * from './claude-code.provider';
+export * from './gemini.provider';
 export * from './circuit-breaker';
 export * from './anthropic-tools';

@@ -37,6 +37,9 @@ export const envValidationSchema = Joi.object({
   // AI Providers (Story 2.3)
   CLAUDE_CODE_ENABLED: Joi.boolean().default(false),
   GEMINI_ENABLED: Joi.boolean().default(false),
+  GEMINI_API_KEY: Joi.string().allow('').default(''),
+  GEMINI_BASE_URL: Joi.string().uri().allow('').default(''),
+  GEMINI_MODEL: Joi.string().default('gemini-2.5-pro'),
   CODEX_ENABLED: Joi.boolean().default(false),
   KIMI_ENABLED: Joi.boolean().default(false),
   // ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {

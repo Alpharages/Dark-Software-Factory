@@ -545,7 +545,7 @@ development_status:
   epic-os-4-source: 'epics.md'
   epic-os-4-notes: 'Retire Cursor Headless. Add 3 new providers dark-deployed. Full complexity-based routing across 4 providers.'
   os-4-1-retire-cursor-headless-provider-data-migration: done
-  os-4-2-gemini-cli-provider: ready-for-dev
+  os-4-2-gemini-cli-provider: done
   os-4-3-openai-codex-kimi-cli-providers: ready-for-dev
   os-4-4-multi-provider-ai-routing-service-complexity-strategy: ready-for-dev
   epic-os-4-retrospective: optional

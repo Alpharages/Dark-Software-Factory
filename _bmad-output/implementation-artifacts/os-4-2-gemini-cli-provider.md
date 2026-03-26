@@ -1,6 +1,6 @@
 # Story OS-4.2: Gemini CLI Provider
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -319,6 +319,15 @@ OS-4.1 (ready-for-dev, not yet implemented) performs the groundwork:
 - Epic OS-4 spec: `_bmad-output/planning-artifacts/epics.md` line 473
 - PRD FR-OS19, FR-OS20: `_bmad-output/planning-artifacts/prd-opensandbox-migration.md` section 5.6
 - PRD env vars: section 5.13.2 Gemini Provider table
+
+### Review Findings
+
+- [x] [Review][Patch] GeminiProvider mock in provider-factory.service.spec.ts missing `isHealthy` and `execute` — Spec Task 9 template explicitly includes `isHealthy: jest.fn().mockResolvedValue(false), execute: jest.fn()` in the mock `useValue`. The implementation only provides `{ providerName: ProviderName.GEMINI, isEnabled: false }`. Non-breaking today (factory doesn't invoke those methods in current tests), but deviates from spec and could mask regressions. [`src/ai-routing/provider-factory.service.spec.ts:58-62`]
+- [x] [Review][Patch] `isHealthy` test doesn't assert sandbox `isHealthy` was NOT called when API key absent — AC8 states "no sandbox call made" as a requirement, but the test only asserts `result === false`. The inner-module mock makes it impossible to verify `sandboxService.isHealthy` was never called. Add `expect(sandboxService.isHealthy).not.toHaveBeenCalled()` in the outer `sandboxService` mock context, or restructure the test to use the shared mock. [`src/ai-routing/providers/gemini.provider.spec.ts:~127`]
+- [x] [Review][Patch] `isHealthy()` uses `&&` short-circuit instead of explicit `if` guard — `return !!apiKey && this.sandboxService.isHealthy()` deviates from the canonical form in the spec (`if (!apiKey) return false; return this.sandboxService.isHealthy()`). Functionally equivalent but the spec's explicit guard is clearer and matches what `ClaudeCodeProvider`'s spec pattern describes. [`src/ai-routing/providers/gemini.provider.ts:28`]
+- [x] [Review][Defer] Whitespace API key bypasses `isHealthy()` guard [`src/ai-routing/providers/gemini.provider.ts:28`] — deferred, pre-existing
+- [x] [Review][Defer] Hardcoded `confidenceScore: 0.8` on success [`src/ai-routing/providers/gemini.provider.ts:75`] — deferred, pre-existing
+- [x] [Review][Defer] `filesChanged: []` and `workspacePath: ''` always empty [`src/ai-routing/providers/gemini.provider.ts:73-74`] — deferred, pre-existing
 
 ## Dev Agent Record
 

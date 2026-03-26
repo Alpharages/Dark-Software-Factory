@@ -60,3 +60,9 @@
 ## Deferred from: code review of os-4-1-retire-cursor-headless-provider-data-migration (2026-03-26)
 
 - **Hardcoded threshold `10` in `determineRoutingReason`** — `src/ai-routing/ai-routing.service.ts` uses `complexityScore >= 10` instead of reading from config. Acknowledged as intentional simplification for OS-4.1; full routing reinstated in OS-4.4.
+
+## Deferred from: code review of os-4-2-gemini-cli-provider (2026-03-26)
+
+- **Whitespace API key bypasses `isHealthy()` guard** — `GEMINI_API_KEY='   '` passes `!!apiKey` check; Gemini CLI would fail auth at runtime. Same gap exists in `ClaudeCodeProvider`. No spec requirement to trim. [`src/ai-routing/providers/gemini.provider.ts:28`]
+- **Hardcoded `confidenceScore: 0.8` on success** — Both `GeminiProvider` and `ClaudeCodeProvider` always return `0.8`. No dynamic confidence scoring implemented. Pre-existing from `ClaudeCodeProvider`. [`src/ai-routing/providers/gemini.provider.ts:75`]
+- **`filesChanged: []` and `workspacePath: ''` always empty** — Callers cannot know which files changed without parsing `codeDiff`. Pre-existing from `ClaudeCodeProvider`. [`src/ai-routing/providers/gemini.provider.ts:73-74`]

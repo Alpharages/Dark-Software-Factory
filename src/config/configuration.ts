@@ -166,6 +166,13 @@ export default () => {
       workspacesRoot: process.env.CLAUDE_WORKSPACES_ROOT || '/tmp/claude-workspaces',
     },
 
+    // Story OS-4.2: Gemini CLI Provider
+    gemini: {
+      apiKey: process.env.GEMINI_API_KEY || '',
+      baseURL: process.env.GEMINI_BASE_URL || '',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-pro',
+    },
+
     // Story 2.8: Orchestrator Configuration
     // Controls multi-provider orchestration and fallback behavior
     orchestrator: {

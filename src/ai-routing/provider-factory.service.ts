@@ -26,6 +26,7 @@ import { IRoutingRequest } from './interfaces/ai-routing.interface';
 import { ICodingAgentProvider } from './interfaces/coding-agent-provider.interface';
 import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 import { ClaudeCodeProvider } from './providers/claude-code.provider';
+import { GeminiProvider } from './providers/gemini.provider';
 
 @Injectable()
 export class ProviderFactoryService {
@@ -43,6 +44,7 @@ export class ProviderFactoryService {
     @InjectMetric('orchestrator_provider_selections_total')
     private readonly selectionsCounter: Counter<string>,
     private readonly claudeCodeProvider: ClaudeCodeProvider,
+    private readonly geminiProvider: GeminiProvider,
   ) {
     this.HIGH_COMPLEXITY_THRESHOLD = this.config.get<number>(
       'orchestrator.complexityThresholdHigh',
@@ -54,6 +56,7 @@ export class ProviderFactoryService {
     );
     this.codingProviders = new Map<ProviderName, ICodingAgentProvider>([
       [ProviderName.CLAUDE_CODE, claudeCodeProvider],
+      [ProviderName.GEMINI, geminiProvider],
     ]);
   }
 
@@ -193,7 +196,7 @@ export class ProviderFactoryService {
    * Get all providers availability status
    */
   async getAllProvidersAvailability(): Promise<IProviderAvailability[]> {
-    const providers = [AIProvider.CLAUDE_CODE];
+    const providers = [AIProvider.CLAUDE_CODE, AIProvider.GEMINI];
     const availability: IProviderAvailability[] = [];
 
     for (const provider of providers) {

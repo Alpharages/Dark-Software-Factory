@@ -22,6 +22,7 @@ interface AIProvidersResponseDto {
 
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   CLAUDE_CODE: 'Antigravity',
+  GEMINI: 'Gemini CLI',
 };
 
 /**
@@ -58,7 +59,7 @@ export class AIProvidersController {
 
     const providers: AIProviderDto[] = [];
 
-    for (const provider of [AIProvider.CLAUDE_CODE]) {
+    for (const provider of [AIProvider.CLAUDE_CODE, AIProvider.GEMINI]) {
       const health = await this.providerHealthService.getProviderHealth(provider);
 
       let status: AIProviderDto['status'];

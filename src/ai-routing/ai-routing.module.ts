@@ -14,7 +14,7 @@ import { PromptGeneratorService } from './prompt-generator.service';
 import { ClaudeCodePromptBuilder } from './prompt-templates/claude-prompt.template';
 // Story 2.6: AI Execution imports
 import { AIExecutionService } from './ai-execution.service';
-import { GitOperationsService, ClaudeCodeProvider } from './providers';
+import { GitOperationsService, ClaudeCodeProvider, GeminiProvider } from './providers';
 // Story 2.8: Orchestration imports
 import { OrchestratorService } from './orchestrator.service';
 import { ProviderFactoryService } from './provider-factory.service';
@@ -70,6 +70,9 @@ import { AIProvidersController } from './ai-providers.controller';
 
     // Story 2.7: Claude Code Provider
     ClaudeCodeProvider,
+
+    // Story OS-4.2: Gemini CLI Provider
+    GeminiProvider,
 
     // Story 2.8: Orchestration Services
     OrchestratorService,
@@ -195,6 +198,8 @@ import { AIProvidersController } from './ai-providers.controller';
     GitOperationsService,
     // Story 2.7: Claude Code exports
     ClaudeCodeProvider,
+    // Story OS-4.2: Gemini CLI Provider
+    GeminiProvider,
     // Story 2.8: Orchestration exports
     OrchestratorService,
     ProviderFactoryService,

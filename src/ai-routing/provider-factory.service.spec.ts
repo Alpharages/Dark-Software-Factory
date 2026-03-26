@@ -11,6 +11,7 @@ import { AIExecutionService } from './ai-execution.service';
 import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderSelectionReason, ComplexityGrade, IOrchestrationInput } from './interfaces';
 import { ClaudeCodeProvider } from './providers/claude-code.provider';
+import { GeminiProvider } from './providers/gemini.provider';
 import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 
 describe('ProviderFactoryService', () => {
@@ -53,6 +54,15 @@ describe('ProviderFactoryService', () => {
         {
           provide: ClaudeCodeProvider,
           useValue: { providerName: ProviderName.CLAUDE_CODE, isEnabled: true },
+        },
+        {
+          provide: GeminiProvider,
+          useValue: {
+            providerName: ProviderName.GEMINI,
+            isEnabled: false,
+            isHealthy: jest.fn().mockResolvedValue(false),
+            execute: jest.fn(),
+          },
         },
         {
           provide: 'PROM_METRIC_ORCHESTRATOR_PROVIDER_SELECTIONS_TOTAL',
@@ -101,7 +111,7 @@ describe('ProviderFactoryService', () => {
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
+      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
       expect(result.complexityGrade).toBe(ComplexityGrade.HIGH);
     });
 
@@ -126,7 +136,7 @@ describe('ProviderFactoryService', () => {
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
+      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
       expect(result.complexityGrade).toBe(ComplexityGrade.LOW);
     });
 
@@ -184,7 +194,7 @@ describe('ProviderFactoryService', () => {
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
+      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
     });
 
     it('should handle when no providers are available', async () => {
@@ -208,7 +218,7 @@ describe('ProviderFactoryService', () => {
 
       expect(result.primary).toBe(AIProvider.CLAUDE_CODE);
       expect(result.fallback).toBeNull();
-      expect(result.reason).toBe(ProviderSelectionReason.COMPLEXITY);
+      expect(result.reason).toBe(ProviderSelectionReason.SINGLE_PROVIDER);
     });
   });
 
@@ -226,8 +236,9 @@ describe('ProviderFactoryService', () => {
 
       const availability = await service.getAllProvidersAvailability();
 
-      expect(availability).toHaveLength(1);
+      expect(availability).toHaveLength(2);
       expect(availability.find((a) => a.provider === AIProvider.CLAUDE_CODE)).toBeDefined();
+      expect(availability.find((a) => a.provider === AIProvider.GEMINI)).toBeDefined();
     });
 
     it('should calculate estimated wait time based on queue depth', async () => {
