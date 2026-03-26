@@ -66,3 +66,7 @@
 - **Whitespace API key bypasses `isHealthy()` guard** — `GEMINI_API_KEY='   '` passes `!!apiKey` check; Gemini CLI would fail auth at runtime. Same gap exists in `ClaudeCodeProvider`. No spec requirement to trim. [`src/ai-routing/providers/gemini.provider.ts:28`]
 - **Hardcoded `confidenceScore: 0.8` on success** — Both `GeminiProvider` and `ClaudeCodeProvider` always return `0.8`. No dynamic confidence scoring implemented. Pre-existing from `ClaudeCodeProvider`. [`src/ai-routing/providers/gemini.provider.ts:75`]
 - **`filesChanged: []` and `workspacePath: ''` always empty** — Callers cannot know which files changed without parsing `codeDiff`. Pre-existing from `ClaudeCodeProvider`. [`src/ai-routing/providers/gemini.provider.ts:73-74`]
+
+## Deferred from: code review of os-4-3-openai-codex-kimi-cli-providers (2026-03-26)
+
+- **Story 5.5 `OPENAI_API_KEY` Joi description silently dropped** — The original Joi definition (line ~347 of `env.validation.ts`) included `.messages()` and `.description()` documenting its use for Whisper transcription and GPT-4 analysis (Story 5.5). The new definition added by OS-4.3 is functionally equivalent but loses that context. The env var is now shared between two features (Codex provider and Conversations). Document intent and consolidate in OS-5.1 config cleanup. [`src/config/env.validation.ts`]

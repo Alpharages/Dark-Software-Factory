@@ -8,3 +8,5 @@ export * from './claude-code.provider';
 export * from './gemini.provider';
 export * from './circuit-breaker';
 export * from './anthropic-tools';
+export * from './codex.provider';
+export * from './kimi.provider';

@@ -42,6 +42,14 @@ export const envValidationSchema = Joi.object({
   GEMINI_MODEL: Joi.string().default('gemini-2.5-pro'),
   CODEX_ENABLED: Joi.boolean().default(false),
   KIMI_ENABLED: Joi.boolean().default(false),
+  // OpenAI Codex provider
+  OPENAI_API_KEY: Joi.string().allow('').default(''),
+  OPENAI_BASE_URL: Joi.string().uri().allow('').default(''),
+  CODEX_MODEL: Joi.string().default('codex-1'),
+  // Kimi provider
+  KIMI_API_KEY: Joi.string().allow('').default(''),
+  KIMI_BASE_URL: Joi.string().uri().allow('').default(''),
+  KIMI_MODEL: Joi.string().default('kimi-k2'),
   // ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {
   //   is: true,
   //   then: Joi.required(),
@@ -339,13 +347,6 @@ export const envValidationSchema = Joi.object({
 
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
-  OPENAI_API_KEY: Joi.string()
-    .optional()
-    .allow('')
-    .messages({
-      'any.required': 'OPENAI_API_KEY is required for AI conversation processing (Story 5.5)',
-    })
-    .description('OpenAI API key for Whisper transcription and GPT-4 analysis'),
   CONVERSATIONS_STORAGE_PATH: Joi.string()
     .default('./storage/conversations')
     .description('Storage path for conversation audio files'),

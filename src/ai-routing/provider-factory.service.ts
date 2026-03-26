@@ -27,6 +27,8 @@ import { ICodingAgentProvider } from './interfaces/coding-agent-provider.interfa
 import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 import { ClaudeCodeProvider } from './providers/claude-code.provider';
 import { GeminiProvider } from './providers/gemini.provider';
+import { CodexProvider } from './providers/codex.provider';
+import { KimiProvider } from './providers/kimi.provider';
 
 @Injectable()
 export class ProviderFactoryService {
@@ -45,6 +47,8 @@ export class ProviderFactoryService {
     private readonly selectionsCounter: Counter<string>,
     private readonly claudeCodeProvider: ClaudeCodeProvider,
     private readonly geminiProvider: GeminiProvider,
+    private readonly codexProvider: CodexProvider,
+    private readonly kimiProvider: KimiProvider,
   ) {
     this.HIGH_COMPLEXITY_THRESHOLD = this.config.get<number>(
       'orchestrator.complexityThresholdHigh',
@@ -57,6 +61,8 @@ export class ProviderFactoryService {
     this.codingProviders = new Map<ProviderName, ICodingAgentProvider>([
       [ProviderName.CLAUDE_CODE, claudeCodeProvider],
       [ProviderName.GEMINI, geminiProvider],
+      [ProviderName.CODEX, codexProvider],
+      [ProviderName.KIMI, kimiProvider],
     ]);
   }
 
@@ -196,7 +202,12 @@ export class ProviderFactoryService {
    * Get all providers availability status
    */
   async getAllProvidersAvailability(): Promise<IProviderAvailability[]> {
-    const providers = [AIProvider.CLAUDE_CODE, AIProvider.GEMINI];
+    const providers = [
+      AIProvider.CLAUDE_CODE,
+      AIProvider.GEMINI,
+      AIProvider.CODEX,
+      AIProvider.KIMI,
+    ];
     const availability: IProviderAvailability[] = [];
 
     for (const provider of providers) {

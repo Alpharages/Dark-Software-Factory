@@ -173,6 +173,20 @@ export default () => {
       model: process.env.GEMINI_MODEL || 'gemini-2.5-pro',
     },
 
+    // Story OS-4.3: OpenAI Codex CLI Provider
+    codex: {
+      apiKey: process.env.OPENAI_API_KEY || '',
+      baseURL: process.env.OPENAI_BASE_URL || '',
+      model: process.env.CODEX_MODEL || 'codex-1',
+    },
+
+    // Story OS-4.3: Kimi CLI Provider
+    kimi: {
+      apiKey: process.env.KIMI_API_KEY || '',
+      baseURL: process.env.KIMI_BASE_URL || '',
+      model: process.env.KIMI_MODEL || 'kimi-k2',
+    },
+
     // Story 2.8: Orchestrator Configuration
     // Controls multi-provider orchestration and fallback behavior
     orchestrator: {

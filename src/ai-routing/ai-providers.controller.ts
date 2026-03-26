@@ -23,6 +23,8 @@ interface AIProvidersResponseDto {
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   CLAUDE_CODE: 'Antigravity',
   GEMINI: 'Gemini CLI',
+  CODEX: 'OpenAI Codex CLI',
+  KIMI: 'Kimi CLI',
 };
 
 /**
@@ -59,7 +61,14 @@ export class AIProvidersController {
 
     const providers: AIProviderDto[] = [];
 
-    for (const provider of [AIProvider.CLAUDE_CODE, AIProvider.GEMINI]) {
+    const providerList = [
+      AIProvider.CLAUDE_CODE,
+      AIProvider.GEMINI,
+      AIProvider.CODEX,
+      AIProvider.KIMI,
+    ];
+
+    for (const provider of providerList) {
       const health = await this.providerHealthService.getProviderHealth(provider);
 
       let status: AIProviderDto['status'];

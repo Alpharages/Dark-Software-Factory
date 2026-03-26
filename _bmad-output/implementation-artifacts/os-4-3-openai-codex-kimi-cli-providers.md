@@ -1,6 +1,11 @@
 # Story OS-4.3: OpenAI Codex and Kimi CLI Providers
 
-Status: ready-for-dev
+Status: done
+Date: 2026-03-26
+
+## Change Log
+
+- 2026-03-26: Implemented `CodexProvider` and `KimiProvider`. Added configuration and registered them in the factory and module. Full test coverage achieved. (Story OS-4.3)
 
 ## Story
 
@@ -503,3 +508,17 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+### Review Findings
+
+- [x] [Review][Patch] Remove `IS_SANDBOX: '1'` from CodexProvider and KimiProvider env — explicitly prohibited by spec Dev Notes; Claude Code CLI-specific flag [`codex.provider.ts:49`, `kimi.provider.ts:49`]
+- [x] [Review][Patch] Add `isEnabled` returns-false test to both specs — AC #1 and #5 require both true and false paths [`codex.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] Add `isHealthy` empty-API-key test to `kimi.provider.spec.ts` — AC #7 untested; codex spec has it but kimi spec does not [`kimi.provider.spec.ts`]
+- [x] [Review][Patch] Add sandbox-unhealthy path test to both specs — Task 9/10 explicitly list this case [`codex.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] Add `baseURL` omission test (empty → not in env) to both specs — AC #2 and #6 require conditional inclusion [`codex.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] Add `complexityScore` defaults-to-5 test to both specs — Task 9/10 explicitly require this case [`codex.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] Add TIMEOUT error path test to `kimi.provider.spec.ts` — Task 10 requires success/timeout/process-crash all tested [`kimi.provider.spec.ts`]
+- [x] [Review][Patch] Add PROCESS_CRASH error path test to `codex.provider.spec.ts` — Task 9 requires success/timeout/process-crash all tested [`codex.provider.spec.ts`]
+- [x] [Review][Patch] Assert `resourceProfileService.getProfile` called with `complexityScore` in both specs — declared but never asserted; Task 9/10 require resource limit verification [`codex.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] Remove trailing whitespace on blank line in `provider-factory.service.spec.ts` — ESLint `no-trailing-spaces` violation [`provider-factory.service.spec.ts:258`]
+- [x] [Review][Defer] Story 5.5 `OPENAI_API_KEY` Joi description silently dropped — new definition is functionally equivalent but loses Whisper/GPT-4 documentation; deferred to OS-5.1 config cleanup [`env.validation.ts`]

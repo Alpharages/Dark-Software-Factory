@@ -12,6 +12,8 @@ import { ComplexityScorerService } from './complexity-scorer.service';
 import { ProviderSelectionReason, ComplexityGrade, IOrchestrationInput } from './interfaces';
 import { ClaudeCodeProvider } from './providers/claude-code.provider';
 import { GeminiProvider } from './providers/gemini.provider';
+import { CodexProvider } from './providers/codex.provider';
+import { KimiProvider } from './providers/kimi.provider';
 import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 
 describe('ProviderFactoryService', () => {
@@ -59,6 +61,24 @@ describe('ProviderFactoryService', () => {
           provide: GeminiProvider,
           useValue: {
             providerName: ProviderName.GEMINI,
+            isEnabled: false,
+            isHealthy: jest.fn().mockResolvedValue(false),
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: CodexProvider,
+          useValue: {
+            providerName: ProviderName.CODEX,
+            isEnabled: false,
+            isHealthy: jest.fn().mockResolvedValue(false),
+            execute: jest.fn(),
+          },
+        },
+        {
+          provide: KimiProvider,
+          useValue: {
+            providerName: ProviderName.KIMI,
             isEnabled: false,
             isHealthy: jest.fn().mockResolvedValue(false),
             execute: jest.fn(),
@@ -236,9 +256,11 @@ describe('ProviderFactoryService', () => {
 
       const availability = await service.getAllProvidersAvailability();
 
-      expect(availability).toHaveLength(2);
+      expect(availability).toHaveLength(4);
       expect(availability.find((a) => a.provider === AIProvider.CLAUDE_CODE)).toBeDefined();
       expect(availability.find((a) => a.provider === AIProvider.GEMINI)).toBeDefined();
+      expect(availability.find((a) => a.provider === AIProvider.CODEX)).toBeDefined();
+      expect(availability.find((a) => a.provider === AIProvider.KIMI)).toBeDefined();
     });
 
     it('should calculate estimated wait time based on queue depth', async () => {
