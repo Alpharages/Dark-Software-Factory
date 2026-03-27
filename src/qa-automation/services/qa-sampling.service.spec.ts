@@ -257,9 +257,8 @@ describe('RiskScoringService', () => {
 
       const score = service.calculateRiskScore(ticket);
 
-      // Note: Replacing previous cursor test with a generic provider check if applicable
-      // For now, CLAUDE/GEMINI are 1.0x by default.
-      expect(score.cumulativeMultiplier).toBe(1.0);
+      // For now, CLAUDE is 1.0x, GEMINI is 1.2x in DEFAULT_RISK_RULES
+      expect(score.cumulativeMultiplier).toBe(1.2);
     });
 
     it('should accumulate multiple risk factors (multiplicative)', () => {

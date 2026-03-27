@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 /**
  * Type-safe configuration object
  * Loaded from environment variables with validation
@@ -162,9 +160,7 @@ export default () => {
       // lightweight tasks (commit messages, file predictions)
       commitMessageModel: process.env.ANTHROPIC_COMMIT_MESSAGE_MODEL || 'claude-3-haiku-20240307',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
-      timeoutMs: parseInt(process.env.ANTHROPIC_TIMEOUT_MS || '300000', 10),
-      // Reserved for future provider-specific workspace isolation (OpenSandbox handles workspace lifecycle)
-      workspacesRoot: process.env.CLAUDE_WORKSPACES_ROOT || '/tmp/claude-workspaces',
+      // ANTHROPIC_TIMEOUT_MS removed OS-5.1: no service reads anthropic.timeoutMs — SDK timeout not configured explicitly
     },
 
     // Story OS-4.2: Gemini CLI Provider
@@ -328,20 +324,6 @@ export default () => {
       rabbitmqManagementUser: process.env.RABBITMQ_MANAGEMENT_USER || 'guest',
       rabbitmqManagementPassword: process.env.RABBITMQ_MANAGEMENT_PASSWORD || 'guest',
       prometheusUrl: process.env.PROMETHEUS_URL || 'http://localhost:9090',
-    },
-
-    // Story 23.3: Sandbox Resource Limit Configuration
-    // Note: Will be replaced by opensandbox config block in Epic OS migration.
-    sandbox: {
-      resourceLimits: {
-        defaultMemoryLimitMB: parseInt(process.env.SANDBOX_MEMORY_LIMIT_MB || '512', 10),
-        defaultCpuLimitPercent: parseInt(process.env.SANDBOX_CPU_LIMIT_PERCENT || '100', 10),
-      },
-      workspacesRoot: process.env.SANDBOX_WORKSPACES_ROOT || path.join(process.cwd(), 'workspaces'),
-      logsRoot: process.env.SANDBOX_LOGS_ROOT || '/tmp/dsf-agent-logs',
-      containerTimeoutMs: parseInt(process.env.DOCKER_CONTAINER_TIMEOUT_MS || '3000000', 10),
-      containerExecutionEnabled: process.env.ENABLE_CONTAINER_EXECUTION === 'true',
-      maxConcurrent: parseInt(process.env.DOCKER_MAX_CONCURRENT || '10', 10),
     },
 
     // Epic OS-1: OpenSandbox server connection config

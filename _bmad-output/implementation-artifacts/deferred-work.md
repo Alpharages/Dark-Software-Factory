@@ -89,3 +89,9 @@
 - **Save button positioned under second card** — "Save Strategy" lives inside the Provider Tier Mapping card, not after both cards. Admin editing only threshold fields may not visually associate Save with their changes. [`GlobalAiRoutingPanel.tsx`]
 - **Relative imports in `App.tsx`** — Dev notes mandate `@/` aliases. `App.tsx` pre-exists with relative imports throughout; the new imports follow existing convention. Standardize as part of a future import cleanup pass. [`src/App.tsx`]
 - **Tier primary `ProviderSelect` silently drops null via `v && setForm(...)`** — If Radix Select emits a null/falsy for a required tier-primary field (not possible under current allowNull=false config but possible after future refactor), the update is silently ignored. [`GlobalAiRoutingPanel.tsx`]
+
+## Deferred from: code review of os-5-1-env-validation-configuration-module-cleanup (2026-03-27)
+
+- **Magic Number `1.2` in `RiskScoringService` tests** — Expectation uses hardcoded value instead of referencing the `DEFAULT_RISK_RULES` constant from the service. Pre-existing pattern across risk tests; revisit for standardization. [`qa-sampling.service.spec.ts:260`]
+- **Architecture constraints typed as `any[]`** — `prompt-generator.service.ts` uses `let constraints: any[]` with `eslint-disable-line` to bypass the return type of `ArchitectureConstraintsService.findAll()`. Accessing `c.type`, `c.scope`, `c.rules` without type safety. Pre-existing pattern in codebase; replace with proper entity type in a future type-hardening pass. [`src/ai-routing/prompt-generator.service.ts`]
+- **No caching for `architectureConstraintsService.findAll()` in `generatePrompt` hot path** — Every AI prompt generation now hits the DB for architecture constraints. Under concurrent ticket execution this adds per-call DB pressure. Requires TTL and cache-invalidation design decision before implementing. [`src/ai-routing/prompt-generator.service.ts`]

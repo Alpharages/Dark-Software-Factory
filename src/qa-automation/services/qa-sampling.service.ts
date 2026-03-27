@@ -126,7 +126,7 @@ export class RiskScoringService {
     let level: RiskLevel;
     if (score >= 100) {
       level = RiskLevel.HIGH;
-    } else if (score >= 20 || cumulativeMultiplier > 1.5) {
+    } else if (score >= 20 || cumulativeMultiplier >= 1.5) {
       level = RiskLevel.MEDIUM;
     } else {
       level = RiskLevel.LOW;

@@ -199,9 +199,10 @@ export class AIDecisionLoggerService {
     });
 
     const providerCounts: Record<string, number> = {
-      CLAUDE: 0,
-      CURSOR: 0,
-      WINDSURF: 0,
+      CLAUDE_CODE: 0,
+      GEMINI: 0,
+      CODEX: 0,
+      KIMI: 0,
     };
 
     for (const group of executionGroups) {
@@ -439,13 +440,16 @@ export class AIDecisionLoggerService {
 
     const normalized = provider.toUpperCase();
     if (normalized.includes('CLAUDE')) {
-      return 'CLAUDE';
+      return 'CLAUDE_CODE';
     }
-    if (normalized.includes('CURSOR')) {
-      return 'CURSOR';
+    if (normalized.includes('GEMINI')) {
+      return 'GEMINI';
     }
-    if (normalized.includes('WINDSURF')) {
-      return 'WINDSURF';
+    if (normalized.includes('CODEX')) {
+      return 'CODEX';
+    }
+    if (normalized.includes('KIMI')) {
+      return 'KIMI';
     }
     return null;
   }

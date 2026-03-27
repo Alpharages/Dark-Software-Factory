@@ -76,6 +76,20 @@ export class PromptGeneratorService implements OnModuleInit {
         // Placeholder for future providers that might need pre-loaded context
       }
 
+      // Load architecture constraints if context is provided (required by Story 4.4 / tests)
+      if (context) {
+        let constraints: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+        try {
+          constraints = await this.architectureConstraintsService.findAll();
+        } catch (e) {
+          const err = e as Error;
+          this.logger.error(`Failed to load architecture constraints: ${err.message}`);
+        }
+        context.architectureConstraints = constraints.map(
+          (c) => `${c.type} (${c.scope}): ${JSON.stringify(c.rules)}`,
+        );
+      }
+
       // 2. Get appropriate builder
       const builder = this.getBuilder(provider);
 

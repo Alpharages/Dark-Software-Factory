@@ -1,5 +1,4 @@
 import * as Joi from 'joi';
-import * as path from 'path';
 
 /**
  * Joi validation schema for environment variables
@@ -160,10 +159,12 @@ export const envValidationSchema = Joi.object({
   ANTHROPIC_COMMIT_MESSAGE_MODEL: Joi.string()
     .default('claude-3-haiku-20240307')
     .description('Model for commit message generation (default: Haiku 3.5)'),
+  ANTHROPIC_BASE_URL: Joi.string()
+    .uri()
+    .allow('')
+    .optional()
+    .description('Anthropic API base URL override (e.g., for local proxies or LiteLLM)'),
   ANTHROPIC_MAX_TOKENS: Joi.number().min(1000).max(100000).default(8000),
-  ANTHROPIC_TIMEOUT_MS: Joi.number().min(30000).max(3000000).default(120000),
-  CLAUDE_WORKSPACES_ROOT: Joi.string().default('/tmp/claude-workspaces'),
-
   // Story 2.11: Quality Scoring Configuration (optional - has sensible defaults)
   QUALITY_SCORE_THRESHOLD_EXCELLENT: Joi.number().integer().min(0).max(100).default(90),
   QUALITY_SCORE_THRESHOLD_GOOD: Joi.number().integer().min(0).max(100).default(70),
@@ -254,24 +255,6 @@ export const envValidationSchema = Joi.object({
     .default(300000)
     .description('Baseline capture window duration (1-10 min)'),
 
-  // Story 22.3: Sandbox Workspace Configuration
-  SANDBOX_WORKSPACES_ROOT: Joi.string()
-    .default(path.join(process.cwd(), 'workspaces'))
-    .description('Root directory for sandbox workspaces'),
-  SANDBOX_LOGS_ROOT: Joi.string()
-    .default('/tmp/dsf-agent-logs')
-    .description('Root directory for sandbox container logs'),
-
-  // Story 22.4: Container Execution Log Streaming Configuration
-  ENABLE_CONTAINER_EXECUTION: Joi.boolean()
-    .default(false)
-    .description('Feature flag to enable container execution mode'),
-  DOCKER_CONTAINER_TIMEOUT_MS: Joi.number()
-    .integer()
-    .min(60000)
-    .max(7200000)
-    .default(3000000)
-    .description('Max container execution time in milliseconds (default: 50min, max: 2hr)'),
   LOG_STREAM_THROTTLE_MS: Joi.number()
     .integer()
     .min(50)
