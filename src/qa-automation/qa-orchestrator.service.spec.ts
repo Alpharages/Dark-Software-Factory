@@ -96,8 +96,6 @@ describe('QaOrchestratorService', () => {
     executeSecurityScan: jest.fn(),
   };
 
-  // WorkspaceService removed (handled by OpenSandbox TTL)
-
   const mockAIDecisionLogger = {
     logDecision: jest.fn(),
     getDecisionTimeline: jest.fn(),

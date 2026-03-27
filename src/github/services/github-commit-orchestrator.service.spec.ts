@@ -82,7 +82,6 @@ describe('GitHubCommitOrchestrator', () => {
             warn: jest.fn(),
           },
         },
-        // WorkspaceService removed (handled by OpenSandbox TTL)
         {
           provide: GitOperationsService,
           useValue: {

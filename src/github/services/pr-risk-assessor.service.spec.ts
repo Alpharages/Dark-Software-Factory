@@ -88,7 +88,6 @@ describe('PRRiskAssessorService', () => {
             getPullRequestDiff: jest.fn().mockResolvedValue('diff content'),
           },
         },
-        // WorkspaceService removed (handled by OpenSandbox TTL)
       ],
     }).compile();
 

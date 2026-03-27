@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-03-27 # updated by retrospective workflow (os-4)
+last_updated: 2026-03-27 # updated by code-review workflow (os-5-2)
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -553,7 +553,7 @@ development_status:
   epic-os-4-retrospective: done
 
   # EPIC OS-5 - CONFIGURATION CLEANUP & PRODUCTION HARDENING
-  epic-os-5: in-progress
+  epic-os-5: done
   epic-os-5-name: 'Configuration Cleanup & Production Hardening'
   epic-os-5-phase: 'OpenSandbox Migration Sprint'
   epic-os-5-priority: high
@@ -562,7 +562,10 @@ development_status:
   epic-os-5-source: 'epics.md'
   epic-os-5-notes: 'Final cleanup. Zero dead env vars. All 8 grep checks (incl. CURSOR_HEADLESS) pass. pnpm check green.'
   os-5-1-env-validation-configuration-module-cleanup: done
-  os-5-2-env-example-regeneration-final-production-audit: ready-for-dev
+  os-5-2-env-example-regeneration-final-production-audit:
+    status: done
+    completion_date: '2026-03-27T17:31:00Z'
+    review_date: '2026-03-27'
   epic-os-5-retrospective: optional
 
 priority_sequence:

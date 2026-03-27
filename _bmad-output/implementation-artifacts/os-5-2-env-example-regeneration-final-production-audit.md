@@ -308,3 +308,21 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+## Review Findings
+
+> Code review run: 2026-03-27 — Reviewer: bmad-code-review workflow
+
+### Patches
+
+- [x] [Review][Patch] FEATURE_AUTO_APPROVE_AFTER_QA operational warning truncated — restore the workspace cleanup warning: "This is critical because the workspace gets cleaned up after execution completes. If PM approval is delayed, the workspace may no longer exist when the push is triggered, causing it to fail with 'Workspace not found'. Set to false when PM review is required." [`.env.example`]
+- [x] [Review][Patch] QA_CHECK_RETRY_MAX_ATTEMPTS removed from .env.example but actively read in configuration.ts:255 — add back as documented optional: `# QA_CHECK_RETRY_MAX_ATTEMPTS=2  # per-check retry count before skipping (default: 2, not Joi-validated)` [`.env.example`]
+- [x] [Review][Patch] OPENSANDBOX_API_KEY default cleared with no dev guidance — add comment: `# Required; use 'dev-secret-key' for local Docker Compose` [`.env.example`]
+- [x] [Review][Patch] CLAUDE_CODE_ENABLED placed in Anthropic credentials section instead of near AI_PRIMARY_PROVIDER — move to the AI PROVIDERS top block so all provider enable/disable flags are co-located [`.env.example`]
+- [x] [Review][Patch] ANTHROPIC_BASE_URL ordering — spec shows it after ANTHROPIC_MAX_TOKENS; diff places it before ANTHROPIC_MODEL. Move to after ANTHROPIC_MAX_TOKENS. [`.env.example`]
+- [x] [Review][Patch] OPENAI_BASE_URL in CODEX section silently also routes Whisper (Story 5.5) calls — add comment: `# Note: OPENAI_BASE_URL also affects the OpenAI client used by Whisper transcription (Story 5.5)` [`.env.example`]
+- [x] [Review][Patch] Missing "Get API key from:" source links for GEMINI, CODEX, KIMI sections — add links (https://aistudio.google.com/apikey, https://platform.openai.com/api-keys, https://platform.moonshot.cn) matching Anthropic's pattern [`.env.example`]
+
+### Deferred
+
+- [x] [Review][Defer] LOG_LEVEL changed to "info" with no comment directing devs to use "debug" locally — aligns with Joi default (`.default('info')`), cosmetic only; recommend adding `# Use 'debug' for local development` as follow-up [`.env.example`] — deferred, pre-existing Joi default alignment

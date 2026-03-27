@@ -95,3 +95,7 @@
 - **Magic Number `1.2` in `RiskScoringService` tests** — Expectation uses hardcoded value instead of referencing the `DEFAULT_RISK_RULES` constant from the service. Pre-existing pattern across risk tests; revisit for standardization. [`qa-sampling.service.spec.ts:260`]
 - **Architecture constraints typed as `any[]`** — `prompt-generator.service.ts` uses `let constraints: any[]` with `eslint-disable-line` to bypass the return type of `ArchitectureConstraintsService.findAll()`. Accessing `c.type`, `c.scope`, `c.rules` without type safety. Pre-existing pattern in codebase; replace with proper entity type in a future type-hardening pass. [`src/ai-routing/prompt-generator.service.ts`]
 - **No caching for `architectureConstraintsService.findAll()` in `generatePrompt` hot path** — Every AI prompt generation now hits the DB for architecture constraints. Under concurrent ticket execution this adds per-call DB pressure. Requires TTL and cache-invalidation design decision before implementing. [`src/ai-routing/prompt-generator.service.ts`]
+
+## Deferred from: code review of os-5-2-env-example-regeneration-final-production-audit (2026-03-27)
+
+- **LOG_LEVEL default change lacks local dev guidance** — `.env.example` changed from `"debug"` to `"info"` to align with Joi schema default. No comment added to guide developers to use `"debug"` for local development. Low-impact cosmetic gap; add `# Use 'debug' for local development` in a future .env.example maintenance pass. [`.env.example`]
