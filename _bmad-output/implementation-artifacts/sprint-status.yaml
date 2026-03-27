@@ -566,7 +566,7 @@ development_status:
     status: done
     completion_date: '2026-03-27T17:31:00Z'
     review_date: '2026-03-27'
-  epic-os-5-retrospective: optional
+  epic-os-5-retrospective: completed
 
 priority_sequence:
   last_updated: '2026-03-26'
