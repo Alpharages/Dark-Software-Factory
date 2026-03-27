@@ -253,6 +253,9 @@ export class FinancialMetricsController {
       return result;
     } catch (_error) {
       this.logger.error(`Budget trends error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

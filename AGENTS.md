@@ -2,7 +2,7 @@
 
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **dsf-backend** (5830 symbols, 14469 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **dsf-backend** (5873 symbols, 14594 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

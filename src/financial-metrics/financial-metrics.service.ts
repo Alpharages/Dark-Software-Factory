@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
 import { LoggerService } from '@/common/logger/logger.service';
 import { SentryService } from '@/common/sentry/sentry.service';
@@ -440,8 +440,12 @@ export class FinancialMetricsService {
         select: { budget_usd: true },
       });
 
-      if (!project || !project.budget_usd) {
-        throw new Error(`Project ${projectId} not found or budget not set`);
+      if (!project) {
+        throw new NotFoundException(`Project ${projectId} not found`);
+      }
+
+      if (!project.budget_usd) {
+        throw new NotFoundException(`Project ${projectId} has no budget set`);
       }
 
       const totalBudget = parseFloat(project.budget_usd.toString());

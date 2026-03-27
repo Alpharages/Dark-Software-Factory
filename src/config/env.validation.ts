@@ -405,9 +405,11 @@ export const envValidationSchema = Joi.object({
   OPENSANDBOX_REQUEST_TIMEOUT_MS: Joi.number()
     .integer()
     .min(1000)
-    .max(300000)
-    .default(60000)
-    .description('HTTP request timeout for sandbox management calls (ms)'),
+    .max(7500000)
+    .default(3900000)
+    .description(
+      'HTTP request timeout for OpenSandbox API calls (ms). Must exceed OPENSANDBOX_SANDBOX_TIMEOUT_S * 1000 so long-running command executions do not hit the connection timeout before the sandbox timeout fires.',
+    ),
   OPENSANDBOX_AGENT_IMAGE: Joi.string()
     .default('opensandbox/code-interpreter:v1.0.2')
     .description('Docker image for sandbox executions'),
