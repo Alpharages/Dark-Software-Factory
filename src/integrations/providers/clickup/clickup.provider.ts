@@ -198,9 +198,7 @@ export class ClickUpProvider implements IPMProvider {
   }
 
   async getRequiredFields(listId: string): Promise<NormalizedField[]> {
-    const response = await this.retryWithBackoff(() =>
-      this.client.get(`/list/${listId}/custom_field`),
-    );
+    const response = await this.retryWithBackoff(() => this.client.get(`/list/${listId}/field`));
     const fields: ClickUpField[] = response.data.fields || [];
     return fields.filter((f) => f.required).map((f) => this.mapField(f));
   }

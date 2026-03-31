@@ -49,6 +49,7 @@ export class SandboxService implements OnModuleInit {
       requestTimeoutSeconds: Math.floor(
         this.config.get<number>('opensandbox.requestTimeoutMs', 60000) / 1000,
       ),
+      useServerProxy: this.config.get<boolean>('opensandbox.useServerProxy', false),
     };
 
     this.manager = SandboxManager.create({
@@ -185,6 +186,7 @@ export class SandboxService implements OnModuleInit {
           : undefined,
         metadata: options.metadata,
         connectionConfig: this.connectionConfigOptions,
+        readyTimeoutSeconds: this.config.get<number>('opensandbox.readyTimeoutS', 120),
       });
 
       sandboxId = sandbox.id;

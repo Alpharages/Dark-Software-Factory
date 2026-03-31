@@ -3,6 +3,7 @@ import { ProjectIntegration } from '@prisma/client';
 import { PMProviderFactory } from './providers/pm-provider.factory';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { NormalizedField } from '@/integrations/providers/dto/normalized-field.dto';
+import { PMProviderClientError } from '@/integrations/providers/pm-provider-client.error';
 
 export interface FieldPreCheckResult {
   missingFields: NormalizedField[];
@@ -78,7 +79,11 @@ export class PMFieldPreCheckService {
       this.logger.warn(
         `[${correlationId}] CS2-1: pre-check failed for task ${taskId}: ${(error as Error).message} — failing open (status push will proceed)`,
       );
-      this.sentry.captureException(error as Error);
+      // Skip Sentry for 4xx client errors (e.g. APP_001 list-not-found) — these are data/permission
+      // issues, not code bugs. Only capture unexpected errors (5xx, network, etc.).
+      if (!(error instanceof PMProviderClientError)) {
+        this.sentry.captureException(error as Error);
+      }
       return { ...PMFieldPreCheckService.FAIL_OPEN };
     }
   }

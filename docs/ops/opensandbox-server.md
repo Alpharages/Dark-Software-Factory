@@ -112,7 +112,28 @@ curl -H "Authorization: Bearer <OPENSANDBOX_API_KEY>" http://<OPENSANDBOX_DOMAIN
 
 ## 6. Pre-pull Required Docker Image
 
-Must be done on the OpenSandbox server (not the DSF server):
+The `opensandbox/code-interpreter:v1.0.2` image is large (approx. 9.4GB). For stable downloads, configure Docker registry mirrors and increased concurrency.
+
+### 6.1 Optimize Docker Pull Performance
+
+If you experience "unexpected EOF" or slow downloads, configure `/etc/docker/daemon.json` on the OpenSandbox server:
+
+```json
+{
+  "registry-mirrors": ["https://mirror.gcr.io"],
+  "max-concurrent-downloads": 10
+}
+```
+
+Apply the changes:
+
+```bash
+sudo systemctl restart docker
+```
+
+### 6.2 Pull and Verify
+
+Execution must be done on the OpenSandbox server:
 
 ```bash
 docker pull opensandbox/code-interpreter:v1.0.2
@@ -143,4 +164,5 @@ OPENSANDBOX_MAX_CONCURRENT=5
 - **Server fails to start:** Check logs using `journalctl -u opensandbox -f` or run the server manually to see startup errors.
 - **Health check fails (Timeout):** Verify that the firewall allows inbound traffic on port `8080` strictly from the DSF server IP.
 - **Health check fails (Unauthorized):** Ensure `OPENSANDBOX_API_KEY` exactly matches `api_key` in `~/.sandbox.toml`.
+- **Docker Pull Fails ("unexpected EOF"):** Large images can cause timeouts. Configure `registry-mirrors` and `max-concurrent-downloads` as described in Section 6.1.
 - **Sandbox execution fails:** Ensure Docker Engine is running and the required Docker image has been pre-pulled.

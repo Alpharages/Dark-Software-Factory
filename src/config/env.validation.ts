@@ -419,6 +419,12 @@ export const envValidationSchema = Joi.object({
     .max(7200)
     .default(3600)
     .description('Maximum sandbox lifetime in seconds (default: 1 hour)'),
+  OPENSANDBOX_READY_TIMEOUT_S: Joi.number()
+    .integer()
+    .min(30)
+    .max(600)
+    .default(120)
+    .description('Seconds to wait for sandbox execd health check before failing (default: 120)'),
   OPENSANDBOX_MAX_CONCURRENT: Joi.number()
     .integer()
     .min(1)
@@ -444,4 +450,10 @@ export const envValidationSchema = Joi.object({
     .valid('ALLOW', 'DENY')
     .default('ALLOW')
     .description('Default egress policy for sandboxes'),
+  OPENSANDBOX_USE_SERVER_PROXY: Joi.boolean()
+    .default(false)
+    .description(
+      'Route execd commands through the OpenSandbox server proxy instead of connecting directly to container. ' +
+        'Required when the sandbox server is remote (not localhost). Set to true in production.',
+    ),
 });

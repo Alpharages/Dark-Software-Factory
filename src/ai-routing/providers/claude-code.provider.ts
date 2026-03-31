@@ -37,7 +37,7 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
     // Pass prompt via env var — avoids shell injection from $(), backticks, $VAR in prompt text.
     // The shell expands $CLAUDE_PROMPT safely inside double quotes without re-interpreting its value.
     const env: Record<string, string> = {
-      ANTHROPIC_AUTH_TOKEN: apiKey, // Claude Code CLI uses ANTHROPIC_AUTH_TOKEN
+      ANTHROPIC_API_KEY: apiKey, // Claude Code CLI reads ANTHROPIC_API_KEY
       ANTHROPIC_MODEL: model,
       IS_SANDBOX: '1',
       CLAUDE_PROMPT: payload.prompt,
@@ -52,7 +52,12 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
         'opensandbox.agentImage',
         'opensandbox/code-interpreter:v1.0.2',
       ),
-      command: 'claude "$CLAUDE_PROMPT"',
+      // Install claude CLI if not present (image does not bundle it), then run in
+      // non-interactive print mode. --dangerously-skip-permissions suppresses approval
+      // prompts so the agent can write files and run commands autonomously in the sandbox.
+      command:
+        'npm install -g @anthropic-ai/claude-code --silent 2>/dev/null && ' +
+        'claude --dangerously-skip-permissions -p "$CLAUDE_PROMPT"',
       env,
       timeoutSeconds: this.config.get<number>('opensandbox.sandboxTimeoutS', 3600),
       cpuLimit: profile.cpuLimit,
