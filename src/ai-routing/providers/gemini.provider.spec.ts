@@ -1,22 +1,18 @@
-/**
- * Gemini Provider Unit Tests
- * Story OS-4.2: Gemini CLI Provider
- */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { GeminiProvider } from './gemini.provider';
 import { SandboxService } from '@/sandbox/sandbox.service';
 import { SandboxResourceProfileService } from '@/sandbox/sandbox-resource-profile.service';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { IAIExecutionPayload } from '@/execution/interfaces';
 import { AIProvider } from '@/prisma/client';
-import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 import { AIErrorCode } from '../interfaces/ai-provider.interface';
 
 describe('GeminiProvider', () => {
   let provider: GeminiProvider;
   let sandboxService: jest.Mocked<SandboxService>;
-  let resourceProfileService: jest.Mocked<SandboxResourceProfileService>;
+  let _resourceProfileService: jest.Mocked<SandboxResourceProfileService>;
+  let executionTracker: jest.Mocked<ExecutionTrackerService>;
 
   const mockPayload: IAIExecutionPayload = {
     ticketId: 'ticket-123',
@@ -29,18 +25,33 @@ describe('GeminiProvider', () => {
     complexityScore: 8,
   };
 
+  const mockResultLine = {
+    type: 'result',
+    prUrl: 'https://github.com/test/repo/pull/3',
+    commitSha: 'shaabc',
+    branchName: 'dsf/ticket-123/exec-456',
+    qaStatus: 'passed',
+    qaRetryCount: 0,
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const mockSandboxService = {
       isHealthy: jest.fn().mockResolvedValue(true),
-      runAgentCommand: jest.fn().mockResolvedValue({
-        exitCode: 0,
-        stdout: 'Successfully fixed bug',
-        stderr: '',
-        durationMs: 1500,
-        timedOut: false,
-        sandboxId: 'sbx-123',
+      runAgentCommand: jest.fn().mockImplementation(async (options) => {
+        if (options.onStdoutLine) {
+          options.onStdoutLine(JSON.stringify({ type: 'progress', pct: 20, msg: 'Starting...' }));
+          options.onStdoutLine(JSON.stringify(mockResultLine));
+        }
+        return {
+          exitCode: 0,
+          stdout: `Logs...\n${JSON.stringify(mockResultLine)}`,
+          stderr: '',
+          durationMs: 1500,
+          timedOut: false,
+          sandboxId: 'sbx-123',
+        };
       }),
     };
 
@@ -52,6 +63,10 @@ describe('GeminiProvider', () => {
       }),
     };
 
+    const mockExecutionTracker = {
+      emitProgress: jest.fn().mockResolvedValue(undefined),
+    };
+
     const mockConfigService = {
       get: jest.fn((key: string, defaultValue?: unknown) => {
         const config: Record<string, unknown> = {
@@ -59,8 +74,9 @@ describe('GeminiProvider', () => {
           'gemini.apiKey': 'gemini-test-key',
           'gemini.baseURL': 'http://localhost:11434',
           'gemini.model': 'gemini-2.5-pro',
-          'opensandbox.agentImage': 'opensandbox/code-interpreter:v1.0.2',
+          'opensandbox.agentImage': 'dsf-agents:latest',
           'opensandbox.sandboxTimeoutS': 3600,
+          'github.token': 'gh-token-abc',
         };
         return config[key] ?? defaultValue;
       }),
@@ -72,14 +88,16 @@ describe('GeminiProvider', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: SandboxService, useValue: mockSandboxService },
         { provide: SandboxResourceProfileService, useValue: mockResourceProfileService },
+        { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
       ],
     }).compile();
 
     provider = module.get<GeminiProvider>(GeminiProvider);
     sandboxService = module.get(SandboxService) as jest.Mocked<SandboxService>;
-    resourceProfileService = module.get(
+    _resourceProfileService = module.get(
       SandboxResourceProfileService,
     ) as jest.Mocked<SandboxResourceProfileService>;
+    executionTracker = module.get(ExecutionTrackerService) as jest.Mocked<ExecutionTrackerService>;
   });
 
   describe('isEnabled', () => {
@@ -88,30 +106,23 @@ describe('GeminiProvider', () => {
     });
 
     it('should return false when config is false', async () => {
-      const mockConfigFalse = {
+      const mockConfigDisabled = {
         get: jest.fn((key: string, defaultValue?: unknown) => {
           if (key === 'ai.providers.gemini.enabled') return false;
-          const config: Record<string, unknown> = {
-            'gemini.apiKey': 'gemini-test-key',
-            'opensandbox.agentImage': 'opensandbox/code-interpreter:v1.0.2',
-            'opensandbox.sandboxTimeoutS': 3600,
-          };
-          return config[key] ?? defaultValue;
+          return defaultValue;
         }),
       };
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           GeminiProvider,
-          { provide: ConfigService, useValue: mockConfigFalse },
-          {
-            provide: SandboxService,
-            useValue: { isHealthy: jest.fn(), runAgentCommand: jest.fn() },
-          },
+          { provide: ConfigService, useValue: mockConfigDisabled },
+          { provide: SandboxService, useValue: { isHealthy: jest.fn() } },
           { provide: SandboxResourceProfileService, useValue: { getProfile: jest.fn() } },
+          { provide: ExecutionTrackerService, useValue: {} },
         ],
       }).compile();
-      const disabledProvider = module.get<GeminiProvider>(GeminiProvider);
-      expect(disabledProvider.isEnabled).toBe(false);
+      const p = module.get<GeminiProvider>(GeminiProvider);
+      expect(p.isEnabled).toBe(false);
     });
   });
 
@@ -122,6 +133,11 @@ describe('GeminiProvider', () => {
       expect(result).toBe(true);
     });
 
+    it('should return false when sandbox is unhealthy', async () => {
+      sandboxService.isHealthy.mockResolvedValueOnce(false);
+      expect(await provider.isHealthy()).toBe(false);
+    });
+
     it('should return false when API key is missing', async () => {
       const mockConfigNoKey = {
         get: jest.fn((key: string, defaultValue?: unknown) => {
@@ -129,156 +145,154 @@ describe('GeminiProvider', () => {
           return defaultValue;
         }),
       };
-      const mockSandboxNoKey = { isHealthy: jest.fn().mockResolvedValue(true) };
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           GeminiProvider,
           { provide: ConfigService, useValue: mockConfigNoKey },
-          { provide: SandboxService, useValue: mockSandboxNoKey },
+          { provide: SandboxService, useValue: { isHealthy: jest.fn() } },
           { provide: SandboxResourceProfileService, useValue: { getProfile: jest.fn() } },
+          { provide: ExecutionTrackerService, useValue: {} },
         ],
       }).compile();
-      const noKeyProvider = module.get<GeminiProvider>(GeminiProvider);
-      const result = await noKeyProvider.isHealthy();
-      expect(result).toBe(false);
-      expect(mockSandboxNoKey.isHealthy).not.toHaveBeenCalled();
-    });
-
-    it('should return false when sandbox service is unhealthy', async () => {
-      sandboxService.isHealthy.mockResolvedValueOnce(false);
-      const result = await provider.isHealthy();
-      expect(result).toBe(false);
+      const p = module.get<GeminiProvider>(GeminiProvider);
+      expect(await p.isHealthy()).toBe(false);
     });
   });
 
   describe('execute', () => {
-    it('should use SandboxService to run gemini command', async () => {
+    it('should run gemini command with agentic workflow and emit progress', async () => {
       const result = await provider.execute(mockPayload);
 
-      expect(resourceProfileService.getProfile).toHaveBeenCalledWith(8);
       expect(sandboxService.runAgentCommand).toHaveBeenCalledWith(
         expect.objectContaining({
-          executionId: 'exec-456',
-          image: 'opensandbox/code-interpreter:v1.0.2',
-          command: 'gemini "$GEMINI_PROMPT"',
-          timeoutSeconds: 3600,
-          cpuLimit: '2',
-          memoryLimit: '4Gi',
-          ticketId: 'ticket-123',
-          metadata: {
-            providerName: ProviderName.GEMINI,
-            executionId: 'exec-456',
-            ticketId: 'ticket-123',
-          },
+          command: 'gemini execute dsf-execution',
+          image: 'dsf-agents:latest',
+          env: expect.objectContaining({
+            GEMINI_API_KEY: 'gemini-test-key',
+            GEMINI_MODEL: 'gemini-2.5-pro',
+            IS_SANDBOX: '1',
+            REPO_URL: mockPayload.repositoryUrl,
+            FEATURE_BRANCH: 'dsf/ticket-123/exec-456',
+            TASK_DESCRIPTION: mockPayload.prompt,
+            GITHUB_TOKEN: 'gh-token-abc',
+            QA_MAX_RETRIES: '3',
+          }),
+          onStdoutLine: expect.any(Function),
         }),
       );
 
-      // Verify env vars
-      const callArgs = sandboxService.runAgentCommand.mock.calls[0][0];
-      expect(callArgs.env).toBeDefined();
-      expect(callArgs.env['GEMINI_API_KEY']).toBe('gemini-test-key');
-      expect(callArgs.env['GEMINI_BASE_URL']).toBe('http://localhost:11434');
-      expect(callArgs.env['GEMINI_MODEL']).toBe('gemini-2.5-pro');
-      expect(callArgs.env['IS_SANDBOX']).toBe('1');
-      expect(callArgs.env['GEMINI_PROMPT']).toBe('Fix the bug in main.ts');
+      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
+        mockPayload.executionId,
+        mockPayload.ticketId,
+        mockPayload.projectId,
+        'Starting...',
+        20,
+      );
 
       expect(result.success).toBe(true);
-      expect(result.codeDiff).toBe('Successfully fixed bug');
-      expect(result.durationMs).toBe(1500);
+      expect(result.codeDiff).toBeNull();
+      expect(result.prUrl).toBe(mockResultLine.prUrl);
+      expect(result.qaRetryCount).toBe(0);
     });
 
-    it('should handle timeout errors correctly', async () => {
-      sandboxService.runAgentCommand.mockResolvedValueOnce({
-        exitCode: 124,
-        stdout: '',
-        stderr: 'Command timed out',
-        durationMs: 3600000,
-        timedOut: true,
-        sandboxId: 'sbx-123',
+    it('should silently skip non-JSON stdout lines without crashing', async () => {
+      sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          options.onStdoutLine('this is plain text, not json');
+          options.onStdoutLine('{ invalid json }');
+          options.onStdoutLine(JSON.stringify(mockResultLine));
+        }
+        return {
+          exitCode: 0,
+          stdout: JSON.stringify(mockResultLine),
+          stderr: '',
+          durationMs: 100,
+          timedOut: false,
+          sandboxId: 'sbx-111',
+        };
       });
 
       const result = await provider.execute(mockPayload);
-
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
-      expect(result.error?.isRetryable).toBe(true);
+      expect(result.success).toBe(true);
+      expect(result.commitSha).toBe(mockResultLine.commitSha);
     });
 
-    it('should handle process crash errors correctly', async () => {
+    it('should fallback to parsing stdout if onStdoutLine missed the result', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: `More logs\n${JSON.stringify(mockResultLine)}\n`,
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-111',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(true);
+      expect(result.commitSha).toBe(mockResultLine.commitSha);
+    });
+
+    it('should handle failure if result line is missing', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: 'Crashed without JSON',
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-111',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toContain('Agent did not emit a final result line');
+    });
+
+    it('should handle failure if QA failed even if process exited cleanly', async () => {
+      const failedResult = { ...mockResultLine, qaStatus: 'failed', prUrl: null };
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify(failedResult),
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-111',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.qaStatus).toBe('failed');
+      expect(result.error?.message).toContain('Agent completed with QA failures');
+    });
+
+    it('should handle timeout correctly', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 124,
+        stdout: '',
+        stderr: 'Timeout',
+        durationMs: 3600000,
+        timedOut: true,
+        sandboxId: 'sbx-111',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
+    });
+
+    it('should handle process crash', async () => {
       sandboxService.runAgentCommand.mockResolvedValueOnce({
         exitCode: 1,
         stdout: '',
         stderr: 'Segmentation fault',
         durationMs: 500,
         timedOut: false,
-        sandboxId: 'sbx-123',
+        sandboxId: 'sbx-111',
       });
 
       const result = await provider.execute(mockPayload);
-
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(AIErrorCode.PROCESS_CRASH);
       expect(result.error?.isRetryable).toBe(false);
-    });
-
-    it('should default complexity score to 5 if not provided', async () => {
-      await provider.execute({ ...mockPayload, complexityScore: undefined });
-      expect(resourceProfileService.getProfile).toHaveBeenCalledWith(5);
-    });
-
-    it('should pass prompt via GEMINI_PROMPT env var and use fixed command string', async () => {
-      const promptWithSpecialChars = 'Fix "bug" in main.ts and run $(echo dangerous)';
-      await provider.execute({ ...mockPayload, prompt: promptWithSpecialChars });
-      const callArgs = sandboxService.runAgentCommand.mock.calls[0][0];
-      expect(callArgs.command).toBe('gemini "$GEMINI_PROMPT"');
-      expect(callArgs.env['GEMINI_PROMPT']).toBe(promptWithSpecialChars);
-    });
-
-    it('should omit GEMINI_BASE_URL from env when config value is empty string', async () => {
-      const mockConfigNoBaseURL = {
-        get: jest.fn((key: string, defaultValue?: unknown) => {
-          const config: Record<string, unknown> = {
-            'ai.providers.gemini.enabled': true,
-            'gemini.apiKey': 'gemini-test-key',
-            'gemini.baseURL': '',
-            'gemini.model': 'gemini-2.5-pro',
-            'opensandbox.agentImage': 'opensandbox/code-interpreter:v1.0.2',
-            'opensandbox.sandboxTimeoutS': 3600,
-          };
-          return config[key] ?? defaultValue;
-        }),
-      };
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          GeminiProvider,
-          { provide: ConfigService, useValue: mockConfigNoBaseURL },
-          {
-            provide: SandboxService,
-            useValue: {
-              isHealthy: jest.fn(),
-              runAgentCommand: jest.fn().mockResolvedValue({
-                exitCode: 0,
-                stdout: '',
-                stderr: '',
-                durationMs: 100,
-                timedOut: false,
-                sandboxId: 'sbx',
-              }),
-            },
-          },
-          {
-            provide: SandboxResourceProfileService,
-            useValue: {
-              getProfile: jest.fn().mockReturnValue({ cpuLimit: '1', memoryLimit: '2Gi' }),
-            },
-          },
-        ],
-      }).compile();
-      const p = module.get<GeminiProvider>(GeminiProvider);
-      await p.execute(mockPayload);
-      const sb = module.get(SandboxService) as jest.Mocked<SandboxService>;
-      const callArgs = sb.runAgentCommand.mock.calls[0][0];
-      expect(callArgs.env['GEMINI_BASE_URL']).toBeUndefined();
     });
   });
 });

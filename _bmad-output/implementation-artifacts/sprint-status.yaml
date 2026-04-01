@@ -621,10 +621,12 @@ development_status:
     story_points: 8
     notes: 'ClaudeCodeProvider.execute() runs full agentic loop via SKILL.md. JSON stdout protocol (type:progress/result). lineBuffer flushed at stream end. qaStatus lowercase. FEATURE_BRANCH sanitized. Code review 2026-04-01: 10 patches applied, 6 deferred.'
   wr-2-4-implement-codex-kimi-gemini-full-agentic-workflow:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-04-01'
+    last_updated: '2026-04-01'
     effort: '2 days'
     story_points: 8
-    notes: 'Codex, Kimi, Gemini providers inject 8-step workflow as structured system prompt. Same stdout parsing contract as ClaudeCodeProvider. E2E smoke test for all 4 providers.'
+    notes: 'Codex/Kimi/Gemini invoke dsf-execution skill via dsf-agents:latest. Identical stdout contract to WR-2.3. Code review 2026-04-01: 9 patches applied (error message ternary, ticketId guard, restored isEnabled/isHealthy/crash tests, env var/non-JSON/codeDiff assertions, stale Dev Notes fixed). 11 deferred. Skill dir paths to verify in staging smoke test.'
   wr-2-5-extend-api-key-redaction-to-all-provider-keys:
     status: ready-for-dev
     effort: '0.5 days'

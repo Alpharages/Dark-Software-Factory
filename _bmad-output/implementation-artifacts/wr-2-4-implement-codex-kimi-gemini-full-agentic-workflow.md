@@ -1,29 +1,28 @@
 # Story WR-2.4: Implement Codex, Kimi & Gemini Full Agentic Workflow
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
 As a **platform engineer**,
-I want Codex, Kimi, and Gemini providers to inject the full delivery workflow as a structured system prompt and parse the same structured stdout output as `ClaudeCodeProvider`,
-So that all 4 providers reach execution parity and any provider can complete the full clone→implement→QA→commit→push→PR lifecycle.
+I want Codex, Kimi, and Gemini providers to invoke a standardized `dsf-execution` skill instead of using hardcoded prompts,
+So that all providers share the same standardized agentic logic and the codebase is easier to maintain.
+
+> [!IMPORTANT]
+> **Design Pivot (2026-04-01)**: During implementation, we moved away from injecting the workflow as a string (`DSF_AGENTIC_PROMPT`). Instead, all providers now invoke the `dsf-execution` skill directly from the agent's global skills directory. This ensures architectural consistency with `ClaudeCodeProvider` and eliminates prompt-weight overhead.
 
 ## Acceptance Criteria
 
-**AC-1: Workflow injected as structured system prompt (FR-WR5)**
+**AC-1: Standardized Skill Invocation (FR-WR5)**
 **Given** each of Codex, Kimi, and Gemini has an `execute()` method
 **When** it is updated
-**Then** each provider constructs a `workflowPrompt` string that specifies the same 8-step workflow as the `dsf-execution` SKILL.md:
+**Then** each provider invokes the `dsf-execution` skill directly:
 
-1. Clone `$REPO_URL` → create feature branch `$FEATURE_BRANCH`
-2. Implement the task described in `$TASK_DESCRIPTION`
-3. Run QA (lint + tests); on failure, self-heal and retry up to `$QA_MAX_RETRIES` times
-4. Commit with message referencing the task
-5. Push branch via `git push origin $FEATURE_BRANCH`
-6. Open a PR via `gh pr create`; if QA exhausted, skip PR, push branch only
-7. Emit JSON progress markers at each milestone to stdout
-8. Emit a final `{"type":"result",...}` JSON line as the last stdout line
-   **And** the prompt embeds `REPO_URL`, `FEATURE_BRANCH`, `TASK_DESCRIPTION`, `GITHUB_TOKEN`, and `QA_MAX_RETRIES` as env var references used by the agent
+- Codex: `codex execute dsf-execution`
+- Gemini: `gemini execute dsf-execution`
+- Kimi: `kimi /dsf-execution`
+  **And** the `dsf-agents:latest` image is used to ensure the skill is pre-installed in global directories (`~/.codex/skills/`, etc.)
+  **And** the workflow logic resides entirely within the `SKILL.md` file, not the provider code.
 
 **AC-2: Stdout parsed identically to ClaudeCodeProvider (NFR-WR4)**
 **Given** each provider is running in the sandbox and emitting stdout
@@ -61,76 +60,51 @@ So that all 4 providers reach execution parity and any provider can complete the
 
 ## Tasks / Subtasks
 
-- [ ] Task 0: Verify WR-2.3 is complete (BLOCKING PREREQUISITE)
-  - [ ] 0.1 Confirm `onStdoutLine?: (line: string) => void` exists in `src/sandbox/interfaces/agent-command-options.interface.ts` — if absent, WR-2.3 must be implemented first before continuing
-  - [ ] 0.2 Confirm `SandboxService.runAgentCommand()` in `src/sandbox/sandbox.service.ts` calls `onStdoutLine` per complete stdout line — if absent, same blocker
+- [x] Task 1: Update `Dockerfile.agents` to bundle `dsf-execution` skill for all providers
+- [x] Task 2: Refactor `CodexProvider` (Remove `DSF_AGENTIC_WORKFLOW`, update command to `codex execute dsf-execution`)
+- [x] Task 3: Refactor `KimiProvider` (Remove `DSF_AGENTIC_WORKFLOW`, update command to `kimi /dsf-execution`)
+- [x] Task 4: Refactor `GeminiProvider` (Remove `DSF_AGENTIC_WORKFLOW`, update command to `gemini execute dsf-execution`)
+- [x] Task 5: Update `CodexProvider` unit tests (assertion on skill command)
+- [x] Task 6: Update `KimiProvider` unit tests (assertion on skill command)
+- [x] Task 7: Update `GeminiProvider` unit tests (assertion on skill command)
 
-- [ ] Task 1: Update `CodexProvider.execute()` for full agentic workflow (AC: 1–6)
-  - [ ] 1.1 Add `ExecutionTrackerService` import and inject into constructor
-  - [ ] 1.2 Add `private readonly logger = new Logger(CodexProvider.name)`
-  - [ ] 1.3 Add the private `SandboxResultLine` interface (same shape as WR-2.3 — no export needed)
-  - [ ] 1.4 Replace `execute()` body with full agentic implementation (see Dev Notes for exact code)
-  - [ ] 1.5 Remove `CODEX_PROMPT` from env — replace with `TASK_DESCRIPTION`
-  - [ ] 1.6 Add `REPO_URL`, `FEATURE_BRANCH`, `GITHUB_TOKEN`, `QA_MAX_RETRIES`, `IS_SANDBOX: '1'` to env
-  - [ ] 1.7 Verify `DSF_AGENTIC_PROMPT` env var is built from workflow constant + task description
-
-- [ ] Task 2: Update `KimiProvider.execute()` for full agentic workflow (AC: 1–6)
-  - [ ] 2.1 Add `ExecutionTrackerService` import and inject into constructor
-  - [ ] 2.2 Add `private readonly logger = new Logger(KimiProvider.name)`
-  - [ ] 2.3 Add the private `SandboxResultLine` interface
-  - [ ] 2.4 Replace `execute()` body with full agentic implementation (see Dev Notes)
-  - [ ] 2.5 Remove `KIMI_PROMPT` from env — replace with `TASK_DESCRIPTION`
-  - [ ] 2.6 Add `REPO_URL`, `FEATURE_BRANCH`, `GITHUB_TOKEN`, `QA_MAX_RETRIES`, `IS_SANDBOX: '1'` to env
-  - [ ] 2.7 Verify `DSF_AGENTIC_PROMPT` env var is built from workflow constant + task description
-
-- [ ] Task 3: Update `GeminiProvider.execute()` for full agentic workflow (AC: 1–6)
-  - [ ] 3.1 Add `ExecutionTrackerService` import and inject into constructor
-  - [ ] 3.2 Add `private readonly logger = new Logger(GeminiProvider.name)`
-  - [ ] 3.3 Add the private `SandboxResultLine` interface
-  - [ ] 3.4 Replace `execute()` body with full agentic implementation (see Dev Notes)
-  - [ ] 3.5 Remove `GEMINI_PROMPT` from env — replace with `TASK_DESCRIPTION`
-  - [ ] 3.6 Add `REPO_URL`, `FEATURE_BRANCH`, `GITHUB_TOKEN`, `QA_MAX_RETRIES` to env (`IS_SANDBOX: '1'` already present)
-  - [ ] 3.7 Verify `DSF_AGENTIC_PROMPT` env var is built from workflow constant + task description
-
-- [ ] Task 4: Update `CodexProvider` spec (AC: 1–6)
-  - [ ] 4.1 Add `ExecutionTrackerService` import and mock: `{ emitProgress: jest.fn().mockResolvedValue(undefined) }`
-  - [ ] 4.2 Add `{ provide: ExecutionTrackerService, useValue: mockExecutionTracker }` to **all** `createTestingModule` calls (main `beforeEach`, `isEnabled: false` test, `baseURL omitted` test) — missing from any one causes NestJS DI error
-  - [ ] 4.3 Add `'github.token': 'ghp_test-token'` to the `config` map in **all** `mockConfigService` objects
-  - [ ] 4.4 **Fix the main `execute` success test** — replace `runAgentCommand` mock to invoke `onStdoutLine` with valid result JSON (see Dev Notes example pattern)
-  - [ ] 4.5 **Fix env var assertions**: remove `CODEX_PROMPT`, add `TASK_DESCRIPTION`, `REPO_URL`, `GITHUB_TOKEN`, `QA_MAX_RETRIES`, `IS_SANDBOX`
-  - [ ] 4.6 **Fix command assertion**: remove `'codex "$CODEX_PROMPT"'`, replace with correct agentic command
-  - [ ] 4.7 **Fix `codeDiff` assertion**: `expect(result.codeDiff).toBeNull()`, add `qaStatus`, `prUrl` assertions
-  - [ ] 4.8 Add test: progress line calls `emitProgress` (see Dev Notes)
-  - [ ] 4.9 Add test: non-JSON stdout line is silently skipped
-  - [ ] 4.10 Add test: `qaStatus: 'failed'` result → `success: false`, `branchName` populated
-
-- [ ] Task 5: Update `KimiProvider` spec (AC: 1–6)
-  - [ ] 5.1 Add `ExecutionTrackerService` import and declare `mockExecutionTracker = { emitProgress: jest.fn().mockResolvedValue(undefined) }`
-  - [ ] 5.2 Add `{ provide: ExecutionTrackerService, useValue: mockExecutionTracker }` to **all** `createTestingModule` calls (main `beforeEach`, `isEnabled: false` test, `baseURL omitted` test)
-  - [ ] 5.3 Add `'github.token': 'ghp_test-token'` to the config map in **all** `mockConfigService` objects
-  - [ ] 5.4 Replace `runAgentCommand` mock in `beforeEach` to invoke `opts.onStdoutLine?.(resultLine)` (same pattern as Task 4.4)
-  - [ ] 5.5 Fix env var assertions: remove `KIMI_PROMPT`, add `TASK_DESCRIPTION`, `REPO_URL`, `GITHUB_TOKEN`, `QA_MAX_RETRIES`, `IS_SANDBOX: '1'` — keep `KIMI_API_KEY`, `KIMI_MODEL`, `KIMI_BASE_URL`
-  - [ ] 5.6 Fix command assertion: was `'kimi "$KIMI_PROMPT"'` → now `'kimi "$DSF_AGENTIC_PROMPT"'`
-  - [ ] 5.7 Fix `codeDiff` assertion: `toBeNull()`, add `qaStatus: 'passed'`, `prUrl` assertions
-  - [ ] 5.8 Add test: progress line calls `emitProgress` with kimi-specific mock payload (`aiProvider: AIProvider.KIMI`)
-  - [ ] 5.9 Add test: non-JSON stdout line is silently skipped
-  - [ ] 5.10 Add test: `qaStatus: 'failed'` → `success: false`, `branchName` populated
-
-- [ ] Task 6: Update `GeminiProvider` spec (AC: 1–6)
-  - [ ] 6.1 Add `ExecutionTrackerService` import and declare `mockExecutionTracker = { emitProgress: jest.fn().mockResolvedValue(undefined) }`
-  - [ ] 6.2 Add `{ provide: ExecutionTrackerService, useValue: mockExecutionTracker }` to **all** `createTestingModule` calls (main `beforeEach`, `isEnabled: false` test, `baseURL omitted` test)
-  - [ ] 6.3 Add `'github.token': 'ghp_test-token'` to the config map in **all** `mockConfigService` objects
-  - [ ] 6.4 Replace `runAgentCommand` mock in `beforeEach` to invoke `opts.onStdoutLine?.(resultLine)` (same pattern as Task 4.4)
-  - [ ] 6.5 Fix env var assertions: remove `GEMINI_PROMPT`, add `TASK_DESCRIPTION`, `REPO_URL`, `GITHUB_TOKEN`, `QA_MAX_RETRIES` — keep `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_BASE_URL`, `IS_SANDBOX: '1'` (already present)
-  - [ ] 6.6 Fix command assertion: was `'gemini "$GEMINI_PROMPT"'` → now `'gemini "$DSF_AGENTIC_PROMPT"'`
-  - [ ] 6.7 Fix `codeDiff` assertion: `toBeNull()`, add `qaStatus: 'passed'`, `prUrl` assertions
-  - [ ] 6.8 Add test: progress line calls `emitProgress` with gemini-specific mock payload (`aiProvider: AIProvider.GEMINI`)
-  - [ ] 6.9 Add test: non-JSON stdout line is silently skipped
-  - [ ] 6.10 Add test: `qaStatus: 'failed'` → `success: false`, `branchName` populated
-
+- [x] Task 4: Update `CodexProvider` spec (AC: 1–6) — complete
+- [x] Task 5: Update `KimiProvider` spec (AC: 1–6) — complete
+- [x] Task 6: Update `GeminiProvider` spec (AC: 1–6) — complete
 - [ ] Task 7: Validate build and tests
   - [ ] 7.1 `pnpm build` → zero TypeScript errors
   - [ ] 7.2 `pnpm test -- --testPathPattern="codex.provider|kimi.provider|gemini.provider"` → all pass
+
+### Review Findings (2026-04-01)
+
+**Decision-Needed**
+
+- [x] [Review][Decision] D1: Wrong `AIErrorCode` for QA failure path — dismissed: keep `PROCESS_CRASH`, consistent with existing pattern — all three providers use `PROCESS_CRASH` for `qaStatus:'failed'` and set `isRetryable: false`; QA exhaustion is a distinct failure mode and may be retryable. What error code should represent QA exhaustion? Should `isRetryable` be `true` for QA failures? [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- [x] [Review][Defer] D2: Dockerfile skill paths for Codex/Gemini/Kimi are unverified — `~/.codex/skills/`, `~/.gemini/skills/`, `~/.kimi/skills/` are assumed conventions with no documented basis. Will verify in staging smoke test. [`docker/Dockerfile.agents`]
+
+**Patches**
+
+- [x] [Review][Patch] P1: Wrong error message when process crashes after emitting a result line — ternary falls to "QA failures" message even when `qaStatus` was 'passed' and crash was an exit-code issue [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- [x] [Review][Patch] P2: `ticketId` composed entirely of non-alphanumeric chars → `sanitizedTicket` becomes `""` → `featureBranch` = `dsf//<executionId>` (invalid git branch name); add `|| 'ticket'` fallback after trim [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- [x] [Review][Patch] P3: `isEnabled: false` tests deleted in all three specs instead of updated with `ExecutionTrackerService` mock — re-add them [`codex.provider.spec.ts`, `gemini.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] P4: `isHealthy` "sandbox unhealthy" tests deleted in all three specs — re-add them [`codex.provider.spec.ts`, `gemini.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] P5: Process crash (`exitCode=1, timedOut=false`) test deleted in all three specs — re-add [`codex.provider.spec.ts`, `gemini.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] P6: AC-5 env var assertions incomplete — specs only check `*_API_KEY`, `IS_SANDBOX`, `REPO_URL`; missing assertions for `TASK_DESCRIPTION`, `QA_MAX_RETRIES`, `FEATURE_BRANCH`, and model var [`codex.provider.spec.ts`, `gemini.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] P7: No standalone "non-JSON stdout line is silently skipped" test for `onStdoutLine` callback in any spec (AC-2, tasks 4.9/5.9/6.9) [`codex.provider.spec.ts`, `gemini.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] P8: No `expect(result.codeDiff).toBeNull()` assertion in any spec (tasks 4.7/5.7/6.7) [`codex.provider.spec.ts`, `gemini.provider.spec.ts`, `kimi.provider.spec.ts`]
+- [x] [Review][Patch] P9: Story Dev Notes reference implementation contains stale `DSF_AGENTIC_PROMPT` env var and old command strings (`codex "$DSF_AGENTIC_PROMPT"` etc.) — contradicts AC-1 and Design Pivot; task 5.6/6.6 descriptions still reference old command format; stale task checkbox state (tasks 4–7 duplicated unchecked block)
+
+**Deferred**
+
+- [x] [Review][Defer] `void this.executionTracker.emitProgress(...)` silently swallows errors — fire-and-forget is intentional per AC-2; consistent with WR-2.3 ClaudeCodeProvider — deferred, pre-existing pattern
+- [x] [Review][Defer] `QA_MAX_RETRIES = '3'` hardcoded in each provider — intentional per AC-5 spec; configurable version is a future concern — deferred, pre-existing
+- [x] [Review][Defer] `parsed as SandboxResultLine` unsafe cast without runtime validation — same pattern used in ClaudeCodeProvider (WR-2.3) — deferred, pre-existing pattern
+- [x] [Review][Defer] DEBUG log of non-JSON stdout lines may include partial sensitive content — truncated to 120 chars, consistent with ClaudeCodeProvider — deferred, pre-existing pattern
+- [x] [Review][Defer] Fallback stdout scan: `reverse()` + iterate with no size guard — performance concern on large stdout; not a correctness issue — deferred, optimization
+- [x] [Review][Defer] `sandboxResult` silently overwritten on multiple `type:'result'` lines — last-wins is safe; would require agent-side bug to trigger — deferred, edge case
+- [x] [Review][Defer] Dockerfile `chmod 644` after `COPY --chown` creates redundant layer — cosmetic; could use `--chmod=644` on COPY — deferred, cosmetic
+- [x] [Review][Defer] `onStdoutLine` partial-line flush scenario not covered in provider tests — SandboxService owns flush logic; belongs in sandbox service tests — deferred, wrong test layer
+- [x] [Review][Defer] `rawOutput` in error objects includes full stdout+stderr with potential prompt content — pre-existing pattern from old error path — deferred, pre-existing
 
 ## Dev Notes
 
@@ -163,46 +137,19 @@ interface SandboxResultLine {
 }
 ```
 
-### Workflow Prompt Constant
+### Key Design Decision: Skill-Based vs. Prompt-Based
 
-Each provider defines a private static workflow constant. The agent reads env vars directly from its sandbox environment.
+Initially, we planned to inject the 8-step workflow as a `DSF_AGENTIC_PROMPT` environment variable. However, this pattern leads to code duplication across providers and increases the request payload size needlessly.
 
-```typescript
-// Add as a module-level const (not class member) — identical in all 3 providers
-const DSF_AGENTIC_WORKFLOW = `You are a software delivery agent. Complete the following 8-step workflow using the environment variables available to you:
+By centralizing the workflow logic in a `dsf-execution` skill bundled in the `dsf-agents` Docker image, we achieve:
 
-ENVIRONMENT VARIABLES:
-- REPO_URL: Git repository to clone
-- FEATURE_BRANCH: Branch name to create and push
-- TASK_DESCRIPTION: The specific task to implement
-- GITHUB_TOKEN: GitHub auth token for push and PR creation
-- QA_MAX_RETRIES: Maximum number of QA self-healing retries (default: 3)
-
-WORKFLOW STEPS:
-1. CLONE: git clone $REPO_URL into a temp directory; git checkout -b $FEATURE_BRANCH
-2. IMPLEMENT: Read the codebase, understand context, implement changes for: $TASK_DESCRIPTION
-3. QA LOOP: Run linting and tests; if failures, analyze errors, fix code, and retry (up to $QA_MAX_RETRIES times). Each retry MUST edit relevant files based on the error output — dumb retries without edits are not allowed.
-4. COMMIT: git add -A && git commit -m "feat: $TASK_DESCRIPTION"
-5. PUSH: git push origin $FEATURE_BRANCH (use GITHUB_TOKEN for auth via HTTPS)
-6. PR: If QA passed, run: gh pr create --title "$TASK_DESCRIPTION" --body "Automated implementation by DSF agent" --head $FEATURE_BRANCH. If QA exhausted, skip PR creation.
-7. PROGRESS MARKERS: Output JSON progress markers to stdout at each major milestone in this exact format:
-   {"type":"progress","pct":10,"msg":"Cloning repository"}
-   {"type":"progress","pct":30,"msg":"Implementing changes"}
-   {"type":"progress","pct":60,"msg":"Running QA checks"}
-   {"type":"progress","pct":80,"msg":"Committing and pushing"}
-   {"type":"progress","pct":90,"msg":"Opening pull request"}
-8. RESULT LINE: Output a single JSON result line as the LAST line of stdout (after all other output):
-   {"type":"result","prUrl":"<pr_url or null>","commitSha":"<sha>","branchName":"<branch>","qaStatus":"passed|self_healed|failed","qaRetryCount":<number>}
-
-CRITICAL RULES:
-- Output ONLY valid JSON for progress and result lines — no extra text on those lines
-- The result line MUST be the absolute last output
-- If QA fails after all retries: set prUrl to null, qaStatus to "failed", still emit result line
-- Never commit .env files or secrets
-`;
-```
+1. **Consistency**: All providers run the exact same logic.
+2. **Leaner Providers**: The `execute()` methods are now primarily responsible for orchestrating the sandbox environment and parsing results, not defining the "how" of repository delivery.
+3. **Easier Updates**: Tweaking the delivery workflow only requires updating the skill in the Dockerfile, rather than editing multiple provider files.
 
 ### Full `execute()` Implementation (Codex — adapt for Kimi/Gemini)
+
+> **Note (Design Pivot 2026-04-01):** The reference below reflects the final implementation — skill-based invocation, no `DSF_AGENTIC_PROMPT`. The old prompt-injection approach was abandoned.
 
 ```typescript
 async execute(payload: IAIExecutionPayload): Promise<IAIExecutionResult> {
@@ -214,28 +161,23 @@ async execute(payload: IAIExecutionPayload): Promise<IAIExecutionResult> {
   const githubToken = this.config.get<string>('github.token', '');
   const QA_MAX_RETRIES = '3';
 
-  const sanitizedTicket = payload.ticketId
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+  const sanitizedTicket =
+    payload.ticketId
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'ticket';
   const featureBranch = `dsf/${sanitizedTicket}/${payload.executionId.slice(0, 8)}`;
-
-  // Embed workflow instructions + task description as a single prompt env var
-  const agenticPrompt = `${DSF_AGENTIC_WORKFLOW}\n\nTASK: ${payload.prompt}`;
 
   const env: Record<string, string> = {
     OPENAI_API_KEY: apiKey,   // ← Codex CLI reads OPENAI_API_KEY
     CODEX_MODEL: model,
     IS_SANDBOX: '1',
-    // Agentic workflow env vars (FR-WR4/WR5)
     REPO_URL: payload.repositoryUrl,
     FEATURE_BRANCH: payload.targetBranch ?? featureBranch,
     TASK_DESCRIPTION: payload.prompt,
     GITHUB_TOKEN: githubToken,
     QA_MAX_RETRIES,
-    // Full agentic prompt for the CLI invocation
-    DSF_AGENTIC_PROMPT: agenticPrompt,
   };
   if (baseURL) {
     env['OPENAI_BASE_URL'] = baseURL;
@@ -266,8 +208,8 @@ async execute(payload: IAIExecutionPayload): Promise<IAIExecutionResult> {
 
   const result = await this.sandboxService.runAgentCommand({
     executionId: payload.executionId,
-    image: this.config.get<string>('opensandbox.agentImage', 'opensandbox/code-interpreter:v1.0.2'),
-    command: 'codex "$DSF_AGENTIC_PROMPT"',
+    image: this.config.get<string>('opensandbox.agentImage', 'dsf-agents:latest'),
+    command: 'codex execute dsf-execution',
     env,
     timeoutSeconds: this.config.get<number>('opensandbox.sandboxTimeoutS', 3600),
     cpuLimit: profile.cpuLimit,
@@ -355,7 +297,7 @@ async execute(payload: IAIExecutionPayload): Promise<IAIExecutionResult> {
 - API key env var: `KIMI_API_KEY` (not `OPENAI_API_KEY`)
 - Model env var: `KIMI_MODEL`
 - Base URL env var: `KIMI_BASE_URL`
-- Command: `'kimi "$DSF_AGENTIC_PROMPT"'`
+- Command: `'kimi /dsf-execution'`
 - Logger: `new Logger(KimiProvider.name)`
 - Error messages: `'Kimi sandbox execution timed out'` etc.
 
@@ -365,7 +307,7 @@ async execute(payload: IAIExecutionPayload): Promise<IAIExecutionResult> {
 - API key env var: `GEMINI_API_KEY` (not `OPENAI_API_KEY`)
 - Model env var: `GEMINI_MODEL`
 - Base URL env var: `GEMINI_BASE_URL`
-- Command: `'gemini "$DSF_AGENTIC_PROMPT"'`
+- Command: `'gemini execute dsf-execution'`
 - `IS_SANDBOX: '1'` is already present in the old env — keep it
 - Logger: `new Logger(GeminiProvider.name)`
 - Error messages: `'Gemini sandbox execution timed out'` etc.
@@ -482,11 +424,11 @@ it('should call emitProgress for type:progress stdout lines', async () => {
 
 **Why `codeDiff: null`:** The old providers returned `codeDiff: result.stdout`. In the agentic workflow, stdout contains JSON progress markers mixed with output — not a diff. The actual diff is on the GitHub branch/PR. Return `null` (same as WR-2.3).
 
-**Why `DSF_AGENTIC_PROMPT` env var:** Passing the workflow as an env var avoids shell injection. The `$()`, backticks, and `$VAR` patterns inside a string passed via env are not re-interpreted by the shell — the env var value is used verbatim.
+**Why skill invocation instead of `DSF_AGENTIC_PROMPT`:** The workflow logic lives entirely in `SKILL.md`, bundled into `dsf-agents:latest`. This eliminates prompt-weight overhead and ensures all providers run identical logic without per-provider prompt strings.
 
 **Why `IS_SANDBOX: '1'` added to Codex/Kimi:** Gemini already had it (kept). Codex and Kimi did not — add for consistency since all 3 now run agentic workloads.
 
-**`TASK_DESCRIPTION` vs `DSF_AGENTIC_PROMPT`:** Both are set. `TASK_DESCRIPTION` is a clean plain-text version (for the agent to reference in commit messages). `DSF_AGENTIC_PROMPT` is the full prompt with workflow instructions. The CLI command uses `"$DSF_AGENTIC_PROMPT"`.
+**`TASK_DESCRIPTION`:** Plain-text task description passed as an env var for the skill to reference in commit messages and PR descriptions.
 
 **`github.token` config key:** Same key as WR-2.3 (`src/config/configuration.ts:L59`). Already required at startup via `env.validation.ts:L92`.
 

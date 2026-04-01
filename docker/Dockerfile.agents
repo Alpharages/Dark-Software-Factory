@@ -26,18 +26,32 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
     apt-get update && apt-get install -y gh && \
     rm -rf /var/lib/apt/lists/*
 
-# Create the Claude Code skills directory for the agent user
-RUN mkdir -p /home/agent/.claude/skills/dsf-execution && \
-    chown -R agent:agent /home/agent/.claude
+# Create skills directories for all CLIs (Claude, Codex, Gemini, Kimi)
+RUN mkdir -p /home/agent/.claude/skills/dsf-execution \
+             /home/agent/.codex/skills/dsf-execution \
+             /home/agent/.gemini/skills/dsf-execution \
+             /home/agent/.kimi/skills/dsf-execution && \
+    chown -R agent:agent /home/agent/.claude /home/agent/.codex /home/agent/.gemini /home/agent/.kimi
 
 # Bundle the dsf-execution skill (source: docker/skills/dsf-execution/SKILL.md)
-COPY docker/skills/dsf-execution/SKILL.md /home/agent/.claude/skills/dsf-execution/SKILL.md
-RUN chown agent:agent /home/agent/.claude/skills/dsf-execution/SKILL.md && \
-    chmod 644 /home/agent/.claude/skills/dsf-execution/SKILL.md
+# Universal skill: the same core content works across all agentic CLIs
+COPY --chown=agent:agent docker/skills/dsf-execution/SKILL.md /home/agent/.claude/skills/dsf-execution/SKILL.md
+COPY --chown=agent:agent docker/skills/dsf-execution/SKILL.md /home/agent/.codex/skills/dsf-execution/SKILL.md
+COPY --chown=agent:agent docker/skills/dsf-execution/SKILL.md /home/agent/.gemini/skills/dsf-execution/SKILL.md
+COPY --chown=agent:agent docker/skills/dsf-execution/SKILL.md /home/agent/.kimi/skills/dsf-execution/SKILL.md
+
+# Set permissions for all skill files
+RUN chmod 644 /home/agent/.claude/skills/dsf-execution/SKILL.md \
+              /home/agent/.codex/skills/dsf-execution/SKILL.md \
+              /home/agent/.gemini/skills/dsf-execution/SKILL.md \
+              /home/agent/.kimi/skills/dsf-execution/SKILL.md
 
 # Switch back to non-root agent user
 USER agent
 
-# Verify skill file is accessible
+# Verify skill files are accessible
 RUN test -f /home/agent/.claude/skills/dsf-execution/SKILL.md && \
-    echo "dsf-execution skill bundled successfully"
+    test -f /home/agent/.codex/skills/dsf-execution/SKILL.md && \
+    test -f /home/agent/.gemini/skills/dsf-execution/SKILL.md && \
+    test -f /home/agent/.kimi/skills/dsf-execution/SKILL.md && \
+    echo "All dsf-execution skills bundled successfully"

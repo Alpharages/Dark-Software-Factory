@@ -1,5 +1,18 @@
 # Deferred Work Log
 
+## Deferred from: code review of wr-2-4-implement-codex-kimi-gemini-full-agentic-workflow (2026-04-01)
+
+- **`void this.executionTracker.emitProgress(...)` silently swallows errors** — fire-and-forget is intentional per AC-2; consistent with WR-2.3 ClaudeCodeProvider pattern. Revisit if progress tracking reliability becomes a requirement. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- **`QA_MAX_RETRIES = '3'` hardcoded in each provider** — intentional per AC-5 spec. Make configurable via `ConfigService` if retry policy needs to vary per project or environment in a future story.
+- **`parsed as SandboxResultLine` unsafe cast** — no runtime validation that required fields (`commitSha`, `branchName`, etc.) are present. Same accepted pattern from ClaudeCodeProvider (WR-2.3). Add Zod/schema validation if agent output reliability becomes a concern.
+- **DEBUG log of non-JSON stdout lines may surface partial sensitive content** — truncated to 120 chars; consistent with ClaudeCodeProvider. Consider redacting at the SandboxService layer instead. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- **Fallback stdout scan: `reverse()` + full array iteration with no size guard** — for very large stdout (50MB+) this creates a transient ~100MB allocation. Add `maxChars` guard on stdout before splitting if large-output agents become common. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- **`sandboxResult` silently overwritten on multiple `type:'result'` lines** — last-wins is safe behavior; requires an agent-side bug to trigger. Log a warning if a second result line is seen.
+- **Dockerfile `chmod 644` after `COPY --chown` creates a redundant layer** — cosmetic; consolidate with `--chmod=644` on the COPY instruction (requires BuildKit). [`docker/Dockerfile.agents`]
+- **`onStdoutLine` partial-line flush scenario not covered in provider tests** — SandboxService owns flush logic; this should be tested in sandbox service unit tests, not provider tests.
+- **`rawOutput` in error objects includes full stdout+stderr** — may contain prompt content. Pre-existing pattern from the old error path.
+- **Dockerfile skill directory paths for Codex/Gemini/Kimi unverified** — `~/.codex/skills/`, `~/.gemini/skills/`, `~/.kimi/skills/` are assumed conventions; if wrong, skill bundles silently but agent invocation fails at runtime. Will verify in staging smoke test. [`docker/Dockerfile.agents`]
+
 ## Deferred from: code review of os-1-3-sandbox-command-execution-real-time-log-streaming (2026-03-24)
 
 - **All egress rules hardcode `action: 'allow'`** — `egressRules` in `AgentCommandOptions` only has `target` (no `action` field), so per-rule deny is architecturally impossible in the current interface. Revisit when OS-2 refines network policy requirements and if per-rule deny becomes a need. [`sandbox.service.ts:123-127`]
