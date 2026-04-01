@@ -1,6 +1,6 @@
 # Story WR-2.5: Extend API Key Redaction to All Provider Keys
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -32,23 +32,32 @@ So that no raw API key values for any provider can ever appear in logs, Sentry c
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update `redactEnvForLogging` comment to document provider keys (AC: 1, 3)
-  - [ ] 1.1 In `src/sandbox/sandbox.service.ts:L368`, update the method comment from `/** NFR-OS5: Redact sensitive values from env before logging */` to list the covered keys explicitly (see Dev Notes)
-  - [ ] 1.2 Verify the existing regex `/KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i` covers all provider keys — it does, no regex change required
+- [x] Task 1: Update `redactEnvForLogging` comment to document provider keys (AC: 1, 3)
+  - [x] 1.1 In `src/sandbox/sandbox.service.ts:L368`, update the method comment from `/** NFR-OS5: Redact sensitive values from env before logging */` to list the covered keys explicitly (see Dev Notes)
+  - [x] 1.2 Verify the existing regex `/KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i` covers all provider keys — it does, no regex change required
 
-- [ ] Task 2: Expand T16 redaction test to cover all provider key names (AC: 1, 2)
-  - [ ] 2.1 In `src/sandbox/sandbox.service.spec.ts`, update test `'T16: should redact API keys in logger.debug'`
-  - [ ] 2.2 Pass an env containing all 4 provider API key env var names with distinct raw values: `OPENAI_API_KEY`, `KIMI_API_KEY`, `GEMINI_API_KEY`, `CODEX_API_KEY`, plus a `NORMAL_VAR` (see Dev Notes for exact test body)
-  - [ ] 2.3 Assert that `logger.debug` output contains `[REDACTED]` and does NOT contain any of the raw key values
-  - [ ] 2.4 Assert `NORMAL_VAR` value still appears unredacted
+- [x] Task 2: Expand T16 redaction test to cover all provider key names (AC: 1, 2)
+  - [x] 2.1 In `src/sandbox/sandbox.service.spec.ts`, update test `'T16: should redact API keys in logger.debug'`
+  - [x] 2.2 Pass an env containing all 4 provider API key env var names with distinct raw values: `OPENAI_API_KEY`, `KIMI_API_KEY`, `GEMINI_API_KEY`, `CODEX_API_KEY`, plus a `NORMAL_VAR` (see Dev Notes for exact test body)
+  - [x] 2.3 Assert that `logger.debug` output contains `[REDACTED]` and does NOT contain any of the raw key values
+  - [x] 2.4 Assert `NORMAL_VAR` value still appears unredacted
 
-- [ ] Task 3: Add a dedicated NFR-WR5 test (AC: 2)
-  - [ ] 3.1 Add test `'T16b: NFR-WR5 — no raw provider API key value appears in any debug output'` (see Dev Notes)
-  - [ ] 3.2 Verify logger.debug was never called with any raw key value string for all 4 key names
+- [x] Task 3: Add a dedicated NFR-WR5 test (AC: 2)
+  - [x] 3.1 Add test `'T16b: NFR-WR5 — no raw provider API key value appears in any debug output'` (see Dev Notes)
+  - [x] 3.2 Verify logger.debug was never called with any raw key value string for all 4 key names
 
-- [ ] Task 4: Validate build and tests (AC: 4)
-  - [ ] 4.1 `pnpm build` → zero TypeScript errors
-  - [ ] 4.2 `pnpm test -- --testPathPattern="sandbox.service"` → all pass including T16 and T16b
+- [x] Task 4: Validate build and tests (AC: 4)
+  - [x] 4.1 `pnpm build` → zero TypeScript errors
+  - [x] 4.2 `pnpm test -- --testPathPattern="sandbox.service"` → all pass including T16 and T16b
+
+### Review Findings
+
+- [x] [Review][Patch] T16b missing positive `[REDACTED]` assertion — absence-only checks pass vacuously if logger mock is never invoked; add `expect(allDebugOutput).toContain('[REDACTED]')` to T16b [`src/sandbox/sandbox.service.spec.ts` T16b body]
+- [x] [Review][Defer] `.flat()` single-level flatten is structurally fragile for nested log args [`src/sandbox/sandbox.service.spec.ts`] — deferred, pre-existing; spec-mandated assertion pattern; only risky if logger call signature changes
+- [x] [Review][Defer] AUTH regex over-matches legitimate non-sensitive vars (e.g. `AUTHOR`, `OAUTH_REDIRECT_URI`) [`src/sandbox/sandbox.service.ts:redactEnvForLogging`] — deferred, pre-existing; regex unchanged by this story
+- [x] [Review][Defer] ANTHROPIC_API_KEY named in JSDoc but has no dedicated test coverage [`src/sandbox/sandbox.service.spec.ts`] — deferred, out of scope; AC-2 specifies 4 keys (not ANTHROPIC); covered by existing regex
+- [x] [Review][Defer] No test verifies redaction at warn/error/verbose log levels [`src/sandbox/sandbox.service.spec.ts`] — deferred, pre-existing; spec Dev Notes confirm debug is the only level that touches env vars
+- [x] [Review][Defer] Value-based secret leakage — secrets stored under non-sensitive key names not redacted [`src/sandbox/sandbox.service.ts:redactEnvForLogging`] — deferred, pre-existing design scope limitation
 
 ## Dev Notes
 
@@ -245,4 +254,12 @@ Claude Sonnet 4.6 — story created 2026-04-01
 
 ### Completion Notes List
 
+- Updated `redactEnvForLogging` comment to list `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CODEX_API_KEY`, `KIMI_API_KEY`, `GEMINI_API_KEY`, and `GITHUB_TOKEN`.
+- Expanded `T16` test in `src/sandbox/sandbox.service.spec.ts` to verify redaction of all 4 provider API keys.
+- Added `T16b` test in `src/sandbox/sandbox.service.spec.ts` for NFR-WR5 verification (zero raw key value leakage in debug output).
+- Verified with `pnpm build` and `pnpm test sandbox.service`.
+
 ### File List
+
+- `src/sandbox/sandbox.service.ts`
+- `src/sandbox/sandbox.service.spec.ts`

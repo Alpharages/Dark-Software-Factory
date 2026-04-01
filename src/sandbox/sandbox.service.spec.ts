@@ -344,13 +344,59 @@ describe('SandboxService', () => {
 
       await service.runAgentCommand({
         ...defaultOptions,
-        env: { OPENAI_API_KEY: 'sk-123', NORMAL_VAR: 'val' },
+        env: {
+          OPENAI_API_KEY: 'sk-openai-secret',
+          KIMI_API_KEY: 'km-kimi-secret',
+          GEMINI_API_KEY: 'gm-gemini-secret',
+          CODEX_API_KEY: 'cdx-codex-secret',
+          NORMAL_VAR: 'val',
+        },
       });
 
-      expect((service as any).logger.debug).toHaveBeenCalledWith(
-        expect.stringContaining('"[REDACTED]"'),
-      );
-      expect((service as any).logger.debug).toHaveBeenCalledWith(expect.stringContaining('"val"'));
+      const debugCalls = ((service as any).logger.debug as jest.Mock).mock.calls.flat().join(' ');
+
+      // All raw key values must be absent
+      expect(debugCalls).not.toContain('sk-openai-secret');
+      expect(debugCalls).not.toContain('km-kimi-secret');
+      expect(debugCalls).not.toContain('gm-gemini-secret');
+      expect(debugCalls).not.toContain('cdx-codex-secret');
+
+      // [REDACTED] marker must be present
+      expect(debugCalls).toContain('[REDACTED]');
+
+      // Non-sensitive vars still appear
+      expect(debugCalls).toContain('val');
+    });
+
+    it('T16b: NFR-WR5 — no raw provider API key value appears in any debug output', async () => {
+      mockSandbox.commands.run.mockResolvedValue({});
+
+      const sensitiveValues = [
+        'sk-openai-secret',
+        'km-kimi-secret',
+        'gm-gemini-secret',
+        'cdx-codex-secret',
+      ];
+
+      await service.runAgentCommand({
+        ...defaultOptions,
+        env: {
+          OPENAI_API_KEY: sensitiveValues[0],
+          KIMI_API_KEY: sensitiveValues[1],
+          GEMINI_API_KEY: sensitiveValues[2],
+          CODEX_API_KEY: sensitiveValues[3],
+        },
+      });
+
+      const allDebugOutput = ((service as any).logger.debug as jest.Mock).mock.calls
+        .flat()
+        .join(' ');
+
+      expect(allDebugOutput).toContain('[REDACTED]');
+
+      for (const rawValue of sensitiveValues) {
+        expect(allDebugOutput).not.toContain(rawValue);
+      }
     });
 
     it('T17: should map networkPolicy properly', async () => {

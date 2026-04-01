@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-01 # updated by code-review (wr-2-2 done)
+last_updated: 2026-04-01 # updated: wr-3-2 story created, ready-for-dev
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -628,14 +628,16 @@ development_status:
     story_points: 8
     notes: 'Codex/Kimi/Gemini invoke dsf-execution skill via dsf-agents:latest. Identical stdout contract to WR-2.3. Code review 2026-04-01: 9 patches applied (error message ternary, ticketId guard, restored isEnabled/isHealthy/crash tests, env var/non-JSON/codeDiff assertions, stale Dev Notes fixed). 11 deferred. Skill dir paths to verify in staging smoke test.'
   wr-2-5-extend-api-key-redaction-to-all-provider-keys:
-    status: ready-for-dev
+    status: done
     effort: '0.5 days'
     story_points: 2
-    notes: 'Add CODEX_API_KEY, KIMI_API_KEY, GEMINI_API_KEY to SandboxService redaction pattern. Zero key value matches in logs/Sentry at all severity levels. NFR-WR5.'
+    completion_date: '2026-04-02'
+    last_updated: '2026-04-02'
+    notes: 'Add CODEX_API_KEY, KIMI_API_KEY, GEMINI_API_KEY to SandboxService redaction pattern. Zero key value matches in logs/Sentry at all severity levels. NFR-WR5. Code review 2026-04-02: 1 patch applied (T16b positive [REDACTED] guard). 5 deferred.'
   epic-wr-2-retrospective: optional
 
   # EPIC WR-3 - LIVE EXECUTION VISIBILITY & CRASH RESILIENCE
-  epic-wr-3: backlog
+  epic-wr-3: in-progress
   epic-wr-3-name: 'Live Execution Visibility & Crash Resilience'
   epic-wr-3-phase: 'Workspace Removal Sprint'
   epic-wr-3-priority: high
@@ -644,12 +646,12 @@ development_status:
   epic-wr-3-source: 'epics-workspace-removal.md'
   epic-wr-3-notes: 'PM dashboard shows live progress bar (7+ milestones) and immediate crash failure reason. No silent freeze.'
   wr-3-1-wire-all-execution-milestones-to-progress-bar:
-    status: backlog
+    status: ready-for-dev
     effort: '1.5 days'
     story_points: 5
     notes: '10%→20%→40%→75%→80%→90%→95%→100% milestones wired via emitProgress(). QA retry emits self-heal message. Concurrent emitLog() streaming preserved. FR-WR7 + NFR-WR4.'
   wr-3-2-implement-crash-detection-full-failure-cascade:
-    status: backlog
+    status: ready-for-dev
     effort: '1.5 days'
     story_points: 5
     notes: 'Detect missing final result line → FAILED state + UI error message + ClickUp comment + revert ticket status. Specific error types (rate limit, OOM, unreachable repo). FR-WR14.'

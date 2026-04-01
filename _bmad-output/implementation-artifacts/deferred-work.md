@@ -1,5 +1,13 @@
 # Deferred Work Log
 
+## Deferred from: code review of wr-2-5-extend-api-key-redaction-to-all-provider-keys (2026-04-02)
+
+- **`.flat()` single-level flatten is structurally fragile for nested log args** — `mock.calls.flat().join(' ')` only flattens one level; if a future `logger.debug` call passes an object argument, the raw value inside it would survive as `[object Object]` and elude the absence assertions. Spec mandated this approach; revisit if logger call signatures change. [`src/sandbox/sandbox.service.spec.ts`]
+- **AUTH regex over-matches legitimate non-sensitive vars** — `/KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i` will silently redact vars like `AUTHOR`, `OAUTH_REDIRECT_URI`, or `FEATURE_AUTH_LOGGING` in debug output. Pre-existing behavior not changed by this story. [`src/sandbox/sandbox.service.ts:redactEnvForLogging`]
+- **ANTHROPIC_API_KEY named in JSDoc but has no dedicated test** — AC-2 specifies 4 keys (OPENAI, KIMI, GEMINI, CODEX); ANTHROPIC is covered by the regex `KEY` branch but is never exercised in T16 or T16b. Add an explicit test value if ANTHROPIC redaction becomes a compliance requirement. [`src/sandbox/sandbox.service.spec.ts`]
+- **No test verifies redaction at warn/error/verbose log levels** — Spec Dev Notes confirm `logger.debug` is the only call that touches env vars; checking other severity levels is out of scope. Revisit if additional logger calls are added to `runAgentCommand`. [`src/sandbox/sandbox.service.spec.ts`]
+- **Value-based secret leakage — secrets under non-sensitive key names not redacted** — Redaction is key-name-based; a secret stored under e.g. `CLAUDE_PROVIDER_TOKEN_VALUE` would appear unredacted in logs. Pre-existing design scope limitation. [`src/sandbox/sandbox.service.ts:redactEnvForLogging`]
+
 ## Deferred from: code review of wr-2-4-implement-codex-kimi-gemini-full-agentic-workflow (2026-04-01)
 
 - **`void this.executionTracker.emitProgress(...)` silently swallows errors** — fire-and-forget is intentional per AC-2; consistent with WR-2.3 ClaudeCodeProvider pattern. Revisit if progress tracking reliability becomes a requirement. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]

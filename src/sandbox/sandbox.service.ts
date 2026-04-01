@@ -398,7 +398,13 @@ export class SandboxService implements OnModuleInit {
     }
   }
 
-  /** NFR-OS5: Redact sensitive values from env before logging */
+  /**
+   * NFR-OS5 / NFR-WR5: Redact sensitive env var values before logging.
+   * Covers: OPENAI_API_KEY, ANTHROPIC_API_KEY, CODEX_API_KEY, KIMI_API_KEY,
+   *         GEMINI_API_KEY, GITHUB_TOKEN, and any env var whose name contains
+   *         KEY | TOKEN | SECRET | PASSWORD | CREDENTIAL | AUTH (case-insensitive).
+   * Raw key values must NEVER appear in logs, Sentry captures, or debug traces.
+   */
   private redactEnvForLogging(env?: Record<string, string>): Record<string, string> {
     if (!env) return {};
     const SENSITIVE = /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH/i;
