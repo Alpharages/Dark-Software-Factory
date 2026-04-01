@@ -241,6 +241,20 @@ export class SandboxService implements OnModuleInit {
         },
       );
 
+      // P5: Flush any partial line remaining in the buffer after stream ends.
+      // Handles agents that write the result line without a trailing newline.
+      if (options.onStdoutLine && lineBuffer.trim()) {
+        try {
+          options.onStdoutLine(lineBuffer);
+        } catch (err) {
+          this.logger.error(
+            `[SandboxService] Error in onStdoutLine callback for ${options.executionId}: ${(err as Error).message}`,
+            (err as Error).stack,
+          );
+        }
+        lineBuffer = '';
+      }
+
       // Infer exit code from the execResult
       exitCode = execResult.error ? 1 : 0;
       timedOut =

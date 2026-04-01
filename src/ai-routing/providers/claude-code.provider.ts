@@ -35,34 +35,40 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
     const profile = this.resourceProfileService.getProfile(payload.complexityScore ?? 5);
 
     // Build environment — never log raw env (NFR-OS5)
-    // Claude Code reads these for API access
     const apiKey = this.config.get<string>('anthropic.apiKey', '');
     const baseURL = this.config.get<string>('anthropic.baseURL', '');
     const model = this.config.get<string>('anthropic.model', 'claude-sonnet-4-20250514');
 
-    // dsf-execution Skill requirements
+    // P1: git-safe branch name — dsf/{sanitized-ticket}/{exec-prefix-8}
+    const sanitizedTicket = (ticketId || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    const featureBranch = `dsf/${sanitizedTicket}/${executionId.slice(0, 8)}`;
+
+    // dsf-execution Skill requirements (AC-1)
     const env: Record<string, string> = {
       ANTHROPIC_API_KEY: apiKey,
       ANTHROPIC_MODEL: model,
       IS_SANDBOX: '1',
-      // Agentic Workflow Inputs
       REPO_URL: repositoryUrl || '',
-      FEATURE_BRANCH: targetBranch || `dsf/fix-${ticketId}-${Date.now()}`,
+      FEATURE_BRANCH: targetBranch ?? featureBranch,
       TASK_DESCRIPTION: prompt,
       GITHUB_TOKEN: this.config.get<string>('github.token', ''),
-      QA_MAX_RETRIES: '3', // AC 1.3
+      QA_MAX_RETRIES: '3',
     };
 
     if (baseURL) {
       env['ANTHROPIC_BASE_URL'] = baseURL;
     }
 
-    // Results to be captured from structured stdout
+    // Capture structured result from stdout (AC-3)
     let agentResult: {
-      prUrl?: string;
+      prUrl?: string | null;
       commitSha?: string;
       branchName?: string;
-      qaStatus?: string;
+      qaStatus?: 'passed' | 'self_healed' | 'failed';
       qaRetryCount?: number;
     } = {};
 
@@ -70,7 +76,6 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
       executionId,
       ticketId,
       image: this.config.get<string>('opensandbox.agentImage', 'dsf-agents:latest'),
-      // Trigger the dsf-execution skill (WR-2.2) via slash command
       command: 'claude --dangerously-skip-permissions -p "/dsf-execution"',
       env,
       timeoutSeconds: this.config.get<number>('opensandbox.sandboxTimeoutS', 3600),
@@ -81,31 +86,31 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
         executionId,
         ticketId: ticketId || '',
       },
-      // AC 1.4: Real-time progress and result parsing
+      // AC-2: JSON stdout protocol — {"type":"progress","pct":N,"msg":"..."} | {"type":"result",...}
       onStdoutLine: (line) => {
         try {
-          // Lines starting with markers identify structured data from skill.md
-          if (line.startsWith('pct:')) {
-            // pct:82:Starting QA self-healing
-            const parts = line.split(':');
-            if (parts.length >= 3) {
-              const percent = parseInt(parts[1], 10);
-              const step = parts.slice(2).join(':');
-
-              // Emit progress via service (fire-and-forget inside callback)
-              this.executionTracker
-                .emitProgress(executionId, ticketId || '', projectId || null, step, percent)
-                .catch((err) => this.logger.error(`Failed to emit progress: ${err.message}`));
-            }
-          } else if (line.startsWith('result:')) {
-            // result:{"prUrl":"...","qaStatus":"PASSED",...}
-            const jsonText = line.substring(7).trim();
-            const parsed = JSON.parse(jsonText);
-            agentResult = { ...agentResult, ...parsed };
-            this.logger.debug(`[${executionId}] Agent result captured phase: ${parsed.qaStatus}`);
+          const parsed = JSON.parse(line) as { type?: string; pct?: number; msg?: string };
+          if (parsed.type === 'progress' && typeof parsed.pct === 'number') {
+            // Fire-and-forget progress emission — never blocks execution (NFR-WR3)
+            this.executionTracker
+              .emitProgress(
+                executionId,
+                ticketId || '',
+                projectId || null,
+                parsed.msg ?? '',
+                parsed.pct,
+              )
+              .catch((err) =>
+                this.logger.error(`Failed to emit progress: ${(err as Error).message}`),
+              );
+          } else if (parsed.type === 'result') {
+            agentResult = { ...agentResult, ...(parsed as typeof agentResult) };
+            this.logger.debug(
+              `[${executionId}] Agent result captured: qaStatus=${agentResult.qaStatus}`,
+            );
           }
         } catch (_err) {
-          // NFR-WR4: Skip parsing if line is not valid JSON/marker — never crash
+          // NFR-WR4: Non-JSON line — skip silently, never crash
           this.logger.debug(
             `[${executionId}] Skipping non-structured line: ${line.substring(0, 50)}...`,
           );
@@ -113,32 +118,36 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
       },
     });
 
-    const success = result.exitCode === 0 && !result.timedOut;
+    const exitedClean = result.exitCode === 0 && !result.timedOut;
+    const resultReceived = agentResult.qaStatus !== undefined;
+    const qaFailed = agentResult.qaStatus === 'failed';
+    const agenticSuccess = exitedClean && resultReceived && !qaFailed;
 
-    // Final result composition merging sandbox stats and agentic output
     return {
-      success: success && agentResult.qaStatus === 'PASSED', // Hard failure if QA failed
-      codeDiff: null, // Diff is internal to PR/Branch now, raw stdout is now structured logs
-      filesChanged: [], // Legacy field
-      confidenceScore: success ? 0.9 : 0.0,
+      success: agenticSuccess,
+      codeDiff: null,
+      filesChanged: [],
+      confidenceScore: agenticSuccess ? 0.9 : 0.0,
       durationMs: result.durationMs,
       workspacePath: '',
-      // Map extended fields from WR-2.1 contract
-      prUrl: agentResult.prUrl,
+      prUrl: agentResult.prUrl ?? undefined,
       commitSha: agentResult.commitSha,
       branchName: agentResult.branchName || env.FEATURE_BRANCH,
-      qaStatus: agentResult.qaStatus as 'passed' | 'self_healed' | 'failed' | undefined,
+      qaStatus: agentResult.qaStatus,
       qaRetryCount: agentResult.qaRetryCount,
-      ...(success && agentResult.qaStatus === 'PASSED'
+      ...(agenticSuccess
         ? {}
         : {
             error: {
               code: result.timedOut ? AIErrorCode.TIMEOUT : AIErrorCode.PROCESS_CRASH,
-              message:
-                agentResult.qaStatus === 'FAILED'
-                  ? 'Agentic delivery failed: QA self-healing exhausted retries'
-                  : result.stderr || 'Claude Code execution failed in sandbox',
-              isRetryable: result.timedOut || agentResult.qaStatus === 'FAILED',
+              message: result.timedOut
+                ? 'Claude Code sandbox execution timed out'
+                : !resultReceived
+                  ? 'Agent did not emit a final result line — execution may have crashed'
+                  : qaFailed
+                    ? 'Agentic delivery failed: QA self-healing exhausted retries'
+                    : result.stderr || 'Claude Code execution failed in sandbox',
+              isRetryable: result.timedOut || qaFailed,
               rawOutput: `${result.stdout}\n${result.stderr}`.trim(),
               exitCode: result.exitCode,
             },

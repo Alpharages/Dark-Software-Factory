@@ -443,7 +443,7 @@ describe('SandboxService', () => {
       expect(onStdoutLine).toHaveBeenNthCalledWith(3, 'line 3 part 2');
     });
 
-    it('T33: should swallowed errors in onStdoutLine callback (NFR-WR4)', async () => {
+    it('T33: should swallow errors in onStdoutLine callback (NFR-WR4)', async () => {
       const onStdoutLine = jest.fn().mockImplementation(() => {
         throw new Error('callback crash');
       });
