@@ -373,16 +373,8 @@ export class OrchestratorService {
    * This is a high-level delegation method that simplifies AI calls for other modules.
    */
   async executeTask(input: ITaskInput): Promise<ITaskResult> {
-    const {
-      correlationId,
-      ticketId,
-      prompt,
-      agentName,
-      action,
-      workspacePath,
-      contextFiles,
-      providerOverride,
-    } = input;
+    const { correlationId, ticketId, prompt, agentName, action, contextFiles, providerOverride } =
+      input;
 
     const startTime = Date.now();
     this.logger.log(`[${correlationId}] Executing AI task: ${agentName} - ${action}`);
@@ -406,14 +398,8 @@ export class OrchestratorService {
 
       const aiProvider = providerInstance as unknown as IAIPromptExecutor;
 
-      // 3. Prepare workspace (if none provided, use a dummy or shared one)
-      // For NLP tasks like report generation, we might not need a workspace,
-      // but current providers expect one for tool use logic.
-      const targetWorkspace = workspacePath || '/tmp/ai-task-workspace';
-
       // 4. Execute prompt
       const result = await aiProvider.executePrompt({
-        workspacePath: targetWorkspace,
         prompt,
         contextFiles,
       });

@@ -63,14 +63,6 @@ export class PRRiskAssessorService {
         throw new Error(`Execution ${executionId} not found`);
       }
 
-      // 3. Get workspace path
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { execution_id: executionId },
-      });
-      if (!workspace) {
-        throw new Error(`Workspace not found for execution ${executionId}`);
-      }
-
       // 4. Build prompt via centralized service (AC#7)
       // Combine ticket info and context document summaries (H2)
       const contextDocs = execution.ticket.context_documents
@@ -95,7 +87,6 @@ export class PRRiskAssessorService {
 
       const aiProvider = providerInstance as unknown as IAIPromptExecutor;
       const result = await aiProvider.executePrompt({
-        workspacePath: workspace.workspace_path,
         prompt,
       });
 

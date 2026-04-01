@@ -140,7 +140,8 @@ describe('ClaudeCodeProvider', () => {
         expect.objectContaining({
           executionId: 'exec-456',
           image: 'opensandbox/code-interpreter:v1.0.2',
-          command: 'claude "$CLAUDE_PROMPT"',
+          command:
+            'npm install -g @anthropic-ai/claude-code --silent 2>/dev/null && claude --dangerously-skip-permissions -p "$CLAUDE_PROMPT"',
           timeoutSeconds: 3600,
           cpuLimit: '2',
           memoryLimit: '4Gi',
@@ -156,7 +157,7 @@ describe('ClaudeCodeProvider', () => {
       // Verify env vars
       const callArgs = sandboxService.runAgentCommand.mock.calls[0][0];
       expect(callArgs.env).toBeDefined();
-      expect(callArgs.env['ANTHROPIC_AUTH_TOKEN']).toBe('sk-ant-test-key');
+      expect(callArgs.env['ANTHROPIC_API_KEY']).toBe('sk-ant-test-key');
       expect(callArgs.env['ANTHROPIC_BASE_URL']).toBe('http://localhost:11434');
       expect(callArgs.env['ANTHROPIC_MODEL']).toBe('claude-sonnet-4-20250514');
       expect(callArgs.env['IS_SANDBOX']).toBe('1');
@@ -210,7 +211,9 @@ describe('ClaudeCodeProvider', () => {
       const promptWithSpecialChars = 'Fix "bug" in main.ts and run $(echo dangerous)';
       await provider.execute({ ...mockPayload, prompt: promptWithSpecialChars });
       const callArgs = sandboxService.runAgentCommand.mock.calls[0][0];
-      expect(callArgs.command).toBe('claude "$CLAUDE_PROMPT"');
+      expect(callArgs.command).toBe(
+        'npm install -g @anthropic-ai/claude-code --silent 2>/dev/null && claude --dangerously-skip-permissions -p "$CLAUDE_PROMPT"',
+      );
       expect(callArgs.env['CLAUDE_PROMPT']).toBe(promptWithSpecialChars);
     });
 

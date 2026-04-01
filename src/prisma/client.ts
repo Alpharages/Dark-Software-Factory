@@ -17,13 +17,11 @@ import {
   CoverageBaseline,
   ProjectCoverageConfig,
   WebhookEvent,
-  Workspace,
   AIDecisionLog,
   FileLock,
   FileLockQueue,
   AICostLog,
   TicketDependency,
-  WorkspaceArchive,
   ApprovalRecord,
   ProductionApproval,
   BugEscape,
@@ -76,13 +74,11 @@ export type ContextDocumentModel = ContextDocument;
 export type CoverageBaselineModel = CoverageBaseline;
 export type ProjectCoverageConfigModel = ProjectCoverageConfig;
 export type WebhookEventModel = WebhookEvent;
-export type WorkspaceModel = Workspace;
 export type AIDecisionLogModel = AIDecisionLog;
 export type FileLockModel = FileLock;
 export type FileLockQueueModel = FileLockQueue;
 export type AICostLogModel = AICostLog;
 export type TicketDependencyModel = TicketDependency;
-export type WorkspaceArchiveModel = WorkspaceArchive;
 export type ApprovalRecordModel = ApprovalRecord;
 export type ProductionApprovalModel = ProductionApproval;
 export type BugEscapeModel = BugEscape;

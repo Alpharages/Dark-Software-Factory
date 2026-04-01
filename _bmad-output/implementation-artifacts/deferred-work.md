@@ -14,6 +14,15 @@
 - **`cancel()` no-op in legacy adapter** — Calling `cancel()` on the Claude legacy adapter logs a message but does not stop the sandbox container. Container runs until `sandboxTimeoutS`. Fix by storing the sandbox ID returned by `runAgentCommand` and calling `SandboxService.killSandbox()` in a future story. [`ai-execution.service.ts`]
 - **AC5 e2e tests do not exercise the real pipeline** — `test/claude-code.e2e-spec.ts` mocks `ClaudeCodeProvider` with a plain object; state machine transitions and OpenSandbox container execution are never tested end-to-end. Requires a full integration test environment with a running OpenSandbox instance. Deferred to OS-5 integration testing story.
 
+## Deferred from: code review of wr-1-2-delete-legacy-dood-pipeline-components (2026-04-01)
+
+- **`--dangerously-skip-permissions` + unpinned `npm install` in ClaudeCodeProvider** — OS-2 scope change bundled into this diff. Security flag disables permission prompts inside container; unpinned install is non-deterministic. Revisit in OS-2 retrospective or a dedicated security story.
+- **`ANTHROPIC_AUTH_TOKEN` → `ANTHROPIC_API_KEY` rename** — OS-2 scope. Deployment environments, secret managers, and Docker Compose files must be updated to use new var name or Claude Code provider will silently have no API key.
+- **`pr-risk-assessor.service.ts` workspace removal may degrade AI output** — WR-1.1 scope. `executePrompt` no longer receives `workspacePath`; if provider uses workspace files for context, the risk assessment will produce hollow results. Verify provider implementations don't depend on this field.
+- **`workspacePath` optional/removed from AI interfaces** — WR-1.1 scope. `IAIExecutionResult.workspacePath` now optional; `IAIPromptExecutionInput.workspacePath` removed. Any provider implementation reading `input.workspacePath` will get `undefined`. Build + integration tests must verify.
+- **RabbitMQ `github-push-trigger-queue` binding persists with no consumer** — Intentional gap: WR-2 will wire a new agentic consumer. Messages published by `approval.service.ts` will accumulate until WR-2 lands. Monitor queue depth in staging.
+- **`WorkspaceModel`/`WorkspaceArchiveModel` type exports removed without grep** — WR-1.1 scope. `pnpm build` will catch any remaining callers; run and confirm before deploying.
+
 ## Deferred from: code review of os-2-3-provider-fallback-health-circuit-breaker-compatibility (2026-03-26)
 
 - **Missing `CURSOR_HEADLESS` in `mapAIProviderToProviderName`** — `orchestrator.service.ts` maps only `AIProvider.CLAUDE_CODE`; CURSOR_HEADLESS returns `undefined` and falls through to the old path. Pre-existing from OS-2.2. Revisit when CURSOR_HEADLESS is promoted to the coding-provider path.

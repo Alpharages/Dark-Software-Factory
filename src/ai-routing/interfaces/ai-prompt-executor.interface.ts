@@ -19,11 +19,6 @@ import { IAIExecutionError } from './ai-provider.interface';
  */
 export interface IAIPromptExecutionInput {
   /**
-   * Absolute path to existing workspace directory
-   */
-  workspacePath: string;
-
-  /**
    * AI prompt/instruction to execute
    */
   prompt: string;

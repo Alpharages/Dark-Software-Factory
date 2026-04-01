@@ -81,7 +81,7 @@ export class GitHubErrorMonitor {
 
   /**
    * Handle GitHub operation error (AC#1, #2, #4, #5)
-   * Used by GitHubCommitOrchestrator, GitHubPROrchestrator, DeploymentOrchestrator
+   * Used by GitHubPROrchestrator, DeploymentOrchestrator
    */
   async handleGitHubError(context: GitHubErrorContext): Promise<void> {
     const classification = ErrorClassifier.classify(context.error);

@@ -461,9 +461,10 @@ describe('AIDecisionLoggerService', () => {
       const result = await service.getProviderDistributionStats();
 
       expect(result).toEqual([
-        { provider: 'CLAUDE', percentage: 100, count: 3 },
+        { provider: 'CLAUDE_CODE', percentage: 100, count: 3 },
         { provider: 'GEMINI', percentage: 0, count: 0 },
         { provider: 'CODEX', percentage: 0, count: 0 },
+        { provider: 'KIMI', percentage: 0, count: 0 },
       ]);
     });
 
@@ -473,9 +474,10 @@ describe('AIDecisionLoggerService', () => {
       const result = await service.getProviderDistributionStats();
 
       expect(result).toEqual([
-        { provider: 'CLAUDE', percentage: 0, count: 0 },
+        { provider: 'CLAUDE_CODE', percentage: 0, count: 0 },
         { provider: 'GEMINI', percentage: 0, count: 0 },
         { provider: 'CODEX', percentage: 0, count: 0 },
+        { provider: 'KIMI', percentage: 0, count: 0 },
       ]);
     });
 
@@ -495,7 +497,7 @@ describe('AIDecisionLoggerService', () => {
           }),
         }),
       );
-      expect(result.find((r) => r.provider === 'CLAUDE')?.count).toBe(3);
+      expect(result.find((r) => r.provider === 'CLAUDE_CODE')?.count).toBe(3);
     });
   });
 });

@@ -114,7 +114,6 @@ model Execution {
   fileLocks             FileLock[]
   qa_result             QAResult?
   qa_review_queue       QaReviewQueue?
-  archive               WorkspaceArchive?
   logs                  ExecutionLog[]
   overrides             ExecutionOverride[]
   activities            ExecutionActivity[]
@@ -404,25 +403,6 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
-model Workspace {
-  id             String          @id @default(uuid())
-  workspace_id   String          @unique
-  execution_id   String          @unique
-  ticket_id      String
-  workspace_path String
-  repository_url String?
-  branch_name    String
-  status         WorkspaceStatus @default(CREATING)
-  created_at     DateTime        @default(now())
-  updated_at     DateTime        @updatedAt
-  cleaned_at     DateTime?
-
-  @@index([execution_id])
-  @@index([ticket_id])
-  @@index([status, created_at])
-  @@map("workspaces")
-}
-
 model AIDecisionLog {
   id           String     @id @default(uuid())
   timestamp    DateTime   @default(now())
@@ -515,23 +495,6 @@ model TicketDependency {
   @@index([depends_on])
   @@index([status])
   @@map("ticket_dependencies")
-}
-
-model WorkspaceArchive {
-  id              String        @id @default(uuid())
-  execution_id    String        @unique
-  workspace_path  String
-  archive_path    String?
-  size_bytes      BigInt
-  compressed_size BigInt?
-  status          ArchiveStatus @default(PENDING)
-  archived_at     DateTime?
-  error_message   String?
-  execution       Execution     @relation(fields: [execution_id], references: [id], onDelete: Cascade)
-
-  @@index([status])
-  @@index([archived_at])
-  @@map("workspace_archives")
 }
 
 model ApprovalRecord {
@@ -1135,13 +1098,6 @@ enum DependencyStatus {
   CANCELLED
 }
 
-enum ArchiveStatus {
-  PENDING
-  ARCHIVING
-  ARCHIVED
-  FAILED
-}
-
 enum PRRiskLevel {
   LOW
   MEDIUM
@@ -1213,15 +1169,6 @@ enum ExtractionStatus {
   PROCESSING
   COMPLETED
   FAILED
-}
-
-enum WorkspaceStatus {
-  CREATING
-  READY
-  IN_USE
-  FAILED
-  CLEANING
-  CLEANED
 }
 
 enum ApprovalDecision {

@@ -68,8 +68,8 @@ export interface IAIExecutionResult {
   /** Tokens used in output */
   tokensOutput?: number;
 
-  /** Workspace path (for debugging) */
-  workspacePath: string;
+  /** Workspace path (for debugging, optional in WR-1.1) */
+  workspacePath?: string;
 
   /** Error details if failed */
   error?: IAIExecutionError;

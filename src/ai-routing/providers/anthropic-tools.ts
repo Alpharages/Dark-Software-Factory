@@ -118,8 +118,7 @@ export const deleteFileTool: Tool = {
 
 /**
  * Tool: Generate conventional commit message from code changes
- * Used by GitHubCommitOrchestrator for AI-powered commit messages
- * without spawning a Docker container.
+ * Generates AI-powered commit messages for code changes.
  */
 export const generateCommitMessageTool: Tool = {
   name: 'generate_commit_message',

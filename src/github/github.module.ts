@@ -4,9 +4,7 @@ import { GitHubService } from './github.service';
 import { GitHubAuthService } from './github-auth.service';
 import { GitHubClientService } from './github-client.service';
 import { GitHubBranchService } from './services/github-branch.service';
-import { GitHubCommitOrchestrator } from './services/github-commit-orchestrator.service';
 import { GitHubPROrchestrator } from './services/github-pr-orchestrator.service';
-import { GitHubPushTriggerConsumer } from './services/github-push-trigger.consumer';
 import { DeploymentOrchestrator } from './services/deployment-orchestrator.service';
 import { DeploymentTriggerConsumer } from './services/deployment-trigger.consumer';
 import { DeploymentStatusSyncService } from './services/deployment-status-sync.service';
@@ -65,9 +63,7 @@ import { RealtimeModule } from '@/realtime/realtime.module';
     GitHubAuthService,
     GitHubClientService,
     GitHubBranchService,
-    GitHubCommitOrchestrator,
     GitHubPROrchestrator,
-    GitHubPushTriggerConsumer,
     DeploymentOrchestrator,
     DeploymentTriggerConsumer,
     DeploymentStatusSyncService,
@@ -103,7 +99,6 @@ import { RealtimeModule } from '@/realtime/realtime.module';
     GitHubAuthService,
     GitHubClientService,
     GitHubBranchService,
-    GitHubCommitOrchestrator,
     GitHubPROrchestrator,
     DeploymentOrchestrator,
     DeploymentStatusSyncService,

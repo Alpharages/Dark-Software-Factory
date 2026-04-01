@@ -13,7 +13,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { MetricsService } from '../common/metrics/metrics.service';
-import { ArchiveStatus } from '@/prisma/client';
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import archiver from 'archiver';
@@ -76,8 +76,8 @@ export class StorageManagerService implements OnModuleInit {
       `Storage Manager initialized: root=${this.workspacesRoot}, threshold=${this.diskThresholdPercent}%, retention=${this.retentionDays}d`,
     );
 
-    // Start periodic cleanup (runs daily at 2 AM)
-    this.startCleanupScheduler();
+    // WR-1.1: Cleanup scheduler decommissioned — WorkspaceArchive table dropped.
+    // this.startCleanupScheduler();
   }
 
   /**
@@ -107,87 +107,8 @@ export class StorageManagerService implements OnModuleInit {
    * Archive a workspace to ZIP format
    * AC#3: Workspace Archival
    */
-  async archiveWorkspace(executionId: string): Promise<ArchiveResult> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { execution_id: executionId },
-    });
-
-    if (!workspace) {
-      throw new Error(`Workspace not found for execution: ${executionId}`);
-    }
-
-    // Calculate original directory size
-    const originalSizeBytes = await this.getDirectorySize(workspace.workspace_path);
-
-    // Create archive path (Fix H3: Sanitize workspace_id to prevent path traversal)
-    const sanitizedWorkspaceId = path.basename(workspace.workspace_id);
-    const archiveFileName = `${sanitizedWorkspaceId}-${Date.now()}.zip`;
-    const archivePath = path.join(this.archivesRoot, archiveFileName);
-
-    // Update database: PENDING → ARCHIVING
-    await this.prisma.workspaceArchive.upsert({
-      where: { execution_id: executionId },
-      create: {
-        execution_id: executionId,
-        workspace_path: workspace.workspace_path,
-        size_bytes: originalSizeBytes,
-        status: ArchiveStatus.ARCHIVING,
-      },
-      update: {
-        status: ArchiveStatus.ARCHIVING,
-      },
-    });
-
-    try {
-      // Create ZIP archive using archiver library
-      const compressedSizeBytes = await this.createZipArchive(
-        workspace.workspace_path,
-        archivePath,
-      );
-
-      // Update database: ARCHIVING → ARCHIVED
-      await this.prisma.workspaceArchive.update({
-        where: { execution_id: executionId },
-        data: {
-          archive_path: archivePath,
-          compressed_size: compressedSizeBytes,
-          status: ArchiveStatus.ARCHIVED,
-          archived_at: new Date(),
-        },
-      });
-
-      // Update Prometheus metrics (AC#6)
-      this.metrics.incrementCounter('storage_archives_total', { status: 'success' });
-
-      const compressionRatio = Number(compressedSizeBytes) / Number(originalSizeBytes);
-
-      this.logger.log(
-        `Archived workspace ${workspace.workspace_id}: ${this.formatBytes(originalSizeBytes)} → ${this.formatBytes(compressedSizeBytes)} (${(compressionRatio * 100).toFixed(1)}% compression)`,
-      );
-
-      return {
-        archivePath,
-        originalSizeBytes,
-        compressedSizeBytes,
-        compressionRatio,
-      };
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      // Update database: ARCHIVING → FAILED (Fix C4: Set compressed_size=0 for data completeness)
-      await this.prisma.workspaceArchive.update({
-        where: { execution_id: executionId },
-        data: {
-          status: ArchiveStatus.FAILED,
-          error_message: errorMessage,
-          compressed_size: BigInt(0),
-        },
-      });
-
-      this.metrics.incrementCounter('storage_archives_total', { status: 'failed' });
-
-      throw new Error(`Failed to archive workspace: ${errorMessage}`);
-    }
+  async archiveWorkspace(_executionId: string): Promise<ArchiveResult> {
+    throw new Error('archiveWorkspace is decommissioned — Workspace table dropped in WR-1.1');
   }
 
   /**
@@ -195,58 +116,7 @@ export class StorageManagerService implements OnModuleInit {
    * AC#5: Retention Policy
    */
   async performCleanup(): Promise<void> {
-    const diskUsage = await this.getDiskUsage();
-
-    // Check if disk space is critical (above threshold)
-    if (diskUsage.usedPercentage >= this.diskThresholdPercent) {
-      this.logger.warn(
-        `Disk usage at ${diskUsage.usedPercentage.toFixed(1)}% (threshold: ${this.diskThresholdPercent}%) - initiating emergency cleanup`,
-      );
-      await this.emergencyCleanup();
-    }
-
-    // Regular retention-based cleanup
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - this.retentionDays);
-
-    const oldArchives = await this.prisma.workspaceArchive.findMany({
-      where: {
-        status: ArchiveStatus.ARCHIVED,
-        archived_at: {
-          lt: cutoffDate,
-        },
-      },
-    });
-
-    this.logger.log(
-      `Cleaning up ${oldArchives.length} archives older than ${this.retentionDays} days`,
-    );
-
-    let deletedCount = 0;
-    for (const archive of oldArchives) {
-      if (archive.archive_path) {
-        try {
-          // eslint-disable-next-line security/detect-non-literal-fs-filename
-          await fs.unlink(archive.archive_path);
-          await this.prisma.workspaceArchive.delete({
-            where: { id: archive.id },
-          });
-          deletedCount++;
-          this.logger.log(`Deleted archive: ${path.basename(archive.archive_path)}`);
-        } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          this.logger.error(`Failed to delete archive ${archive.archive_path}: ${errorMessage}`);
-        }
-      }
-    }
-
-    this.logger.log(`Retention cleanup completed: ${deletedCount} archives deleted`);
-
-    // Update archives total gauge
-    await this.updateArchivesMetric();
-
-    // Update Prometheus metrics (AC#6)
-    this.metrics.incrementCounter('storage_cleanup_operations_total');
+    throw new Error('performCleanup is decommissioned — Workspace table dropped in WR-1.1');
   }
 
   /**
@@ -255,69 +125,7 @@ export class StorageManagerService implements OnModuleInit {
    * Fix H2: Loop until disk usage drops below target or max iterations reached
    */
   private async emergencyCleanup(): Promise<void> {
-    this.logger.warn('Initiating emergency cleanup - deleting oldest archives');
-
-    const targetThreshold = Math.max(this.diskThresholdPercent - 10, 70); // Target 10% below threshold
-    const maxIterations = 10; // Prevent infinite loops
-    let iteration = 0;
-    let totalDeleted = 0;
-
-    while (iteration < maxIterations) {
-      // Check current disk usage
-      const diskUsage = await this.getDiskUsage();
-      if (diskUsage.usedPercentage < targetThreshold) {
-        this.logger.log(
-          `Emergency cleanup target reached: ${diskUsage.usedPercentage.toFixed(1)}% < ${targetThreshold}%`,
-        );
-        break;
-      }
-
-      // Find oldest archives (batch of 10)
-      const oldestArchives = await this.prisma.workspaceArchive.findMany({
-        where: {
-          status: ArchiveStatus.ARCHIVED,
-          archive_path: { not: null },
-        },
-        orderBy: { archived_at: 'asc' },
-        take: 10,
-      });
-
-      if (oldestArchives.length === 0) {
-        this.logger.warn('No more archives to delete, emergency cleanup incomplete');
-        break;
-      }
-
-      // Delete batch
-      for (const archive of oldestArchives) {
-        if (archive.archive_path) {
-          try {
-            // eslint-disable-next-line security/detect-non-literal-fs-filename
-            await fs.unlink(archive.archive_path);
-            await this.prisma.workspaceArchive.delete({
-              where: { id: archive.id },
-            });
-            totalDeleted++;
-            this.logger.warn(
-              `Emergency cleanup: Deleted archive ${path.basename(archive.archive_path)}`,
-            );
-          } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            this.logger.error(
-              `Emergency cleanup failed for ${archive.archive_path}: ${errorMessage}`,
-            );
-          }
-        }
-      }
-
-      iteration++;
-    }
-
-    // Update archives total gauge
-    await this.updateArchivesMetric();
-
-    this.logger.warn(
-      `Emergency cleanup completed: ${totalDeleted} archives deleted in ${iteration} iteration(s)`,
-    );
+    throw new Error('emergencyCleanup is decommissioned — Workspace table dropped in WR-1.1');
   }
 
   /**
@@ -436,14 +244,6 @@ export class StorageManagerService implements OnModuleInit {
    * Update archives total metric by querying database
    */
   private async updateArchivesMetric(): Promise<void> {
-    try {
-      const count = await this.prisma.workspaceArchive.count({
-        where: { status: ArchiveStatus.ARCHIVED },
-      });
-      this.metrics.setGauge('storage_archives_total', count);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.warn(`Failed to update archives metric: ${errorMessage}`);
-    }
+    throw new Error('updateArchivesMetric is decommissioned — Workspace table dropped in WR-1.1');
   }
 }

@@ -113,6 +113,7 @@ describe('SandboxService', () => {
             apiKey: 'key',
             protocol: 'http',
             requestTimeoutSeconds: 60,
+            useServerProxy: false,
           },
         }),
       );

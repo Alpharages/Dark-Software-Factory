@@ -79,9 +79,6 @@ export class AIExecutionResultDto {
   @ApiProperty({ description: 'Execution duration in milliseconds' })
   durationMs!: number;
 
-  @ApiProperty({ description: 'Workspace path (for debugging)' })
-  workspacePath!: string;
-
   @ApiPropertyOptional({ description: 'Error code if failed' })
   errorCode?: string;
 
@@ -90,32 +87,6 @@ export class AIExecutionResultDto {
 
   @ApiPropertyOptional({ description: 'Whether error is retryable' })
   isRetryable?: boolean;
-}
-
-/**
- * DTO for workspace status
- */
-export class WorkspaceStatusDto {
-  @ApiProperty({ description: 'Unique workspace ID' })
-  id!: string;
-
-  @ApiProperty({ description: 'Filesystem path' })
-  path!: string;
-
-  @ApiProperty({ description: 'Ticket ID' })
-  ticketId!: string;
-
-  @ApiProperty({ description: 'Execution ID' })
-  executionId!: string;
-
-  @ApiProperty({ description: 'Current status' })
-  status!: string;
-
-  @ApiProperty({ description: 'Creation timestamp' })
-  createdAt!: Date;
-
-  @ApiPropertyOptional({ description: 'Size in bytes' })
-  sizeBytes?: number;
 }
 
 /**
