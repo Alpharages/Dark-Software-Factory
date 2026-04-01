@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-01 # updated by create-story (wr-2-2 ready-for-dev)
+last_updated: 2026-04-01 # updated by create-story (wr-2-3 ready-for-dev)
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -603,17 +603,18 @@ development_status:
   epic-wr-2-source: 'epics-workspace-removal.md'
   epic-wr-2-notes: 'All 4 providers run full agentic loop: clone→implement→QA self-heal→commit→push→PR. dsf-execution SKILL.md bundled. IAIExecutionResult extended. API key redaction extended.'
   wr-2-1-establish-shared-provider-contract-execution-state:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-04-01'
     effort: '0.5 days'
     story_points: 3
-    notes: 'Extend IAIExecutionResult with prUrl, commitSha, branchName, qaStatus, qaRetryCount. Add QA_FAILED to ExecutionPhase enum. Backward-compatible — no existing fields changed.'
+    notes: 'Extend IAIExecutionResult with prUrl, commitSha, branchName, qaStatus, qaRetryCount. Add QA_FAILED to ExecutionPhase enum. Backward-compatible — no existing fields changed. Code review 2026-04-01: 2 patches applied (qaStatus Swagger type:string, qaRetryCount minimum:0), 7 items deferred (pre-existing or intentional gaps).'
   wr-2-2-author-bundle-dsf-execution-agent-skill:
     status: ready-for-dev
     effort: '1 day'
     story_points: 3
     notes: 'Author dsf-execution SKILL.md with 8-step workflow. Mandatory security review (NFR-WR6). Bundle in dsf-agents image at ~/.claude/skills/dsf-execution/SKILL.md.'
   wr-2-3-implement-claude-code-provider-full-agentic-workflow:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 8
     notes: 'ClaudeCodeProvider.execute() runs full agentic loop via SKILL.md. Parses progress markers + final result line. NFR-WR4 resilience (non-JSON lines skipped). Preserves emitLog streaming.'

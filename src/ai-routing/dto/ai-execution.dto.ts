@@ -87,6 +87,28 @@ export class AIExecutionResultDto {
 
   @ApiPropertyOptional({ description: 'Whether error is retryable' })
   isRetryable?: boolean;
+
+  @ApiPropertyOptional({ description: 'PR URL opened by sandbox agent' })
+  prUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Git commit SHA produced by sandbox agent' })
+  commitSha?: string;
+
+  @ApiPropertyOptional({ description: 'Feature branch name pushed by sandbox agent' })
+  branchName?: string;
+
+  @ApiPropertyOptional({
+    description: 'QA outcome from sandbox execution',
+    type: 'string',
+    enum: ['passed', 'self_healed', 'failed', 'skipped'],
+  })
+  qaStatus?: 'passed' | 'self_healed' | 'failed' | 'skipped';
+
+  @ApiPropertyOptional({
+    description: 'Number of QA self-healing retries (0 = passed first time or skipped)',
+    minimum: 0,
+  })
+  qaRetryCount?: number;
 }
 
 /**

@@ -39,6 +39,8 @@ const PHASE_DESCRIPTIONS: Record<ExecutionPhase, string> = {
   [ExecutionPhase.COMPLETED]:
     'An AI agent has finished coding and a pull request has been created and is ready for review.',
   [ExecutionPhase.FAILED]: 'The AI execution failed or was blocked and requires human attention.',
+  [ExecutionPhase.QA_FAILED]:
+    'The AI agent exhausted all QA retries. The branch has been pushed but no PR was created — awaiting PM resolution.',
 };
 
 /**

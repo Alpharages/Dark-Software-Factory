@@ -73,6 +73,30 @@ export interface IAIExecutionResult {
 
   /** Error details if failed */
   error?: IAIExecutionError;
+
+  /** PR URL opened by sandbox agent (populated by WR-2.3/2.4 providers) */
+  prUrl?: string;
+
+  /** Git commit SHA produced by sandbox agent */
+  commitSha?: string;
+
+  /** Feature branch name pushed by sandbox agent */
+  branchName?: string;
+
+  /**
+   * QA outcome from sandbox execution.
+   * - 'passed'      — QA passed on first attempt
+   * - 'self_healed' — QA passed after one or more retries
+   * - 'failed'      — All retries exhausted; branch pushed but no PR
+   * - 'skipped'     — Provider does not run in-sandbox QA (legacy/non-sandbox providers)
+   */
+  qaStatus?: 'passed' | 'self_healed' | 'failed' | 'skipped';
+
+  /**
+   * Number of QA self-healing retries that occurred.
+   * 0 means QA passed first time or was skipped.
+   */
+  qaRetryCount?: number;
 }
 
 /**

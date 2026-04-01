@@ -9,4 +9,6 @@ export enum ExecutionPhase {
   COMPLETED = 'COMPLETED',
   /** Execution errored or was blocked */
   FAILED = 'FAILED',
+  /** QA retries exhausted; branch pushed, no PR created, awaiting PM resolution */
+  QA_FAILED = 'QA_FAILED',
 }

@@ -1,6 +1,6 @@
 # Story WR-2.1: Establish Shared Provider Contract & Execution State
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -47,9 +47,9 @@ So that all sandbox providers share a single typed contract and the new executio
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `IAIExecutionResult` interface (AC: 1, 3, 5)
-  - [ ] 1.1 Open `src/ai-routing/interfaces/ai-provider.interface.ts`
-  - [ ] 1.2 After the existing `error?: IAIExecutionError` field, add the following block:
+- [x] Task 1: Extend `IAIExecutionResult` interface (AC: 1, 3, 5)
+  - [x] 1.1 Open `src/ai-routing/interfaces/ai-provider.interface.ts`
+  - [x] 1.2 After the existing `error?: IAIExecutionError` field, add the following block:
 
     ```typescript
     /** PR URL opened by sandbox agent (populated by WR-2.3/2.4 providers) */
@@ -77,12 +77,12 @@ So that all sandbox providers share a single typed contract and the new executio
     qaRetryCount?: number;
     ```
 
-  - [ ] 1.3 Do NOT modify or remove any existing fields (`success`, `codeDiff`, `filesChanged`, `confidenceScore`, `durationMs`, `tokensInput`, `model`, `tokensOutput`, `workspacePath`, `error`)
-  - [ ] 1.4 Confirm `workspacePath?: string` remains (it was made optional in WR-1.1 for debugging purposes — do not remove it)
+  - [x] 1.3 Do NOT modify or remove any existing fields (`success`, `codeDiff`, `filesChanged`, `confidenceScore`, `durationMs`, `tokensInput`, `model`, `tokensOutput`, `workspacePath`, `error`)
+  - [x] 1.4 Confirm `workspacePath?: string` remains (it was made optional in WR-1.1 for debugging purposes — do not remove it)
 
-- [ ] Task 2: Add `QA_FAILED` to `ExecutionPhase` enum (AC: 2, 5)
-  - [ ] 2.1 Open `src/ai-routing/agent-skills/skills/execution-phase.enum.ts`
-  - [ ] 2.2 Add `QA_FAILED = 'QA_FAILED'` after `FAILED = 'FAILED'`:
+- [x] Task 2: Add `QA_FAILED` to `ExecutionPhase` enum (AC: 2, 5)
+  - [x] 2.1 Open `src/ai-routing/agent-skills/skills/execution-phase.enum.ts`
+  - [x] 2.2 Add `QA_FAILED = 'QA_FAILED'` after `FAILED = 'FAILED'`:
     ```typescript
     export enum ExecutionPhase {
       STARTED = 'STARTED',
@@ -92,11 +92,11 @@ So that all sandbox providers share a single typed contract and the new executio
       QA_FAILED = 'QA_FAILED',
     }
     ```
-  - [ ] 2.3 Note: This enum is re-exported by `src/integrations/pm-execution-status.service.ts` (line 15: `export { ExecutionPhase };`) — the re-export picks up the new value automatically, no change needed there
+  - [x] 2.3 Note: This enum is re-exported by `src/integrations/pm-execution-status.service.ts` (line 15: `export { ExecutionPhase };`) — the re-export picks up the new value automatically, no change needed there
 
-- [ ] Task 3: Update `AIExecutionResultDto` for Swagger docs (AC: 4, 5)
-  - [ ] 3.1 Open `src/ai-routing/dto/ai-execution.dto.ts`
-  - [ ] 3.2 Add these optional fields to `AIExecutionResultDto` after the existing `isRetryable?` field:
+- [x] Task 3: Update `AIExecutionResultDto` for Swagger docs (AC: 4, 5)
+  - [x] 3.1 Open `src/ai-routing/dto/ai-execution.dto.ts`
+  - [x] 3.2 Add these optional fields to `AIExecutionResultDto` after the existing `isRetryable?` field:
 
     ```typescript
     @ApiPropertyOptional({ description: 'PR URL opened by sandbox agent' })
@@ -118,10 +118,10 @@ So that all sandbox providers share a single typed contract and the new executio
     qaRetryCount?: number;
     ```
 
-- [ ] Task 4: Add `QA_FAILED` to `PHASE_DESCRIPTIONS` in `clickup-status.skill.ts` (AC: 2, 5)
-  - [ ] 4.1 Open `src/ai-routing/agent-skills/skills/clickup-status.skill.ts`
-  - [ ] 4.2 Line 36 declares `const PHASE_DESCRIPTIONS: Record<ExecutionPhase, string>` — this is an **exhaustive record**; TypeScript will fail compilation if any enum member is missing
-  - [ ] 4.3 Add the `QA_FAILED` entry to the record:
+- [x] Task 4: Add `QA_FAILED` to `PHASE_DESCRIPTIONS` in `clickup-status.skill.ts` (AC: 2, 5)
+  - [x] 4.1 Open `src/ai-routing/agent-skills/skills/clickup-status.skill.ts`
+  - [x] 4.2 Line 36 declares `const PHASE_DESCRIPTIONS: Record<ExecutionPhase, string>` — this is an **exhaustive record**; TypeScript will fail compilation if any enum member is missing
+  - [x] 4.3 Add the `QA_FAILED` entry to the record:
     ```typescript
     const PHASE_DESCRIPTIONS: Record<ExecutionPhase, string> = {
       [ExecutionPhase.STARTED]:
@@ -134,12 +134,12 @@ So that all sandbox providers share a single typed contract and the new executio
         'The AI agent exhausted all QA retries. The branch has been pushed but no PR was created — awaiting PM resolution.',
     };
     ```
-  - [ ] 4.4 This is the **4th file** that changes in this story — it is not optional
+  - [x] 4.4 This is the **4th file** that changes in this story — it is not optional
 
-- [ ] Task 5: Verify build and no regressions (AC: 5)
-  - [ ] 5.1 `pnpm build` → zero TypeScript compilation errors
-  - [ ] 5.2 `pnpm test -- --testPathPattern="ai-routing|provider|execution|clickup-status"` → no regressions
-  - [ ] 5.3 Confirm no existing provider file (`claude-code.provider.ts`, `kimi.provider.ts`, `codex.provider.ts`, `gemini.provider.ts`, `base-ai.provider.ts`) requires changes — they all return the interface and all new fields are optional
+- [x] Task 5: Verify build and no regressions (AC: 5)
+  - [x] 5.1 `pnpm build` → zero TypeScript compilation errors
+  - [x] 5.2 `pnpm test -- --testPathPattern="ai-routing|provider|execution|clickup-status"` → no regressions
+  - [x] 5.3 Confirm no existing provider file (`claude-code.provider.ts`, `kimi.provider.ts`, `codex.provider.ts`, `gemini.provider.ts`, `base-ai.provider.ts`) requires changes — they all return the interface and all new fields are optional
 
 ## Dev Notes
 
@@ -274,4 +274,29 @@ Claude Sonnet 4.6 — story created 2026-04-01
 
 ### Completion Notes List
 
+- ✅ Implemented AC-1: Added 5 optional sandbox-result fields to IAIExecutionResult
+- ✅ Implemented AC-2: Added QA_FAILED to ExecutionPhase enum
+- ✅ Implemented AC-3: Backward compatibility verified via build
+- ✅ Implemented AC-4: Added fields to AIExecutionResultDto with Swagger decorators
+- ✅ Implemented AC-5: Full build clean, zero TS errors, all tests passing
+
 ### File List
+
+- src/ai-routing/interfaces/ai-provider.interface.ts
+- src/ai-routing/agent-skills/skills/execution-phase.enum.ts
+- src/ai-routing/dto/ai-execution.dto.ts
+- src/ai-routing/agent-skills/skills/clickup-status.skill.ts
+
+### Review Findings
+
+Code review run: 2026-04-01. Reviewers: Blind Hunter, Edge Case Hunter, Acceptance Auditor.
+
+- [x] [Review][Patch] `@ApiPropertyOptional` for `qaStatus` missing `type: 'string'` [src/ai-routing/dto/ai-execution.dto.ts:100-103] — Fixed: added `type: 'string'` to decorator.
+- [x] [Review][Patch] `qaRetryCount` missing `minimum: 0` in Swagger decorator [src/ai-routing/dto/ai-execution.dto.ts:106] — Fixed: added `minimum: 0` to decorator.
+- [x] [Review][Defer] DTO missing `tokensInput`/`tokensOutput`/`model` fields [src/ai-routing/dto/ai-execution.dto.ts] — deferred, pre-existing gap not caused by WR-2.1
+- [x] [Review][Defer] `IWorkspaceInfo.branchName` vs `IAIExecutionResult.branchName` naming — deferred, pre-existing interface, no runtime conflict; cosmetic doc ambiguity only
+- [x] [Review][Defer] DTO file header references stale "Story 2.6: Cursor CLI Headless Mode" — deferred, pre-existing, out of WR-2.1 scope
+- [x] [Review][Defer] `success: true` + `qaStatus: 'failed'` is a valid self-contradictory object — deferred, intentional; WR-2.3 producer enforces consistency at implementation time
+- [x] [Review][Defer] `QA_FAILED` phase wired in PHASE_DESCRIPTIONS but consumer not yet handling it — deferred, intentional per dev notes; WR-4 adds the call path
+- [x] [Review][Defer] `commitSha?: string` allows empty string — deferred, WR-2.3 parser owns validation; interface-level check out of scope
+- [x] [Review][Defer] No enforced default for `qaStatus: 'skipped'` in contract — deferred, intentional; consumer responsibility per spec (AC-3)
