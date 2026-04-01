@@ -615,11 +615,11 @@ development_status:
     story_points: 3
     notes: 'Author dsf-execution SKILL.md with 8-step workflow. Mandatory security review (NFR-WR6). Bundle in dsf-agents image at ~/.claude/skills/dsf-execution/SKILL.md. Code review 2026-04-01: 15 patches applied (HTTPS validation, branch sanitization, workspace cleanup, force-with-lease push, empty-commit guard, PR idempotency, DEFAULT_BRANCH fallback, exit trap, QA_MAX_RETRIES validation, pct:82/90/95 timing, wip commit message, SECURITY-REVIEW.md correction, gh auth setup-git replacing token-in-URL), 6 items deferred.'
   wr-2-3-implement-claude-code-provider-full-agentic-workflow:
-    status: completed
+    status: done
     last_updated: '2026-04-01'
     effort: '2 days'
     story_points: 8
-    notes: 'ClaudeCodeProvider.execute() runs full agentic loop via SKILL.md. Parses progress markers + final result line. NFR-WR4 resilience (non-JSON lines skipped). Preserves emitLog streaming.'
+    notes: 'ClaudeCodeProvider.execute() runs full agentic loop via SKILL.md. JSON stdout protocol (type:progress/result). lineBuffer flushed at stream end. qaStatus lowercase. FEATURE_BRANCH sanitized. Code review 2026-04-01: 10 patches applied, 6 deferred.'
   wr-2-4-implement-codex-kimi-gemini-full-agentic-workflow:
     status: ready-for-dev
     effort: '2 days'

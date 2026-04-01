@@ -1,6 +1,6 @@
 # Story WR-2.3: Implement ClaudeCodeProvider Full Agentic Workflow
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -546,16 +546,16 @@ it('should call emitProgress for type:progress stdout lines', async () => {
 
 ### Review Findings
 
-- [ ] [Review][Patch] P1: Wrong FEATURE_BRANCH fallback pattern — uses `dsf/fix-${ticketId}-${Date.now()}` but spec requires `dsf/{sanitized-ticket-id}/{execution-id-prefix-8}` [claude-code.provider.ts]
-- [ ] [Review][Patch] P2: Progress lines parsed via colon-delimited `pct:` format instead of JSON `{"type":"progress","pct":N,"msg":"..."}` — explicit AC-2 violation per spec dev notes [claude-code.provider.ts]
-- [ ] [Review][Patch] P3: Result lines parsed via `result:` prefix instead of JSON `{"type":"result",...}` — explicit AC-3 violation per spec dev notes [claude-code.provider.ts]
-- [ ] [Review][Patch] P4: `qaStatus` comparisons use uppercase `'PASSED'`/`'FAILED'` but SKILL.md emits lowercase `'passed'`/`'failed'` — makes `success` always `false` and QA failure detection never trigger [claude-code.provider.ts]
-- [ ] [Review][Patch] P5: `lineBuffer` in SandboxService never flushed at stream end — if result line has no trailing `\n`, `onStdoutLine` is never called for it, `agentResult` stays `{}`, `success` always `false` [sandbox.service.ts]
-- [ ] [Review][Patch] P6: `confidenceScore` uses process-level `success` (exitCode check only) but returned `result.success` uses stricter agentic check — returns `{success: false, confidenceScore: 0.9}` on QA failure [claude-code.provider.ts]
-- [ ] [Review][Patch] P7: Removed `isEnabled=false` and `ANTHROPIC_BASE_URL omission` test cases — both code paths still exist but are now untested [claude-code.provider.spec.ts]
-- [ ] [Review][Patch] P8: `qaStatus: agentResult.qaStatus as any` — should use a proper union type `'passed' | 'self_healed' | 'failed'` [claude-code.provider.ts]
-- [ ] [Review][Patch] P9: Missing result line (no JSON result emitted) returns generic error message — should explicitly state "Agent did not emit a final result line" [claude-code.provider.ts]
-- [ ] [Review][Patch] P10: Test T33 title typo: "should swallowed errors" → "should swallow errors" [claude-code.provider.spec.ts]
+- [x] [Review][Patch] P1: Wrong FEATURE_BRANCH fallback pattern — uses `dsf/fix-${ticketId}-${Date.now()}` but spec requires `dsf/{sanitized-ticket-id}/{execution-id-prefix-8}` [claude-code.provider.ts]
+- [x] [Review][Patch] P2: Progress lines parsed via colon-delimited `pct:` format instead of JSON `{"type":"progress","pct":N,"msg":"..."}` — explicit AC-2 violation per spec dev notes [claude-code.provider.ts]
+- [x] [Review][Patch] P3: Result lines parsed via `result:` prefix instead of JSON `{"type":"result",...}` — explicit AC-3 violation per spec dev notes [claude-code.provider.ts]
+- [x] [Review][Patch] P4: `qaStatus` comparisons use uppercase `'PASSED'`/`'FAILED'` but SKILL.md emits lowercase `'passed'`/`'failed'` — makes `success` always `false` and QA failure detection never trigger [claude-code.provider.ts]
+- [x] [Review][Patch] P5: `lineBuffer` in SandboxService never flushed at stream end — if result line has no trailing `\n`, `onStdoutLine` is never called for it, `agentResult` stays `{}`, `success` always `false` [sandbox.service.ts]
+- [x] [Review][Patch] P6: `confidenceScore` uses process-level `success` (exitCode check only) but returned `result.success` uses stricter agentic check — returns `{success: false, confidenceScore: 0.9}` on QA failure [claude-code.provider.ts]
+- [x] [Review][Patch] P7: Removed `isEnabled=false` and `ANTHROPIC_BASE_URL omission` test cases — both code paths still exist but are now untested [claude-code.provider.spec.ts]
+- [x] [Review][Patch] P8: `qaStatus: agentResult.qaStatus as any` — should use a proper union type `'passed' | 'self_healed' | 'failed'` [claude-code.provider.ts]
+- [x] [Review][Patch] P9: Missing result line (no JSON result emitted) returns generic error message — should explicitly state "Agent did not emit a final result line" [claude-code.provider.ts]
+- [x] [Review][Patch] P10: Test T33 title typo: "should swallowed errors" → "should swallow errors" [claude-code.provider.spec.ts]
 - [x] [Review][Defer] D1: `agentResult = { ...agentResult, ...parsed }` no schema whitelist — arbitrary fields from agent stdout merged in [claude-code.provider.ts] — deferred, pre-existing pattern; low risk in controlled sandbox context; post-MVP hardening
 - [x] [Review][Defer] D2: Truncated JSON result line (multi-chunk) silently dropped — complex to fix without SDK-level stream guarantees [sandbox.service.ts] — deferred, edge case requires SDK contract change
 - [x] [Review][Defer] D3: `TASK_DESCRIPTION: prompt` no max-length guard — oversized prompts could exceed Linux ARG_MAX in container env [claude-code.provider.ts] — deferred, pre-existing concern, not in scope for WR-2.3
