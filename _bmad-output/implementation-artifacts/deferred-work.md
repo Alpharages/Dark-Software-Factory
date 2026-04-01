@@ -14,6 +14,15 @@
 - **`cancel()` no-op in legacy adapter** — Calling `cancel()` on the Claude legacy adapter logs a message but does not stop the sandbox container. Container runs until `sandboxTimeoutS`. Fix by storing the sandbox ID returned by `runAgentCommand` and calling `SandboxService.killSandbox()` in a future story. [`ai-execution.service.ts`]
 - **AC5 e2e tests do not exercise the real pipeline** — `test/claude-code.e2e-spec.ts` mocks `ClaudeCodeProvider` with a plain object; state machine transitions and OpenSandbox container execution are never tested end-to-end. Requires a full integration test environment with a running OpenSandbox instance. Deferred to OS-5 integration testing story.
 
+## Deferred from: code review of wr-2-2-author-bundle-dsf-execution-agent-skill (2026-04-01)
+
+- **`FROM dsf-agents-base:latest` no digest pin** — mutable base tag is a supply-chain and reproducibility risk; any base image update silently changes the sandbox environment. Pin to a `sha256:` digest when the base image lifecycle is stabilised. [`docker/Dockerfile.agents:15`]
+- **GitHub CLI no version pin** — `apt-get install -y gh` pulls latest CLI on every rebuild; breaking or compromised releases are auto-adopted. Add `gh=<version>` pin alongside the base image digest fix. [`docker/Dockerfile.agents:26`]
+- **Package manager detection falls to `npm` for non-Node repos** — the SKILL.md detects pnpm/yarn from lockfiles but falls through to `npm` for Python, Go, Rust, or any non-Node project; all QA retries are wasted. Extend detection or add a `QA_COMMAND` override env var in a future story.
+- **No timeout on QA commands** — `pnpm lint && pnpm test` can hang indefinitely on a stuck test suite; no `timeout` wrapper or wall-clock circuit breaker is specified. Add `QA_TIMEOUT_SECONDS` env var support in a future story.
+- **`exitCode` binary inference in SandboxService** — `exitCode = execResult.error ? 1 : 0` discards specific exit codes (128 git fatal, 130 SIGINT, etc.). Downstream retry logic cannot distinguish failure classes. Fix in a dedicated SandboxService improvement story. [`src/sandbox/sandbox.service.ts`]
+- **No workspace isolation for concurrent agent runs** — hardcoded `workspace/` directory name means two agent containers sharing a filesystem collide on `git clone`. Requires either per-execution temp dirs (e.g., `$(mktemp -d)`) or Docker volume isolation enforced by the orchestrator.
+
 ## Deferred from: code review of wr-1-2-delete-legacy-dood-pipeline-components (2026-04-01)
 
 - **`--dangerously-skip-permissions` + unpinned `npm install` in ClaudeCodeProvider** — OS-2 scope change bundled into this diff. Security flag disables permission prompts inside container; unpinned install is non-deterministic. Revisit in OS-2 retrospective or a dedicated security story.

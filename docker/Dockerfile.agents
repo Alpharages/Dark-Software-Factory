@@ -1,0 +1,43 @@
+# ===========================================
+# Dark Software Factory — Agent Sandbox Image
+# ===========================================
+# Purpose: Extends the base agent image with the dsf-execution Claude Code skill
+# Bundled skill: docker/skills/dsf-execution/SKILL.md
+#   → /home/agent/.claude/skills/dsf-execution/SKILL.md
+#
+# Build (from repo root):
+#   docker build -f docker/Dockerfile.agents -t dsf-agents:latest .
+#
+# Required by: ClaudeCodeProvider (WR-2.3)
+# Security review: docker/skills/dsf-execution/SECURITY-REVIEW.md (NFR-WR6)
+# ===========================================
+
+FROM dsf-agents-base:latest
+
+# Switch to root to install skill files with correct ownership
+USER root
+
+# Install GitHub CLI (required for `gh pr create` in the dsf-execution skill)
+# Dockerfile.base does not include gh — must be installed here
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+    dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
+    tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+    apt-get update && apt-get install -y gh && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create the Claude Code skills directory for the agent user
+RUN mkdir -p /home/agent/.claude/skills/dsf-execution && \
+    chown -R agent:agent /home/agent/.claude
+
+# Bundle the dsf-execution skill (source: docker/skills/dsf-execution/SKILL.md)
+COPY docker/skills/dsf-execution/SKILL.md /home/agent/.claude/skills/dsf-execution/SKILL.md
+RUN chown agent:agent /home/agent/.claude/skills/dsf-execution/SKILL.md && \
+    chmod 644 /home/agent/.claude/skills/dsf-execution/SKILL.md
+
+# Switch back to non-root agent user
+USER agent
+
+# Verify skill file is accessible
+RUN test -f /home/agent/.claude/skills/dsf-execution/SKILL.md && \
+    echo "dsf-execution skill bundled successfully"

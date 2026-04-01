@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-01 # updated by create-story (wr-2-3 ready-for-dev)
+last_updated: 2026-04-01 # updated by code-review (wr-2-2 done)
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -609,22 +609,23 @@ development_status:
     story_points: 3
     notes: 'Extend IAIExecutionResult with prUrl, commitSha, branchName, qaStatus, qaRetryCount. Add QA_FAILED to ExecutionPhase enum. Backward-compatible — no existing fields changed. Code review 2026-04-01: 2 patches applied (qaStatus Swagger type:string, qaRetryCount minimum:0), 7 items deferred (pre-existing or intentional gaps).'
   wr-2-2-author-bundle-dsf-execution-agent-skill:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-04-01'
     effort: '1 day'
     story_points: 3
-    notes: 'Author dsf-execution SKILL.md with 8-step workflow. Mandatory security review (NFR-WR6). Bundle in dsf-agents image at ~/.claude/skills/dsf-execution/SKILL.md.'
+    notes: 'Author dsf-execution SKILL.md with 8-step workflow. Mandatory security review (NFR-WR6). Bundle in dsf-agents image at ~/.claude/skills/dsf-execution/SKILL.md. Code review 2026-04-01: 15 patches applied (HTTPS validation, branch sanitization, workspace cleanup, force-with-lease push, empty-commit guard, PR idempotency, DEFAULT_BRANCH fallback, exit trap, QA_MAX_RETRIES validation, pct:82/90/95 timing, wip commit message, SECURITY-REVIEW.md correction, gh auth setup-git replacing token-in-URL), 6 items deferred.'
   wr-2-3-implement-claude-code-provider-full-agentic-workflow:
     status: ready-for-dev
     effort: '2 days'
     story_points: 8
     notes: 'ClaudeCodeProvider.execute() runs full agentic loop via SKILL.md. Parses progress markers + final result line. NFR-WR4 resilience (non-JSON lines skipped). Preserves emitLog streaming.'
   wr-2-4-implement-codex-kimi-gemini-full-agentic-workflow:
-    status: backlog
+    status: ready-for-dev
     effort: '2 days'
     story_points: 8
     notes: 'Codex, Kimi, Gemini providers inject 8-step workflow as structured system prompt. Same stdout parsing contract as ClaudeCodeProvider. E2E smoke test for all 4 providers.'
   wr-2-5-extend-api-key-redaction-to-all-provider-keys:
-    status: backlog
+    status: ready-for-dev
     effort: '0.5 days'
     story_points: 2
     notes: 'Add CODEX_API_KEY, KIMI_API_KEY, GEMINI_API_KEY to SandboxService redaction pattern. Zero key value matches in logs/Sentry at all severity levels. NFR-WR5.'
