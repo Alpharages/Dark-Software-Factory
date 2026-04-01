@@ -164,6 +164,7 @@ export class SandboxService implements OnModuleInit {
     let sandboxId: string | null = null;
     let stdoutBuffer = '';
     let stderrBuffer = '';
+    let lineBuffer = '';
     let timedOut = false;
     let exitCode = 1;
 
@@ -209,6 +210,24 @@ export class SandboxService implements OnModuleInit {
               msg.text,
               'stdout',
             );
+
+            if (options.onStdoutLine) {
+              lineBuffer += msg.text;
+              const lines = lineBuffer.split('\n');
+              lineBuffer = lines.pop() || '';
+
+              for (const line of lines) {
+                try {
+                  options.onStdoutLine(line);
+                } catch (err) {
+                  // NFR-WR4: Swallowing errors to prevent sandbox execution crash — never let callback crash the loop
+                  this.logger.error(
+                    `[SandboxService] Error in onStdoutLine callback for ${options.executionId}: ${(err as Error).message}`,
+                    (err as Error).stack,
+                  );
+                }
+              }
+            }
           },
           onStderr: (msg: OutputMessage) => {
             stderrBuffer += msg.text;

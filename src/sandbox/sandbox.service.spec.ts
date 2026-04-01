@@ -420,6 +420,48 @@ describe('SandboxService', () => {
         expect.stringContaining('close fail'),
       );
     });
+
+    it('T32: should invoke onStdoutLine for complete lines including partial buffer handling', async () => {
+      const onStdoutLine = jest.fn();
+      mockSandbox.commands.run.mockImplementation(async (cmd: string, opts: any, handlers: any) => {
+        handlers.onStdout({ text: 'line 1\nline 2' }); // Two complete lines
+        handlers.onStdout({ text: '\nline 3' }); // Completes line 2 (empty) then line 3 partial
+        handlers.onStdout({ text: ' part 2\n' }); // Completes line 3
+        return {};
+      });
+
+      await service.runAgentCommand({ ...defaultOptions, onStdoutLine });
+
+      expect(onStdoutLine).toHaveBeenCalledTimes(3);
+      expect(onStdoutLine).toHaveBeenNthCalledWith(1, 'line 1');
+      // Note: line 2 is empty string between \n\n but split('\n') with pop() handles it?
+      // "line 1\nline 2" split('\n') -> ["line 1", "line 2"]
+      // Buffer = "line 2"
+      // "\nline 3" -> "line 2\nline 3" split('\n') -> ["line 2", "line 3"]
+      // Buffer = "line 3"
+      expect(onStdoutLine).toHaveBeenNthCalledWith(2, 'line 2');
+      expect(onStdoutLine).toHaveBeenNthCalledWith(3, 'line 3 part 2');
+    });
+
+    it('T33: should swallowed errors in onStdoutLine callback (NFR-WR4)', async () => {
+      const onStdoutLine = jest.fn().mockImplementation(() => {
+        throw new Error('callback crash');
+      });
+      mockSandbox.commands.run.mockImplementation(async (cmd: string, opts: any, handlers: any) => {
+        handlers.onStdout({ text: 'line 1\n' });
+        return {};
+      });
+
+      // Should not throw
+      const res = await service.runAgentCommand({ ...defaultOptions, onStdoutLine });
+
+      expect(onStdoutLine).toHaveBeenCalledWith('line 1');
+      expect(res.exitCode).toBe(0); // Execution continued
+      expect((service as any).logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Error in onStdoutLine callback'),
+        expect.any(String),
+      );
+    });
   });
 
   describe('configuration', () => {

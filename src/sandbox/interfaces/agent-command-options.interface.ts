@@ -13,4 +13,10 @@ export interface AgentCommandOptions {
   metadata?: Record<string, string>; // Attached to sandbox for observability
   /** Optional: correlates sandbox execution to the parent ticket in ExecutionGateway log payloads */
   ticketId?: string;
+  /**
+   * Optional per-line stdout callback for structured output parsing.
+   * Called synchronously for each complete newline-terminated line.
+   * Errors thrown inside this callback are swallowed — never crash the execution.
+   */
+  onStdoutLine?: (line: string) => void;
 }

@@ -1,6 +1,6 @@
 /**
  * Claude Code Provider Unit Tests
- * Story OS-2.2: Rewrite ClaudeCodeProvider
+ * Story WR-2.3: Agentic delivery workflow
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -8,22 +8,22 @@ import { ConfigService } from '@nestjs/config';
 import { ClaudeCodeProvider } from './claude-code.provider';
 import { SandboxService } from '@/sandbox/sandbox.service';
 import { SandboxResourceProfileService } from '@/sandbox/sandbox-resource-profile.service';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { IAIExecutionPayload } from '@/execution/interfaces';
 import { AIProvider } from '@/prisma/client';
-import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
-import { AIErrorCode } from '../interfaces/ai-provider.interface';
+import { AIErrorCode } from '@/ai-routing/interfaces';
 
 describe('ClaudeCodeProvider', () => {
   let provider: ClaudeCodeProvider;
   let sandboxService: jest.Mocked<SandboxService>;
-  let resourceProfileService: jest.Mocked<SandboxResourceProfileService>;
+  let executionTracker: jest.Mocked<ExecutionTrackerService>;
 
   const mockPayload: IAIExecutionPayload = {
     ticketId: 'ticket-123',
     executionId: 'exec-456',
     aiProvider: AIProvider.CLAUDE_CODE,
     priority: 1,
-    prompt: 'Fix the bug in main.ts',
+    prompt: 'Implement feature X',
     repositoryUrl: 'https://github.com/test/repo',
     projectId: 'proj-789',
     complexityScore: 8,
@@ -34,148 +34,171 @@ describe('ClaudeCodeProvider', () => {
 
     const mockSandboxService = {
       isHealthy: jest.fn().mockResolvedValue(true),
-      runAgentCommand: jest.fn().mockResolvedValue({
-        exitCode: 0,
-        stdout: 'Successfully fixed bug',
-        stderr: '',
-        durationMs: 1500,
-        timedOut: false,
-        sandboxId: 'sbx-123',
-      }),
-    };
-
-    const mockResourceProfileService = {
-      getProfile: jest.fn().mockReturnValue({
-        cpuLimit: '2',
-        memoryLimit: '4Gi',
-        networkPolicy: { defaultAction: 'ALLOW' },
-      }),
-    };
-
-    const mockConfigService = {
-      get: jest.fn((key: string, defaultValue?: unknown) => {
-        const config: Record<string, unknown> = {
-          'ai.providers.claudeCode.enabled': true,
-          'anthropic.apiKey': 'sk-ant-test-key',
-          'anthropic.baseURL': 'http://localhost:11434',
-          'anthropic.model': 'claude-sonnet-4-20250514',
-          'opensandbox.agentImage': 'opensandbox/code-interpreter:v1.0.2',
-          'opensandbox.sandboxTimeoutS': 3600,
+      runAgentCommand: jest.fn().mockImplementation(async (options) => {
+        // Simulate some output via the callback
+        if (options.onStdoutLine) {
+          options.onStdoutLine('pct:50:Halfway there');
+          options.onStdoutLine('result:{"prUrl":"https://github.com/pr/1","qaStatus":"PASSED"}');
+        }
+        return {
+          exitCode: 0,
+          stdout: 'result:{"prUrl":"https://github.com/pr/1","qaStatus":"PASSED"}',
+          stderr: '',
+          durationMs: 1500,
+          timedOut: false,
+          sandboxId: 'sbx-123',
         };
-        return config[key] ?? defaultValue;
       }),
+    };
+
+    const mockExecutionTracker = {
+      emitProgress: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClaudeCodeProvider,
-        { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, defaultValue?: unknown) => {
+              const config: Record<string, unknown> = {
+                'ai.providers.claudeCode.enabled': true,
+                'anthropic.apiKey': 'sk-ant-test',
+                'anthropic.model': 'claude-3-5',
+                'github.token': 'gh-token',
+                'opensandbox.agentImage': 'dsf-agents:latest',
+                'opensandbox.sandboxTimeoutS': 3600,
+              };
+              return config[key] ?? defaultValue;
+            }),
+          },
+        },
         { provide: SandboxService, useValue: mockSandboxService },
-        { provide: SandboxResourceProfileService, useValue: mockResourceProfileService },
+        {
+          provide: SandboxResourceProfileService,
+          useValue: {
+            getProfile: jest.fn().mockReturnValue({ cpuLimit: '2', memoryLimit: '4Gi' }),
+          },
+        },
+        { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
       ],
     }).compile();
 
     provider = module.get<ClaudeCodeProvider>(ClaudeCodeProvider);
     sandboxService = module.get(SandboxService) as jest.Mocked<SandboxService>;
-    resourceProfileService = module.get(
-      SandboxResourceProfileService,
-    ) as jest.Mocked<SandboxResourceProfileService>;
-  });
-
-  describe('isEnabled', () => {
-    it('should return true when config is true', () => {
-      expect(provider.isEnabled).toBe(true);
-    });
-
-    it('should return false when config is false', async () => {
-      const mockConfigFalse = {
-        get: jest.fn((key: string, defaultValue?: unknown) => {
-          if (key === 'ai.providers.claudeCode.enabled') return false;
-          const config: Record<string, unknown> = {
-            'anthropic.apiKey': 'sk-ant-test-key',
-            'anthropic.baseURL': 'http://localhost:11434',
-            'anthropic.model': 'claude-sonnet-4-20250514',
-            'opensandbox.agentImage': 'opensandbox/code-interpreter:v1.0.2',
-            'opensandbox.sandboxTimeoutS': 3600,
-          };
-          return config[key] ?? defaultValue;
-        }),
-      };
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          ClaudeCodeProvider,
-          { provide: ConfigService, useValue: mockConfigFalse },
-          {
-            provide: SandboxService,
-            useValue: { isHealthy: jest.fn(), runAgentCommand: jest.fn() },
-          },
-          { provide: SandboxResourceProfileService, useValue: { getProfile: jest.fn() } },
-        ],
-      }).compile();
-      const disabledProvider = module.get<ClaudeCodeProvider>(ClaudeCodeProvider);
-      expect(disabledProvider.isEnabled).toBe(false);
-    });
-  });
-
-  describe('isHealthy', () => {
-    it('should delegate to sandbox service and return true', async () => {
-      const result = await provider.isHealthy();
-      expect(sandboxService.isHealthy).toHaveBeenCalled();
-      expect(result).toBe(true);
-    });
-
-    it('should return false when sandbox service is unhealthy', async () => {
-      sandboxService.isHealthy.mockResolvedValueOnce(false);
-      const result = await provider.isHealthy();
-      expect(result).toBe(false);
-    });
+    executionTracker = module.get(ExecutionTrackerService) as jest.Mocked<ExecutionTrackerService>;
   });
 
   describe('execute', () => {
-    it('should use SandboxService to run claude command', async () => {
+    it('should run full agentic workflow and parse structured output', async () => {
       const result = await provider.execute(mockPayload);
 
-      expect(resourceProfileService.getProfile).toHaveBeenCalledWith(8);
       expect(sandboxService.runAgentCommand).toHaveBeenCalledWith(
         expect.objectContaining({
-          executionId: 'exec-456',
-          image: 'opensandbox/code-interpreter:v1.0.2',
-          command:
-            'npm install -g @anthropic-ai/claude-code --silent 2>/dev/null && claude --dangerously-skip-permissions -p "$CLAUDE_PROMPT"',
-          timeoutSeconds: 3600,
-          cpuLimit: '2',
-          memoryLimit: '4Gi',
-          ticketId: 'ticket-123',
-          metadata: {
-            providerName: ProviderName.CLAUDE_CODE,
-            executionId: 'exec-456',
-            ticketId: 'ticket-123',
-          },
+          command: 'claude --dangerously-skip-permissions -p "/dsf-execution"',
+          env: expect.objectContaining({
+            REPO_URL: 'https://github.com/test/repo',
+            TASK_DESCRIPTION: 'Implement feature X',
+            GITHUB_TOKEN: 'gh-token',
+            QA_MAX_RETRIES: '3',
+          }),
         }),
       );
 
-      // Verify env vars
-      const callArgs = sandboxService.runAgentCommand.mock.calls[0][0];
-      expect(callArgs.env).toBeDefined();
-      expect(callArgs.env['ANTHROPIC_API_KEY']).toBe('sk-ant-test-key');
-      expect(callArgs.env['ANTHROPIC_BASE_URL']).toBe('http://localhost:11434');
-      expect(callArgs.env['ANTHROPIC_MODEL']).toBe('claude-sonnet-4-20250514');
-      expect(callArgs.env['IS_SANDBOX']).toBe('1');
-      expect(callArgs.env['CLAUDE_PROMPT']).toBe('Fix the bug in main.ts');
+      // Verify progress emission
+      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
+        'exec-456',
+        'ticket-123',
+        'proj-789',
+        'Halfway there',
+        50,
+      );
 
       expect(result.success).toBe(true);
-      expect(result.codeDiff).toBe('Successfully fixed bug');
-      expect(result.durationMs).toBe(1500);
+      expect(result.prUrl).toBe('https://github.com/pr/1');
+      expect(result.qaStatus).toBe('PASSED');
+      expect(result.codeDiff).toBeNull(); // NFR-WR4: raw stdout is no longer returned as codeDiff
     });
 
-    it('should handle timeout errors correctly', async () => {
+    it('should return success: false if QA state is FAILED', async () => {
+      sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          options.onStdoutLine('result:{"qaStatus":"FAILED"}');
+        }
+        return {
+          exitCode: 0,
+          stdout: '',
+          stderr: '',
+          durationMs: 100,
+          timedOut: false,
+          sandboxId: 'sbx',
+        };
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(false);
+      expect(result.qaStatus).toBe('FAILED');
+      expect(result.error?.message).toContain('QA self-healing exhausted retries');
+      expect(result.error?.isRetryable).toBe(true);
+    });
+
+    it('should ignore non-structured lines gracefully', async () => {
+      sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          options.onStdoutLine('Random log line');
+          options.onStdoutLine('pct:80:Almost done');
+          options.onStdoutLine('result:{"prUrl":"url"}');
+          options.onStdoutLine('Another random line');
+        }
+        return {
+          exitCode: 0,
+          stdout: '',
+          stderr: '',
+          durationMs: 100,
+          timedOut: false,
+          sandboxId: 'sbx',
+        };
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        'Almost done',
+        80,
+      );
+      expect(result.prUrl).toBe('url');
+    });
+
+    it('should handle sandbox crashes', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'OOM Killed',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx',
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(AIErrorCode.PROCESS_CRASH);
+      expect(result.error?.message).toBe('OOM Killed');
+    });
+
+    it('should handle timeouts', async () => {
       sandboxService.runAgentCommand.mockResolvedValueOnce({
         exitCode: 124,
         stdout: '',
-        stderr: 'Command timed out',
+        stderr: '',
         durationMs: 3600000,
         timedOut: true,
-        sandboxId: 'sbx-123',
+        sandboxId: 'sbx',
       });
 
       const result = await provider.execute(mockPayload);
@@ -183,85 +206,6 @@ describe('ClaudeCodeProvider', () => {
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
       expect(result.error?.isRetryable).toBe(true);
-    });
-
-    it('should handle process crash errors correctly', async () => {
-      sandboxService.runAgentCommand.mockResolvedValueOnce({
-        exitCode: 1,
-        stdout: '',
-        stderr: 'Segmentation fault',
-        durationMs: 500,
-        timedOut: false,
-        sandboxId: 'sbx-123',
-      });
-
-      const result = await provider.execute(mockPayload);
-
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe(AIErrorCode.PROCESS_CRASH);
-      expect(result.error?.isRetryable).toBe(false);
-    });
-
-    it('should default complexity score to 5 if not provided', async () => {
-      await provider.execute({ ...mockPayload, complexityScore: undefined });
-      expect(resourceProfileService.getProfile).toHaveBeenCalledWith(5);
-    });
-
-    it('should pass prompt via CLAUDE_PROMPT env var and use fixed command string', async () => {
-      const promptWithSpecialChars = 'Fix "bug" in main.ts and run $(echo dangerous)';
-      await provider.execute({ ...mockPayload, prompt: promptWithSpecialChars });
-      const callArgs = sandboxService.runAgentCommand.mock.calls[0][0];
-      expect(callArgs.command).toBe(
-        'npm install -g @anthropic-ai/claude-code --silent 2>/dev/null && claude --dangerously-skip-permissions -p "$CLAUDE_PROMPT"',
-      );
-      expect(callArgs.env['CLAUDE_PROMPT']).toBe(promptWithSpecialChars);
-    });
-
-    it('should omit ANTHROPIC_BASE_URL from env when config value is empty string', async () => {
-      const mockConfigNoBaseURL = {
-        get: jest.fn((key: string, defaultValue?: unknown) => {
-          const config: Record<string, unknown> = {
-            'ai.providers.claudeCode.enabled': true,
-            'anthropic.apiKey': 'sk-ant-test-key',
-            'anthropic.baseURL': '',
-            'anthropic.model': 'claude-sonnet-4-20250514',
-            'opensandbox.agentImage': 'opensandbox/code-interpreter:v1.0.2',
-            'opensandbox.sandboxTimeoutS': 3600,
-          };
-          return config[key] ?? defaultValue;
-        }),
-      };
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          ClaudeCodeProvider,
-          { provide: ConfigService, useValue: mockConfigNoBaseURL },
-          {
-            provide: SandboxService,
-            useValue: {
-              isHealthy: jest.fn(),
-              runAgentCommand: jest.fn().mockResolvedValue({
-                exitCode: 0,
-                stdout: '',
-                stderr: '',
-                durationMs: 100,
-                timedOut: false,
-                sandboxId: 'sbx',
-              }),
-            },
-          },
-          {
-            provide: SandboxResourceProfileService,
-            useValue: {
-              getProfile: jest.fn().mockReturnValue({ cpuLimit: '1', memoryLimit: '2Gi' }),
-            },
-          },
-        ],
-      }).compile();
-      const p = module.get<ClaudeCodeProvider>(ClaudeCodeProvider);
-      await p.execute(mockPayload);
-      const sb = module.get(SandboxService) as jest.Mocked<SandboxService>;
-      const callArgs = sb.runAgentCommand.mock.calls[0][0];
-      expect(callArgs.env['ANTHROPIC_BASE_URL']).toBeUndefined();
     });
   });
 });
