@@ -3,6 +3,7 @@ import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
 import { UpdateSyncConfigDto } from './dto/update-sync-config.dto';
+import { UpdateQaStatusConfigDto } from './dto/update-qa-status-config.dto';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -35,6 +36,9 @@ describe('ProjectController', () => {
     updated_at: new Date(),
     is_active: true,
     deactivated_at: null,
+    qa_failure_status: null,
+    manual_review_status: null,
+    code_review_status: null,
   };
 
   const mockIntegration = {
@@ -76,6 +80,7 @@ describe('ProjectController', () => {
             reassign: jest.fn(),
             updateGitHubRepository: jest.fn(),
             updateStatus: jest.fn(),
+            updateQaStatusConfig: jest.fn(),
             syncFromClickUp: jest.fn(),
             deleteProject: jest.fn(),
             updateGithubRepo: jest.fn(),
@@ -321,6 +326,53 @@ describe('ProjectController', () => {
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
       expect(errors.some((e) => e.property === 'container_id')).toBe(true);
+    });
+  });
+
+  describe('updateQaStatusConfig', () => {
+    it('should update QA status configuration fields', async () => {
+      const dto = {
+        qa_failure_status: 'QA Failed',
+        manual_review_status: 'Needs PM',
+        code_review_status: 'Code Review',
+      };
+      service.updateQaStatusConfig.mockResolvedValue({
+        ...mockProject,
+        ...dto,
+      } as any);
+
+      const result = await controller.updateQaStatusConfig('project-123', dto);
+
+      expect((result as any).qa_failure_status).toBe('QA Failed');
+      expect((result as any).manual_review_status).toBe('Needs PM');
+      expect((result as any).code_review_status).toBe('Code Review');
+      expect(service.updateQaStatusConfig).toHaveBeenCalledWith('project-123', dto);
+    });
+
+    it('should validate empty strings as invalid', async () => {
+      const dto = plainToInstance(UpdateQaStatusConfigDto, { qa_failure_status: '' });
+      const errors = await validate(dto);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.property === 'qa_failure_status')).toBe(true);
+    });
+
+    it('should allow null to pass DTO validation (clears the field)', async () => {
+      const dto = plainToInstance(UpdateQaStatusConfigDto, { qa_failure_status: null });
+      const errors = await validate(dto);
+      expect(errors.length).toBe(0);
+    });
+
+    it('should allow clearing config with null', async () => {
+      const dto = { qa_failure_status: null };
+      service.updateQaStatusConfig.mockResolvedValue({
+        ...mockProject,
+        qa_failure_status: null,
+      } as any);
+
+      const result = await controller.updateQaStatusConfig('project-123', dto);
+
+      expect((result as any).qa_failure_status).toBeNull();
+      expect(service.updateQaStatusConfig).toHaveBeenCalledWith('project-123', dto);
     });
   });
 });

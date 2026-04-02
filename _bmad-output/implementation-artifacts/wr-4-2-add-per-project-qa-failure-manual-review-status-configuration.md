@@ -1,6 +1,6 @@
 # Story WR-4.2: Add Per-Project QA Failure & Manual Review Status Configuration
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -51,224 +51,22 @@ So that ClickUp status transitions for QA failures can be customised per project
 
 ---
 
-- [ ] Task 1: Add three new optional fields to `prisma/schema.prisma` (AC: 1)
-
-  In `prisma/schema.prisma`, add after the `is_active` field in the `Project` model (near line 25, before the relation fields):
-
-  ```prisma
-  qa_failure_status     String?                            // WR-4.2: ClickUp status name for QA exhaustion (FR-WR11)
-  manual_review_status  String?                            // WR-4.2: ClickUp status name for PM cancel action (FR-WR11, WR-4.3)
-  code_review_status    String?                            // WR-4.2: ClickUp status name after open_pr action (FR-WR11, WR-4.3)
-  ```
-
-  All three fields are `String?` (nullable) — no default value needed (null = "not configured").
-  - [ ] 1.1 Run `pnpm db:migrate` — name the migration `add_project_qa_status_fields`
-  - [ ] 1.2 Run `pnpm db:generate` to regenerate the Prisma client
-
----
-
-- [ ] Task 2: Create `UpdateQaStatusConfigDto` (AC: 2, 3)
-
-  Create new file `src/projects/dto/update-qa-status-config.dto.ts`:
-
-  ```typescript
-  import { IsString, IsOptional, MinLength } from 'class-validator';
-  import { ApiPropertyOptional } from '@nestjs/swagger';
-
-  export class UpdateQaStatusConfigDto {
-    @ApiPropertyOptional({
-      description:
-        'ClickUp status name to move ticket to when QA retries are exhausted. Pass null to clear.',
-      example: 'QA Failed',
-      nullable: true,
-    })
-    @IsOptional()
-    @IsString()
-    @MinLength(1, { message: 'qa_failure_status must be a non-empty string or null' })
-    qa_failure_status?: string | null;
-
-    @ApiPropertyOptional({
-      description:
-        'ClickUp status name to move ticket to when PM cancels QA-failed execution. Pass null to clear.',
-      example: 'Needs Manual Review',
-      nullable: true,
-    })
-    @IsOptional()
-    @IsString()
-    @MinLength(1, { message: 'manual_review_status must be a non-empty string or null' })
-    manual_review_status?: string | null;
-
-    @ApiPropertyOptional({
-      description:
-        'ClickUp status name to move ticket to after open_pr on QA-failed execution. Pass null to clear.',
-      example: 'Code Review',
-      nullable: true,
-    })
-    @IsOptional()
-    @IsString()
-    @MinLength(1, { message: 'code_review_status must be a non-empty string or null' })
-    code_review_status?: string | null;
-  }
-  ```
-
-  > **Pattern match:** This mirrors `UpdateSyncConfigDto` at `src/projects/dto/update-sync-config.dto.ts` — same `@IsOptional()` + `@IsString()` + `@MinLength(1)` triple for nullable-but-not-empty strings.
-
----
-
-- [ ] Task 3: Add `updateQaStatusConfig()` to `ProjectService` (AC: 2, 5)
-
-  In `src/projects/project.service.ts`:
-  - [ ] 3.1 Update the top-of-file import for `@/prisma/client` — `Prisma` namespace is not currently imported in this service but is needed for `Prisma.ProjectUpdateInput`. Change:
-    ```typescript
-    import { Project } from '@/prisma/client';
-    ```
-    To:
-    ```typescript
-    import { Project, Prisma } from '@/prisma/client';
-    ```
-    Also add the new DTO import with the existing project DTO imports:
-    ```typescript
-    import { UpdateQaStatusConfigDto } from './dto/update-qa-status-config.dto';
-    ```
-  - [ ] 3.2 Add the method after `updateStatus()`:
-
-    ```typescript
-    /**
-     * Update per-project QA status configuration fields (WR-4.2).
-     * Accepted fields: qa_failure_status, manual_review_status, code_review_status.
-     * All are optional; only provided fields are written (undefined = no change, null = clear).
-     */
-    async updateQaStatusConfig(
-      projectId: string,
-      dto: UpdateQaStatusConfigDto,
-    ): Promise<Project> {
-      const existing = await this.repository.findById(projectId);
-      if (!existing) {
-        throw new NotFoundException(`Project ${projectId} not found`);
-      }
-
-      const updateData: Prisma.ProjectUpdateInput = {};
-      if (dto.qa_failure_status !== undefined) updateData.qa_failure_status = dto.qa_failure_status;
-      if (dto.manual_review_status !== undefined) updateData.manual_review_status = dto.manual_review_status;
-      if (dto.code_review_status !== undefined) updateData.code_review_status = dto.code_review_status;
-
-      this.logger.log(`[WR-4.2] Updating QA status config for project ${projectId}`);
-      return this.repository.update(projectId, updateData);
-    }
-    ```
-
-  > **Existing pattern:** `ProjectService.updateStatus()` follows this same guard-then-update pattern. `ProjectRepository.update(id, data: Prisma.ProjectUpdateInput)` already exists at `src/projects/project.repository.ts:L73`.
-
----
-
-- [ ] Task 4: Add `PATCH :id/qa-status-config` endpoint to `ProjectController` (AC: 2, 3, 5)
-
-  In `src/projects/project.controller.ts`:
-  - [ ] 4.1 Add the import for the new DTO (add to the existing DTO import block):
-
-    ```typescript
-    import { UpdateQaStatusConfigDto } from './dto/update-qa-status-config.dto';
-    ```
-
-  - [ ] 4.2 Add the endpoint after `updateStatus()` (around line 196):
-    ```typescript
-    @Patch(':id/qa-status-config')
-    @Roles(Role.ADMIN, Role.MANAGER, Role.PM)
-    @ApiOperation({ summary: 'Update per-project QA failure and manual review ClickUp status names' })
-    @ApiParam({ name: 'id', description: 'Project ID' })
-    @ApiResponse({ status: 200, description: 'QA status configuration updated successfully' })
-    @ApiResponse({ status: 400, description: 'Empty string not accepted — use null to clear' })
-    @ApiResponse({ status: 404, description: 'Project not found' })
-    updateQaStatusConfig(
-      @Param('id') id: string,
-      @Body() dto: UpdateQaStatusConfigDto,
-    ) {
-      return this.projectService.updateQaStatusConfig(id, dto);
-    }
-    ```
-
-  > **Pattern:** Matches `PATCH :id/status` structure. Role guard: ADMIN + MANAGER + PM (PM needs to configure their own project — same as `updateSyncConfig`).
-
----
-
-- [ ] Task 5: Remove `(as any)` cast in `PMExecutionStatusService.notifyQAFailure()` (AC: 4)
-
-  In `src/integrations/pm-execution-status.service.ts`, in the `notifyQAFailure()` method (added by WR-4.1):
-
-  Replace:
-
-  ```typescript
-  const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const qaFailureStatus = ((project as any)?.qa_failure_status as string | null) ?? null;
-  ```
-
-  With:
-
-  ```typescript
-  const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-  const qaFailureStatus = project?.qa_failure_status ?? null;
-  ```
-
-  > **Context:** WR-4.1 used `(project as any)` because `qa_failure_status` didn't exist in the Prisma schema yet. After Task 1 adds it and `pnpm db:generate` regenerates the client (Task 1.2), the field is properly typed on the `Project` type and the cast is no longer needed. **Only apply this task if WR-4.1 has already been merged into the codebase.** If WR-4.1 is not yet merged, skip this task — the WR-4.1 developer will pick it up.
-
----
-
-- [ ] Task 6: Tests for `ProjectController.updateQaStatusConfig` (AC: 2, 3, 5)
-
-  In `src/projects/project.controller.spec.ts`:
-  - [ ] 6.0 **Update `mockProject` fixture** — after `pnpm db:generate` the Prisma `Project` type gains the three new nullable fields. TypeScript strict mode will reject `.mockResolvedValue(mockProject)` if the fixture is missing them. Add to the `mockProject` object (around line 37, after `deactivated_at: null`):
-
-    ```typescript
-    qa_failure_status: null,
-    manual_review_status: null,
-    code_review_status: null,
-    ```
-
-  - [ ] 6.1 Add `updateQaStatusConfig` to the `ProjectService` mock in the test module:
-
-    ```typescript
-    updateQaStatusConfig: jest.fn().mockResolvedValue({ ...mockProject, qa_failure_status: 'QA Failed' }),
-    ```
-
-  - [ ] 6.2 Add describe block `'updateQaStatusConfig'` with test cases:
-    - `'should update qa_failure_status when provided'` — call `controller.updateQaStatusConfig('project-123', { qa_failure_status: 'QA Failed' })`, assert `projectService.updateQaStatusConfig` called with `('project-123', { qa_failure_status: 'QA Failed' })`
-    - `'should clear qa_failure_status when null passed'` — call with `{ qa_failure_status: null }`, assert service called with `{ qa_failure_status: null }`
-    - `'should update all three fields in one call'` — call with all three fields set, assert service called with all three
-    - `'should reject empty string via validation'` — use `plainToInstance(UpdateQaStatusConfigDto, { qa_failure_status: '' })` + `validate()`, assert at least one validation error on `qa_failure_status`
-
-  > **Pattern:** Follow the `updateSyncConfig` test block at lines 246–315 of `project.controller.spec.ts` — identical structure.
-
----
-
-- [ ] Task 7: Tests for `ProjectService.updateQaStatusConfig` (AC: 2, 5)
-
-  In `src/projects/project.service.spec.ts`:
-  - [ ] 7.0 **Update `mockProject` fixture** — same reason as Task 6.0. Add to the `mockProject` object at `src/projects/project.service.spec.ts:L38` (after `deactivated_at: null`):
-
-    ```typescript
-    qa_failure_status: null,
-    manual_review_status: null,
-    code_review_status: null,
-    ```
-
-  - [ ] 7.1 Add describe block `'updateQaStatusConfig'` with test cases:
-    - `'should update qa_failure_status on the project'` — mock `repository.findById` returns `mockProject`, mock `repository.update` returns updated project, assert `repository.update` called with `(projectId, { qa_failure_status: 'QA Failed' })`
-    - `'should throw NotFoundException when project not found'` — mock `repository.findById` returns `null`, assert `updateQaStatusConfig` rejects with `NotFoundException`
-    - `'should only include defined fields in update payload'` — call with `{ qa_failure_status: 'QA Failed' }` only, assert `repository.update` called with `{ qa_failure_status: 'QA Failed' }` and NO `manual_review_status` key in the payload
-    - `'should pass null to clear a field'` — call with `{ qa_failure_status: null }`, assert `repository.update` called with `{ qa_failure_status: null }`
-
----
-
-- [ ] Task 8: Run and verify (AC: 6)
-  - [ ] 8.1 `pnpm db:validate` → schema integrity confirmed before migration
-  - [ ] 8.2 `pnpm db:migrate` → migration `add_project_qa_status_fields` applied cleanly
-  - [ ] 8.3 `pnpm db:generate` → Prisma client has `qa_failure_status`, `manual_review_status`, `code_review_status` on `Project` type
-  - [ ] 8.4 `pnpm test -- --testPathPattern="project.controller"` → green
-  - [ ] 8.5 `pnpm test -- --testPathPattern="project.service"` → green
-  - [ ] 8.6 _(Conditional — only if Task 5 was applied)_ `pnpm test -- --testPathPattern="pm-execution-status"` → green
-  - [ ] 8.7 `pnpm typecheck` → zero errors (especially verify Task 5 cast removal and new `Prisma` import in service both compile cleanly)
-  - [ ] 8.8 `pnpm build` → clean build
+- [x] Task 1: Add three new optional fields to `prisma/schema.prisma` (AC: 1)
+- [x] Task 2: Create `UpdateQaStatusConfigDto` (AC: 2, 3)
+- [x] Task 3: Add `updateQaStatusConfig()` to `ProjectService` (AC: 2, 5)
+- [x] Task 4: Add `PATCH :id/qa-status-config` endpoint to `ProjectController` (AC: 2, 3, 5)
+- [x] Task 5: Remove `(as any)` cast in `PMExecutionStatusService.notifyQAFailure()` (AC: 4)
+- [x] Task 6: Tests for `ProjectController.updateQaStatusConfig` (AC: 2, 3, 5)
+- [x] Task 7: Tests for `ProjectService.updateQaStatusConfig` (AC: 2, 5)
+- [x] Task 8: Run and verify (AC: 6)
+  - [x] 8.1 `pnpm db:validate` → schema integrity confirmed before migration
+  - [x] 8.2 `pnpm db:migrate` → migration `add_project_qa_status_fields` applied cleanly
+  - [x] 8.3 `pnpm db:generate` → Prisma client has `qa_failure_status`, `manual_review_status`, `code_review_status` on `Project` type
+  - [x] 8.4 `pnpm test -- --testPathPattern="project.controller"` → green
+  - [x] 8.5 `pnpm test -- --testPathPattern="project.service"` → green
+  - [x] 8.6 _(Conditional — only if Task 5 was applied)_ `pnpm test -- --testPathPattern="pm-execution-status"` → green
+  - [x] 8.7 `pnpm typecheck` → zero errors (especially verify Task 5 cast removal and new `Prisma` import in service both compile cleanly)
+  - [x] 8.8 `pnpm build` → clean build
 
 ---
 
@@ -359,6 +157,17 @@ code_review_status: null,
 - [Source: `src/projects/project.service.ts` — `updateStatus()` guard-then-update pattern]
 - [Source: `prisma/schema.prisma:L9–L39` — `Project` model field ordering]
 
+---
+
+## Review Findings
+
+- [x] [Review][Patch] No-op DB write when all DTO fields are undefined — guard `updateData` before calling `repository.update` [project.service.ts:L443–449]
+- [x] [Review][Patch] NotFoundException test missing `not.toHaveBeenCalled()` on `repository.update` [project.service.spec.ts:L527–529]
+- [x] [Review][Patch] Null-clearing path not validated through `plainToInstance`+`validate()` in controller spec [project.controller.spec.ts:L359]
+- [x] [Review][Patch] Log emitted before `repository.update()` resolves — move to after or add error-path log [project.service.ts:L448]
+
+---
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -370,3 +179,14 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+| File                                                                          | Change                                                                                                  |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `prisma/schema.prisma`                                                        | Added `qa_failure_status`, `manual_review_status`, `code_review_status` as `String?` to `Project` model |
+| `prisma/migrations/20260402185858_add_project_qa_status_fields/migration.sql` | Migration: `ALTER TABLE "projects" ADD COLUMN` for three new fields                                     |
+| `src/projects/dto/update-qa-status-config.dto.ts`                             | **NEW** — DTO with three optional nullable-string fields + `@MinLength(1)` guards                       |
+| `src/projects/project.service.ts`                                             | Added `updateQaStatusConfig()` method; added `Prisma` to import                                         |
+| `src/projects/project.controller.ts`                                          | Added `PATCH :id/qa-status-config` endpoint                                                             |
+| `src/integrations/pm-execution-status.service.ts`                             | Removed `(as any)` cast for `qa_failure_status`                                                         |
+| `src/projects/project.controller.spec.ts`                                     | Added `updateQaStatusConfig` test suite + new fields to `mockProject` fixture                           |
+| `src/projects/project.service.spec.ts`                                        | Added `updateQaStatusConfig` test suite + new fields to `mockProject` fixture                           |

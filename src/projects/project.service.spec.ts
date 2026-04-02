@@ -38,6 +38,9 @@ describe('ProjectService', () => {
     deactivated_at: null,
     created_at: new Date(),
     updated_at: new Date(),
+    qa_failure_status: null,
+    manual_review_status: null,
+    code_review_status: null,
   };
 
   const mockCounter = {
@@ -485,6 +488,53 @@ describe('ProjectService', () => {
         operation: 'update_status',
         status: 'success',
       });
+    });
+  });
+
+  describe('updateQaStatusConfig', () => {
+    it('should update QA status configuration fields', async () => {
+      const updatedProject = {
+        ...mockProject,
+        qa_failure_status: 'QA Failed',
+        manual_review_status: 'Needs PM',
+        code_review_status: 'Code Review',
+      };
+      const dto = {
+        qa_failure_status: 'QA Failed',
+        manual_review_status: 'Needs PM',
+        code_review_status: 'Code Review',
+      };
+
+      repository.findById.mockResolvedValue(mockProject);
+      repository.update.mockResolvedValue(updatedProject as any);
+
+      const result = await service.updateQaStatusConfig('project-123', dto);
+
+      expect((result as any).qa_failure_status).toBe('QA Failed');
+      expect((result as any).manual_review_status).toBe('Needs PM');
+      expect((result as any).code_review_status).toBe('Code Review');
+      expect(repository.update).toHaveBeenCalledWith('project-123', {
+        qa_failure_status: 'QA Failed',
+        manual_review_status: 'Needs PM',
+        code_review_status: 'Code Review',
+      });
+    });
+
+    it('should throw NotFoundException if project not found', async () => {
+      repository.findById.mockResolvedValue(null);
+      await expect(service.updateQaStatusConfig('project-123', {})).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('should return existing record without calling repository.update when no fields provided', async () => {
+      repository.findById.mockResolvedValue(mockProject);
+
+      const result = await service.updateQaStatusConfig('project-123', {});
+
+      expect(result).toEqual(mockProject);
+      expect(repository.update).not.toHaveBeenCalled();
     });
   });
 

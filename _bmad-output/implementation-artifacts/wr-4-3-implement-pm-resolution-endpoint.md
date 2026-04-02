@@ -208,8 +208,11 @@ So that I can decide in one API call whether to open the PR for manual review or
         const provider = await this.providerFactory.getProvider(integration);
 
         // 4. Read configured status field from Project (WR-4.2 adds these fields)
+        // Use explicit ternary — TypeScript strict mode may reject project?.[statusField] indexed access
         const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-        const configuredStatus = project?.[statusField] ?? null;
+        const configuredStatus = statusField === 'code_review_status'
+          ? (project?.code_review_status ?? null)
+          : (project?.manual_review_status ?? null);
 
         if (!configuredStatus) {
           this.logger.warn(
@@ -257,7 +260,7 @@ So that I can decide in one API call whether to open the PR for manual review or
 
   > **Pattern:** `moveTicketToConfiguredStatus()` is the exact same structure as `notifyQAFailure()` in WR-4.1 — same try/catch, same ClickUp resolution flow, same config-gap fallback. The only difference is which `Project` field is read. Do NOT duplicate the ClickUp resolution logic again — extract it into the shared private method.
   >
-  > **Type note:** `project?.[statusField]` uses indexed access on the Prisma `Project` type. After WR-4.2 runs `pnpm db:generate`, both `code_review_status` and `manual_review_status` are typed as `string | null` on `Project`. TypeScript will accept `project?.[statusField]` where `statusField` is narrowed to the union type above.
+  > **Type note:** The explicit ternary `statusField === 'code_review_status' ? project?.code_review_status : project?.manual_review_status` is used instead of `project?.[statusField]` indexed access because TypeScript strict mode may reject the indexed access pattern. Both `code_review_status` and `manual_review_status` are typed as `string | null` on the Prisma-generated `Project` type after WR-4.2 runs `pnpm db:generate`.
 
 ---
 
@@ -286,9 +289,10 @@ So that I can decide in one API call whether to open the PR for manual review or
   }
   ```
 
-  Also add `ResolveQaFailureDto` to the barrel export at `src/execution/dto/index.ts`:
+  Also **append** (do not replace existing exports) the new DTO export to the barrel at `src/execution/dto/index.ts`:
 
   ```typescript
+  // WR-4.3: PM resolution endpoint DTO
   export { ResolveQaFailureDto, QaFailureResolutionAction } from './resolve-qa-failure.dto';
   ```
 
@@ -301,6 +305,7 @@ So that I can decide in one API call whether to open the PR for manual review or
   ```typescript
   import {
     Injectable,
+    Logger,
     NotFoundException,
     ConflictException,
     UnprocessableEntityException,
@@ -310,8 +315,8 @@ So that I can decide in one API call whether to open the PR for manual review or
   import { ExecutionRepository } from '@/execution/execution.repository';
   import { GitHubService } from '@/github/github.service';
   import { PMExecutionStatusService } from '@/integrations/pm-execution-status.service';
-  import { LoggerService } from '@/common/logger/logger.service';
   import { ExecutionStatus } from '@/execution/enums/execution-status.enum';
+  import { GitHubStatus } from '@/prisma/client';
   import { QaFailureResolutionAction, ResolveQaFailureDto } from '../dto/resolve-qa-failure.dto';
 
   export interface QAResolutionResult {
@@ -323,13 +328,16 @@ So that I can decide in one API call whether to open the PR for manual review or
 
   @Injectable()
   export class QAFailureResolutionService {
+    // Use NestJS built-in Logger — LoggerService requires LoggerModule import which ExecutionModule doesn't have.
+    // All services in src/execution/services/ follow this pattern (see approval.service.ts).
+    private readonly logger = new Logger(QAFailureResolutionService.name);
+
     constructor(
       private readonly prisma: PrismaService,
       private readonly trackerService: ExecutionTrackerService,
       private readonly repository: ExecutionRepository,
       private readonly githubService: GitHubService,
       private readonly pmStatus: PMExecutionStatusService,
-      private readonly logger: LoggerService,
     ) {}
 
     async resolve(
@@ -454,7 +462,7 @@ So that I can decide in one API call whether to open the PR for manual review or
           branch_name: execution.qa_failed_branch,
           pr_number: prNumber,
           pr_url: prUrl,
-          push_status: 'PR_CREATED',
+          push_status: GitHubStatus.PR_CREATED,
         },
       });
 
@@ -475,8 +483,10 @@ So that I can decide in one API call whether to open the PR for manual review or
 
       // 10. Transition execution to COMPLETED
       // completeExecution() calls stateMachine.transition(QA_FAILED → COMPLETED) — valid after WR-4.1 adds transition rule
+      // IExecutionCompletion requires: executionId, codeOutput (string), filesChanged (string[]), confidenceScore (number)
+      // All fields are required — use empty/zero values since this is a PM resolution, not an AI completion
       await this.trackerService.completeExecution(
-        { executionId: execution.id, filesChanged: [], confidenceScore: undefined },
+        { executionId: execution.id, codeOutput: '', filesChanged: [], confidenceScore: 0 },
         correlationId,
       );
 
@@ -664,9 +674,12 @@ So that I can decide in one API call whether to open the PR for manual review or
   **Mock setup:**
 
   ```typescript
+  import { ExecutionStatus } from '@/execution/enums/execution-status.enum';
+
+  // Use the enum value, not a bare string — the service compares with === against the enum
   const mockExecution = {
     id: 'exec-123',
-    status: 'QA_FAILED',
+    status: ExecutionStatus.QA_FAILED,
     qa_failed_branch: 'feature/test-branch',
     ticket_id: 'ticket-456',
     ticket: {
@@ -682,17 +695,18 @@ So that I can decide in one API call whether to open the PR for manual review or
   };
 
   // Mocks: PrismaService, ExecutionTrackerService, ExecutionRepository,
-  //        GitHubService, PMExecutionStatusService, LoggerService
+  //        GitHubService, PMExecutionStatusService
+  // Note: Logger is not injected — it's a class field (new Logger(name)), so no mock needed
   ```
 
   **Test cases:**
   - `'should throw NotFoundException for unknown execution'` — mock `prisma.execution.findUnique` returns `null`, assert throws `NotFoundException`
   - `'should throw ConflictException when status is not QA_FAILED'` — mock execution with `status: 'IN_PROGRESS'`, assert throws `ConflictException` with message containing `"not in QA_FAILED state"`
   - `'should throw UnprocessableEntityException for open_pr with null qa_failed_branch'` — mock execution with `qa_failed_branch: null`, call with `action: 'open_pr'`, assert throws `UnprocessableEntityException` with "no pushed branch"
-  - `'should create PR and transition to COMPLETED on open_pr'` — mock `prisma.gitHubAccount.findUnique` returns `{ installationId: 'install-1' }`, mock `githubService.createPullRequest` returns `{ number: 42, html_url: 'https://github.com/org/repo/pull/42' }`, mock `githubService.addLabelsToPR` resolves, mock `prisma.gitHubPush.create` resolves, mock `pmStatus.notifyCodeReview` resolves, mock `trackerService.completeExecution` resolves, assert result is `{ action: 'open_pr', prUrl: 'https://...', prNumber: 42 }`, assert `trackerService.completeExecution` called with `{ executionId: 'exec-123', filesChanged: [], confidenceScore: undefined }`
+  - `'should create PR and transition to COMPLETED on open_pr'` — mock `prisma.gitHubAccount.findUnique` returns `{ installationId: 'install-1' }`, mock `githubService.createPullRequest` returns `{ number: 42, html_url: 'https://github.com/org/repo/pull/42' }`, mock `githubService.addLabelsToPR` resolves, mock `prisma.gitHubPush.create` resolves, mock `pmStatus.notifyCodeReview` resolves, mock `trackerService.completeExecution` resolves, assert result is `{ action: 'open_pr', prUrl: 'https://...', prNumber: 42 }`, assert `trackerService.completeExecution` called with `{ executionId: 'exec-123', codeOutput: '', filesChanged: [], confidenceScore: 0 }`
   - `'should still complete execution if qa-failed label attachment fails'` — mock `githubService.addLabelsToPR` throws, assert `trackerService.completeExecution` still called (label failure is best-effort)
   - `'should still complete execution if notifyCodeReview fails'` — mock `pmStatus.notifyCodeReview` throws, assert `trackerService.completeExecution` still called
-  - `'should create GitHubPush record with PR info on open_pr'` — assert `prisma.gitHubPush.create` called with `{ execution_id: 'exec-123', branch_name: 'feature/test-branch', pr_number: 42, pr_url: 'https://...', push_status: 'PR_CREATED' }`
+  - `'should create GitHubPush record with PR info on open_pr'` — assert `prisma.gitHubPush.create` called with `{ execution_id: 'exec-123', branch_name: 'feature/test-branch', pr_number: 42, pr_url: 'https://...', push_status: GitHubStatus.PR_CREATED }`
   - `'should transition to FAILED and return branchName on cancel'` — mock `pmStatus.notifyCancel` resolves, mock `trackerService.failExecution` resolves, assert result is `{ action: 'cancel', branchName: 'feature/test-branch' }`, assert `trackerService.failExecution` called with `{ executionId: 'exec-123', isRetryable: false, errorCode: 'PM_CANCELLED' }`
   - `'should still cancel execution if notifyCancel fails'` — mock `pmStatus.notifyCancel` throws, assert `trackerService.failExecution` still called
   - `'should use fallback to PAT when github_account_id is null'` — mock execution with `project.github_account_id: null`, assert `githubService.createPullRequest` called with `installationId: undefined`
@@ -718,7 +732,7 @@ So that I can decide in one API call whether to open the PR for manual review or
 ---
 
 - [ ] Task 9: Run and verify (AC: 10)
-  - [ ] 9.1 `pnpm typecheck` → zero errors (especially validate the `project?.[statusField]` indexed access in Task 2.3 compiles cleanly against the WR-4.2 Prisma-generated types)
+  - [ ] 9.1 `pnpm typecheck` → zero errors (especially validate the explicit ternary in Task 2.3 compiles cleanly against the WR-4.2 Prisma-generated types)
   - [ ] 9.2 `pnpm test -- --testPathPattern="qa-failure-resolution"` → green
   - [ ] 9.3 `pnpm test -- --testPathPattern="pm-execution-status"` → green
   - [ ] 9.4 `pnpm test -- --testPathPattern="execution.controller"` → green (ensure existing tests still pass after controller changes)
@@ -763,7 +777,7 @@ After WR-4.1 adds `QA_FAILED → [COMPLETED, FAILED]` to `VALID_TRANSITIONS`, th
 
 ### PR URL Persistence Pattern
 
-The `Execution` model has no `pr_url` column. The existing pattern (from `GitHubPROrchestrator`) is to create a `GitHubPush` record. WR-4.3 follows this same pattern — `prisma.gitHubPush.create()` with `push_status: 'PR_CREATED'` ties the PR URL to the execution via `execution_id`.
+The `Execution` model has no `pr_url` column. The existing pattern (from `GitHubPROrchestrator`) is to create a `GitHubPush` record. WR-4.3 follows this same pattern — `prisma.gitHubPush.create()` with `push_status: GitHubStatus.PR_CREATED` ties the PR URL to the execution via `execution_id`.
 
 `GitHubPush` required fields: `execution_id`, `repository`, `branch_name`. Optional: `commit_sha`, `pr_number`, `pr_url`, `push_status` (defaults to `PENDING`). [Source: `prisma/schema.prisma:L199–L214`]
 
@@ -771,16 +785,30 @@ The `Execution` model has no `pr_url` column. The existing pattern (from `GitHub
 
 Both `notifyCodeReview()` and `notifyCancel()` must NEVER prevent the execution state transition. The ClickUp calls are wrapped in try/catch in the resolution service — if ClickUp fails, the execution still transitions to COMPLETED/FAILED. This is consistent with how `notifyQAFailure()` in WR-4.1 is designed.
 
-### `project?.[statusField]` Indexed Access
+### `IExecutionCompletion` Interface — All Fields Required
 
-The `moveTicketToConfiguredStatus()` helper uses `project?.[statusField]` where `statusField` is `'code_review_status' | 'manual_review_status'`. TypeScript will validate this against the Prisma-generated `Project` type after `pnpm db:generate` (WR-4.2). Both fields are `string | null` on `Project`. If TypeScript rejects this pattern (strict indexing), use an explicit switch/ternary instead:
+`IExecutionCompletion` at `src/execution/interfaces/execution.interface.ts:L74–L80` has four **required** fields: `executionId: string`, `codeOutput: string`, `filesChanged: string[]`, `confidenceScore: number`. None are optional. The `open_pr` path calls `completeExecution({ executionId, codeOutput: '', filesChanged: [], confidenceScore: 0 })` with empty/zero values since this is a PM resolution, not an AI-generated completion.
+
+### Logger Pattern — Use Built-in `new Logger(name)`
+
+`QAFailureResolutionService` uses `private readonly logger = new Logger(QAFailureResolutionService.name)` (NestJS built-in). Do NOT inject `LoggerService` from `@/common/logger/logger.service` — `ExecutionModule` does not import `LoggerModule`. All services in `src/execution/services/` follow this `new Logger()` pattern.
+
+### `GitHubStatus` Enum for `push_status`
+
+When creating the `GitHubPush` record, use `GitHubStatus.PR_CREATED` imported from `@/prisma/client` — not the bare string `'PR_CREATED'`. Prisma-generated enums require the typed enum value for strict TypeScript compliance.
+
+### Status Field Access — Explicit Ternary
+
+The `moveTicketToConfiguredStatus()` helper uses an explicit ternary to read the configured status from the `Project` model:
 
 ```typescript
 const configuredStatus =
   statusField === 'code_review_status'
-    ? project?.code_review_status
-    : project?.manual_review_status;
+    ? (project?.code_review_status ?? null)
+    : (project?.manual_review_status ?? null);
 ```
+
+This avoids `project?.[statusField]` indexed access which TypeScript strict mode may reject. Both `code_review_status` and `manual_review_status` are typed as `string | null` on the Prisma-generated `Project` type after WR-4.2.
 
 ### `forwardRef` for GitHubModule Import
 

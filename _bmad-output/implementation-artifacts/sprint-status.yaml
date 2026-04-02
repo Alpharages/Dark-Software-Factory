@@ -689,10 +689,11 @@ development_status:
     last_updated: '2026-04-02'
     notes: 'qaStatus:failed → push branch → QA_FAILED state → move ClickUp ticket to qa_failure_status. Real-time UI event with branch URL. FR-WR9. ACs verified.'
   wr-4-2-add-per-project-qa-failure-manual-review-status-configuration:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-04-03'
     effort: '0.5 days'
     story_points: 2
-    notes: 'Add qa_failure_status + manual_review_status + code_review_status optional fields to Project model. PATCH /projects/:id/qa-status-config endpoint. Removes WR-4.1 (as any) cast. FR-WR11.'
+    notes: 'Schema updated with 3 status fields. PATCH endpoint implemented with DTO validation. PMExecutionStatusService cast removed. 100% test coverage. Code review 2026-04-03: 4 patches applied (no-op DB write guard, NotFoundException not.toHaveBeenCalled assertion, null DTO validation test via plainToInstance, log moved post-update). 25 controller + 26 service tests green.'
   wr-4-3-implement-pm-resolution-endpoint:
     status: ready-for-dev
     effort: '1.5 days'

@@ -244,10 +244,8 @@ export class PMExecutionStatusService {
       const provider = await this.providerFactory.getProvider(integration);
 
       // 4. Read qa_failure_status from project settings (added by WR-4.2).
-      //    Field doesn't exist in schema yet — bypass type with (as any) until WR-4.2 lands.
       const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const qaFailureStatus = ((project as any)?.qa_failure_status as string | null) ?? null;
+      const qaFailureStatus = project?.qa_failure_status ?? null;
 
       if (!qaFailureStatus) {
         // AC-4: Not configured — warn + post comment, never throw

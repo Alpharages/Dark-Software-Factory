@@ -16,7 +16,8 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ReassignProjectDto } from './dto/reassign-project.dto';
 import { ImportProjectDto } from './dto/import-project.dto';
 import { UpdateGithubRepoDto } from './dto/update-github-repo.dto';
-import { Project } from '@/prisma/client';
+import { UpdateQaStatusConfigDto } from './dto/update-qa-status-config.dto';
+import { Project, Prisma } from '@/prisma/client';
 import { PMProvider } from '@/prisma/enums';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
@@ -423,6 +424,36 @@ export class ProjectService {
       this.operationsCounter.inc({ operation: 'update_status', status: 'error' });
       throw _error;
     }
+  }
+
+  /**
+   * Update per-project QA status configuration fields (WR-4.2).
+   * Accepted fields: qa_failure_status, manual_review_status, code_review_status.
+   * All are optional; only provided fields are written (undefined = no change, null = clear).
+   */
+  async updateQaStatusConfig(projectId: string, dto: UpdateQaStatusConfigDto): Promise<Project> {
+    const existing = await this.repository.findById(projectId);
+    if (!existing) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    const updateData: Prisma.ProjectUpdateInput = {};
+    if (dto.qa_failure_status !== undefined) updateData.qa_failure_status = dto.qa_failure_status;
+    if (dto.manual_review_status !== undefined)
+      updateData.manual_review_status = dto.manual_review_status;
+    if (dto.code_review_status !== undefined)
+      updateData.code_review_status = dto.code_review_status;
+
+    if (Object.keys(updateData).length === 0) {
+      this.logger.log(
+        `[WR-4.2] No fields to update for project ${projectId} — returning existing record`,
+      );
+      return existing;
+    }
+
+    const updated = await this.repository.update(projectId, updateData);
+    this.logger.log(`[WR-4.2] QA status config updated for project ${projectId}`);
+    return updated;
   }
 
   /**

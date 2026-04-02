@@ -29,6 +29,7 @@ import {
   toPmIntegrationResponse,
 } from './dto/sync-config-response.dto';
 import { UpdateSyncConfigDto } from './dto/update-sync-config.dto';
+import { UpdateQaStatusConfigDto } from './dto/update-qa-status-config.dto';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
 import { PMProvider, Prisma } from '@prisma/client';
 import {
@@ -192,6 +193,17 @@ export class ProjectController {
     }
     const resolvedIsActive = dto.isActive ?? dto.status === 'active';
     return this.projectService.updateStatus(id, resolvedIsActive);
+  }
+
+  @Patch(':id/qa-status-config')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PM)
+  @ApiOperation({ summary: 'Update per-project QA failure and manual review ClickUp status names' })
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiResponse({ status: 200, description: 'QA status configuration updated successfully' })
+  @ApiResponse({ status: 400, description: 'Empty string not accepted — use null to clear' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  updateQaStatusConfig(@Param('id') id: string, @Body() dto: UpdateQaStatusConfigDto) {
+    return this.projectService.updateQaStatusConfig(id, dto);
   }
 
   @Post(':id/sync')

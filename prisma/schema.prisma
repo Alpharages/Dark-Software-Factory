@@ -23,6 +23,9 @@ model Project {
   sync_config           Json?
   deactivated_at        DateTime?
   is_active             Boolean                @default(true)
+  qa_failure_status     String?                            // WR-4.2: ClickUp status name for QA exhaustion (FR-WR11)
+  manual_review_status  String?                            // WR-4.2: ClickUp status name for PM cancel action (FR-WR11, WR-4.3)
+  code_review_status    String?                            // WR-4.2: ClickUp status name after open_pr action (FR-WR11, WR-4.3)
   conversations         ClientConversation[]
   coverage_baseline     CoverageBaseline?
   coverage_config       ProjectCoverageConfig?
