@@ -95,6 +95,7 @@ model Execution {
   routing_reason        String?
   scheduled_retry_at    DateTime?
   base_branch           String?
+  qa_failed_branch      String?             // WR-4.1: branch pushed when QA exhausted retries
   branch_selection_log  String?
   circular_dep_detected Boolean             @default(false)
   file_modifications    Json?
@@ -1131,6 +1132,7 @@ enum ExecutionStatus {
   CANCELLED
   AWAITING_APPROVAL
   EMERGENCY_STOPPED
+  QA_FAILED          // WR-4.1: QA retries exhausted; awaiting PM resolution
 }
 
 enum GitHubStatus {

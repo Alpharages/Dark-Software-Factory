@@ -90,6 +90,16 @@ export interface IExecutionFailure {
 }
 
 /**
+ * QA failure data — QA retries exhausted, branch pushed, awaiting PM resolution
+ */
+export interface IExecutionQAFailure {
+  executionId: string;
+  errorMessage: string;
+  branchName: string | null;
+  qaRetryCount?: number;
+}
+
+/**
  * Execution timeout data
  */
 export interface IExecutionTimeout {
@@ -118,7 +128,7 @@ export interface IExecutionEvent {
 export interface IExecutionAuditLog {
   entityType: 'execution';
   entityId: string;
-  action: 'created' | 'status_changed' | 'completed' | 'failed' | 'retried';
+  action: 'created' | 'status_changed' | 'completed' | 'failed' | 'retried' | 'qa_failed';
   actorType: 'system';
   actorId: null;
   beforeState: Record<string, unknown> | null;

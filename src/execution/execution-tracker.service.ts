@@ -15,6 +15,7 @@ import {
   IExecutionTimeout,
   IExecutionEvent,
   IStateTransition,
+  IExecutionQAFailure,
 } from './interfaces';
 import { RealtimeService } from '@/realtime/realtime.service';
 import {
@@ -24,6 +25,7 @@ import {
   ExecutionTimeoutEvent,
   ExecutionCancelledEvent,
   ExecutionProgressEvent,
+  ExecutionQAFailedEvent,
 } from '@/realtime/realtime.types';
 import { AI_METRICS, CONTAINER_METRICS } from '@/common/metrics';
 import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
@@ -426,6 +428,87 @@ export class ExecutionTrackerService implements OnModuleInit {
         maxRetries: execution.max_retries,
       },
     });
+
+    return transition;
+  }
+
+  /**
+   * Transition execution to QA_FAILED state.
+   * QA retries are exhausted; branch has been pushed but no PR created.
+   * Terminal state until PM resolves via POST /executions/:id/resolve-qa-failure (WR-4.3).
+   * Never triggers auto-retry.
+   */
+  async qaFailExecution(
+    failure: IExecutionQAFailure,
+    correlationId: string,
+  ): Promise<IStateTransition> {
+    const { executionId, errorMessage, branchName, qaRetryCount } = failure;
+    const execution = await this.getExecutionOrThrow(executionId);
+
+    const transition = this.stateMachine.transition(
+      executionId,
+      execution.status,
+      ExecutionStatus.QA_FAILED,
+      errorMessage,
+    );
+
+    try {
+      // Atomically update status + branch name in a single DB call (P3: prevents partial-write)
+      await this.repository.updateStatus(executionId, ExecutionStatus.QA_FAILED, {
+        errorMessage,
+        branchName: branchName ?? null,
+      });
+
+      await this.repository.createAuditLog({
+        entityType: 'execution',
+        entityId: executionId,
+        action: 'qa_failed',
+        actorType: 'system',
+        actorId: null,
+        beforeState: { status: execution.status },
+        afterState: {
+          status: ExecutionStatus.QA_FAILED,
+          errorMessage,
+          branchName,
+          qaRetryCount,
+        },
+        createdAt: new Date(),
+      });
+
+      await this.repository.updateTicketStatus(execution.ticket_id, 'QA_FAILED');
+
+      await this.emitExecutionEvent({
+        eventType: 'STATUS_CHANGED',
+        correlationId,
+        executionId,
+        ticketId: execution.ticket_id,
+        provider: execution.ai_provider,
+        status: ExecutionStatus.QA_FAILED,
+        timestamp: new Date().toISOString(),
+        payload: { errorMessage, branchName, qaRetryCount },
+      });
+
+      this.executionCounter.inc({ provider: execution.ai_provider, status: 'qa_failed' });
+      await this.updateStatusGauges();
+
+      // Emit real-time WebSocket event inside try/catch (P2: prevents crash-cascade on Socket.IO fault)
+      await this.emitWebSocketEvent<ExecutionQAFailedEvent>('execution.qa_failed', {
+        executionId,
+        ticketId: execution.ticket_id,
+        projectId: execution.ticket?.project_id || null,
+        provider: execution.ai_provider,
+        status: ExecutionStatus.QA_FAILED,
+        timestamp: new Date().toISOString(),
+        payload: {
+          errorMessage,
+          branchName: branchName ?? null,
+          qaRetryCount,
+        },
+      });
+    } catch (e) {
+      this.logger.error(`[${correlationId}] Error in qaFailExecution:`, e);
+      throw e;
+    }
 
     return transition;
   }

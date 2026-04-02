@@ -33,6 +33,7 @@ describe('CleanupService', () => {
     error_context: null,
     scheduled_retry_at: null,
     base_branch: null,
+    qa_failed_branch: null,
     branch_selection_log: null,
     file_modifications: null,
     risk_level: null,

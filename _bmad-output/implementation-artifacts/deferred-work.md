@@ -1,5 +1,11 @@
 # Deferred Work Log
 
+## Deferred from: code review of wr-4-1-implement-hard-qa-failure-provider-behaviour-state-transition (2026-04-02)
+
+- **D1: State-machine `transition()` called before DB writes — split-brain on crash** — pre-existing pattern across all tracker methods (failExecution, timeoutExecution, cancelExecution). If the DB write fails, the in-memory state machine has advanced but the DB has not. Revisit when designing distributed state management. [`src/execution/execution-tracker.service.ts`]
+- **D2: TOCTOU — `execution.ticket?.project_id` fetched at start of `qaFailExecution`, used in WebSocket payload after two subsequent DB writes** — same pattern exists in all other tracker methods. If ticket is reassigned between fetch and emit, the WebSocket event is routed to wrong project room. Low frequency risk. [`src/execution/execution-tracker.service.ts`]
+- **D3: `repository.update` silent-miss for `qa_failed_branch` if row is deleted between `updateStatus` and `update` calls** — pre-existing `updateMany`-based repository contract; silent miss is documented behavior. Partially mitigated by P3 patch (atomic write). [`src/execution/execution.repository.ts`]
+
 ## Deferred from: code review of wr-3-1-wire-all-execution-milestones-to-progress-bar (2026-04-02)
 
 - **W1: Multiple sequential `type:'result'` lines merge via spread accumulation** — second partial line with missing keys does not overwrite prior values via spread semantics, but behavior is undocumented and untested. Revisit if agent protocol ever emits incremental result lines. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]

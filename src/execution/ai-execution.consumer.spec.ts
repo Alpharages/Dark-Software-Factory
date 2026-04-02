@@ -88,6 +88,12 @@ describe('AIExecutionConsumer', () => {
         newStatus: ExecutionStatus.FAILED,
         transitionedAt: new Date(),
       }),
+      qaFailExecution: jest.fn().mockResolvedValue({
+        executionId: 'exec-789',
+        previousStatus: ExecutionStatus.IN_PROGRESS,
+        newStatus: 'QA_FAILED',
+        transitionedAt: new Date(),
+      }),
       emitProgress: jest.fn(),
     };
 
@@ -157,6 +163,7 @@ describe('AIExecutionConsumer', () => {
           useValue: {
             updateByPhase: jest.fn().mockResolvedValue(undefined),
             revertToPreTriggerStatus: jest.fn().mockResolvedValue(undefined),
+            notifyQAFailure: jest.fn().mockResolvedValue(undefined),
           },
         },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
@@ -311,6 +318,135 @@ describe('AIExecutionConsumer', () => {
         'proj-123',
         'corr-123',
       );
+    });
+  });
+
+  describe('processExecution — QA failure handling (WR-4.1)', () => {
+    it('should call qaFailExecution, notifyQAFailure, and ACK message when qaStatus is failed', async () => {
+      const pmStatus = (consumer as any).pmExecutionStatus;
+
+      _orchestrator.execute.mockResolvedValue({
+        success: false,
+        error: {
+          code: AIErrorCode.CLI_NOT_FOUND, // any error code
+          message: 'Linter failed',
+          isRetryable: false,
+        },
+        qaStatus: 'failed',
+        qaRetryCount: 3,
+        branchName: 'feature/qa-fail',
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        codeDiff: null,
+        filesChanged: [],
+        confidenceScore: 0,
+        durationMs: 100,
+        totalDurationMs: 100,
+        workspacePath: '',
+        fallbackAttempts: [],
+        estimatedCostCents: 0,
+      });
+
+      const result = await (consumer as any).processExecution(_mockMessage);
+
+      // Verify returned result indicates success: false but with QA_FAILED
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('QA_FAILED');
+
+      expect(_executionTracker.qaFailExecution).toHaveBeenCalledWith(
+        {
+          executionId: 'exec-789',
+          errorMessage: 'Linter failed',
+          branchName: 'feature/qa-fail',
+          qaRetryCount: 3,
+        },
+        'corr-123',
+      );
+
+      expect(pmStatus.notifyQAFailure).toHaveBeenCalledWith(
+        'proj-123',
+        'ticket-456',
+        'feature/qa-fail',
+        'corr-123',
+      );
+
+      // Verify it skips crash cascade
+      expect(pmStatus.revertToPreTriggerStatus).not.toHaveBeenCalled();
+      expect(pmStatus.updateByPhase).not.toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        ExecutionPhase.FAILED,
+        expect.any(String),
+      );
+      expect(_executionTracker.failExecution).not.toHaveBeenCalled();
+    });
+
+    it('should NOT call qaFailExecution for PROCESS_CRASH without qaStatus', async () => {
+      const pmStatus = (consumer as any).pmExecutionStatus;
+
+      _orchestrator.execute.mockResolvedValue({
+        success: false,
+        error: {
+          code: AIErrorCode.PROCESS_CRASH,
+          message: 'Sandbox OOM',
+          isRetryable: false,
+        },
+        qaStatus: undefined,
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        codeDiff: null,
+        filesChanged: [],
+        confidenceScore: 0,
+        durationMs: 100,
+        totalDurationMs: 100,
+        workspacePath: '',
+        fallbackAttempts: [],
+        estimatedCostCents: 0,
+      });
+
+      await (consumer as any).processExecution(_mockMessage);
+
+      expect(_executionTracker.qaFailExecution).not.toHaveBeenCalled();
+      expect(pmStatus.notifyQAFailure).not.toHaveBeenCalled();
+      expect(_executionTracker.failExecution).toHaveBeenCalled();
+      expect(pmStatus.revertToPreTriggerStatus).toHaveBeenCalled();
+    });
+
+    it('should fall through to standard error handling if branchName is missing', async () => {
+      const pmStatus = (consumer as any).pmExecutionStatus;
+
+      _orchestrator.execute.mockResolvedValue({
+        success: false,
+        error: {
+          code: AIErrorCode.PROCESS_CRASH,
+          message: 'Crash during QA',
+          isRetryable: false,
+        },
+        qaStatus: 'failed',
+        // branchName missing
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        codeDiff: null,
+        filesChanged: [],
+        confidenceScore: 0,
+        durationMs: 100,
+        totalDurationMs: 100,
+        workspacePath: '',
+        fallbackAttempts: [],
+        estimatedCostCents: 0,
+      });
+
+      const result = await (consumer as any).processExecution(_mockMessage);
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe(AIErrorCode.PROCESS_CRASH);
+
+      expect(_executionTracker.qaFailExecution).not.toHaveBeenCalled();
+      expect(pmStatus.notifyQAFailure).not.toHaveBeenCalled();
+
+      // Verify standard fail logic triggered
+      expect(_executionTracker.failExecution).toHaveBeenCalled();
+      expect(pmStatus.revertToPreTriggerStatus).toHaveBeenCalled();
     });
   });
 

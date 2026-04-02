@@ -90,6 +90,20 @@ export interface ExecutionFailedEvent {
   };
 }
 
+export interface ExecutionQAFailedEvent {
+  executionId: string;
+  ticketId: string;
+  projectId: string | null;
+  provider: string;
+  status: string;
+  timestamp: string;
+  payload: {
+    errorMessage: string;
+    branchName: string | null;
+    qaRetryCount?: number;
+  };
+}
+
 export interface ExecutionTimeoutEvent {
   executionId: string;
   ticketId: string;

@@ -201,6 +201,96 @@ export class PMExecutionStatusService {
   }
 
   /**
+   * Move ClickUp ticket to the project's configured qa_failure_status.
+   * If qa_failure_status is not configured (field added by WR-4.2), logs a
+   * warning and posts a configuration-gap comment instead — never throws.
+   *
+   * @param projectId     DSF project UUID
+   * @param ticketId      Internal DSF ticket UUID
+   * @param branchName    The pushed feature branch (included in comment)
+   * @param correlationId For log tracing
+   */
+  async notifyQAFailure(
+    projectId: string,
+    ticketId: string,
+    branchName: string | null,
+    correlationId?: string,
+  ): Promise<void> {
+    const tag = correlationId ? `[${correlationId}] ` : '';
+
+    try {
+      // 1. Resolve clickup_task_id
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { clickup_task_id: true },
+      });
+      if (!ticket?.clickup_task_id) {
+        this.logger.warn(`${tag}No clickup_task_id for ticket ${ticketId} — skipping`);
+        return;
+      }
+      const clickupTaskId = ticket.clickup_task_id;
+
+      // 2. Resolve integration
+      const integration = await this.integrationService.findByProjectAndProvider(
+        projectId,
+        PMProvider.CLICKUP,
+      );
+      if (!integration) {
+        this.logger.warn(`${tag}No CLICKUP integration for project ${projectId} — skipping`);
+        return;
+      }
+
+      // 3. Get provider
+      const provider = await this.providerFactory.getProvider(integration);
+
+      // 4. Read qa_failure_status from project settings (added by WR-4.2).
+      //    Field doesn't exist in schema yet — bypass type with (as any) until WR-4.2 lands.
+      const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const qaFailureStatus = ((project as any)?.qa_failure_status as string | null) ?? null;
+
+      if (!qaFailureStatus) {
+        // AC-4: Not configured — warn + post comment, never throw
+        this.logger.warn(
+          `${tag}Project ${projectId} has no qa_failure_status configured — posting comment`,
+        );
+        const gapComment =
+          `⚠️ **QA Failure — Configuration Gap**\n\n` +
+          `The AI agent exhausted all QA retries. The branch \`${branchName ?? 'unknown'}\` has been pushed but no PR was created.\n\n` +
+          `**Action required:** Configure \`qa_failure_status\` in project settings so this ticket can be moved to the correct ClickUp status automatically.`;
+        await provider.addComment(clickupTaskId, gapComment);
+        return;
+      }
+
+      // 5. Runtime discovery — resolve qa_failure_status name to a live status (hallucination guard)
+      const task = await provider.getTask(clickupTaskId);
+      if (!task.listId) {
+        this.logger.warn(`${tag}Task ${clickupTaskId} has no listId — skipping`);
+        return;
+      }
+      const statuses = await provider.getStatuses(task.listId);
+      const target = statuses.find((s) => s.name.toLowerCase() === qaFailureStatus.toLowerCase());
+      if (!target) {
+        this.logger.warn(
+          `${tag}qa_failure_status '${qaFailureStatus}' not found in list statuses — skipping`,
+        );
+        return;
+      }
+
+      // 6. Apply transition
+      await provider.updateStatus(clickupTaskId, target.name);
+      this.logger.log(
+        `${tag}ClickUp ${clickupTaskId}: '${task.status.name}' → '${target.name}' (QA_FAILED)`,
+      );
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.warn(
+        `${tag}QA failure notification skipped for ticket ${ticketId}: ${err.message}`,
+      );
+    }
+  }
+
+  /**
    * Revert the ClickUp task to its pre-trigger status and post a failure comment.
    * Used when a sandbox crash or timeout is detected (no code pushed).
    *

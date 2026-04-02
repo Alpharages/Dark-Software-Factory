@@ -19,6 +19,7 @@ import {
   IConsumerState,
   IProcessingResult,
   IExecutionFailure,
+  IExecutionQAFailure,
 } from './interfaces';
 import { OrchestratorService } from '@/ai-routing/orchestrator.service';
 import { AIErrorCode } from '@/ai-routing/interfaces/ai-provider.interface';
@@ -38,7 +39,7 @@ import {
   PMExecutionStatusService,
   ExecutionPhase,
 } from '@/integrations/pm-execution-status.service';
-import { Prisma } from '@/prisma/client';
+import { ExecutionStatus, Prisma } from '@/prisma/client';
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
 
@@ -171,11 +172,18 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             const duration = Date.now() - startTime;
             this.recordProcessingTime(duration);
 
-            if (result.success) {
-              this.logger.log(
-                `[${correlationId}] Execution ${payload.executionId} completed ` +
-                  `(${duration}ms)`,
-              );
+            if (result.success || result.errorCode === ExecutionStatus.QA_FAILED) {
+              if (result.success) {
+                this.logger.log(
+                  `[${correlationId}] Execution ${payload.executionId} completed ` +
+                    `(${duration}ms)`,
+                );
+              } else {
+                this.logger.log(
+                  `[${correlationId}] Execution ${payload.executionId} finished with QA failure ` +
+                    `(${duration}ms)`,
+                );
+              }
 
               // Acknowledge message
               channel.ack(msg);
@@ -183,7 +191,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
 
               this.consumedCounter.inc({
                 queue: QUEUE_NAMES.AI_EXECUTION,
-                status: 'success',
+                status: result.success ? 'success' : 'qa_failed',
                 provider: payload.aiProvider,
               });
             } else {
@@ -242,7 +250,8 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         existing?.status === 'COMPLETED' ||
         existing?.status === 'FAILED' ||
         existing?.status === 'TIMEOUT' ||
-        existing?.status === 'CANCELLED'
+        existing?.status === 'CANCELLED' ||
+        existing?.status === 'QA_FAILED' // WR-4.1: terminal PM-resolution state
       ) {
         this.logger.warn(
           `[${correlationId}] Skipping message: execution ${executionId} already terminal (${existing.status})`,
@@ -668,6 +677,57 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           },
           confidence: 0.85,
         });
+
+        // WR-4.1: Hard QA Failure — QA retries exhausted, branch pushed, awaiting PM resolution.
+        // Does NOT trigger crash-cascade (revertToPreTriggerStatus is for PROCESS_CRASH/TIMEOUT only).
+        if (result.qaStatus === 'failed' && result.branchName) {
+          // P4: use fallback so empty-string message doesn't bypass QA path
+          const qaErrorMessage =
+            result.error?.message || 'Agentic delivery failed: QA self-healing exhausted retries';
+
+          // P5: QA-specific audit decision log (willRetry always false for QA_FAILED)
+          await this.aiDecisionLogger.logDecision({
+            agentName: 'AIExecutionConsumer',
+            action: 'ai_execution_failed',
+            reasoning: `QA_FAILED: agent exhausted QA retries (count: ${result.qaRetryCount ?? 'unknown'}). Branch pushed: ${result.branchName}. Awaiting PM resolution.`,
+            ticketId: payload.ticketId,
+            executionId,
+            inputData: { qaRetryCount: result.qaRetryCount, branchName: result.branchName },
+            outputData: { isRetryable: false, willRetry: false },
+            confidence: 0.95,
+          });
+
+          const qaFailure: IExecutionQAFailure = {
+            executionId,
+            errorMessage: qaErrorMessage,
+            branchName: result.branchName,
+            qaRetryCount: result.qaRetryCount,
+          };
+          await this.executionTracker.qaFailExecution(qaFailure, correlationId);
+          await this.pmExecutionStatus.notifyQAFailure(
+            payload.projectId,
+            payload.ticketId,
+            result.branchName,
+            correlationId,
+          );
+
+          // P6: track capability failure so provider reliability scoring sees QA failures
+          await this.capabilityTracker.trackExecution(
+            false,
+            payload.prompt,
+            undefined,
+            qaErrorMessage,
+          );
+
+          // P7: use enum constant — errorCode drives the ACK branch above
+          return {
+            success: false,
+            executionId,
+            durationMs: Date.now() - startTime,
+            errorMessage: qaErrorMessage,
+            errorCode: ExecutionStatus.QA_FAILED,
+          };
+        }
 
         // 4. Mark as failed
         const failure: IExecutionFailure = {

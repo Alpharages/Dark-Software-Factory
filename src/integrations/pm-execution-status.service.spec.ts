@@ -52,6 +52,7 @@ const mockStatuses = [
   { id: 's-pr', name: 'PR Ready', color: '#0f0', type: NormalizedStatusType.IN_PROGRESS },
   { id: 's-done', name: 'Done', color: '#000', type: NormalizedStatusType.DONE },
   { id: 's-blocked', name: 'Blocked', color: '#f00', type: NormalizedStatusType.CANCELLED },
+  { id: 's-qa', name: 'QA Review', color: '#0ff', type: NormalizedStatusType.IN_PROGRESS },
 ];
 
 describe('PMExecutionStatusService', () => {
@@ -61,7 +62,7 @@ describe('PMExecutionStatusService', () => {
   let fieldPreCheck: jest.Mocked<PMFieldPreCheckService>;
   let fieldAutoFill: jest.Mocked<PMFieldAutoFillService>;
   let skillRunner: jest.Mocked<AgentSkillRunner>;
-  let prisma: { ticket: { findUnique: jest.Mock } };
+  let prisma: { ticket: { findUnique: jest.Mock }; project: { findUnique: jest.Mock } };
   let mockProvider: {
     getTask: jest.Mock;
     getStatuses: jest.Mock;
@@ -112,6 +113,12 @@ describe('PMExecutionStatusService', () => {
           clickup_task_id: '86ewke7gg',
           title: 'Implement login',
           description: 'Login page description',
+        }),
+      },
+      project: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'proj-1',
+          qa_failure_status: null,
         }),
       },
     };
@@ -175,7 +182,7 @@ describe('PMExecutionStatusService', () => {
         expect.objectContaining({
           taskName: 'Implement login',
           currentStatus: 'Open',
-          availableStatuses: ['Open', 'Coding', 'PR Ready', 'Done', 'Blocked'],
+          availableStatuses: ['Open', 'Coding', 'PR Ready', 'Done', 'Blocked', 'QA Review'],
           phase: ExecutionPhase.STARTED,
           hasAssignee: false, // mockTask.assignees is []
           hasDueDate: false, // mockTask.dueDate is null
@@ -635,6 +642,63 @@ describe('PMExecutionStatusService', () => {
       await expect(
         service.revertToPreTriggerStatus('proj-1', 'task-1', 'Crash', 'corr-factory-fail'),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('notifyQAFailure', () => {
+    it('moves task to qa_failure_status and posts comment when configured', async () => {
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        qa_failure_status: 'QA Review',
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+
+      await service.notifyQAFailure('proj-1', 'task-1', 'feature/pm-review', 'corr-qa');
+
+      expect(mockProvider.updateStatus).toHaveBeenCalledWith('86ewke7gg', 'QA Review');
+    });
+
+    it('posts missing-config comment when qa_failure_status is not configured', async () => {
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        qa_failure_status: null,
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+
+      await service.notifyQAFailure('proj-1', 'task-1', 'feature/pm-review', 'corr-qa-miss');
+
+      expect(mockProvider.updateStatus).not.toHaveBeenCalled();
+      expect(mockProvider.addComment).toHaveBeenCalledWith(
+        '86ewke7gg',
+        expect.stringContaining('qa_failure_status'),
+      );
+    });
+
+    it('never throws when updateStatus throws (best-effort)', async () => {
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        qa_failure_status: 'QA Review',
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+      mockProvider.updateStatus.mockRejectedValue(new Error('ClickUp rate limit'));
+
+      await expect(
+        service.notifyQAFailure('proj-1', 'task-1', 'fix/branch', 'corr-throw'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should use case-insensitive status name matching', async () => {
+      // qa_failure_status stored in lowercase; ClickUp returns mixed case
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        qa_failure_status: 'qa review',
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+
+      await service.notifyQAFailure('proj-1', 'task-1', 'feature/ci-fix', 'corr-case');
+
+      // mockStatuses includes { name: 'QA Review' } — should match despite casing difference
+      expect(mockProvider.updateStatus).toHaveBeenCalledWith('86ewke7gg', 'QA Review');
     });
   });
 });

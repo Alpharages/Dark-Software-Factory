@@ -46,6 +46,7 @@ describe('ExecutionService', () => {
     scheduled_retry_at: null, // Story 2.9
     // Story 11.1: Database schema additions
     base_branch: 'main',
+    qa_failed_branch: null,
     branch_selection_log: null,
     file_modifications: null,
     risk_level: PRRiskLevel.LOW,

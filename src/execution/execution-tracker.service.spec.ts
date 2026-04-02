@@ -51,6 +51,7 @@ describe('ExecutionTrackerService', () => {
     container_id: null,
     debug_mode: false,
     progress: null,
+    qa_failed_branch: null,
   };
 
   const mockMetricCounter = {
@@ -79,6 +80,7 @@ describe('ExecutionTrackerService', () => {
             findById: jest.fn(),
             findByTicketId: jest.fn(),
             updateStatus: jest.fn(),
+            update: jest.fn(),
             incrementRetryAndRequeue: jest.fn(),
             canRetry: jest.fn(),
             createAuditLog: jest.fn(),
@@ -440,6 +442,160 @@ describe('ExecutionTrackerService', () => {
       await service.failExecution(failureData, 'corr-123');
 
       expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('qaFailExecution', () => {
+    const qaFailureData = {
+      executionId: 'exec-123',
+      errorMessage: 'QA failed 3 times',
+      branchName: 'feature/test-branch',
+      qaRetryCount: 3,
+    };
+
+    it('should transition execution to QA_FAILED and persist branch name', async () => {
+      const inProgressExecution = {
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+        ticket: { project_id: 'proj-1' },
+      } as any;
+      repository.findById.mockResolvedValue(inProgressExecution);
+      stateMachine.transition.mockReturnValue({
+        executionId: 'exec-123',
+        previousStatus: ExecutionStatus.IN_PROGRESS,
+        newStatus: ExecutionStatus.QA_FAILED as any,
+        reason: 'QA failed 3 times',
+        transitionedAt: new Date(),
+      });
+      repository.updateStatus.mockResolvedValue({
+        ...inProgressExecution,
+        status: ExecutionStatus.QA_FAILED as any,
+      });
+      repository.update.mockResolvedValue({
+        ...inProgressExecution,
+        qa_failed_branch: 'feature/test-branch',
+      });
+      repository.createAuditLog.mockResolvedValue();
+      repository.updateTicketStatus.mockResolvedValue();
+      publisher.publishToQueue.mockResolvedValue(true);
+
+      const result = await service.qaFailExecution(qaFailureData, 'corr-123');
+
+      expect(result.newStatus).toBe(ExecutionStatus.QA_FAILED as any);
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'exec-123',
+        ExecutionStatus.QA_FAILED as any,
+        { errorMessage: 'QA failed 3 times', branchName: 'feature/test-branch' },
+      );
+      expect(repository.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'qa_failed',
+          afterState: expect.objectContaining({
+            status: ExecutionStatus.QA_FAILED as any,
+            errorMessage: 'QA failed 3 times',
+            branchName: 'feature/test-branch',
+            qaRetryCount: 3,
+          }),
+        }),
+      );
+      expect(publisher.publishToQueue).toHaveBeenCalledWith(
+        'execution-status-queue',
+        expect.objectContaining({
+          status: ExecutionStatus.QA_FAILED as any,
+        }),
+      );
+    });
+
+    it('should emit execution.qa_failed WebSocket event with branch and error payload', async () => {
+      const inProgressExecution = {
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+        ticket: { project_id: 'proj-1' },
+      } as any;
+      repository.findById.mockResolvedValue(inProgressExecution);
+      stateMachine.transition.mockReturnValue({
+        executionId: 'exec-123',
+        previousStatus: ExecutionStatus.IN_PROGRESS,
+        newStatus: ExecutionStatus.QA_FAILED as any,
+        transitionedAt: new Date(),
+      });
+      repository.updateStatus.mockResolvedValue({
+        ...inProgressExecution,
+        status: ExecutionStatus.QA_FAILED as any,
+      });
+      repository.createAuditLog.mockResolvedValue();
+      repository.updateTicketStatus.mockResolvedValue();
+      publisher.publishToQueue.mockResolvedValue(true);
+
+      const realtimeService = (service as any).realtimeService;
+
+      await service.qaFailExecution(qaFailureData, 'corr-123');
+
+      expect(realtimeService.emitToProject).toHaveBeenCalledWith(
+        'proj-1',
+        'execution.qa_failed',
+        expect.objectContaining({
+          executionId: 'exec-123',
+          payload: expect.objectContaining({
+            errorMessage: 'QA failed 3 times',
+            branchName: 'feature/test-branch',
+          }),
+        }),
+      );
+    });
+
+    it('should NOT call scheduleRetry (QA_FAILED is never auto-retried)', async () => {
+      const inProgressExecution = {
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+        ticket: { project_id: 'proj-1' },
+      } as any;
+      repository.findById.mockResolvedValue(inProgressExecution);
+      stateMachine.transition.mockReturnValue({
+        executionId: 'exec-123',
+        previousStatus: ExecutionStatus.IN_PROGRESS,
+        newStatus: ExecutionStatus.QA_FAILED as any,
+        transitionedAt: new Date(),
+      });
+      repository.updateStatus.mockResolvedValue({
+        ...inProgressExecution,
+        status: ExecutionStatus.QA_FAILED as any,
+      });
+      repository.createAuditLog.mockResolvedValue();
+      repository.updateTicketStatus.mockResolvedValue();
+      publisher.publishToQueue.mockResolvedValue(true);
+
+      await service.qaFailExecution(qaFailureData, 'corr-123');
+
+      expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
+    });
+
+    it('should create audit log with action qa_failed', async () => {
+      const inProgressExecution = {
+        ...mockExecution,
+        status: ExecutionStatus.IN_PROGRESS,
+        ticket: { project_id: 'proj-1' },
+      } as any;
+      repository.findById.mockResolvedValue(inProgressExecution);
+      stateMachine.transition.mockReturnValue({
+        executionId: 'exec-123',
+        previousStatus: ExecutionStatus.IN_PROGRESS,
+        newStatus: ExecutionStatus.QA_FAILED as any,
+        transitionedAt: new Date(),
+      });
+      repository.updateStatus.mockResolvedValue({
+        ...inProgressExecution,
+        status: ExecutionStatus.QA_FAILED as any,
+      });
+      repository.createAuditLog.mockResolvedValue();
+      repository.updateTicketStatus.mockResolvedValue();
+      publisher.publishToQueue.mockResolvedValue(true);
+
+      await service.qaFailExecution(qaFailureData, 'corr-123');
+
+      expect(repository.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'qa_failed' }),
+      );
     });
   });
 

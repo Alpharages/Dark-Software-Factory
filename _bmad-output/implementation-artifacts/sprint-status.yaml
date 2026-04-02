@@ -682,10 +682,12 @@ development_status:
   epic-wr-4-source: 'epics-workspace-removal.md'
   epic-wr-4-notes: 'When agent exhausts QA retries: push branch, QA_FAILED state, ClickUp notify. PM can open_pr or cancel via resolve-qa-failure endpoint.'
   wr-4-1-implement-hard-qa-failure-provider-behaviour-state-transition:
-    status: ready-for-dev
+    status: done
     effort: '1 day'
     story_points: 5
-    notes: 'qaStatus:failed → push branch → QA_FAILED state → move ClickUp ticket to qa_failure_status. Real-time UI event with branch URL. FR-WR9.'
+    completion_date: '2026-04-02'
+    last_updated: '2026-04-02'
+    notes: 'qaStatus:failed → push branch → QA_FAILED state → move ClickUp ticket to qa_failure_status. Real-time UI event with branch URL. FR-WR9. ACs verified.'
   wr-4-2-add-per-project-qa-failure-manual-review-status-configuration:
     status: ready-for-dev
     effort: '0.5 days'

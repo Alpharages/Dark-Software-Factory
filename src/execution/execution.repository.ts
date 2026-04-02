@@ -90,6 +90,7 @@ export class ExecutionRepository {
       codeOutput: string;
       filesChanged: string[];
       errorMessage: string;
+      branchName: string | null; // WR-4.1: qa_failed_branch for QA_FAILED status
     }>,
   ): Promise<Execution> {
     const updateData: Prisma.ExecutionUpdateManyMutationInput = {
@@ -111,6 +112,15 @@ export class ExecutionRepository {
         }
         if (additionalData?.filesChanged !== undefined) {
           updateData.files_changed = additionalData.filesChanged;
+        }
+        break;
+      case ExecutionStatus.QA_FAILED:
+        updateData.failed_at = new Date();
+        if (additionalData?.errorMessage !== undefined) {
+          updateData.error_message = additionalData.errorMessage;
+        }
+        if (additionalData?.branchName !== undefined) {
+          updateData.qa_failed_branch = additionalData.branchName;
         }
         break;
       case ExecutionStatus.FAILED:

@@ -1,6 +1,6 @@
 # Story WR-4.1: Implement Hard QA Failure Provider Behaviour & State Transition
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -612,3 +612,33 @@ The `eslint-disable-next-line @typescript-eslint/no-explicit-any` comment is req
 | `src/execution/execution-tracker.service.spec.ts`      | Add `qaFailExecution` test suite        |
 | `src/integrations/pm-execution-status.service.spec.ts` | Add `notifyQAFailure` test suite        |
 | `src/execution/ai-execution.consumer.spec.ts`          | Update mocks; add QA failure path tests |
+
+---
+
+### Review Findings
+
+- [x] [Review][Patch] P1 — `QA_FAILED` missing from early-exit terminal-status guard: redelivered messages re-run full AI orchestration [src/execution/ai-execution.consumer.ts ~L249] — CRITICAL. The early-exit guard that checks for already-terminal executions (COMPLETED, FAILED, TIMEOUT, CANCELLED) does not include `QA_FAILED`. A RabbitMQ redelivery before ACK confirmation causes `markInProgress` to be called on a terminal execution, then re-runs the orchestration and calls `qaFailExecution` + `notifyQAFailure` a second time. Add `ExecutionStatus.QA_FAILED` to the terminal-status skip list.
+
+- [x] [Review][Patch] P2 — `emitWebSocketEvent` outside try/catch: Socket.IO fault triggers crash-cascade and prevents ACK [src/execution/execution-tracker.service.ts ~L503] — HIGH. The `emitWebSocketEvent<ExecutionQAFailedEvent>(...)` call is placed **after** the closing brace of the try/catch block. If it throws (gateway down, serialisation error), the exception propagates to `ai-execution.consumer.ts`'s outer catch, which calls `failExecution` + `revertToPreTriggerStatus` on an execution already set to `QA_FAILED` — the exact crash-cascade AC-6 forbids. Move the emit inside the try block.
+
+- [x] [Review][Patch] P3 — Two-step non-atomic write: execution can be stranded in `QA_FAILED` with `qa_failed_branch = null` [src/execution/execution-tracker.service.ts ~L452-L460] — HIGH. `repository.updateStatus(QA_FAILED)` and the subsequent `repository.update({ qa_failed_branch })` are separate DB calls. A crash/kill between them leaves the execution in `QA_FAILED` with no branch name — WR-4.3's resolution endpoint depends on that field. Fix: include `qa_failed_branch` in the `updateStatus` call's `additionalData`, or merge into a single `repository.update()` call.
+
+- [x] [Review][Patch] P4 — Empty `result.error.message` bypasses QA guard, falls through to crash-cascade [src/execution/ai-execution.consumer.ts ~L683] — HIGH. The guard requires `result.error?.message` to be truthy. A provider returning `qaStatus: 'failed'` and `branchName: 'feature/x'` but `error: { code: ..., message: '' }` (empty string) passes all three conditions as false, and the code falls through to `failExecution` + `revertToPreTriggerStatus`. Fix: replace `result.error?.message` guard with a fallback: `const errorMessage = result.error?.message || 'Agentic delivery failed: QA self-healing exhausted retries'` and use `errorMessage` in the condition.
+
+- [x] [Review][Patch] P5 — `aiDecisionLogger.logDecision` not called in QA failure path; generic pre-QA log records `willRetry: true` [src/execution/ai-execution.consumer.ts ~L677] — MEDIUM. Spec Task 7.2 explicitly requires a `logDecision` call inside the QA block with `reasoning: 'QA_FAILED: agent exhausted QA retries...'` and `outputData: { isRetryable: false, willRetry: false }`. The implementation omits this. The existing generic `ai_execution_failed` logDecision that runs before the guard records `willRetry: isRetryable` (evaluates true), making every QA-failed execution appear in audit logs as "will retry" — incorrect.
+
+- [x] [Review][Patch] P6 — `capabilityTracker.trackExecution` not called on QA_FAILED path [src/execution/ai-execution.consumer.ts ~L702] — MEDIUM. The QA early-return exits before the `capabilityTracker.trackExecution(false, ...)` call that runs for all other failure paths. QA failures are invisible to provider reliability scoring, skewing metrics over time. Add `await this.capabilityTracker.trackExecution(false, payload.prompt, undefined, qaFailure.errorMessage)` before the return.
+
+- [x] [Review][Patch] P7 — `errorCode: 'QA_FAILED'` raw string literal: rename risk and ACK-path type safety [src/execution/ai-execution.consumer.ts ~L172, L703] — MEDIUM. The ACK condition `result.errorCode === 'QA_FAILED'` and the return value `errorCode: 'QA_FAILED'` use a bare string. Use `ExecutionStatus.QA_FAILED` (or a dedicated const) so a future rename catches both sites at compile time.
+
+- [x] [Review][Patch] P8 — Missing consumer test: `'should NOT call qaFailExecution for PROCESS_CRASH without qaStatus'` [src/execution/ai-execution.consumer.spec.ts] — LOW. Spec Task 10 explicitly requires this test case: mock `{ success: false, error: { code: 'PROCESS_CRASH' }, qaStatus: undefined }`, assert `qaFailExecution` NOT called and `failExecution` IS called. It is absent from the diff.
+
+- [x] [Review][Patch] P9 — Missing tracker tests: `'should emit execution.qa_failed WebSocket event'`, `'should NOT trigger auto-retry'`, `'should create audit log with action qa_failed'` [src/execution/execution-tracker.service.spec.ts] — LOW. Spec Task 8 enumerates five distinct test cases; only one combined test was added. The three listed are missing.
+
+- [x] [Review][Patch] P10 — Missing PM-status test: `'should use case-insensitive status name matching'` [src/integrations/pm-execution-status.service.spec.ts] — LOW. Spec Task 9 requires this test: mock `qa_failure_status: 'qa failed'`, statuses include `{ name: 'QA Failed' }`, assert `updateStatus` called (case mismatch resolved). Absent from the diff.
+
+- [x] [Review][Defer] D1 — State-machine transition() called before DB writes: split-brain on crash [src/execution/execution-tracker.service.ts ~L448] — pre-existing pattern across all tracker methods (failExecution, timeoutExecution, etc.), not introduced by this story.
+
+- [x] [Review][Defer] D2 — TOCTOU: `execution.ticket?.project_id` fetched at start, used after two DB writes in WebSocket payload — pre-existing pattern across all tracker methods.
+
+- [x] [Review][Defer] D3 — `repository.update` silent miss on deleted row for `qa_failed_branch` — pre-existing `updateMany`-based repository contract documented in the repository.

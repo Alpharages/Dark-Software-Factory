@@ -58,6 +58,7 @@ export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
     ExecutionStatus.AWAITING_APPROVAL,
     ExecutionStatus.PAUSED, // Story 10-U-5: Manual pause
     ExecutionStatus.EMERGENCY_STOPPED, // Story 10-U-5: Emergency stop
+    ExecutionStatus.QA_FAILED, // WR-4.1
   ],
   [ExecutionStatus.PAUSED]: [
     ExecutionStatus.IN_PROGRESS, // Resume
@@ -83,6 +84,10 @@ export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
   ],
   [ExecutionStatus.CANCELLED]: [], // Terminal state
   [ExecutionStatus.EMERGENCY_STOPPED]: [], // Terminal state - Story 10-U-5
+  [ExecutionStatus.QA_FAILED]: [
+    ExecutionStatus.COMPLETED, // After open_pr action (WR-4.3)
+    ExecutionStatus.FAILED, // After cancel action (WR-4.3)
+  ],
 };
 
 /**
@@ -115,6 +120,7 @@ export const STATUS_LABELS: Record<ExecutionStatus, string> = {
   [ExecutionStatus.CANCELLED]: 'Cancelled',
   [ExecutionStatus.AWAITING_APPROVAL]: 'Awaiting Approval',
   [ExecutionStatus.EMERGENCY_STOPPED]: 'Emergency Stopped', // Story 10-U-5
+  [ExecutionStatus.QA_FAILED]: 'QA Failed', // WR-4.1
 };
 
 // Type-safe Map for transitions lookup
