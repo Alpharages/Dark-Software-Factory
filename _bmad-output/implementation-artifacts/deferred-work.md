@@ -1,5 +1,13 @@
 # Deferred Work Log
 
+## Deferred from: code review of wr-3-1-wire-all-execution-milestones-to-progress-bar (2026-04-02)
+
+- **W1: Multiple sequential `type:'result'` lines merge via spread accumulation** — second partial line with missing keys does not overwrite prior values via spread semantics, but behavior is undocumented and untested. Revisit if agent protocol ever emits incremental result lines. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- **W2: `agentResult.branchName || featureBranch` — empty-string branchName silently replaced by local fallback** — theoretical edge case; agent protocol does not emit empty branchName in practice. Revisit if agent output contract changes. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- **W3: Fourth error message branch (`'Agent process exited with non-zero code after emitting result'`) is dead code** — requires exitCode≠0 with a valid result line; no test exercises this combination. Pre-existing pattern unchanged by this story. [`codex.provider.ts`, `gemini.provider.ts`, `kimi.provider.ts`]
+- **W4: ClaudeCode lacks stdout buffered fallback; Codex/Kimi/Gemini have it** — pre-existing architectural divergence; ClaudeCode is strictly dependent on `onStdoutLine` delivery. Undocumented cross-provider difference. [`claude-code.provider.ts` vs others]
+- **W5: `isRetryable:false` for crash-with-no-result path not explicitly asserted in Codex/Kimi/Gemini crash tests** — asymmetric coverage vs timeout/QA paths which now assert `isRetryable:true`. Minor gap; add assertion if retry orchestration logic is hardened. [`codex.provider.spec.ts`, `kimi.provider.spec.ts`, `gemini.provider.spec.ts`]
+
 ## Deferred from: code review of wr-2-5-extend-api-key-redaction-to-all-provider-keys (2026-04-02)
 
 - **`.flat()` single-level flatten is structurally fragile for nested log args** — `mock.calls.flat().join(' ')` only flattens one level; if a future `logger.debug` call passes an object argument, the raw value inside it would survive as `[object Object]` and elude the absence assertions. Spec mandated this approach; revisit if logger call signatures change. [`src/sandbox/sandbox.service.spec.ts`]

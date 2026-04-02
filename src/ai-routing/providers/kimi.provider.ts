@@ -8,16 +8,6 @@ import { SandboxService } from '@/sandbox/sandbox.service';
 import { SandboxResourceProfileService } from '@/sandbox/sandbox-resource-profile.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 
-/** Structured result emitted by the agent at the end of execution */
-interface SandboxResultLine {
-  type: 'result';
-  prUrl: string | null;
-  commitSha: string;
-  branchName: string;
-  qaStatus: 'passed' | 'self_healed' | 'failed';
-  qaRetryCount: number;
-}
-
 /**
  * Kimi CLI Provider
  * Executes the `kimi` command in an OpenSandbox container using the dsf-execution skill.
@@ -75,21 +65,43 @@ export class KimiProvider implements ICodingAgentProvider {
       env['KIMI_BASE_URL'] = baseURL;
     }
 
-    let sandboxResult: SandboxResultLine | null = null;
+    // Capture structured result from stdout (AC-3)
+    let agentResult: {
+      prUrl?: string | null;
+      commitSha?: string;
+      branchName?: string;
+      qaStatus?: 'passed' | 'self_healed' | 'failed';
+      qaRetryCount?: number;
+    } = {};
 
     const onStdoutLine = (line: string): void => {
       try {
         const parsed = JSON.parse(line) as { type?: string; pct?: number; msg?: string };
         if (parsed.type === 'progress' && typeof parsed.pct === 'number') {
-          void this.executionTracker.emitProgress(
-            payload.executionId,
-            payload.ticketId,
-            payload.projectId,
-            parsed.msg ?? '',
-            parsed.pct,
-          );
+          // Fire-and-forget progress emission — never blocks execution (NFR-WR3)
+          this.executionTracker
+            .emitProgress(
+              payload.executionId,
+              payload.ticketId,
+              payload.projectId,
+              parsed.msg ?? '',
+              parsed.pct,
+            )
+            .catch((err) =>
+              this.logger.error(`Failed to emit progress: ${(err as Error).message}`),
+            );
         } else if (parsed.type === 'result') {
-          sandboxResult = parsed as SandboxResultLine;
+          const r = parsed as {
+            prUrl?: string | null;
+            commitSha?: string;
+            branchName?: string;
+            qaStatus?: 'passed' | 'self_healed' | 'failed';
+            qaRetryCount?: number;
+          };
+          agentResult = { ...agentResult, ...r };
+          this.logger.debug(
+            `[${payload.executionId}] Agent result captured: qaStatus=${agentResult.qaStatus}`,
+          );
         }
       } catch {
         this.logger.debug(
@@ -101,7 +113,7 @@ export class KimiProvider implements ICodingAgentProvider {
     const result = await this.sandboxService.runAgentCommand({
       executionId: payload.executionId,
       image: this.config.get<string>('opensandbox.agentImage', 'dsf-agents:latest'),
-      command: 'kimi /dsf-execution',
+      command: 'kimi execute dsf-execution',
       env,
       timeoutSeconds: this.config.get<number>('opensandbox.sandboxTimeoutS', 3600),
       cpuLimit: profile.cpuLimit,
@@ -116,14 +128,21 @@ export class KimiProvider implements ICodingAgentProvider {
     });
 
     // Fallback: scan buffered stdout if onStdoutLine never captured a result line
-    if (!sandboxResult) {
+    if (!('qaStatus' in agentResult)) {
       const lines = result.stdout.split('\n').reverse();
       for (const line of lines) {
         if (!line.trim()) continue;
         try {
-          const parsed = JSON.parse(line) as { type?: string };
+          const parsed = JSON.parse(line) as {
+            type?: string;
+            prUrl?: string | null;
+            commitSha?: string;
+            branchName?: string;
+            qaStatus?: 'passed' | 'self_healed' | 'failed';
+            qaRetryCount?: number;
+          };
           if (parsed.type === 'result') {
-            sandboxResult = parsed as SandboxResultLine;
+            agentResult = { ...agentResult, ...parsed };
             break;
           }
         } catch {
@@ -133,13 +152,14 @@ export class KimiProvider implements ICodingAgentProvider {
     }
 
     const exitedClean = result.exitCode === 0 && !result.timedOut;
-    const qaFailed = sandboxResult?.qaStatus === 'failed';
-    const success = exitedClean && sandboxResult !== null && !qaFailed;
+    const resultReceived = agentResult.qaStatus !== undefined;
+    const qaFailed = agentResult.qaStatus === 'failed';
+    const success = exitedClean && resultReceived && !qaFailed;
 
-    if (!success || !sandboxResult) {
+    if (!success) {
       const errorMessage = result.timedOut
         ? 'Kimi sandbox execution timed out'
-        : sandboxResult === null
+        : !resultReceived
           ? 'Agent did not emit a final result line — execution may have crashed'
           : qaFailed
             ? 'Agent completed with QA failures after all retries'
@@ -152,15 +172,15 @@ export class KimiProvider implements ICodingAgentProvider {
         confidenceScore: 0.0,
         durationMs: result.durationMs,
         workspacePath: '',
-        prUrl: sandboxResult?.prUrl ?? undefined,
-        commitSha: sandboxResult?.commitSha,
-        branchName: sandboxResult?.branchName ?? payload.targetBranch ?? featureBranch,
-        qaStatus: sandboxResult?.qaStatus ?? 'skipped',
-        qaRetryCount: sandboxResult?.qaRetryCount ?? 0,
+        prUrl: agentResult.prUrl ?? undefined,
+        commitSha: agentResult.commitSha,
+        branchName: agentResult.branchName || payload.targetBranch || featureBranch,
+        qaStatus: agentResult.qaStatus ?? 'skipped',
+        qaRetryCount: agentResult.qaRetryCount ?? 0,
         error: {
           code: result.timedOut ? AIErrorCode.TIMEOUT : AIErrorCode.PROCESS_CRASH,
           message: errorMessage,
-          isRetryable: result.timedOut,
+          isRetryable: result.timedOut || qaFailed,
           rawOutput: `${result.stdout}\n${result.stderr}`.trim(),
           exitCode: result.exitCode,
         },
@@ -171,14 +191,14 @@ export class KimiProvider implements ICodingAgentProvider {
       success: true,
       codeDiff: null,
       filesChanged: [],
-      confidenceScore: sandboxResult.qaStatus === 'passed' ? 0.95 : 0.8,
+      confidenceScore: agentResult.qaStatus === 'passed' ? 0.95 : 0.8,
       durationMs: result.durationMs,
       workspacePath: '',
-      prUrl: sandboxResult.prUrl ?? undefined,
-      commitSha: sandboxResult.commitSha,
-      branchName: sandboxResult.branchName,
-      qaStatus: sandboxResult.qaStatus,
-      qaRetryCount: sandboxResult.qaRetryCount,
+      prUrl: agentResult.prUrl ?? undefined,
+      commitSha: agentResult.commitSha,
+      branchName: agentResult.branchName || featureBranch,
+      qaStatus: agentResult.qaStatus,
+      qaRetryCount: agentResult.qaRetryCount,
     };
   }
 }

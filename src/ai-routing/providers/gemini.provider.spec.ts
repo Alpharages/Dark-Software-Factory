@@ -160,7 +160,144 @@ describe('GeminiProvider', () => {
   });
 
   describe('execute', () => {
-    it('should run gemini command with agentic workflow and emit progress', async () => {
+    it('should successfully execute and capture progress milestones', async () => {
+      const milestones = [
+        { pct: 10, msg: 'Budget check passed' },
+        { pct: 20, msg: 'Cloning repository' },
+        { pct: 40, msg: 'Implementing changes' },
+        { pct: 75, msg: 'Implementation complete' },
+        { pct: 80, msg: 'Running QA' },
+        { pct: 90, msg: 'Pushing to GitHub' },
+        { pct: 95, msg: 'Opening PR' },
+        { pct: 100, msg: 'Done' },
+      ];
+
+      sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          for (const m of milestones) {
+            options.onStdoutLine(JSON.stringify({ type: 'progress', ...m }));
+          }
+          options.onStdoutLine(JSON.stringify(mockResultLine));
+        }
+        return {
+          exitCode: 0,
+          stdout: 'DONE',
+          stderr: '',
+          durationMs: 1500,
+          timedOut: false,
+          sandboxId: 'sbx-123',
+        };
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(true);
+      expect(result.prUrl).toBe(mockResultLine.prUrl);
+
+      // Verify all 8 milestones were emitted
+      expect(executionTracker.emitProgress).toHaveBeenCalledTimes(8);
+      milestones.forEach((m, idx) => {
+        expect(executionTracker.emitProgress).toHaveBeenNthCalledWith(
+          idx + 1,
+          mockPayload.executionId,
+          mockPayload.ticketId,
+          mockPayload.projectId,
+          m.msg,
+          m.pct,
+        );
+      });
+    });
+
+    it('should emit QA retry message with specific self-healing information', async () => {
+      sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          options.onStdoutLine(
+            JSON.stringify({ type: 'progress', pct: 82, msg: 'QA failed — retrying (1/3)' }),
+          );
+          options.onStdoutLine(
+            JSON.stringify({
+              ...mockResultLine,
+              qaStatus: 'self_healed',
+              qaRetryCount: 1,
+            }),
+          );
+        }
+        return {
+          exitCode: 0,
+          stdout: 'DONE',
+          stderr: '',
+          durationMs: 1500,
+          timedOut: false,
+          sandboxId: 'sbx-123',
+        };
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(true);
+      expect(result.qaStatus).toBe('self_healed');
+      expect(result.qaRetryCount).toBe(1);
+
+      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
+        mockPayload.executionId,
+        mockPayload.ticketId,
+        mockPayload.projectId,
+        'QA failed — retrying (1/3)',
+        82,
+      );
+    });
+
+    it('should handle failure if QA failed even if process exited cleanly', async () => {
+      const failedResult = { ...mockResultLine, qaStatus: 'failed', prUrl: null };
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify(failedResult),
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-111',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.qaStatus).toBe('failed');
+      expect(result.error?.message).toContain('Agent completed with QA failures');
+      expect(result.error?.isRetryable).toBe(true);
+    });
+
+    it('should handle timeout correctly', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 124,
+        stdout: '',
+        stderr: 'Timeout',
+        durationMs: 3600000,
+        timedOut: true,
+        sandboxId: 'sbx-111',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
+      expect(result.error?.isRetryable).toBe(true);
+    });
+
+    it('should handle process crash', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Segmentation fault',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-111',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(AIErrorCode.PROCESS_CRASH);
+      expect(result.error?.isRetryable).toBe(false);
+    });
+
+    it('should run gemini command with correct options and wired onStdoutLine', async () => {
       const result = await provider.execute(mockPayload);
 
       expect(sandboxService.runAgentCommand).toHaveBeenCalledWith(
@@ -181,18 +318,9 @@ describe('GeminiProvider', () => {
         }),
       );
 
-      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
-        mockPayload.executionId,
-        mockPayload.ticketId,
-        mockPayload.projectId,
-        'Starting...',
-        20,
-      );
-
       expect(result.success).toBe(true);
-      expect(result.codeDiff).toBeNull();
       expect(result.prUrl).toBe(mockResultLine.prUrl);
-      expect(result.qaRetryCount).toBe(0);
+      expect(result.qaStatus).toBe('passed');
     });
 
     it('should silently skip non-JSON stdout lines without crashing', async () => {
@@ -232,7 +360,7 @@ describe('GeminiProvider', () => {
       expect(result.commitSha).toBe(mockResultLine.commitSha);
     });
 
-    it('should handle failure if result line is missing', async () => {
+    it('should return failure if result line is missing and exit code is 0', async () => {
       sandboxService.runAgentCommand.mockResolvedValueOnce({
         exitCode: 0,
         stdout: 'Crashed without JSON',
@@ -245,54 +373,6 @@ describe('GeminiProvider', () => {
       const result = await provider.execute(mockPayload);
       expect(result.success).toBe(false);
       expect(result.error?.message).toContain('Agent did not emit a final result line');
-    });
-
-    it('should handle failure if QA failed even if process exited cleanly', async () => {
-      const failedResult = { ...mockResultLine, qaStatus: 'failed', prUrl: null };
-      sandboxService.runAgentCommand.mockResolvedValueOnce({
-        exitCode: 0,
-        stdout: JSON.stringify(failedResult),
-        stderr: '',
-        durationMs: 500,
-        timedOut: false,
-        sandboxId: 'sbx-111',
-      });
-
-      const result = await provider.execute(mockPayload);
-      expect(result.success).toBe(false);
-      expect(result.qaStatus).toBe('failed');
-      expect(result.error?.message).toContain('Agent completed with QA failures');
-    });
-
-    it('should handle timeout correctly', async () => {
-      sandboxService.runAgentCommand.mockResolvedValueOnce({
-        exitCode: 124,
-        stdout: '',
-        stderr: 'Timeout',
-        durationMs: 3600000,
-        timedOut: true,
-        sandboxId: 'sbx-111',
-      });
-
-      const result = await provider.execute(mockPayload);
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
-    });
-
-    it('should handle process crash', async () => {
-      sandboxService.runAgentCommand.mockResolvedValueOnce({
-        exitCode: 1,
-        stdout: '',
-        stderr: 'Segmentation fault',
-        durationMs: 500,
-        timedOut: false,
-        sandboxId: 'sbx-111',
-      });
-
-      const result = await provider.execute(mockPayload);
-      expect(result.success).toBe(false);
-      expect(result.error?.code).toBe(AIErrorCode.PROCESS_CRASH);
-      expect(result.error?.isRetryable).toBe(false);
     });
   });
 });

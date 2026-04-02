@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-01 # updated: wr-3-2 story created, ready-for-dev
+last_updated: 2026-04-02 # updated: wr-4-1 story created, ready-for-dev; epic-wr-4 → in-progress
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -81,7 +81,18 @@ development_status:
     effort: '3 days'
     story_points: 8
   10-U-2-execution-progress-streaming:
-    status: review
+    - story_id: WR-3.1
+      title: Wire all execution milestones to progress bar
+      status: completed
+      assigned_to: Antigravity
+      completed_at: "2026-04-01"
+      notes: "All 4 providers standardized on 8-milestone sequence with enhanced test coverage."
+
+    - story_id: WR-3.2
+      title: Implement failure cascade logic in SandboxService
+      status: ready-for-dev
+      assigned_to: Antigravity
+      notes: "Detect crashes/timeouts and surface specific failure reasons to UI and ClickUp."
     effort: '2 days'
     story_points: 5
 
@@ -646,10 +657,12 @@ development_status:
   epic-wr-3-source: 'epics-workspace-removal.md'
   epic-wr-3-notes: 'PM dashboard shows live progress bar (7+ milestones) and immediate crash failure reason. No silent freeze.'
   wr-3-1-wire-all-execution-milestones-to-progress-bar:
-    status: ready-for-dev
+    status: done
     effort: '1.5 days'
     story_points: 5
-    notes: '10%→20%→40%→75%→80%→90%→95%→100% milestones wired via emitProgress(). QA retry emits self-heal message. Concurrent emitLog() streaming preserved. FR-WR7 + NFR-WR4.'
+    completion_date: '2026-04-02'
+    last_updated: '2026-04-02'
+    notes: '10%→20%→40%→75%→80%→90%→95%→100% milestones wired via emitProgress(). QA retry emits self-heal message. Concurrent emitLog() streaming preserved. FR-WR7 + NFR-WR4. READY FOR REVIEW.'
   wr-3-2-implement-crash-detection-full-failure-cascade:
     status: ready-for-dev
     effort: '1.5 days'
@@ -658,7 +671,7 @@ development_status:
   epic-wr-3-retrospective: optional
 
   # EPIC WR-4 - HARD QA FAILURE HANDLING & PM RESOLUTION
-  epic-wr-4: backlog
+  epic-wr-4: in-progress
   epic-wr-4-name: 'Hard QA Failure Handling & PM Resolution'
   epic-wr-4-phase: 'Workspace Removal Sprint'
   epic-wr-4-priority: high
@@ -667,7 +680,7 @@ development_status:
   epic-wr-4-source: 'epics-workspace-removal.md'
   epic-wr-4-notes: 'When agent exhausts QA retries: push branch, QA_FAILED state, ClickUp notify. PM can open_pr or cancel via resolve-qa-failure endpoint.'
   wr-4-1-implement-hard-qa-failure-provider-behaviour-state-transition:
-    status: backlog
+    status: ready-for-dev
     effort: '1 day'
     story_points: 5
     notes: 'qaStatus:failed → push branch → QA_FAILED state → move ClickUp ticket to qa_failure_status. Real-time UI event with branch URL. FR-WR9.'

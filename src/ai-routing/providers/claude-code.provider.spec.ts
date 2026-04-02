@@ -201,6 +201,143 @@ describe('ClaudeCodeProvider', () => {
       expect(result.codeDiff).toBeNull();
     });
 
+    it('should successfully execute and capture progress milestones', async () => {
+      const milestones = [
+        { pct: 10, msg: 'Budget check passed' },
+        { pct: 20, msg: 'Cloning repository' },
+        { pct: 40, msg: 'Implementing changes' },
+        { pct: 75, msg: 'Implementation complete' },
+        { pct: 80, msg: 'Running QA' },
+        { pct: 90, msg: 'Pushing to GitHub' },
+        { pct: 95, msg: 'Opening PR' },
+        { pct: 100, msg: 'Done' },
+      ];
+
+      (sandboxService.runAgentCommand as jest.Mock).mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          for (const m of milestones) {
+            options.onStdoutLine(JSON.stringify({ type: 'progress', ...m }));
+          }
+          options.onStdoutLine(
+            JSON.stringify({
+              type: 'result',
+              prUrl: 'https://github.com/pr/1',
+              qaStatus: 'passed',
+              qaRetryCount: 0,
+            }),
+          );
+        }
+        return {
+          exitCode: 0,
+          stdout: 'DONE',
+          stderr: '',
+          durationMs: 1500,
+          timedOut: false,
+          sandboxId: 'sbx-123',
+        };
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(true);
+      expect(result.prUrl).toBe('https://github.com/pr/1');
+      expect(sandboxService.runAgentCommand).toHaveBeenCalledWith(
+        expect.objectContaining({ onStdoutLine: expect.any(Function) }),
+      );
+
+      // Verify all 8 milestones were emitted
+      expect(executionTracker.emitProgress).toHaveBeenCalledTimes(8);
+      milestones.forEach((m, idx) => {
+        expect(executionTracker.emitProgress).toHaveBeenNthCalledWith(
+          idx + 1,
+          mockPayload.executionId,
+          mockPayload.ticketId,
+          mockPayload.projectId,
+          m.msg,
+          m.pct,
+        );
+      });
+    });
+
+    it('should emit QA retry message with specific self-healing information', async () => {
+      (sandboxService.runAgentCommand as jest.Mock).mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          options.onStdoutLine(JSON.stringify({ type: 'progress', pct: 80, msg: 'Running QA' }));
+          options.onStdoutLine(
+            JSON.stringify({ type: 'progress', pct: 82, msg: 'QA failed — retrying (1/3)' }),
+          );
+          options.onStdoutLine(
+            JSON.stringify({
+              type: 'result',
+              prUrl: 'https://github.com/pr/1',
+              qaStatus: 'self_healed',
+              qaRetryCount: 1,
+            }),
+          );
+        }
+        return {
+          exitCode: 0,
+          stdout: 'DONE',
+          stderr: '',
+          durationMs: 1500,
+          timedOut: false,
+          sandboxId: 'sbx-123',
+        };
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(true);
+      expect(result.qaStatus).toBe('self_healed');
+      expect(result.qaRetryCount).toBe(1);
+
+      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
+        mockPayload.executionId,
+        mockPayload.ticketId,
+        mockPayload.projectId,
+        'Running QA',
+        80,
+      );
+      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
+        mockPayload.executionId,
+        mockPayload.ticketId,
+        mockPayload.projectId,
+        'QA failed — retrying (1/3)',
+        82,
+      );
+    });
+
+    it('should be resilient to non-JSON stdout lines interleaved with progress', async () => {
+      (sandboxService.runAgentCommand as jest.Mock).mockImplementationOnce(async (options) => {
+        if (options.onStdoutLine) {
+          options.onStdoutLine('Cloning into /tmp/repo...');
+          options.onStdoutLine('{"type":"progress","pct":20,"msg":"Cloning repository"}');
+          options.onStdoutLine('Updating submodules...');
+          options.onStdoutLine(
+            '{"type":"result","prUrl":"https://github.com/pr/1","qaStatus":"passed"}',
+          );
+        }
+        return {
+          exitCode: 0,
+          stdout: 'DONE',
+          stderr: '',
+          durationMs: 1500,
+          timedOut: false,
+          sandboxId: 'sbx-123',
+        };
+      });
+
+      await provider.execute(mockPayload);
+      expect(executionTracker.emitProgress).toHaveBeenCalledTimes(1);
+      expect(executionTracker.emitProgress).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        'Cloning repository',
+        20,
+      );
+    });
+
     it('should return success: false if QA state is failed', async () => {
       sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
         if (options.onStdoutLine) {
