@@ -1,6 +1,6 @@
 # Story WR-4.3: Implement the PM Resolution Endpoint
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -852,6 +852,28 @@ The existing `GitHubPROrchestrator.createPullRequest()` uses Anthropic SDK to ge
 - [Source: `src/execution/execution.module.ts` — existing imports; IntegrationsModule already present]
 - [Source: `prisma/schema.prisma:L73–L125` — Execution model (no pr_url); L199–L214 — GitHubPush model]
 - [Source: `src/execution/execution-tracker.service.ts:L228–L327` — completeExecution(); L330–L430 — failExecution()]
+
+### Review Findings
+
+Code review 2026-04-03 — 13 patches applied, 3 deferred, 7 dismissed.
+
+- [x] [Review][Patch] P1 — Wrong exception type for non-QA_FAILED state: `BadRequestException` (400) used; AC-7 requires `ConflictException` (409) with exact message `"Execution ${id} is not in QA_FAILED state — current state: ${status}"` [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P2 — Wrong exception type for missing branch: `BadRequestException` (400) used; AC-8 requires `UnprocessableEntityException` (422) with message `"Execution ${id} has no pushed branch — cannot open PR"`. Also: implementation checks GitHubPush.findFirst rather than `execution.qa_failed_branch` (spec field set by WR-4.1) [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P3 — TL role missing from `@Roles` guard; AC-9 requires PM, ADMIN, and TL. Currently only `@Roles(Role.PM, Role.ADMIN)` [`src/execution/execution.controller.ts`]
+- [x] [Review][Patch] P4 — `open_pr` response body absent; AC-1 requires `{ action: 'open_pr', prUrl, prNumber }`. Controller method returns `Promise<void>` — should return `QAResolutionResult` [`src/execution/execution.controller.ts`]
+- [x] [Review][Patch] P5 — `cancel` response body absent; AC-4 requires `{ action: 'cancel', branchName }`. Controller returns `void` [`src/execution/execution.controller.ts`]
+- [x] [Review][Patch] P6 — `pr_url` not saved to GitHubPush record; AC-3 requires `pr_number`, `pr_url`, and `push_status: 'PR_CREATED'`. Only `pr_number` + `push_status` are in the update call [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P7 — Non-atomic state transition: `tracker.updateStatus(COMPLETED)` fires at step 3 of 5. If `gitHubPush.update` or `notifyCodeReview` fail after, execution is stuck in terminal COMPLETED with no PR record and no retry possible (endpoint rejects non-QA_FAILED). ClickUp should notify before status transition (per spec ordering) [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P8 — No idempotency guard: status check (read) and status transition (write) are not atomic; concurrent calls both pass the `QA_FAILED` guard and both invoke `createPullRequest`, producing duplicate PRs. Should check `latestPush.pr_number !== null` before creating PR [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P9 — `prData` typed as `any` — no null guard on `.number`/`.html_url` before use in `addLabelsToPR`, `gitHubPush.update`, and `notifyCodeReview`. Should cast as `{ number: number; html_url: string }` per spec [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P10 — `execution` typed as `any` in private methods; bypasses TypeScript structural checks on deep property chain `ticket.project.gitHubAccount.installationId`. Should use an inline typed shape per spec [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P11 — `addLabelsToPR` swallows ALL `createLabel` errors (including 401/403/429) with bare `catch {}`. Should log a warning for non-422 errors to surface auth/rate-limit failures [`src/github/github.service.ts`]
+- [x] [Review][Patch] P12 — `push_status: 'PR_CREATED'` written as raw string literal; should use `GitHubStatus.PR_CREATED` Prisma enum reference for compile-time safety [`src/execution/services/qa-failure-resolution.service.ts`]
+- [x] [Review][Patch] P13 — URL regex `/github\.com\/([^/]+)\/([^/]+)/` fails on GitHub Enterprise hostnames (e.g., `github.mycompany.com`); spec adds slug fallback `^([^/]+)\/([^/]+)$` and throws `UnprocessableEntityException` for unparseable URLs [`src/execution/services/qa-failure-resolution.service.ts`]
+
+- [x] [Review][Defer] D1 — No UUID format validation on `:id` param — pre-existing pattern across all execution endpoints; Prisma throws a raw DB error for non-UUID input [`src/execution/execution.controller.ts`] — deferred, pre-existing
+- [x] [Review][Defer] D2 — `handleCancel` does not write `errorMessage`/`errorCode` to the execution record — audit trail gap; branch reference is only in `qa_failed_branch` field set by WR-4.1 [`src/execution/services/qa-failure-resolution.service.ts`] — deferred, pre-existing
+- [x] [Review][Defer] D3 — `moveTicketToConfiguredStatus` issues two sequential ClickUp API calls per invocation with no rate-limit coordination; burst resolutions could saturate the 100 req/min limit silently [`src/integrations/pm-execution-status.service.ts`] — deferred, pre-existing
 
 ## Dev Agent Record
 

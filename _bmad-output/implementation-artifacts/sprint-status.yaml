@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-02 # updated: wr-4-3 story created, ready-for-dev
+last_updated: 2026-04-03 # updated: wr-4-3 completed, epics wr-2/wr-4 done
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -90,8 +90,9 @@ development_status:
 
     - story_id: WR-3.2
       title: Implement failure cascade logic in SandboxService
-      status: ready-for-dev
+      status: completed
       assigned_to: Antigravity
+      completed_at: "2026-04-02"
       notes: "Detect crashes/timeouts and surface specific failure reasons to UI and ClickUp."
     effort: '2 days'
     story_points: 5
@@ -605,7 +606,7 @@ development_status:
   epic-wr-1-retrospective: done
 
   # EPIC WR-2 - AGENTIC PROVIDER EXECUTION ENGINE
-  epic-wr-2: in-progress
+  epic-wr-2: done
   epic-wr-2-name: 'Agentic Provider Execution Engine'
   epic-wr-2-phase: 'Workspace Removal Sprint'
   epic-wr-2-priority: critical
@@ -673,7 +674,7 @@ development_status:
   epic-wr-3-retrospective: optional
 
   # EPIC WR-4 - HARD QA FAILURE HANDLING & PM RESOLUTION
-  epic-wr-4: in-progress
+  epic-wr-4: done
   epic-wr-4-name: 'Hard QA Failure Handling & PM Resolution'
   epic-wr-4-phase: 'Workspace Removal Sprint'
   epic-wr-4-priority: high
@@ -695,10 +696,12 @@ development_status:
     story_points: 2
     notes: 'Schema updated with 3 status fields. PATCH endpoint implemented with DTO validation. PMExecutionStatusService cast removed. 100% test coverage. Code review 2026-04-03: 4 patches applied (no-op DB write guard, NotFoundException not.toHaveBeenCalled assertion, null DTO validation test via plainToInstance, log moved post-update). 25 controller + 26 service tests green.'
   wr-4-3-implement-pm-resolution-endpoint:
-    status: ready-for-dev
+    status: done
     effort: '1.5 days'
     story_points: 5
-    notes: 'POST /api/v1/executions/:id/resolve-qa-failure. open_pr: create PR with qa-failed label + COMPLETED. cancel: FAILED + manual_review_status. 404/409/422 guards. Purely additive endpoint. FR-WR10.'
+    completion_date: '2026-04-03'
+    last_updated: '2026-04-03'
+    notes: 'POST /api/v1/executions/:id/resolve-qa-failure. open_pr: create PR with qa-failed label + COMPLETED + ClickUp move. cancel: FAILED + manual_review_status move. Code review 2026-04-03: 13 patches applied (ConflictException 409/422, TL role guard, QAResolutionResult response bodies, pr_url saved, ClickUp-before-status ordering, idempotency guard, typed execution shape, GitHubStatus enum, URL slug fallback, addLabelsToPR warning log). 12 service + 47 status integration tests green.'
   epic-wr-4-retrospective: optional
 
 priority_sequence:
@@ -979,3 +982,27 @@ epic_status:
     stories: 2
     estimated_effort: '3 days'
     notes: 'Dropped Workspace schema, deleted QaOrchestratorService legacy paths, and removed GitHub Commit/Push DooD consumers.'
+  epic-wr-2:
+    name: 'Agentic Provider Execution Engine'
+    status: 'done'
+    priority: 'critical'
+    source: 'epics-workspace-removal.md'
+    stories: 5
+    estimated_effort: '6 days'
+    notes: 'All 4 providers (Claude Code, Gemini, Codex, Kimi) migrated to full agentic loop (clone→implement→QA self-heal→commit→push→PR) via dsf-execution SKILL.md. API key redaction extended.'
+  epic-wr-3:
+    name: 'Live Execution Visibility & Crash Resilience'
+    status: 'done'
+    priority: 'high'
+    source: 'epics-workspace-removal.md'
+    stories: 2
+    estimated_effort: '3 days'
+    notes: 'Execution progress bar wired to 8 milestones. Standardized failure cascade implemented for agent crashes, timeouts, and OOMs. Live log streaming via ExecutionGateway preserved.'
+  epic-wr-4:
+    name: 'Hard QA Failure Handling & PM Resolution'
+    status: 'done'
+    priority: 'high'
+    source: 'epics-workspace-removal.md'
+    stories: 3
+    estimated_effort: '3 days'
+    notes: 'Implemented QA_FAILED terminal state, per-project status configuration, and POST /resolve-qa-failure endpoint for PM intervention (open_pr or cancel).'

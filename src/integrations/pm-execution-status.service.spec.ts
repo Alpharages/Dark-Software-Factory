@@ -701,4 +701,76 @@ describe('PMExecutionStatusService', () => {
       expect(mockProvider.updateStatus).toHaveBeenCalledWith('86ewke7gg', 'QA Review');
     });
   });
+
+  describe('notifyCodeReview', () => {
+    it('moves task to code_review_status when configured', async () => {
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        code_review_status: 'PR Ready',
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+
+      await service.notifyCodeReview(
+        'proj-1',
+        'task-1',
+        'https://github.com/owner/repo/pull/123',
+        'corr-cr',
+      );
+
+      expect(mockProvider.updateStatus).toHaveBeenCalledWith('86ewke7gg', 'PR Ready');
+      expect(mockProvider.addComment).not.toHaveBeenCalled();
+    });
+
+    it('posts missing-config comment when code_review_status is not configured', async () => {
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        code_review_status: null,
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+
+      await service.notifyCodeReview(
+        'proj-1',
+        'task-1',
+        'https://github.com/owner/repo/pull/123',
+        'corr-cr-miss',
+      );
+
+      expect(mockProvider.updateStatus).not.toHaveBeenCalled();
+      expect(mockProvider.addComment).toHaveBeenCalledWith(
+        '86ewke7gg',
+        expect.stringContaining('code_review_status'),
+      );
+    });
+  });
+
+  describe('notifyCancel', () => {
+    it('moves task to manual_review_status when configured', async () => {
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        manual_review_status: 'Blocked',
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+
+      await service.notifyCancel('proj-1', 'task-1', 'corr-cancel');
+
+      expect(mockProvider.updateStatus).toHaveBeenCalledWith('86ewke7gg', 'Blocked');
+      expect(mockProvider.addComment).not.toHaveBeenCalled();
+    });
+
+    it('posts missing-config comment when manual_review_status is not configured', async () => {
+      prisma.project.findUnique.mockResolvedValueOnce({
+        id: 'proj-1',
+        manual_review_status: null,
+      });
+      integrationService.findByProjectAndProvider.mockResolvedValue(mockIntegration);
+
+      await service.notifyCancel('proj-1', 'task-1', 'corr-cancel-miss');
+
+      expect(mockProvider.updateStatus).not.toHaveBeenCalled();
+      expect(mockProvider.addComment).toHaveBeenCalledWith(
+        '86ewke7gg',
+        expect.stringContaining('manual_review_status'),
+      );
+    });
+  });
 });

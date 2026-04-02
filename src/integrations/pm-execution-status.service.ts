@@ -204,11 +204,6 @@ export class PMExecutionStatusService {
    * Move ClickUp ticket to the project's configured qa_failure_status.
    * If qa_failure_status is not configured (field added by WR-4.2), logs a
    * warning and posts a configuration-gap comment instead — never throws.
-   *
-   * @param projectId     DSF project UUID
-   * @param ticketId      Internal DSF ticket UUID
-   * @param branchName    The pushed feature branch (included in comment)
-   * @param correlationId For log tracing
    */
   async notifyQAFailure(
     projectId: string,
@@ -216,8 +211,69 @@ export class PMExecutionStatusService {
     branchName: string | null,
     correlationId?: string,
   ): Promise<void> {
-    const tag = correlationId ? `[${correlationId}] ` : '';
+    const contextNote =
+      `The AI agent exhausted all QA retries. The branch \`${branchName ?? 'unknown'}\` ` +
+      `has been pushed but no PR was created.`;
 
+    await this.moveTicketToConfiguredStatus(
+      projectId,
+      ticketId,
+      'qa_failure_status',
+      contextNote,
+      correlationId,
+    );
+  }
+
+  /**
+   * Move ClickUp ticket to the project's configured code_review_status (WR-4.3).
+   * Called after open_pr action creates a PR on the qa-failed branch.
+   * If code_review_status is not configured, logs warning and posts config-gap comment — never throws.
+   */
+  async notifyCodeReview(
+    projectId: string,
+    ticketId: string,
+    prUrl: string,
+    correlationId?: string,
+  ): Promise<void> {
+    await this.moveTicketToConfiguredStatus(
+      projectId,
+      ticketId,
+      'code_review_status',
+      `Code review PR created: ${prUrl}`,
+      correlationId,
+    );
+  }
+
+  /**
+   * Move ClickUp ticket to the project's configured manual_review_status (WR-4.3).
+   * Called after cancel action. If manual_review_status not configured, logs warning — never throws.
+   */
+  async notifyCancel(projectId: string, ticketId: string, correlationId?: string): Promise<void> {
+    await this.moveTicketToConfiguredStatus(
+      projectId,
+      ticketId,
+      'manual_review_status',
+      'Execution cancelled by PM — branch preserved for manual developer review.',
+      correlationId,
+    );
+  }
+
+  /**
+   * Generic helper: read a configured status field from the Project model,
+   * resolve the live ClickUp status ID, and apply the transition.
+   * Logs a warning and posts a config-gap comment if the field is null — never throws.
+   *
+   * @param statusField  One of: 'qa_failure_status' | 'code_review_status' | 'manual_review_status'
+   * @param contextNote  Included in the config-gap comment if status not configured
+   */
+  private async moveTicketToConfiguredStatus(
+    projectId: string,
+    ticketId: string,
+    statusField: 'qa_failure_status' | 'code_review_status' | 'manual_review_status',
+    contextNote: string,
+    correlationId?: string,
+  ): Promise<void> {
+    const tag = correlationId ? `[${correlationId}] ` : '';
     try {
       // 1. Resolve clickup_task_id
       const ticket = await this.prisma.ticket.findUnique({
@@ -243,34 +299,42 @@ export class PMExecutionStatusService {
       // 3. Get provider
       const provider = await this.providerFactory.getProvider(integration);
 
-      // 4. Read qa_failure_status from project settings (added by WR-4.2).
+      // 4. Read configured status field from Project (WR-4.2 adds these fields)
+      // Use explicit ternary to avoid indexed access strict mode issues
       const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-      const qaFailureStatus = project?.qa_failure_status ?? null;
+      let configuredStatus: string | null = null;
+      if (statusField === 'qa_failure_status') {
+        configuredStatus = project?.qa_failure_status ?? null;
+      } else if (statusField === 'code_review_status') {
+        configuredStatus = project?.code_review_status ?? null;
+      } else {
+        configuredStatus = project?.manual_review_status ?? null;
+      }
 
-      if (!qaFailureStatus) {
-        // AC-4: Not configured — warn + post comment, never throw
+      if (!configuredStatus) {
         this.logger.warn(
-          `${tag}Project ${projectId} has no qa_failure_status configured — posting comment`,
+          `${tag}Project ${projectId} has no ${statusField} configured — posting comment`,
         );
-        const gapComment =
-          `⚠️ **QA Failure — Configuration Gap**\n\n` +
-          `The AI agent exhausted all QA retries. The branch \`${branchName ?? 'unknown'}\` has been pushed but no PR was created.\n\n` +
-          `**Action required:** Configure \`qa_failure_status\` in project settings so this ticket can be moved to the correct ClickUp status automatically.`;
-        await provider.addComment(clickupTaskId, gapComment);
+        await provider.addComment(
+          clickupTaskId,
+          `⚠️ **Status Transition Skipped — Configuration Gap**\n\n` +
+            `${contextNote}\n\n` +
+            `**Action required:** Configure \`${statusField}\` in project settings to enable automatic ClickUp status transitions.`,
+        );
         return;
       }
 
-      // 5. Runtime discovery — resolve qa_failure_status name to a live status (hallucination guard)
+      // 5. Runtime status discovery (no hardcoded IDs)
       const task = await provider.getTask(clickupTaskId);
       if (!task.listId) {
         this.logger.warn(`${tag}Task ${clickupTaskId} has no listId — skipping`);
         return;
       }
       const statuses = await provider.getStatuses(task.listId);
-      const target = statuses.find((s) => s.name.toLowerCase() === qaFailureStatus.toLowerCase());
+      const target = statuses.find((s) => s.name.toLowerCase() === configuredStatus.toLowerCase());
       if (!target) {
         this.logger.warn(
-          `${tag}qa_failure_status '${qaFailureStatus}' not found in list statuses — skipping`,
+          `${tag}${statusField} '${configuredStatus}' not found in list statuses — skipping`,
         );
         return;
       }
@@ -278,12 +342,12 @@ export class PMExecutionStatusService {
       // 6. Apply transition
       await provider.updateStatus(clickupTaskId, target.name);
       this.logger.log(
-        `${tag}ClickUp ${clickupTaskId}: '${task.status.name}' → '${target.name}' (QA_FAILED)`,
+        `${tag}ClickUp ${clickupTaskId}: '${task.status.name}' → '${target.name}' (${statusField})`,
       );
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.warn(
-        `${tag}QA failure notification skipped for ticket ${ticketId}: ${err.message}`,
+        `${tag}Status transition skipped for ticket ${ticketId} [${statusField}]: ${err.message}`,
       );
     }
   }

@@ -259,6 +259,42 @@ export class GitHubService {
     );
   }
 
+  /**
+   * Add labels to a PR (creates labels if they don't exist — idempotent).
+   * Uses issues API (GitHub PRs are issues under the hood).
+   * Swallows label creation 422 ("already_exists") — safe to call multiple times.
+   */
+  async addLabelsToPR(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    labels: string[],
+    installationId?: string,
+  ): Promise<void> {
+    await this.clientService.execute(
+      async (client: Octokit) => {
+        // Ensure labels exist (idempotent — 422 means already exists, that's fine)
+        for (const label of labels) {
+          try {
+            await client.issues.createLabel({ owner, repo, name: label, color: 'e11d48' });
+          } catch (err: unknown) {
+            // 422 = label already exists — expected and safe to ignore
+            // Other errors (401/403/429) are unexpected — log a warning so they surface
+            const status = (err as { status?: number })?.status;
+            if (status !== 422) {
+              this.logger.warn(
+                `addLabelsToPR: createLabel("${label}") failed with status ${status ?? 'unknown'} — proceeding`,
+              );
+            }
+          }
+        }
+        await client.issues.addLabels({ owner, repo, issue_number: prNumber, labels });
+      },
+      installationId,
+      'addLabelsToPR',
+    );
+  }
+
   async getPullRequest(
     owner: string,
     repo: string,

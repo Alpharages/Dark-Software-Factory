@@ -53,6 +53,8 @@ import { ExecutionActivityRepository } from './repositories/execution-activity.r
 // Audit Logging
 import { AuditLogService } from '../common/audit/audit-log.service';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { GitHubModule } from '../github/github.module';
+import { QAFailureResolutionService } from './services/qa-failure-resolution.service';
 
 /**
  * Execution Module
@@ -101,6 +103,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
         algorithms: ['HS256'],
       },
     }),
+    forwardRef(() => GitHubModule),
   ],
   controllers: [
     ExecutionController,
@@ -279,6 +282,9 @@ import { IntegrationsModule } from '../integrations/integrations.module';
       help: 'Total number of container control operation failures',
       labelNames: ['operation', 'execution_id'],
     }),
+
+    // QA Failure Resolution (WR-4.3)
+    QAFailureResolutionService,
   ],
   exports: [
     ExecutionService,

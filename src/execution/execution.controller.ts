@@ -1,31 +1,36 @@
-import { Controller, Get, Param, UseGuards, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, getSchemaPath } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  NotFoundException,
+  Headers,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ExecutionService } from './execution.service';
-import { ExecutionResponseDto } from '@/execution/dto';
+import { ExecutionResponseDto, ResolveQaFailureDto } from '@/execution/dto';
 import { JwtAuthGuard } from '@/common/guards/auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/auth/constants/roles.enum';
+import {
+  QAFailureResolutionService,
+  QAResolutionResult,
+} from './services/qa-failure-resolution.service';
 
 @ApiTags('Execution')
 @Controller('executions')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ExecutionController {
-  constructor(private readonly executionService: ExecutionService) {}
+  constructor(
+    private readonly executionService: ExecutionService,
+    private readonly resolutionService: QAFailureResolutionService,
+  ) {}
 
   @Get('active')
-  @Roles(Role.PM, Role.ADMIN, Role.TL, Role.QA)
-  @ApiOperation({ summary: 'Get all active executions' })
-  @ApiResponse({
-    status: 200,
-    schema: {
-      type: 'object',
-      properties: {
-        executions: { type: 'array', items: { $ref: getSchemaPath(ExecutionResponseDto) } },
-        total: { type: 'number' },
-      },
-    },
-  })
+  // ... (lines 17-35)
   async getActiveExecutions(): Promise<{ executions: ExecutionResponseDto[]; total: number }> {
     const executions = await this.executionService.getActiveExecutions();
     return {
@@ -34,7 +39,28 @@ export class ExecutionController {
     };
   }
 
+  @Post(':id/resolve-qa-failure')
+  @Roles(Role.PM, Role.ADMIN, Role.TL)
+  @ApiOperation({ summary: 'Resolve a QA-failed execution: open PR or cancel (Story WR-4.3)' })
+  @ApiParam({ name: 'id', description: 'Execution UUID' })
+  @ApiResponse({
+    status: 201,
+    description: 'Resolution applied — returns prUrl+prNumber (open_pr) or branchName (cancel)',
+  })
+  @ApiResponse({ status: 404, description: 'Execution not found' })
+  @ApiResponse({ status: 409, description: 'Execution is not in QA_FAILED state' })
+  @ApiResponse({ status: 422, description: 'open_pr called but no pushed branch exists' })
+  async resolveQaFailure(
+    @Param('id') id: string,
+    @Body() dto: ResolveQaFailureDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<QAResolutionResult> {
+    const corrId = correlationId ?? `wr-4.3-${id.slice(0, 8)}`;
+    return this.resolutionService.resolve(id, dto, corrId);
+  }
+
   @Get(':id/status')
+  // ...
   @Roles(Role.PM, Role.ADMIN, Role.TL)
   @ApiOperation({ summary: 'Get current execution status for polling fallback' })
   @ApiParam({ name: 'id', description: 'Execution UUID' })

@@ -8,3 +8,6 @@ export * from './resume-execution.dto';
 export * from './emergency-stop.dto';
 export * from './override-decision.dto';
 export * from './execution-control-response.dto';
+
+// WR-4.3: PM resolution endpoint DTO
+export { ResolveQaFailureDto, QaFailureResolutionAction } from './resolve-qa-failure.dto';

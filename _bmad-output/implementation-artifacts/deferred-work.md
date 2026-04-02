@@ -175,3 +175,9 @@
 ## Deferred from: code review of wr-3-2-implement-crash-detection-full-failure-cascade (2026-04-02)
 
 - **ECH-3: `updateByPhase` fallback in `revertToPreTriggerStatus` escapes outer try/catch via `return`** — When `integration.ai_trigger_status` is null, `return this.updateByPhase(...)` is called inside the try block. Benign because `updateByPhase` is documented as never-throw, but the asymmetry is fragile if that contract ever changes. Pre-existing best-effort pattern. [`src/integrations/pm-execution-status.service.ts`]
+
+## Deferred from: code review of wr-4-3-implement-pm-resolution-endpoint (2026-04-03)
+
+- **D1: No UUID format validation on `:id` route param** — Pre-existing pattern across all execution endpoints; Prisma throws a raw DB error for non-UUID input. Revisit when adding global input validation pipe. [`src/execution/execution.controller.ts`]
+- **D2: `handleCancel` does not write `errorMessage`/`errorCode` to the execution record** — Audit trail gap; branch reference is preserved in `qa_failed_branch` field set by WR-4.1 but no PM-cancellation reason is written. Consider adding `failExecution` call with `errorCode: 'PM_CANCELLED'` in a future pass. [`src/execution/services/qa-failure-resolution.service.ts`]
+- **D3: `moveTicketToConfiguredStatus` issues two sequential ClickUp API calls per invocation with no rate-limit coordination** — Burst resolution events (multiple simultaneous QA failures) could silently saturate ClickUp's 100 req/min limit; errors are swallowed by the catch-all. Pre-existing design from WR-4.1. [`src/integrations/pm-execution-status.service.ts`]
