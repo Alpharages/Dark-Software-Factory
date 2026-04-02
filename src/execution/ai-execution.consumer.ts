@@ -21,6 +21,7 @@ import {
   IExecutionFailure,
 } from './interfaces';
 import { OrchestratorService } from '@/ai-routing/orchestrator.service';
+import { AIErrorCode } from '@/ai-routing/interfaces/ai-provider.interface';
 import { DEFAULT_COMPLEXITY_SCORE, DEFAULT_ESTIMATED_OUTPUT_TOKENS } from './execution.constants';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
@@ -677,13 +678,26 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
         };
         await this.executionTracker.failExecution(failure, correlationId);
 
-        // Update ClickUp task status → CANCELLED (best-effort)
-        await this.pmExecutionStatus.updateByPhase(
-          payload.projectId,
-          payload.ticketId,
-          ExecutionPhase.FAILED,
-          correlationId,
-        );
+        // Story WR-3.2: Crash Detection Cascade
+        if (
+          result.error?.code === AIErrorCode.PROCESS_CRASH ||
+          result.error?.code === AIErrorCode.TIMEOUT
+        ) {
+          await this.pmExecutionStatus.revertToPreTriggerStatus(
+            payload.projectId,
+            payload.ticketId,
+            result.error.message,
+            correlationId,
+          );
+        } else {
+          // Update ClickUp task status → CANCELLED (best-effort)
+          await this.pmExecutionStatus.updateByPhase(
+            payload.projectId,
+            payload.ticketId,
+            ExecutionPhase.FAILED,
+            correlationId,
+          );
+        }
 
         // Story 7.7: Track AI capability failure (C2 fix)
         await this.capabilityTracker.trackExecution(
@@ -713,11 +727,12 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       };
       await this.executionTracker.failExecution(failure, correlationId);
 
-      // Update ClickUp task status → CANCELLED (best-effort)
-      await this.pmExecutionStatus.updateByPhase(
+      // Story WR-3.2: Crash Detection Cascade
+      // Unhandled exceptions are always crash-like — no conditional needed (Task 2.3)
+      await this.pmExecutionStatus.revertToPreTriggerStatus(
         payload.projectId,
         payload.ticketId,
-        ExecutionPhase.FAILED,
+        err.message,
         correlationId,
       );
 

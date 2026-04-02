@@ -159,11 +159,12 @@ export class CodexProvider implements ICodingAgentProvider {
     if (!success) {
       const errorMessage = result.timedOut
         ? 'Codex sandbox execution timed out'
-        : !resultReceived
-          ? 'Agent did not emit a final result line — execution may have crashed'
-          : qaFailed
-            ? 'Agent completed with QA failures after all retries'
-            : 'Agent process exited with non-zero code after emitting result';
+        : this.categorizeError(`${result.stdout}\n${result.stderr}`) ||
+          (!resultReceived
+            ? 'Agent did not emit a final result line — execution may have crashed'
+            : qaFailed
+              ? 'Agent completed with QA failures after all retries'
+              : 'Agent process exited with non-zero code after emitting result');
 
       return {
         success: false,
@@ -180,7 +181,7 @@ export class CodexProvider implements ICodingAgentProvider {
         error: {
           code: result.timedOut ? AIErrorCode.TIMEOUT : AIErrorCode.PROCESS_CRASH,
           message: errorMessage,
-          isRetryable: result.timedOut || qaFailed,
+          isRetryable: result.timedOut || qaFailed || errorMessage.includes('Rate Limit'),
           rawOutput: `${result.stdout}\n${result.stderr}`.trim(),
           exitCode: result.exitCode,
         },
@@ -200,5 +201,31 @@ export class CodexProvider implements ICodingAgentProvider {
       qaStatus: agentResult.qaStatus,
       qaRetryCount: agentResult.qaRetryCount,
     };
+  }
+
+  /**
+   * Categorize common sandbox errors based on output patterns.
+   * Story WR-3.2: Error Classification logic.
+   */
+  private categorizeError(output: string): string | null {
+    if (/rate limit|too many requests|429/i.test(output)) {
+      return 'Codex Rate Limit exceeded (429)';
+    }
+    if (
+      /getaddrinfo ENOTFOUND/i.test(output) ||
+      /unable to access/i.test(output) ||
+      /could not read from remote repository/i.test(output)
+    ) {
+      return 'Repository Unreachable (Network/Auth Error)';
+    }
+    if (
+      /OutOfMemory/i.test(output) ||
+      /OOMKill|oom-kill/i.test(output) ||
+      /allocation failed/i.test(output) ||
+      /killed.*memory|memory.*killed/i.test(output)
+    ) {
+      return 'Sandbox Out-of-Memory (OOM)';
+    }
+    return null;
   }
 }

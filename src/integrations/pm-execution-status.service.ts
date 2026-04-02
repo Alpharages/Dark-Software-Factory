@@ -201,6 +201,102 @@ export class PMExecutionStatusService {
   }
 
   /**
+   * Revert the ClickUp task to its pre-trigger status and post a failure comment.
+   * Used when a sandbox crash or timeout is detected (no code pushed).
+   *
+   * @param projectId    DSF project UUID
+   * @param ticketId     Internal DSF ticket UUID
+   * @param failureReason Specific error message/category
+   * @param correlationId For log tracing
+   */
+  async revertToPreTriggerStatus(
+    projectId: string,
+    ticketId: string,
+    failureReason: string,
+    correlationId?: string,
+  ): Promise<void> {
+    const tag = correlationId ? `[${correlationId}] ` : '';
+
+    try {
+      // 1. Resolve ticket
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { clickup_task_id: true },
+      });
+
+      if (!ticket?.clickup_task_id) {
+        this.logger.warn(`${tag}No clickup_task_id for ticket ${ticketId} — skipping revert`);
+        return;
+      }
+
+      const clickupTaskId = ticket.clickup_task_id;
+
+      // 2. Resolve integration
+      const integration = await this.integrationService.findByProjectAndProvider(
+        projectId,
+        PMProvider.CLICKUP,
+      );
+
+      if (!integration) {
+        this.logger.warn(`${tag}No CLICKUP integration for project ${projectId} — skipping revert`);
+        return;
+      }
+
+      // 3. Resolve ai_trigger_status
+      if (!integration.ai_trigger_status) {
+        this.logger.warn(
+          `${tag}No ai_trigger_status configured for project ${projectId} — falling back to FAILED phase update`,
+        );
+        return this.updateByPhase(projectId, ticketId, ExecutionPhase.FAILED, correlationId);
+      }
+
+      // 4. Resolve provider
+      const provider = await this.providerFactory.getProvider(integration);
+
+      // 5. Status revert — requires listId; best-effort, does NOT block comment posting
+      const task = await provider.getTask(clickupTaskId);
+      if (!task.listId) {
+        this.logger.warn(`${tag}Task ${clickupTaskId} has no listId — skipping status revert`);
+      } else {
+        // 6. Resolve target status ID
+        const statuses = await provider.getStatuses(task.listId);
+        const targetStatus = statuses.find(
+          (s) => s.name.toLowerCase() === integration.ai_trigger_status?.toLowerCase(),
+        );
+
+        if (targetStatus) {
+          // 7. Update status
+          await provider.updateStatus(clickupTaskId, targetStatus.name);
+          this.logger.log(
+            `${tag}Reverted ticket ${clickupTaskId} to status '${targetStatus.name}'`,
+          );
+        } else {
+          this.logger.warn(
+            `${tag}Could not find status '${integration.ai_trigger_status}' in list ${task.listId} — skipping status revert`,
+          );
+        }
+      }
+
+      // 8. Add failure comment — always posted, independent of status revert (AC-3)
+      const comment = [
+        '⚠️ **Execution Failed — No Code Pushed**',
+        '',
+        `The agent did not complete. Reason: ${failureReason}`,
+        '',
+        'No branch was created and no code was pushed.',
+      ].join('\n');
+
+      await provider.addComment(clickupTaskId, comment);
+      this.logger.log(`${tag}Posted failure comment to ticket ${clickupTaskId}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(
+        `${tag}Failed to revert pre-trigger status for ticket ${ticketId}: ${err.message}`,
+      );
+    }
+  }
+
+  /**
    * Resolve the workspace owner's provider user ID.
    * Calls getSelf() — the authenticated OAuth user — as the fallback when
    * bot_user_id is not stored on the integration record.

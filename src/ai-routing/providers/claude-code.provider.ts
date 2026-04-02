@@ -123,6 +123,15 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
     const qaFailed = agentResult.qaStatus === 'failed';
     const agenticSuccess = exitedClean && resultReceived && !qaFailed;
 
+    const errorMessage = result.timedOut
+      ? 'Claude Code sandbox execution timed out'
+      : this.categorizeError(`${result.stdout}\n${result.stderr}`) ||
+        (!resultReceived
+          ? 'Agent did not emit a final result line — execution may have crashed'
+          : qaFailed
+            ? 'Agentic delivery failed: QA self-healing exhausted retries'
+            : result.stderr || 'Claude Code execution failed in sandbox');
+
     return {
       success: agenticSuccess,
       codeDiff: null,
@@ -140,18 +149,38 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
         : {
             error: {
               code: result.timedOut ? AIErrorCode.TIMEOUT : AIErrorCode.PROCESS_CRASH,
-              message: result.timedOut
-                ? 'Claude Code sandbox execution timed out'
-                : !resultReceived
-                  ? 'Agent did not emit a final result line — execution may have crashed'
-                  : qaFailed
-                    ? 'Agentic delivery failed: QA self-healing exhausted retries'
-                    : result.stderr || 'Claude Code execution failed in sandbox',
-              isRetryable: result.timedOut || qaFailed,
+              message: errorMessage,
+              isRetryable: result.timedOut || qaFailed || errorMessage.includes('Rate Limit'),
               rawOutput: `${result.stdout}\n${result.stderr}`.trim(),
               exitCode: result.exitCode,
             },
           }),
     };
+  }
+
+  /**
+   * Categorize common sandbox errors based on output patterns.
+   * Story WR-3.2: Error Classification logic.
+   */
+  private categorizeError(output: string): string | null {
+    if (/rate limit|too many requests|429/i.test(output)) {
+      return 'Claude Code Rate Limit exceeded (429)';
+    }
+    if (
+      /getaddrinfo ENOTFOUND/i.test(output) ||
+      /unable to access/i.test(output) ||
+      /could not read from remote repository/i.test(output)
+    ) {
+      return 'Repository Unreachable (Network/Auth Error)';
+    }
+    if (
+      /OutOfMemory/i.test(output) ||
+      /OOMKill|oom-kill/i.test(output) ||
+      /signal 9/i.test(output) ||
+      /killed.*memory|memory.*killed/i.test(output)
+    ) {
+      return 'Sandbox Out-of-Memory (OOM)';
+    }
+    return null;
   }
 }

@@ -68,6 +68,7 @@ describe('PMExecutionStatusService', () => {
     updateStatus: jest.Mock;
     prepareForTransition: jest.Mock;
     getSelf: jest.Mock;
+    addComment: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -79,6 +80,7 @@ describe('PMExecutionStatusService', () => {
       getSelf: jest
         .fn()
         .mockResolvedValue({ id: 'owner-99', name: 'Workspace Owner', email: 'owner@acme.com' }),
+      addComment: jest.fn().mockResolvedValue(undefined),
     };
 
     integrationService = {
@@ -542,6 +544,97 @@ describe('PMExecutionStatusService', () => {
         undefined,
       );
       expect(mockProvider.updateStatus).toHaveBeenCalledWith('86ewke7gg', skillChoice);
+    });
+  });
+
+  describe('revertToPreTriggerStatus', () => {
+    it('reverts status to ai_trigger_status and adds a failure comment with full AC-3 format', async () => {
+      const integrationWithTrigger = { ...mockIntegration, ai_trigger_status: 'Open' };
+      integrationService.findByProjectAndProvider.mockResolvedValue(integrationWithTrigger);
+
+      await service.revertToPreTriggerStatus('proj-1', 'task-1', 'Sandbox Timeout', 'corr-revert');
+
+      expect(mockProvider.updateStatus).toHaveBeenCalledWith('86ewke7gg', 'Open');
+      // AC-3: verify the full comment format — not just the failure reason substring
+      expect(mockProvider.addComment).toHaveBeenCalledWith(
+        '86ewke7gg',
+        expect.stringMatching(
+          /⚠️.*Execution Failed.*No Code Pushed.*Sandbox Timeout.*No branch was created/s,
+        ),
+      );
+    });
+
+    it('falls back to updateByPhase(FAILED) if ai_trigger_status is missing', async () => {
+      const updateByPhaseSpy = jest.spyOn(service, 'updateByPhase').mockResolvedValue(undefined);
+
+      await service.revertToPreTriggerStatus('proj-1', 'task-1', 'Crash', 'corr-fallback');
+
+      expect(updateByPhaseSpy).toHaveBeenCalledWith(
+        'proj-1',
+        'task-1',
+        ExecutionPhase.FAILED,
+        'corr-fallback',
+      );
+      expect(mockProvider.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('handles missing status name gracefully — skips status revert but still posts comment', async () => {
+      const integrationWithTrigger = { ...mockIntegration, ai_trigger_status: 'NonExistent' };
+      integrationService.findByProjectAndProvider.mockResolvedValue(integrationWithTrigger);
+
+      await service.revertToPreTriggerStatus('proj-1', 'task-1', 'Error', 'corr-missing-status');
+
+      expect(mockProvider.updateStatus).not.toHaveBeenCalled();
+      // Comment must still be posted even when status name is not found
+      expect(mockProvider.addComment).toHaveBeenCalled();
+    });
+
+    it('still posts failure comment when task has no listId (AC-3 always fires)', async () => {
+      // P8: listId null must NOT prevent the comment from being posted
+      const integrationWithTrigger = { ...mockIntegration, ai_trigger_status: 'Open' };
+      integrationService.findByProjectAndProvider.mockResolvedValue(integrationWithTrigger);
+      mockProvider.getTask.mockResolvedValue({ ...mockTask, listId: null });
+
+      await service.revertToPreTriggerStatus('proj-1', 'task-1', 'OOM crash', 'corr-no-list');
+
+      // Status revert skipped (no listId)
+      expect(mockProvider.updateStatus).not.toHaveBeenCalled();
+      // Comment MUST still be posted independently
+      expect(mockProvider.addComment).toHaveBeenCalledWith(
+        '86ewke7gg',
+        expect.stringContaining('OOM crash'),
+      );
+    });
+
+    // P4 (Task 4.1): best-effort contract — never throws under any circumstances
+    it('never throws when updateStatus throws (best-effort)', async () => {
+      const integrationWithTrigger = { ...mockIntegration, ai_trigger_status: 'Open' };
+      integrationService.findByProjectAndProvider.mockResolvedValue(integrationWithTrigger);
+      mockProvider.updateStatus.mockRejectedValue(new Error('ClickUp API 500'));
+
+      await expect(
+        service.revertToPreTriggerStatus('proj-1', 'task-1', 'Crash', 'corr-throw'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('never throws when addComment throws (best-effort)', async () => {
+      const integrationWithTrigger = { ...mockIntegration, ai_trigger_status: 'Open' };
+      integrationService.findByProjectAndProvider.mockResolvedValue(integrationWithTrigger);
+      mockProvider.addComment.mockRejectedValue(new Error('ClickUp 429'));
+
+      await expect(
+        service.revertToPreTriggerStatus('proj-1', 'task-1', 'Timeout', 'corr-comment-fail'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('never throws when providerFactory throws (best-effort)', async () => {
+      const integrationWithTrigger = { ...mockIntegration, ai_trigger_status: 'Open' };
+      integrationService.findByProjectAndProvider.mockResolvedValue(integrationWithTrigger);
+      providerFactory.getProvider.mockRejectedValue(new Error('OAuth expired'));
+
+      await expect(
+        service.revertToPreTriggerStatus('proj-1', 'task-1', 'Crash', 'corr-factory-fail'),
+      ).resolves.toBeUndefined();
     });
   });
 });

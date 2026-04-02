@@ -375,6 +375,7 @@ describe('ClaudeCodeProvider', () => {
 
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(AIErrorCode.PROCESS_CRASH);
+      // Falls back to generic message when categorizeError returns null
       expect(result.error?.message).toContain('did not emit a final result line');
     });
 
@@ -412,7 +413,7 @@ describe('ClaudeCodeProvider', () => {
       sandboxService.runAgentCommand.mockResolvedValueOnce({
         exitCode: 1,
         stdout: '',
-        stderr: 'OOM Killed',
+        stderr: 'OOMKilled',
         durationMs: 500,
         timedOut: false,
         sandboxId: 'sbx',
@@ -422,7 +423,7 @@ describe('ClaudeCodeProvider', () => {
 
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(AIErrorCode.PROCESS_CRASH);
-      expect(result.error?.message).toContain('did not emit a final result line');
+      expect(result.error?.message).toContain('Sandbox Out-of-Memory (OOM)');
     });
 
     it('should handle timeouts', async () => {
@@ -440,6 +441,55 @@ describe('ClaudeCodeProvider', () => {
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(AIErrorCode.TIMEOUT);
       expect(result.error?.isRetryable).toBe(true);
+    });
+
+    it('should categorize rate limit errors as RETRYABLE', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: 'Error: 429 Rate limit exceeded',
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx',
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe('Claude Code Rate Limit exceeded (429)');
+      expect(result.error?.isRetryable).toBe(true);
+    });
+
+    it('should categorize repository unreachable errors', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: 'fatal: unable to access github.com: getaddrinfo ENOTFOUND',
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx',
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe('Repository Unreachable (Network/Auth Error)');
+    });
+
+    it('should categorize OOM errors', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'v8::internal::FatalProcessOutOfMemory',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx',
+      });
+
+      const result = await provider.execute(mockPayload);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe('Sandbox Out-of-Memory (OOM)');
     });
   });
 });

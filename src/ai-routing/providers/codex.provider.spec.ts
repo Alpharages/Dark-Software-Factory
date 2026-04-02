@@ -281,6 +281,53 @@ describe('CodexProvider', () => {
       expect(result.error?.isRetryable).toBe(true);
     });
 
+    it('should categorize OpenAI rate limit errors', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: 'Error: Rate limit reached for model',
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-123',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe('Codex Rate Limit exceeded (429)');
+      expect(result.error?.isRetryable).toBe(true);
+    });
+
+    it('should categorize repository connectivity errors', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: 'fatal: could not read from remote repository',
+        stderr: '',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-123',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe('Repository Unreachable (Network/Auth Error)');
+    });
+
+    it('should categorize sandbox OOM errors', async () => {
+      sandboxService.runAgentCommand.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr:
+          'FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory',
+        durationMs: 500,
+        timedOut: false,
+        sandboxId: 'sbx-123',
+      });
+
+      const result = await provider.execute(mockPayload);
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe('Sandbox Out-of-Memory (OOM)');
+    });
+
     it('should handle process crash', async () => {
       sandboxService.runAgentCommand.mockResolvedValueOnce({
         exitCode: 1,

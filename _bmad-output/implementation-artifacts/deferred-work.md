@@ -165,3 +165,7 @@
 - **`agentResult` spread mutation theoretical race** — If SDK ever batches `onStdout` callbacks via microtasks, two in-flight spreads could interleave. JS single-threaded model makes this safe in practice. [`claude-code.provider.ts`]
 - **`emitProgress .catch()` logs error message only, loses stack trace** — Logging quality improvement; non-critical for progress indicators. [`claude-code.provider.ts`]
 - **QA failure + simultaneous timeout → `error.code` would be TIMEOUT instead of PROCESS_CRASH** — Edge case: if sandbox times out and the agent had already emitted a `qaStatus: failed` result line, the error code is TIMEOUT not PROCESS_CRASH. Highly unlikely in practice. [`claude-code.provider.ts`]
+
+## Deferred from: code review of wr-3-2-implement-crash-detection-full-failure-cascade (2026-04-02)
+
+- **ECH-3: `updateByPhase` fallback in `revertToPreTriggerStatus` escapes outer try/catch via `return`** — When `integration.ai_trigger_status` is null, `return this.updateByPhase(...)` is called inside the try block. Benign because `updateByPhase` is documented as never-throw, but the asymmetry is fragile if that contract ever changes. Pre-existing best-effort pattern. [`src/integrations/pm-execution-status.service.ts`]

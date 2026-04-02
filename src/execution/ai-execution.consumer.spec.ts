@@ -4,17 +4,21 @@ import { AIProvider, ExecutionStatus, Prisma } from '@/prisma/client';
 import Decimal = Prisma.Decimal;
 import { AIExecutionConsumer } from './ai-execution.consumer';
 import { ExecutionTrackerService } from './execution-tracker.service';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
-import { OrchestratorService } from '../ai-routing/orchestrator.service';
+import { RabbitMQService } from '@/rabbitmq/rabbitmq.service';
+import { OrchestratorService } from '@/ai-routing/orchestrator.service';
 import { IExecutionCompletion, IExecutionFailure } from './interfaces';
-import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
-import { AICostTrackerService } from '../cost-tracking/ai-cost-tracker.service';
-import { CostOptimizerService } from '../cost-tracking/cost-optimizer.service';
-import { SentryService } from '../common/sentry/sentry.service';
-import { ClickUpService } from '../clickup/clickup.service';
-import { AiCapabilityTrackerService } from '../architecture-review/capabilities/ai-capability-tracker.service';
-import { BotAssignmentService } from '../integrations/bot-assignment.service';
-import { PMExecutionStatusService } from '../integrations/pm-execution-status.service';
+import { AIErrorCode } from '@/ai-routing/interfaces/ai-provider.interface';
+import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
+import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
+import { CostOptimizerService } from '@/cost-tracking/cost-optimizer.service';
+import { SentryService } from '@/common/sentry';
+import { ClickUpService } from '@/clickup/clickup.service';
+import { AiCapabilityTrackerService } from '@/architecture-review/capabilities/ai-capability-tracker.service';
+import { BotAssignmentService } from '@/integrations/bot-assignment.service';
+import {
+  PMExecutionStatusService,
+  ExecutionPhase,
+} from '@/integrations/pm-execution-status.service';
 
 /**
  * AIExecutionConsumer Unit Tests
@@ -150,7 +154,10 @@ describe('AIExecutionConsumer', () => {
         { provide: BotAssignmentService, useValue: mockBotAssignment },
         {
           provide: PMExecutionStatusService,
-          useValue: { updateByPhase: jest.fn().mockResolvedValue(undefined) },
+          useValue: {
+            updateByPhase: jest.fn().mockResolvedValue(undefined),
+            revertToPreTriggerStatus: jest.fn().mockResolvedValue(undefined),
+          },
         },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_CONSUMED_TOTAL', useValue: mockCounter },
         { provide: 'PROM_METRIC_QUEUE_MESSAGES_FAILED_TOTAL', useValue: mockCounter },
@@ -303,6 +310,142 @@ describe('AIExecutionConsumer', () => {
         'ticket-456',
         'proj-123',
         'corr-123',
+      );
+    });
+  });
+
+  describe('processExecution — crash/timeout handling', () => {
+    it('should trigger revertToPreTriggerStatus on AIErrorCode.PROCESS_CRASH', async () => {
+      const pmStatus = (consumer as any).pmExecutionStatus;
+
+      _orchestrator.execute.mockResolvedValue({
+        success: false,
+        error: {
+          code: AIErrorCode.PROCESS_CRASH,
+          message: 'Sandbox OOM',
+          isRetryable: false,
+        },
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        codeDiff: null,
+        filesChanged: [],
+        confidenceScore: 0,
+        durationMs: 100,
+        totalDurationMs: 100,
+        workspacePath: '',
+        fallbackAttempts: [],
+        estimatedCostCents: 0,
+      });
+
+      await (consumer as any).processExecution(_mockMessage);
+
+      expect(pmStatus.revertToPreTriggerStatus).toHaveBeenCalledWith(
+        'proj-123',
+        'ticket-456',
+        'Sandbox OOM',
+        'corr-123',
+      );
+      expect(pmStatus.updateByPhase).not.toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        ExecutionPhase.FAILED,
+        expect.any(String),
+      );
+    });
+
+    it('should trigger revertToPreTriggerStatus on AIErrorCode.TIMEOUT', async () => {
+      const pmStatus = (consumer as any).pmExecutionStatus;
+
+      _orchestrator.execute.mockResolvedValue({
+        success: false,
+        error: {
+          code: AIErrorCode.TIMEOUT,
+          message: 'Execution reached 1 hour limit',
+          isRetryable: false,
+        },
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        codeDiff: null,
+        filesChanged: [],
+        confidenceScore: 0,
+        durationMs: 100,
+        totalDurationMs: 100,
+        workspacePath: '',
+        fallbackAttempts: [],
+        estimatedCostCents: 0,
+      });
+
+      await (consumer as any).processExecution(_mockMessage);
+
+      expect(pmStatus.revertToPreTriggerStatus).toHaveBeenCalledWith(
+        'proj-123',
+        'ticket-456',
+        'Execution reached 1 hour limit',
+        'corr-123',
+      );
+      expect(pmStatus.updateByPhase).not.toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        ExecutionPhase.FAILED,
+        expect.any(String),
+      );
+    });
+
+    // P6 (Task 5.3): non-crash error codes must route to updateByPhase(FAILED)
+    it('should call updateByPhase(FAILED) on non-crash error codes (e.g. CLI_NOT_FOUND)', async () => {
+      const pmStatus = (consumer as any).pmExecutionStatus;
+
+      _orchestrator.execute.mockResolvedValue({
+        success: false,
+        error: {
+          code: AIErrorCode.CLI_NOT_FOUND,
+          message: 'Claude CLI binary not found',
+          isRetryable: false,
+        },
+        executedBy: AIProvider.CLAUDE_CODE,
+        usedFallback: false,
+        codeDiff: null,
+        filesChanged: [],
+        confidenceScore: 0,
+        durationMs: 100,
+        totalDurationMs: 100,
+        workspacePath: '',
+        fallbackAttempts: [],
+        estimatedCostCents: 0,
+      });
+
+      await (consumer as any).processExecution(_mockMessage);
+
+      expect(pmStatus.updateByPhase).toHaveBeenCalledWith(
+        'proj-123',
+        'ticket-456',
+        ExecutionPhase.FAILED,
+        'corr-123',
+      );
+      expect(pmStatus.revertToPreTriggerStatus).not.toHaveBeenCalled();
+    });
+
+    // P7 (Task 5.4): unhandled catch-block exceptions are always crash-like
+    it('should call revertToPreTriggerStatus in global catch block for unhandled exceptions', async () => {
+      const pmStatus = (consumer as any).pmExecutionStatus;
+
+      // Simulate an unhandled exception thrown mid-execution (not from provider result)
+      _orchestrator.execute.mockRejectedValue(new Error('DB connection lost unexpectedly'));
+
+      await (consumer as any).processExecution(_mockMessage);
+
+      // Unhandled exceptions are always crash-like — should call revert, not updateByPhase
+      expect(pmStatus.revertToPreTriggerStatus).toHaveBeenCalledWith(
+        'proj-123',
+        'ticket-456',
+        'DB connection lost unexpectedly',
+        'corr-123',
+      );
+      expect(pmStatus.updateByPhase).not.toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        ExecutionPhase.FAILED,
+        expect.any(String),
       );
     });
   });
