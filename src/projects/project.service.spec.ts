@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectService } from './project.service';
 import { ProjectRepository } from './project.repository';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { ClickUpService } from '@/clickup/clickup.service';
@@ -41,6 +46,7 @@ describe('ProjectService', () => {
     qa_failure_status: null,
     manual_review_status: null,
     code_review_status: null,
+    qa_max_retries: 3,
   };
 
   const mockCounter = {
@@ -534,6 +540,38 @@ describe('ProjectService', () => {
       const result = await service.updateQaStatusConfig('project-123', {});
 
       expect(result).toEqual(mockProject);
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('should update qaMaxRetries when provided in valid range (WR-5.1)', async () => {
+      const updatedProject = {
+        ...mockProject,
+        qa_max_retries: 5,
+      };
+      const dto = { qaMaxRetries: 5 };
+
+      repository.findById.mockResolvedValue(mockProject);
+      repository.update.mockResolvedValue(updatedProject as any);
+
+      const result = await service.updateQaStatusConfig('project-123', dto);
+
+      expect((result as any).qa_max_retries).toBe(5);
+      expect(repository.update).toHaveBeenCalledWith('project-123', {
+        qa_max_retries: 5,
+      });
+    });
+
+    it('should throw UnprocessableEntityException when qaMaxRetries is out of range (WR-5.1)', async () => {
+      repository.findById.mockResolvedValue(mockProject);
+
+      await expect(
+        service.updateQaStatusConfig('project-123', { qaMaxRetries: 0 }),
+      ).rejects.toThrow(UnprocessableEntityException);
+
+      await expect(
+        service.updateQaStatusConfig('project-123', { qaMaxRetries: 11 }),
+      ).rejects.toThrow(UnprocessableEntityException);
+
       expect(repository.update).not.toHaveBeenCalled();
     });
   });

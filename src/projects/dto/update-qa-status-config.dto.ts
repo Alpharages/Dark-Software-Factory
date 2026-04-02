@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsInt } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateQaStatusConfigDto {
@@ -34,4 +34,15 @@ export class UpdateQaStatusConfigDto {
   @IsString()
   @MinLength(1, { message: 'code_review_status must be a non-empty string or null' })
   code_review_status?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Max QA retry attempts for this project (1–10). Default: 3. Takes effect on next execution only.',
+    example: 3,
+    minimum: 1,
+    maximum: 10,
+  })
+  @IsOptional()
+  @IsInt()
+  qaMaxRetries?: number;
 }

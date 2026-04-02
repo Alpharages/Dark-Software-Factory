@@ -26,6 +26,7 @@ model Project {
   qa_failure_status     String?                            // WR-4.2: ClickUp status name for QA exhaustion (FR-WR11)
   manual_review_status  String?                            // WR-4.2: ClickUp status name for PM cancel action (FR-WR11, WR-4.3)
   code_review_status    String?                            // WR-4.2: ClickUp status name after open_pr action (FR-WR11, WR-4.3)
+  qa_max_retries        Int                    @default(3) // WR-5.1: Per-project QA retry limit (FR-EXT1, NFR-EXT1/2)
   conversations         ClientConversation[]
   coverage_baseline     CoverageBaseline?
   coverage_config       ProjectCoverageConfig?

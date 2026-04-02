@@ -7,6 +7,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { ClickUpService } from '@/clickup/clickup.service';
 import { ClickUpProvider } from '@/integrations/providers/clickup/clickup.provider';
@@ -443,6 +444,17 @@ export class ProjectService {
       updateData.manual_review_status = dto.manual_review_status;
     if (dto.code_review_status !== undefined)
       updateData.code_review_status = dto.code_review_status;
+
+    // WR-5.1: qaMaxRetries — use != null (catches both null AND undefined)
+    // Null guard prevents propagating null to a non-nullable DB column
+    if (dto.qaMaxRetries != null) {
+      if (dto.qaMaxRetries < 1 || dto.qaMaxRetries > 10) {
+        throw new UnprocessableEntityException(
+          `qaMaxRetries must be between 1 and 10 (inclusive), got: ${dto.qaMaxRetries}`,
+        );
+      }
+      updateData.qa_max_retries = dto.qaMaxRetries;
+    }
 
     if (Object.keys(updateData).length === 0) {
       this.logger.log(

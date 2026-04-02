@@ -201,6 +201,7 @@ export class ProjectController {
   @ApiParam({ name: 'id', description: 'Project ID' })
   @ApiResponse({ status: 200, description: 'QA status configuration updated successfully' })
   @ApiResponse({ status: 400, description: 'Empty string not accepted — use null to clear' })
+  @ApiResponse({ status: 422, description: 'qaMaxRetries out of range — must be 1–10' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   updateQaStatusConfig(@Param('id') id: string, @Body() dto: UpdateQaStatusConfigDto) {
     return this.projectService.updateQaStatusConfig(id, dto);

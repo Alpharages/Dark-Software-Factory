@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UnprocessableEntityException } from '@nestjs/common';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { ProjectIntegrationService } from '@/integrations/project-integration.service';
@@ -39,6 +40,7 @@ describe('ProjectController', () => {
     qa_failure_status: null,
     manual_review_status: null,
     code_review_status: null,
+    qa_max_retries: 3,
   };
 
   const mockIntegration = {
@@ -373,6 +375,29 @@ describe('ProjectController', () => {
 
       expect((result as any).qa_failure_status).toBeNull();
       expect(service.updateQaStatusConfig).toHaveBeenCalledWith('project-123', dto);
+    });
+
+    it('should update qaMaxRetries when provided in valid range (WR-5.1)', async () => {
+      const dto = { qaMaxRetries: 5 };
+      service.updateQaStatusConfig.mockResolvedValue({
+        ...mockProject,
+        qa_max_retries: 5,
+      } as any);
+
+      const result = await controller.updateQaStatusConfig('project-123', dto);
+
+      expect((result as any).qa_max_retries).toBe(5);
+      expect(service.updateQaStatusConfig).toHaveBeenCalledWith('project-123', dto);
+    });
+
+    it('should propagate UnprocessableEntityException when service rejects out-of-range qaMaxRetries (WR-5.1)', async () => {
+      service.updateQaStatusConfig.mockRejectedValue(
+        new UnprocessableEntityException('qaMaxRetries must be between 1 and 10'),
+      );
+
+      await expect(
+        controller.updateQaStatusConfig('project-123', { qaMaxRetries: 0 } as any),
+      ).rejects.toThrow('qaMaxRetries must be between 1 and 10');
     });
   });
 });
