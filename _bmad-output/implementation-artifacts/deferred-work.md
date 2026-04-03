@@ -1,5 +1,10 @@
 # Deferred Work Log
 
+## Deferred from: code review of fe-1-2-implement-pm-resolution-modal-open-pr-cancel (2026-04-03)
+
+- **W1: `branchUrl` assembled from unvalidated `github_repository_url`** — No URL scheme validation before constructing the anchor `href`. Risk is low: `github_repository_url` is admin-set, not user-controlled at PM level. Revisit if ClickUp sync ever writes project repo URLs from external webhook data.
+- **W2: Socket execution-status update races with open PMResolutionModal** — A real-time socket event updating the same execution while the modal is open could conflict with `updateExecutionStatus` from `handleResolved`. Pre-existing architectural pattern shared with `ExecutionLogsViewer`; address when implementing execution-level optimistic update locking.
+
 ## Deferred from: code review of wr-6-1-define-qa-attempt-interface-and-add-qa-attempts-db-column (2026-04-03)
 
 ## Deferred from: code review of wr-6-2-emit-and-parse-per-attempt-qa-markers-across-all-providers (2026-04-03)
