@@ -201,6 +201,19 @@ describe('ClaudeCodeProvider', () => {
       expect(result.codeDiff).toBeNull();
     });
 
+    it('should propagate qaMaxRetries from payload to environment', async () => {
+      const payloadWithRetries = { ...mockPayload, qaMaxRetries: 5 };
+      await provider.execute(payloadWithRetries);
+
+      expect(sandboxService.runAgentCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          env: expect.objectContaining({
+            QA_MAX_RETRIES: '5',
+          }),
+        }),
+      );
+    });
+
     it('should successfully execute and capture progress milestones', async () => {
       const milestones = [
         { pct: 10, msg: 'Budget check passed' },

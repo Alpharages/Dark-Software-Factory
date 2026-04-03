@@ -413,3 +413,17 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+---
+
+## Review Findings
+
+- [x] [Review][Decision] FEATURE_BRANCH assertion removed from 3 provider specs without source justification — **fixed**: restored `FEATURE_BRANCH: 'dsf/ticket-123/exec-456'` to codex, gemini, kimi provider specs; removal was unintentional — `codex.provider.spec.ts`, `gemini.provider.spec.ts`, `kimi.provider.spec.ts` each had `FEATURE_BRANCH: 'dsf/ticket-123/exec-456'` removed from their main env assertion block. No corresponding change exists in the provider source (FEATURE_BRANCH is still emitted). Needs human decision: was this intentional (mock was wrong) or should the assertion be restored?
+
+- [x] [Review][Defer] `qaMaxRetries: 0` silently reaches sandbox as `"0"` — DTO missing `@Min(1)` [UpdateQaStatusConfigDto] — deferred, pre-existing (WR-5.1 scope)
+- [x] [Review][Defer] No upper-bound guard on `qaMaxRetries` — arbitrary large values pass through to sandbox env — deferred, validation belongs in settings API (WR-5.1)
+- [x] [Review][Defer] Silent `undefined` fallback when `ticket.project` is null — no log/warn emitted [`orchestrator.consumer.ts`] — deferred, pre-existing by-design per spec notes
+- [x] [Review][Defer] Float/non-integer `qaMaxRetries` bypasses validation at RabbitMQ queue boundary [`IAIExecutionPayload`] — deferred, pre-existing risk applies to all payload fields
+- [x] [Review][Defer] `NaN` `qaMaxRetries` produces `"NaN"` env var — deferred, requires corrupted message data, pre-existing
+- [x] [Review][Defer] `qaMaxRetries` not wired through `executeTask` path in `OrchestratorService` — deferred, out of WR-5.2 scope
+- [x] [Review][Defer] AC-3 has no dedicated named test — deferred, happy-path tests cover this incidentally

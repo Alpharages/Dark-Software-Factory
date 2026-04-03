@@ -91,6 +91,9 @@ export interface IOrchestrationInput extends IAIExecutionInput {
 
   /** Dynamic Routing Configuration (OS-4.5) */
   routingConfig?: EffectiveAiRoutingConfigDto;
+
+  /** Per-project QA retry limit from Project.qa_max_retries (WR-5.2) */
+  qaMaxRetries?: number;
 }
 
 /**

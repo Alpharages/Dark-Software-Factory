@@ -56,7 +56,7 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
       FEATURE_BRANCH: targetBranch ?? featureBranch,
       TASK_DESCRIPTION: prompt,
       GITHUB_TOKEN: this.config.get<string>('github.token', ''),
-      QA_MAX_RETRIES: '3',
+      QA_MAX_RETRIES: String(payload.qaMaxRetries ?? 3), // WR-5.2
     };
 
     if (baseURL) {

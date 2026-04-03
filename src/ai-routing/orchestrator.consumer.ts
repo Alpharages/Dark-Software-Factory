@@ -132,6 +132,7 @@ export class OrchestratorConsumer extends RabbitMQConsumerBase implements OnModu
       repositoryUrl,
       baseBranch,
       allowFallback: true,
+      qaMaxRetries: ticket?.project?.qa_max_retries, // WR-5.2
     };
 
     // 5. Execute orchestration

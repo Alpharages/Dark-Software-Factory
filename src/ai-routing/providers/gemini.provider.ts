@@ -41,7 +41,6 @@ export class GeminiProvider implements ICodingAgentProvider {
     const baseURL = this.config.get<string>('gemini.baseURL', '');
     const model = this.config.get<string>('gemini.model', 'gemini-2.5-pro');
     const githubToken = this.config.get<string>('github.token', '');
-    const QA_MAX_RETRIES = '3';
 
     const sanitizedTicket =
       payload.ticketId
@@ -59,7 +58,7 @@ export class GeminiProvider implements ICodingAgentProvider {
       FEATURE_BRANCH: payload.targetBranch ?? featureBranch,
       TASK_DESCRIPTION: payload.prompt,
       GITHUB_TOKEN: githubToken,
-      QA_MAX_RETRIES,
+      QA_MAX_RETRIES: String(payload.qaMaxRetries ?? 3), // WR-5.2
     };
     if (baseURL) {
       env['GEMINI_BASE_URL'] = baseURL;

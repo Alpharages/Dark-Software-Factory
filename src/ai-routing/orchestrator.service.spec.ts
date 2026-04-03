@@ -158,6 +158,35 @@ describe('OrchestratorService', () => {
       expect(fallbackStrategy.executeWithFallbackCodingProvider).toHaveBeenCalled();
     });
 
+    it('should propagate qaMaxRetries to the execution payload', async () => {
+      const inputWithRetries = { ...mockInput, qaMaxRetries: 5 };
+
+      providerFactory.selectProvider.mockResolvedValue({
+        primary: AIProvider.CLAUDE_CODE,
+        fallback: null,
+        reason: ProviderSelectionReason.COMPLEXITY,
+        complexityScore: 10,
+        complexityGrade: ComplexityGrade.MEDIUM,
+      });
+
+      providerFactory.getCodingProvider.mockReturnValue({
+        providerName: 'claude-code',
+        isEnabled: true,
+        execute: jest.fn(),
+        isHealthy: jest.fn().mockResolvedValue(true),
+      } as any);
+
+      await service.execute(inputWithRetries);
+
+      expect(fallbackStrategy.executeWithFallbackCodingProvider).toHaveBeenCalledWith(
+        expect.anything(),
+        null,
+        expect.objectContaining({
+          qaMaxRetries: 5,
+        }),
+      );
+    });
+
     it('should fallback when primary fails with retryable error', async () => {
       providerFactory.selectProvider.mockResolvedValue({
         primary: AIProvider.CLAUDE_CODE,

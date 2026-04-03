@@ -1,5 +1,15 @@
 # Deferred Work Log
 
+## Deferred from: code review of wr-5-2-wire-all-providers-to-per-project-qa-retry-limit (2026-04-03)
+
+- **D1: `qaMaxRetries: 0` silently reaches sandbox as `"0"` — DTO missing `@Min(1)`** — `UpdateQaStatusConfigDto` accepts 0 via HTTP API, stores it, and `String(0)` produces `"0"` for the sandbox. Could disable QA self-healing silently. Fix belongs in WR-5.1 settings API DTO. [`UpdateQaStatusConfigDto`]
+- **D2: No upper-bound guard on `qaMaxRetries`** — arbitrarily large values (e.g. 99999) pass through all layers to the sandbox env var. Validation belongs in the settings API. [`UpdateQaStatusConfigDto`]
+- **D3: Silent `undefined` fallback when `ticket.project` is null — no log warning** — `ticket?.project?.qa_max_retries` silently returns `undefined` and providers fall back to 3 with no trace in logs. Existing repositoryUrl guard already throws for null ticket; inconsistency. [`src/ai-routing/orchestrator.consumer.ts`]
+- **D4: Float/non-integer `qaMaxRetries` bypasses validation at RabbitMQ queue boundary** — A directly-crafted queue message with `"qaMaxRetries": 2.7` produces `QA_MAX_RETRIES=2.7`. HTTP layer validates via `@IsInt()` but queue consumers do not. Pre-existing risk for all payload fields. [`IAIExecutionPayload`]
+- **D5: `NaN` `qaMaxRetries` produces `"NaN"` env var** — `NaN ?? 3` is `NaN` (not nullish), so `String(NaN)` = `"NaN"` reaches the sandbox. Requires corrupted/manually crafted message. Pre-existing pattern. [`src/ai-routing/providers/*.provider.ts`]
+- **D6: `qaMaxRetries` not wired through `executeTask` path** — Any AI task delegated via `OrchestratorService.executeTask()` bypasses `buildExecutionPayload()` and always sends hardcoded default 3. Out of WR-5.2 scope. [`src/ai-routing/orchestrator.service.ts`]
+- **D7: AC-3 has no dedicated named test** — Fallback-to-3 behavior is exercised incidentally by happy-path tests (mockPayload has no `qaMaxRetries`), but no test is explicitly named or structured for this branch. Coverage gap only. [`provider spec files`]
+
 ## Deferred from: code review of wr-4-1-implement-hard-qa-failure-provider-behaviour-state-transition (2026-04-02)
 
 - **D1: State-machine `transition()` called before DB writes — split-brain on crash** — pre-existing pattern across all tracker methods (failExecution, timeoutExecution, cancelExecution). If the DB write fails, the in-memory state machine has advanced but the DB has not. Revisit when designing distributed state management. [`src/execution/execution-tracker.service.ts`]

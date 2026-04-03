@@ -93,6 +93,7 @@ export class OrchestratorService {
       targetFiles: input.targetFiles,
       allowFallback: input.allowFallback,
       complexityScore,
+      qaMaxRetries: input.qaMaxRetries, // WR-5.2
     };
   }
 

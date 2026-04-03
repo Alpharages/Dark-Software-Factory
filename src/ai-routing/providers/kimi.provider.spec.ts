@@ -322,6 +322,19 @@ describe('KimiProvider', () => {
       expect(result.qaStatus).toBe('passed');
     });
 
+    it('should propagate qaMaxRetries from payload to environment', async () => {
+      const payloadWithRetries = { ...mockPayload, qaMaxRetries: 10 };
+      await provider.execute(payloadWithRetries);
+
+      expect(sandboxService.runAgentCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          env: expect.objectContaining({
+            QA_MAX_RETRIES: '10',
+          }),
+        }),
+      );
+    });
+
     it('should silently skip non-JSON stdout lines without crashing', async () => {
       sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
         if (options.onStdoutLine) {

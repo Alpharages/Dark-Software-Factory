@@ -41,7 +41,6 @@ export class CodexProvider implements ICodingAgentProvider {
     const baseURL = this.config.get<string>('codex.baseURL', '');
     const model = this.config.get<string>('codex.model', 'codex-1');
     const githubToken = this.config.get<string>('github.token', '');
-    const QA_MAX_RETRIES = '3';
 
     const sanitizedTicket =
       payload.ticketId
@@ -59,7 +58,7 @@ export class CodexProvider implements ICodingAgentProvider {
       FEATURE_BRANCH: payload.targetBranch ?? featureBranch,
       TASK_DESCRIPTION: payload.prompt,
       GITHUB_TOKEN: githubToken,
-      QA_MAX_RETRIES,
+      QA_MAX_RETRIES: String(payload.qaMaxRetries ?? 3), // WR-5.2
     };
     if (baseURL) {
       env['OPENAI_BASE_URL'] = baseURL;

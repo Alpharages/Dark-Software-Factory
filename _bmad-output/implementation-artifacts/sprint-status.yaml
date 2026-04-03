@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-03 # updated: wr-6-1 ready-for-dev
+last_updated: 2026-04-03 # updated: wr-6-3 ready-for-dev
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -718,9 +718,11 @@ development_status:
     effort: '1 day'
     story_points: 3
   wr-5-2-wire-all-providers-to-per-project-qa-retry-limit:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-04-03'
     effort: '1 day'
     story_points: 3
+    notes: 'Configurable qaMaxRetries wired from Project DB to all 4 providers (Claude, Codex, Kimi, Gemini) via IAIExecutionPayload. Hardcoded defaults replaced with payload.qaMaxRetries ?? 3. Unit tests updated for OrchestratorService and all providers.'
   epic-wr-5-retrospective: optional
 
   # EPIC WR-6 - PER-ATTEMPT QA HISTORY — BACKEND CAPTURE & STORAGE
@@ -737,17 +739,17 @@ development_status:
     effort: '0.5 days'
     story_points: 2
   wr-6-2-emit-and-parse-per-attempt-qa-markers-across-all-providers:
-    status: backlog
+    status: ready-for-dev
     effort: '1.5 days'
     story_points: 5
   wr-6-3-persist-qa-attempts-to-db-and-expose-via-execution-detail-api:
-    status: backlog
+    status: ready-for-dev
     effort: '1 day'
     story_points: 3
   epic-wr-6-retrospective: optional
 
   # EPIC FE-1 - PM RESOLUTION MODAL & QA RESULTS PANEL
-  epic-fe-1: backlog
+  epic-fe-1: in-progress
   epic-fe-1-name: 'PM Resolution Modal & QA Results Panel'
   epic-fe-1-phase: 'Workspace Removal Extensions Sprint'
   epic-fe-1-priority: medium
@@ -756,7 +758,7 @@ development_status:
   epic-fe-1-source: 'epics-workspace-removal-extensions.md'
   epic-fe-1-notes: 'Frontend (dsf-dashboard repo). WebSocket QA_FAILED detection. PM Resolution Modal (branch URL, last error, open_pr/cancel). QA Results Panel per-attempt breakdown. UX spec compliance: focus trap, ARIA, toast, traffic light colours.'
   fe-1-1-detect-qa-failed-state-and-surface-resolution-prompt:
-    status: backlog
+    status: ready-for-dev
     effort: '0.5 days'
     story_points: 2
   fe-1-2-implement-pm-resolution-modal-open-pr-cancel:
