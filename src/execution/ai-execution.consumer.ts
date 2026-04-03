@@ -649,6 +649,23 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
           correlationId,
         );
 
+        // Story WR-6.3: Persist QA attempt history (best-effort — never crash consumer)
+        try {
+          await this.executionTracker.persistQaAttempts(
+            executionId,
+            result.qaAttempts ?? null,
+            correlationId,
+          );
+        } catch (_err) {
+          const err = _err as Error;
+          this.logger.error(`[${correlationId}] Failed to persist qa_attempts: ${err.message}`);
+          this.sentry.captureMessage(
+            `qa_attempts persistence failed for execution ${executionId}: ${err.message}`,
+            ErrorSeverity.HIGH,
+          );
+          // Continue — missing qa_attempts is recoverable
+        }
+
         // Story 7.7: Track AI capability success (C2 fix)
         await this.capabilityTracker.trackExecution(true, payload.prompt);
 
@@ -702,6 +719,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
             errorMessage: qaErrorMessage,
             branchName: result.branchName,
             qaRetryCount: result.qaRetryCount,
+            qaAttempts: result.qaAttempts ?? null, // WR-6.3
           };
           await this.executionTracker.qaFailExecution(qaFailure, correlationId);
           await this.pmExecutionStatus.notifyQAFailure(

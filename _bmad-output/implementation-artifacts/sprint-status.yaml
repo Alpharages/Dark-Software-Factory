@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-03 # updated: wr-6-2 done (code review patches applied)
+last_updated: 2026-04-03 # updated: wr-6-3 done (code review patches applied)
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -746,7 +746,8 @@ development_status:
     effort: '1.5 days'
     story_points: 5
   wr-6-3-persist-qa-attempts-to-db-and-expose-via-execution-detail-api:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-04-03'
     effort: '1 day'
     story_points: 3
   epic-wr-6-retrospective: optional

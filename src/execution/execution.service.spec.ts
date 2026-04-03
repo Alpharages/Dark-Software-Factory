@@ -316,6 +316,31 @@ describe('ExecutionService', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should map qa_attempts array from DB to qaAttempts in response DTO', async () => {
+      const qaAttempts = [
+        { attemptNumber: 1, lintPassed: true, testsPassed: true, durationMs: 500 },
+      ];
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        qa_attempts: qaAttempts as unknown as any,
+      } as any);
+
+      const result = await service.getExecution('exec-123');
+
+      expect(result?.qaAttempts).toEqual(qaAttempts);
+    });
+
+    it('should return qaAttempts: null when qa_attempts is null in DB', async () => {
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        qa_attempts: null,
+      } as any);
+
+      const result = await service.getExecution('exec-123');
+
+      expect(result?.qaAttempts).toBeNull();
+    });
   });
 
   describe('state machine helpers', () => {

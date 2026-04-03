@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AIProvider, Execution, ExecutionStatus, Prisma } from '@/prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { IExecutionAuditLog } from './interfaces';
+import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
 
 /**
  * Execution Repository
@@ -91,6 +92,7 @@ export class ExecutionRepository {
       filesChanged: string[];
       errorMessage: string;
       branchName: string | null; // WR-4.1: qa_failed_branch for QA_FAILED status
+      qaAttempts: QAAttempt[] | null; // WR-6.3
     }>,
   ): Promise<Execution> {
     const updateData: Prisma.ExecutionUpdateManyMutationInput = {
@@ -121,6 +123,10 @@ export class ExecutionRepository {
         }
         if (additionalData?.branchName !== undefined) {
           updateData.qa_failed_branch = additionalData.branchName;
+        }
+        if ('qaAttempts' in (additionalData ?? {})) {
+          updateData.qa_attempts = (additionalData?.qaAttempts ??
+            Prisma.JsonNull) as unknown as Prisma.InputJsonValue;
         }
         break;
       case ExecutionStatus.FAILED:

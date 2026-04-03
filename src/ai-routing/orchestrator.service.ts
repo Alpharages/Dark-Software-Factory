@@ -198,6 +198,7 @@ export class OrchestratorService {
         error: executionResult.result.error,
         tokensInput: executionResult.result.tokensInput,
         tokensOutput: executionResult.result.tokensOutput,
+        qaAttempts: executionResult.result.qaAttempts, // WR-6.3
       };
       if (result.success) {
         this.successfulExecutions++;

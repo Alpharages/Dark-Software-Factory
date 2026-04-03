@@ -214,3 +214,7 @@
 - **D1: No test for explicit `null` body value for `qaMaxRetries`** — `{ qaMaxRetries: null }` passes the DTO (`@IsOptional()` skips validators for null) and the service `!= null` guard treats it as no-op (no update). Behavior is correct but undocumented. Consider a test and Swagger `nullable: true` annotation in a future pass. [`src/projects/project.service.spec.ts`]
 - **D2: No test for combined PATCH (multiple fields including `qaMaxRetries`)** — No test exercises `{ qa_failure_status: null, qaMaxRetries: 5 }` in a single request to verify multi-field `updateData` merging works correctly. [`src/projects/project.service.spec.ts`]
 - **D3: Out-of-range service spec test does not assert `repository.findById` was called** — Trivial gap; `repository.update not.toHaveBeenCalled()` is asserted but `findById` call order is not verified. Low risk since other service tests cover it. [`src/projects/project.service.spec.ts:567`]
+
+## Deferred from: code review of wr-6-3-persist-qa-attempts-to-db-and-expose-via-execution-detail-api (2026-04-03)
+
+- **D1: Double-write if two consumers process same executionId simultaneously** — Pre-existing RabbitMQ concurrent-consumer architecture concern. On the success path, `persistQaAttempts` issues a standalone `update` after `completeExecution`; if two consumer instances race on the same message (rare but possible with redelivery), the last write wins. Not specific to WR-6.3; applies to all post-orchestrator DB writes in the consumer. [`src/execution/ai-execution.consumer.ts`]

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ExecutionStatus, Execution } from '@/prisma/client';
+import { ExecutionStatus, Execution, Prisma } from '@/prisma/client';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Observable, Subscription } from 'rxjs';
@@ -27,6 +27,7 @@ import {
   ExecutionProgressEvent,
   ExecutionQAFailedEvent,
 } from '@/realtime/realtime.types';
+import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
 import { AI_METRICS, CONTAINER_METRICS } from '@/common/metrics';
 import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
 
@@ -442,7 +443,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     failure: IExecutionQAFailure,
     correlationId: string,
   ): Promise<IStateTransition> {
-    const { executionId, errorMessage, branchName, qaRetryCount } = failure;
+    const { executionId, errorMessage, branchName, qaRetryCount, qaAttempts } = failure;
     const execution = await this.getExecutionOrThrow(executionId);
 
     const transition = this.stateMachine.transition(
@@ -457,6 +458,7 @@ export class ExecutionTrackerService implements OnModuleInit {
       await this.repository.updateStatus(executionId, ExecutionStatus.QA_FAILED, {
         errorMessage,
         branchName: branchName ?? null,
+        qaAttempts: qaAttempts ?? null, // WR-6.3
       });
 
       await this.repository.createAuditLog({
@@ -749,6 +751,30 @@ export class ExecutionTrackerService implements OnModuleInit {
   async assignContainer(executionId: string, containerId: string): Promise<void> {
     await this.repository.update(executionId, { container_id: containerId });
     this.logger.log(`[${executionId}] Container ${containerId} assigned`);
+  }
+
+  /**
+   * Persist QA history for successful or failed execution (WR-6.3)
+   * Best-effort persistence: failures are logged but not thrown.
+   */
+  async persistQaAttempts(
+    executionId: string,
+    qaAttempts: QAAttempt[] | null,
+    correlationId?: string,
+  ): Promise<void> {
+    try {
+      await this.repository.update(executionId, {
+        qa_attempts: (qaAttempts ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
+      } as unknown as Parameters<typeof this.repository.update>[1]);
+      this.logger.log(
+        `[${correlationId ?? 'system'}] Persisted ${qaAttempts?.length ?? 0} QA attempts for ${executionId}`,
+      );
+    } catch (e: unknown) {
+      const err = e as Error;
+      this.logger.error(
+        `[${correlationId ?? 'system'}] Failed to persist QA attempts for ${executionId}: ${err.message}`,
+      );
+    }
   }
 
   /**

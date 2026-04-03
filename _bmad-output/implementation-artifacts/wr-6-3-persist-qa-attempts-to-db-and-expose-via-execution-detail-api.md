@@ -1,6 +1,6 @@
 # Story WR-6.3: Persist qaAttempts to DB & Expose via Execution Detail API
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -468,3 +468,14 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+### Review Findings
+
+- [x] [Review][Patch] P1: Consumer missing try/catch + Sentry around `persistQaAttempts` call — spec Task 4.1 / Anti-pattern 7 requires outer try/catch with `sentry.captureMessage(ErrorSeverity.HIGH)` in the consumer; implementation moved error handling into `persistQaAttempts` only, no Sentry capture [`src/execution/ai-execution.consumer.ts` ~line 652]
+- [x] [Review][Patch] P2: `(execution as any).qa_attempts` unsafe cast — should be `execution.qa_attempts as unknown as QAAttempt[] | null` to match existing `progress` field pattern and preserve Prisma type safety [`src/execution/execution.service.ts` ~line 355]
+- [x] [Review][Patch] P3: Removed `expect(result.newStatus).toBe(ExecutionStatus.QA_FAILED)` assertion — regression: state machine return value of `qaFailExecution` is now fully uncovered [`src/execution/execution-tracker.service.spec.ts` ~line 492]
+- [x] [Review][Patch] P4: `persistQaAttempts` test uses `expect.any(Object)` — spec Task 7.4 requires exact assertion `{ qa_attempts: qaAttempts }` to prove correct value flows through [`src/execution/execution-tracker.service.spec.ts`]
+- [x] [Review][Patch] P5: `qaFailExecution` assertion weakened to `expect.objectContaining` — spec Task 3.4 requires exact match with `qaAttempts: qaFailureData.qaAttempts` in the call args [`src/execution/execution-tracker.service.spec.ts` ~line 493]
+- [x] [Review][Patch] P6: No `execution.service.spec.ts` tests for `toResponseDto` DTO mapping — spec Task 7.5 requires 2 tests (non-null array + null passthrough) [`src/execution/execution.service.spec.ts`]
+- [x] [Review][Patch] P7: Error-path test calls `persistQaAttempts('exec-123', [], ...)` — `[]` is truthy so `Prisma.JsonNull` branch is never exercised; test should use `null` [`src/execution/execution-tracker.service.spec.ts`]
+- [x] [Review][Defer] D1: Double-write if two consumers process same executionId simultaneously [`src/execution/ai-execution.consumer.ts`] — deferred, pre-existing RabbitMQ concurrent-consumer architecture concern

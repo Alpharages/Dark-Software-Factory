@@ -1,4 +1,5 @@
 import { AIProvider, ExecutionStatus } from '@/prisma/client';
+import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
 import {
   IsString,
   IsNotEmpty,
@@ -140,6 +141,7 @@ export class ExecutionResponseDto {
   updatedAt!: Date;
   currentStep?: string;
   percentComplete?: number;
+  qaAttempts?: QAAttempt[] | null; // WR-6.3
 }
 
 /**

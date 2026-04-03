@@ -10,6 +10,7 @@ import {
   IStateTransition,
   IExecutionProgress,
 } from './interfaces';
+import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
 import {
   StartExecutionDto,
   CompleteExecutionDto,
@@ -351,6 +352,7 @@ export class ExecutionService {
       currentStep:
         (execution.progress as unknown as IExecutionProgress)?.currentStep ?? 'Initializing...',
       percentComplete: (execution.progress as unknown as IExecutionProgress)?.percentComplete ?? 0,
+      qaAttempts: execution.qa_attempts as unknown as QAAttempt[] | null, // WR-6.3
     };
   }
   /**

@@ -5,6 +5,7 @@
  */
 
 import { AIProvider, ExecutionStatus } from '@/prisma/client';
+import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
 
 /**
  * Input for starting a new execution
@@ -97,6 +98,7 @@ export interface IExecutionQAFailure {
   errorMessage: string;
   branchName: string | null;
   qaRetryCount?: number;
+  qaAttempts?: QAAttempt[] | null; // WR-6.3
 }
 
 /**

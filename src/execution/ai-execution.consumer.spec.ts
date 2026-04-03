@@ -359,6 +359,7 @@ describe('AIExecutionConsumer', () => {
           errorMessage: 'Linter failed',
           branchName: 'feature/qa-fail',
           qaRetryCount: 3,
+          qaAttempts: null,
         },
         'corr-123',
       );

@@ -452,6 +452,14 @@ describe('ExecutionTrackerService', () => {
       errorMessage: 'QA failed 3 times',
       branchName: 'feature/test-branch',
       qaRetryCount: 3,
+      qaAttempts: [
+        {
+          attemptNumber: 1,
+          lintStatus: 'failed' as const,
+          testStatus: 'failed' as const,
+          durationMs: 1000,
+        } as any,
+      ],
     };
 
     it('should transition execution to QA_FAILED and persist branch name', async () => {
@@ -486,7 +494,11 @@ describe('ExecutionTrackerService', () => {
       expect(repository.updateStatus).toHaveBeenCalledWith(
         'exec-123',
         ExecutionStatus.QA_FAILED as any,
-        { errorMessage: 'QA failed 3 times', branchName: 'feature/test-branch' },
+        {
+          errorMessage: 'QA failed 3 times',
+          branchName: 'feature/test-branch',
+          qaAttempts: qaFailureData.qaAttempts,
+        },
       );
       expect(repository.createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -758,6 +770,35 @@ describe('ExecutionTrackerService', () => {
           complexityScore: 50,
         }),
       ).resolves.toEqual(mockExecution);
+    });
+  });
+
+  describe('persistQaAttempts', () => {
+    it('should update execution with qa_attempts', async () => {
+      const qaAttempts: any[] = [
+        {
+          attemptNumber: 1,
+          lintStatus: 'passed' as const,
+          testStatus: 'passed' as const,
+          durationMs: 1000,
+        },
+      ];
+      repository.update.mockResolvedValue();
+
+      await service.persistQaAttempts('exec-123', qaAttempts, 'corr-123');
+
+      expect(repository.update).toHaveBeenCalledWith('exec-123', {
+        qa_attempts: qaAttempts,
+      });
+    });
+
+    it('should log error but not throw if update fails', async () => {
+      repository.update.mockRejectedValue(new Error('DB error'));
+
+      // Should not throw (tests Prisma.JsonNull branch — null is coalesced sentinel)
+      await expect(
+        service.persistQaAttempts('exec-123', null, 'corr-123'),
+      ).resolves.toBeUndefined();
     });
   });
 });
