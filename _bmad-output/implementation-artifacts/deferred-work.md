@@ -218,3 +218,11 @@
 ## Deferred from: code review of wr-6-3-persist-qa-attempts-to-db-and-expose-via-execution-detail-api (2026-04-03)
 
 - **D1: Double-write if two consumers process same executionId simultaneously** — Pre-existing RabbitMQ concurrent-consumer architecture concern. On the success path, `persistQaAttempts` issues a standalone `update` after `completeExecution`; if two consumer instances race on the same message (rare but possible with redelivery), the last write wins. Not specific to WR-6.3; applies to all post-orchestrator DB writes in the consumer. [`src/execution/ai-execution.consumer.ts`]
+
+## Deferred from: code review of fe-1-1-detect-qa-failed-state-and-surface-resolution-prompt (2026-04-03)
+
+- **W1: Reconnect race — `onQAFailed` event lost in socket teardown/re-registration window** — Systemic gap affecting all event handlers (not unique to this change). A `execution.qa_failed` event emitted between socket teardown and re-registration is silently lost with no recovery path. [`useSocketIO.ts` — `useExecutionEvents`]
+- **W2: `lazy` import placed after top-level declarations** — `import { lazy, Suspense } from 'react'` appears mid-file after `statusConfig`. Pre-existing ESLint `import/first` risk. [`ExecutionCard.tsx`]
+- **W3: `ContainerActivityTimeline` Suspense boundary not visible in diff** — Lazy component used without a visible `<Suspense>` wrapper in the card; risk of missing boundary for QA_FAILED+timeline path. Pre-existing. [`ExecutionCard.tsx`]
+- **W4: `getAvailableControls` / `CONTROL_BUTTON_MATRIX` two-source-of-truth gap** — `CONTROL_BUTTON_MATRIX['QA_FAILED']: []` is correct but `getAvailableControls` hits `default: return []` silently; future adds to the matrix won't show buttons without also updating the switch. Pre-existing architectural gap. [`permissions.ts` / `execution.ts`]
+- **W5: Empty `executionId` produces blank ID in toast** — `.slice(0, 8)` on empty string is a pre-existing pattern used by all status update toasts; not introduced by this change. [`ExecutionMonitoringDashboard.tsx`]

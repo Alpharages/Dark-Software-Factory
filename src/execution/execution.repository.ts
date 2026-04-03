@@ -287,6 +287,7 @@ export class ExecutionRepository {
             ExecutionStatus.QUEUED,
             ExecutionStatus.IN_PROGRESS,
             ExecutionStatus.AWAITING_APPROVAL,
+            ExecutionStatus.QA_FAILED,
           ],
         },
       },

@@ -1,6 +1,6 @@
 # Story FE-1.1: Detect QA_FAILED State & Surface Resolution Prompt
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -339,6 +339,42 @@ Then zero TypeScript errors — `QA_FAILED` is a fully typed member of `Executio
 - [ ] 7.1 Run `pnpm typecheck` — zero errors
 - [ ] 7.2 Run `pnpm build` — zero errors
 - [ ] 7.3 Run `pnpm test` — all tests pass (existing + new)
+
+---
+
+### Review Findings
+
+- [x] [Review][Decision] **30-second poll may overwrite optimistic QA_FAILED cache state** — Fixed: added `QA_FAILED` to `findActiveExecutions()` status filter in `execution.repository.ts` so the REST endpoint now returns QA_FAILED executions; poll reinforces rather than clobbers state. Also added `!exists` refetch fallback in `onQAFailed` handler. [`ExecutionMonitoringDashboard.tsx`, `execution.repository.ts`]
+
+- [x] [Review][Decision] **`qaRetryCount === 0` renders "QA failed after 0 retries" — ambiguous fallback** — Fixed: `0` now renders "QA failed on first attempt — action required"; `undefined` renders "QA failed — action required"; `N > 0` renders "QA failed after N retries". [`ExecutionCard.tsx`]
+
+- [x] [Review][Patch] **`onResolve` no-op emits a visible toast — must be a true no-op per spec** [`ExecutionMonitoringDashboard.tsx:397`]
+
+- [x] [Review][Patch] **Tests use `fireEvent` instead of `userEvent` for click — spec requires `userEvent`** [`ExecutionCard.test.tsx` — Test D]
+
+- [x] [Review][Patch] **Test assertions use `.toBeDefined()` instead of `.toBeInTheDocument()`** [`ExecutionCard.test.tsx` — all test cases]
+
+- [x] [Review][Patch] **Test B assertion is fragmented — does not verify the full AC-2 prompt sentence as a single unit** — Replaced with `getByText(/QA failed after 3 retries — action required/i)`. Also added Test E for `qaRetryCount === 0`. [`ExecutionCard.test.tsx`]
+
+- [x] [Review][Patch] **CSS: `text-rose-500` should be `text-rose-400` on QA prompt icon/text div** [`ExecutionCard.tsx`]
+
+- [x] [Review][Patch] **CSS: `rounded-xl` should be `rounded-lg` on QA prompt container** [`ExecutionCard.tsx`]
+
+- [x] [Review][Patch] **CSS: `mb-4` should be `mt-4` on QA prompt container** [`ExecutionCard.tsx`]
+
+- [x] [Review][Patch] **Double blank lines after `socket.on/off(ExecutionEvents.QA_FAILED, ...)` — will trip Prettier pre-commit hook** [`useSocketIO.ts`]
+
+- [x] [Review][Patch] **`onQAFailed` handler has no refetch fallback when execution is absent from `activeFiltered(undefined)` cache** [`ExecutionMonitoringDashboard.tsx`]
+
+- [x] [Review][Defer] **Reconnect race: `onQAFailed` event lost in socket teardown/re-registration window** — systemic gap affecting all event handlers, not unique to this change [`useSocketIO.ts`] — deferred, pre-existing
+
+- [x] [Review][Defer] **`lazy` import placed after top-level declarations — pre-existing lint/bundler risk** [`ExecutionCard.tsx`] — deferred, pre-existing
+
+- [x] [Review][Defer] **`ContainerActivityTimeline` Suspense boundary not visible in diff — may be missing** — pre-existing risk, Suspense handles other statuses already [`ExecutionCard.tsx`] — deferred, pre-existing
+
+- [x] [Review][Defer] **`getAvailableControls` / `CONTROL_BUTTON_MATRIX` two-source-of-truth gap for QA_FAILED** — correct behavior now but dangerous for future extension; pre-existing architectural gap [`permissions.ts` / `execution.ts`] — deferred, pre-existing
+
+- [x] [Review][Defer] **Empty `executionId` produces blank toast — same `.slice(0,8)` pattern throughout codebase** — not introduced by this change [`ExecutionMonitoringDashboard.tsx`] — deferred, pre-existing
 
 ---
 
