@@ -22,6 +22,8 @@ coverage
 
 # Docker (prevent recursive copy)
 docker
+!docker/skills/
+!docker/skills/**
 Dockerfile*
 docker-compose*
 
@@ -34,6 +36,7 @@ docker-compose*
 docs
 *.md
 !README.md
+!docker/skills/**/*.md
 
 # Tests (for production image)
 test
