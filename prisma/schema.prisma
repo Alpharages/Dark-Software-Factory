@@ -109,6 +109,7 @@ model Execution {
   container_id          String?
   debug_mode            Boolean             @default(false)
   progress              Json?               @map("progress") // Store latest progress state (step, percent)
+  qa_attempts           Json?               // WR-6.1: per-attempt QA history array
   adrs                  Adr[]
   aiCostLogs            AICostLog[]
   aiDecisionLogs        AIDecisionLog[]

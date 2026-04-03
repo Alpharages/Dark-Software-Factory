@@ -1,6 +1,6 @@
 # Story WR-6.1: Define QAAttempt Interface & Add qa_attempts DB Column
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validate with validate-create-story if needed before running dev-story. -->
 
@@ -18,9 +18,9 @@ When it is updated
 Then a new `QAAttempt` interface is exported from the same file with these exact fields:
 
 - `attemptNumber: number`
-- `lintPassed: boolean`
+- `lintStatus: 'passed' | 'failed' | 'skipped'`
 - `lintErrors?: { count: number; details: unknown[] }`
-- `testsPassed: boolean`
+- `testStatus: 'passed' | 'failed' | 'skipped'`
 - `testResults?: { passed: number; failed: number; details: unknown[] }`
 - `durationMs: number`
 
@@ -55,13 +55,13 @@ And `pnpm typecheck` also passes with zero errors
     export interface QAAttempt {
       /** 1-based attempt number */
       attemptNumber: number;
-      /** Whether the lint step passed for this attempt */
-      lintPassed: boolean;
-      /** Lint failure details (absent when lintPassed is true) */
+      /** 'passed' | 'failed' | 'skipped' (skipped when lint disabled for project or unavailable in sandbox) */
+      lintStatus: 'passed' | 'failed' | 'skipped';
+      /** Lint failure details — present only when lintStatus is 'failed' */
       lintErrors?: { count: number; details: unknown[] };
-      /** Whether the test step passed for this attempt */
-      testsPassed: boolean;
-      /** Test run details (absent when testsPassed is true) */
+      /** 'passed' | 'failed' | 'skipped' (skipped when tests disabled for project or sandbox lacks required env e.g. DB) */
+      testStatus: 'passed' | 'failed' | 'skipped';
+      /** Test run details — present only when testStatus is 'failed' */
       testResults?: { passed: number; failed: number; details: unknown[] };
       /** Duration of this QA attempt in milliseconds */
       durationMs: number;
@@ -132,9 +132,9 @@ Final structure around the change:
  */
 export interface QAAttempt {
   attemptNumber: number;
-  lintPassed: boolean;
+  lintStatus: 'passed' | 'failed' | 'skipped';
   lintErrors?: { count: number; details: unknown[] };
-  testsPassed: boolean;
+  testStatus: 'passed' | 'failed' | 'skipped';
   testResults?: { passed: number; failed: number; details: unknown[] };
   durationMs: number;
 }
@@ -247,6 +247,16 @@ The WR-5.1 migration pattern to follow: add the field in `schema.prisma` first, 
 - Precedent migration: `prisma/migrations/20260402213657_add_qa_max_retries_to_project/`
 
 ---
+
+### Review Findings
+
+- [x] [Review][Decision] Mutually exclusive lintPassed/testsPassed state not type-enforced — Resolved: converted `lintPassed: boolean` → `lintStatus: 'passed' | 'failed' | 'skipped'` and `testsPassed: boolean` → `testStatus: 'passed' | 'failed' | 'skipped'`. Tri-state matches `qaStatus` pattern and handles per-project lint/test disable + sandbox environments lacking DB connections.
+
+- [x] [Review][Defer] `qa_attempts` write path not wired to orchestrator/persistence [src/ai-routing, src/execution] — deferred, WR-6.2/6.3 scope by design (JSDoc comment confirms "Populated by providers in WR-6.2")
+- [x] [Review][Defer] `attemptNumber` semantic contract with `qaRetryCount` not enforced [src/ai-routing/interfaces/ai-provider.interface.ts] — deferred, TypeScript interface cannot enforce numeric constraints; document in WR-6.2 provider implementation guide
+- [x] [Review][Defer] `durationMs` non-negative constraint missing [src/ai-routing/interfaces/ai-provider.interface.ts] — deferred, TypeScript interface limitation; address in WR-6.2 if runtime validation is added
+- [x] [Review][Defer] Migration has no rollback (DOWN) script [prisma/migrations/20260403114813_add_qa_attempts_to_execution/] — deferred, consistent with project-wide convention (WR-4.1 migration has same pattern)
+- [x] [Review][Defer] `ExecutionResponseDto` / `toResponseDto()` do not expose `qa_attempts` [src/execution/] — deferred, explicit WR-6.3 scope per spec
 
 ## Dev Agent Record
 

@@ -41,6 +41,34 @@ export interface IAIExecutionInput {
 }
 
 /**
+ * Per-attempt QA result captured during sandbox self-healing loop (WR-6.1)
+ */
+export interface QAAttempt {
+  /** 1-based attempt number */
+  attemptNumber: number;
+  /**
+   * Lint check outcome for this attempt.
+   * - 'passed'  — lint ran and found no errors
+   * - 'failed'  — lint ran and found errors (see lintErrors)
+   * - 'skipped' — lint is disabled for this project or unavailable in sandbox
+   */
+  lintStatus: 'passed' | 'failed' | 'skipped';
+  /** Lint failure details — present only when lintStatus is 'failed' */
+  lintErrors?: { count: number; details: unknown[] };
+  /**
+   * Test run outcome for this attempt.
+   * - 'passed'  — all tests passed
+   * - 'failed'  — one or more tests failed (see testResults)
+   * - 'skipped' — tests are disabled for this project or sandbox lacks required environment (e.g. DB connection)
+   */
+  testStatus: 'passed' | 'failed' | 'skipped';
+  /** Test run details — present only when testStatus is 'failed' */
+  testResults?: { passed: number; failed: number; details: unknown[] };
+  /** Duration of this QA attempt in milliseconds */
+  durationMs: number;
+}
+
+/**
  * Output from AI code generation
  */
 export interface IAIExecutionResult {
@@ -97,6 +125,13 @@ export interface IAIExecutionResult {
    * 0 means QA passed first time or was skipped.
    */
   qaRetryCount?: number;
+
+  /**
+   * Per-attempt QA history from the sandbox self-healing loop.
+   * Populated by providers in WR-6.2. Optional — absent when QA was skipped or
+   * the provider does not yet emit qa_attempt markers.
+   */
+  qaAttempts?: QAAttempt[];
 }
 
 /**

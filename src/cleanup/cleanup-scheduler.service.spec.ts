@@ -50,6 +50,7 @@ describe('CleanupSchedulerService', () => {
       selected_model: null,
       task_type: null,
       progress: null,
+      qa_attempts: null, // WR-6.1
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -86,6 +87,7 @@ describe('CleanupSchedulerService', () => {
       selected_model: null,
       task_type: null,
       progress: null,
+      qa_attempts: null, // WR-6.1
       created_at: new Date(),
       updated_at: new Date(),
     },

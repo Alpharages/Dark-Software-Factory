@@ -30,7 +30,7 @@
 # - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
 
 generated: 2026-03-26
-last_updated: 2026-04-03 # updated: wr-6-3 ready-for-dev
+last_updated: 2026-04-03 # updated: fe-1-3 ready-for-dev
 project: Dark Software Factory
 project_key: NOKEY
 tracking_system: file-system
@@ -735,9 +735,11 @@ development_status:
   epic-wr-6-source: 'epics-workspace-removal-extensions.md'
   epic-wr-6-notes: 'QAAttempt interface + qa_attempts Json? column on Execution. SKILL.md + all 3 provider prompts emit qa_attempt markers. All 4 providers parse and accumulate. Persisted + exposed via execution detail API.'
   wr-6-1-define-qa-attempt-interface-and-add-qa-attempts-db-column:
-    status: ready-for-dev
+    status: done
+    completion_date: '2026-04-03'
     effort: '0.5 days'
     story_points: 2
+    notes: 'Defined QAAttempt interface and IAIExecutionResult.qaAttempts. Added qa_attempts JSONB column to Execution model via migration. Fixed test mocks in 4 service specs.'
   wr-6-2-emit-and-parse-per-attempt-qa-markers-across-all-providers:
     status: ready-for-dev
     effort: '1.5 days'
@@ -762,11 +764,11 @@ development_status:
     effort: '0.5 days'
     story_points: 2
   fe-1-2-implement-pm-resolution-modal-open-pr-cancel:
-    status: backlog
+    status: ready-for-dev
     effort: '1.5 days'
     story_points: 5
   fe-1-3-qa-results-panel-per-attempt-breakdown:
-    status: backlog
+    status: ready-for-dev
     effort: '1 day'
     story_points: 3
   epic-fe-1-retrospective: optional
@@ -1083,7 +1085,7 @@ epic_status:
     notes: 'qaMaxRetries (1–10, default 3) on Project model. All 4 providers read from project record, replacing hardcoded literal. Exposed via project settings GET/PATCH API.'
   epic-wr-6:
     name: 'Per-Attempt QA History — Backend Capture & Storage'
-    status: 'backlog'
+    status: 'in-progress'
     priority: 'medium'
     source: 'epics-workspace-removal-extensions.md'
     stories: 3

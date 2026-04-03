@@ -58,6 +58,7 @@ describe('ExecutionService', () => {
     container_id: null,
     debug_mode: false,
     progress: null, // Story 13.3.1
+    qa_attempts: null, // WR-6.1
   };
 
   const mockTransition: IStateTransition = {

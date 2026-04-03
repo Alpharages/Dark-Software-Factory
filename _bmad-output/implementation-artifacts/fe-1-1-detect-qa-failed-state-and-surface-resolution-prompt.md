@@ -179,8 +179,8 @@ Then zero TypeScript errors — `QA_FAILED` is a fully typed member of `Executio
             QA failed
             {execution.qaRetryCount !== undefined
               ? ` after ${execution.qaRetryCount} retr${execution.qaRetryCount === 1 ? 'y' : 'ies'}`
-              : ''}{' '}
-            — action required
+              : ''}
+            {/* space before em-dash */} — action required
           </span>
         </div>
         <Button
@@ -217,7 +217,7 @@ Then zero TypeScript errors — `QA_FAILED` is a fully typed member of `Executio
 
 - [ ] 5.2 Import `QAFailedEventPayload` from `@/lib/socket/socketEvents`
 
-- [ ] 5.3 Add `onQAFailed` handler inside the `useExecutionEvents(socket, { ... })` call. This handler must update the query cache with the full QA_FAILED context (status + qaRetryCount + qaFailedBranch). Use `queryClient.setQueryData` — NOT `updateExecutionStatus` (that only patches `status`):
+- [ ] 5.3 Add `onQAFailed` handler inside the `useExecutionEvents(socket, { ... })` call. This handler must update the query cache with the full QA_FAILED context (status + qaRetryCount + qaFailedBranch). Use `queryClient.setQueryData` — NOT `updateExecutionStatus` (that only patches `status`). Use `any[]` for the `setQueryData` callback type — this matches the existing convention in `updateExecutionStatus` at line 126 of this file (ESLint allows it inside TanStack Query callbacks):
 
   ```typescript
   onQAFailed: (payload: QAFailedEventPayload) => {
@@ -261,7 +261,33 @@ Then zero TypeScript errors — `QA_FAILED` is a fully typed member of `Executio
 
 ### Task 6: Write unit tests for `ExecutionCard` QA_FAILED rendering
 
-- [ ] 6.1 In `src/components/execution/__tests__/ExecutionCard.test.tsx` (create if absent), add test cases:
+- [ ] 6.1 In `src/components/execution/__tests__/ExecutionCard.test.tsx` (create if absent), start the file with these imports before the test cases (Vitest + RTL — do NOT use Jest globals):
+
+  ```typescript
+  import { render, screen } from '@testing-library/react';
+  import userEvent from '@testing-library/user-event';
+  import { vi, describe, it, expect } from 'vitest';
+  import { ExecutionCard } from '../ExecutionCard';
+  import type { Execution } from '@/types/execution';
+
+  function buildMockExecution(overrides: Partial<Execution>): Execution {
+    return {
+      id: 'exec-test-1',
+      ticketId: 'ticket-1',
+      projectId: 'proj-1',
+      projectName: 'Test Project',
+      status: 'IN_PROGRESS',
+      aiProvider: 'claude-code',
+      currentStep: 'Building',
+      percentComplete: 50,
+      startTime: new Date().toISOString(),
+      duration: 120,
+      ...overrides,
+    };
+  }
+  ```
+
+  Then add test cases:
 
   **Test A** — QA_FAILED badge renders with red label:
 
@@ -453,30 +479,6 @@ aria-label={`Resolve QA failure for execution ${execution.id}`}
 ### No new API functions in FE-1.1
 
 Do NOT add `resolveQaFailure()` to `src/api/executionsApi.ts` in this story. That is FE-1.2 work. The `onResolve` callback in `ExecutionCard` is a UI wiring point only — the API call happens in the modal (FE-1.2).
-
----
-
-### Test setup: `buildMockExecution` helper
-
-If `buildMockExecution` doesn't exist in the test file, define a simple factory:
-
-```typescript
-function buildMockExecution(overrides: Partial<Execution>): Execution {
-  return {
-    id: 'exec-test-1',
-    ticketId: 'ticket-1',
-    projectId: 'proj-1',
-    projectName: 'Test Project',
-    status: 'IN_PROGRESS',
-    aiProvider: 'claude-code',
-    currentStep: 'Building',
-    percentComplete: 50,
-    startTime: new Date().toISOString(),
-    duration: 120,
-    ...overrides,
-  };
-}
-```
 
 ---
 

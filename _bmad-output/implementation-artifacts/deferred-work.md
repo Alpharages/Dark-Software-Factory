@@ -1,5 +1,13 @@
 # Deferred Work Log
 
+## Deferred from: code review of wr-6-1-define-qa-attempt-interface-and-add-qa-attempts-db-column (2026-04-03)
+
+- **W1: `qa_attempts` write path not wired to orchestrator/persistence** — Column exists post-migration and type is defined, but no code reads `result.qaAttempts` and writes it. `IExecutionQAFailure`, `IExecutionCompletion`, and `ExecutionRepository.updateStatus()` all need updates. Deferred by design — WR-6.2/6.3 scope per spec JSDoc.
+- **W2: `attemptNumber` semantic contract with `qaRetryCount` not enforced** — 1-based doc constraint is unenforced; `qaRetryCount` off-by-one confusion possible (count = retries, array length = attempts = retries+1). TypeScript interface cannot enforce. Document in WR-6.2 implementation guide.
+- **W3: `durationMs` non-negative constraint missing** — Negative values from clock-skew bugs would persist silently. TypeScript interface limitation. Consider runtime assertion in WR-6.2 persistence path.
+- **W4: Migration has no rollback (DOWN) script** — `ALTER TABLE "executions" ADD COLUMN "qa_attempts" JSONB` is trivially reversible but no script exists. Consistent with project-wide convention (WR-4.1 same pattern).
+- **W5: `ExecutionResponseDto` / `toResponseDto()` do not expose `qa_attempts`** — Column written by WR-6.2 but not surfaced via `GET /executions/:id/status`. Explicit WR-6.3 scope.
+
 ## Deferred from: code review of wr-5-2-wire-all-providers-to-per-project-qa-retry-limit (2026-04-03)
 
 - **D1: `qaMaxRetries: 0` silently reaches sandbox as `"0"` — DTO missing `@Min(1)`** — `UpdateQaStatusConfigDto` accepts 0 via HTTP API, stores it, and `String(0)` produces `"0"` for the sandbox. Could disable QA self-healing silently. Fix belongs in WR-5.1 settings API DTO. [`UpdateQaStatusConfigDto`]

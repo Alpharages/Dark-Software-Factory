@@ -52,6 +52,7 @@ describe('ExecutionTrackerService', () => {
     debug_mode: false,
     progress: null,
     qa_failed_branch: null,
+    qa_attempts: null, // WR-6.1
   };
 
   const mockMetricCounter = {

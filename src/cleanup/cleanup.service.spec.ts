@@ -46,6 +46,7 @@ describe('CleanupService', () => {
     container_id: 'container-abc123',
     debug_mode: false,
     progress: null,
+    qa_attempts: null, // WR-6.1
   };
 
   const mockMetricHistogram = {
