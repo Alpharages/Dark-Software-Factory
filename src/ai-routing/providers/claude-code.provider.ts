@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ICodingAgentProvider } from '@/ai-routing/interfaces';
 import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 import { IAIExecutionPayload } from '@/execution/interfaces';
-import { IAIExecutionResult, AIErrorCode } from '@/ai-routing/interfaces';
+import { IAIExecutionResult, AIErrorCode, QAAttempt } from '@/ai-routing/interfaces';
 import { SandboxService } from '@/sandbox/sandbox.service';
 import { SandboxResourceProfileService } from '@/sandbox/sandbox-resource-profile.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
@@ -71,6 +71,7 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
       qaStatus?: 'passed' | 'self_healed' | 'failed';
       qaRetryCount?: number;
     } = {};
+    const qaAttempts: QAAttempt[] = [];
 
     const result = await this.sandboxService.runAgentCommand({
       executionId,
@@ -108,6 +109,35 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
             this.logger.debug(
               `[${executionId}] Agent result captured: qaStatus=${agentResult.qaStatus}`,
             );
+          } else if (parsed.type === 'qa_attempt') {
+            const a = parsed as unknown as {
+              attempt: number;
+              lintPassed: boolean;
+              lintErrors?: { count: number; details: unknown[] };
+              testsPassed: boolean;
+              testResults?: { passed: number; failed: number; details: unknown[] };
+              durationMs: number;
+            };
+            if (
+              typeof a.attempt === 'number' &&
+              typeof a.lintPassed === 'boolean' &&
+              typeof a.testsPassed === 'boolean' &&
+              typeof a.durationMs === 'number'
+            ) {
+              qaAttempts.push({
+                attemptNumber: a.attempt,
+                lintStatus: a.lintPassed ? 'passed' : 'failed',
+                testStatus: a.testsPassed ? 'passed' : 'failed',
+                lintErrors: a.lintErrors,
+                testResults: a.testResults,
+                durationMs: a.durationMs,
+              });
+              this.logger.debug(
+                `[${executionId}] QA attempt ${a.attempt} captured: lint=${a.lintPassed}, tests=${a.testsPassed}`,
+              );
+            } else {
+              this.logger.debug(`[${executionId}] qa_attempt line malformed — skipped`);
+            }
           }
         } catch (_err) {
           // NFR-WR4: Non-JSON line — skip silently, never crash
@@ -144,6 +174,7 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
       branchName: agentResult.branchName || env.FEATURE_BRANCH,
       qaStatus: agentResult.qaStatus,
       qaRetryCount: agentResult.qaRetryCount,
+      qaAttempts: qaAttempts.length > 0 ? qaAttempts : undefined,
       ...(agenticSuccess
         ? {}
         : {

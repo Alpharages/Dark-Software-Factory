@@ -386,5 +386,126 @@ describe('KimiProvider', () => {
       expect(result.success).toBe(false);
       expect(result.error?.message).toContain('Agent did not emit a final result line');
     });
+
+    describe('qa_attempt parsing', () => {
+      it('should parse and accumulate multiple qa_attempt markers from onStdoutLine', async () => {
+        const qaAttempts = [
+          {
+            type: 'qa_attempt',
+            attempt: 1,
+            lintPassed: true,
+            testsPassed: false,
+            durationMs: 2000,
+          },
+          {
+            type: 'qa_attempt',
+            attempt: 2,
+            lintPassed: true,
+            testsPassed: true,
+            durationMs: 1500,
+          },
+        ];
+
+        sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+          if (options.onStdoutLine) {
+            for (const a of qaAttempts) {
+              options.onStdoutLine(JSON.stringify(a));
+            }
+            options.onStdoutLine(
+              JSON.stringify({
+                ...mockResultLine,
+                qaStatus: 'self_healed',
+                qaRetryCount: 1,
+              }),
+            );
+          }
+          return {
+            exitCode: 0,
+            stdout: 'DONE',
+            stderr: '',
+            durationMs: 4000,
+            timedOut: false,
+            sandboxId: 'sbx',
+          };
+        });
+
+        const result = await provider.execute(mockPayload);
+
+        expect(result.qaAttempts).toHaveLength(2);
+        expect(result.qaAttempts?.[0].attemptNumber).toBe(1);
+        expect(result.qaAttempts?.[0].testStatus).toBe('failed');
+        expect(result.qaAttempts?.[1].testStatus).toBe('passed');
+      });
+
+      it('should fallback to scanning stdout for qa_attempt markers', async () => {
+        const qaAttemptLine = JSON.stringify({
+          type: 'qa_attempt',
+          attempt: 1,
+          lintPassed: true,
+          testsPassed: true,
+          durationMs: 500,
+        });
+
+        sandboxService.runAgentCommand.mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: `${JSON.stringify(mockResultLine)}\n${qaAttemptLine}`,
+          stderr: '',
+          durationMs: 1000,
+          timedOut: false,
+          sandboxId: 'sbx',
+        });
+
+        const result = await provider.execute(mockPayload);
+        expect(result.qaAttempts).toHaveLength(1);
+        expect(result.qaAttempts?.[0].attemptNumber).toBe(1);
+      });
+
+      it('should skip malformed qa_attempt lines (NFR-EXT6)', async () => {
+        sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+          if (options.onStdoutLine) {
+            // Missing durationMs
+            options.onStdoutLine(
+              JSON.stringify({
+                type: 'qa_attempt',
+                attempt: 1,
+                lintPassed: true,
+                testsPassed: true,
+              }),
+            );
+            options.onStdoutLine(JSON.stringify({ ...mockResultLine, qaStatus: 'passed' }));
+          }
+          return {
+            exitCode: 0,
+            stdout: '',
+            stderr: '',
+            durationMs: 100,
+            timedOut: false,
+            sandboxId: 'sbx',
+          };
+        });
+
+        const result = await provider.execute(mockPayload);
+        expect(result.qaAttempts).toBeUndefined();
+      });
+
+      it('should return undefined qaAttempts when no qa_attempt markers are emitted', async () => {
+        sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+          if (options.onStdoutLine) {
+            options.onStdoutLine(JSON.stringify(mockResultLine));
+          }
+          return {
+            exitCode: 0,
+            stdout: '',
+            stderr: '',
+            durationMs: 100,
+            timedOut: false,
+            sandboxId: 'sbx',
+          };
+        });
+
+        const result = await provider.execute(mockPayload);
+        expect(result.qaAttempts).toBeUndefined();
+      });
+    });
   });
 });

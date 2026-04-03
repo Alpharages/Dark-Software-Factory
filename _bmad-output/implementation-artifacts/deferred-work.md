@@ -2,6 +2,15 @@
 
 ## Deferred from: code review of wr-6-1-define-qa-attempt-interface-and-add-qa-attempts-db-column (2026-04-03)
 
+## Deferred from: code review of wr-6-2-emit-and-parse-per-attempt-qa-markers-across-all-providers (2026-04-03)
+
+- **W1: `attempt` field not validated for positivity or integrality** — All 4 providers accept `typeof a.attempt === 'number'` which passes 0, negative, and fractional values. NFR-EXT6 does not explicitly require this; pre-existing design choice.
+- **W2: `--no-verify` explanation deleted from SKILL.md** — The flag remains in the bash block but the explanatory comment (`--no-verify bypasses pre-commit hooks...`) was removed. Minor doc regression.
+- **W3: Duplicate `as unknown as` type cast across 8 sites** — No shared `parseQAAttempt()` utility introduced. Acceptable per story scope; revisit if schema changes.
+- **W4: Gemini fallback test stdout order differs from Codex/Kimi** — Both orderings work correctly due to reversed fallback scan; cosmetic inconsistency only.
+
+---
+
 - **W1: `qa_attempts` write path not wired to orchestrator/persistence** — Column exists post-migration and type is defined, but no code reads `result.qaAttempts` and writes it. `IExecutionQAFailure`, `IExecutionCompletion`, and `ExecutionRepository.updateStatus()` all need updates. Deferred by design — WR-6.2/6.3 scope per spec JSDoc.
 - **W2: `attemptNumber` semantic contract with `qaRetryCount` not enforced** — 1-based doc constraint is unenforced; `qaRetryCount` off-by-one confusion possible (count = retries, array length = attempts = retries+1). TypeScript interface cannot enforce. Document in WR-6.2 implementation guide.
 - **W3: `durationMs` non-negative constraint missing** — Negative values from clock-skew bugs would persist silently. TypeScript interface limitation. Consider runtime assertion in WR-6.2 persistence path.

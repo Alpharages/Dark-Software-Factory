@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ICodingAgentProvider } from '@/ai-routing/interfaces';
 import { ProviderName } from '@/ai-routing/enums/provider-name.enum';
 import { IAIExecutionPayload } from '@/execution/interfaces';
-import { IAIExecutionResult, AIErrorCode } from '@/ai-routing/interfaces';
+import { IAIExecutionResult, AIErrorCode, QAAttempt } from '@/ai-routing/interfaces';
 import { SandboxService } from '@/sandbox/sandbox.service';
 import { SandboxResourceProfileService } from '@/sandbox/sandbox-resource-profile.service';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
@@ -72,6 +72,7 @@ export class CodexProvider implements ICodingAgentProvider {
       qaStatus?: 'passed' | 'self_healed' | 'failed';
       qaRetryCount?: number;
     } = {};
+    const qaAttempts: QAAttempt[] = [];
 
     const onStdoutLine = (line: string): void => {
       try {
@@ -101,6 +102,35 @@ export class CodexProvider implements ICodingAgentProvider {
           this.logger.debug(
             `[${payload.executionId}] Agent result captured: qaStatus=${agentResult.qaStatus}`,
           );
+        } else if (parsed.type === 'qa_attempt') {
+          const a = parsed as unknown as {
+            attempt: number;
+            lintPassed: boolean;
+            lintErrors?: { count: number; details: unknown[] };
+            testsPassed: boolean;
+            testResults?: { passed: number; failed: number; details: unknown[] };
+            durationMs: number;
+          };
+          if (
+            typeof a.attempt === 'number' &&
+            typeof a.lintPassed === 'boolean' &&
+            typeof a.testsPassed === 'boolean' &&
+            typeof a.durationMs === 'number'
+          ) {
+            qaAttempts.push({
+              attemptNumber: a.attempt,
+              lintStatus: a.lintPassed ? 'passed' : 'failed',
+              testStatus: a.testsPassed ? 'passed' : 'failed',
+              lintErrors: a.lintErrors,
+              testResults: a.testResults,
+              durationMs: a.durationMs,
+            });
+            this.logger.debug(
+              `[CodexProvider] QA attempt ${a.attempt} captured: lint=${a.lintPassed}, tests=${a.testsPassed}`,
+            );
+          } else {
+            this.logger.debug(`[CodexProvider] qa_attempt line malformed — skipped`);
+          }
         }
       } catch {
         this.logger.debug(
@@ -126,8 +156,12 @@ export class CodexProvider implements ICodingAgentProvider {
       },
     });
 
-    // Fallback: scan buffered stdout if onStdoutLine never captured a result line
-    if (!('qaStatus' in agentResult)) {
+    // Fallback: scan buffered stdout if onStdoutLine missed a result or qa_attempt lines.
+    // needQAAttempts is captured before the loop so all qa_attempt lines are recovered (not just one).
+    // unshift preserves natural emission order (stdout is reversed for scanning).
+    const needResult = !('qaStatus' in agentResult);
+    const needQAAttempts = qaAttempts.length === 0;
+    if (needResult || needQAAttempts) {
       const lines = result.stdout.split('\n').reverse();
       for (const line of lines) {
         if (!line.trim()) continue;
@@ -140,9 +174,32 @@ export class CodexProvider implements ICodingAgentProvider {
             qaStatus?: 'passed' | 'self_healed' | 'failed';
             qaRetryCount?: number;
           };
-          if (parsed.type === 'result') {
+          if (parsed.type === 'result' && needResult && !('qaStatus' in agentResult)) {
             agentResult = { ...agentResult, ...parsed };
-            break;
+          } else if (parsed.type === 'qa_attempt' && needQAAttempts) {
+            const a = parsed as unknown as {
+              attempt: number;
+              lintPassed: boolean;
+              lintErrors?: { count: number; details: unknown[] };
+              testsPassed: boolean;
+              testResults?: { passed: number; failed: number; details: unknown[] };
+              durationMs: number;
+            };
+            if (
+              typeof a.attempt === 'number' &&
+              typeof a.lintPassed === 'boolean' &&
+              typeof a.testsPassed === 'boolean' &&
+              typeof a.durationMs === 'number'
+            ) {
+              qaAttempts.unshift({
+                attemptNumber: a.attempt,
+                lintStatus: a.lintPassed ? 'passed' : 'failed',
+                testStatus: a.testsPassed ? 'passed' : 'failed',
+                lintErrors: a.lintErrors,
+                testResults: a.testResults,
+                durationMs: a.durationMs,
+              });
+            }
           }
         } catch {
           // skip
@@ -177,6 +234,7 @@ export class CodexProvider implements ICodingAgentProvider {
         branchName: agentResult.branchName || payload.targetBranch || featureBranch,
         qaStatus: agentResult.qaStatus ?? 'skipped',
         qaRetryCount: agentResult.qaRetryCount ?? 0,
+        qaAttempts: qaAttempts.length > 0 ? qaAttempts : undefined,
         error: {
           code: result.timedOut ? AIErrorCode.TIMEOUT : AIErrorCode.PROCESS_CRASH,
           message: errorMessage,
@@ -199,6 +257,7 @@ export class CodexProvider implements ICodingAgentProvider {
       branchName: agentResult.branchName || featureBranch,
       qaStatus: agentResult.qaStatus,
       qaRetryCount: agentResult.qaRetryCount,
+      qaAttempts: qaAttempts.length > 0 ? qaAttempts : undefined,
     };
   }
 

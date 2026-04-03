@@ -124,28 +124,52 @@ Emit when implementation is complete (before QA):
 Run QA checks: lint + tests. The QA command sequence depends on the project's package manager.
 Detect it from lock files: `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, else npm.
 
-```bash
-# Example for pnpm project:
-pnpm lint && pnpm test
-```
+**CRITICAL: Run lint and tests as separate commands** so you can determine each outcome independently:
+
+1. Record the attempt start time: `QA_START_MS=$(date +%s%3N)`
+2. Run the lint command (e.g., `pnpm lint`). Capture whether it passed and the error count.
+3. Run the test command (e.g., `pnpm test`). Capture whether it passed, the pass count, and the fail count.
 
 Emit at the start of QA:
-{"type":"progress","pct":80,"msg":"Running QA"}
+`{"type":"progress","pct":80,"msg":"Running QA"}`
+
+**After EACH QA attempt completes (initial run AND each retry):**
+
+Compute `QA_DURATION_MS = $(date +%s%3N) - QA_START_MS`.
+Emit a `qa_attempt` JSON line to stdout with this exact shape:
+
+```json
+{
+  "type": "qa_attempt",
+  "attempt": 1,
+  "lintPassed": true,
+  "lintErrors": { "count": 0, "details": [] },
+  "testsPassed": false,
+  "testResults": { "passed": 12, "failed": 1, "details": [] },
+  "durationMs": 4200
+}
+```
+
+- `attempt`: Current attempt number (1-based: first run = 1, first retry = 2, etc.)
+- `lintPassed/testsPassed`: JSON booleans.
+- `lintErrors`: `count` = 0 if passed.
+- `testResults`: `passed`/`failed` counts. If tests were skipped (e.g., due to fatal lint), set `testsPassed: false` and counts to 0.
 
 **On QA failure — self-healing loop (up to $QA_MAX_RETRIES attempts, default 3):**
 
-For each retry attempt N (1-indexed):
+For each retry attempt N (1-indexed start):
 
 1. READ the full error output carefully
 2. REASON about the root cause — which file(s) need fixing?
 3. EDIT the specific file(s) to fix the issue — do NOT retry without making changes
 4. Emit: `{"type":"progress","pct":82,"msg":"QA failed — retrying (N/3)"}` ← emit BEFORE re-running
-5. RE-RUN the QA command
+5. Reset `QA_START_MS=$(date +%s%3N)`, then RE-RUN the QA sequence (separate lint/test calls)
+6. Emit the `qa_attempt` marker for attempt N+1 after it completes
 
 If QA fails after all retries:
 
 - DO NOT open a PR
-- Commit and push the failing branch anyway (so it's preserved for PM review):
+- Commit and push the failing branch anyway:
   ```bash
   if git status --porcelain | grep -q .; then
     git add -A
@@ -154,11 +178,10 @@ If QA fails after all retries:
   git push origin "$FEATURE_BRANCH"
   COMMIT_SHA=$(git rev-parse HEAD)
   ```
-  (`--no-verify` bypasses pre-commit hooks that would reject a commit with failing QA. The commit message MUST describe the actual changes attempted — do NOT use "wip:", "WIP", or placeholder text.)
-- Emit the final result line with qaStatus "failed"
+- Emit the final result line with `qaStatus` "failed"
 
-qaRetryCount = number of retry attempts made (0 if QA passed on first attempt).
-qaStatus values:
+`qaRetryCount` = Number of retry attempts made (0 if QA passed on first attempt).
+`qaStatus` values:
 
 - "passed" — QA passed on first attempt (qaRetryCount = 0)
 - "self_healed" — QA passed after one or more retries (qaRetryCount ≥ 1)

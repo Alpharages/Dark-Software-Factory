@@ -1,6 +1,6 @@
 # Story WR-6.2: Emit & Parse Per-Attempt QA Markers Across All Providers
 
-Status: ready-for-dev
+Status: done
 
 <!-- Depends on WR-6.1 being complete (QAAttempt interface + qa_attempts DB column must exist first) -->
 
@@ -347,6 +347,30 @@ Providers return `qaAttempts` in `IAIExecutionResult` but nothing reads it yet �
 - NFR-EXT6: Parse errors silently skipped at debug level — same file
 - SKILL.md: `docker/skills/dsf-execution/SKILL.md`
 - Interface file: `src/ai-routing/interfaces/ai-provider.interface.ts`
+
+---
+
+## Review Findings
+
+### Decision Needed
+
+- [x] [Review][Decision] **D1: Fallback scan extended to collect `qa_attempt` lines — violates explicit dev note and contains multiple bugs** — Dev Note explicitly states "Do NOT modify the fallback scan to accumulate `qa_attempt` lines — it is only for recovering a missed `result` line." The implementation modified the fallback scan in all three providers (Codex, Kimi, Gemini) with: (1) condition changed from `!('qaStatus' in agentResult)` to `!('qaStatus' in agentResult) || qaAttempts.length === 0`, (2) `break` removed so the loop never short-circuits, (3) a new `qa_attempt` push branch added. This introduces cascading bugs: the fallback only ever recovers ONE attempt (due to `qaAttempts.length === 0` guard blocking subsequent entries), `lintErrors`/`testResults` are dropped in the fallback cast, `durationMs` is not validated, and the scan fires unconditionally on any execution that emitted zero `qa_attempt` lines (e.g., QA-skipped executions). The "fallback scan" tests in Codex/Kimi/Gemini specs validate this prohibited behavior. **Choice: (A) Revert — remove fallback qa_attempt collection and its tests, restore `break`, restore original condition; or (B) Keep and Fix — address all sub-bugs (multi-entry recovery, field completeness, break restoration, condition tightening) and document as intentional deviation from dev note.**
+
+### Patches
+
+- [x] [Review][Patch] **P1: Missing debug/malformed logs in Codex, Kimi, Gemini `onStdoutLine` qa_attempt handler** — Dev Note specifies identical debug pattern required for all providers. ClaudeCode has both a capture log and a malformed-skip log; Codex, Kimi, and Gemini have neither. Add `this.logger.debug('[CodexProvider] QA attempt ${a.attempt} captured: ...')` and `this.logger.debug('[CodexProvider] qa_attempt line malformed — skipped')` to each. [codex.provider.ts, kimi.provider.ts, gemini.provider.ts]
+- [x] [Review][Patch] **P2: Deleted `expect(result.success).toBe(false)` from ClaudeCode OOM test — weakened assertion** — The assertion was removed without explanation from the existing OOM test case. A regression setting `success: true` on OOM would now go undetected. Restore the assertion. [claude-code.provider.spec.ts:501]
+- [x] [Review][Patch] **P3: Missing "Non-JSON line does not corrupt qaAttempts" test in ClaudeCode spec** — Task 6.1 explicitly requires this test case. Add: emit a raw non-JSON text line followed by a valid `qa_attempt` line; assert `result.qaAttempts` still has 1 entry. [claude-code.provider.spec.ts]
+- [x] [Review][Patch] **P4: Missing "no qa_attempt → qaAttempts is undefined" equivalent test in Codex spec** — Task 6.2 requires equivalent tests to ClaudeCode's Task 6.1 list. This case (no qa_attempt lines emitted, result is undefined) is present for ClaudeCode but absent for Codex. [codex.provider.spec.ts]
+- [x] [Review][Patch] **P5: Missing "malformed skip" and "no qa_attempt → undefined" tests in Gemini and Kimi specs** — Task 6.2 requires equivalent tests. Gemini and Kimi specs each have 2 tests (accumulate + fallback) but are missing the malformed-skip case and the undefined-when-empty case. [gemini.provider.spec.ts, kimi.provider.spec.ts]
+- [x] [Review][Patch] **P6: SKILL.md retry loop ambiguous on `QA_START_MS` reset — agents may compute cumulative duration** — Step 5 says "record start time again" without naming the variable or providing the command. An agent may not reset `QA_START_MS=$(date +%s%3N)` before each retry, causing cumulative elapsed time to be reported as per-attempt `durationMs`. Change step 5 to explicitly state: "Reset `QA_START_MS=$(date +%s%3N)` before re-running." [docker/skills/dsf-execution/SKILL.md]
+
+### Deferred
+
+- [x] [Review][Defer] **W1: `attempt` field not validated for positivity or integrality** — `typeof a.attempt === 'number'` accepts 0, negative, and fractional values. Not required by NFR-EXT6 spec. [all 4 providers] — deferred, pre-existing design choice
+- [x] [Review][Defer] **W2: `--no-verify` explanation deleted from SKILL.md** — The explanatory comment for `git commit --no-verify` was removed; the flag itself remains. Minor documentation regression. [docker/skills/dsf-execution/SKILL.md] — deferred, pre-existing
+- [x] [Review][Defer] **W3: Duplicate `as unknown as` type cast repeated across 8 sites** — No shared `parseQAAttempt()` helper introduced. Any future schema change requires 8 updates. [all 4 providers] — deferred, design choice acceptable per story scope
+- [x] [Review][Defer] **W4: Gemini fallback test stdout order differs from Codex/Kimi** — Gemini uses `result\nqa_attempt` order; Codex/Kimi use `qa_attempt\nresult`. Both work correctly due to reversed scan; cosmetic inconsistency only. [gemini.provider.spec.ts] — deferred, tests pass
 
 ---
 

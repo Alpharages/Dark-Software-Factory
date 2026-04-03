@@ -504,5 +504,151 @@ describe('ClaudeCodeProvider', () => {
       expect(result.success).toBe(false);
       expect(result.error?.message).toBe('Sandbox Out-of-Memory (OOM)');
     });
+
+    describe('qa_attempt parsing', () => {
+      it('should parse and accumulate multiple qa_attempt markers', async () => {
+        const qaAttempts = [
+          {
+            type: 'qa_attempt',
+            attempt: 1,
+            lintPassed: true,
+            lintErrors: { count: 0, details: [] },
+            testsPassed: false,
+            testResults: { passed: 10, failed: 1, details: [] },
+            durationMs: 2000,
+          },
+          {
+            type: 'qa_attempt',
+            attempt: 2,
+            lintPassed: true,
+            lintErrors: { count: 0, details: [] },
+            testsPassed: true,
+            testResults: { passed: 11, failed: 0, details: [] },
+            durationMs: 1500,
+          },
+        ];
+
+        sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+          if (options.onStdoutLine) {
+            for (const a of qaAttempts) {
+              options.onStdoutLine(JSON.stringify(a));
+            }
+            options.onStdoutLine(
+              JSON.stringify({
+                type: 'result',
+                qaStatus: 'self_healed',
+                qaRetryCount: 1,
+              }),
+            );
+          }
+          return {
+            exitCode: 0,
+            stdout: 'DONE',
+            stderr: '',
+            durationMs: 4000,
+            timedOut: false,
+            sandboxId: 'sbx',
+          };
+        });
+
+        const result = await provider.execute(mockPayload);
+
+        expect(result.qaAttempts).toHaveLength(2);
+        expect(result.qaAttempts?.[0]).toEqual({
+          attemptNumber: 1,
+          lintStatus: 'passed',
+          lintErrors: { count: 0, details: [] },
+          testStatus: 'failed',
+          testResults: { passed: 10, failed: 1, details: [] },
+          durationMs: 2000,
+        });
+        expect(result.qaAttempts?.[1]).toEqual({
+          attemptNumber: 2,
+          lintStatus: 'passed',
+          lintErrors: { count: 0, details: [] },
+          testStatus: 'passed',
+          testResults: { passed: 11, failed: 0, details: [] },
+          durationMs: 1500,
+        });
+      });
+
+      it('should be undefined if no qa_attempt markers are emitted', async () => {
+        sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+          if (options.onStdoutLine) {
+            options.onStdoutLine(JSON.stringify({ type: 'result', qaStatus: 'passed' }));
+          }
+          return {
+            exitCode: 0,
+            stdout: '',
+            stderr: '',
+            durationMs: 100,
+            timedOut: false,
+            sandboxId: 'sbx',
+          };
+        });
+
+        const result = await provider.execute(mockPayload);
+        expect(result.qaAttempts).toBeUndefined();
+      });
+
+      it('should skip malformed qa_attempt lines (NFR-EXT6)', async () => {
+        sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+          if (options.onStdoutLine) {
+            // Missing attempt number
+            options.onStdoutLine(
+              JSON.stringify({
+                type: 'qa_attempt',
+                lintPassed: true,
+                testsPassed: true,
+                durationMs: 100,
+              }),
+            );
+            // Result line
+            options.onStdoutLine(JSON.stringify({ type: 'result', qaStatus: 'passed' }));
+          }
+          return {
+            exitCode: 0,
+            stdout: '',
+            stderr: '',
+            durationMs: 100,
+            timedOut: false,
+            sandboxId: 'sbx',
+          };
+        });
+
+        const result = await provider.execute(mockPayload);
+        expect(result.qaAttempts).toBeUndefined();
+      });
+
+      it('should not corrupt qaAttempts when a non-JSON line is followed by a valid qa_attempt', async () => {
+        sandboxService.runAgentCommand.mockImplementationOnce(async (options) => {
+          if (options.onStdoutLine) {
+            options.onStdoutLine('this is plain text output, not JSON');
+            options.onStdoutLine(
+              JSON.stringify({
+                type: 'qa_attempt',
+                attempt: 1,
+                lintPassed: true,
+                testsPassed: true,
+                durationMs: 300,
+              }),
+            );
+            options.onStdoutLine(JSON.stringify({ type: 'result', qaStatus: 'passed' }));
+          }
+          return {
+            exitCode: 0,
+            stdout: '',
+            stderr: '',
+            durationMs: 100,
+            timedOut: false,
+            sandboxId: 'sbx',
+          };
+        });
+
+        const result = await provider.execute(mockPayload);
+        expect(result.qaAttempts).toHaveLength(1);
+        expect(result.qaAttempts?.[0].attemptNumber).toBe(1);
+      });
+    });
   });
 });
