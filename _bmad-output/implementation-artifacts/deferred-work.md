@@ -231,3 +231,9 @@
 - **W3: `ContainerActivityTimeline` Suspense boundary not visible in diff** — Lazy component used without a visible `<Suspense>` wrapper in the card; risk of missing boundary for QA_FAILED+timeline path. Pre-existing. [`ExecutionCard.tsx`]
 - **W4: `getAvailableControls` / `CONTROL_BUTTON_MATRIX` two-source-of-truth gap** — `CONTROL_BUTTON_MATRIX['QA_FAILED']: []` is correct but `getAvailableControls` hits `default: return []` silently; future adds to the matrix won't show buttons without also updating the switch. Pre-existing architectural gap. [`permissions.ts` / `execution.ts`]
 - **W5: Empty `executionId` produces blank ID in toast** — `.slice(0, 8)` on empty string is a pre-existing pattern used by all status update toasts; not introduced by this change. [`ExecutionMonitoringDashboard.tsx`]
+
+## Deferred from: code review of fe-1-3-qa-results-panel-per-attempt-breakdown (2026-04-03)
+
+- **lintErrors.count vs details.length cosmetic mismatch** — Badge shows backend `count` field; expanded section shows `details.length` entries (backend may truncate). Silent discrepancy between badge number and visible rows. Revisit if backend adds a `truncated: true` indicator. [`QAResultsPanel.tsx:123`]
+- **QA Results badge count includes partial/in-progress attempt records** — `executionDetail?.qaAttempts?.length` counts all entries including incomplete records the backend may emit mid-execution. Revisit when backend guarantees only completed attempts are persisted. [`ExecutionLogsViewer.tsx:251`]
+- **5s polling no explicit terminal-state stop in component** — `refetchInterval: isLive ? 5_000 : false` defers to parent's `isLive` prop; parent is responsible for setting `isLive=false` on terminal state. Pre-existing parent-responsibility pattern. [`ExecutionLogsViewer.tsx:89`]
