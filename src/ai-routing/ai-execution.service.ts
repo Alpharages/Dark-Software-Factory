@@ -69,6 +69,7 @@ export class AIExecutionService {
    * Get provider instance for specialized orchestration (Story 14.1 Fix)
    */
   getProvider(provider: AIProvider): IAIProvider | undefined {
+    this.logger.log(`Provider requested: ${provider}`);
     return this.providers.get(provider);
   }
 
