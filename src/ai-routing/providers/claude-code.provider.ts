@@ -64,7 +64,7 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
     }
 
     // Capture structured result from stdout (AC-3)
-    let agentResult: {
+    const agentResult: {
       prUrl?: string | null;
       commitSha?: string;
       branchName?: string;
@@ -77,7 +77,8 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
       executionId,
       ticketId,
       image: this.config.get<string>('opensandbox.agentImage', 'dsf-agents:latest'),
-      command: 'claude --dangerously-skip-permissions -p "/dsf-execution"',
+      command:
+        'claude --dangerously-skip-permissions -p "/dsf-execution" --output-format stream-json --verbose',
       env,
       timeoutSeconds: this.config.get<number>('opensandbox.sandboxTimeoutS', 3600),
       cpuLimit: profile.cpuLimit,
@@ -87,56 +88,61 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
         executionId,
         ticketId: ticketId || '',
       },
-      // AC-2: JSON stdout protocol — {"type":"progress","pct":N,"msg":"..."} | {"type":"result",...}
+      // AC-2: Parse --verbose --output-format stream-json stdout lines.
+      // Each line from execd is a complete JSON object from claude's stream.
+      // Text content lives in: {"type":"assistant","message":{"content":[{"type":"text","text":"..."}]}}
       onStdoutLine: (line) => {
         try {
-          const parsed = JSON.parse(line) as { type?: string; pct?: number; msg?: string };
-          if (parsed.type === 'progress' && typeof parsed.pct === 'number') {
-            // Fire-and-forget progress emission — never blocks execution (NFR-WR3)
-            this.executionTracker
-              .emitProgress(
-                executionId,
-                ticketId || '',
-                projectId || null,
-                parsed.msg ?? '',
-                parsed.pct,
-              )
-              .catch((err) =>
-                this.logger.error(`Failed to emit progress: ${(err as Error).message}`),
-              );
-          } else if (parsed.type === 'result') {
-            agentResult = { ...agentResult, ...(parsed as typeof agentResult) };
-            this.logger.debug(
-              `[${executionId}] Agent result captured: qaStatus=${agentResult.qaStatus}`,
-            );
-          } else if (parsed.type === 'qa_attempt') {
-            const a = parsed as unknown as {
-              attempt: number;
-              lintPassed: boolean;
-              lintErrors?: { count: number; details: unknown[] };
-              testsPassed: boolean;
-              testResults?: { passed: number; failed: number; details: unknown[] };
-              durationMs: number;
+          const event = JSON.parse(line) as {
+            type?: string;
+            message?: {
+              content?: Array<{
+                type?: string;
+                text?: string;
+                name?: string;
+                input?: { command?: string; description?: string };
+              }>;
             };
-            if (
-              typeof a.attempt === 'number' &&
-              typeof a.lintPassed === 'boolean' &&
-              typeof a.testsPassed === 'boolean' &&
-              typeof a.durationMs === 'number'
-            ) {
-              qaAttempts.push({
-                attemptNumber: a.attempt,
-                lintStatus: a.lintPassed ? 'passed' : 'failed',
-                testStatus: a.testsPassed ? 'passed' : 'failed',
-                lintErrors: a.lintErrors,
-                testResults: a.testResults,
-                durationMs: a.durationMs,
-              });
-              this.logger.debug(
-                `[${executionId}] QA attempt ${a.attempt} captured: lint=${a.lintPassed}, tests=${a.testsPassed}`,
-              );
-            } else {
-              this.logger.debug(`[${executionId}] qa_attempt line malformed — skipped`);
+          };
+
+          if (event.type === 'assistant' && event.message?.content) {
+            for (const block of event.message.content) {
+              // Extract text blocks — parse skill protocol JSON
+              if (block.type === 'text' && block.text) {
+                const cleaned = block.text
+                  .replace(/^```(?:json)?\s*/gm, '')
+                  .replace(/^```\s*/gm, '');
+
+                for (const skillLine of cleaned.split('\n')) {
+                  const trimmed = skillLine.trim();
+                  if (!trimmed) continue;
+                  this.handleSkillProtocolLine(
+                    trimmed,
+                    executionId,
+                    ticketId || '',
+                    projectId || null,
+                    agentResult,
+                    qaAttempts,
+                  );
+                }
+              }
+
+              // Emit live activity for tool_use blocks (Bash, Edit, Read, etc.)
+              if (block.type === 'tool_use' && block.name) {
+                const detail =
+                  block.input?.description || block.input?.command?.substring(0, 120) || '';
+                const { category, icon } = this.classifyToolActivity(block.name);
+                this.executionTracker
+                  .emitActivity(
+                    executionId,
+                    ticketId || '',
+                    `${block.name}: ${detail || 'executing'}`,
+                    category,
+                    icon,
+                    detail,
+                  )
+                  .catch(() => {});
+              }
             }
           }
         } catch (_err) {
@@ -147,6 +153,27 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
         }
       },
     });
+
+    // Fallback: if the stream parser didn't capture a result, scan the full
+    // stdout buffer for the last {"type":"result",...} line.  The verbose
+    // stream-json format may bury it in an assistant message we missed.
+    if (agentResult.qaStatus === undefined && result.stdout) {
+      const resultMatch = result.stdout.match(
+        /\{"type"\s*:\s*"result"[^}]*"qaStatus"\s*:\s*"[^"]+?"[^}]*\}/g,
+      );
+      if (resultMatch) {
+        const last = resultMatch[resultMatch.length - 1];
+        try {
+          const parsed = JSON.parse(last) as typeof agentResult;
+          Object.assign(agentResult, parsed);
+          this.logger.log(
+            `[${executionId}] Result recovered from stdout fallback: qaStatus=${agentResult.qaStatus}`,
+          );
+        } catch {
+          /* skip */
+        }
+      }
+    }
 
     const exitedClean = result.exitCode === 0 && !result.timedOut;
     const resultReceived = agentResult.qaStatus !== undefined;
@@ -181,7 +208,7 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
             error: {
               code: result.timedOut ? AIErrorCode.TIMEOUT : AIErrorCode.PROCESS_CRASH,
               message: errorMessage,
-              isRetryable: result.timedOut || qaFailed || errorMessage.includes('Rate Limit'),
+              isRetryable: result.timedOut || errorMessage.includes('Rate Limit'),
               rawOutput: `${result.stdout}\n${result.stderr}`.trim(),
               exitCode: result.exitCode,
             },
@@ -193,6 +220,94 @@ export class ClaudeCodeProvider implements ICodingAgentProvider {
    * Categorize common sandbox errors based on output patterns.
    * Story WR-3.2: Error Classification logic.
    */
+  /** Parse a single skill-protocol JSON line (progress / result / qa_attempt). */
+  private handleSkillProtocolLine(
+    jsonLine: string,
+    executionId: string,
+    ticketId: string,
+    projectId: string | null,
+    agentResult: {
+      prUrl?: string | null;
+      commitSha?: string;
+      branchName?: string;
+      qaStatus?: 'passed' | 'self_healed' | 'failed';
+      qaRetryCount?: number;
+    },
+    qaAttempts: QAAttempt[],
+  ): void {
+    try {
+      const parsed = JSON.parse(jsonLine) as { type?: string; pct?: number; msg?: string };
+      if (parsed.type === 'progress' && typeof parsed.pct === 'number') {
+        this.executionTracker
+          .emitProgress(executionId, ticketId, projectId, parsed.msg ?? '', parsed.pct)
+          .catch((err) => this.logger.error(`Failed to emit progress: ${(err as Error).message}`));
+        // Also emit as live activity
+        this.executionTracker
+          .emitActivity(
+            executionId,
+            ticketId,
+            parsed.msg ?? '',
+            'SYSTEM',
+            '🚀',
+            undefined,
+            parsed.pct,
+          )
+          .catch(() => {});
+      } else if (parsed.type === 'result') {
+        Object.assign(agentResult, parsed);
+        this.logger.debug(
+          `[${executionId}] Agent result captured: qaStatus=${agentResult.qaStatus}`,
+        );
+      } else if (parsed.type === 'qa_attempt') {
+        const a = parsed as unknown as {
+          attempt: number;
+          lintPassed: boolean;
+          lintErrors?: { count: number; details: unknown[] };
+          testsPassed: boolean;
+          testResults?: { passed: number; failed: number; details: unknown[] };
+          durationMs: number;
+        };
+        if (
+          typeof a.attempt === 'number' &&
+          typeof a.lintPassed === 'boolean' &&
+          typeof a.testsPassed === 'boolean' &&
+          typeof a.durationMs === 'number'
+        ) {
+          qaAttempts.push({
+            attemptNumber: a.attempt,
+            lintStatus: a.lintPassed ? 'passed' : 'failed',
+            testStatus: a.testsPassed ? 'passed' : 'failed',
+            lintErrors: a.lintErrors,
+            testResults: a.testResults,
+            durationMs: a.durationMs,
+          });
+          this.logger.debug(
+            `[${executionId}] QA attempt ${a.attempt} captured: lint=${a.lintPassed}, tests=${a.testsPassed}`,
+          );
+        }
+      }
+    } catch {
+      // Not valid skill JSON — skip
+    }
+  }
+
+  /** Map Claude tool names to activity categories and icons for the live feed. */
+  private classifyToolActivity(toolName: string): { category: string; icon: string } {
+    switch (toolName) {
+      case 'Bash':
+        return { category: 'SYSTEM', icon: '💻' };
+      case 'Edit':
+      case 'Write':
+        return { category: 'AI_CODING', icon: '✏️' };
+      case 'Read':
+      case 'Glob':
+      case 'Grep':
+        return { category: 'FILE_OP', icon: '📄' };
+      default:
+        return { category: 'AI_THINKING', icon: '🤔' };
+    }
+  }
+
   private categorizeError(output: string): string | null {
     if (/rate limit|too many requests|429/i.test(output)) {
       return 'Claude Code Rate Limit exceeded (429)';

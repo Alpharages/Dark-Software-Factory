@@ -75,14 +75,16 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   /**
    * AC 1: Gateway initialization
    */
-  afterInit(server: Server): void {
+  afterInit(_server: Server): void {
     this.logger.log('RealtimeGateway initialized');
     this.logger.log(
       `CORS origin: ${this.configService.get('FRONTEND_URL', 'http://localhost:5173')}`,
     );
 
-    // Register server with RealtimeService for external emissions
-    this.realtimeService.setServer(server);
+    // NOTE: RealtimeService.setServer() is intentionally NOT called here.
+    // The frontend connects to the /dashboard namespace (DashboardGateway), not the default /
+    // namespace. DashboardGateway.afterInit() registers the correct namespace server so that
+    // emitToProject/emitToRole/emitToUser all reach the right connected clients.
 
     // AC 5: Metrics are pre-registered by collectors, just log initialization
     this.logger.log('WebSocket metrics tracking enabled');

@@ -47,6 +47,7 @@ describe('ProjectService', () => {
     manual_review_status: null,
     code_review_status: null,
     qa_max_retries: 3,
+    max_execution_retries: 3,
   };
 
   const mockCounter = {

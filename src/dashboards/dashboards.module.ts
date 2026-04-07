@@ -35,6 +35,7 @@ import { ConversationsModule } from '@/conversations/conversations.module';
 import { AIDecisionLoggerModule } from '@/audit/ai-decision-logger.module';
 import { FinancialMetricsModule } from '@/financial-metrics/financial-metrics.module';
 import { GitHubModule } from '@/github/github.module';
+import { RealtimeModule } from '@/realtime/realtime.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { GitHubModule } from '@/github/github.module';
     ConversationsModule,
     AIDecisionLoggerModule,
     EmailModule,
+    RealtimeModule,
     CacheModule.register({
       ttl: 300, // 5 minutes
       max: 100, // Maximum items in cache

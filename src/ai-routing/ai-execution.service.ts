@@ -42,7 +42,7 @@ export class AIExecutionService {
           prompt: input.prompt,
           repositoryUrl: input.repositoryUrl,
           projectId: '',
-          targetBranch: input.baseBranch,
+          // targetBranch intentionally omitted — provider auto-generates dsf/<ticket>/<exec> branch
           targetFiles: input.targetFiles,
           complexityScore: 5, // Default complexity
         });

@@ -87,9 +87,10 @@ export class OrchestratorService {
       prompt: input.prompt,
       repositoryUrl: input.repositoryUrl,
       projectId: input.projectId ?? '',
-      // NOTE: IAIExecutionInput uses `baseBranch` (source branch to start from),
-      // IAIExecutionPayload uses `targetBranch` (branch to push changes to).
-      targetBranch: input.baseBranch,
+      // NOTE: targetBranch is intentionally omitted here — providers auto-generate
+      // a feature branch name (dsf/<ticket>/<exec-prefix>) when targetBranch is undefined.
+      // Passing input.baseBranch (e.g. "main") would set FEATURE_BRANCH=main in the
+      // container, causing the agent to push directly to the default branch.
       targetFiles: input.targetFiles,
       allowFallback: input.allowFallback,
       complexityScore,

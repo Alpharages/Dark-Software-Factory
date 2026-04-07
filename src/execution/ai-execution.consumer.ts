@@ -30,6 +30,7 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
 import { CostOptimizerService } from '@/cost-tracking/cost-optimizer.service';
 import { SentryService } from '@/common/sentry/sentry.service';
+import { PrismaService } from '@/database/prisma.service';
 import { ErrorSeverity } from '@/common/sentry/sentry.constants';
 // Story 7.7: AI Capability Management & Limitations
 import { AiCapabilityTrackerService } from '@/architecture-review/capabilities/ai-capability-tracker.service';
@@ -102,6 +103,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly clickup: ClickUpService,
     private readonly botAssignment: BotAssignmentService,
     private readonly pmExecutionStatus: PMExecutionStatusService,
+    private readonly prisma: PrismaService,
     @InjectMetric('queue_messages_consumed_total')
     private readonly consumedCounter: Counter<string>,
     @InjectMetric('queue_messages_failed_total')
@@ -836,7 +838,23 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
     const { correlationId } = messageData;
     const currentRetryCount = Number(msg.properties.headers?.['x-retry-count'] ?? 0);
     const nextRetryCount = currentRetryCount + 1;
-    const maxRetries = 3;
+
+    // Per-project execution retry limit (falls back to 3)
+    let maxRetries = 3;
+    try {
+      const projectId = messageData.payload.projectId;
+      if (projectId) {
+        const project = await this.prisma.project.findUnique({
+          where: { id: projectId },
+          select: { max_execution_retries: true },
+        });
+        if (project?.max_execution_retries != null) {
+          maxRetries = project.max_execution_retries;
+        }
+      }
+    } catch {
+      // Non-critical — use default
+    }
 
     this.logger.warn(
       `[${correlationId}] Execution failed (attempt ${nextRetryCount}/${maxRetries}): ${result.errorMessage}`,
@@ -891,6 +909,7 @@ export class AIExecutionConsumer implements OnModuleInit, OnModuleDestroy {
       'PERMISSION_DENIED',
       'CLI_NOT_FOUND',
       'CANCELLED',
+      'PROCESS_CRASH', // Agent completed but QA failed — work already pushed, don't re-spin
     ];
     return !nonRetryable.includes(errorCode || '');
   }
