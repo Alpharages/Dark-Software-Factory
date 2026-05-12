@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:26-slim
 
 # Install essential system tools for node-pty and agent operations
 # git: for cloning repositories

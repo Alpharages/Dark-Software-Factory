@@ -7,7 +7,7 @@
 # ===========================================
 
 # ---- Build Stage ----
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN npx tsc --module commonjs --moduleResolution node --esModuleInterop --resolv
     prisma/seed.ts prisma/seeds/admin.seeder.ts prisma/seeds/system-config.seeder.ts
 
 # ---- Production Stage ----
-FROM node:22-alpine AS production
+FROM node:26-alpine AS production
 
 # Install runtime dependencies for git
 RUN apk add --no-cache bash git
