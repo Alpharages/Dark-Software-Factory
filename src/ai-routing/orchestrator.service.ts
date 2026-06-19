@@ -68,6 +68,7 @@ export class OrchestratorService {
       [AIProvider.GEMINI]: ProviderName.GEMINI,
       [AIProvider.CODEX]: ProviderName.CODEX,
       [AIProvider.KIMI]: ProviderName.KIMI,
+      [AIProvider.OPENHARNESS]: ProviderName.OPENHARNESS,
     };
     // eslint-disable-next-line security/detect-object-injection
     return map[provider];

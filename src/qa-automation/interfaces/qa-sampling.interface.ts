@@ -8,7 +8,7 @@ import { RiskLevel } from '@/prisma/client';
 /**
  * AI Provider type
  */
-export type AIProvider = 'CLAUDE_CODE' | 'GEMINI' | 'CODEX' | 'KIMI';
+export type AIProvider = 'CLAUDE_CODE' | 'GEMINI' | 'CODEX' | 'KIMI' | 'OPENHARNESS';
 
 /**
  * Sampling configuration from database

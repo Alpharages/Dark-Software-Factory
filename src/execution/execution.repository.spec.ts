@@ -388,6 +388,7 @@ describe('ExecutionRepository', () => {
         [AIProvider.GEMINI]: 3,
         [AIProvider.CODEX]: 0,
         [AIProvider.KIMI]: 0,
+        [AIProvider.OPENHARNESS]: 0,
       });
     });
 
@@ -401,6 +402,7 @@ describe('ExecutionRepository', () => {
         [AIProvider.GEMINI]: 0,
         [AIProvider.CODEX]: 0,
         [AIProvider.KIMI]: 0,
+        [AIProvider.OPENHARNESS]: 0,
       });
     });
   });

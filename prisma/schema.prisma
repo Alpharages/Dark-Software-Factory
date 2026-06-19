@@ -1126,6 +1126,7 @@ enum AIProvider {
   GEMINI
   CODEX
   KIMI
+  OPENHARNESS
 }
 
 enum ExecutionStatus {

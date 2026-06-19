@@ -3,4 +3,5 @@ export enum ProviderName {
   GEMINI = 'GEMINI',
   CODEX = 'CODEX',
   KIMI = 'KIMI',
+  OPENHARNESS = 'OPENHARNESS',
 }

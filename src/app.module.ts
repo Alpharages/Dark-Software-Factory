@@ -62,6 +62,9 @@ import { GitMirrorModule } from '@/git-mirror';
 import { SandboxModule } from '@/sandbox'; // Epic OS-1
 import { CleanupModule } from '@/cleanup'; // Story 23.2
 
+// OpenHarness
+import { OpenHarnessModule } from './openharness/openharness.module';
+
 // Story 15.2
 import { SystemConfigModule } from './system-settings/system-config.module';
 // Story 7.1
@@ -109,6 +112,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     TicketIntakeModule,
     AiRoutingModule,
     ExecutionModule,
+    OpenHarnessModule,
 
     // Quality & Deployment
     QaAutomationModule,

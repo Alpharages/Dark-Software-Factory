@@ -320,6 +320,7 @@ export class ExecutionRepository {
       [AIProvider.GEMINI]: 0,
       [AIProvider.CODEX]: 0,
       [AIProvider.KIMI]: 0,
+      [AIProvider.OPENHARNESS]: 0,
     } as Record<AIProvider, number>;
 
     // Fill in actual counts
