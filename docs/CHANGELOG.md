@@ -12,3 +12,19 @@
   `LORE_API_KEY` bearer auth.
 - Updated BMAD wiring to use the `bmad-mcp-server` HTTP transport (`/mcp`) with
   `BMAD_API_KEY` bearer auth and per-run `X-ClickUp-*` headers.
+- Code-review follow-up (OHP-1.1): pinned the install to `openharness-ai==0.1.9` and
+  documented that AC1 is satisfied via the isolated `oh mcp add` fallback (the 0.1.9
+  `--mcp-config` flag is not wired into dry-run). Verified offline that `oh mcp add` accepts
+  the `{type:"http",…}` config shape and the isolated dry-run reports two configured servers.
+- Code-review follow-up (OHP-1.1): removed the unused `LORE_SLUG` env var from `.env.example`
+  and the runbook (Lore is wired via `LORE_SERVER_URL` + `LORE_API_KEY`; the slug was never
+  consumed). Added a "Capturing acceptance evidence (AC1–AC3)" runbook section for the
+  credentialed live smoke run.
+- Live-smoke fixes (OHP-1.1, AC2/AC3 now passing): pinned the smoke model via
+  `OH_MCP_SMOKE_MODEL` (default `gpt-5.4`) because `oh -p` otherwise defaults to a Claude alias
+  the Codex provider cannot run; and reworked the live path to register the MCP servers in the
+  **default** OpenHarness config dir (with `settings.json` snapshot + restore) instead of an
+  isolated dir, because the Codex subscription auth is only visible in the default dir. Offline
+  mode (`OH_MCP_SMOKE_LIVE=0`) still uses an isolated dir with no auth and no mutation.
+- Verified live on `openharness 0.1.9` + Codex subscription (2026-06-19): AC1 (dry-run lists both
+  servers via fallback), AC2 (`BMAD MCP smoke passed.`), AC3 (`LORE MCP smoke passed.`).

@@ -4,6 +4,10 @@ set -euo pipefail
 CONFIG_PATH="${1:-openharness/mcp-config.json}"
 MAX_TURNS="${OH_MCP_SMOKE_MAX_TURNS:-20}"
 LIVE_SMOKE="${OH_MCP_SMOKE_LIVE:-1}"
+# OpenHarness print-mode defaults to a Claude model alias, which the Codex/ChatGPT
+# subscription provider cannot run. Pin a provider-compatible model for the live calls;
+# override for non-Codex providers (e.g. OH_MCP_SMOKE_MODEL=sonnet on a Claude profile).
+SMOKE_MODEL="${OH_MCP_SMOKE_MODEL:-gpt-5.4}"
 
 required_commands=(node oh)
 required_env=(BMAD_SERVER_URL BMAD_API_KEY CLICKUP_API_KEY CLICKUP_TEAM_ID LORE_SERVER_URL LORE_API_KEY)
@@ -79,7 +83,7 @@ if [[ $MCP_CONFIG_DRY_RUN_STATUS -eq 0 ]] \
   note "OpenHarness --mcp-config dry-run lists bmad and lore."
 else
   note "OpenHarness --mcp-config did not list bmad and lore in this installed build."
-  note "Falling back to an isolated OPENHARNESS_CONFIG_DIR and oh mcp add for smoke validation."
+  note "Falling back to oh mcp add for smoke validation (isolated config dir offline; default config dir for live calls)."
 fi
 
 node - "$CONFIG_PATH" "$TMP_DIR/bmad.json" "$TMP_DIR/lore.json" <<'NODE'
@@ -112,9 +116,65 @@ fs.writeFileSync(bmadPath, JSON.stringify(materialize(config.mcpServers.bmad)));
 fs.writeFileSync(lorePath, JSON.stringify(materialize(config.mcpServers.lore)));
 NODE
 
-export OPENHARNESS_CONFIG_DIR="$TMP_DIR/openharness-config"
-export OPENHARNESS_DATA_DIR="$TMP_DIR/openharness-data"
-export OPENHARNESS_LOGS_DIR="$TMP_DIR/openharness-logs"
+BMAD_PROMPT='Call the MCP tool mcp__bmad__bmad with {"operation":"list","query":"workflows"}. If the tool returns without an error, reply exactly BMAD_SMOKE_OK and nothing else.'
+LORE_PROMPT='Call the MCP tool mcp__lore__search_similar with {"text":"openharness smoke test","limit":1}. If the tool returns without an error, reply exactly LORE_SMOKE_OK and nothing else.'
+
+# ---------------------------------------------------------------------------
+# Offline mode (OH_MCP_SMOKE_LIVE=0): validate server visibility in a fully
+# isolated OPENHARNESS_CONFIG_DIR. No provider auth and no mutation of the
+# user's real config — ideal for CI.
+# ---------------------------------------------------------------------------
+if [[ "$LIVE_SMOKE" == "0" ]]; then
+  export OPENHARNESS_CONFIG_DIR="$TMP_DIR/openharness-config"
+  export OPENHARNESS_DATA_DIR="$TMP_DIR/openharness-data"
+  export OPENHARNESS_LOGS_DIR="$TMP_DIR/openharness-logs"
+
+  set +e
+  BMAD_ADD_OUTPUT="$(oh mcp add bmad "$(cat "$TMP_DIR/bmad.json")" 2>&1)"
+  BMAD_ADD_STATUS=$?
+  LORE_ADD_OUTPUT="$(oh mcp add lore "$(cat "$TMP_DIR/lore.json")" 2>&1)"
+  LORE_ADD_STATUS=$?
+  set -e
+  [[ $BMAD_ADD_STATUS -eq 0 ]] || fail "failed to register bmad MCP server\n$BMAD_ADD_OUTPUT"
+  [[ $LORE_ADD_STATUS -eq 0 ]] || fail "failed to register lore MCP server\n$LORE_ADD_OUTPUT"
+
+  ISOLATED_DRY_RUN_OUTPUT="$(oh --dry-run -p "List configured MCP servers." 2>&1)"
+  printf '%s\n' "$ISOLATED_DRY_RUN_OUTPUT" >"$TMP_DIR/dry-run-isolated.txt"
+  grep -qi "configured mcp servers: 2" "$TMP_DIR/dry-run-isolated.txt" || fail "dry-run did not report two configured MCP servers"
+  grep -qi "bmad" "$TMP_DIR/dry-run-isolated.txt" || fail "dry-run did not list bmad"
+  grep -qi "lore" "$TMP_DIR/dry-run-isolated.txt" || fail "dry-run did not list lore"
+  note "Isolated dry-run lists bmad and lore."
+  note "Skipping live MCP calls because OH_MCP_SMOKE_LIVE=0."
+  exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# Live mode (OH_MCP_SMOKE_LIVE=1): the live `oh -p` calls need the provider
+# credentials that live in the DEFAULT OpenHarness config dir (e.g. the Codex
+# subscription token in ~/.openharness). An isolated OPENHARNESS_CONFIG_DIR
+# cannot see that auth, so live mode registers the servers in the default dir
+# and restores settings.json afterward (snapshot + trap), keeping the user's
+# real config unmodified on exit.
+# ---------------------------------------------------------------------------
+DEFAULT_CONFIG_DIR="${OPENHARNESS_CONFIG_DIR:-$HOME/.openharness}"
+SETTINGS_FILE="$DEFAULT_CONFIG_DIR/settings.json"
+SETTINGS_BACKUP="$TMP_DIR/settings.json.bak"
+SETTINGS_EXISTED=0
+if [[ -f "$SETTINGS_FILE" ]]; then
+  cp "$SETTINGS_FILE" "$SETTINGS_BACKUP"
+  SETTINGS_EXISTED=1
+fi
+
+restore_settings() {
+  oh mcp remove bmad >/dev/null 2>&1 || true
+  oh mcp remove lore >/dev/null 2>&1 || true
+  if [[ $SETTINGS_EXISTED -eq 1 ]]; then
+    cp "$SETTINGS_BACKUP" "$SETTINGS_FILE" 2>/dev/null || true
+  else
+    rm -f "$SETTINGS_FILE" 2>/dev/null || true
+  fi
+}
+trap 'restore_settings; rm -rf "$TMP_DIR"' EXIT
 
 set +e
 BMAD_ADD_OUTPUT="$(oh mcp add bmad "$(cat "$TMP_DIR/bmad.json")" 2>&1)"
@@ -125,24 +185,16 @@ set -e
 [[ $BMAD_ADD_STATUS -eq 0 ]] || fail "failed to register bmad MCP server\n$BMAD_ADD_OUTPUT"
 [[ $LORE_ADD_STATUS -eq 0 ]] || fail "failed to register lore MCP server\n$LORE_ADD_OUTPUT"
 
-ISOLATED_DRY_RUN_OUTPUT="$(oh --dry-run -p "List configured MCP servers." 2>&1)"
-printf '%s\n' "$ISOLATED_DRY_RUN_OUTPUT" >"$TMP_DIR/dry-run-isolated.txt"
-
-grep -qi "configured mcp servers: 2" "$TMP_DIR/dry-run-isolated.txt" || fail "dry-run did not report two configured MCP servers"
-grep -qi "bmad" "$TMP_DIR/dry-run-isolated.txt" || fail "dry-run did not list bmad"
-grep -qi "lore" "$TMP_DIR/dry-run-isolated.txt" || fail "dry-run did not list lore"
-note "Isolated dry-run lists bmad and lore."
-
-if [[ "$LIVE_SMOKE" == "0" ]]; then
-  note "Skipping live MCP calls because OH_MCP_SMOKE_LIVE=0."
-  exit 0
-fi
-
-BMAD_PROMPT='Call the MCP tool mcp__bmad__bmad with {"operation":"list","query":"workflows"}. If the tool returns without an error, reply exactly BMAD_SMOKE_OK and nothing else.'
-LORE_PROMPT='Call the MCP tool mcp__lore__search_similar with {"text":"openharness smoke test","limit":1}. If the tool returns without an error, reply exactly LORE_SMOKE_OK and nothing else.'
+DRY_RUN_OUTPUT="$(oh --dry-run -p "List configured MCP servers." 2>&1)"
+printf '%s\n' "$DRY_RUN_OUTPUT" >"$TMP_DIR/dry-run.txt"
+# Do not assert an exact server count here: the user's default config may hold
+# other MCP servers. Assert that both bmad and lore are present.
+grep -qi "bmad" "$TMP_DIR/dry-run.txt" || fail "dry-run did not list bmad"
+grep -qi "lore" "$TMP_DIR/dry-run.txt" || fail "dry-run did not list lore"
+note "Dry-run lists bmad and lore."
 
 set +e
-BMAD_OUTPUT="$(oh -p "$BMAD_PROMPT" --allowed-tools mcp__bmad__bmad --permission-mode full_auto --max-turns "$MAX_TURNS" 2>&1)"
+BMAD_OUTPUT="$(oh -p "$BMAD_PROMPT" --model "$SMOKE_MODEL" --allowed-tools mcp__bmad__bmad --permission-mode full_auto --max-turns "$MAX_TURNS" 2>&1)"
 BMAD_STATUS=$?
 set -e
 printf '%s\n' "$BMAD_OUTPUT" >"$TMP_DIR/bmad-smoke.txt"
@@ -151,7 +203,7 @@ grep -q "BMAD_SMOKE_OK" "$TMP_DIR/bmad-smoke.txt" || fail "bmad smoke did not co
 note "BMAD MCP smoke passed."
 
 set +e
-LORE_OUTPUT="$(oh -p "$LORE_PROMPT" --allowed-tools mcp__lore__search_similar --permission-mode full_auto --max-turns "$MAX_TURNS" 2>&1)"
+LORE_OUTPUT="$(oh -p "$LORE_PROMPT" --model "$SMOKE_MODEL" --allowed-tools mcp__lore__search_similar --permission-mode full_auto --max-turns "$MAX_TURNS" 2>&1)"
 LORE_STATUS=$?
 set -e
 printf '%s\n' "$LORE_OUTPUT" >"$TMP_DIR/lore-smoke.txt"

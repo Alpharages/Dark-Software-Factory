@@ -13,13 +13,17 @@ It defines two MCP servers:
 Install OpenHarness and select the Codex subscription profile:
 
 ```bash
-pipx install openharness-ai
+pipx install "openharness-ai==0.1.9"
 oh auth codex-login
 oh provider use codex
 oh --version
 ```
 
-The spike validated `openharness 0.1.9`.
+The spike validated `openharness 0.1.9`. The version is **pinned** because this build's
+`--mcp-config` behavior (see "Dry Run" below) is version-specific; when bumping OpenHarness,
+re-run `scripts/oh-mcp-smoke.sh` and re-check whether the direct `--mcp-config` dry-run path
+starts listing both servers (which would let it satisfy AC1 directly instead of via the
+fallback).
 
 ## Environment
 
@@ -30,7 +34,6 @@ export CLICKUP_API_KEY="pk_..."
 export CLICKUP_TEAM_ID="9018612026"
 export BMAD_SERVER_URL="https://your-bmad-server.example.com"
 export BMAD_API_KEY="your-bmad-http-key"
-export LORE_SLUG="dark-software-factory"
 export LORE_SERVER_URL="https://your-lore-server.example.com"
 export LORE_API_KEY="lore_..."
 ```
@@ -49,16 +52,49 @@ command first:
 oh --dry-run --mcp-config openharness/mcp-config.json -p "List configured MCP servers."
 ```
 
-If that output does not list both servers, the script falls back to an isolated config:
+If that output does not list both servers, the script falls back to `oh mcp add`. The fallback
+behaves differently per mode:
+
+- **Offline (`OH_MCP_SMOKE_LIVE=0`)** — registers the servers in an **isolated**
+  `OPENHARNESS_CONFIG_DIR` and runs the dry-run there. No provider auth and no mutation of
+  `~/.openharness/settings.json`. Ideal for CI.
+- **Live (`OH_MCP_SMOKE_LIVE=1`)** — registers the servers in the **default** config dir, runs
+  the dry-run and the live calls, then **restores `settings.json`** (snapshot + trap) on exit.
+  The default dir is required because the provider credentials the live `oh -p` calls need
+  (e.g. the Codex subscription token) are only visible there — an isolated `OPENHARNESS_CONFIG_DIR`
+  cannot see that auth and the run fails with `No API key configured` or a misleading
+  `Network error: Connection error`.
 
 ```bash
+# what the offline fallback does, conceptually:
 export OPENHARNESS_CONFIG_DIR="$(mktemp -d)"
 oh mcp add bmad '<materialized bmad JSON>'
 oh mcp add lore '<materialized lore JSON>'
 oh --dry-run -p "List configured MCP servers."
 ```
 
-The fallback keeps the smoke test reproducible without mutating `~/.openharness/settings.json`.
+## Model & provider
+
+OpenHarness print-mode (`oh -p`) defaults to a **Claude model alias**, which the Codex/ChatGPT
+subscription provider cannot run. The smoke script therefore pins the model via
+`OH_MCP_SMOKE_MODEL` (default `gpt-5.4`) on the live calls. The model must match the **active
+provider** in your default config dir:
+
+- On the Codex subscription (`oh provider use codex`), keep the default `gpt-5.4`.
+- On a Claude profile (`oh provider use claude-api`), set `OH_MCP_SMOKE_MODEL=sonnet` (or another
+  Anthropic alias).
+
+A model that does not match the active provider (e.g. `gpt-5.4` sent to an Anthropic profile)
+surfaces as `Network error: Connection error` — confirm `oh provider list` shows the expected
+active profile before running the live smoke.
+
+> **AC1 status:** On the pinned 0.1.9 build, AC1 ("`oh --dry-run` lists both `bmad` and `lore`")
+> is satisfied through the **fallback** path (isolated `OPENHARNESS_CONFIG_DIR` + `oh mcp add` +
+> `oh --dry-run`), not the direct `--mcp-config` invocation. The isolated dry-run reports
+> `configured mcp servers: 2` and lists both servers — verified offline with placeholder env via
+> `OH_MCP_SMOKE_LIVE=0 scripts/oh-mcp-smoke.sh` (no live servers or model calls needed for this
+> check). If a future OpenHarness version wires `--mcp-config` into dry-run, the direct path will
+> begin satisfying AC1 and the fallback becomes redundant but harmless.
 
 ## Smoke Test
 
@@ -82,6 +118,31 @@ For CI or offline validation that should not start MCP servers or call a model, 
 OH_MCP_SMOKE_LIVE=0 scripts/oh-mcp-smoke.sh
 ```
 
+### Capturing acceptance evidence (AC1–AC3)
+
+AC2 and AC3 require the live BMAD list op and Lore query to actually reach their servers, so
+they can only be closed on a machine with real credentials. To capture sign-off evidence:
+
+```bash
+export BMAD_SERVER_URL="https://<real-bmad-host>"
+export BMAD_API_KEY="<real-bmad-http-key>"
+export CLICKUP_API_KEY="pk_<real>"
+export CLICKUP_TEAM_ID="9018612026"
+export LORE_SERVER_URL="https://<real-lore-host>"
+export LORE_API_KEY="lore_<real>"
+
+oh provider use codex             # ensure the active provider matches OH_MCP_SMOKE_MODEL
+scripts/oh-mcp-smoke.sh           # LIVE defaults on; OH_MCP_SMOKE_LIVE=1
+```
+
+Paste into the ClickUp ticket: the `Dry-run lists bmad and lore.` line (AC1 via fallback), plus
+`BMAD MCP smoke passed.` / `LORE MCP smoke passed.` (AC2/AC3). A successful run ends with
+`OpenHarness MCP smoke complete.` The live run temporarily registers the two servers in your
+default OpenHarness config and restores `settings.json` on exit.
+
+Verified on `openharness 0.1.9` + Codex subscription (`gpt-5.4`) on 2026-06-19: all three lines
+emitted and `settings.json` restored clean.
+
 ## Troubleshooting
 
 - Missing `oh`: install with `pipx install openharness-ai`.
@@ -97,3 +158,10 @@ OH_MCP_SMOKE_LIVE=0 scripts/oh-mcp-smoke.sh
   set `LORE_API_KEY` to the project key printed by `lore init`.
 - BMAD must receive `X-ClickUp-Mode: write`; downstream `clickup-dev-implement` requires
   write mode for comments and status transitions.
+- `Network error: Connection error` on the live calls (MCP servers are reachable): the pinned
+  model does not match the active provider, or the provider is unauthenticated. Run
+  `oh provider list`, confirm the active profile, and set `OH_MCP_SMOKE_MODEL` to a model that
+  profile supports (`gpt-5.4` for Codex, `sonnet` for a Claude profile).
+- `No API key configured` on the live calls: you are running with an isolated
+  `OPENHARNESS_CONFIG_DIR` that cannot see the subscription auth. The live path deliberately uses
+  the default config dir; do not export `OPENHARNESS_CONFIG_DIR` when running the live smoke.
