@@ -30,9 +30,15 @@
   servers via fallback), AC2 (`BMAD MCP smoke passed.`), AC3 (`LORE MCP smoke passed.`).
 - Added `scripts/oh-run-skill.sh` as the thin OHP-1.2 headless wrapper for driving
   `clickup-dev-implement`, capturing `stream-json`, and restoring OpenHarness MCP settings.
-- Captured the first OHP-1.2 real-ticket evidence run in
-  `docs/openharness/runs/ohp-1.2-86ey07n48.stream.json` plus
-  `docs/openharness/runs/ohp-1.2-report.md`. Direct `oh --mcp-config` attempts were unreliable on
-  OpenHarness `0.1.9`, but the wrapper-driven `gpt-5.4` run successfully invoked
-  `bmad({operation:"execute", workflow:"clickup-dev-implement"})`, posted completion evidence,
-  moved the task to the list-valid review status, and saved a Lore lesson.
+- Captured the OHP-1.2 real-ticket evidence run in
+  `docs/openharness/runs/ohp-1.2-86ewke7gg.stream.json` plus
+  `docs/openharness/runs/ohp-1.2-report.md`. The validation was driven against an **independent**
+  low-risk ticket (`86ewke7gg`), not OHP-1.2 itself. Direct `oh --mcp-config` attempts were
+  unreliable on OpenHarness `0.1.9`, but the wrapper-driven `gpt-5.4` run invoked
+  `bmad({operation:"execute", workflow:"clickup-dev-implement"})` and drove the multi-step flow as
+  an MCP client — producing a real `src/` diff via `edit_file` (TDD order, independently verified:
+  8/8 tests pass, typecheck clean), posting a completion comment, and moving the task to the
+  list-valid review status (`ready for review`). The validation diff was reverted, not committed.
+  Lore lesson-saving is AI-discretionary (saved only when a run yields genuinely reusable signal,
+  not on every run); the trivial validation change had none, so zero Lore calls is the correct
+  outcome, not a gap. The earlier self-referential run against OHP-1.2 itself was discarded.
