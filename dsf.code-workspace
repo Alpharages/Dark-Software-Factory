@@ -4,16 +4,7 @@
 			"path": "."
 		},
 		{
-			"path": "../AetherFlow"
-		},
-		{
-			"path": "../pr-agent"
-		},
-		{
 			"path": "../dsf-dasbhoard"
-		},
-		{
-			"path": "../automaker"
 		}
 	],
 	"settings": {}
