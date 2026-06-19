@@ -28,3 +28,11 @@
   mode (`OH_MCP_SMOKE_LIVE=0`) still uses an isolated dir with no auth and no mutation.
 - Verified live on `openharness 0.1.9` + Codex subscription (2026-06-19): AC1 (dry-run lists both
   servers via fallback), AC2 (`BMAD MCP smoke passed.`), AC3 (`LORE MCP smoke passed.`).
+- Added `scripts/oh-run-skill.sh` as the thin OHP-1.2 headless wrapper for driving
+  `clickup-dev-implement`, capturing `stream-json`, and restoring OpenHarness MCP settings.
+- Captured the first OHP-1.2 real-ticket evidence run in
+  `docs/openharness/runs/ohp-1.2-86ey07n48.stream.json` plus
+  `docs/openharness/runs/ohp-1.2-report.md`. Direct `oh --mcp-config` attempts were unreliable on
+  OpenHarness `0.1.9`, but the wrapper-driven `gpt-5.4` run successfully invoked
+  `bmad({operation:"execute", workflow:"clickup-dev-implement"})`, posted completion evidence,
+  moved the task to the list-valid review status, and saved a Lore lesson.

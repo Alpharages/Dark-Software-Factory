@@ -143,6 +143,26 @@ default OpenHarness config and restores `settings.json` on exit.
 Verified on `openharness 0.1.9` + Codex subscription (`gpt-5.4`) on 2026-06-19: all three lines
 emitted and `settings.json` restored clean.
 
+## Driving a skill on a real ticket
+
+Use the thin wrapper below to run `clickup-dev-implement` headlessly against a real ClickUp task
+while keeping the MCP registration/cleanup and stream-log capture consistent:
+
+```bash
+scripts/oh-run-skill.sh <CLICKUP_TASK_ID>
+```
+
+Behavior:
+
+- materializes `openharness/mcp-config.json` with the current shell env,
+- registers `bmad` and `lore` for the duration of the run,
+- executes `oh -p` with `--output-format stream-json`, `--permission-mode full_auto`, and the
+  task-scoped prompt used by OHP-1.2,
+- writes the log to `docs/openharness/runs/ohp-1.2-<TASK_ID>.stream.json` by default,
+- refuses to persist the log if any required secret literal appears in the stream.
+
+This is still a CLI spike helper, not the OHP-1.3 production runner.
+
 ## Troubleshooting
 
 - Missing `oh`: install with `pipx install openharness-ai`.

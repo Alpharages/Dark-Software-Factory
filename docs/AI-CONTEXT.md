@@ -8,7 +8,13 @@ OpenHarness, BMAD skills, and Lore memory. The current single-tenant integration
 - `openharness/mcp-config.json` for BMAD and Lore HTTP MCP server definitions.
 - `scripts/oh-mcp-smoke.sh` for local dry-run and read-only MCP reachability checks.
 - `docs/openharness/mcp-setup.md` for setup and troubleshooting.
+- `scripts/oh-run-skill.sh` for the OHP-1.2 headless real-ticket wrapper.
+- `docs/openharness/runs/ohp-1.2-86ey07n48.stream.json` and
+  `docs/openharness/runs/ohp-1.2-report.md` for the first captured OHP-1.2 evidence run.
 
-For OHP-1.1, do not touch NestJS `src/` execution, `ai-routing/`, RabbitMQ, or dispatcher code.
-The story is configuration and runbook-only. OAuth/per-tenant credential injection is deferred
-to OHP-4; this phase uses one ClickUp token, one ClickUp team, and one Lore project key.
+For OHP-1.1/OHP-1.2, do not touch NestJS `src/` execution, `ai-routing/`, RabbitMQ, or
+dispatcher code. The work here is docs/scripts/evidence only. OAuth/per-tenant credential
+injection is deferred to OHP-4; this phase uses one ClickUp token, one ClickUp team, and one Lore
+project key. The successful OHP-1.2 `gpt-5.4` run used `scripts/oh-run-skill.sh` because direct
+`oh --mcp-config` was unreliable on OpenHarness `0.1.9`; keep using the wrapper until that CLI
+path is upgraded and revalidated.
