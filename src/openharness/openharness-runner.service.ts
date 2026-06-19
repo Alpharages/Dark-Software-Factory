@@ -94,6 +94,7 @@ export class OpenHarnessRunnerService {
 
       const parser = new OpenHarnessStreamParser();
       let lastProgress = '';
+      let settled = false;
 
       if (child.stdout) {
         const rl = readline.createInterface({ input: child.stdout });
@@ -111,44 +112,62 @@ export class OpenHarnessRunnerService {
         });
       }
 
+      // Run exactly one terminal path and only resolve once its persistence has
+      // completed. The `settled` guard prevents a double-fire: a timeout calls
+      // child.kill(), which in turn emits 'close' — without the guard the close
+      // handler would attempt a second, illegal TIMEOUT→FAILED transition. It
+      // also ensures the row is genuinely in its terminal state by the time
+      // runForTicket() resolves, so a caller that reads the row right after the
+      // await sees the final status (not a still-in-flight write).
+      const finalize = (persist: () => Promise<unknown>): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        void (async () => {
+          try {
+            await persist();
+          } catch (e) {
+            this.logger.error(e);
+          } finally {
+            resolve(execution.id);
+          }
+        })();
+      };
+
       const timer = setTimeout(() => {
         child.kill();
-        this.executionTracker
-          .timeoutExecution(
+        finalize(() =>
+          this.executionTracker.timeoutExecution(
             {
               executionId: execution.id,
               timeoutSeconds: RUN_TIMEOUT_MS / 1000,
               lastKnownProgress: lastProgress,
             },
             execution.id,
-          )
-          .catch((e) => this.logger.error(e));
-        resolve(execution.id);
+          ),
+        );
       }, RUN_TIMEOUT_MS);
 
       child.on('error', (err) => {
-        clearTimeout(timer);
-        this.executionTracker
-          .failExecution(
+        finalize(() =>
+          this.executionTracker.failExecution(
             {
               executionId: execution.id,
               errorMessage: `Spawn error: ${err.message}`,
               isRetryable: false,
             },
             execution.id,
-          )
-          .catch((e) => this.logger.error(e));
-        resolve(execution.id);
+          ),
+        );
       });
 
-      child.on('close', async (code) => {
-        clearTimeout(timer);
-        const result = parser.getResult();
-        const filesChanged = parser.getFilesChanged();
-        const toolsUsed = parser.getToolsUsed();
-        const summary = result?.summary || 'Execution completed without summary';
+      child.on('close', (code) => {
+        finalize(async () => {
+          const result = parser.getResult();
+          const filesChanged = parser.getFilesChanged();
+          const toolsUsed = parser.getToolsUsed();
+          const summary = result?.summary || 'Execution completed without summary';
 
-        try {
           if (code === 0 && result && result.status !== 'FAILED') {
             await this.prisma.execution.update({
               where: { id: execution.id },
@@ -162,6 +181,10 @@ export class OpenHarnessRunnerService {
                 executionId: execution.id,
                 codeOutput: summary,
                 filesChanged: filesChanged,
+                // Placeholder: IExecutionCompletion requires a confidence score,
+                // but the OpenHarness stream carries no confidence signal. 1.0 is
+                // a known limitation, not a measured value — revisit if the
+                // stream gains a confidence field.
                 confidenceScore: 1.0,
               },
               execution.id,
@@ -190,11 +213,7 @@ export class OpenHarnessRunnerService {
               execution.id,
             );
           }
-        } catch (e) {
-          this.logger.error(e);
-        } finally {
-          resolve(execution.id);
-        }
+        });
       });
     });
   }

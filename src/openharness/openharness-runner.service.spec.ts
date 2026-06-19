@@ -222,6 +222,14 @@ describe('OpenHarnessRunnerService', () => {
         'exec-123',
       );
       expect(mockExecutionTracker.completeExecution).not.toHaveBeenCalled();
+
+      // child.kill() emits 'close' in real life. The settle-guard must keep the
+      // late close from attempting a second (illegal) terminal transition.
+      mockChild.emit('close', null);
+      await Promise.resolve();
+      expect(mockExecutionTracker.timeoutExecution).toHaveBeenCalledTimes(1);
+      expect(mockExecutionTracker.failExecution).not.toHaveBeenCalled();
+      expect(mockExecutionTracker.completeExecution).not.toHaveBeenCalled();
     } finally {
       jest.useRealTimers();
     }
