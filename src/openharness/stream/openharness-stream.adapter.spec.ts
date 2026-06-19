@@ -109,7 +109,7 @@ describe('OpenHarnessStreamAdapter', () => {
     );
   });
 
-  it('flushes buffered deltas before emitting assistant_complete', async () => {
+  it('flushes buffered deltas and emits the summary as a final log marker on assistant_complete', async () => {
     await adapter.handleEvent('exec-1', 'ticket-1', {
       type: 'assistant_delta',
       delta: 'Final text',
@@ -122,25 +122,42 @@ describe('OpenHarnessStreamAdapter', () => {
       duration_seconds: 3,
     });
 
+    // The buffered delta is flushed first...
     expect(realtimeService.emitToProject).toHaveBeenCalledWith(
       'project-1',
       'execution.log',
       expect.objectContaining({ message: 'Final text' }),
     );
+    // ...then the assistant's final message is emitted as a terminal log marker.
     expect(realtimeService.emitToProject).toHaveBeenCalledWith(
       'project-1',
+      'execution.log',
+      expect.objectContaining({ message: 'done' }),
+    );
+  });
+
+  it('never emits execution.completed — the runner owns the run-terminal event', async () => {
+    await adapter.handleEvent('exec-1', 'ticket-1', {
+      type: 'assistant_complete',
+      summary: 'done',
+      files_changed: ['src/a.ts'],
+      duration_seconds: 3,
+    });
+
+    expect(realtimeService.emitToProject).not.toHaveBeenCalledWith(
+      'project-1',
       'execution.completed',
-      expect.objectContaining({
-        executionId: 'exec-1',
-        ticketId: 'ticket-1',
-        provider: 'OPENHARNESS',
-        status: 'COMPLETED',
-        projectId: 'project-1',
-        payload: {
-          filesChanged: ['src/a.ts'],
-          durationSeconds: 3,
-        },
-      }),
+      expect.anything(),
+    );
+    expect(realtimeService.emitToRole).not.toHaveBeenCalledWith(
+      'ADMIN',
+      'execution.completed',
+      expect.anything(),
+    );
+    expect(realtimeService.emitToRole).not.toHaveBeenCalledWith(
+      'MANAGER',
+      'execution.completed',
+      expect.anything(),
     );
   });
 

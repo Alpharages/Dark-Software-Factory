@@ -7,7 +7,6 @@ import {
   LogLevel,
 } from '@/execution/gateways/execution.gateway';
 import { RealtimeService } from '@/realtime/realtime.service';
-import { ExecutionCompletedEvent } from '@/realtime/realtime.types';
 import {
   OpenHarnessAssistantCompleteEvent,
   OpenHarnessAssistantDeltaEvent,
@@ -24,7 +23,7 @@ interface BufferedLogEntry {
 @Injectable()
 export class OpenHarnessStreamAdapter {
   private readonly logger = new Logger(OpenHarnessStreamAdapter.name);
-  private readonly projectIdCache = new Map<string, string | null>();
+  private readonly projectIdCache = new Map<string, string>();
   private readonly logStreamBuffer = new Map<string, BufferedLogEntry>();
   private readonly logStreamThrottleMs = parseInt(process.env.LOG_STREAM_THROTTLE_MS || '100', 10);
 
@@ -104,38 +103,52 @@ export class OpenHarnessStreamAdapter {
     ticketId: string,
     event: OpenHarnessAssistantCompleteEvent,
   ): Promise<void> {
+    await this.resolveProjectId(executionId);
+
+    // Flush any buffered assistant text so it lands before the final marker.
     this.flushLogBuffer(executionId, 'stdout');
 
-    const projectId = await this.resolveProjectId(executionId);
-    const payload: ExecutionCompletedEvent = {
-      executionId,
-      ticketId,
-      projectId,
-      provider: 'OPENHARNESS',
-      status: 'COMPLETED',
-      timestamp: new Date().toISOString(),
-      payload: {
-        filesChanged: this.extractFilesChanged(event.files_changed),
-        durationSeconds: typeof event.duration_seconds === 'number' ? event.duration_seconds : 0,
-      },
-    };
+    // Emit the assistant's final message as a terminal log marker only. The
+    // run-terminal `execution.completed` event is owned solely by the runner's
+    // ExecutionTracker.completeExecution() (the single source of the persisted
+    // payload); emitting it here too would double-fire it to the dashboard.
+    const summary = this.extractSummary(event);
+    if (summary) {
+      this.emitLog(executionId, ticketId, summary, 'stdout', LogLevel.INFO);
+    }
 
-    this.emitCompletion(projectId, payload);
+    // This execution emits no further live events; release its cached state.
+    this.releaseExecution(executionId);
   }
 
   private async resolveProjectId(executionId: string): Promise<string | null> {
-    if (this.projectIdCache.has(executionId)) {
-      return this.projectIdCache.get(executionId) ?? null;
-    }
+    const cached = this.projectIdCache.get(executionId);
+    if (cached) return cached;
 
     try {
       const execution = await this.executionRepository.findById(executionId);
       const projectId = execution?.ticket?.project_id ?? null;
-      this.projectIdCache.set(executionId, projectId);
+      // Only cache a resolved, non-null projectId. Caching null would pin the
+      // run to role-room fallback even after the project becomes resolvable.
+      if (projectId) {
+        this.projectIdCache.set(executionId, projectId);
+      }
       return projectId;
     } catch {
-      this.projectIdCache.set(executionId, null);
       return null;
+    }
+  }
+
+  /** Release all per-execution state once a run can emit no further events. */
+  private releaseExecution(executionId: string): void {
+    this.projectIdCache.delete(executionId);
+    for (const source of ['stdout', 'stderr'] as const) {
+      const bufferKey = `${executionId}:${source}`;
+      const entry = this.logStreamBuffer.get(bufferKey);
+      if (entry) {
+        clearTimeout(entry.timer);
+        this.logStreamBuffer.delete(bufferKey);
+      }
     }
   }
 
@@ -214,16 +227,6 @@ export class OpenHarnessStreamAdapter {
     this.realtimeService.emitToRole('DEVELOPER', 'execution.log', payload);
   }
 
-  private emitCompletion(projectId: string | null, payload: ExecutionCompletedEvent): void {
-    if (projectId) {
-      this.realtimeService.emitToProject(projectId, 'execution.completed', payload);
-      return;
-    }
-
-    this.realtimeService.emitToRole('ADMIN', 'execution.completed', payload);
-    this.realtimeService.emitToRole('MANAGER', 'execution.completed', payload);
-  }
-
   private extractToolName(event: OpenHarnessToolStartedEvent): string {
     if (typeof event.tool_name === 'string' && event.tool_name.trim()) {
       return event.tool_name.trim();
@@ -255,17 +258,8 @@ export class OpenHarnessStreamAdapter {
     return '';
   }
 
-  private extractFilesChanged(filesChanged: unknown[] | undefined): string[] {
-    if (!Array.isArray(filesChanged)) return [];
-
-    return filesChanged.flatMap((file) => {
-      if (typeof file === 'string') return [file];
-      if (file && typeof file === 'object' && 'file' in file) {
-        const value = file.file;
-        return typeof value === 'string' ? [value] : [];
-      }
-      return [];
-    });
+  private extractSummary(event: OpenHarnessAssistantCompleteEvent): string {
+    return typeof event.summary === 'string' && event.summary.trim() ? event.summary.trim() : '';
   }
 
   private stringifyEvent(value: unknown): string {

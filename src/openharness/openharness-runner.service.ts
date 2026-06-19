@@ -17,6 +17,12 @@ const DEFAULT_OPENHARNESS_MODEL = 'gpt-5.4';
 const DEFAULT_MCP_CONFIG_PATH = './docs/openharness/mcp-config.json';
 /** Wall-clock budget for a single `oh` run before it is killed and marked TIMEOUT. */
 const RUN_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
+/**
+ * Structural stream event types the runner consumes via parser state
+ * (getResult/getFilesChanged/getToolsUsed) rather than the live adapter path.
+ * Anything outside this set and the live-event set is logged and skipped (AC5).
+ */
+const KNOWN_OH_EVENT_TYPES = new Set<string>(['progress', 'result', 'qa_attempt', 'assistant']);
 
 export interface OpenHarnessRunOptions {
   skill: string;
@@ -104,17 +110,28 @@ export class OpenHarnessRunnerService {
         const rl = readline.createInterface({ input: child.stdout });
         rl.on('line', (line) => {
           const event = parser.parseLine(line);
-          if (event?.type === 'progress' && event.step) {
+          if (!event) return;
+
+          if (event.type === 'progress' && event.step) {
             lastProgress = event.step;
           }
 
-          if (event && isOpenHarnessLiveEvent(event as OpenHarnessStreamEvent)) {
+          if (isOpenHarnessLiveEvent(event as OpenHarnessStreamEvent)) {
             this.streamAdapter
               ?.handleEvent(execution.id, ticketId, event)
               .catch((error: unknown) => {
                 const message = error instanceof Error ? error.message : String(error);
                 this.logger.warn(`[${execution.id}] OpenHarness stream adapter failed: ${message}`);
               });
+            return;
+          }
+
+          // AC5: unknown/unhandled stream event types are logged and skipped so
+          // they are observable without ever crashing the run.
+          if (!KNOWN_OH_EVENT_TYPES.has(event.type)) {
+            this.logger.debug(
+              `[${execution.id}] Skipping unrecognized OpenHarness stream event: ${event.type}`,
+            );
           }
         });
       }
