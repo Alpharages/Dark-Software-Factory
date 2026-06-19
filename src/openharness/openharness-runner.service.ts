@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { spawn } from 'child_process';
 import * as readline from 'readline';
@@ -8,6 +8,8 @@ import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { PrismaService } from '@/database/prisma.service';
 import { AIProvider, Prisma } from '@/prisma/client';
 import { OpenHarnessStreamParser } from './openharness-stream.parser';
+import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
+import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
 
 /** Engine model recorded on the Execution when none is configured. */
 const DEFAULT_OPENHARNESS_MODEL = 'gpt-5.4';
@@ -31,6 +33,8 @@ export class OpenHarnessRunnerService {
     private readonly executionRepository: ExecutionRepository,
     private readonly executionTracker: ExecutionTrackerService,
     private readonly prisma: PrismaService,
+    @Optional()
+    private readonly streamAdapter?: OpenHarnessStreamAdapter,
   ) {}
 
   async runForTicket(ticketId: string, opts: OpenHarnessRunOptions): Promise<string> {
@@ -102,6 +106,15 @@ export class OpenHarnessRunnerService {
           const event = parser.parseLine(line);
           if (event?.type === 'progress' && event.step) {
             lastProgress = event.step;
+          }
+
+          if (event && isOpenHarnessLiveEvent(event as OpenHarnessStreamEvent)) {
+            this.streamAdapter
+              ?.handleEvent(execution.id, ticketId, event)
+              .catch((error: unknown) => {
+                const message = error instanceof Error ? error.message : String(error);
+                this.logger.warn(`[${execution.id}] OpenHarness stream adapter failed: ${message}`);
+              });
           }
         });
       }

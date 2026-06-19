@@ -4,6 +4,7 @@ import { ExecutionRepository } from '@/execution/execution.repository';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { PrismaService } from '@/database/prisma.service';
 import { OpenHarnessRunnerService } from './openharness-runner.service';
+import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
 import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 import * as child_process from 'child_process';
@@ -17,6 +18,7 @@ describe('OpenHarnessRunnerService', () => {
   let mockExecutionTracker: Record<string, jest.Mock>;
   let mockPrisma: any;
   let mockConfig: Record<string, jest.Mock>;
+  let mockStreamAdapter: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     mockExecutionRepo = {
@@ -43,6 +45,9 @@ describe('OpenHarnessRunnerService', () => {
         return 'mocked-' + key;
       }),
     };
+    mockStreamAdapter = {
+      handleEvent: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,6 +56,7 @@ describe('OpenHarnessRunnerService', () => {
         { provide: ExecutionRepository, useValue: mockExecutionRepo },
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: OpenHarnessStreamAdapter, useValue: mockStreamAdapter },
       ],
     }).compile();
 
@@ -106,6 +112,51 @@ describe('OpenHarnessRunnerService', () => {
       },
       'exec-123',
     );
+  });
+
+  it('forwards live OpenHarness stream events to the realtime adapter', async () => {
+    const mockChild = new EventEmitter() as any;
+    mockChild.stdout = new PassThrough();
+    mockChild.stderr = new PassThrough();
+    mockChild.kill = jest.fn();
+    (child_process.spawn as jest.Mock).mockReturnValue(mockChild);
+
+    const runPromise = service.runForTicket('ticket-1', {
+      skill: 'test-skill',
+      workspaceDir: '/tmp',
+    });
+
+    mockChild.stdout.write(
+      JSON.stringify({ type: 'tool_started', tool_name: 'bmad', input: {} }) + '\n',
+    );
+    mockChild.stdout.write(
+      JSON.stringify({
+        type: 'assistant_delta',
+        delta: 'streaming text',
+      }) + '\n',
+    );
+    mockChild.stdout.write(
+      JSON.stringify({
+        type: 'result',
+        status: 'COMPLETED',
+        summary: 'done',
+        files_changed: [],
+      }) + '\n',
+    );
+
+    setTimeout(() => mockChild.emit('close', 0), 10);
+    await runPromise;
+
+    expect(mockStreamAdapter.handleEvent).toHaveBeenCalledWith('exec-123', 'ticket-1', {
+      type: 'tool_started',
+      tool_name: 'bmad',
+      input: {},
+    });
+    expect(mockStreamAdapter.handleEvent).toHaveBeenCalledWith('exec-123', 'ticket-1', {
+      type: 'assistant_delta',
+      delta: 'streaming text',
+    });
+    expect(mockStreamAdapter.handleEvent).toHaveBeenCalledTimes(2);
   });
 
   it('should fail execution on non-zero exit', async () => {
