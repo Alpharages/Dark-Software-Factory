@@ -154,6 +154,15 @@ export const envValidationSchema = Joi.object({
 
   // Story 2.6: Reserved for future provider configuration
 
+  // Epic OHP-1: OpenHarness local MVP defaults
+  OPENHARNESS_BINARY_PATH: Joi.string().default('oh'),
+  OPENHARNESS_MODEL: Joi.string().default('gpt-5.4'),
+  OPENHARNESS_DEFAULT_SKILL: Joi.string().default('clickup-dev-implement'),
+  OPENHARNESS_WORKSPACE_DIR: Joi.string().default(process.cwd()),
+  OPENHARNESS_MAX_TURNS: Joi.number().integer().min(1).max(1000).default(200),
+  OPENHARNESS_MCP_CONFIG_PATH: Joi.string().default('./docs/openharness/mcp-config.json'),
+  MCP_CONFIG_PATH: Joi.string().optional().allow(''),
+
   // Story 2.7: Anthropic API Configuration (optional - provider disabled if not set)
   ANTHROPIC_MODEL: Joi.string().default('claude-sonnet-4-20250514'),
   ANTHROPIC_COMMIT_MESSAGE_MODEL: Joi.string()

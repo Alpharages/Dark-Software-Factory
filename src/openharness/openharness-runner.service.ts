@@ -11,10 +11,6 @@ import { OpenHarnessStreamParser } from './openharness-stream.parser';
 import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
 
-/** Engine model recorded on the Execution when none is configured. */
-const DEFAULT_OPENHARNESS_MODEL = 'gpt-5.4';
-/** MCP config path used when MCP_CONFIG_PATH is unset (relative to the DSF root). */
-const DEFAULT_MCP_CONFIG_PATH = './docs/openharness/mcp-config.json';
 /** Wall-clock budget for a single `oh` run before it is killed and marked TIMEOUT. */
 const RUN_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
 /**
@@ -28,6 +24,7 @@ export interface OpenHarnessRunOptions {
   skill: string;
   workspaceDir: string;
   maxTurns?: number;
+  mcpConfigPath?: string;
 }
 
 @Injectable()
@@ -45,7 +42,8 @@ export class OpenHarnessRunnerService {
 
   async runForTicket(ticketId: string, opts: OpenHarnessRunOptions): Promise<string> {
     const { skill, workspaceDir, maxTurns = 200 } = opts;
-    const model = this.configService.get<string>('OPENHARNESS_MODEL') || DEFAULT_OPENHARNESS_MODEL;
+    const model = this.requiredConfig('openharness.model');
+    const binaryPath = this.requiredConfig('openharness.binaryPath');
 
     const execution = await this.executionRepository.create({
       ticketId,
@@ -71,14 +69,14 @@ export class OpenHarnessRunnerService {
     // relative path would otherwise resolve under the ticket workspace and the
     // config would not be found.
     const configuredMcpPath =
-      this.configService.get<string>('MCP_CONFIG_PATH') || DEFAULT_MCP_CONFIG_PATH;
+      opts.mcpConfigPath || this.requiredConfig('openharness.mcpConfigPath');
     const mcpConfigPath = path.isAbsolute(configuredMcpPath)
       ? configuredMcpPath
       : path.resolve(process.cwd(), configuredMcpPath);
 
     return new Promise((resolve) => {
       const child = spawn(
-        'oh',
+        binaryPath,
         [
           '-p',
           skill,
@@ -246,5 +244,13 @@ export class OpenHarnessRunnerService {
         });
       });
     });
+  }
+
+  private requiredConfig(key: string): string {
+    const value = this.configService.get<string>(key);
+    if (!value) {
+      throw new Error(`Missing OpenHarness configuration: ${key}`);
+    }
+    return value;
   }
 }

@@ -163,6 +163,58 @@ Behavior:
 
 This is still a CLI spike helper, not the OHP-1.3 production runner.
 
+## Local MVP HTTP trigger
+
+Start local infrastructure and the NestJS backend with one command:
+
+```bash
+pnpm start:mvp
+```
+
+The backend exposes the guarded local MVP endpoint at `POST /api/v1/executions/test`. It reuses
+the standard JWT/RBAC posture from `ExecutionController`: callers need a valid JWT with `PM`,
+`TL`, or `ADMIN`.
+
+Defaults come from validated env/config:
+
+```bash
+OPENHARNESS_BINARY_PATH=oh
+OPENHARNESS_DEFAULT_SKILL=clickup-dev-implement
+OPENHARNESS_WORKSPACE_DIR=/Volumes/Data/project/products/alpharages/dsf-backend
+OPENHARNESS_MAX_TURNS=200
+OPENHARNESS_MCP_CONFIG_PATH=./docs/openharness/mcp-config.json
+```
+
+Minimal request:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/executions/test \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"ticketId":"86ey08c75"}'
+```
+
+Override the run profile when needed:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/executions/test \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ticketId": "86ey08c75",
+    "skill": "clickup-dev-implement",
+    "workspaceDir": "/Volumes/Data/project/products/alpharages/dsf-backend",
+    "maxTurns": 200,
+    "mcpConfigPath": "./docs/openharness/mcp-config.json"
+  }'
+```
+
+The response includes the persisted execution id, terminal status/summary when available, changed
+files, a polling URL, and a Socket.IO stream hint. Live activity is emitted through the existing
+Socket.IO execution namespace: connect to `/execution`, send `subscribe-to-execution-logs` with
+the returned execution id, and listen for `execution-activity` / `execution-log` while the runner
+processes OpenHarness stream events.
+
 ## Troubleshooting
 
 - Missing `oh`: install with `pipx install openharness-ai`.
