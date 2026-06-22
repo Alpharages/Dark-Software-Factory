@@ -45,7 +45,7 @@ jobs:
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -80,7 +80,7 @@ jobs:
       name: staging
       url: https://staging.darksoftwarefactory.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           echo "🚀 Deploying to staging..."
           echo "Image: ${{ needs.build-and-push.outputs.image-tag }}"
@@ -96,7 +96,7 @@ jobs:
       name: production
       url: https://darksoftwarefactory.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           echo "🚀 Deploying to production..."
           echo "Image: ${{ needs.build-and-push.outputs.image-tag }}"
