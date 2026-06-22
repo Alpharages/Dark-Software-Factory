@@ -1,5 +1,12 @@
 import { envValidationSchema } from './env.validation';
-import { DEFAULT_STATUS_SKILL_MAP, parseStatusSkillMap } from './status-skill-map.config';
+import {
+  DEFAULT_LOOP_MAX_ITERATIONS,
+  DEFAULT_LOOP_TERMINAL_STATUSES,
+  DEFAULT_STATUS_SKILL_MAP,
+  parseLoopMaxIterations,
+  parseLoopTerminalStatuses,
+  parseStatusSkillMap,
+} from './status-skill-map.config';
 import { OpenHarnessSkill } from '@/openharness/skills.enum';
 
 const validEnv = {
@@ -15,16 +22,27 @@ describe('status skill map config', () => {
     expect(parseStatusSkillMap()).toEqual(DEFAULT_STATUS_SKILL_MAP);
   });
 
-  it('does not hardcode the per-project implement-trigger status in the default map', () => {
-    // The implement leg is driven by the per-project ai_trigger_status gate
-    // (OHP-2.2) — the default map carries only the fixed downstream transitions.
-    expect(DEFAULT_STATUS_SKILL_MAP.map((e) => e.skill)).not.toContain(
-      OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
-    );
+  it('includes loop entries in the default map', () => {
     expect(DEFAULT_STATUS_SKILL_MAP).toEqual([
       { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
       { status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_QA },
+      { status: 'changes_requested', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
+      { status: 'failed', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
+      { status: 'approved', skill: OpenHarnessSkill.CLICKUP_QA },
     ]);
+  });
+
+  it('parses loop terminal statuses and max iteration defaults', () => {
+    expect(parseLoopTerminalStatuses()).toEqual(DEFAULT_LOOP_TERMINAL_STATUSES);
+    expect(parseLoopTerminalStatuses('passed, done')).toEqual(['passed', 'done']);
+    expect(parseLoopMaxIterations()).toBe(DEFAULT_LOOP_MAX_ITERATIONS);
+    expect(parseLoopMaxIterations('3')).toBe(3);
+  });
+
+  it('rejects bad loop settings', () => {
+    expect(() => parseLoopTerminalStatuses('')).toThrow('LOOP_TERMINAL_STATUSES');
+    expect(() => parseLoopTerminalStatuses('passed, Passed')).toThrow('duplicate');
+    expect(() => parseLoopMaxIterations('0')).toThrow('LOOP_MAX_ITERATIONS');
   });
 
   it('parses STATUS_SKILL_MAP overrides from a JSON array', () => {
@@ -73,9 +91,23 @@ describe('status skill map config', () => {
         ...validEnv,
         STATUS_SKILL_MAP: JSON.stringify([{ status: 'x', skill: 'not-a-skill' }]),
       },
-      { allowUnknown: true },
+      { abortEarly: false, allowUnknown: true },
     );
 
     expect(error?.message).toContain('not-a-skill');
+  });
+
+  it('rejects bad loop settings through Joi startup validation', () => {
+    const { error } = envValidationSchema.validate(
+      {
+        ...validEnv,
+        LOOP_TERMINAL_STATUSES: '',
+        LOOP_MAX_ITERATIONS: 0,
+      },
+      { abortEarly: false, allowUnknown: true },
+    );
+
+    expect(error?.message).toContain('LOOP_TERMINAL_STATUSES');
+    expect(error?.message).toContain('LOOP_MAX_ITERATIONS');
   });
 });

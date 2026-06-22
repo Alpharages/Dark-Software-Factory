@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ExecutionStatus, PMProvider } from '@/prisma/client';
+import { AIProvider, ExecutionStatus, PMProvider } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { normalizeStatus } from '@/config/status-skill-map.config';
 import { OpenHarnessRunnerService } from '@/openharness/openharness-runner.service';
+import { OpenHarnessSkill } from '@/openharness/skills.enum';
 import { StatusSkillMapService } from '@/openharness/status-skill-map.service';
 import { ITaskEvent, TaskProviderType } from '@/ticket-intake/dto';
 
@@ -11,7 +12,14 @@ export type DispatchResult =
   | { dispatched: true; executionId: string; skill: string }
   | {
       dispatched: false;
-      reason: 'missing-status' | 'ticket-not-found' | 'no-mapping' | 'active-execution' | 'error';
+      reason:
+        | 'missing-status'
+        | 'ticket-not-found'
+        | 'no-mapping'
+        | 'loop-complete'
+        | 'active-execution'
+        | 'loop-cap-exceeded'
+        | 'error';
       executionId?: string;
       error?: string;
       skill?: string;
@@ -57,13 +65,21 @@ export class DispatcherService {
       return { dispatched: false, reason: 'ticket-not-found' };
     }
 
+    const mappedSkill = this.statusSkillMap.resolveSkill(status);
     const skill =
-      this.statusSkillMap.resolveSkill(status) ??
+      mappedSkill ??
       (this.isProjectTrigger(status, ticket.project.integrations[0]?.ai_trigger_status)
         ? this.requiredConfig('openharness.defaultSkill')
         : null);
 
     if (!skill) {
+      if (this.statusSkillMap.isLoopTerminal(status)) {
+        this.logger.log(
+          `[${event.correlationId}] Dispatch loop complete for ${event.externalId} status ${status}`,
+        );
+        return { dispatched: false, reason: 'loop-complete' };
+      }
+
       this.logger.debug(
         `[${event.correlationId}] Dispatch skipped: no skill mapping for ${event.externalId} status ${status}`,
       );
@@ -87,6 +103,23 @@ export class DispatcherService {
         reason: 'active-execution',
         executionId: activeExecution.id,
       };
+    }
+
+    if (mappedSkill === OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT) {
+      const loopCount = await this.prisma.execution.count({
+        where: {
+          ticket_id: ticket.id,
+          ai_provider: AIProvider.OPENHARNESS,
+          prompt: `Run OpenHarness skill: ${skill}`,
+        },
+      });
+
+      if (loopCount >= this.statusSkillMap.loopMaxIterations) {
+        this.logger.warn(
+          `[${event.correlationId}] Dispatch skipped: loop cap exceeded for ${event.externalId} (${loopCount}/${this.statusSkillMap.loopMaxIterations})`,
+        );
+        return { dispatched: false, reason: 'loop-cap-exceeded', skill };
+      }
     }
 
     try {

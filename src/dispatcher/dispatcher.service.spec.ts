@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { ExecutionStatus, PMProvider } from '@/prisma/client';
+import { AIProvider, ExecutionStatus, PMProvider } from '@/prisma/client';
 import { OpenHarnessSkill } from '@/openharness/skills.enum';
 import { ITaskEvent, TaskProviderType, TaskTriggerSource } from '@/ticket-intake/dto';
 import { DispatcherService } from './dispatcher.service';
@@ -27,9 +27,13 @@ describe('DispatcherService', () => {
 
   let prisma: {
     ticket: { findUnique: jest.Mock };
-    execution: { findFirst: jest.Mock };
+    execution: { findFirst: jest.Mock; count: jest.Mock };
   };
-  let statusSkillMap: { resolveSkill: jest.Mock };
+  let statusSkillMap: {
+    resolveSkill: jest.Mock;
+    isLoopTerminal: jest.Mock;
+    loopMaxIterations: number;
+  };
   let runner: { runForTicket: jest.Mock };
   let config: Pick<ConfigService, 'get'>;
   let service: DispatcherService;
@@ -37,10 +41,15 @@ describe('DispatcherService', () => {
   beforeEach(() => {
     prisma = {
       ticket: { findUnique: jest.fn().mockResolvedValue(makeTicket()) },
-      execution: { findFirst: jest.fn().mockResolvedValue(null) },
+      execution: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        count: jest.fn().mockResolvedValue(0),
+      },
     };
     statusSkillMap = {
       resolveSkill: jest.fn().mockReturnValue(OpenHarnessSkill.CLICKUP_CODE_REVIEW),
+      isLoopTerminal: jest.fn().mockReturnValue(false),
+      loopMaxIterations: 5,
     };
     runner = { runForTicket: jest.fn().mockResolvedValue('exec-1') };
     config = {
@@ -107,6 +116,7 @@ describe('DispatcherService', () => {
       skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
       workspaceDir: '/workspaces/dsf',
     });
+    expect(prisma.execution.count).not.toHaveBeenCalled();
   });
 
   it('no-ops unmapped non-trigger status', async () => {
@@ -119,6 +129,41 @@ describe('DispatcherService', () => {
 
     expect(result).toEqual({ dispatched: false, reason: 'no-mapping' });
     expect(runner.runForTicket).not.toHaveBeenCalled();
+  });
+
+  it('no-ops loop-terminal statuses distinctly from unmapped statuses', async () => {
+    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.isLoopTerminal.mockReturnValue(true);
+
+    const result = await service.dispatch({
+      ...event,
+      originalProviderStatus: 'passed',
+    });
+
+    expect(result).toEqual({ dispatched: false, reason: 'loop-complete' });
+    expect(runner.runForTicket).not.toHaveBeenCalled();
+  });
+
+  it('dispatches failed QA back to implement', async () => {
+    statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
+
+    const result = await service.dispatch({
+      ...event,
+      originalProviderStatus: 'failed',
+    });
+
+    expect(result).toEqual({
+      dispatched: true,
+      executionId: 'exec-1',
+      skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+    });
+    expect(prisma.execution.count).toHaveBeenCalledWith({
+      where: {
+        ticket_id: 'ticket-uuid-1',
+        ai_provider: AIProvider.OPENHARNESS,
+        prompt: `Run OpenHarness skill: ${OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT}`,
+      },
+    });
   });
 
   it('skips when an active execution already exists', async () => {
@@ -134,6 +179,37 @@ describe('DispatcherService', () => {
       dispatched: false,
       reason: 'active-execution',
       executionId: 'exec-active',
+    });
+    expect(runner.runForTicket).not.toHaveBeenCalled();
+  });
+
+  it('allows re-dispatch after prior execution is terminal', async () => {
+    statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
+    prisma.execution.findFirst.mockResolvedValueOnce(null);
+    prisma.execution.count.mockResolvedValueOnce(1);
+
+    const result = await service.dispatch({
+      ...event,
+      originalProviderStatus: 'changes_requested',
+    });
+
+    expect(result.dispatched).toBe(true);
+    expect(runner.runForTicket).toHaveBeenCalledTimes(1);
+  });
+
+  it('suppresses implement loopback when loop cap is reached', async () => {
+    statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
+    prisma.execution.count.mockResolvedValueOnce(5);
+
+    const result = await service.dispatch({
+      ...event,
+      originalProviderStatus: 'changes_requested',
+    });
+
+    expect(result).toEqual({
+      dispatched: false,
+      reason: 'loop-cap-exceeded',
+      skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
     });
     expect(runner.runForTicket).not.toHaveBeenCalled();
   });

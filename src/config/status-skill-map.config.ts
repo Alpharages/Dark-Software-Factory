@@ -8,6 +8,8 @@ export interface StatusSkillMapEntry {
 
 export interface StatusSkillMapConfig {
   entries: StatusSkillMapEntry[];
+  loopTerminalStatuses: string[];
+  loopMaxIterations: number;
 }
 
 /**
@@ -28,7 +30,13 @@ export interface StatusSkillMapConfig {
 export const DEFAULT_STATUS_SKILL_MAP: StatusSkillMapEntry[] = [
   { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
   { status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_QA },
+  { status: 'changes_requested', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
+  { status: 'failed', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
+  { status: 'approved', skill: OpenHarnessSkill.CLICKUP_QA },
 ];
+
+export const DEFAULT_LOOP_TERMINAL_STATUSES = ['passed', 'done'];
+export const DEFAULT_LOOP_MAX_ITERATIONS = 5;
 
 /**
  * Canonical normalization for status keys — case-insensitive, outer-trimmed, and
@@ -112,8 +120,49 @@ export function parseStatusSkillMap(raw = process.env.STATUS_SKILL_MAP): StatusS
   return entries;
 }
 
+export function parseLoopTerminalStatuses(raw = process.env.LOOP_TERMINAL_STATUSES): string[] {
+  if (raw === undefined) {
+    return [...DEFAULT_LOOP_TERMINAL_STATUSES];
+  }
+
+  const statuses = raw
+    .split(',')
+    .map((status) => status.trim())
+    .filter(Boolean);
+
+  if (statuses.length === 0) {
+    throw new Error('LOOP_TERMINAL_STATUSES must include at least one status');
+  }
+
+  const seen = new Set<string>();
+  for (const status of statuses) {
+    const key = normalizeStatus(status);
+    if (seen.has(key)) {
+      throw new Error(`LOOP_TERMINAL_STATUSES has a duplicate status: ${status}`);
+    }
+    seen.add(key);
+  }
+
+  return statuses;
+}
+
+export function parseLoopMaxIterations(raw = process.env.LOOP_MAX_ITERATIONS): number {
+  if (raw === undefined) {
+    return DEFAULT_LOOP_MAX_ITERATIONS;
+  }
+
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error('LOOP_MAX_ITERATIONS must be a positive integer');
+  }
+
+  return value;
+}
+
 export default registerAs('statusSkillMap', (): StatusSkillMapConfig => {
   return {
     entries: parseStatusSkillMap(),
+    loopTerminalStatuses: parseLoopTerminalStatuses(),
+    loopMaxIterations: parseLoopMaxIterations(),
   };
 });

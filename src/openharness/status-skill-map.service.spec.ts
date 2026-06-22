@@ -10,6 +10,8 @@ describe('StatusSkillMapService', () => {
         { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
         { status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_QA },
       ],
+      loopTerminalStatuses: ['passed', 'done'],
+      loopMaxIterations: 5,
     }),
   } as unknown as ConfigService);
 
@@ -29,6 +31,15 @@ describe('StatusSkillMapService', () => {
     expect(service.resolveSkill('ready  for\tqa')).toBe(OpenHarnessSkill.CLICKUP_QA);
   });
 
+  it('recognizes loop-terminal statuses', () => {
+    expect(service.isLoopTerminal(' Passed ')).toBe(true);
+    expect(service.isLoopTerminal('unknown')).toBe(false);
+  });
+
+  it('exposes loop max iterations from config', () => {
+    expect(service.loopMaxIterations).toBe(5);
+  });
+
   it('throws when the statusSkillMap namespace is not loaded', () => {
     expect(
       () =>
@@ -45,6 +56,8 @@ describe('StatusSkillMapService', () => {
           { status: 'same', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
           { status: 'same', skill: OpenHarnessSkill.CLICKUP_QA },
         ],
+        loopTerminalStatuses: ['passed'],
+        loopMaxIterations: 5,
       }),
     } as unknown as ConfigService);
 

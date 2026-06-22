@@ -6,6 +6,8 @@ import { OpenHarnessSkill } from './skills.enum';
 @Injectable()
 export class StatusSkillMapService {
   private readonly skillsByStatus: Map<string, OpenHarnessSkill>;
+  private readonly loopTerminalStatuses: Set<string>;
+  readonly loopMaxIterations: number;
 
   constructor(configService: ConfigService) {
     const config = configService.get<StatusSkillMapConfig>('statusSkillMap');
@@ -19,6 +21,10 @@ export class StatusSkillMapService {
     this.skillsByStatus = new Map(
       config.entries.map((entry) => [normalizeStatus(entry.status), entry.skill]),
     );
+    this.loopTerminalStatuses = new Set(
+      config.loopTerminalStatuses.map((status) => normalizeStatus(status)),
+    );
+    this.loopMaxIterations = config.loopMaxIterations;
   }
 
   resolveSkill(status: string | null | undefined): OpenHarnessSkill | null {
@@ -27,5 +33,9 @@ export class StatusSkillMapService {
     }
 
     return this.skillsByStatus.get(normalizeStatus(status)) ?? null;
+  }
+
+  isLoopTerminal(status: string | null | undefined): boolean {
+    return !!status && this.loopTerminalStatuses.has(normalizeStatus(status));
   }
 }

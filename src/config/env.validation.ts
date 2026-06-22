@@ -1,5 +1,9 @@
 import * as Joi from 'joi';
-import { parseStatusSkillMap } from './status-skill-map.config';
+import {
+  parseLoopMaxIterations,
+  parseLoopTerminalStatuses,
+  parseStatusSkillMap,
+} from './status-skill-map.config';
 
 const statusSkillMapSchema = Joi.string()
   .custom((value: string, helpers) => {
@@ -10,6 +14,30 @@ const statusSkillMapSchema = Joi.string()
       return helpers.error('any.invalid', { message: (error as Error).message });
     }
   }, 'status skill map validation')
+  .messages({ 'any.invalid': '{{#message}}' });
+
+const loopTerminalStatusesSchema = Joi.string()
+  .custom((value: string, helpers) => {
+    try {
+      parseLoopTerminalStatuses(value);
+      return value;
+    } catch (error) {
+      return helpers.error('any.invalid', { message: (error as Error).message });
+    }
+  }, 'loop terminal statuses validation')
+  .messages({ 'any.invalid': '{{#message}}' });
+
+const loopMaxIterationsSchema = Joi.number()
+  .integer()
+  .min(1)
+  .custom((value: number, helpers) => {
+    try {
+      parseLoopMaxIterations(String(value));
+      return value;
+    } catch (error) {
+      return helpers.error('any.invalid', { message: (error as Error).message });
+    }
+  }, 'loop max iterations validation')
   .messages({ 'any.invalid': '{{#message}}' });
 
 /**
@@ -171,6 +199,8 @@ export const envValidationSchema = Joi.object({
   OPENHARNESS_MODEL: Joi.string().default('gpt-5.4'),
   OPENHARNESS_DEFAULT_SKILL: Joi.string().default('clickup-dev-implement'),
   STATUS_SKILL_MAP: statusSkillMapSchema.optional(),
+  LOOP_TERMINAL_STATUSES: loopTerminalStatusesSchema.optional(),
+  LOOP_MAX_ITERATIONS: loopMaxIterationsSchema.default(5),
   OPENHARNESS_WORKSPACE_DIR: Joi.string().default(process.cwd()),
   OPENHARNESS_MAX_TURNS: Joi.number().integer().min(1).max(1000).default(200),
   OPENHARNESS_MCP_CONFIG_PATH: Joi.string().default('./docs/openharness/mcp-config.json'),
