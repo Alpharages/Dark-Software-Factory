@@ -25,6 +25,19 @@ describe('StatusSkillMapService', () => {
     expect(service.resolveSkill(' In Review ')).toBe(OpenHarnessSkill.CLICKUP_CODE_REVIEW);
   });
 
+  it('collapses internal whitespace when resolving', () => {
+    expect(service.resolveSkill('ready  for\tqa')).toBe(OpenHarnessSkill.CLICKUP_QA);
+  });
+
+  it('throws when the statusSkillMap namespace is not loaded', () => {
+    expect(
+      () =>
+        new StatusSkillMapService({
+          get: jest.fn().mockReturnValue(undefined),
+        } as unknown as ConfigService),
+    ).toThrow('statusSkillMap config namespace is not loaded');
+  });
+
   it('lets later duplicate statuses win', () => {
     const duplicateService = new StatusSkillMapService({
       get: jest.fn().mockReturnValue({

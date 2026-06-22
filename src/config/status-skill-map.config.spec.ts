@@ -15,6 +15,18 @@ describe('status skill map config', () => {
     expect(parseStatusSkillMap()).toEqual(DEFAULT_STATUS_SKILL_MAP);
   });
 
+  it('does not hardcode the per-project implement-trigger status in the default map', () => {
+    // The implement leg is driven by the per-project ai_trigger_status gate
+    // (OHP-2.2) — the default map carries only the fixed downstream transitions.
+    expect(DEFAULT_STATUS_SKILL_MAP.map((e) => e.skill)).not.toContain(
+      OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+    );
+    expect(DEFAULT_STATUS_SKILL_MAP).toEqual([
+      { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
+      { status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_QA },
+    ]);
+  });
+
   it('parses STATUS_SKILL_MAP overrides from a JSON array', () => {
     expect(
       parseStatusSkillMap(
@@ -33,6 +45,26 @@ describe('status skill map config', () => {
     expect(() => parseStatusSkillMap('')).toThrow('STATUS_SKILL_MAP');
     expect(() => parseStatusSkillMap('not-json')).toThrow('valid JSON');
     expect(() => parseStatusSkillMap('[]')).toThrow('at least one entry');
+  });
+
+  it('rejects non-collection JSON with a clear message', () => {
+    // null, primitives, and bare strings parse as valid JSON but are not maps —
+    // each must fail with the same descriptive error, not a TypeError or a
+    // nonsensical per-character "unknown skill" message.
+    for (const raw of ['null', '42', 'true', JSON.stringify('hello')]) {
+      expect(() => parseStatusSkillMap(raw)).toThrow('must be a JSON array');
+    }
+  });
+
+  it('rejects duplicate statuses that collide after normalization', () => {
+    expect(() =>
+      parseStatusSkillMap(
+        JSON.stringify([
+          { status: 'In Review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
+          { status: 'in review', skill: OpenHarnessSkill.CLICKUP_QA },
+        ]),
+      ),
+    ).toThrow('duplicate status');
   });
 
   it('rejects unknown skills through Joi startup validation', () => {
