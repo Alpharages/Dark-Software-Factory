@@ -147,22 +147,67 @@ describe('ApprovalGateService', () => {
     });
   });
 
-  it('reworks by re-dispatching implement through the guarded dispatcher path', async () => {
+  it.each([ApprovalDecision.REWORK, ApprovalDecision.REJECT])(
+    'loops back on %s by re-dispatching implement through the guarded dispatcher path',
+    async (decision) => {
+      const result = await service.recordDecision({
+        executionId: 'exec-1',
+        deciderId: 'pm-1',
+        decision,
+        reasoning: 'fix tests',
+      });
+
+      expect(github.mergePullRequest).not.toHaveBeenCalled();
+      expect(dispatcher.redispatchImplement).toHaveBeenCalledWith('ticket-1', 'exec-1');
+      expect(result).toEqual({
+        status: ExecutionStatus.QA_FAILED,
+        decision,
+        newExecutionId: 'exec-2',
+        redispatch: 'dispatched',
+      });
+    },
+  );
+
+  it('holds the gate open on ESCALATE — records + notifies, no merge or loop-back', async () => {
     const result = await service.recordDecision({
       executionId: 'exec-1',
       deciderId: 'pm-1',
-      decision: ApprovalDecision.REWORK,
-      reasoning: 'fix tests',
+      decision: ApprovalDecision.ESCALATE,
+      reasoning: 'needs a second opinion',
     });
 
+    // Non-terminal: a record is written and the decision event emitted, but the
+    // gate is not claimed and neither side effect fires (QA-notes edge case).
+    expect(prisma.approvalRecord.create).toHaveBeenCalledTimes(1);
+    expect(prisma.execution.updateMany).not.toHaveBeenCalled();
     expect(github.mergePullRequest).not.toHaveBeenCalled();
-    expect(dispatcher.redispatchImplement).toHaveBeenCalledWith('ticket-1', 'exec-1');
+    expect(dispatcher.redispatchImplement).not.toHaveBeenCalled();
+    expect(realtime.emitToProject).toHaveBeenCalledWith(
+      'project-1',
+      'execution.approval-decision',
+      expect.objectContaining({ decision: ApprovalDecision.ESCALATE }),
+    );
     expect(result).toEqual({
-      status: ExecutionStatus.QA_FAILED,
-      decision: ApprovalDecision.REWORK,
-      newExecutionId: 'exec-2',
-      redispatch: 'dispatched',
+      status: ExecutionStatus.AWAITING_APPROVAL,
+      decision: ApprovalDecision.ESCALATE,
     });
+  });
+
+  it('refuses a non-terminal decision when the gate is no longer awaiting approval', async () => {
+    prisma.execution.findUnique.mockResolvedValue({
+      ...execution,
+      status: ExecutionStatus.COMPLETED,
+    });
+
+    await expect(
+      service.recordDecision({
+        executionId: 'exec-1',
+        deciderId: 'pm-1',
+        decision: ApprovalDecision.ESCALATE,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(prisma.approvalRecord.create).not.toHaveBeenCalled();
   });
 
   it('rejects a second decision once a terminal decision exists (no double-merge)', async () => {
