@@ -1,0 +1,49 @@
+import { envValidationSchema } from './env.validation';
+import { DEFAULT_STATUS_SKILL_MAP, parseStatusSkillMap } from './status-skill-map.config';
+import { OpenHarnessSkill } from '@/openharness/skills.enum';
+
+const validEnv = {
+  DATABASE_URL: 'postgresql://test:test@localhost:5432/test_db',
+  RABBITMQ_URL: 'amqp://test:test@localhost:5672',
+  JWT_SECRET: 'test-secret-at-least-32-characters-long',
+  GITHUB_TOKEN: 'ghp_testtoken',
+  GITHUB_DEFAULT_REPOSITORY: 'https://github.com/test/repo',
+};
+
+describe('status skill map config', () => {
+  it('uses default loop entries when STATUS_SKILL_MAP is unset', () => {
+    expect(parseStatusSkillMap()).toEqual(DEFAULT_STATUS_SKILL_MAP);
+  });
+
+  it('parses STATUS_SKILL_MAP overrides from a JSON array', () => {
+    expect(
+      parseStatusSkillMap(
+        JSON.stringify([{ status: 'custom review', skill: OpenHarnessSkill.CLICKUP_QA }]),
+      ),
+    ).toEqual([{ status: 'custom review', skill: OpenHarnessSkill.CLICKUP_QA }]);
+  });
+
+  it('parses STATUS_SKILL_MAP overrides from a JSON object', () => {
+    expect(
+      parseStatusSkillMap(JSON.stringify({ 'ready for qa': OpenHarnessSkill.CLICKUP_CODE_REVIEW })),
+    ).toEqual([{ status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW }]);
+  });
+
+  it('rejects empty or malformed map values', () => {
+    expect(() => parseStatusSkillMap('')).toThrow('STATUS_SKILL_MAP');
+    expect(() => parseStatusSkillMap('not-json')).toThrow('valid JSON');
+    expect(() => parseStatusSkillMap('[]')).toThrow('at least one entry');
+  });
+
+  it('rejects unknown skills through Joi startup validation', () => {
+    const { error } = envValidationSchema.validate(
+      {
+        ...validEnv,
+        STATUS_SKILL_MAP: JSON.stringify([{ status: 'x', skill: 'not-a-skill' }]),
+      },
+      { allowUnknown: true },
+    );
+
+    expect(error?.message).toContain('not-a-skill');
+  });
+});
