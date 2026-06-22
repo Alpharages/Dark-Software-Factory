@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Counter, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { TicketStatus } from '@/prisma/client';
+import { DispatcherService } from '@/dispatcher/dispatcher.service';
 import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
@@ -72,6 +73,7 @@ export class TicketIntakeService {
     private readonly waitingCounter: Counter<string>,
     @InjectMetric(METRICS.CIRCULAR_DEPENDENCIES)
     private readonly circularCounter: Counter<string>,
+    private readonly dispatcher: DispatcherService,
   ) {}
 
   /**
@@ -147,6 +149,7 @@ export class TicketIntakeService {
         }
 
         if (existing.status !== TicketStatus.VALIDATION_FAILED) {
+          await this.dispatcher.dispatch(event);
           this.logger.debug(
             `[${correlationId}] Skipping re-validation - ticket already validated or in final state`,
           );
@@ -365,6 +368,7 @@ export class TicketIntakeService {
 
       // Route to AI processing
       await this.routeToAIProcessing(ticket.id, parsed, qualityScore, correlationId);
+      await this.dispatcher.dispatch(event);
 
       this.logger.log(
         `[${correlationId}] Ticket validated and routed: ${ticket.id} (score: ${qualityScore.totalScore})`,

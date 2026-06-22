@@ -27,6 +27,7 @@ describe('TicketIntakeService', () => {
   let mockDependencyManager: { checkDependencies: jest.Mock; isStatusResolved: jest.Mock };
   let mockWaitingCounter: { inc: jest.Mock };
   let mockCircularCounter: { inc: jest.Mock };
+  let mockDispatcher: { dispatch: jest.Mock };
 
   let mockProjectService: { findByListId: jest.Mock };
 
@@ -132,6 +133,7 @@ describe('TicketIntakeService', () => {
     };
     mockWaitingCounter = { inc: jest.fn() };
     mockCircularCounter = { inc: jest.fn() };
+    mockDispatcher = { dispatch: jest.fn().mockResolvedValue({ dispatched: false }) };
 
     // Story 11.4: Mock AIDecisionLoggerService
     const mockAIDecisionLogger = {
@@ -164,6 +166,7 @@ describe('TicketIntakeService', () => {
       mockDependencyManager as unknown as DependencyManagerService,
       mockWaitingCounter as never,
       mockCircularCounter as never,
+      mockDispatcher as never,
     );
   });
 
@@ -206,6 +209,7 @@ describe('TicketIntakeService', () => {
 
       expect(result.success).toBe(true);
       expect(result.status).toBe(TicketStatus.VALIDATED);
+      expect(mockDispatcher.dispatch).toHaveBeenCalled();
       expect(mockValidator.validate).not.toHaveBeenCalled();
     });
 
@@ -266,6 +270,7 @@ describe('TicketIntakeService', () => {
         }),
         'test-corr-123',
       );
+      expect(mockDispatcher.dispatch).toHaveBeenCalled();
     });
 
     it('should log audit entry on successful validation', async () => {

@@ -64,6 +64,7 @@ import { CleanupModule } from '@/cleanup'; // Story 23.2
 
 // OpenHarness
 import { OpenHarnessModule } from './openharness/openharness.module';
+import { DispatcherModule } from './dispatcher/dispatcher.module';
 
 // Story 15.2
 import { SystemConfigModule } from './system-settings/system-config.module';
@@ -113,6 +114,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     AiRoutingModule,
     ExecutionModule,
     OpenHarnessModule,
+    DispatcherModule,
 
     // Quality & Deployment
     QaAutomationModule,
