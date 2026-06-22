@@ -3,9 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { ApprovalDecision, ExecutionStatus, TicketStatus } from '@/prisma/client';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { PrismaService } from '@/database/prisma.service';
+import { DispatcherService } from '@/dispatcher/dispatcher.service';
 import { GitHubService } from '@/github/github.service';
-import { OpenHarnessRunnerService } from '@/openharness/openharness-runner.service';
-import { OpenHarnessSkill } from '@/openharness/skills.enum';
 import { RealtimeService } from '@/realtime/realtime.service';
 import { ApprovalGateService } from './approval-gate.service';
 
@@ -26,14 +25,19 @@ describe('ApprovalGateService', () => {
   };
 
   let prisma: {
-    execution: { findUnique: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+    execution: {
+      findUnique: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+      findMany: jest.Mock;
+    };
     ticket: { update: jest.Mock };
     gitHubPush: { findFirst: jest.Mock };
     approvalRecord: { findFirst: jest.Mock; create: jest.Mock };
   };
   let github: { mergePullRequest: jest.Mock };
   let realtime: { emitToProject: jest.Mock; emitToRole: jest.Mock };
-  let runner: { runForTicket: jest.Mock };
+  let dispatcher: { redispatchImplement: jest.Mock };
   let config: { get: jest.Mock };
   let logger: { logDecision: jest.Mock };
   let service: ApprovalGateService;
@@ -43,6 +47,8 @@ describe('ApprovalGateService', () => {
       execution: {
         findUnique: jest.fn().mockResolvedValue(execution),
         update: jest.fn().mockResolvedValue({}),
+        // Default: the atomic gate claim succeeds (one row flipped).
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         findMany: jest.fn().mockResolvedValue([]),
       },
       ticket: { update: jest.fn().mockResolvedValue({}) },
@@ -60,7 +66,13 @@ describe('ApprovalGateService', () => {
     };
     github = { mergePullRequest: jest.fn().mockResolvedValue({ sha: 'sha-1' }) };
     realtime = { emitToProject: jest.fn(), emitToRole: jest.fn() };
-    runner = { runForTicket: jest.fn().mockResolvedValue('exec-2') };
+    dispatcher = {
+      redispatchImplement: jest.fn().mockResolvedValue({
+        dispatched: true,
+        executionId: 'exec-2',
+        skill: 'clickup-dev-implement',
+      }),
+    };
     config = {
       get: jest.fn((key: string) =>
         key === 'openharness.workspaceDir' ? '/workspaces/dsf' : undefined,
@@ -71,7 +83,7 @@ describe('ApprovalGateService', () => {
       prisma as never as PrismaService,
       github as never as GitHubService,
       realtime as never as RealtimeService,
-      runner as never as OpenHarnessRunnerService,
+      dispatcher as never as DispatcherService,
       config as never as ConfigService,
       logger as never as AIDecisionLoggerService,
     );
@@ -101,9 +113,10 @@ describe('ApprovalGateService', () => {
   });
 
   it('approves once and merges the PR', async () => {
-    prisma.approvalRecord.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
-      id: 'approval-1',
-    });
+    // findFirst: 1st = terminal-decision check (none), 2nd = assertApproved (found).
+    prisma.approvalRecord.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'approval-1' });
 
     const result = await service.recordDecision({
       executionId: 'exec-1',
@@ -112,10 +125,20 @@ describe('ApprovalGateService', () => {
       reasoning: 'looks good',
     });
 
+    // Atomic claim guards against double-merge (AC6).
+    expect(prisma.execution.updateMany).toHaveBeenCalledWith({
+      where: { id: 'exec-1', status: ExecutionStatus.AWAITING_APPROVAL },
+      data: { status: ExecutionStatus.IN_PROGRESS },
+    });
+    expect(prisma.approvalRecord.create).toHaveBeenCalledTimes(1);
     expect(github.mergePullRequest).toHaveBeenCalledWith('owner', 'repo', 7, 'squash', 'install-1');
     expect(prisma.execution.update).toHaveBeenLastCalledWith({
       where: { id: 'exec-1' },
-      data: { status: ExecutionStatus.COMPLETED, completed_at: expect.any(Date) },
+      data: {
+        status: ExecutionStatus.COMPLETED,
+        completed_at: expect.any(Date),
+        error_message: null,
+      },
     });
     expect(result).toEqual({
       status: ExecutionStatus.COMPLETED,
@@ -124,7 +147,7 @@ describe('ApprovalGateService', () => {
     });
   });
 
-  it('rejects by re-dispatching implement without merging', async () => {
+  it('reworks by re-dispatching implement through the guarded dispatcher path', async () => {
     const result = await service.recordDecision({
       executionId: 'exec-1',
       deciderId: 'pm-1',
@@ -133,14 +156,94 @@ describe('ApprovalGateService', () => {
     });
 
     expect(github.mergePullRequest).not.toHaveBeenCalled();
-    expect(runner.runForTicket).toHaveBeenCalledWith('ticket-1', {
-      skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
-      workspaceDir: '/workspaces/dsf',
-    });
+    expect(dispatcher.redispatchImplement).toHaveBeenCalledWith('ticket-1', 'exec-1');
     expect(result).toEqual({
       status: ExecutionStatus.QA_FAILED,
       decision: ApprovalDecision.REWORK,
       newExecutionId: 'exec-2',
+      redispatch: 'dispatched',
     });
+  });
+
+  it('rejects a second decision once a terminal decision exists (no double-merge)', async () => {
+    prisma.execution.findUnique.mockResolvedValue({
+      ...execution,
+      status: ExecutionStatus.COMPLETED,
+    });
+    prisma.approvalRecord.findFirst.mockResolvedValue({
+      id: 'approval-1',
+      decision: ApprovalDecision.APPROVE,
+    });
+
+    await expect(
+      service.recordDecision({
+        executionId: 'exec-1',
+        deciderId: 'pm-2',
+        decision: ApprovalDecision.APPROVE,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(prisma.execution.updateMany).not.toHaveBeenCalled();
+    expect(github.mergePullRequest).not.toHaveBeenCalled();
+  });
+
+  it('rejects a concurrent decision that loses the atomic claim race', async () => {
+    // The competing request already flipped the row out of AWAITING_APPROVAL.
+    prisma.execution.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.recordDecision({
+        executionId: 'exec-1',
+        deciderId: 'pm-1',
+        decision: ApprovalDecision.APPROVE,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(prisma.approvalRecord.create).not.toHaveBeenCalled();
+    expect(github.mergePullRequest).not.toHaveBeenCalled();
+  });
+
+  it('releases the gate and records the failure when the merge fails, allowing retry', async () => {
+    prisma.approvalRecord.findFirst
+      .mockResolvedValueOnce(null) // terminal-decision check
+      .mockResolvedValueOnce({ id: 'approval-1' }); // assertApproved
+    github.mergePullRequest.mockRejectedValueOnce(new Error('merge conflict'));
+
+    await expect(
+      service.recordDecision({
+        executionId: 'exec-1',
+        deciderId: 'pm-1',
+        decision: ApprovalDecision.APPROVE,
+      }),
+    ).rejects.toThrow('merge conflict');
+
+    // Gate reset to AWAITING_APPROVAL with the failure recorded (retryable).
+    expect(prisma.execution.update).toHaveBeenLastCalledWith({
+      where: { id: 'exec-1' },
+      data: { status: ExecutionStatus.AWAITING_APPROVAL, error_message: 'merge conflict' },
+    });
+    expect(realtime.emitToProject).toHaveBeenCalledWith(
+      'project-1',
+      'execution.approval-decision-failed',
+      expect.objectContaining({ error: 'merge conflict' }),
+    );
+  });
+
+  it('retries a previously-approved merge without writing a second record', async () => {
+    // Execution still awaiting (prior merge failed) but an APPROVE is on record.
+    prisma.approvalRecord.findFirst.mockResolvedValue({
+      id: 'approval-1',
+      decision: ApprovalDecision.APPROVE,
+    });
+
+    const result = await service.recordDecision({
+      executionId: 'exec-1',
+      deciderId: 'pm-1',
+      decision: ApprovalDecision.APPROVE,
+    });
+
+    expect(prisma.approvalRecord.create).not.toHaveBeenCalled();
+    expect(github.mergePullRequest).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe(ExecutionStatus.COMPLETED);
   });
 });

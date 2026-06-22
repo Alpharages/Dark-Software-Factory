@@ -253,4 +253,80 @@ describe('DispatcherService', () => {
       skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW,
     });
   });
+
+  it('never rethrows when opening the approval gate fails (fire-and-forget)', async () => {
+    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.isLoopTerminal.mockReturnValue(true);
+    prisma.execution.findFirst.mockResolvedValueOnce({ id: 'exec-done' });
+    approvalGate.openGate.mockRejectedValueOnce(new Error('gate boom'));
+
+    const result = await service.dispatch({
+      ...event,
+      originalProviderStatus: 'passed',
+    });
+
+    expect(result).toEqual({
+      dispatched: false,
+      reason: 'error',
+      error: 'gate boom',
+      executionId: 'exec-done',
+    });
+    expect(metrics.incrementErrors).toHaveBeenCalledWith('dispatcher_open_gate_failed');
+  });
+
+  describe('redispatchImplement', () => {
+    it('re-dispatches implement through the guarded path', async () => {
+      const result = await service.redispatchImplement('ticket-uuid-1', 'corr-1');
+
+      expect(result).toEqual({
+        dispatched: true,
+        executionId: 'exec-1',
+        skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+      });
+      expect(runner.runForTicket).toHaveBeenCalledWith('ticket-uuid-1', {
+        skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+        workspaceDir: '/workspaces/dsf',
+      });
+    });
+
+    it('skips re-dispatch when an active execution exists', async () => {
+      prisma.execution.findFirst.mockResolvedValueOnce({ id: 'exec-active' });
+
+      const result = await service.redispatchImplement('ticket-uuid-1', 'corr-1');
+
+      expect(result).toEqual({
+        dispatched: false,
+        reason: 'active-execution',
+        executionId: 'exec-active',
+      });
+      expect(runner.runForTicket).not.toHaveBeenCalled();
+    });
+
+    it('honours the loop cap on re-dispatch', async () => {
+      prisma.execution.count.mockResolvedValueOnce(5);
+
+      const result = await service.redispatchImplement('ticket-uuid-1', 'corr-1');
+
+      expect(result).toEqual({
+        dispatched: false,
+        reason: 'loop-cap-exceeded',
+        skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+      });
+      expect(runner.runForTicket).not.toHaveBeenCalled();
+      expect(metrics.incrementErrors).toHaveBeenCalledWith('dispatcher_loop_cap_exceeded');
+    });
+
+    it('returns a failed result when the runner throws', async () => {
+      runner.runForTicket.mockRejectedValueOnce(new Error('oh down'));
+
+      const result = await service.redispatchImplement('ticket-uuid-1', 'corr-1');
+
+      expect(result).toEqual({
+        dispatched: false,
+        reason: 'error',
+        error: 'oh down',
+        skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+      });
+    });
+  });
 });

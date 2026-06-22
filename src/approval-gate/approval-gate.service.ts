@@ -1,21 +1,48 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApprovalDecision, ExecutionStatus, Prisma, TicketStatus } from '@/prisma/client';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { PrismaService } from '@/database/prisma.service';
+import { DispatcherService } from '@/dispatcher/dispatcher.service';
 import { GitHubService } from '@/github/github.service';
-import { OpenHarnessRunnerService } from '@/openharness/openharness-runner.service';
-import { OpenHarnessSkill } from '@/openharness/skills.enum';
 import { RealtimeService } from '@/realtime/realtime.service';
 
 const APPROVAL_EVENT = 'execution.approval-required';
 const DECISION_EVENT = 'execution.approval-decision';
-const APPROVER_ROLES = ['ADMIN', 'MANAGER', 'PM', 'TL'] as const;
+const DECISION_FAILED_EVENT = 'execution.approval-decision-failed';
+
+/** Decisions that close the gate and trigger a side effect (merge or loop-back). */
+const TERMINAL_DECISIONS: ApprovalDecision[] = [
+  ApprovalDecision.APPROVE,
+  ApprovalDecision.REJECT,
+  ApprovalDecision.REWORK,
+];
+
+// Transient status used to atomically *claim* a gate decision. Only one
+// concurrent submission (double-click / retried webhook) can flip the row out
+// of AWAITING_APPROVAL, so at most one merge / loop-back ever runs (AC6). It is
+// overwritten by the terminal status (COMPLETED / QA_FAILED) on success, or
+// reset back to AWAITING_APPROVAL if the side effect fails so the operator can
+// retry (see `releaseGate`).
+const GATE_DECISION_LOCK_STATUS = ExecutionStatus.IN_PROGRESS;
 
 type MergeMethod = 'merge' | 'squash' | 'rebase';
 type GateExecution = Prisma.ExecutionGetPayload<{
   include: { ticket: { include: { project: { include: { gitHubAccount: true } } } } };
 }>;
+
+type DecisionInput = {
+  executionId: string;
+  deciderId: string;
+  decision: ApprovalDecision;
+  reasoning?: string;
+};
 
 @Injectable()
 export class ApprovalGateService {
@@ -23,7 +50,10 @@ export class ApprovalGateService {
     private readonly prisma: PrismaService,
     private readonly github: GitHubService,
     private readonly realtime: RealtimeService,
-    private readonly runner: OpenHarnessRunnerService,
+    // forwardRef: the dispatcher opens the gate and the gate feeds REJECT/REWORK
+    // back into the dispatcher's guarded re-dispatch path — a deliberate cycle.
+    @Inject(forwardRef(() => DispatcherService))
+    private readonly dispatcher: DispatcherService,
     private readonly config: ConfigService,
     private readonly aiDecisionLogger: AIDecisionLoggerService,
   ) {}
@@ -37,6 +67,7 @@ export class ApprovalGateService {
 
     const githubPush = await this.prisma.gitHubPush.findFirst({
       where: { execution_id: executionId },
+      orderBy: { created_at: 'desc' },
     });
 
     await this.prisma.execution.update({
@@ -61,9 +92,18 @@ export class ApprovalGateService {
     return payload;
   }
 
-  async pendingApprovals() {
+  /**
+   * Executions awaiting human approval. Pass `projectId` to scope the list to a
+   * single tenant (the dashboard supplies the project it is rendering). Broader
+   * per-user project-membership filtering is deferred until a user↔project
+   * ownership relation exists; today approver roles are workspace-global.
+   */
+  async pendingApprovals(projectId?: string) {
     return this.prisma.execution.findMany({
-      where: { status: ExecutionStatus.AWAITING_APPROVAL },
+      where: {
+        status: ExecutionStatus.AWAITING_APPROVAL,
+        ...(projectId ? { ticket: { project_id: projectId } } : {}),
+      },
       include: {
         ticket: { include: { project: true } },
         approvalRecords: { orderBy: { created_at: 'desc' }, take: 1 },
@@ -80,63 +120,96 @@ export class ApprovalGateService {
     if (!approval) throw new BadRequestException(`Execution ${executionId} is not approved`);
   }
 
-  async recordDecision(input: {
-    executionId: string;
-    deciderId: string;
-    decision: ApprovalDecision;
-    reasoning?: string;
-  }) {
+  async recordDecision(input: DecisionInput) {
     const execution = await this.getGateExecution(input.executionId);
     if (!execution) throw new NotFoundException(`Execution ${input.executionId} not found`);
+
+    // Non-terminal decisions (e.g. ESCALATE): record + notify only, the gate
+    // stays open and no merge/loop-back is triggered.
+    if (!TERMINAL_DECISIONS.includes(input.decision)) {
+      if (execution.status !== ExecutionStatus.AWAITING_APPROVAL) {
+        throw new BadRequestException(
+          `Execution is not awaiting approval (current: ${execution.status})`,
+        );
+      }
+      await this.prisma.approvalRecord.create({
+        data: {
+          execution_id: input.executionId,
+          pm_id: input.deciderId,
+          decision: input.decision,
+          reasoning: input.reasoning,
+        },
+      });
+      this.emit(execution.ticket.project_id, DECISION_EVENT, {
+        executionId: input.executionId,
+        decision: input.decision,
+        status: execution.status,
+      });
+      return { status: execution.status, decision: input.decision };
+    }
+
+    const existingTerminal = await this.prisma.approvalRecord.findFirst({
+      where: { execution_id: input.executionId, decision: { in: TERMINAL_DECISIONS } },
+    });
+
+    // An APPROVE already recorded but still AWAITING_APPROVAL means a previous
+    // merge failed (see `releaseGate`). Re-submitting APPROVE retries the merge
+    // without writing a second record — preserving the original audit trail.
+    const isApproveRetry =
+      input.decision === ApprovalDecision.APPROVE &&
+      existingTerminal?.decision === ApprovalDecision.APPROVE &&
+      execution.status === ExecutionStatus.AWAITING_APPROVAL;
+
+    if (existingTerminal && !isApproveRetry) {
+      throw new BadRequestException('Execution already has a terminal approval decision');
+    }
     if (execution.status !== ExecutionStatus.AWAITING_APPROVAL) {
       throw new BadRequestException(
         `Execution is not awaiting approval (current: ${execution.status})`,
       );
     }
 
-    const previous = await this.prisma.approvalRecord.findFirst({
-      where: {
-        execution_id: input.executionId,
-        decision: {
-          in: [ApprovalDecision.APPROVE, ApprovalDecision.REJECT, ApprovalDecision.REWORK],
-        },
-      },
+    // Atomic claim — the WHERE clause guarantees exactly one concurrent caller
+    // flips the row, so duplicate submissions can never double-merge/double-loop.
+    const claim = await this.prisma.execution.updateMany({
+      where: { id: input.executionId, status: ExecutionStatus.AWAITING_APPROVAL },
+      data: { status: GATE_DECISION_LOCK_STATUS },
     });
-    if (previous)
-      throw new BadRequestException('Execution already has a terminal approval decision');
-
-    await this.prisma.approvalRecord.create({
-      data: {
-        execution_id: input.executionId,
-        pm_id: input.deciderId,
-        decision: input.decision,
-        reasoning: input.reasoning,
-      },
-    });
-
-    if (input.decision === ApprovalDecision.APPROVE) {
-      return this.approve(execution, input);
-    }
-    if (input.decision === ApprovalDecision.REJECT || input.decision === ApprovalDecision.REWORK) {
-      return this.loopBack(execution, input);
+    if (claim.count !== 1) {
+      throw new BadRequestException(
+        'An approval decision is already being processed for this execution',
+      );
     }
 
-    this.emit(execution.ticket.project_id, DECISION_EVENT, { ...input, status: execution.status });
-    return { status: execution.status, decision: input.decision };
+    try {
+      // Persist the decision (attribution + reasoning) before the side effect so
+      // the audit trail is complete even if the merge/loop-back fails (NFR-S5).
+      if (!isApproveRetry) {
+        await this.prisma.approvalRecord.create({
+          data: {
+            execution_id: input.executionId,
+            pm_id: input.deciderId,
+            decision: input.decision,
+            reasoning: input.reasoning,
+          },
+        });
+      }
+
+      if (input.decision === ApprovalDecision.APPROVE) {
+        return await this.approve(execution, input);
+      }
+      return await this.loopBack(execution, input);
+    } catch (error: unknown) {
+      await this.releaseGate(execution, input, error);
+      throw error;
+    }
   }
 
-  private async approve(
-    execution: GateExecution,
-    input: {
-      executionId: string;
-      deciderId: string;
-      decision: ApprovalDecision;
-      reasoning?: string;
-    },
-  ) {
+  private async approve(execution: GateExecution, input: DecisionInput) {
     await this.assertApproved(input.executionId);
     const githubPush = await this.prisma.gitHubPush.findFirst({
       where: { execution_id: input.executionId },
+      orderBy: { created_at: 'desc' },
     });
     if (!githubPush?.pr_number)
       throw new BadRequestException('Execution has no pull request to merge');
@@ -153,7 +226,7 @@ export class ApprovalGateService {
 
     await this.prisma.execution.update({
       where: { id: input.executionId },
-      data: { status: ExecutionStatus.COMPLETED, completed_at: new Date() },
+      data: { status: ExecutionStatus.COMPLETED, completed_at: new Date(), error_message: null },
     });
     await this.aiDecisionLogger.logDecision({
       agentName: 'ApprovalGate',
@@ -183,26 +256,65 @@ export class ApprovalGateService {
     };
   }
 
-  private async loopBack(
-    execution: GateExecution,
-    input: {
-      executionId: string;
-      deciderId: string;
-      decision: ApprovalDecision;
-      reasoning?: string;
-    },
-  ) {
+  private async loopBack(execution: GateExecution, input: DecisionInput) {
     await this.prisma.execution.update({
       where: { id: input.executionId },
       data: { status: ExecutionStatus.QA_FAILED, error_message: input.reasoning },
     });
-    const newExecutionId = await this.runner.runForTicket(execution.ticket_id, {
-      skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
-      workspaceDir: this.requiredConfig('openharness.workspaceDir'),
-    });
-    const payload = { executionId: input.executionId, decision: input.decision, newExecutionId };
+    // Reuse the dispatcher's guarded re-dispatch (active-execution + loop-cap
+    // valves) instead of forking an unguarded run.
+    const result = await this.dispatcher.redispatchImplement(
+      execution.ticket_id,
+      input.executionId,
+    );
+    const newExecutionId = result.dispatched ? result.executionId : undefined;
+    const redispatch = result.dispatched ? 'dispatched' : result.reason;
+
+    const payload = {
+      executionId: input.executionId,
+      decision: input.decision,
+      newExecutionId,
+      redispatch,
+    };
     this.emit(execution.ticket.project_id, DECISION_EVENT, payload);
-    return { status: ExecutionStatus.QA_FAILED, decision: input.decision, newExecutionId };
+    return {
+      status: ExecutionStatus.QA_FAILED,
+      decision: input.decision,
+      newExecutionId,
+      redispatch,
+    };
+  }
+
+  /**
+   * Side effect failed after the gate was claimed: reset the execution back to
+   * AWAITING_APPROVAL (so the decision can be retried), record the failure on the
+   * row, and surface it to the dashboard. Never lets an audit failure mask the
+   * original error (AC9).
+   */
+  private async releaseGate(execution: GateExecution, input: DecisionInput, error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    await this.prisma.execution.update({
+      where: { id: input.executionId },
+      data: { status: ExecutionStatus.AWAITING_APPROVAL, error_message: message },
+    });
+    await this.aiDecisionLogger
+      .logDecision({
+        agentName: 'ApprovalGate',
+        action: 'approve_merge_failed',
+        reasoning: message,
+        ticketId: execution.ticket_id,
+        executionId: input.executionId,
+        inputData: { decision: input.decision, deciderId: input.deciderId },
+        outputData: { error: message },
+        confidence: 0,
+      })
+      .catch(() => undefined);
+    this.emit(execution.ticket.project_id, DECISION_FAILED_EVENT, {
+      executionId: input.executionId,
+      decision: input.decision,
+      status: ExecutionStatus.AWAITING_APPROVAL,
+      error: message,
+    });
   }
 
   private emit(projectId: string | null, event: string, payload: unknown): void {
@@ -223,12 +335,6 @@ export class ApprovalGateService {
     return { owner, repo };
   }
 
-  private requiredConfig(key: string): string {
-    const value = this.config.get<string>(key);
-    if (!value) throw new Error(`Missing required config: ${key}`);
-    return value;
-  }
-
   private async getGateExecution(executionId: string) {
     return this.prisma.execution.findUnique({
       where: { id: executionId },
@@ -236,5 +342,3 @@ export class ApprovalGateService {
     });
   }
 }
-
-export { APPROVER_ROLES };

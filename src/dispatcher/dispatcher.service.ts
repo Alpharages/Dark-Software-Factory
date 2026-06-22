@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AIProvider, ExecutionStatus, PMProvider } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
@@ -12,6 +12,9 @@ import { ITaskEvent, TaskProviderType } from '@/ticket-intake/dto';
 
 /** Non-fatal error-metric label recorded when a ticket trips the loop-cap safety valve. */
 const LOOP_CAP_EXCEEDED_METRIC = 'dispatcher_loop_cap_exceeded';
+
+/** Non-fatal error-metric label recorded when opening the approval gate fails. */
+const OPEN_GATE_FAILED_METRIC = 'dispatcher_open_gate_failed';
 
 export type DispatchResult =
   | { dispatched: true; executionId: string; skill: string }
@@ -40,6 +43,9 @@ export class DispatcherService {
     private readonly statusSkillMap: StatusSkillMapService,
     private readonly runner: OpenHarnessRunnerService,
     private readonly configService: ConfigService,
+    // forwardRef: the gate feeds REJECT/REWORK back into `redispatchImplement`,
+    // so dispatcher ⇄ gate is a deliberate cycle.
+    @Inject(forwardRef(() => ApprovalGateService))
     private readonly approvalGate: ApprovalGateService,
     // Optional so a missing metrics provider never breaks fire-and-forget dispatch,
     // and the service stays trivially constructable in unit tests.
@@ -91,8 +97,26 @@ export class DispatcherService {
         });
 
         if (execution) {
-          await this.approvalGate.openGate(execution.id, event.correlationId);
-          return { dispatched: false, reason: 'awaiting-approval', executionId: execution.id };
+          // Gate-open runs off the webhook-driven path: errors must be logged +
+          // recorded, never rethrown into the synchronous 200 path (AC9 / OHP-2.2
+          // fire-and-forget). `dispatch` keeps its never-throw contract.
+          try {
+            await this.approvalGate.openGate(execution.id, event.correlationId);
+            return { dispatched: false, reason: 'awaiting-approval', executionId: execution.id };
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.error(
+              `[${event.correlationId}] Failed to open approval gate for ${event.externalId} (${execution.id}): ${message}`,
+              error instanceof Error ? error.stack : undefined,
+            );
+            this.metrics?.incrementErrors(OPEN_GATE_FAILED_METRIC);
+            return {
+              dispatched: false,
+              reason: 'error',
+              error: message,
+              executionId: execution.id,
+            };
+          }
         }
 
         this.logger.log(
@@ -165,6 +189,64 @@ export class DispatcherService {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
         `[${event.correlationId}] Dispatch failed for ${event.externalId}: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      return { dispatched: false, reason: 'error', error: message, skill };
+    }
+  }
+
+  /**
+   * Guarded re-dispatch of the implement skill for a ticket. Applies the same
+   * active-execution and loop-cap safety valves as the status-driven dispatch
+   * path, so callers — notably the approval gate's REJECT/REWORK loop-back —
+   * feed the existing loop instead of forking an unguarded run. Never throws:
+   * returns a `DispatchResult` describing the outcome.
+   */
+  async redispatchImplement(ticketId: string, correlationId: string): Promise<DispatchResult> {
+    const skill = OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT;
+
+    const activeExecution = await this.prisma.execution.findFirst({
+      where: {
+        ticket_id: ticketId,
+        status: { in: [ExecutionStatus.QUEUED, ExecutionStatus.IN_PROGRESS] },
+      },
+      select: { id: true },
+    });
+    if (activeExecution) {
+      this.logger.debug(
+        `[${correlationId}] Re-dispatch skipped: active execution ${activeExecution.id} for ticket ${ticketId}`,
+      );
+      return { dispatched: false, reason: 'active-execution', executionId: activeExecution.id };
+    }
+
+    const loopCount = await this.prisma.execution.count({
+      where: {
+        ticket_id: ticketId,
+        ai_provider: AIProvider.OPENHARNESS,
+        prompt: openHarnessSkillPrompt(skill),
+      },
+    });
+    if (loopCount >= this.statusSkillMap.loopMaxIterations) {
+      this.logger.warn(
+        `[${correlationId}] Re-dispatch skipped: loop cap exceeded for ticket ${ticketId} (${loopCount}/${this.statusSkillMap.loopMaxIterations})`,
+      );
+      this.metrics?.incrementErrors(LOOP_CAP_EXCEEDED_METRIC);
+      return { dispatched: false, reason: 'loop-cap-exceeded', skill };
+    }
+
+    try {
+      const executionId = await this.runner.runForTicket(ticketId, {
+        skill,
+        workspaceDir: this.requiredConfig('openharness.workspaceDir'),
+      });
+      this.logger.log(
+        `[${correlationId}] Re-dispatched ticket ${ticketId} to OpenHarness skill ${skill} (${executionId})`,
+      );
+      return { dispatched: true, executionId, skill };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `[${correlationId}] Re-dispatch failed for ticket ${ticketId}: ${message}`,
         error instanceof Error ? error.stack : undefined,
       );
       return { dispatched: false, reason: 'error', error: message, skill };
