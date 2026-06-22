@@ -17,6 +17,27 @@ export class ExecutionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Resolve a caller-supplied ticket identifier to the internal Ticket UUID that
+   * `Execution.ticket_id` foreign-keys to. Accepts either the external PM ticket
+   * id (today: ClickUp task id) or the internal UUID, so operators can pass the
+   * ClickUp id they already have while internal callers can pass the UUID.
+   * Returns null when no ticket matches.
+   *
+   * NOTE (multi-PM-tool): the external match is ClickUp-specific (`clickup_task_id`).
+   * If DSF gains other PM sources (Jira/Asana), generalize this to match on a
+   * `(provider, external_id)` pair — this method is the single place that changes.
+   */
+  async resolveTicketUuid(ticketIdOrExternalId: string): Promise<string | null> {
+    const ticket = await this.prisma.ticket.findFirst({
+      where: {
+        OR: [{ id: ticketIdOrExternalId }, { clickup_task_id: ticketIdOrExternalId }],
+      },
+      select: { id: true },
+    });
+    return ticket?.id ?? null;
+  }
+
+  /**
    * Create a new execution record
    */
   async create(data: {

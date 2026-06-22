@@ -3,6 +3,7 @@ import {
   Controller,
   HttpStatus,
   InternalServerErrorException,
+  NotFoundException,
   Post,
   Res,
   UseGuards,
@@ -71,6 +72,10 @@ export class OpenHarnessExecutionController {
   @ApiResponse({ status: 401, description: 'JWT authentication required' })
   @ApiResponse({ status: 403, description: 'Role not allowed to trigger local MVP execution' })
   @ApiResponse({
+    status: 404,
+    description: 'No ticket matches the supplied id (ClickUp task id or internal UUID)',
+  })
+  @ApiResponse({
     status: 500,
     description:
       'OpenHarness run failed (terminal FAILED/CANCELLED status) or the runner errored before returning an execution id. Body still carries the persisted execution when one exists.',
@@ -92,8 +97,22 @@ export class OpenHarnessExecutionController {
       mcpConfigPath: dto.mcpConfigPath ?? this.requiredConfig<string>('openharness.mcpConfigPath'),
     };
 
+    // Resolve the supplied ticket identifier (ClickUp task id or internal UUID)
+    // to the internal Ticket UUID that Execution.ticket_id references. Without
+    // this, an unknown/ClickUp-id ticket hits a raw FK violation surfaced as an
+    // opaque 500 with no persisted Execution; AC5 wants a useful error for an
+    // invalid ticket, and a missing ticket is a client error (404), not a 5xx.
+    const ticketUuid = await this.executionRepository.resolveTicketUuid(dto.ticketId);
+    if (!ticketUuid) {
+      throw new NotFoundException({
+        message: 'Ticket not found',
+        ticketId: dto.ticketId,
+        hint: 'Provide a ClickUp task id ingested into DSF, or the internal ticket UUID.',
+      });
+    }
+
     try {
-      const executionId = await this.runner.runForTicket(dto.ticketId, profile);
+      const executionId = await this.runner.runForTicket(ticketUuid, profile);
       const execution = await this.executionRepository.findById(executionId);
       const status =
         execution?.status && EXECUTION_STATUS_VALUES.includes(execution.status)

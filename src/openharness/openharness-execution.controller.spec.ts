@@ -1,4 +1,9 @@
-import { HttpStatus, InternalServerErrorException, ValidationPipe } from '@nestjs/common';
+import {
+  HttpStatus,
+  InternalServerErrorException,
+  NotFoundException,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { validate } from 'class-validator';
@@ -12,7 +17,7 @@ import { TestExecutionDto } from './dto/test-execution.dto';
 describe('OpenHarnessExecutionController', () => {
   let controller: OpenHarnessExecutionController;
   let runner: jest.Mocked<Pick<OpenHarnessRunnerService, 'runForTicket'>>;
-  let executionRepository: jest.Mocked<Pick<ExecutionRepository, 'findById'>>;
+  let executionRepository: jest.Mocked<Pick<ExecutionRepository, 'findById' | 'resolveTicketUuid'>>;
   let configService: { get: jest.Mock<unknown, [string]> };
   let reply: { status: jest.Mock };
 
@@ -26,6 +31,7 @@ describe('OpenHarnessExecutionController', () => {
       runForTicket: jest.fn().mockResolvedValue('exec-123'),
     };
     executionRepository = {
+      resolveTicketUuid: jest.fn().mockResolvedValue('ticket-uuid-1'),
       findById: jest.fn().mockResolvedValue({
         id: 'exec-123',
         status: ExecutionStatus.COMPLETED,
@@ -67,7 +73,10 @@ describe('OpenHarnessExecutionController', () => {
       makeReply(),
     );
 
-    expect(runner.runForTicket).toHaveBeenCalledWith('86ey08c75', {
+    expect(executionRepository.resolveTicketUuid).toHaveBeenCalledWith('86ey08c75');
+    // The run targets the resolved internal ticket UUID (Execution.ticket_id FK),
+    // not the caller-supplied ClickUp task id.
+    expect(runner.runForTicket).toHaveBeenCalledWith('ticket-uuid-1', {
       skill: 'custom-skill',
       workspaceDir: '/workspaces/dsf',
       maxTurns: 50,
@@ -83,6 +92,19 @@ describe('OpenHarnessExecutionController', () => {
       pollUrl: '/api/v1/executions/exec-123/status',
       streamUrl: 'socket.io:/execution?room=execution_logs_exec-123',
     });
+  });
+
+  it('returns 404 and never invokes the runner when the ticket id resolves to no ticket (AC5)', async () => {
+    executionRepository.resolveTicketUuid.mockResolvedValueOnce(null);
+
+    await expect(
+      controller.runTestExecution({ ticketId: 'unknown-ticket' }, makeReply()),
+    ).rejects.toMatchObject({
+      constructor: NotFoundException,
+      response: { message: 'Ticket not found', ticketId: 'unknown-ticket' },
+    });
+
+    expect(runner.runForTicket).not.toHaveBeenCalled();
   });
 
   it('maps a terminal FAILED run to HTTP 500 while still returning the persisted execution (AC5)', async () => {
