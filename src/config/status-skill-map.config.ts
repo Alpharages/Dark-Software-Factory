@@ -30,7 +30,12 @@ export interface StatusSkillMapConfig {
 export const DEFAULT_STATUS_SKILL_MAP: StatusSkillMapEntry[] = [
   { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
   { status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_QA },
-  { status: 'changes_requested', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
+  // Space-separated, lower-cased keys — the form `normalizeStatus` produces from a
+  // raw ClickUp display status. An underscore key (e.g. `changes_requested`) would
+  // never match, since normalizeStatus collapses whitespace but never inserts
+  // underscores. Operators whose workspace uses different status names override the
+  // whole map via STATUS_SKILL_MAP (config swap, not code change).
+  { status: 'changes requested', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
   { status: 'failed', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
   { status: 'approved', skill: OpenHarnessSkill.CLICKUP_QA },
 ];

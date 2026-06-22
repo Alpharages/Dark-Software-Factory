@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { AIProvider, ExecutionStatus, PMProvider } from '@/prisma/client';
-import { OpenHarnessSkill } from '@/openharness/skills.enum';
+import { OpenHarnessSkill, openHarnessSkillPrompt } from '@/openharness/skills.enum';
 import { ITaskEvent, TaskProviderType, TaskTriggerSource } from '@/ticket-intake/dto';
 import { DispatcherService } from './dispatcher.service';
 
@@ -36,6 +36,7 @@ describe('DispatcherService', () => {
   };
   let runner: { runForTicket: jest.Mock };
   let config: Pick<ConfigService, 'get'>;
+  let metrics: { incrementErrors: jest.Mock };
   let service: DispatcherService;
 
   beforeEach(() => {
@@ -61,11 +62,13 @@ describe('DispatcherService', () => {
             : undefined,
       ),
     };
+    metrics = { incrementErrors: jest.fn() };
     service = new DispatcherService(
       prisma as never,
       statusSkillMap as never,
       runner as never,
       config as ConfigService,
+      metrics as never,
     );
   });
 
@@ -161,7 +164,7 @@ describe('DispatcherService', () => {
       where: {
         ticket_id: 'ticket-uuid-1',
         ai_provider: AIProvider.OPENHARNESS,
-        prompt: `Run OpenHarness skill: ${OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT}`,
+        prompt: openHarnessSkillPrompt(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT),
       },
     });
   });
@@ -212,6 +215,8 @@ describe('DispatcherService', () => {
       skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
     });
     expect(runner.runForTicket).not.toHaveBeenCalled();
+    // AC7: the cap trip is recorded as a durable, non-fatal signal.
+    expect(metrics.incrementErrors).toHaveBeenCalledWith('dispatcher_loop_cap_exceeded');
   });
 
   it('returns failed result when runner throws', async () => {

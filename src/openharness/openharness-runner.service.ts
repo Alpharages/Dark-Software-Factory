@@ -7,6 +7,7 @@ import { ExecutionRepository } from '@/execution/execution.repository';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { PrismaService } from '@/database/prisma.service';
 import { AIProvider, Prisma } from '@/prisma/client';
+import { openHarnessSkillPrompt } from './skills.enum';
 import { OpenHarnessStreamParser } from './openharness-stream.parser';
 import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
@@ -52,7 +53,7 @@ export class OpenHarnessRunnerService {
     const execution = await this.executionRepository.create({
       ticketId,
       provider: AIProvider.OPENHARNESS,
-      prompt: `Run OpenHarness skill: ${skill}`,
+      prompt: openHarnessSkillPrompt(skill),
       // Single-tenant MVP: OpenHarness runs are not auto-retried. Without this,
       // ExecutionTracker.timeoutExecution() would re-queue the row to QUEUED on
       // timeout (TIMEOUT is a retryable state), leaving a non-terminal record.

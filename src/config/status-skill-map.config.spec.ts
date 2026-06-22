@@ -26,7 +26,7 @@ describe('status skill map config', () => {
     expect(DEFAULT_STATUS_SKILL_MAP).toEqual([
       { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
       { status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_QA },
-      { status: 'changes_requested', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
+      { status: 'changes requested', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
       { status: 'failed', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
       { status: 'approved', skill: OpenHarnessSkill.CLICKUP_QA },
     ]);

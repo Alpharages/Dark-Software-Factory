@@ -1,5 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import { readFileSync } from 'fs';
+import {
+  DEFAULT_LOOP_TERMINAL_STATUSES,
+  DEFAULT_STATUS_SKILL_MAP,
+} from '@/config/status-skill-map.config';
 import { StatusSkillMapService } from './status-skill-map.service';
 import { OpenHarnessSkill } from './skills.enum';
 
@@ -38,6 +42,41 @@ describe('StatusSkillMapService', () => {
 
   it('exposes loop max iterations from config', () => {
     expect(service.loopMaxIterations).toBe(5);
+  });
+
+  it('resolves the default loop entries from real ClickUp status forms', () => {
+    // Regression guard: the loopback keys must be in the space-separated, lower-cased
+    // form normalizeStatus produces from a raw ClickUp display status. An underscore
+    // key would silently never match "Changes Requested" and break the core loop.
+    const defaultService = new StatusSkillMapService({
+      get: jest.fn().mockReturnValue({
+        entries: DEFAULT_STATUS_SKILL_MAP,
+        loopTerminalStatuses: DEFAULT_LOOP_TERMINAL_STATUSES,
+        loopMaxIterations: 5,
+      }),
+    } as unknown as ConfigService);
+
+    expect(defaultService.resolveSkill('changes requested')).toBe(
+      OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+    );
+    expect(defaultService.resolveSkill('Changes Requested')).toBe(
+      OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+    );
+    expect(defaultService.resolveSkill('approved')).toBe(OpenHarnessSkill.CLICKUP_QA);
+    expect(defaultService.isLoopTerminal('passed')).toBe(true);
+  });
+
+  it('throws when a status is both skill-mapped and loop-terminal', () => {
+    expect(
+      () =>
+        new StatusSkillMapService({
+          get: jest.fn().mockReturnValue({
+            entries: [{ status: 'done', skill: OpenHarnessSkill.CLICKUP_QA }],
+            loopTerminalStatuses: ['done'],
+            loopMaxIterations: 5,
+          }),
+        } as unknown as ConfigService),
+    ).toThrow('loop-terminal');
   });
 
   it('throws when the statusSkillMap namespace is not loaded', () => {

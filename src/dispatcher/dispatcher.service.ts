@@ -1,12 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AIProvider, ExecutionStatus, PMProvider } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
+import { MetricsService } from '@/common/metrics/metrics.service';
 import { normalizeStatus } from '@/config/status-skill-map.config';
 import { OpenHarnessRunnerService } from '@/openharness/openharness-runner.service';
-import { OpenHarnessSkill } from '@/openharness/skills.enum';
+import { OpenHarnessSkill, openHarnessSkillPrompt } from '@/openharness/skills.enum';
 import { StatusSkillMapService } from '@/openharness/status-skill-map.service';
 import { ITaskEvent, TaskProviderType } from '@/ticket-intake/dto';
+
+/** Non-fatal error-metric label recorded when a ticket trips the loop-cap safety valve. */
+const LOOP_CAP_EXCEEDED_METRIC = 'dispatcher_loop_cap_exceeded';
 
 export type DispatchResult =
   | { dispatched: true; executionId: string; skill: string }
@@ -34,6 +38,9 @@ export class DispatcherService {
     private readonly statusSkillMap: StatusSkillMapService,
     private readonly runner: OpenHarnessRunnerService,
     private readonly configService: ConfigService,
+    // Optional so a missing metrics provider never breaks fire-and-forget dispatch,
+    // and the service stays trivially constructable in unit tests.
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   async dispatch(event: ITaskEvent): Promise<DispatchResult> {
@@ -106,18 +113,27 @@ export class DispatcherService {
     }
 
     if (mappedSkill === OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT) {
+      // Safety valve against unbounded ping-pong (e.g. changes-requested ⇄ re-implement).
+      // `loopMaxIterations` caps the TOTAL implement runs per ticket — the initial
+      // trigger-initiated run plus every loopback (all share this prompt). So the
+      // default of 5 permits the first implement plus 4 re-implements before the
+      // valve trips. The prompt predicate is the shared `openHarnessSkillPrompt`
+      // helper the runner writes, so the count can never silently drift to zero.
       const loopCount = await this.prisma.execution.count({
         where: {
           ticket_id: ticket.id,
           ai_provider: AIProvider.OPENHARNESS,
-          prompt: `Run OpenHarness skill: ${skill}`,
+          prompt: openHarnessSkillPrompt(skill),
         },
       });
 
       if (loopCount >= this.statusSkillMap.loopMaxIterations) {
+        // Flag the ticket: warn log (carries the task id) + a durable, queryable
+        // metric signal — the AC7 "recorded non-fatal signal", not a thrown error.
         this.logger.warn(
           `[${event.correlationId}] Dispatch skipped: loop cap exceeded for ${event.externalId} (${loopCount}/${this.statusSkillMap.loopMaxIterations})`,
         );
+        this.metrics?.incrementErrors(LOOP_CAP_EXCEEDED_METRIC);
         return { dispatched: false, reason: 'loop-cap-exceeded', skill };
       }
     }

@@ -24,6 +24,20 @@ export class StatusSkillMapService {
     this.loopTerminalStatuses = new Set(
       config.loopTerminalStatuses.map((status) => normalizeStatus(status)),
     );
+
+    // A status must be EITHER a skill trigger OR a loop terminal, never both.
+    // resolveSkill() is consulted before isLoopTerminal() in the dispatcher, so an
+    // overlapping status would dispatch a skill and the loop would never terminate
+    // on it. Fail loud at startup rather than loop unbounded at runtime.
+    const overlap = [...this.loopTerminalStatuses].filter((status) =>
+      this.skillsByStatus.has(status),
+    );
+    if (overlap.length > 0) {
+      throw new Error(
+        `statusSkillMap config invalid: status(es) mapped to a skill AND marked loop-terminal: ${overlap.join(', ')}`,
+      );
+    }
+
     this.loopMaxIterations = config.loopMaxIterations;
   }
 
