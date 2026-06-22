@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AIProvider, ExecutionStatus, PMProvider } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
+import { ApprovalGateService } from '@/approval-gate/approval-gate.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { normalizeStatus } from '@/config/status-skill-map.config';
 import { OpenHarnessRunnerService } from '@/openharness/openharness-runner.service';
@@ -21,6 +22,7 @@ export type DispatchResult =
         | 'ticket-not-found'
         | 'no-mapping'
         | 'loop-complete'
+        | 'awaiting-approval'
         | 'active-execution'
         | 'loop-cap-exceeded'
         | 'error';
@@ -38,6 +40,7 @@ export class DispatcherService {
     private readonly statusSkillMap: StatusSkillMapService,
     private readonly runner: OpenHarnessRunnerService,
     private readonly configService: ConfigService,
+    private readonly approvalGate: ApprovalGateService,
     // Optional so a missing metrics provider never breaks fire-and-forget dispatch,
     // and the service stays trivially constructable in unit tests.
     @Optional() private readonly metrics?: MetricsService,
@@ -81,6 +84,17 @@ export class DispatcherService {
 
     if (!skill) {
       if (this.statusSkillMap.isLoopTerminal(status)) {
+        const execution = await this.prisma.execution.findFirst({
+          where: { ticket_id: ticket.id },
+          orderBy: { created_at: 'desc' },
+          select: { id: true },
+        });
+
+        if (execution) {
+          await this.approvalGate.openGate(execution.id, event.correlationId);
+          return { dispatched: false, reason: 'awaiting-approval', executionId: execution.id };
+        }
+
         this.logger.log(
           `[${event.correlationId}] Dispatch loop complete for ${event.externalId} status ${status}`,
         );

@@ -36,6 +36,7 @@ import { ExecutionModule } from '../execution/execution.module';
 import { EncryptionModule } from '../common/encryption/encryption.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { RealtimeModule } from '@/realtime/realtime.module';
+import { ApprovalGateModule } from '@/approval-gate/approval-gate.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { RealtimeModule } from '@/realtime/realtime.module';
     EncryptionModule,
     IntegrationsModule,
     RealtimeModule,
+    forwardRef(() => ApprovalGateModule),
     forwardRef(() => ExecutionModule),
   ],
   controllers: [GitHubAuthFlowController],

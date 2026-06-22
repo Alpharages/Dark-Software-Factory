@@ -36,6 +36,7 @@ describe('DispatcherService', () => {
   };
   let runner: { runForTicket: jest.Mock };
   let config: Pick<ConfigService, 'get'>;
+  let approvalGate: { openGate: jest.Mock };
   let metrics: { incrementErrors: jest.Mock };
   let service: DispatcherService;
 
@@ -63,11 +64,13 @@ describe('DispatcherService', () => {
       ),
     };
     metrics = { incrementErrors: jest.fn() };
+    approvalGate = { openGate: jest.fn().mockResolvedValue({}) };
     service = new DispatcherService(
       prisma as never,
       statusSkillMap as never,
       runner as never,
       config as ConfigService,
+      approvalGate as never,
       metrics as never,
     );
   });
@@ -144,6 +147,25 @@ describe('DispatcherService', () => {
     });
 
     expect(result).toEqual({ dispatched: false, reason: 'loop-complete' });
+    expect(runner.runForTicket).not.toHaveBeenCalled();
+  });
+
+  it('opens the approval gate for loop-terminal statuses with a completed execution', async () => {
+    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.isLoopTerminal.mockReturnValue(true);
+    prisma.execution.findFirst.mockResolvedValueOnce({ id: 'exec-done' });
+
+    const result = await service.dispatch({
+      ...event,
+      originalProviderStatus: 'passed',
+    });
+
+    expect(result).toEqual({
+      dispatched: false,
+      reason: 'awaiting-approval',
+      executionId: 'exec-done',
+    });
+    expect(approvalGate.openGate).toHaveBeenCalledWith('exec-done', 'corr-1');
     expect(runner.runForTicket).not.toHaveBeenCalled();
   });
 

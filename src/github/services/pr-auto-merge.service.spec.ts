@@ -5,6 +5,7 @@ import { GitHubService } from '../github.service';
 import { PrismaService } from '@/database/prisma.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
+import { ApprovalGateService } from '@/approval-gate/approval-gate.service';
 import { PRRiskLevel } from '@/prisma/client';
 
 describe('PRAutoMergeService', () => {
@@ -13,6 +14,7 @@ describe('PRAutoMergeService', () => {
   let githubService: GitHubService;
   let prismaService: PrismaService;
   let aiDecisionLogger: AIDecisionLoggerService;
+  let approvalGate: ApprovalGateService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -45,6 +47,10 @@ describe('PRAutoMergeService', () => {
           provide: MetricsService,
           useValue: { incrementCounter: jest.fn() },
         },
+        {
+          provide: ApprovalGateService,
+          useValue: { assertApproved: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -53,6 +59,7 @@ describe('PRAutoMergeService', () => {
     githubService = module.get<GitHubService>(GitHubService);
     prismaService = module.get<PrismaService>(PrismaService);
     aiDecisionLogger = module.get<AIDecisionLoggerService>(AIDecisionLoggerService);
+    approvalGate = module.get<ApprovalGateService>(ApprovalGateService);
   });
 
   it('should be defined', () => {
@@ -96,6 +103,7 @@ describe('PRAutoMergeService', () => {
     const result = await service.attemptAutoMerge('exec-1', 'owner/repo', 1);
 
     expect(result).toBe(true);
+    expect(approvalGate.assertApproved).toHaveBeenCalledWith('exec-1');
     expect(githubService.mergePullRequest).toHaveBeenCalledWith(
       'owner',
       'repo',
@@ -104,6 +112,20 @@ describe('PRAutoMergeService', () => {
       'exec-1',
     );
     expect(aiDecisionLogger.logDecision).toHaveBeenCalled();
+  });
+
+  it('should refuse auto-merge without recorded approval', async () => {
+    jest.spyOn(configService, 'get').mockReturnValue(true);
+    (prismaService.execution.findUnique as jest.Mock).mockResolvedValue({
+      risk_level: PRRiskLevel.LOW,
+      ticket_id: 'ticket-1',
+    });
+    (approvalGate.assertApproved as jest.Mock).mockRejectedValue(new Error('not approved'));
+
+    const result = await service.attemptAutoMerge('exec-1', 'owner/repo', 1);
+
+    expect(result).toBe(false);
+    expect(githubService.mergePullRequest).not.toHaveBeenCalled();
   });
 
   it('should retry once and return false if mergeability stays null', async () => {
