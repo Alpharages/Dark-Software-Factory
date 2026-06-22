@@ -41,7 +41,11 @@ export class OpenHarnessRunnerService {
   ) {}
 
   async runForTicket(ticketId: string, opts: OpenHarnessRunOptions): Promise<string> {
-    const { skill, workspaceDir, maxTurns = 200 } = opts;
+    const { skill, workspaceDir } = opts;
+    // Single source of truth for the default: the validated `openharness.maxTurns`
+    // config (Joi-bounded 1–1000, default 200). The trailing literal is only a
+    // defensive fallback if config is somehow unset on a direct (non-HTTP) call.
+    const maxTurns = opts.maxTurns ?? this.configService.get<number>('openharness.maxTurns') ?? 200;
     const model = this.requiredConfig('openharness.model');
     const binaryPath = this.requiredConfig('openharness.binaryPath');
 

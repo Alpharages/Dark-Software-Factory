@@ -1,7 +1,8 @@
-import { InternalServerErrorException, ValidationPipe } from '@nestjs/common';
+import { HttpStatus, InternalServerErrorException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { validate } from 'class-validator';
+import type { FastifyReply } from 'fastify';
 import { ExecutionStatus } from '@/prisma/client';
 import { ExecutionRepository } from '@/execution/execution.repository';
 import { OpenHarnessExecutionController } from './openharness-execution.controller';
@@ -13,6 +14,12 @@ describe('OpenHarnessExecutionController', () => {
   let runner: jest.Mocked<Pick<OpenHarnessRunnerService, 'runForTicket'>>;
   let executionRepository: jest.Mocked<Pick<ExecutionRepository, 'findById'>>;
   let configService: { get: jest.Mock<unknown, [string]> };
+  let reply: { status: jest.Mock };
+
+  const makeReply = (): FastifyReply => {
+    reply = { status: jest.fn().mockReturnThis() };
+    return reply as unknown as FastifyReply;
+  };
 
   beforeEach(async () => {
     runner = {
@@ -51,11 +58,14 @@ describe('OpenHarnessExecutionController', () => {
   });
 
   it('merges request overrides over ConfigService defaults and returns a visible execution result', async () => {
-    const result = await controller.runTestExecution({
-      ticketId: '86ey08c75',
-      skill: 'custom-skill',
-      maxTurns: 50,
-    });
+    const result = await controller.runTestExecution(
+      {
+        ticketId: '86ey08c75',
+        skill: 'custom-skill',
+        maxTurns: 50,
+      },
+      makeReply(),
+    );
 
     expect(runner.runForTicket).toHaveBeenCalledWith('86ey08c75', {
       skill: 'custom-skill',
@@ -64,6 +74,7 @@ describe('OpenHarnessExecutionController', () => {
       mcpConfigPath: 'docs/openharness/mcp-config.json',
     });
     expect(executionRepository.findById).toHaveBeenCalledWith('exec-123');
+    expect(reply.status).toHaveBeenCalledWith(HttpStatus.OK);
     expect(result).toEqual({
       executionId: 'exec-123',
       status: ExecutionStatus.COMPLETED,
@@ -72,6 +83,39 @@ describe('OpenHarnessExecutionController', () => {
       pollUrl: '/api/v1/executions/exec-123/status',
       streamUrl: 'socket.io:/execution?room=execution_logs_exec-123',
     });
+  });
+
+  it('maps a terminal FAILED run to HTTP 500 while still returning the persisted execution (AC5)', async () => {
+    executionRepository.findById.mockResolvedValueOnce({
+      id: 'exec-123',
+      status: ExecutionStatus.FAILED,
+      code_output: null,
+      error_message: 'oh exited with code 1',
+      files_changed: [],
+    } as never);
+
+    const result = await controller.runTestExecution({ ticketId: '86ey08c75' }, makeReply());
+
+    expect(reply.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(result).toMatchObject({
+      executionId: 'exec-123',
+      status: ExecutionStatus.FAILED,
+      summary: 'oh exited with code 1',
+    });
+  });
+
+  it('maps a terminal TIMEOUT run to HTTP 504 (AC5)', async () => {
+    executionRepository.findById.mockResolvedValueOnce({
+      id: 'exec-123',
+      status: ExecutionStatus.TIMEOUT,
+      code_output: null,
+      error_message: 'Execution timed out',
+      files_changed: [],
+    } as never);
+
+    await controller.runTestExecution({ ticketId: '86ey08c75' }, makeReply());
+
+    expect(reply.status).toHaveBeenCalledWith(HttpStatus.GATEWAY_TIMEOUT);
   });
 
   it('validates ticketId as required', async () => {
@@ -103,7 +147,9 @@ describe('OpenHarnessExecutionController', () => {
   it('returns a structured error when the runner throws', async () => {
     runner.runForTicket.mockRejectedValueOnce(new Error('oh failed'));
 
-    await expect(controller.runTestExecution({ ticketId: '86ey08c75' })).rejects.toMatchObject({
+    await expect(
+      controller.runTestExecution({ ticketId: '86ey08c75' }, makeReply()),
+    ).rejects.toMatchObject({
       constructor: InternalServerErrorException,
       response: {
         message: 'OpenHarness test execution failed',

@@ -171,6 +171,10 @@ Start local infrastructure and the NestJS backend with one command:
 pnpm start:mvp
 ```
 
+`start:mvp` runs `docker compose up -d --wait` (waits for the Postgres healthcheck so the DB is
+actually accepting connections), applies pending migrations with `pnpm db:migrate:deploy`, then
+launches the backend with `pnpm start:dev`. No hidden manual migrate/seed step is required.
+
 The backend exposes the guarded local MVP endpoint at `POST /api/v1/executions/test`. It reuses
 the standard JWT/RBAC posture from `ExecutionController`: callers need a valid JWT with `PM`,
 `TL`, or `ADMIN`.
@@ -179,6 +183,7 @@ Defaults come from validated env/config:
 
 ```bash
 OPENHARNESS_BINARY_PATH=oh
+OPENHARNESS_MODEL=gpt-5.4
 OPENHARNESS_DEFAULT_SKILL=clickup-dev-implement
 OPENHARNESS_WORKSPACE_DIR=/Volumes/Data/project/products/alpharages/dsf-backend
 OPENHARNESS_MAX_TURNS=200
@@ -209,11 +214,16 @@ curl -X POST http://localhost:3000/api/v1/executions/test \
   }'
 ```
 
-The response includes the persisted execution id, terminal status/summary when available, changed
-files, a polling URL, and a Socket.IO stream hint. Live activity is emitted through the existing
-Socket.IO execution namespace: connect to `/execution`, send `subscribe-to-execution-logs` with
-the returned execution id, and listen for `execution-activity` / `execution-log` while the runner
-processes OpenHarness stream events.
+The endpoint blocks until the run reaches a terminal state, then returns the persisted execution
+id, terminal status/summary, changed files, a polling URL, and a Socket.IO stream hint. The HTTP
+status mirrors the terminal execution status (AC5): `200` when the run completes, `504` when the
+run hits its wall-clock budget (`TIMEOUT`), and `5xx` when the run fails (`FAILED`/`CANCELLED`) or
+the runner errors before producing an execution id. In every case the response body still carries
+the persisted execution, so a failure is never a silent `2xx` or a dangling request.
+
+Live activity is emitted through the existing Socket.IO execution namespace: connect to
+`/execution`, send `subscribe-to-execution-logs` with the returned execution id, and listen for
+`execution-activity` / `execution-log` while the runner processes OpenHarness stream events.
 
 ## Troubleshooting
 

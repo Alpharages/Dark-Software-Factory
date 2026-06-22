@@ -1,13 +1,14 @@
 import {
   Body,
   Controller,
-  HttpCode,
   HttpStatus,
   InternalServerErrorException,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { FastifyReply } from 'fastify';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -59,22 +60,31 @@ export class OpenHarnessExecutionController {
   ) {}
 
   @Post('test')
-  @HttpCode(HttpStatus.ACCEPTED)
   @Roles(Role.PM, Role.ADMIN, Role.TL)
   @ApiOperation({
     summary: 'Trigger one local MVP OpenHarness run for a ClickUp ticket',
     description:
-      'Local MVP endpoint guarded like the existing ExecutionController. It invokes OpenHarness directly through the runner and returns the persisted execution result plus poll/stream hints.',
+      'Local MVP endpoint guarded like the existing ExecutionController. It invokes OpenHarness directly through the runner and blocks until the run reaches a terminal state, then returns the persisted execution result plus poll/stream hints. The HTTP status mirrors the terminal execution status: 200 on success, 504 on runner timeout, 5xx on a failed run (AC5).',
   })
-  @ApiResponse({ status: 202, type: TestExecutionResponseDto })
+  @ApiResponse({ status: 200, type: TestExecutionResponseDto, description: 'Run completed' })
   @ApiResponse({ status: 400, description: 'Invalid ticket id or run profile' })
   @ApiResponse({ status: 401, description: 'JWT authentication required' })
   @ApiResponse({ status: 403, description: 'Role not allowed to trigger local MVP execution' })
   @ApiResponse({
     status: 500,
-    description: 'OpenHarness runner failed before returning an execution id',
+    description:
+      'OpenHarness run failed (terminal FAILED/CANCELLED status) or the runner errored before returning an execution id. Body still carries the persisted execution when one exists.',
+    type: TestExecutionResponseDto,
   })
-  async runTestExecution(@Body() dto: TestExecutionDto): Promise<TestExecutionResponseDto> {
+  @ApiResponse({
+    status: 504,
+    description: 'OpenHarness run exceeded its wall-clock budget (terminal TIMEOUT status)',
+    type: TestExecutionResponseDto,
+  })
+  async runTestExecution(
+    @Body() dto: TestExecutionDto,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<TestExecutionResponseDto> {
     const profile: OpenHarnessRunOptions = {
       skill: dto.skill ?? this.requiredConfig<string>('openharness.defaultSkill'),
       workspaceDir: dto.workspaceDir ?? this.requiredConfig<string>('openharness.workspaceDir'),
@@ -89,6 +99,11 @@ export class OpenHarnessExecutionController {
         execution?.status && EXECUTION_STATUS_VALUES.includes(execution.status)
           ? execution.status
           : 'UNKNOWN';
+
+      // AC5: surface the terminal outcome through the HTTP status so a runner
+      // failure reads as an error to API clients, not a 2xx. The body still
+      // carries the persisted execution (id + status + summary) in every case.
+      reply.status(this.httpStatusForExecution(status));
 
       return {
         executionId,
@@ -105,6 +120,21 @@ export class OpenHarnessExecutionController {
         ticketId: dto.ticketId,
         error: message,
       });
+    }
+  }
+
+  /**
+   * Map a terminal execution status to an HTTP status code (AC5):
+   * COMPLETED → 200, TIMEOUT → 504, anything else (FAILED/CANCELLED/UNKNOWN) → 500.
+   */
+  private httpStatusForExecution(status: ExecutionStatus | 'UNKNOWN'): number {
+    switch (status) {
+      case ExecutionStatus.COMPLETED:
+        return HttpStatus.OK;
+      case ExecutionStatus.TIMEOUT:
+        return HttpStatus.GATEWAY_TIMEOUT;
+      default:
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
   }
 
