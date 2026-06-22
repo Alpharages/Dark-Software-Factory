@@ -157,10 +157,18 @@ export default () => {
       defaultSkill: process.env.OPENHARNESS_DEFAULT_SKILL || 'clickup-dev-implement',
       workspaceDir: process.env.OPENHARNESS_WORKSPACE_DIR || process.cwd(),
       maxTurns: parseInt(process.env.OPENHARNESS_MAX_TURNS || '200', 10),
+      runTimeoutMs: parseInt(process.env.OPENHARNESS_RUN_TIMEOUT_MS || '1800000', 10),
+      mandatedMcpServers: (process.env.OPENHARNESS_MANDATED_MCP_SERVERS || 'gitnexus')
+        .split(',')
+        .map((server) => server.trim())
+        .filter(Boolean),
+      mandatedToolsMode: process.env.OPENHARNESS_MANDATED_TOOLS_MODE === 'fail' ? 'fail' : 'warn',
+      formatEnabled: process.env.OPENHARNESS_FORMAT_ENABLED !== 'false',
+      formatCommand: process.env.OPENHARNESS_FORMAT_COMMAND || 'pnpm exec prettier --write',
       mcpConfigPath:
         process.env.OPENHARNESS_MCP_CONFIG_PATH ||
         process.env.MCP_CONFIG_PATH ||
-        './docs/openharness/mcp-config.json',
+        './openharness/mcp-config.json',
     },
 
     // Story 2.7: Anthropic Claude API Configuration (updated OS-3.2: stale refs removed)

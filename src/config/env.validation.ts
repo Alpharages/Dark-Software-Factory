@@ -203,7 +203,12 @@ export const envValidationSchema = Joi.object({
   LOOP_MAX_ITERATIONS: loopMaxIterationsSchema.default(5),
   OPENHARNESS_WORKSPACE_DIR: Joi.string().default(process.cwd()),
   OPENHARNESS_MAX_TURNS: Joi.number().integer().min(1).max(1000).default(200),
-  OPENHARNESS_MCP_CONFIG_PATH: Joi.string().default('./docs/openharness/mcp-config.json'),
+  OPENHARNESS_RUN_TIMEOUT_MS: Joi.number().integer().min(1000).max(86400000).default(1800000),
+  OPENHARNESS_MANDATED_MCP_SERVERS: Joi.string().allow('').default('gitnexus'),
+  OPENHARNESS_MANDATED_TOOLS_MODE: Joi.string().valid('warn', 'fail').default('warn'),
+  OPENHARNESS_FORMAT_ENABLED: Joi.boolean().default(true),
+  OPENHARNESS_FORMAT_COMMAND: Joi.string().default('pnpm exec prettier --write'),
+  OPENHARNESS_MCP_CONFIG_PATH: Joi.string().default('./openharness/mcp-config.json'),
   MCP_CONFIG_PATH: Joi.string().optional().allow(''),
 
   // Story 2.7: Anthropic API Configuration (optional - provider disabled if not set)

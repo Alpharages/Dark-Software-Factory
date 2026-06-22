@@ -11,9 +11,9 @@ import { openHarnessSkillPrompt } from './skills.enum';
 import { OpenHarnessStreamParser } from './openharness-stream.parser';
 import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
+import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 
-/** Wall-clock budget for a single `oh` run before it is killed and marked TIMEOUT. */
-const RUN_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
+type MandatedToolsMode = 'warn' | 'fail';
 /**
  * Structural stream event types the runner consumes via parser state
  * (getResult/getFilesChanged/getToolsUsed) rather than the live adapter path.
@@ -37,6 +37,7 @@ export class OpenHarnessRunnerService {
     private readonly executionRepository: ExecutionRepository,
     private readonly executionTracker: ExecutionTrackerService,
     private readonly prisma: PrismaService,
+    private readonly guardrails: OpenHarnessRunGuardrailsService,
     @Optional()
     private readonly streamAdapter?: OpenHarnessStreamAdapter,
   ) {}
@@ -47,6 +48,15 @@ export class OpenHarnessRunnerService {
     // config (Joi-bounded 1–1000, default 200). The trailing literal is only a
     // defensive fallback if config is somehow unset on a direct (non-HTTP) call.
     const maxTurns = opts.maxTurns ?? this.configService.get<number>('openharness.maxTurns') ?? 200;
+    const runTimeoutMs =
+      this.configService.get<number>('openharness.runTimeoutMs') ?? 1000 * 60 * 30;
+    const mandatedMcpServers =
+      this.configService.get<string[]>('openharness.mandatedMcpServers') ?? [];
+    const mandatedToolsMode =
+      this.configService.get<MandatedToolsMode>('openharness.mandatedToolsMode') ?? 'warn';
+    const formatEnabled = this.configService.get<boolean>('openharness.formatEnabled') ?? true;
+    const formatCommand =
+      this.configService.get<string>('openharness.formatCommand') ?? 'pnpm exec prettier --write';
     const model = this.requiredConfig('openharness.model');
     const binaryPath = this.requiredConfig('openharness.binaryPath');
 
@@ -78,6 +88,32 @@ export class OpenHarnessRunnerService {
     const mcpConfigPath = path.isAbsolute(configuredMcpPath)
       ? configuredMcpPath
       : path.resolve(process.cwd(), configuredMcpPath);
+
+    const missingMandatedTools = this.guardrails.findMissingMandatedMcpServers(
+      mcpConfigPath,
+      mandatedMcpServers,
+    );
+    if (missingMandatedTools.length > 0) {
+      const message = `Missing mandated MCP servers: ${missingMandatedTools.join(', ')}`;
+      await this.prisma.execution.update({
+        where: { id: execution.id },
+        data: {
+          error_context: JSON.stringify({
+            guardrails: { missingMandatedTools, mandatedToolsMode },
+          }),
+        },
+      });
+
+      if (mandatedToolsMode === 'fail') {
+        await this.executionTracker.failExecution(
+          { executionId: execution.id, errorMessage: message, isRetryable: false },
+          execution.id,
+        );
+        return execution.id;
+      }
+
+      this.logger.warn(`[${execution.id}] ${message}`);
+    }
 
     return new Promise((resolve) => {
       const child = spawn(
@@ -173,13 +209,13 @@ export class OpenHarnessRunnerService {
           this.executionTracker.timeoutExecution(
             {
               executionId: execution.id,
-              timeoutSeconds: RUN_TIMEOUT_MS / 1000,
+              timeoutSeconds: runTimeoutMs / 1000,
               lastKnownProgress: lastProgress,
             },
             execution.id,
           ),
         );
-      }, RUN_TIMEOUT_MS);
+      }, runTimeoutMs);
 
       child.on('error', (err) => {
         finalize(() =>
@@ -202,6 +238,30 @@ export class OpenHarnessRunnerService {
           const summary = result?.summary || 'Execution completed without summary';
 
           if (code === 0 && result && result.status !== 'FAILED') {
+            try {
+              await this.guardrails.formatOwnFiles(
+                workspaceDir,
+                filesChanged,
+                formatEnabled,
+                formatCommand,
+              );
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              await this.prisma.execution.update({
+                where: { id: execution.id },
+                data: { error_context: `OpenHarness guardrail formatter failed: ${message}` },
+              });
+              await this.executionTracker.failExecution(
+                {
+                  executionId: execution.id,
+                  errorMessage: `OpenHarness guardrail formatter failed: ${message}`,
+                  isRetryable: false,
+                },
+                execution.id,
+              );
+              return;
+            }
+
             await this.prisma.execution.update({
               where: { id: execution.id },
               data: {

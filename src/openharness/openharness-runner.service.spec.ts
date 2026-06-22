@@ -9,6 +9,7 @@ import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 import * as child_process from 'child_process';
 import { AIProvider } from '@/prisma/client';
+import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 
 jest.mock('child_process');
 
@@ -19,6 +20,7 @@ describe('OpenHarnessRunnerService', () => {
   let mockPrisma: any;
   let mockConfig: Record<string, jest.Mock>;
   let mockStreamAdapter: Record<string, jest.Mock>;
+  let mockGuardrails: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     mockExecutionRepo = {
@@ -41,12 +43,26 @@ describe('OpenHarnessRunnerService', () => {
 
     mockConfig = {
       get: jest.fn().mockImplementation((key) => {
-        if (key === 'MCP_CONFIG_PATH') return '/path/to/mcp.json';
-        return 'mocked-' + key;
+        const values: Record<string, unknown> = {
+          'openharness.binaryPath': 'oh',
+          'openharness.model': 'gpt-5.4',
+          'openharness.maxTurns': 200,
+          'openharness.runTimeoutMs': 1000 * 60 * 30,
+          'openharness.mcpConfigPath': '/path/to/mcp.json',
+          'openharness.mandatedMcpServers': ['gitnexus'],
+          'openharness.mandatedToolsMode': 'warn',
+          'openharness.formatEnabled': true,
+          'openharness.formatCommand': 'pnpm exec prettier --write',
+        };
+        return values[key];
       }),
     };
     mockStreamAdapter = {
       handleEvent: jest.fn().mockResolvedValue(undefined),
+    };
+    mockGuardrails = {
+      findMissingMandatedMcpServers: jest.fn().mockReturnValue([]),
+      formatOwnFiles: jest.fn().mockResolvedValue({ formattedFiles: [] }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -56,6 +72,7 @@ describe('OpenHarnessRunnerService', () => {
         { provide: ExecutionRepository, useValue: mockExecutionRepo },
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: OpenHarnessRunGuardrailsService, useValue: mockGuardrails },
         { provide: OpenHarnessStreamAdapter, useValue: mockStreamAdapter },
       ],
     }).compile();
@@ -109,6 +126,90 @@ describe('OpenHarnessRunnerService', () => {
         codeOutput: 'done',
         filesChanged: ['a.ts'],
         confidenceScore: 1.0,
+      },
+      'exec-123',
+    );
+    expect(mockGuardrails.formatOwnFiles).toHaveBeenCalledWith(
+      '/tmp',
+      ['a.ts'],
+      true,
+      'pnpm exec prettier --write',
+    );
+  });
+
+  it('fails before spawn when mandated MCP servers are missing in fail mode', async () => {
+    mockGuardrails.findMissingMandatedMcpServers.mockReturnValue(['gitnexus']);
+    mockConfig.get.mockImplementation((key) => {
+      const values: Record<string, unknown> = {
+        'openharness.binaryPath': 'oh',
+        'openharness.model': 'gpt-5.4',
+        'openharness.maxTurns': 200,
+        'openharness.runTimeoutMs': 1000 * 60 * 30,
+        'openharness.mcpConfigPath': '/path/to/mcp.json',
+        'openharness.mandatedMcpServers': ['gitnexus'],
+        'openharness.mandatedToolsMode': 'fail',
+        'openharness.formatEnabled': true,
+        'openharness.formatCommand': 'pnpm exec prettier --write',
+      };
+      return values[key];
+    });
+
+    const execId = await service.runForTicket('ticket-1', {
+      skill: 'test-skill',
+      workspaceDir: '/tmp',
+    });
+
+    expect(execId).toBe('exec-123');
+    expect(child_process.spawn).not.toHaveBeenCalled();
+    expect(mockPrisma.execution.update).toHaveBeenCalledWith({
+      where: { id: 'exec-123' },
+      data: {
+        error_context: JSON.stringify({
+          guardrails: { missingMandatedTools: ['gitnexus'], mandatedToolsMode: 'fail' },
+        }),
+      },
+    });
+    expect(mockExecutionTracker.failExecution).toHaveBeenCalledWith(
+      {
+        executionId: 'exec-123',
+        errorMessage: 'Missing mandated MCP servers: gitnexus',
+        isRetryable: false,
+      },
+      'exec-123',
+    );
+  });
+
+  it('fails the run when post-run formatting fails', async () => {
+    mockGuardrails.formatOwnFiles.mockRejectedValue(new Error('Formatter exited with code 1'));
+    const mockChild = new EventEmitter() as any;
+    mockChild.stdout = new PassThrough();
+    mockChild.stderr = new PassThrough();
+    mockChild.kill = jest.fn();
+    (child_process.spawn as jest.Mock).mockReturnValue(mockChild);
+
+    const runPromise = service.runForTicket('ticket-1', {
+      skill: 'test-skill',
+      workspaceDir: '/tmp',
+    });
+
+    mockChild.stdout.write(
+      JSON.stringify({
+        type: 'result',
+        status: 'COMPLETED',
+        summary: 'done',
+        files_changed: ['a.ts'],
+      }) + '\n',
+    );
+    setTimeout(() => mockChild.emit('close', 0), 10);
+
+    await runPromise;
+
+    expect(mockExecutionTracker.completeExecution).not.toHaveBeenCalled();
+    expect(mockExecutionTracker.failExecution).toHaveBeenCalledWith(
+      {
+        executionId: 'exec-123',
+        errorMessage: 'OpenHarness guardrail formatter failed: Formatter exited with code 1',
+        isRetryable: false,
       },
       'exec-123',
     );
