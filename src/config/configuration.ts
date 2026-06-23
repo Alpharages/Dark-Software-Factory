@@ -174,49 +174,6 @@ export default () => {
       supportedFormats: (process.env.CONTEXT_SUPPORTED_FORMATS || 'pdf,md,txt,docx').split(','),
     },
 
-    // Story 3.2: QA Automation Configuration
-    // FR67: Automated test execution
-    qa: {
-      testTimeoutMs: parseInt(process.env.QA_TEST_TIMEOUT_MS || '300000', 10), // 5 minutes default
-      dockerMemoryLimit: process.env.QA_DOCKER_MEMORY || '2g',
-      dockerCpuLimit: process.env.QA_DOCKER_CPUS || '2',
-      // Story 3.3: Coverage Enforcement
-      coverageThreshold: parseInt(process.env.QA_COVERAGE_THRESHOLD || '80', 10),
-      coverageEnforcementEnabled: process.env.QA_COVERAGE_ENFORCEMENT !== 'false',
-      baseBranch: process.env.QA_BASE_BRANCH || 'main',
-      generateHtmlReport: process.env.QA_GENERATE_HTML_REPORT !== 'false',
-      // Story 3.7: RabbitMQ QA Queue Processing
-      check: {
-        concurrency: parseInt(process.env.QA_CHECK_CONCURRENCY || '5', 10),
-        maxRetries: parseInt(process.env.QA_CHECK_MAX_RETRIES || '3', 10),
-        timeoutMs: parseInt(process.env.QA_CHECK_TIMEOUT_MS || '300000', 10), // 5 minutes
-        depthIntervalMs: parseInt(process.env.QA_QUEUE_DEPTH_INTERVAL_MS || '30000', 10), // 30 seconds
-        // Max retry attempts for individual QA checks (lint, test, etc.) before skipping.
-        // When retries are exhausted, the check is marked SKIPPED and execution proceeds
-        // to commit+push instead of blocking indefinitely. This prevents loops caused by
-        // pre-existing broken tests/lint issues or missing sandbox environment (e.g., databases).
-        qaRetryMaxAttempts: parseInt(process.env.QA_CHECK_RETRY_MAX_ATTEMPTS || '2', 10),
-      },
-    },
-
-    // Story 8.1: QA Review Queue & Sampling Configuration
-    // FR34: Lead QA can view a sample queue of AI-generated code
-    // FR35: Lead QA can configure sampling strategy
-    qaReview: {
-      sampling: {
-        defaultPercentage: parseInt(process.env.QA_REVIEW_SAMPLING_PERCENTAGE || '20', 10),
-        riskBasedEnabled: process.env.QA_REVIEW_RISK_BASED_ENABLED !== 'false',
-        minPercentage: parseInt(process.env.QA_REVIEW_MIN_PERCENTAGE || '0', 10),
-        maxPercentage: parseInt(process.env.QA_REVIEW_MAX_PERCENTAGE || '100', 10),
-      },
-      queue: {
-        defaultPageSize: parseInt(process.env.QA_REVIEW_QUEUE_PAGE_SIZE || '20', 10),
-        maxPageSize: parseInt(process.env.QA_REVIEW_QUEUE_MAX_PAGE_SIZE || '100', 10),
-        maxRetries: parseInt(process.env.QA_REVIEW_QUEUE_MAX_RETRIES || '3', 10),
-        dlqRoutingKey: process.env.QA_REVIEW_QUEUE_DLQ_KEY || 'qa.execution.completed.dlq',
-      },
-    },
-
     // Story 3.5: Quality Gate Configuration
     // FR70: System blocks deployment if quality gates fail
     qualityGate: {
@@ -229,16 +186,6 @@ export default () => {
       blockOnHighSecurity: process.env.QG_BLOCK_HIGH !== 'false',
       maxComplexity: parseInt(process.env.QG_MAX_COMPLEXITY || '20', 10),
       allowOverride: process.env.QG_ALLOW_OVERRIDE === 'true',
-      // Per-category timeouts (ms)
-      lintingTimeoutMs: parseInt(process.env.QG_LINTING_TIMEOUT_MS || '60000', 10),
-      testingTimeoutMs: parseInt(process.env.QG_TESTING_TIMEOUT_MS || '300000', 10),
-      coverageTimeoutMs: parseInt(process.env.QG_COVERAGE_TIMEOUT_MS || '60000', 10),
-      securityTimeoutMs: parseInt(process.env.QG_SECURITY_TIMEOUT_MS || '180000', 10),
-      // Story 3.6: QA Results pagination
-      results: {
-        defaultPageSize: parseInt(process.env.QA_RESULTS_DEFAULT_PAGE_SIZE || '20', 10),
-        maxPageSize: parseInt(process.env.QA_RESULTS_MAX_PAGE_SIZE || '100', 10),
-      },
     },
 
     // Story 14.3: Storage Manager Configuration

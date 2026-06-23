@@ -10,7 +10,6 @@ import {
   PromptMetadataSnapshotDto,
 } from './dto';
 import { IStateTransition } from './interfaces';
-import { QaCheckPublisher } from '../qa-automation/qa-check.publisher';
 import { ExecutionLogStreamingService } from './services/execution-log-streaming.service';
 import { EventBusService } from '@/common/event-bus.service';
 
@@ -84,12 +83,6 @@ describe('ExecutionService', () => {
             getExecutionsForTicket: jest.fn(),
             hasActiveExecution: jest.fn(),
             findActiveExecution: jest.fn(),
-          },
-        },
-        {
-          provide: QaCheckPublisher,
-          useValue: {
-            publishQaCheck: jest.fn().mockResolvedValue(undefined),
           },
         },
         {

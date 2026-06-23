@@ -248,7 +248,7 @@ export const AI_PROVIDER_RATES = {
 } as const;
 
 // Queue Names (must match RabbitMQ configuration from Story 1.5)
-export const QUEUE_NAMES = ['qa-check-queue', 'deployment-queue', 'monitoring-queue'] as const;
+export const QUEUE_NAMES = ['deployment-queue', 'monitoring-queue'] as const;
 export type QueueName = (typeof QUEUE_NAMES)[number];
 
 // Common Labels

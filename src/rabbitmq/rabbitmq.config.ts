@@ -43,7 +43,6 @@ export const QUEUE_NAMES = {
   // Story 2.1-2.2: Ticket intake pipeline
   TICKET_INTAKE: 'ticket-intake-queue',
   // Core execution queues
-  QA_CHECK: 'qa-check-queue',
   DEPLOYMENT: 'deployment-queue',
   MONITORING: 'monitoring-queue',
   DEAD_LETTER: 'dead-letter-queue',
@@ -66,11 +65,6 @@ export const EXCHANGE_NAMES = {
  * Routing keys (dot notation per architecture)
  */
 export const ROUTING_KEYS = {
-  // QA Check
-  QA_CHECK_STARTED: 'qa.check.started',
-  QA_CHECK_COMPLETED: 'qa.check.completed',
-  QA_CHECK_FAILED: 'qa.check.failed',
-
   // GitHub Push (QA → GitHub workflow trigger)
   GITHUB_PUSH_TRIGGER: 'github.push.trigger',
 

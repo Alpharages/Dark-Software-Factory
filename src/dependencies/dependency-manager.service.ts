@@ -248,8 +248,8 @@ export class DependencyManagerService {
         );
       }
 
-      // Step 5: Get current queue depth from RabbitMQ
-      const queueDepth = await this.getQueueDepth('qa-check-queue');
+      // Step 5: no QA queue remains; agent execution is outside DSF.
+      const queueDepth = 0;
       const queuePosition = queueDepth;
 
       // Step 6: Calculate total ETA

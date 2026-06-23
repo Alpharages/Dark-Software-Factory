@@ -83,7 +83,6 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       // Story 2.1-2.2: Ticket intake pipeline
       QUEUE_NAMES.TICKET_INTAKE,
       // Core execution queues
-      QUEUE_NAMES.QA_CHECK,
       QUEUE_NAMES.DEPLOYMENT,
       QUEUE_NAMES.MONITORING,
       QUEUE_NAMES.FIX_TICKET_CREATION,
@@ -210,14 +209,13 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
    * Returns depth, rate, and oldest message age for each queue
    */
   async getQueueMetrics(): Promise<{
-    'qa-check-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
     'deployment-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
   }> {
     if (!this.channel) {
       throw new Error('Channel not available');
     }
 
-    const queues = ['qa-check-queue', 'deployment-queue'];
+    const queues = ['deployment-queue'];
     const metricsMap = new Map<string, unknown>();
 
     for (const queueName of queues) {
@@ -241,7 +239,6 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     const metrics = Object.fromEntries(metricsMap);
 
     return metrics as {
-      'qa-check-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
       'deployment-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
     };
   }

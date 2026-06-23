@@ -207,12 +207,6 @@ export const envValidationSchema = Joi.object({
   CONTEXT_STORAGE_PATH: Joi.string().default('./uploads/context'),
   CONTEXT_SUPPORTED_FORMATS: Joi.string().default('pdf,md,txt,docx'),
 
-  // Story 3.3: Coverage Configuration
-  QA_COVERAGE_THRESHOLD: Joi.number().min(0).max(100).default(80),
-  QA_COVERAGE_ENFORCEMENT: Joi.string().valid('true', 'false').default('true'),
-  QA_BASE_BRANCH: Joi.string().default('main'),
-  QA_GENERATE_HTML_REPORT: Joi.string().valid('true', 'false').default('true'),
-
   // Story 3.4: Security Scanning Configuration (optional - has sensible defaults)
   // FR68: Security vulnerability scanning, secrets detection, code complexity, OWASP patterns
   SECURITY_BLOCK_ON_CRITICAL: Joi.string().valid('true', 'false').default('true'),
@@ -236,11 +230,6 @@ export const envValidationSchema = Joi.object({
   QG_BLOCK_HIGH: Joi.string().valid('true', 'false').default('true'),
   QG_MAX_COMPLEXITY: Joi.number().integer().min(5).max(50).default(20),
   QG_ALLOW_OVERRIDE: Joi.string().valid('true', 'false').default('false'),
-  // Per-category timeouts
-  QG_LINTING_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
-  QG_TESTING_TIMEOUT_MS: Joi.number().integer().min(30000).max(900000).default(300000), // 30s-15min
-  QG_COVERAGE_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
-  QG_SECURITY_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10min
 
   // Story 14.4: Post-Deployment Health Monitoring Configuration
   HEALTH_MONITORING_ENABLED: Joi.boolean()

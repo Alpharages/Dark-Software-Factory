@@ -5,7 +5,6 @@ import { PrismaService } from '@/database/prisma.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { FinancialMetricsService } from '@/financial-metrics/financial-metrics.service';
 import { GitHubService } from '@/github/github.service';
-import { QaResultsService } from '@/qa-automation/qa-results.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 
 describe('PmDashboardService', () => {
@@ -43,10 +42,6 @@ describe('PmDashboardService', () => {
     getPrMergeRateStats: jest.fn(),
   };
 
-  const mockQaResultsService = {
-    getQaFirstPassRateStats: jest.fn(),
-  };
-
   const mockAiDecisionLoggerService = {
     getProviderDistributionStats: jest.fn(),
   };
@@ -75,10 +70,6 @@ describe('PmDashboardService', () => {
         {
           provide: GitHubService,
           useValue: mockGitHubService,
-        },
-        {
-          provide: QaResultsService,
-          useValue: mockQaResultsService,
         },
         {
           provide: AIDecisionLoggerService,
@@ -262,12 +253,11 @@ describe('PmDashboardService', () => {
       // M1 fix: QA counts now run in Promise.all — use once-style mocks
       mockPrismaService.qAResult.count
         .mockResolvedValueOnce(10) // qaTotal
-        .mockResolvedValueOnce(8); // qaPassed
+        .mockResolvedValueOnce(8) // qaPassed
+        .mockResolvedValueOnce(10) // first-pass total
+        .mockResolvedValueOnce(6); // first-pass passed
       mockGitHubService.getPrMergeRateStats.mockResolvedValue({
         prMergeRate: 0.75,
-      });
-      mockQaResultsService.getQaFirstPassRateStats.mockResolvedValue({
-        qaFirstPassRate: 0.6,
       });
       mockAiDecisionLoggerService.getProviderDistributionStats.mockResolvedValue([
         { provider: 'CLAUDE_CODE', percentage: 60, count: 6 },

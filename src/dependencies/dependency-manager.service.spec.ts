@@ -265,7 +265,7 @@ describe('DependencyManagerService', () => {
         },
       ]);
 
-      // Mock RabbitMQ queue depth: 5 tickets ahead
+      // Legacy queue depth is ignored; agent execution is outside DSF.
       (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
         messageCount: 5,
         consumerCount: 1,
@@ -274,7 +274,7 @@ describe('DependencyManagerService', () => {
       const result = await service.calculateETA('ticket-123', ['dep-1', 'dep-2']);
 
       expect(result.historicalAverage).toBeCloseTo(10, 1); // (8+10+12)/3 = 10
-      expect(result.queuePosition).toBe(5);
+      expect(result.queuePosition).toBe(0);
       expect(result.estimatedWaitMinutes).toBeGreaterThan(0);
       expect(result.confidence).toBeGreaterThan(0);
       expect(result.confidence).toBeLessThanOrEqual(1);
@@ -308,7 +308,7 @@ describe('DependencyManagerService', () => {
       expect(result.reasoning).toContain('default');
     });
 
-    it('should factor in queue depth for ETA calculation', async () => {
+    it('should ignore removed QA queue depth for ETA calculation', async () => {
       // Mock historical data
       (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce([
         {
@@ -319,7 +319,7 @@ describe('DependencyManagerService', () => {
         },
       ]);
 
-      // Mock large queue depth
+      // Legacy queue depth no longer contributes to ETA.
       (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
         messageCount: 20,
         consumerCount: 1,
@@ -327,8 +327,8 @@ describe('DependencyManagerService', () => {
 
       const result = await service.calculateETA('ticket-123', ['dep-1']);
 
-      expect(result.queuePosition).toBe(20);
-      expect(result.estimatedWaitMinutes).toBeGreaterThan(10); // Should include queue wait time
+      expect(result.queuePosition).toBe(0);
+      expect(result.estimatedWaitMinutes).toBeGreaterThan(0);
     });
 
     it('should provide higher confidence with more historical samples', async () => {

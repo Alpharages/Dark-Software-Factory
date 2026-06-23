@@ -1,8 +1,4 @@
 import { TicketStatus } from '@/prisma/client';
-import { ILintingResult } from './linting.interface';
-import { ITestResult } from './test-runner.interface';
-import { ICoverageAnalysis } from './coverage.interface';
-import { ISecurityScanResult } from './security-scanner.interface';
 
 /**
  * Quality Gate Decision Engine Interfaces
@@ -121,24 +117,4 @@ export interface IQualityGateResult {
   durationMs: number;
   nextAction: 'proceed_to_github' | 'notify_pm_failure' | 'manual_review';
   ticketStatusUpdate: TicketStatus;
-}
-
-export interface IQaCheckMessage {
-  executionId: string;
-  ticketId: string;
-  projectId: string;
-  correlationId: string;
-  workspacePath: string;
-  skipCategories?: QualityCategory[];
-}
-
-export interface IQaOrchestrationResult {
-  executionId: string;
-  correlationId: string;
-  status: 'passed' | 'failed';
-  lintingResult: ILintingResult; // From Story 3.1
-  testResult: ITestResult; // From Story 3.2
-  coverageResult: ICoverageAnalysis; // From Story 3.3
-  securityResult: ISecurityScanResult; // From Story 3.4
-  qualityGateResult: IQualityGateResult;
 }

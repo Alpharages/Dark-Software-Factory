@@ -6,7 +6,6 @@ import { PrismaService } from '@/database/prisma.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { FinancialMetricsService } from '@/financial-metrics/financial-metrics.service';
 import { GitHubService } from '@/github/github.service';
-import { QaResultsService } from '@/qa-automation/qa-results.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import {
   ProjectQueryDto,
@@ -29,7 +28,6 @@ export class PmDashboardService {
     private readonly metricsService: MetricsService,
     private readonly financialMetricsService: FinancialMetricsService,
     private readonly gitHubService: GitHubService,
-    private readonly qaResultsService: QaResultsService,
     private readonly aiDecisionLoggerService: AIDecisionLoggerService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
@@ -310,7 +308,7 @@ export class PmDashboardService {
     const [prMergeRateResult, qaFirstPassResult, providerDistributionResult] =
       await Promise.allSettled([
         this.gitHubService.getPrMergeRateStats({ pmId, role }),
-        this.qaResultsService.getQaFirstPassRateStats({ pmId, role }),
+        this.getQaFirstPassRateStats({ pmId, role }),
         this.aiDecisionLoggerService.getProviderDistributionStats({ pmId, role }),
       ]);
 
@@ -418,6 +416,35 @@ export class PmDashboardService {
 
     await this.cacheManager.set(cacheKey, result, 60 * 1000); // M2: 60s TTL matches frontend staleTime
     return result;
+  }
+
+  private async getQaFirstPassRateStats(options: { pmId?: string; role: UserRole }) {
+    const { pmId, role } = options;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const scopedExecutionWhere: Prisma.ExecutionWhereInput =
+      role === 'PM' && pmId ? { ticket: { project: { pm_id: pmId } } } : {};
+
+    const [totalExecutions, firstPassCount] = await Promise.all([
+      this.prisma.qAResult.count({
+        where: {
+          created_at: { gte: since },
+          execution: { ...scopedExecutionWhere, retry_count: 0 },
+        },
+      }),
+      this.prisma.qAResult.count({
+        where: {
+          created_at: { gte: since },
+          overall_passed: true,
+          execution: { ...scopedExecutionWhere, retry_count: 0 },
+        },
+      }),
+    ]);
+
+    return {
+      qaFirstPassRate: totalExecutions > 0 ? firstPassCount / totalExecutions : 0,
+      totalExecutions,
+      firstPassCount,
+    };
   }
 
   async getFinancialSummary(_pmId: string, _role: UserRole): Promise<FinancialSummaryDto> {
