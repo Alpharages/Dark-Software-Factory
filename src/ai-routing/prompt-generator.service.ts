@@ -45,7 +45,9 @@ export class PromptGeneratorService implements OnModuleInit {
 
   onModuleInit(): void {
     // Register prompt builders
+    // Kimi uses the same prompt format as Claude Code (both are sandbox-based CLI agents)
     this.builders.set(AIProvider.CLAUDE_CODE, this.claudeBuilder);
+    this.builders.set(AIProvider.KIMI, this.claudeBuilder);
 
     this.logger.log(
       `Prompt generators initialized for providers: ${[...this.builders.keys()].join(', ')}`,

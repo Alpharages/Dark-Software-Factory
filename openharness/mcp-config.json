@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "bmad": {
+      "type": "http",
+      "url": "${BMAD_SERVER_URL}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${BMAD_API_KEY}",
+        "X-ClickUp-API-Key": "${CLICKUP_API_KEY}",
+        "X-ClickUp-Team-ID": "${CLICKUP_TEAM_ID}",
+        "X-ClickUp-Mode": "write"
+      }
+    },
+    "lore": {
+      "type": "http",
+      "url": "${LORE_SERVER_URL}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LORE_API_KEY}"
+      }
+    }
+  }
+}

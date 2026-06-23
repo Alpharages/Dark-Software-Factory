@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GitHubService, GitHubPR } from '../github.service';
+import { ApprovalGateService } from '@/approval-gate/approval-gate.service';
 import { PrismaService } from '@/database/prisma.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
@@ -16,6 +17,7 @@ export class PRAutoMergeService {
     private readonly prisma: PrismaService,
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     private readonly metrics: MetricsService,
+    private readonly approvalGate: ApprovalGateService,
   ) {}
 
   /**
@@ -46,6 +48,8 @@ export class PRAutoMergeService {
         );
         return false;
       }
+
+      await this.approvalGate.assertApproved(executionId);
 
       // 2. Fetch PR to ensure it's mergeable
       let pr: GitHubPR = await this.github.getPullRequest(owner, repo, prNumber, executionId);

@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { LoggerService } from '@/common/logger/logger.service';
+import { StatusSkillMapService } from '@/openharness/status-skill-map.service';
 
 export interface DevelopmentGateDecision {
   allowed: boolean;
-  reason: 'allowed' | 'trigger_not_configured' | 'status_mismatch';
+  reason: 'allowed' | 'mapped_status' | 'trigger_not_configured' | 'status_mismatch';
 }
 
 interface GateIntegration {
@@ -18,6 +19,7 @@ export class DevelopmentGateService {
   constructor(
     private readonly metrics: MetricsService,
     private readonly logger: LoggerService,
+    private readonly statusSkillMap: StatusSkillMapService,
   ) {}
 
   /**
@@ -38,6 +40,10 @@ export class DevelopmentGateService {
     correlationId: string,
   ): DevelopmentGateDecision {
     const { ai_trigger_status, provider, project_id } = integration;
+    const mappedSkill = this.statusSkillMap.resolveSkill(taskStatus);
+    if (mappedSkill) {
+      return { allowed: true, reason: 'mapped_status' };
+    }
 
     // AC3: Null/empty trigger status — discard all tasks with warn
     if (!ai_trigger_status || ai_trigger_status.trim() === '') {

@@ -3,12 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { Counter, Histogram, Gauge } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import * as https from 'node:https';
+import * as http from 'node:http';
 import {
   SandboxManager,
   SandboxInfo,
   Sandbox,
   ConnectionConfigOptions,
-  OutputMessage,
 } from '@alibaba-group/opensandbox';
 import { AgentCommandOptions } from './interfaces/agent-command-options.interface';
 import { AgentCommandResult } from './interfaces/agent-command-result.interface';
@@ -42,13 +43,16 @@ export class SandboxService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     const domain = this.config.get<string>('opensandbox.domain', 'localhost:8080');
 
+    // requestTimeoutSeconds must cover the full sandbox execution (streaming
+    // commands keep the HTTP connection open for the entire run).  Use the
+    // sandbox timeout + a generous buffer so lifecycle API calls also work.
+    const sandboxTimeoutS = this.config.get<number>('opensandbox.sandboxTimeoutS', 3600);
+
     this.connectionConfigOptions = {
       domain,
       apiKey: this.config.get<string>('opensandbox.apiKey', ''),
       protocol: this.config.get<'http' | 'https'>('opensandbox.protocol', 'http'),
-      requestTimeoutSeconds: Math.floor(
-        this.config.get<number>('opensandbox.requestTimeoutMs', 60000) / 1000,
-      ),
+      requestTimeoutSeconds: sandboxTimeoutS + 120,
       useServerProxy: this.config.get<boolean>('opensandbox.useServerProxy', false),
     };
 
@@ -196,70 +200,155 @@ export class SandboxService implements OnModuleInit {
         `Sandbox created: sandboxId=${sandboxId}, executionId=${options.executionId}`,
       );
 
-      const execResult = await sandbox.commands.run(
-        options.command,
-        {
-          timeoutSeconds: options.timeoutSeconds,
-        },
-        {
-          onStdout: (msg: OutputMessage) => {
-            stdoutBuffer += msg.text;
-            this.executionGateway?.emitLog(
-              options.executionId,
-              options.ticketId ?? '',
-              msg.text,
-              'stdout',
+      // Direct node:https SSE streaming — bypasses the SDK's internal
+      // dispatcher and fetch() which both fail to deliver real-time chunks
+      // inside the NestJS runtime.  node:https.request proven to stream correctly.
+      const execdUrl = await sandbox.getEndpointUrl(44772);
+      const apiKey = this.config.get<string>('opensandbox.apiKey', '');
+
+      const commandBody = JSON.stringify({
+        command: options.command,
+        background: false,
+        timeout: options.timeoutSeconds ? Math.round(options.timeoutSeconds * 1000) : undefined,
+      });
+
+      this.logger.log(
+        `Starting direct SSE stream: sandboxId=${sandboxId}, execdUrl=${execdUrl}, executionId=${options.executionId}`,
+      );
+
+      await new Promise<void>((resolve, reject) => {
+        const parsedUrl = new URL(`${execdUrl}/command`);
+        const transport = parsedUrl.protocol === 'https:' ? https : http;
+
+        const req = transport.request(
+          parsedUrl,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'text/event-stream',
+              'OPEN-SANDBOX-API-KEY': apiKey,
+            },
+          },
+          (res) => {
+            if (res.statusCode !== 200) {
+              let errBody = '';
+              res.on('data', (c: Buffer) => (errBody += c.toString()));
+              res.on('end', () =>
+                reject(new Error(`Execd command failed (status=${res.statusCode}): ${errBody}`)),
+              );
+              return;
+            }
+
+            this.logger.log(
+              `SSE stream connected: sandboxId=${sandboxId}, executionId=${options.executionId}`,
             );
 
-            if (options.onStdoutLine) {
-              lineBuffer += msg.text;
-              const lines = lineBuffer.split('\n');
-              lineBuffer = lines.pop() || '';
+            let sseBuf = '';
 
-              for (const line of lines) {
+            res.on('data', (chunk: Buffer) => {
+              sseBuf += chunk.toString();
+              let idx: number;
+
+              while ((idx = sseBuf.indexOf('\n')) >= 0) {
+                const rawLine = sseBuf.slice(0, idx).trim();
+                sseBuf = sseBuf.slice(idx + 1);
+                if (!rawLine) continue;
+
                 try {
-                  options.onStdoutLine(line);
+                  const ev = JSON.parse(rawLine) as {
+                    type?: string;
+                    text?: string;
+                    error?: { name?: string; value?: string };
+                  };
+
+                  if (ev.type === 'stdout') {
+                    const text = ev.text ?? '';
+                    stdoutBuffer += text;
+                    this.executionGateway?.emitLog(
+                      options.executionId,
+                      options.ticketId ?? '',
+                      text,
+                      'stdout',
+                    );
+
+                    if (options.onStdoutLine) {
+                      lineBuffer += text + '\n';
+                      const lines = lineBuffer.split('\n');
+                      lineBuffer = lines.pop() || '';
+                      for (const line of lines) {
+                        try {
+                          options.onStdoutLine(line);
+                        } catch (err) {
+                          this.logger.error(
+                            `[SandboxService] Error in onStdoutLine callback for ${options.executionId}: ${(err as Error).message}`,
+                            (err as Error).stack,
+                          );
+                        }
+                      }
+                    }
+                  } else if (ev.type === 'stderr') {
+                    stderrBuffer += ev.text ?? '';
+                    this.executionGateway?.emitLog(
+                      options.executionId,
+                      options.ticketId ?? '',
+                      ev.text ?? '',
+                      'stderr',
+                    );
+                  } else if (ev.type === 'execution_complete') {
+                    // exit_code may be on the event; default to 0 if absent
+                    const evAny = ev as Record<string, unknown>;
+                    exitCode = typeof evAny.exit_code === 'number' ? evAny.exit_code : 0;
+                  } else if (ev.type === 'error') {
+                    exitCode = 1;
+                    timedOut =
+                      ev.error?.name === 'TimeoutError' ||
+                      /timed? out|timeout/i.test(ev.error?.value ?? '');
+                  }
+                } catch {
+                  // Non-JSON SSE line — skip
+                }
+              }
+            });
+
+            res.on('end', () => {
+              // Flush remaining SSE buffer (last line without trailing newline)
+              const remaining = sseBuf.trim();
+              if (remaining) {
+                try {
+                  const ev = JSON.parse(remaining) as { type?: string; text?: string };
+                  if (ev.type === 'stdout' && ev.text && options.onStdoutLine) {
+                    lineBuffer += ev.text + '\n';
+                  }
+                  if (ev.type === 'stdout') stdoutBuffer += ev.text ?? '';
+                } catch {
+                  /* skip */
+                }
+              }
+
+              // Flush remaining line buffer
+              if (options.onStdoutLine && lineBuffer.trim()) {
+                try {
+                  options.onStdoutLine(lineBuffer);
                 } catch (err) {
-                  // NFR-WR4: Swallowing errors to prevent sandbox execution crash — never let callback crash the loop
                   this.logger.error(
                     `[SandboxService] Error in onStdoutLine callback for ${options.executionId}: ${(err as Error).message}`,
                     (err as Error).stack,
                   );
                 }
+                lineBuffer = '';
               }
-            }
-          },
-          onStderr: (msg: OutputMessage) => {
-            stderrBuffer += msg.text;
-            this.executionGateway?.emitLog(
-              options.executionId,
-              options.ticketId ?? '',
-              msg.text,
-              'stderr',
-            );
-          },
-        },
-      );
+              resolve();
+            });
 
-      // P5: Flush any partial line remaining in the buffer after stream ends.
-      // Handles agents that write the result line without a trailing newline.
-      if (options.onStdoutLine && lineBuffer.trim()) {
-        try {
-          options.onStdoutLine(lineBuffer);
-        } catch (err) {
-          this.logger.error(
-            `[SandboxService] Error in onStdoutLine callback for ${options.executionId}: ${(err as Error).message}`,
-            (err as Error).stack,
-          );
-        }
-        lineBuffer = '';
-      }
+            res.on('error', (err) => reject(err));
+          },
+        );
 
-      // Infer exit code from the execResult
-      exitCode = execResult.error ? 1 : 0;
-      timedOut =
-        execResult.error?.name === 'TimeoutError' ||
-        /timed? out|timeout/i.test(execResult.error?.value ?? '');
+        req.on('error', (err) => reject(err));
+        req.write(commandBody);
+        req.end();
+      });
 
       const durationMs = Date.now() - startTime;
       const durationSeconds = durationMs / 1000;

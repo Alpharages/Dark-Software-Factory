@@ -151,6 +151,18 @@ export default () => {
 
     // Story 2.6: Reserved for future provider configuration
 
+    openharness: {
+      binaryPath: process.env.OPENHARNESS_BINARY_PATH || 'oh',
+      model: process.env.OPENHARNESS_MODEL || 'gpt-5.4',
+      defaultSkill: process.env.OPENHARNESS_DEFAULT_SKILL || 'clickup-dev-implement',
+      workspaceDir: process.env.OPENHARNESS_WORKSPACE_DIR || process.cwd(),
+      maxTurns: parseInt(process.env.OPENHARNESS_MAX_TURNS || '200', 10),
+      mcpConfigPath:
+        process.env.OPENHARNESS_MCP_CONFIG_PATH ||
+        process.env.MCP_CONFIG_PATH ||
+        './docs/openharness/mcp-config.json',
+    },
+
     // Story 2.7: Anthropic Claude API Configuration (updated OS-3.2: stale refs removed)
     // Model: claude-sonnet-4-20250514 is the latest Sonnet model as of implementation
     anthropic: {

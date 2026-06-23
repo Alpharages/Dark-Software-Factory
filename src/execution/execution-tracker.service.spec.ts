@@ -168,6 +168,7 @@ describe('ExecutionTrackerService', () => {
       [AIProvider.GEMINI]: 0,
       [AIProvider.CODEX]: 0,
       [AIProvider.KIMI]: 0,
+      [AIProvider.OPENHARNESS]: 0,
     });
   });
 

@@ -9,9 +9,10 @@ export interface ResourceProfile {
 @Injectable()
 export class SandboxResourceProfileService {
   // Small: scores 0-3
-  private readonly SMALL: ResourceProfile = { cpuLimit: '0.5', memoryLimit: '256Mi' };
-  // Large: scores 8-10
-  private readonly LARGE: ResourceProfile = { cpuLimit: '2', memoryLimit: '1Gi' };
+  // 1Gi minimum — code-interpreter base + AI CLI runtime needs ~500MB+; 512Mi causes OOM kill
+  private readonly SMALL: ResourceProfile = { cpuLimit: '1', memoryLimit: '1Gi' };
+  // Large: scores 8+
+  private readonly LARGE: ResourceProfile = { cpuLimit: '2', memoryLimit: '2Gi' };
 
   constructor(private readonly config: ConfigService) {}
 

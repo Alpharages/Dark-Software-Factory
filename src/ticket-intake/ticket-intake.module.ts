@@ -26,6 +26,7 @@ import { ProjectModule } from '../projects/project.module';
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 12.5: Dependency Management
 import { DependenciesModule } from '../dependencies/dependencies.module';
+import { DispatcherModule } from '@/dispatcher/dispatcher.module';
 
 // Metric names (must match service injection)
 const METRICS = {
@@ -63,6 +64,7 @@ const METRICS = {
     ProjectModule,
     // Story 12.5: Dependency Management
     DependenciesModule,
+    DispatcherModule,
     // Story 2.12: Cache for context extraction
     CacheModule.registerAsync({
       imports: [ConfigModule],

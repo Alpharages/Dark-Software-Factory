@@ -1,18 +1,49 @@
 # dsf-execution — Agentic Delivery Workflow
 
+## CRITICAL OUTPUT PROTOCOL — Read First
+
+You are running in headless Claude Code mode. Your **text response** is the process stdout.
+Bash tool outputs are captured internally — they do NOT appear in the process stdout.
+
+**Rules:**
+
+1. At each milestone, your immediate text output MUST be the JSON progress line — print it BEFORE using any tools for that step.
+2. The VERY LAST thing you output MUST be the JSON result line. Nothing after it.
+3. NEVER output markdown, prose, summaries, or explanations. ONLY JSON lines.
+4. Each JSON line must be on its own line with no trailing text.
+
+Example of correct output sequence (what you write as text, in order):
+
+```
+{"type":"progress","pct":10,"msg":"Budget check passed"}
+{"type":"progress","pct":20,"msg":"Cloning repository"}
+{"type":"progress","pct":40,"msg":"Implementing changes"}
+{"type":"progress","pct":75,"msg":"Implementation complete"}
+{"type":"progress","pct":80,"msg":"Running QA"}
+{"type":"progress","pct":90,"msg":"Pushing to GitHub"}
+{"type":"progress","pct":95,"msg":"Opening PR"}
+{"type":"progress","pct":100,"msg":"Done"}
+{"type":"result","prUrl":"https://...","commitSha":"abc123","branchName":"dsf/...","qaStatus":"passed","qaRetryCount":0}
+```
+
+---
+
 ## Required Environment Variables
 
 The following environment variables MUST be present. Execution MUST halt immediately
 if any required variable is missing or empty.
 
-| Variable          | Required | Default | Description                             |
-| ----------------- | -------- | ------- | --------------------------------------- |
-| REPO_URL          | YES      | —       | HTTPS URL of the repository to clone    |
-| FEATURE_BRANCH    | YES      | —       | Branch name to create and push          |
-| TASK_DESCRIPTION  | YES      | —       | Full description of the changes to make |
-| GITHUB_TOKEN      | YES      | —       | GitHub PAT for push and PR creation     |
-| ANTHROPIC_API_KEY | YES      | —       | Anthropic API key (already in env)      |
-| QA_MAX_RETRIES    | NO       | 3       | Maximum QA self-healing retries (≥1)    |
+| Variable          | Required | Default | Description                                         |
+| ----------------- | -------- | ------- | --------------------------------------------------- |
+| REPO_URL          | YES      | —       | HTTPS URL of the repository to clone                |
+| FEATURE_BRANCH    | YES      | —       | Branch name to create and push                      |
+| TASK_DESCRIPTION  | YES      | —       | Full description of the changes to make             |
+| GITHUB_TOKEN      | YES      | —       | GitHub PAT for push and PR creation                 |
+| ANTHROPIC_API_KEY | NO\*     | —       | Anthropic API key (present when provider is Claude) |
+| KIMI_API_KEY      | NO\*     | —       | Kimi API key (present when provider is Kimi)        |
+
+> \*At least one provider API key must be present (ANTHROPIC_API_KEY or KIMI_API_KEY).
+> | QA_MAX_RETRIES | NO | 3 | Maximum QA self-healing retries (≥1) |
 
 ## Security Constraints — Non-Negotiable
 
@@ -20,123 +51,128 @@ if any required variable is missing or empty.
 - NEVER log or print the value of any environment variable
 - NEVER make network calls to hosts other than: the $REPO_URL host and api.github.com
 - ALL output goes to stdout only — no file exfiltration
-- If $GITHUB_TOKEN or $ANTHROPIC_API_KEY appears in any diff, ABORT immediately
+- If $GITHUB_TOKEN, $ANTHROPIC_API_KEY, or $KIMI_API_KEY appears in any diff, ABORT immediately
 - NEVER embed tokens in git remote URLs — use `gh auth setup-git` for push authentication
 
 ## Execution Workflow
 
 ### Step 0: Validate Environment
 
-Set up an exit trap so that any unexpected failure emits a result JSON before the process dies:
+Use bash to check required env vars, format, and safety:
 
 ```bash
-_on_exit() {
-  echo "{\"type\":\"result\",\"prUrl\":null,\"commitSha\":\"\",\"branchName\":\"${FEATURE_BRANCH:-}\",\"qaStatus\":\"failed\",\"qaRetryCount\":0}"
-}
-trap '_on_exit' ERR
-```
-
-Check required env vars, format, and safety:
-
-```bash
-# 1. Required presence — exit on any missing variable
-for var in REPO_URL FEATURE_BRANCH TASK_DESCRIPTION GITHUB_TOKEN ANTHROPIC_API_KEY; do
+for var in REPO_URL FEATURE_BRANCH TASK_DESCRIPTION GITHUB_TOKEN; do
   if [ -z "${!var:-}" ]; then
-    echo '{"type":"result","prUrl":null,"commitSha":"","branchName":"","qaStatus":"failed","qaRetryCount":0}'
+    echo "Missing required env var: $var"
     exit 1
   fi
 done
 
-# 2. REPO_URL must be an HTTPS URL (SSH format breaks gh auth setup-git authentication)
+# At least one provider API key must be present
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${KIMI_API_KEY:-}" ]; then
+  echo "Missing provider API key (need ANTHROPIC_API_KEY or KIMI_API_KEY)"
+  exit 1
+fi
+
+# REPO_URL must be HTTPS
 if [[ "$REPO_URL" != https://* ]]; then
-  echo '{"type":"result","prUrl":null,"commitSha":"","branchName":"","qaStatus":"failed","qaRetryCount":0}'
   exit 1
 fi
 
-# 3. FEATURE_BRANCH must be a safe git ref name — no leading dashes, no shell metacharacters
+# FEATURE_BRANCH must be a safe git ref
 if [[ ! "$FEATURE_BRANCH" =~ ^[a-zA-Z0-9._/-]+$ ]] || [[ "$FEATURE_BRANCH" == -* ]]; then
-  echo '{"type":"result","prUrl":null,"commitSha":"","branchName":"","qaStatus":"failed","qaRetryCount":0}'
   exit 1
 fi
 
-# 4. QA_MAX_RETRIES must be a positive integer (default 3 if unset or invalid)
+# QA_MAX_RETRIES default
 QA_MAX_RETRIES="${QA_MAX_RETRIES:-3}"
 if ! [[ "$QA_MAX_RETRIES" =~ ^[1-9][0-9]*$ ]]; then
   QA_MAX_RETRIES=3
 fi
 ```
 
+If any validation fails, output this JSON as your text response and stop:
+
+```
+{"type":"result","prUrl":null,"commitSha":"","branchName":"","qaStatus":"failed","qaRetryCount":0}
+```
+
 ### Step 1: Emit Initial Progress
 
-Emit to stdout (newline-delimited JSON — this is the FIRST output line):
+**OUTPUT THIS AS YOUR TEXT (before any tools for this step):**
+
+```
 {"type":"progress","pct":10,"msg":"Budget check passed"}
+```
 
 ### Step 2: Clone Repository
 
-Emit BEFORE cloning starts (so PM sees the milestone as it begins, not after):
+**OUTPUT THIS AS YOUR TEXT (before running clone):**
+
+```
 {"type":"progress","pct":20,"msg":"Cloning repository"}
-
-Remove any pre-existing workspace directory to ensure a clean clone:
-
-```bash
-rm -rf workspace
 ```
 
-Clone $REPO_URL and create/checkout $FEATURE_BRANCH:
-
-```bash
-git clone --no-progress "$REPO_URL" workspace
-cd workspace
-git checkout -b "$FEATURE_BRANCH" 2>/dev/null || git checkout "$FEATURE_BRANCH"
-```
-
-(`--no-progress` suppresses git's stderr progress output, keeping stdout free of non-JSON noise.)
-
-Configure git identity for commits:
-
-```bash
-git config user.email "dsf-agent@darksoftwarefactory.ai"
-git config user.name "DSF Agent"
-```
-
-Configure GitHub CLI for push authentication (token stays out of `.git/config` and git remote URLs):
+Then use bash to clone:
 
 ```bash
 export GH_TOKEN="$GITHUB_TOKEN"
 gh auth setup-git
+rm -rf workspace
+git clone --no-progress "$REPO_URL" workspace
+cd workspace
+git checkout -b "$FEATURE_BRANCH" 2>/dev/null || git checkout "$FEATURE_BRANCH"
+git config user.email "dsf-agent@darksoftwarefactory.ai"
+git config user.name "DSF Agent"
 ```
-
-(`gh auth setup-git` registers the GitHub CLI as a git credential helper for github.com, so `git push` authenticates via `GH_TOKEN` without embedding the token in the remote URL.)
 
 ### Step 3: Implement Changes
 
-Read $TASK_DESCRIPTION carefully. Analyze the codebase. Implement the required changes.
-Use your full capability: read files, edit files, run commands to understand context.
+**OUTPUT THIS AS YOUR TEXT (before starting implementation):**
 
-Emit when starting implementation:
+```
 {"type":"progress","pct":40,"msg":"Implementing changes"}
+```
 
-Emit when implementation is complete (before QA):
+Read $TASK_DESCRIPTION carefully. Analyze the codebase (read files, understand context).
+Implement the required changes.
+
+**OUTPUT THIS AS YOUR TEXT (after implementation is complete, before QA):**
+
+```
 {"type":"progress","pct":75,"msg":"Implementation complete"}
+```
 
 ### Step 4: QA Self-Healing Loop
 
-Run QA checks: lint + tests. The QA command sequence depends on the project's package manager.
-Detect it from lock files: `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, else npm.
+**OUTPUT THIS AS YOUR TEXT (before starting QA):**
 
-**CRITICAL: Run lint and tests as separate commands** so you can determine each outcome independently:
+```
+{"type":"progress","pct":80,"msg":"Running QA"}
+```
 
-1. Record the attempt start time: `QA_START_MS=$(date +%s%3N)`
-2. Run the lint command (e.g., `pnpm lint`). Capture whether it passed and the error count.
-3. Run the test command (e.g., `pnpm test`). Capture whether it passed, the pass count, and the fail count.
+Run QA checks: **lint changed files only** + typecheck. Detect package manager from lock files:
 
-Emit at the start of QA:
-`{"type":"progress","pct":80,"msg":"Running QA"}`
+- `pnpm-lock.yaml` → pnpm
+- `yarn.lock` → yarn
+- else npm
 
-**After EACH QA attempt completes (initial run AND each retry):**
+**IMPORTANT: Only lint files YOU changed** — the repo may have pre-existing lint errors.
+Do NOT run `pnpm lint` on the entire repo. Instead:
 
-Compute `QA_DURATION_MS = $(date +%s%3N) - QA_START_MS`.
-Emit a `qa_attempt` JSON line to stdout with this exact shape:
+```bash
+# Get list of changed files (staged + unstaged .ts files)
+CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR HEAD -- '*.ts' | tr '\n' ' ')
+```
+
+**Run lint (changed files only) and typecheck as SEPARATE commands:**
+
+1. Record start time: `QA_START_MS=$(date +%s%3N)`
+2. Run lint on changed files only: `npx eslint $CHANGED_FILES` (skip if no .ts files changed).
+3. Run typecheck: `pnpm typecheck` (or the equivalent `tsc --noEmit`).
+4. Compute `QA_DURATION_MS = $(date +%s%3N) - QA_START_MS`
+
+**After EACH QA attempt (initial + each retry), OUTPUT THIS AS YOUR TEXT:**
 
 ```json
 {
@@ -144,91 +180,80 @@ Emit a `qa_attempt` JSON line to stdout with this exact shape:
   "attempt": 1,
   "lintPassed": true,
   "lintErrors": { "count": 0, "details": [] },
-  "testsPassed": false,
-  "testResults": { "passed": 12, "failed": 1, "details": [] },
+  "testsPassed": true,
+  "testResults": { "passed": 12, "failed": 0, "details": [] },
   "durationMs": 4200
 }
 ```
 
-- `attempt`: Current attempt number (1-based: first run = 1, first retry = 2, etc.)
-- `lintPassed/testsPassed`: JSON booleans.
-- `lintErrors`: `count` = 0 if passed.
-- `testResults`: `passed`/`failed` counts. If tests were skipped (e.g., due to fatal lint), set `testsPassed: false` and counts to 0.
+Use actual values. `attempt` is 1-indexed (first run = 1, first retry = 2, etc.).
 
-**On QA failure — self-healing loop (up to $QA_MAX_RETRIES attempts, default 3):**
+**On QA failure — self-healing loop (up to $QA_MAX_RETRIES retries):**
 
-For each retry attempt N (1-indexed start):
+For each retry N:
 
-1. READ the full error output carefully
-2. REASON about the root cause — which file(s) need fixing?
-3. EDIT the specific file(s) to fix the issue — do NOT retry without making changes
-4. Emit: `{"type":"progress","pct":82,"msg":"QA failed — retrying (N/3)"}` ← emit BEFORE re-running
-5. Reset `QA_START_MS=$(date +%s%3N)`, then RE-RUN the QA sequence (separate lint/test calls)
-6. Emit the `qa_attempt` marker for attempt N+1 after it completes
+1. Read the full error output carefully
+2. Reason about the root cause and fix the specific files
+3. **OUTPUT THIS AS YOUR TEXT before re-running:** `{"type":"progress","pct":82,"msg":"QA failed — retrying (N/3)"}`
+4. Reset `QA_START_MS=$(date +%s%3N)`, re-run lint (changed files only) and typecheck separately
+5. Output the `qa_attempt` JSON for attempt N+1
 
-If QA fails after all retries:
+If QA fails after all retries — commit and push anyway:
 
-- DO NOT open a PR
-- Commit and push the failing branch anyway:
-  ```bash
-  if git status --porcelain | grep -q .; then
-    git add -A
-    git commit --no-verify -m "<AI-generated message describing what was attempted and what QA errors remain>"
-  fi
-  git push origin "$FEATURE_BRANCH"
-  COMMIT_SHA=$(git rev-parse HEAD)
-  ```
-- Emit the final result line with `qaStatus` "failed"
+```bash
+if git status --porcelain | grep -q .; then
+  git add -A
+  git commit --no-verify -m "<AI-generated message describing what was attempted>"
+fi
+git push origin "$FEATURE_BRANCH"
+COMMIT_SHA=$(git rev-parse HEAD)
+```
 
-`qaRetryCount` = Number of retry attempts made (0 if QA passed on first attempt).
-`qaStatus` values:
-
-- "passed" — QA passed on first attempt (qaRetryCount = 0)
-- "self_healed" — QA passed after one or more retries (qaRetryCount ≥ 1)
-- "failed" — All retries exhausted, QA did not pass (qaRetryCount = QA_MAX_RETRIES)
+Then go to Step 8 with `qaStatus: "failed"`.
 
 ### Step 5: Commit
 
-Only commit if there are staged changes — guard against empty commits:
+Only if QA passed or self-healed:
 
 ```bash
 git add -A
 if git status --porcelain | grep -q .; then
   git commit -m "<AI-generated descriptive message reflecting what was changed>"
 else
-  echo '{"type":"result","prUrl":null,"commitSha":"","branchName":"'"$FEATURE_BRANCH"'","qaStatus":"failed","qaRetryCount":0}'
-  exit 1
-fi
+  # Nothing to commit — output failure result and stop
 ```
 
-The commit message MUST describe the actual change, not a generic placeholder.
-Do NOT include "WIP", "initial commit", or "automated" in the message.
+If nothing to commit, output failure result and stop:
+
+```
+{"type":"result","prUrl":null,"commitSha":"","branchName":"<FEATURE_BRANCH>","qaStatus":"failed","qaRetryCount":0}
+```
 
 ### Step 6: Push to GitHub
 
-Emit BEFORE pushing starts:
+**OUTPUT THIS AS YOUR TEXT (before pushing):**
+
+```
 {"type":"progress","pct":90,"msg":"Pushing to GitHub"}
+```
 
 ```bash
 git push --force-with-lease origin "$FEATURE_BRANCH"
 COMMIT_SHA=$(git rev-parse HEAD)
 ```
 
-(`--force-with-lease` handles the case where the remote branch already exists: it pushes if the remote tip matches what was cloned, but refuses if someone else pushed in the meantime — preventing silent overwrites.)
-
 ### Step 7: Open Pull Request (skip if qaStatus is "failed")
 
-Only open a PR if QA passed or self-healed.
+**OUTPUT THIS AS YOUR TEXT (before creating PR):**
 
-Emit BEFORE creating the PR:
+```
 {"type":"progress","pct":95,"msg":"Opening PR"}
+```
 
 ```bash
-# Detect the repository's actual default branch (handles main, master, develop, etc.)
 DEFAULT_BRANCH=$(git remote show origin | grep "HEAD branch" | cut -d" " -f5)
-DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"  # fallback to "main" if detection fails
+DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"
 
-# Create PR, or retrieve URL if one already exists for this branch
 PR_URL=$(gh pr create \
   --title "<descriptive PR title>" \
   --body "<PR description summarizing what changed and why>" \
@@ -237,25 +262,32 @@ PR_URL=$(gh pr create \
 PR_URL=$(gh pr view "$FEATURE_BRANCH" --json url --jq '.url' 2>/dev/null)
 ```
 
-(If `gh pr create` fails because a PR already exists for this branch, `gh pr view` retrieves the existing PR URL so `PR_URL` is always populated on success.)
-
 ### Step 8: Emit Final Result Line
 
-This MUST be the last line written to stdout. No output after this line.
+**OUTPUT THIS AS YOUR TEXT (100% progress):**
 
-Emit final progress before result:
+```
 {"type":"progress","pct":100,"msg":"Done"}
+```
+
+**Then OUTPUT THIS AS YOUR TEXT — this MUST be the ABSOLUTE LAST thing you output:**
 
 On success (QA passed or self_healed):
 
 ```
-{"type":"result","prUrl":"<PR_URL>","commitSha":"<COMMIT_SHA>","branchName":"<FEATURE_BRANCH>","qaStatus":"passed|self_healed","qaRetryCount":<N>}
+{"type":"result","prUrl":"<PR_URL>","commitSha":"<COMMIT_SHA>","branchName":"<FEATURE_BRANCH>","qaStatus":"passed","qaRetryCount":<N>}
 ```
 
-On hard QA failure (all retries exhausted):
+On QA failure (all retries exhausted):
 
 ```
 {"type":"result","prUrl":null,"commitSha":"<COMMIT_SHA>","branchName":"<FEATURE_BRANCH>","qaStatus":"failed","qaRetryCount":<QA_MAX_RETRIES>}
 ```
 
-Then emit the result line.
+`qaStatus` values:
+
+- `"passed"` — QA passed on first attempt (qaRetryCount = 0)
+- `"self_healed"` — QA passed after retries (qaRetryCount ≥ 1)
+- `"failed"` — All retries exhausted
+
+**STOP. Do not output anything after the result JSON line.**

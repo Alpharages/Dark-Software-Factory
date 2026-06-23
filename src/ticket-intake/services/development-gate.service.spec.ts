@@ -3,11 +3,14 @@ import { DevelopmentGateService } from './development-gate.service';
 import { LoggerService } from '@/common/logger/logger.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { PMProvider } from '@prisma/client';
+import { OpenHarnessSkill } from '@/openharness/skills.enum';
+import { StatusSkillMapService } from '@/openharness/status-skill-map.service';
 
 describe('DevelopmentGateService', () => {
   let service: DevelopmentGateService;
   let logger: jest.Mocked<LoggerService>;
   let metrics: jest.Mocked<MetricsService>;
+  let statusSkillMap: jest.Mocked<Pick<StatusSkillMapService, 'resolveSkill'>>;
 
   const mockIntegration: any = {
     id: 'int-123',
@@ -35,12 +38,16 @@ describe('DevelopmentGateService', () => {
     const mockMetrics = {
       incrementCounter: jest.fn(),
     };
+    statusSkillMap = {
+      resolveSkill: jest.fn().mockReturnValue(null),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DevelopmentGateService,
         { provide: LoggerService, useValue: mockLogger },
         { provide: MetricsService, useValue: mockMetrics },
+        { provide: StatusSkillMapService, useValue: statusSkillMap },
       ],
     }).compile();
 
@@ -66,6 +73,17 @@ describe('DevelopmentGateService', () => {
       expect(result.allowed).toBe(true);
       expect(logger.debug).not.toHaveBeenCalled();
       expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    it('should ALLOW status mapped to an OpenHarness skill even when not the trigger status', () => {
+      statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_CODE_REVIEW);
+
+      const result = service.check('task-1', 'In Review', mockIntegration, 'webhook', 'corr-1');
+
+      expect(result.allowed).toBe(true);
+      expect(result.reason).toBe('mapped_status');
+      expect(logger.warn).not.toHaveBeenCalled();
+      expect(metrics.incrementCounter).not.toHaveBeenCalled();
     });
 
     it('should REJECT and log warn when ai_trigger_status is missing', () => {

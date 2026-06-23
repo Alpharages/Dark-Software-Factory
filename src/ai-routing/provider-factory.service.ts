@@ -184,14 +184,14 @@ export class ProviderFactoryService {
     config?: EffectiveAiRoutingConfigDto,
   ): IProviderSelection {
     const claudeEnabled = this.config.get<boolean>('ai.providers.claudeCode.enabled', false);
-    if (!claudeEnabled) {
-      this.logger.error(`[${correlationId}] No providers ENABLED in configuration!`);
-      throw new Error('No AI providers enabled. Set CLAUDE_CODE_ENABLED=true');
-    }
-
     const geminiEnabled = this.config.get<boolean>('ai.providers.gemini.enabled', false);
     const codexEnabled = this.config.get<boolean>('ai.providers.codex.enabled', false);
     const kimiEnabled = this.config.get<boolean>('ai.providers.kimi.enabled', false);
+
+    if (!claudeEnabled && !geminiEnabled && !codexEnabled && !kimiEnabled) {
+      this.logger.error(`[${correlationId}] No providers ENABLED in configuration!`);
+      throw new Error('No AI providers enabled. Enable at least one provider.');
+    }
 
     // Tier 1: Low Complexity
     if (grade === ComplexityGrade.LOW) {

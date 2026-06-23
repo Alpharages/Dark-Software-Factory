@@ -61,6 +61,9 @@ export interface IAIExecutionPayload {
 
   /** Per-project QA retry limit — populated from Project.qa_max_retries at dispatch time (WR-5.2) */
   qaMaxRetries?: number;
+
+  /** Per-project execution-level retry limit — populated from Project.max_execution_retries */
+  maxExecutionRetries?: number;
 }
 
 /**

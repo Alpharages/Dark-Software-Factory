@@ -52,7 +52,7 @@ export class KimiProvider implements ICodingAgentProvider {
 
     const env: Record<string, string> = {
       KIMI_API_KEY: apiKey,
-      KIMI_MODEL: model,
+      KIMI_MODEL_NAME: model,
       IS_SANDBOX: '1',
       REPO_URL: payload.repositoryUrl,
       FEATURE_BRANCH: payload.targetBranch ?? featureBranch,
@@ -60,6 +60,7 @@ export class KimiProvider implements ICodingAgentProvider {
       GITHUB_TOKEN: githubToken,
       QA_MAX_RETRIES: String(payload.qaMaxRetries ?? 3), // WR-5.2
     };
+    // Only pass KIMI_BASE_URL if explicitly configured; Kimi CLI uses its own default otherwise
     if (baseURL) {
       env['KIMI_BASE_URL'] = baseURL;
     }
@@ -74,11 +75,11 @@ export class KimiProvider implements ICodingAgentProvider {
     } = {};
     const qaAttempts: QAAttempt[] = [];
 
-    const onStdoutLine = (line: string): void => {
+    /** Parse a skill-protocol JSON line (progress / result / qa_attempt). */
+    const handleSkillLine = (jsonLine: string): void => {
       try {
-        const parsed = JSON.parse(line) as { type?: string; pct?: number; msg?: string };
+        const parsed = JSON.parse(jsonLine) as { type?: string; pct?: number; msg?: string };
         if (parsed.type === 'progress' && typeof parsed.pct === 'number') {
-          // Fire-and-forget progress emission — never blocks execution (NFR-WR3)
           this.executionTracker
             .emitProgress(
               payload.executionId,
@@ -90,15 +91,19 @@ export class KimiProvider implements ICodingAgentProvider {
             .catch((err) =>
               this.logger.error(`Failed to emit progress: ${(err as Error).message}`),
             );
+          this.executionTracker
+            .emitActivity(
+              payload.executionId,
+              payload.ticketId,
+              parsed.msg ?? '',
+              'SYSTEM',
+              '🚀',
+              undefined,
+              parsed.pct,
+            )
+            .catch(() => {});
         } else if (parsed.type === 'result') {
-          const r = parsed as {
-            prUrl?: string | null;
-            commitSha?: string;
-            branchName?: string;
-            qaStatus?: 'passed' | 'self_healed' | 'failed';
-            qaRetryCount?: number;
-          };
-          agentResult = { ...agentResult, ...r };
+          Object.assign(agentResult, parsed);
           this.logger.debug(
             `[${payload.executionId}] Agent result captured: qaStatus=${agentResult.qaStatus}`,
           );
@@ -125,11 +130,82 @@ export class KimiProvider implements ICodingAgentProvider {
               testResults: a.testResults,
               durationMs: a.durationMs,
             });
-            this.logger.debug(
-              `[KimiProvider] QA attempt ${a.attempt} captured: lint=${a.lintPassed}, tests=${a.testsPassed}`,
-            );
-          } else {
-            this.logger.debug(`[KimiProvider] qa_attempt line malformed — skipped`);
+          }
+        }
+      } catch {
+        // Not valid skill JSON — skip
+      }
+    };
+
+    const onStdoutLine = (line: string): void => {
+      try {
+        const event = JSON.parse(line) as {
+          role?: string;
+          content?: string | Array<{ type?: string; text?: string }>;
+          tool_calls?: Array<{
+            type?: string;
+            function?: { name?: string; arguments?: string };
+          }>;
+        };
+
+        // Kimi stream-json: {"role":"assistant","content":"...","tool_calls":[...]}
+        if (event.role === 'assistant') {
+          // Parse text content for skill progress/result lines
+          const textContent =
+            typeof event.content === 'string'
+              ? event.content
+              : Array.isArray(event.content)
+                ? event.content
+                    .filter((b) => b.type === 'text')
+                    .map((b) => b.text)
+                    .join('\n')
+                : '';
+          if (textContent) {
+            const cleaned = textContent.replace(/^```(?:json)?\s*/gm, '').replace(/^```\s*/gm, '');
+            for (const skillLine of cleaned.split('\n')) {
+              const trimmed = skillLine.trim();
+              if (trimmed) handleSkillLine(trimmed);
+            }
+          }
+
+          // Emit live activity for tool_call blocks
+          if (event.tool_calls) {
+            for (const call of event.tool_calls) {
+              const name = call.function?.name;
+              if (!name) continue;
+              let detail = '';
+              try {
+                const args = JSON.parse(call.function?.arguments || '{}') as {
+                  command?: string;
+                  description?: string;
+                };
+                detail = args.description || args.command?.substring(0, 120) || '';
+              } catch {
+                /* ignore parse error */
+              }
+              const icon =
+                name === 'Shell' || name === 'Bash'
+                  ? '💻'
+                  : name === 'EditFile' || name === 'WriteFile'
+                    ? '✏️'
+                    : '📄';
+              const category =
+                name === 'Shell' || name === 'Bash'
+                  ? 'SYSTEM'
+                  : name === 'EditFile' || name === 'WriteFile'
+                    ? 'AI_CODING'
+                    : 'FILE_OP';
+              this.executionTracker
+                .emitActivity(
+                  payload.executionId,
+                  payload.ticketId,
+                  `${name}: ${detail || 'executing'}`,
+                  category,
+                  icon,
+                  detail,
+                )
+                .catch(() => {});
+            }
           }
         }
       } catch {
@@ -142,7 +218,7 @@ export class KimiProvider implements ICodingAgentProvider {
     const result = await this.sandboxService.runAgentCommand({
       executionId: payload.executionId,
       image: this.config.get<string>('opensandbox.agentImage', 'dsf-agents:latest'),
-      command: 'kimi execute dsf-execution',
+      command: `mkdir -p ~/.kimi && printf 'default_model = "${model}"\\n\\n[providers.dsf]\\ntype = "kimi"\\nbase_url = "${baseURL || 'https://api.kimi.com/coding/v1'}"\\napi_key = "%s"\\n\\n[models."${model}"]\\nprovider = "dsf"\\nmodel = "${model}"\\nmax_context_size = 131072\\n' "$KIMI_API_KEY" > ~/.kimi/config.toml && kimi --print --output-format stream-json --yolo --skills-dir /home/agent/.kimi/skills -p "/skill:dsf-execution"`,
       env,
       timeoutSeconds: this.config.get<number>('opensandbox.sandboxTimeoutS', 3600),
       cpuLimit: profile.cpuLimit,
@@ -239,10 +315,7 @@ export class KimiProvider implements ICodingAgentProvider {
           code: result.timedOut ? AIErrorCode.TIMEOUT : AIErrorCode.PROCESS_CRASH,
           message: errorMessage,
           isRetryable:
-            result.timedOut ||
-            qaFailed ||
-            errorMessage.includes('Rate Limit') ||
-            errorMessage.includes('429'),
+            result.timedOut || errorMessage.includes('Rate Limit') || errorMessage.includes('429'),
           rawOutput: `${result.stdout}\n${result.stderr}`.trim(),
           exitCode: result.exitCode,
         },

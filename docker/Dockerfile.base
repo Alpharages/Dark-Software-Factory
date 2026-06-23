@@ -1,90 +1,85 @@
-FROM node:20-slim
+# ===========================================
+# Dark Software Factory — Agent Base Image
+# ===========================================
+# Purpose: Extends OpenSandbox code-interpreter with AI provider CLIs
+# Base: opensandbox/code-interpreter:v1.0.2 (Ubuntu 24.04, Node 20/22, Python 3.10-3.14, Go, Java, uv)
+#
+# Pre-installed AI CLIs: Claude Code, Cursor, Kimi
+# Pre-installed tools: git, python3, node, go, java, pnpm, yarn, composer
+#
+# Build (from repo root):
+#   docker build -f docker/Dockerfile.base -t dsf-agents-base:latest .
+# ===========================================
 
-# Install essential system tools for node-pty and agent operations
-# git: for cloning repositories
-# python3, make, g++: for compiling native modules (like node-pty)
-# curl: for health checks and downloads
-# ca-certificates: for SSL/TLS connections (required for CLI installers)
+FROM opensandbox/code-interpreter:v1.0.2
+
+USER root
+
+# ============================================
+# Additional System Dependencies
+# ============================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    python3 \
-    python3-pip \
     php-cli \
-    unzip \
     sudo \
-    make \
-    g++ \
-    curl \
-    ca-certificates \
-    && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Composer for PHP/Laravel support
+# Composer (PHP/Laravel support)
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # ============================================
-# Install AI Provider CLI Tools (as root)
+# AI Provider CLIs (as root)
 # ============================================
 
-# Install Cursor CLI
-# Official installation from: https://cursor.com/docs/cli/headless#setup
-# The installer puts the binary in ~/.local/bin, need to ensure it's in PATH
+# Cursor CLI
 RUN curl https://cursor.com/install -fsS | bash && \
-    # Check where agent was installed
-    echo "=== Searching for agent binary ===" && \
-    find /root -name "agent" -type f 2>/dev/null && \
-    # Copy (not symlink) to /usr/local/bin so all users can access it
     export PATH="/root/.local/bin:$PATH" && \
     if [ -f "/root/.local/bin/agent" ]; then \
-    cp /root/.local/bin/agent /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; \
+      cp /root/.local/bin/agent /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; \
     elif [ -f "$HOME/.cursor/bin/agent" ]; then \
-    cp "$HOME/.cursor/bin/agent" /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; \
+      cp "$HOME/.cursor/bin/agent" /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; \
     else \
-    AGENT_PATH=$(find /root -name "agent" -type f -executable 2>/dev/null | head -1); \
-    if [ -n "$AGENT_PATH" ]; then cp "$AGENT_PATH" /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; fi; \
+      AGENT_PATH=$(find /root -name "agent" -type f -executable 2>/dev/null | head -1); \
+      if [ -n "$AGENT_PATH" ]; then cp "$AGENT_PATH" /usr/local/bin/agent && chmod 755 /usr/local/bin/agent; fi; \
     fi
 
-# Install Claude CLI
-# Use npm directly to avoid runtime compilation/postinstall spikes
-# This requires the image to be rebuilt
+# Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code && \
-    # Ensure binary is in path and executable
     which claude && chmod +x $(which claude)
 
 # ============================================
-# Install Common Package Managers (as root)
+# Package Managers (as root)
 # ============================================
-# Pre-install pnpm and yarn so the AI agent doesn't waste time
-# installing them on every execution. These are globally available
-# via /usr/local/bin and accessible to the non-root agent user.
 RUN npm install -g --force pnpm yarn && \
     pnpm --version && yarn --version
 
-# Verify CLI installations are accessible (existence check, not --version due to config issues)
-RUN which agent && chmod +x /usr/local/bin/agent || (echo "Cursor CLI (agent) installation failed - agent not found in PATH" && exit 1)
-RUN which claude && chmod +x /usr/local/bin/claude || (echo "Claude CLI installation failed - claude not found in PATH" && exit 1)
+# Verify root-installed CLIs
+RUN which agent || (echo "Cursor CLI installation failed" && exit 1)
+RUN which claude || (echo "Claude CLI installation failed" && exit 1)
 
 # ============================================
-# Set up non-root agent user
+# Non-root Agent User
 # ============================================
-
-# Remove default 'node' user (UID 1000) to allow creating 'agent' with UID 1000
-RUN userdel -r node || true
-
-# Create a non-root user 'agent'
-RUN useradd -m -u 1000 agent
-
-# Configure passwordless sudo for agent user
+# code-interpreter ships with 'ubuntu' (UID 1000) — rename to 'agent' for consistency
+RUN usermod -l agent -d /home/agent -m ubuntu 2>/dev/null || true && \
+    groupmod -n agent ubuntu 2>/dev/null || true
 RUN echo "agent ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/agent && \
     chmod 0440 /etc/sudoers.d/agent
 
-# Set up workspace
-WORKDIR /home/agent/workspace
-RUN chown agent:agent /home/agent/workspace
+WORKDIR /home/agent
+RUN mkdir -p /home/agent/workspace && chown -R agent:agent /home/agent/workspace
 
-# Switch to non-root user
+# ============================================
+# Agent-user CLIs (must run as agent for correct shebang paths)
+# ============================================
 USER agent
+ENV PATH="/home/agent/.local/bin:$PATH"
 
-# Verify installation (fail build if tools are missing)
-# Note: Using 'which' instead of '--version' for CLI tools due to config file requirements
-RUN node -v && npm -v && python3 --version && git --version && which agent && claude --version
+# Kimi CLI (uv is already available from code-interpreter base)
+RUN uv tool install --python 3.13 kimi-cli && \
+    which kimi
+
+# ============================================
+# Final Verification
+# ============================================
+RUN node -v && npm -v && python3 --version && git --version && \
+    which agent && claude --version && which kimi
