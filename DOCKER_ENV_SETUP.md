@@ -88,45 +88,6 @@ These are only needed when running with `--profile monitoring`:
 | `ANTHROPIC_API_KEY`      | No       | Anthropic Claude API key                                     |
 | `SENTRY_DSN`             | No       | Sentry error tracking DSN                                    |
 
-### Sandbox Resource Limits (Story 23.3)
-
-Controls resource limits for AI agent containers to prevent one runaway agent from crashing the host:
-
-| Variable                         | Default | Description                                                         |
-| -------------------------------- | ------- | ------------------------------------------------------------------- |
-| `SANDBOX_ENABLE_RESOURCE_LIMITS` | `true`  | Master switch to enable/disable resource limits                     |
-| `SANDBOX_MEMORY_LIMIT_MB`        | `512`   | Memory limit per container in MB (64-8192)                          |
-| `SANDBOX_CPU_LIMIT_PERCENT`      | `100`   | CPU limit as % of single core (10-400), 100 = 1 core, 200 = 2 cores |
-| `SANDBOX_MEMORY_SWAP_LIMIT_MB`   | `512`   | Swap limit in MB (0 to disable swap, recommended for strict limits) |
-
-#### Resource Profiles
-
-Containers can use predefined resource profiles based on task complexity:
-
-| Profile  | Memory | CPU  | Use Case                             |
-| -------- | ------ | ---- | ------------------------------------ |
-| `small`  | 256MB  | 50%  | Simple tasks, linting, small fixes   |
-| `medium` | 512MB  | 100% | Standard development tasks (default) |
-| `large`  | 1024MB | 200% | Complex builds, large refactors      |
-
-**Example: Running with Strict Memory Limits**
-
-```bash
-# Disable swap for strict memory enforcement
-SANDBOX_ENABLE_RESOURCE_LIMITS=true
-SANDBOX_MEMORY_LIMIT_MB=512
-SANDBOX_MEMORY_SWAP_LIMIT_MB=0
-SANDBOX_CPU_LIMIT_PERCENT=100
-```
-
-**Example: High-Performance Agents**
-
-```bash
-# Allow more resources for build-heavy tasks
-SANDBOX_MEMORY_LIMIT_MB=2048
-SANDBOX_CPU_LIMIT_PERCENT=200
-```
-
 ## How Docker Compose Uses `.env`
 
 Docker Compose automatically loads variables from `.env` in the same directory as `docker-compose.yml`. Variables are referenced using `${VARIABLE_NAME}` syntax:

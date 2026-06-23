@@ -56,7 +56,7 @@ export interface IAIExecutionPayload {
   /** Optional: Allow provider fallback */
   allowFallback?: boolean;
 
-  /** Complexity score (0-10) for sandbox resource profile selection */
+  /** Complexity score used for model selection and QA sampling */
   complexityScore?: number;
 
   /** Per-project QA retry limit — populated from Project.qa_max_retries at dispatch time (WR-5.2) */
