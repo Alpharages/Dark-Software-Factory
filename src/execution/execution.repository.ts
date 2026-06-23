@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AIProvider, Execution, ExecutionStatus, Prisma } from '@/prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { IExecutionAuditLog } from './interfaces';
-import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
+import { QAAttempt } from './interfaces'; // WR-6.3
 
 /**
  * Execution Repository

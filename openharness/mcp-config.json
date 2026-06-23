@@ -16,6 +16,13 @@
       "headers": {
         "Authorization": "Bearer ${LORE_API_KEY}"
       }
+    },
+    "gitnexus": {
+      "type": "http",
+      "url": "${GITNEXUS_SERVER_URL}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITNEXUS_API_KEY}"
+      }
     }
   }
 }

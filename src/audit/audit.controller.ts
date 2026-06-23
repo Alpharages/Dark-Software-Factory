@@ -157,7 +157,7 @@ export class AuditController {
     name: 'agent_name',
     required: false,
     description: 'Filter by agent name',
-    example: 'AIExecutionConsumer',
+    example: 'QaOrchestrator',
   })
   @ApiQuery({
     name: 'action',

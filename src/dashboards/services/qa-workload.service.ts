@@ -4,7 +4,6 @@ import { Cache } from 'cache-manager';
 import { Counter, Gauge, Histogram } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '@/database/prisma.service';
-import { BugEscapeService } from '@/qa-automation/bug-escape/bug-escape.service';
 import { QualityGateConfigService } from '@/qa-automation/quality-gate-config/quality-gate-config.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { DashboardGateway } from '../gateways/dashboard.gateway';
@@ -25,7 +24,6 @@ export class QaWorkloadService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly bugEscapeService: BugEscapeService,
     private readonly qualityGateConfigService: QualityGateConfigService,
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     private readonly dashboardGateway: DashboardGateway,
@@ -164,7 +162,7 @@ export class QaWorkloadService {
     const startDate = this.calculateStartDate(period);
 
     // This would typically involve a more complex time-series query or aggregation
-    // For MVP, we'll aggregate from QaReviewQueue entries
+    // Historical review rows still back this dashboard.
     const reviews = await this.prisma.qaReviewQueue.findMany({
       where: {
         OR: [{ created_at: { gte: startDate } }, { reviewed_at: { gte: startDate } }],

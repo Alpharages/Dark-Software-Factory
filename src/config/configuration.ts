@@ -26,34 +26,6 @@ export default () => {
       jwtSecret: process.env.JWT_SECRET,
     },
 
-    // AI Providers (Story 2.3: Multi-Provider Strategy)
-    ai: {
-      providers: {
-        claudeCode: {
-          enabled: process.env.CLAUDE_CODE_ENABLED === 'true',
-          apiKey: process.env.ANTHROPIC_API_KEY || '',
-          healthCheckUrl: 'https://api.anthropic.com/v1/messages',
-          timeout: parseInt(process.env.CLAUDE_CODE_TIMEOUT || '180000', 10), // 3 min
-          maxConcurrent: parseInt(process.env.CLAUDE_MAX_CONCURRENT || '5', 10),
-        },
-        gemini: {
-          enabled: process.env.GEMINI_ENABLED === 'true',
-        },
-        codex: {
-          enabled: process.env.CODEX_ENABLED === 'true',
-        },
-        kimi: {
-          enabled: process.env.KIMI_ENABLED === 'true',
-        },
-      },
-      routing: {
-        primaryProvider: process.env.AI_PRIMARY_PROVIDER,
-        complexityThreshold: parseInt(process.env.AI_COMPLEXITY_THRESHOLD || '10', 10),
-        retryDelayMinutes: parseInt(process.env.AI_RETRY_DELAY_MINUTES || '5', 10),
-        alertThresholdMinutes: parseInt(process.env.AI_ALERT_THRESHOLD_MINUTES || '15', 10),
-      },
-    },
-
     // GitHub Integration
     github: {
       token: process.env.GITHUB_TOKEN,
@@ -139,7 +111,6 @@ export default () => {
 
     // Feature Flags
     features: {
-      selfHealing: process.env.FEATURE_SELF_HEALING === 'true',
       costTracking: process.env.FEATURE_COST_TRACKING === 'true',
       qualityGates: process.env.FEATURE_QUALITY_GATES === 'true',
       // When true, automatically approves executions after QA passes,
@@ -157,10 +128,18 @@ export default () => {
       defaultSkill: process.env.OPENHARNESS_DEFAULT_SKILL || 'clickup-dev-implement',
       workspaceDir: process.env.OPENHARNESS_WORKSPACE_DIR || process.cwd(),
       maxTurns: parseInt(process.env.OPENHARNESS_MAX_TURNS || '200', 10),
+      runTimeoutMs: parseInt(process.env.OPENHARNESS_RUN_TIMEOUT_MS || '1800000', 10),
+      mandatedMcpServers: (process.env.OPENHARNESS_MANDATED_MCP_SERVERS || 'gitnexus')
+        .split(',')
+        .map((server) => server.trim())
+        .filter(Boolean),
+      mandatedToolsMode: process.env.OPENHARNESS_MANDATED_TOOLS_MODE === 'fail' ? 'fail' : 'warn',
+      formatEnabled: process.env.OPENHARNESS_FORMAT_ENABLED !== 'false',
+      formatCommand: process.env.OPENHARNESS_FORMAT_COMMAND || 'pnpm exec prettier --write',
       mcpConfigPath:
         process.env.OPENHARNESS_MCP_CONFIG_PATH ||
         process.env.MCP_CONFIG_PATH ||
-        './docs/openharness/mcp-config.json',
+        './openharness/mcp-config.json',
     },
 
     // Story 2.7: Anthropic Claude API Configuration (updated OS-3.2: stale refs removed)
@@ -173,54 +152,6 @@ export default () => {
       commitMessageModel: process.env.ANTHROPIC_COMMIT_MESSAGE_MODEL || 'claude-3-haiku-20240307',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
       // ANTHROPIC_TIMEOUT_MS removed OS-5.1: no service reads anthropic.timeoutMs — SDK timeout not configured explicitly
-    },
-
-    // Story OS-4.2: Gemini CLI Provider
-    gemini: {
-      apiKey: process.env.GEMINI_API_KEY || '',
-      baseURL: process.env.GEMINI_BASE_URL || '',
-      model: process.env.GEMINI_MODEL || 'gemini-2.5-pro',
-    },
-
-    // Story OS-4.3: OpenAI Codex CLI Provider
-    codex: {
-      apiKey: process.env.OPENAI_API_KEY || '',
-      baseURL: process.env.OPENAI_BASE_URL || '',
-      model: process.env.CODEX_MODEL || 'codex-1',
-    },
-
-    // Story OS-4.3: Kimi CLI Provider
-    kimi: {
-      apiKey: process.env.KIMI_API_KEY || '',
-      baseURL: process.env.KIMI_BASE_URL || '',
-      model: process.env.KIMI_MODEL || 'kimi-k2',
-    },
-
-    // Story 2.8: Orchestrator Configuration
-    // Controls multi-provider orchestration and fallback behavior
-    orchestrator: {
-      // Maximum fallback attempts before giving up
-      maxFallbackAttempts: parseInt(process.env.ORCHESTRATOR_MAX_FALLBACK_ATTEMPTS || '2', 10),
-      // Delay in milliseconds before attempting fallback
-      fallbackDelayMs: parseInt(process.env.ORCHESTRATOR_FALLBACK_DELAY_MS || '1000', 10),
-      // Complexity score threshold for HIGH (routes to heavy coding tools)
-      complexityThresholdHigh: parseInt(
-        process.env.ORCHESTRATOR_COMPLEXITY_THRESHOLD_HIGH || '10',
-        10,
-      ),
-      // Complexity score threshold for MEDIUM
-      complexityThresholdMedium: parseInt(
-        process.env.ORCHESTRATOR_COMPLEXITY_THRESHOLD_MEDIUM || '5',
-        10,
-      ),
-    },
-
-    // Story 2.9: Retry Configuration
-    retry: {
-      maxAttempts: parseInt(process.env.RETRY_MAX_ATTEMPTS || '3', 10),
-      baseDelayMs: parseInt(process.env.RETRY_BASE_DELAY_MS || '1000', 10),
-      backoffMultiplier: parseFloat(process.env.RETRY_BACKOFF_MULTIPLIER || '2'),
-      maxDelayMs: parseInt(process.env.RETRY_MAX_DELAY_MS || '30000', 10),
     },
 
     // Story 2.11: Quality Scoring Configuration
@@ -243,49 +174,6 @@ export default () => {
       supportedFormats: (process.env.CONTEXT_SUPPORTED_FORMATS || 'pdf,md,txt,docx').split(','),
     },
 
-    // Story 3.2: QA Automation Configuration
-    // FR67: Automated test execution
-    qa: {
-      testTimeoutMs: parseInt(process.env.QA_TEST_TIMEOUT_MS || '300000', 10), // 5 minutes default
-      dockerMemoryLimit: process.env.QA_DOCKER_MEMORY || '2g',
-      dockerCpuLimit: process.env.QA_DOCKER_CPUS || '2',
-      // Story 3.3: Coverage Enforcement
-      coverageThreshold: parseInt(process.env.QA_COVERAGE_THRESHOLD || '80', 10),
-      coverageEnforcementEnabled: process.env.QA_COVERAGE_ENFORCEMENT !== 'false',
-      baseBranch: process.env.QA_BASE_BRANCH || 'main',
-      generateHtmlReport: process.env.QA_GENERATE_HTML_REPORT !== 'false',
-      // Story 3.7: RabbitMQ QA Queue Processing
-      check: {
-        concurrency: parseInt(process.env.QA_CHECK_CONCURRENCY || '5', 10),
-        maxRetries: parseInt(process.env.QA_CHECK_MAX_RETRIES || '3', 10),
-        timeoutMs: parseInt(process.env.QA_CHECK_TIMEOUT_MS || '300000', 10), // 5 minutes
-        depthIntervalMs: parseInt(process.env.QA_QUEUE_DEPTH_INTERVAL_MS || '30000', 10), // 30 seconds
-        // Max retry attempts for individual QA checks (lint, test, etc.) before skipping.
-        // When retries are exhausted, the check is marked SKIPPED and execution proceeds
-        // to commit+push instead of blocking indefinitely. This prevents loops caused by
-        // pre-existing broken tests/lint issues or missing sandbox environment (e.g., databases).
-        qaRetryMaxAttempts: parseInt(process.env.QA_CHECK_RETRY_MAX_ATTEMPTS || '2', 10),
-      },
-    },
-
-    // Story 8.1: QA Review Queue & Sampling Configuration
-    // FR34: Lead QA can view a sample queue of AI-generated code
-    // FR35: Lead QA can configure sampling strategy
-    qaReview: {
-      sampling: {
-        defaultPercentage: parseInt(process.env.QA_REVIEW_SAMPLING_PERCENTAGE || '20', 10),
-        riskBasedEnabled: process.env.QA_REVIEW_RISK_BASED_ENABLED !== 'false',
-        minPercentage: parseInt(process.env.QA_REVIEW_MIN_PERCENTAGE || '0', 10),
-        maxPercentage: parseInt(process.env.QA_REVIEW_MAX_PERCENTAGE || '100', 10),
-      },
-      queue: {
-        defaultPageSize: parseInt(process.env.QA_REVIEW_QUEUE_PAGE_SIZE || '20', 10),
-        maxPageSize: parseInt(process.env.QA_REVIEW_QUEUE_MAX_PAGE_SIZE || '100', 10),
-        maxRetries: parseInt(process.env.QA_REVIEW_QUEUE_MAX_RETRIES || '3', 10),
-        dlqRoutingKey: process.env.QA_REVIEW_QUEUE_DLQ_KEY || 'qa.execution.completed.dlq',
-      },
-    },
-
     // Story 3.5: Quality Gate Configuration
     // FR70: System blocks deployment if quality gates fail
     qualityGate: {
@@ -298,20 +186,6 @@ export default () => {
       blockOnHighSecurity: process.env.QG_BLOCK_HIGH !== 'false',
       maxComplexity: parseInt(process.env.QG_MAX_COMPLEXITY || '20', 10),
       allowOverride: process.env.QG_ALLOW_OVERRIDE === 'true',
-      // Per-category timeouts (ms)
-      lintingTimeoutMs: parseInt(process.env.QG_LINTING_TIMEOUT_MS || '60000', 10),
-      testingTimeoutMs: parseInt(process.env.QG_TESTING_TIMEOUT_MS || '300000', 10),
-      coverageTimeoutMs: parseInt(process.env.QG_COVERAGE_TIMEOUT_MS || '60000', 10),
-      securityTimeoutMs: parseInt(process.env.QG_SECURITY_TIMEOUT_MS || '180000', 10),
-      // Story 3.6: QA Results pagination
-      results: {
-        defaultPageSize: parseInt(process.env.QA_RESULTS_DEFAULT_PAGE_SIZE || '20', 10),
-        maxPageSize: parseInt(process.env.QA_RESULTS_MAX_PAGE_SIZE || '100', 10),
-      },
-      // Story 13.4: Self-Healing Configuration
-      selfHealing: {
-        enabled: process.env.SELF_HEALING_ENABLED !== 'false', // Defaults to true
-      },
     },
 
     // Story 14.3: Storage Manager Configuration
@@ -336,23 +210,6 @@ export default () => {
       rabbitmqManagementUser: process.env.RABBITMQ_MANAGEMENT_USER || 'guest',
       rabbitmqManagementPassword: process.env.RABBITMQ_MANAGEMENT_PASSWORD || 'guest',
       prometheusUrl: process.env.PROMETHEUS_URL || 'http://localhost:9090',
-    },
-
-    // Epic OS-1: OpenSandbox server connection config
-    opensandbox: {
-      domain: process.env.OPENSANDBOX_DOMAIN || 'localhost:8080',
-      apiKey: process.env.OPENSANDBOX_API_KEY || '',
-      protocol: process.env.OPENSANDBOX_PROTOCOL || 'http',
-      requestTimeoutMs: parseInt(process.env.OPENSANDBOX_REQUEST_TIMEOUT_MS || '60000', 10),
-      agentImage: process.env.OPENSANDBOX_AGENT_IMAGE || 'opensandbox/code-interpreter:v1.0.2',
-      sandboxTimeoutS: parseInt(process.env.OPENSANDBOX_SANDBOX_TIMEOUT_S || '3600', 10),
-      readyTimeoutS: parseInt(process.env.OPENSANDBOX_READY_TIMEOUT_S || '120', 10),
-      maxConcurrent: parseInt(process.env.OPENSANDBOX_MAX_CONCURRENT || '10', 10),
-      defaultCpuLimit: process.env.OPENSANDBOX_DEFAULT_CPU_LIMIT || '1',
-      defaultMemoryLimit: process.env.OPENSANDBOX_DEFAULT_MEMORY_LIMIT || '512Mi',
-      secureRuntime: process.env.OPENSANDBOX_SECURE_RUNTIME || '',
-      networkDefaultAction: process.env.OPENSANDBOX_NETWORK_DEFAULT_ACTION || 'ALLOW',
-      useServerProxy: process.env.OPENSANDBOX_USE_SERVER_PROXY === 'true',
     },
   };
 };

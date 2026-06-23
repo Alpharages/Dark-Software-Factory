@@ -1,7 +1,6 @@
 import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { ExecutionStatus, Execution } from '@/prisma/client';
 import { ExecutionTrackerService } from './execution-tracker.service';
-import { ExecutionStateMachine } from './state-machine';
 import {
   IStartExecutionInput,
   IExecutionCompletion,
@@ -10,7 +9,8 @@ import {
   IStateTransition,
   IExecutionProgress,
 } from './interfaces';
-import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
+import { QAAttempt } from './interfaces'; // WR-6.3
+import { isFinalExecutionStatus } from './enums';
 import {
   StartExecutionDto,
   CompleteExecutionDto,
@@ -35,7 +35,6 @@ export class ExecutionService {
 
   constructor(
     private readonly tracker: ExecutionTrackerService,
-    private readonly stateMachine: ExecutionStateMachine,
     private readonly eventBus: EventBusService,
     private readonly logStreamingService: ExecutionLogStreamingService,
   ) {
@@ -311,24 +310,28 @@ export class ExecutionService {
   }
 
   /**
-   * Check if execution can be started
+   * Whether a NEW execution may be started given the latest execution's status.
+   *
+   * Since OHP-3.2 retired the bespoke state machine, this answers "is the
+   * previous run finished?" rather than "may THIS run transition to
+   * IN_PROGRESS" — a new run is only allowed once the prior one is final.
    */
   canStart(status: ExecutionStatus): boolean {
-    return this.stateMachine.canStart(status);
+    return this.isTerminal(status);
   }
 
   /**
    * Check if execution can be completed
    */
   canComplete(status: ExecutionStatus): boolean {
-    return this.stateMachine.canComplete(status);
+    return status === ExecutionStatus.IN_PROGRESS;
   }
 
   /**
-   * Check if execution is in terminal state
+   * Check if execution is in a final state (no further processing/intervention)
    */
   isTerminal(status: ExecutionStatus): boolean {
-    return this.stateMachine.isTerminal(status);
+    return isFinalExecutionStatus(status);
   }
 
   /**

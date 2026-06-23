@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { QaWorkloadService } from './qa-workload.service';
 import { PrismaService } from '@/database/prisma.service';
-import { BugEscapeService } from '@/qa-automation/bug-escape/bug-escape.service';
 import { QualityGateConfigService } from '@/qa-automation/quality-gate-config/quality-gate-config.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { DashboardGateway } from '../gateways/dashboard.gateway';
@@ -48,7 +47,6 @@ describe('QaWorkloadService', () => {
       providers: [
         QaWorkloadService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: BugEscapeService, useValue: {} },
         { provide: QualityGateConfigService, useValue: {} },
         { provide: AIDecisionLoggerService, useValue: { logDecision: jest.fn() } },
         { provide: DashboardGateway, useValue: mockDashboardGateway },

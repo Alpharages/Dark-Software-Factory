@@ -18,13 +18,11 @@ import { WorkloadSchedulerService } from './services/workload-scheduler.service'
 import { QaWorkloadController } from './qa-workload.controller';
 import { QaWorkloadService } from './services/qa-workload.service';
 import { DashboardGateway } from './gateways/dashboard.gateway';
-import { QualityDashboardListener } from './listeners/quality-dashboard.listener';
 import { EmailModule } from '@/common/email/email.module';
 import { DatabaseModule } from '@/database/database.module';
 import { RabbitMQModule } from '@/rabbitmq/rabbitmq.module';
 import { AppMetricsModule } from '@/common/metrics';
 import { QaAutomationModule } from '@/qa-automation/qa-automation.module';
-import { BugEscapeModule } from '@/qa-automation/bug-escape/bug-escape.module';
 import { QualityGateConfigModule } from '@/qa-automation/quality-gate-config/quality-gate-config.module';
 import { QaDashboardController } from './qa-dashboard.controller';
 import { QualityDashboardService } from './services/quality-dashboard.service';
@@ -43,7 +41,6 @@ import { RealtimeModule } from '@/realtime/realtime.module';
     RabbitMQModule,
     AppMetricsModule,
     QaAutomationModule,
-    BugEscapeModule,
     QualityGateConfigModule,
     DecisionDashboardModule,
     FinancialMetricsModule,
@@ -173,7 +170,6 @@ import { RealtimeModule } from '@/realtime/realtime.module';
     WorkloadSchedulerService,
     DashboardGateway,
     QualityDashboardService,
-    QualityDashboardListener,
     QaWorkloadService,
     AnomalyDetectionService,
     AnomalyNotificationListener,

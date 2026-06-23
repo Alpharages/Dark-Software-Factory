@@ -6,11 +6,22 @@ import { RealtimeModule } from '@/realtime/realtime.module';
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
 import { OpenHarnessExecutionController } from './openharness-execution.controller';
 import { StatusSkillMapService } from './status-skill-map.service';
+import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 
 @Module({
   imports: [DatabaseModule, ExecutionModule, RealtimeModule],
   controllers: [OpenHarnessExecutionController],
-  providers: [OpenHarnessRunnerService, OpenHarnessStreamAdapter, StatusSkillMapService],
-  exports: [OpenHarnessRunnerService, OpenHarnessStreamAdapter, StatusSkillMapService],
+  providers: [
+    OpenHarnessRunnerService,
+    OpenHarnessRunGuardrailsService,
+    OpenHarnessStreamAdapter,
+    StatusSkillMapService,
+  ],
+  exports: [
+    OpenHarnessRunnerService,
+    OpenHarnessRunGuardrailsService,
+    OpenHarnessStreamAdapter,
+    StatusSkillMapService,
+  ],
 })
 export class OpenHarnessModule {}

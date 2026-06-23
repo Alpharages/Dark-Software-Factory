@@ -41,12 +41,6 @@ export class QueueMetricDto {
 
 export class QueueMetricsDto {
   @ApiProperty({ type: QueueMetricDto })
-  'ai-execution-queue'!: QueueMetricDto;
-
-  @ApiProperty({ type: QueueMetricDto })
-  'qa-check-queue'!: QueueMetricDto;
-
-  @ApiProperty({ type: QueueMetricDto })
   'deployment-queue'!: QueueMetricDto;
 }
 

@@ -82,25 +82,11 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     const queues = [
       // Story 2.1-2.2: Ticket intake pipeline
       QUEUE_NAMES.TICKET_INTAKE,
-      QUEUE_NAMES.AI_ROUTING,
       // Core execution queues
-      QUEUE_NAMES.AI_EXECUTION,
-      QUEUE_NAMES.QA_CHECK,
       QUEUE_NAMES.DEPLOYMENT,
       QUEUE_NAMES.MONITORING,
       QUEUE_NAMES.FIX_TICKET_CREATION,
     ];
-
-    // Create wait queue for AI routing retries (Story 2.3 fix)
-    // Messages here wait for 5 minutes (TTL) then dead-letter back to AI_ROUTING
-    await this.channel.assertQueue(QUEUE_NAMES.AI_ROUTING_WAIT, {
-      durable: true,
-      arguments: {
-        'x-dead-letter-exchange': '', // Default exchange
-        'x-dead-letter-routing-key': QUEUE_NAMES.AI_ROUTING, // Route back to main queue
-      },
-      messageTtl: 300000, // 5 minutes
-    });
 
     // Create WAIT queue for PR reminders (Story 14.2)
     // Messages wait here for variable TTL based on attempt, then dead-letter back to GITHUB_PR_REMINDER
@@ -111,7 +97,6 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
         'x-dead-letter-routing-key': QUEUE_NAMES.GITHUB_PR_REMINDER, // Route back to main queue
       },
     });
-    this.logger.log(`Queue created: ${QUEUE_NAMES.AI_ROUTING_WAIT} (TTL: 5m)`);
 
     for (const queueName of queues) {
       await this.channel.assertQueue(queueName, {
@@ -224,15 +209,13 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
    * Returns depth, rate, and oldest message age for each queue
    */
   async getQueueMetrics(): Promise<{
-    'ai-execution-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
-    'qa-check-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
     'deployment-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
   }> {
     if (!this.channel) {
       throw new Error('Channel not available');
     }
 
-    const queues = ['ai-execution-queue', 'qa-check-queue', 'deployment-queue'];
+    const queues = ['deployment-queue'];
     const metricsMap = new Map<string, unknown>();
 
     for (const queueName of queues) {
@@ -256,8 +239,6 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     const metrics = Object.fromEntries(metricsMap);
 
     return metrics as {
-      'ai-execution-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
-      'qa-check-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
       'deployment-queue': { depth: number; rate: number; oldest_message_age_seconds: number };
     };
   }

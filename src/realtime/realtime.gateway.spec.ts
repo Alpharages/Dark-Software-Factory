@@ -90,10 +90,10 @@ describe('RealtimeGateway', () => {
   });
 
   describe('afterInit', () => {
-    it('should initialize gateway and register server with RealtimeService', () => {
+    it('should initialize gateway without registering the default namespace server', () => {
       gateway.afterInit(mockServer as Server);
 
-      expect(realtimeService.setServer).toHaveBeenCalledWith(mockServer);
+      expect(realtimeService.setServer).not.toHaveBeenCalled();
     });
   });
 

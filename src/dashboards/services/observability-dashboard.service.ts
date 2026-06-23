@@ -148,38 +148,20 @@ export class ObservabilityDashboardService {
       const rabbitMQMetrics = await this.rabbitmqService.getQueueMetrics();
 
       // Calculate processing rates from Execution table
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      const [recentCompletions, dailyCompletions] = await Promise.all([
-        this.prisma.execution.count({
-          where: {
-            completed_at: { gte: oneHourAgo },
-            status: 'COMPLETED',
-          },
-        }),
-        this.prisma.execution.count({
-          where: {
-            completed_at: { gte: twentyFourHoursAgo },
-            status: 'COMPLETED',
-          },
-        }),
-      ]);
+      const dailyCompletions = await this.prisma.execution.count({
+        where: {
+          completed_at: { gte: twentyFourHoursAgo },
+          status: 'COMPLETED',
+        },
+      });
 
       // Processing rate in messages/hour
-      const processingRatePerHour = recentCompletions; // Already per hour
       const dailyRate = Math.floor(dailyCompletions / 24);
 
       // Merge RabbitMQ metrics with processing rates
       return {
-        'ai-execution-queue': {
-          ...rabbitMQMetrics['ai-execution-queue'],
-          rate: processingRatePerHour,
-        },
-        'qa-check-queue': {
-          ...rabbitMQMetrics['qa-check-queue'],
-          rate: dailyRate,
-        },
         'deployment-queue': {
           ...rabbitMQMetrics['deployment-queue'],
           rate: dailyRate,

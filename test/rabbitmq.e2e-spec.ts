@@ -46,13 +46,13 @@ describe('RabbitMQ Integration (e2e)', () => {
 
   it('should publish message to queue', async () => {
     const payload = { testData: 'Hello RabbitMQ' };
-    const result = await publisherService.publishToQueue(QUEUE_NAMES.AI_EXECUTION, payload);
+    const result = await publisherService.publishToQueue(QUEUE_NAMES.DEPLOYMENT, payload);
 
     expect(result).toBe(true);
   });
 
   it('should get queue statistics', async () => {
-    const stats = await rabbitMQService.getQueueStats(QUEUE_NAMES.AI_EXECUTION);
+    const stats = await rabbitMQService.getQueueStats(QUEUE_NAMES.DEPLOYMENT);
 
     expect(stats).toBeDefined();
     expect(stats.messageCount).toBeGreaterThanOrEqual(0);

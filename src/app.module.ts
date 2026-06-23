@@ -25,7 +25,6 @@ import { JwtAuthGuard } from './common/guards';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TicketIntakeModule } from './ticket-intake/ticket-intake.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
-import { AiRoutingModule } from './ai-routing/ai-routing.module';
 import { ExecutionModule } from './execution/execution.module';
 
 // Quality & Deployment
@@ -59,7 +58,6 @@ import { DependenciesModule } from './dependencies/dependencies.module';
 import { FileLocksModule } from './file-locks/file-locks.module';
 import { StorageModule } from './storage/storage.module';
 import { GitMirrorModule } from '@/git-mirror';
-import { SandboxModule } from '@/sandbox'; // Epic OS-1
 import { CleanupModule } from '@/cleanup'; // Story 23.2
 
 // OpenHarness
@@ -102,7 +100,6 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Infrastructure
     DatabaseModule,
     RabbitMQModule,
-    SandboxModule, // Epic OS-1: OpenSandbox Migration
     CleanupModule, // Story 23.2: Automated Container Cleanup
 
     // Authentication
@@ -111,7 +108,6 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Core workflow
     WebhooksModule,
     TicketIntakeModule,
-    AiRoutingModule,
     ExecutionModule,
     OpenHarnessModule,
     DispatcherModule,

@@ -5,14 +5,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './database/prisma.service';
 import { RabbitMQService } from './rabbitmq/rabbitmq.service';
-import { SandboxService } from './sandbox/sandbox.service';
 
 describe('AppController', () => {
   let appController: AppController;
   // let appService: AppService;
   let prismaService: PrismaService;
   let rabbitMQService: RabbitMQService;
-  let sandboxService: SandboxService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
@@ -24,7 +22,7 @@ describe('AppController', () => {
             getHello: jest.fn().mockReturnValue('Hello World!'),
             getIntegrationHealth: jest
               .fn()
-              .mockResolvedValue({ sandbox: true, sendgrid: true, openai: false, slack: true }),
+              .mockResolvedValue({ sendgrid: true, openai: false, slack: true }),
           },
         },
         {
@@ -39,19 +37,12 @@ describe('AppController', () => {
             isHealthy: jest.fn().mockResolvedValue(true),
           },
         },
-        {
-          provide: SandboxService,
-          useValue: {
-            isHealthy: jest.fn().mockResolvedValue(true),
-          },
-        },
       ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
     prismaService = app.get<PrismaService>(PrismaService);
     rabbitMQService = app.get<RabbitMQService>(RabbitMQService);
-    sandboxService = app.get<SandboxService>(SandboxService);
   });
 
   describe('root', () => {
@@ -70,7 +61,6 @@ describe('AppController', () => {
         services: {
           database: 'up',
           rabbitmq: 'up',
-          sandbox: 'up',
         },
       });
     });
@@ -86,17 +76,11 @@ describe('AppController', () => {
 
       await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
     });
-
-    it('should return unhealthy status when sandbox is down', async () => {
-      jest.spyOn(sandboxService, 'isHealthy').mockResolvedValue(false);
-
-      await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
-    });
   });
 
   describe('getIntegrationHealth', () => {
     it('should return integration health status', async () => {
-      const expectedHealth = { sandbox: true, sendgrid: true, openai: false, slack: true };
+      const expectedHealth = { sendgrid: true, openai: false, slack: true };
       const result = await appController.getIntegrationHealth();
       expect(result).toEqual(expectedHealth);
     });
@@ -125,12 +109,6 @@ describe('Swagger Configuration', () => {
         },
         {
           provide: RabbitMQService,
-          useValue: {
-            isHealthy: jest.fn().mockResolvedValue(true),
-          },
-        },
-        {
-          provide: SandboxService,
           useValue: {
             isHealthy: jest.fn().mockResolvedValue(true),
           },

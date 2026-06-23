@@ -2,12 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
 import { AuditLogService } from '@/common/audit/audit-log.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
-import { AIExecutionService } from '@/ai-routing/ai-execution.service';
-import { PromptGeneratorService } from '@/ai-routing/prompt-generator.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { GitHubService } from '../github.service';
 import { PRRiskLevel } from '@/prisma/client';
-import { IAIPromptExecutor } from '@/ai-routing/interfaces';
+
 export interface RiskAssessmentResult {
   riskLevel: PRRiskLevel;
   reasoning: string;
@@ -22,8 +20,6 @@ export class PRRiskAssessorService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditLogService,
     private readonly metrics: MetricsService,
-    private readonly aiExecution: AIExecutionService,
-    private readonly promptGenerator: PromptGeneratorService,
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     private readonly github: GitHubService,
   ) {}
@@ -63,41 +59,12 @@ export class PRRiskAssessorService {
         throw new Error(`Execution ${executionId} not found`);
       }
 
-      // 4. Build prompt via centralized service (AC#7)
-      // Combine ticket info and context document summaries (H2)
-      const contextDocs = execution.ticket.context_documents
-        .map(
-          (doc) =>
-            `- ${doc.original_filename}: ${doc.content_summary || doc.extracted_text?.substring(0, 500)}`,
-        )
-        .join('\n');
-
-      const prompt = this.promptGenerator.generateRiskAssessmentPrompt({
-        ticketId: execution.ticket.clickup_task_id,
-        ticketTitle: execution.ticket.title,
-        ticketDescription: `${execution.ticket.description}\n\nRELEVANT CONTEXT DOCUMENTS:\n${contextDocs}`,
-        diff,
-      });
-
-      // 5. Execute via AI - Safe Provider Access (C1 Fix)
-      const providerInstance = this.aiExecution.getProvider(execution.ai_provider);
-      if (!providerInstance) {
-        throw new Error(`Provider ${execution.ai_provider} not available`);
-      }
-
-      const aiProvider = providerInstance as unknown as IAIPromptExecutor;
-      const result = await aiProvider.executePrompt({
-        prompt,
-      });
-
-      if (!result.success || !result.response) {
-        throw new Error(
-          `AI provider failed: ${result.error?.message || result.error ? JSON.stringify(result.error) : 'No response'}`,
-        );
-      }
-
-      // 6. Parse response
-      const assessment = this.parseRiskResponse(result.response);
+      const assessment: RiskAssessmentResult = {
+        riskLevel: PRRiskLevel.MEDIUM,
+        reasoning:
+          'AI PR risk assessment was removed with ai-routing; defaulting to manual review.',
+        mergeRecommendation: 'Manual review required before merge.',
+      };
 
       // 7. Store results
       await this.prisma.execution.update({
@@ -172,22 +139,5 @@ export class PRRiskAssessorService {
 
     // Should never reach here (loop always throws or returns)
     throw new Error(`fetchDiffWithRetry: failed to fetch diff for ${repository}#${prNumber}`);
-  }
-
-  private parseRiskResponse(response: string): RiskAssessmentResult {
-    try {
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return {
-          riskLevel: parsed.riskLevel as PRRiskLevel,
-          reasoning: parsed.reasoning,
-          mergeRecommendation: parsed.mergeRecommendation,
-        };
-      }
-      throw new Error('Could not parse risk assessment response');
-    } catch (_error) {
-      throw new Error(`Failed to parse risk assessment: ${(_error as Error).message}`);
-    }
   }
 }

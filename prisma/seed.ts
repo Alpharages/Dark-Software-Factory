@@ -1,7 +1,6 @@
 import { PrismaClient, TicketStatus, AIProvider, ExecutionStatus } from '@prisma/client';
 import { seedAdminUser } from './seeds/admin.seeder';
 import { seedSystemConfig } from './seeds/system-config.seeder';
-import { seedAiRoutingConfig } from './seeds/ai-routing-config.seeder';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
@@ -21,9 +20,6 @@ async function main() {
 
     // Seed System Configs
     await seedSystemConfig(prisma);
-
-    // Seed AI Routing Configs
-    await seedAiRoutingConfig(prisma, admin.id);
 
     // Create sample project (idempotent)
     await prisma.project.upsert({

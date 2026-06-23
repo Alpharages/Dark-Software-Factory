@@ -10,7 +10,6 @@ import {
 import { AppService } from './app.service';
 import { PrismaService } from './database/prisma.service';
 import { RabbitMQService } from './rabbitmq/rabbitmq.service';
-import { SandboxService } from './sandbox/sandbox.service';
 import { Public, CurrentUser, Roles } from './common/decorators';
 import { RolesGuard } from './common/guards';
 import { AuthenticatedUser } from './auth/interfaces/jwt-payload.interface';
@@ -30,7 +29,6 @@ export class AppController {
     private readonly appService: AppService,
     private readonly prismaService: PrismaService,
     private readonly rabbitMQService: RabbitMQService,
-    private readonly sandboxService: SandboxService,
   ) {}
 
   @ApiTags('Health')
@@ -60,15 +58,7 @@ export class AppController {
       rabbitMQHealthy = false;
     }
 
-    // Check Sandbox health
-    let sandboxHealthy = false;
-    try {
-      sandboxHealthy = await this.sandboxService.isHealthy();
-    } catch {
-      sandboxHealthy = false;
-    }
-
-    const isHealthy = dbHealthy && rabbitMQHealthy && sandboxHealthy;
+    const isHealthy = dbHealthy && rabbitMQHealthy;
 
     const response: HealthResponseDto = {
       status: isHealthy ? 'healthy' : 'unhealthy',
@@ -76,7 +66,6 @@ export class AppController {
       services: {
         database: dbHealthy ? 'up' : 'down',
         rabbitmq: rabbitMQHealthy ? 'up' : 'down',
-        sandbox: sandboxHealthy ? 'up' : 'down',
       },
     };
 

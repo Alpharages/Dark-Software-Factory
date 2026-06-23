@@ -5,8 +5,6 @@ import { Cache } from 'cache-manager';
 import { Counter } from 'prom-client';
 import { QualityDashboardService } from './quality-dashboard.service';
 import { PrismaService } from '@/database/prisma.service';
-import { QaResultsService } from '@/qa-automation/qa-results.service';
-import { BugEscapeService } from '@/qa-automation/bug-escape/bug-escape.service';
 import { QualityGateConfigService } from '@/qa-automation/quality-gate-config/quality-gate-config.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import {
@@ -18,8 +16,6 @@ import {
 describe('QualityDashboardService', () => {
   let service: QualityDashboardService;
   let _prismaService: PrismaService;
-  let _qaResultsService: QaResultsService;
-  let _bugEscapeService: BugEscapeService;
   let _qualityGateConfigService: QualityGateConfigService;
   let aiDecisionLogger: AIDecisionLoggerService;
   let cacheManager: Cache;
@@ -32,6 +28,7 @@ describe('QualityDashboardService', () => {
       findMany: jest.fn(),
       aggregate: jest.fn(),
       groupBy: jest.fn(),
+      count: jest.fn(),
     },
     qaReviewQueue: {
       count: jest.fn(),
@@ -52,17 +49,10 @@ describe('QualityDashboardService', () => {
       findMany: jest.fn(),
       groupBy: jest.fn(),
     },
-  };
-
-  const mockQaResultsService = {
-    findByProjectId: jest.fn(),
-    getMetrics: jest.fn(),
-  };
-
-  const mockBugEscapeService = {
-    calculateEscapeRate: jest.fn(),
-    getEscapesByCategory: jest.fn(),
-    compareProviders: jest.fn(),
+    bugEscape: {
+      count: jest.fn(),
+      groupBy: jest.fn(),
+    },
   };
 
   const mockQualityGateConfigService = {
@@ -90,12 +80,14 @@ describe('QualityDashboardService', () => {
   };
 
   beforeEach(async () => {
+    mockPrismaService.bugEscape.count.mockResolvedValue(0);
+    mockPrismaService.bugEscape.groupBy.mockResolvedValue([]);
+    mockPrismaService.ticket.count.mockResolvedValue(100);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QualityDashboardService,
         { provide: PrismaService, useValue: mockPrismaService },
-        { provide: QaResultsService, useValue: mockQaResultsService },
-        { provide: BugEscapeService, useValue: mockBugEscapeService },
         {
           provide: QualityGateConfigService,
           useValue: mockQualityGateConfigService,
@@ -119,8 +111,6 @@ describe('QualityDashboardService', () => {
 
     service = module.get<QualityDashboardService>(QualityDashboardService);
     _prismaService = module.get<PrismaService>(PrismaService);
-    _qaResultsService = module.get<QaResultsService>(QaResultsService);
-    _bugEscapeService = module.get<BugEscapeService>(BugEscapeService);
     _qualityGateConfigService = module.get<QualityGateConfigService>(QualityGateConfigService);
     aiDecisionLogger = module.get<AIDecisionLoggerService>(AIDecisionLoggerService);
     cacheManager = module.get<Cache>(CACHE_MANAGER);
@@ -180,15 +170,6 @@ describe('QualityDashboardService', () => {
     it('should generate and cache summary if not cached (AC#1)', async () => {
       mockCacheManager.get.mockResolvedValue(null);
 
-      mockBugEscapeService.calculateEscapeRate.mockResolvedValue({
-        summary: {
-          total_escapes: 3,
-          escape_rate_percent: 3.5,
-          target_rate_percent: 5.0,
-          status: 'within_target',
-        },
-      });
-
       mockPrismaService.qAResult.findMany.mockResolvedValue([
         { overall_passed: true, test_coverage: 80, tests_passed: true },
         { overall_passed: true, test_coverage: 75, tests_passed: true },
@@ -217,14 +198,8 @@ describe('QualityDashboardService', () => {
     it('should generate critical alert when bug escape rate exceeds target (AC#7)', async () => {
       mockCacheManager.get.mockResolvedValue(null);
 
-      mockBugEscapeService.calculateEscapeRate.mockResolvedValue({
-        summary: {
-          total_escapes: 10,
-          escape_rate_percent: 12.0, // EXCEEDS 5% target
-          target_rate_percent: 5.0,
-          status: 'exceeded',
-        },
-      });
+      mockPrismaService.bugEscape.count.mockResolvedValue(10);
+      mockPrismaService.ticket.count.mockResolvedValue(100);
 
       mockPrismaService.qAResult.findMany.mockResolvedValue([
         { overall_passed: true, test_coverage: 80, tests_passed: true },
@@ -256,15 +231,6 @@ describe('QualityDashboardService', () => {
 
     it('should generate warning alert when QA pass rate is low (AC#7)', async () => {
       mockCacheManager.get.mockResolvedValue(null);
-
-      mockBugEscapeService.calculateEscapeRate.mockResolvedValue({
-        summary: {
-          total_escapes: 1,
-          escape_rate_percent: 2.0,
-          target_rate_percent: 5.0,
-          status: 'within_target',
-        },
-      });
 
       // 60% pass rate (3 out of 5 passed)
       mockPrismaService.qAResult.findMany.mockResolvedValue([
@@ -304,17 +270,6 @@ describe('QualityDashboardService', () => {
         { id: 'proj-1', name: 'Project Alpha', pm_id: 'pm-1' },
       ]);
 
-      mockQaResultsService.getMetrics.mockResolvedValue({
-        totalExecutions: 50,
-        passedCount: 45,
-        passRate: 90.0,
-        averageCoverage: 80.0,
-      });
-
-      mockBugEscapeService.getEscapesByCategory.mockResolvedValue([
-        { category: 'TEST_GAP', count: 1 },
-      ]);
-
       mockPrismaService.ticket.findMany.mockResolvedValue([{ status: 'DEPLOYED' }]);
 
       const result = await service.getMetrics(query);
@@ -342,15 +297,6 @@ describe('QualityDashboardService', () => {
 
   describe('getProviderComparison', () => {
     it('should compare AI providers (AC#3)', async () => {
-      mockBugEscapeService.getEscapesByCategory.mockResolvedValue([
-        { category: 'TEST_GAP', count: 2 },
-      ]);
-
-      mockBugEscapeService.compareProviders.mockResolvedValue([
-        { provider: 'CLAUDE', escapes: 1 },
-        { provider: 'OPENAI', escapes: 1 },
-      ]);
-
       mockPrismaService.execution.findMany.mockResolvedValue([
         { ai_provider: 'CLAUDE', status: 'COMPLETED' },
         { ai_provider: 'OPENAI', status: 'COMPLETED' },
@@ -379,16 +325,6 @@ describe('QualityDashboardService', () => {
         pm_id: 'pm-1',
       });
 
-      mockQaResultsService.getMetrics.mockResolvedValue({
-        totalExecutions: 50,
-        passedCount: 45,
-        failedCount: 5,
-        passRate: 90.0,
-        lintingPassRate: 95,
-        testPassRate: 90,
-        securityPassRate: 98,
-      });
-
       mockPrismaService.execution.findMany.mockResolvedValue([
         {
           ticket_id: 'ticket-1',
@@ -404,8 +340,6 @@ describe('QualityDashboardService', () => {
           updated_at: new Date(),
         },
       ]);
-
-      mockBugEscapeService.getEscapesByCategory.mockResolvedValue([]);
 
       const result = await service.getDrillDown('project', projectId, '30d');
 
@@ -435,13 +369,6 @@ describe('QualityDashboardService', () => {
         { id: 'proj-1', name: 'Project Alpha' },
       ]);
 
-      mockQaResultsService.getMetrics.mockResolvedValue({
-        totalExecutions: 50,
-        passedCount: 45,
-        passRate: 90.0,
-      });
-
-      mockBugEscapeService.getEscapesByCategory.mockResolvedValue([]);
       mockPrismaService.ticket.findMany.mockResolvedValue([]);
 
       const result = await service.generateExport(query);
@@ -461,13 +388,6 @@ describe('QualityDashboardService', () => {
         { id: 'proj-1', name: 'Project Alpha' },
       ]);
 
-      mockQaResultsService.getMetrics.mockResolvedValue({
-        totalExecutions: 20,
-        passedCount: 18,
-        passRate: 90.0,
-      });
-
-      mockBugEscapeService.getEscapesByCategory.mockResolvedValue([]);
       mockPrismaService.ticket.findMany.mockResolvedValue([]);
 
       const result = await service.generateExport(query);
@@ -498,13 +418,6 @@ describe('QualityDashboardService', () => {
       }));
 
       mockPrismaService.project.findMany.mockResolvedValue(largeDataset);
-      mockQaResultsService.getMetrics.mockResolvedValue({
-        totalExecutions: 100,
-        passedCount: 90,
-        passRate: 90.0,
-      });
-
-      mockBugEscapeService.getEscapesByCategory.mockResolvedValue([]);
       mockPrismaService.ticket.findMany.mockResolvedValue([]);
 
       const result = await service.generateExport(query);

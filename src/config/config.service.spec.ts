@@ -12,6 +12,11 @@ describe('ConfigService', () => {
     process.env.RABBITMQ_URL = 'amqp://test:test@localhost:5672';
     process.env.JWT_SECRET = 'test-secret-at-least-32-characters-long';
     process.env.CURSOR_API_KEY = 'test-cursor-key';
+    delete process.env.OPENHARNESS_RUN_TIMEOUT_MS;
+    delete process.env.OPENHARNESS_MANDATED_MCP_SERVERS;
+    delete process.env.OPENHARNESS_MANDATED_TOOLS_MODE;
+    delete process.env.OPENHARNESS_FORMAT_ENABLED;
+    delete process.env.OPENHARNESS_FORMAT_COMMAND;
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [
@@ -52,6 +57,13 @@ describe('ConfigService', () => {
   it('should provide default values', () => {
     const port = configService.get<number>('port');
     expect(port).toBeGreaterThan(0);
+    expect(configService.get<number>('openharness.runTimeoutMs')).toBe(1800000);
+    expect(configService.get<string[]>('openharness.mandatedMcpServers')).toEqual(['gitnexus']);
+    expect(configService.get<string>('openharness.mandatedToolsMode')).toBe('warn');
+    expect(configService.get<boolean>('openharness.formatEnabled')).toBe(true);
+    expect(configService.get<string>('openharness.formatCommand')).toBe(
+      'pnpm exec prettier --write',
+    );
   });
 });
 

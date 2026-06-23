@@ -1,12 +1,13 @@
 # OpenHarness MCP Setup
 
 This repo keeps the OpenHarness MCP wiring in `openharness/mcp-config.json`.
-It defines two MCP servers:
+It defines three MCP servers:
 
 - `bmad` connects to the HTTP MCP endpoint exposed by `bmad-mcp-server-http` with ClickUp
   write mode enabled through per-user headers.
 - `lore` connects to the HTTP MCP endpoint exposed by the Lore server configured by
   `@alpharages/lore`.
+- `gitnexus` connects to the HTTP MCP endpoint for repo-mandated code intelligence.
 
 ## Prerequisites
 
@@ -36,6 +37,13 @@ export BMAD_SERVER_URL="https://your-bmad-server.example.com"
 export BMAD_API_KEY="your-bmad-http-key"
 export LORE_SERVER_URL="https://your-lore-server.example.com"
 export LORE_API_KEY="lore_..."
+export GITNEXUS_SERVER_URL="https://your-gitnexus-server.example.com"
+export GITNEXUS_API_KEY="your-gitnexus-http-key"
+export OPENHARNESS_RUN_TIMEOUT_MS=1800000
+export OPENHARNESS_MANDATED_MCP_SERVERS="gitnexus"
+export OPENHARNESS_MANDATED_TOOLS_MODE="warn"
+export OPENHARNESS_FORMAT_ENABLED=true
+export OPENHARNESS_FORMAT_COMMAND="pnpm exec prettier --write"
 ```
 
 No secrets belong in `openharness/mcp-config.json`. The checked-in file uses placeholders
@@ -187,7 +195,12 @@ OPENHARNESS_MODEL=gpt-5.4
 OPENHARNESS_DEFAULT_SKILL=clickup-dev-implement
 OPENHARNESS_WORKSPACE_DIR=/Volumes/Data/project/products/alpharages/dsf-backend
 OPENHARNESS_MAX_TURNS=200
-OPENHARNESS_MCP_CONFIG_PATH=./docs/openharness/mcp-config.json
+OPENHARNESS_RUN_TIMEOUT_MS=1800000
+OPENHARNESS_MANDATED_MCP_SERVERS=gitnexus
+OPENHARNESS_MANDATED_TOOLS_MODE=warn
+OPENHARNESS_FORMAT_ENABLED=true
+OPENHARNESS_FORMAT_COMMAND="pnpm exec prettier --write"
+OPENHARNESS_MCP_CONFIG_PATH=./openharness/mcp-config.json
 ```
 
 Minimal request:

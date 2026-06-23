@@ -6,7 +6,7 @@ import { PaginationMetaDto } from './pagination.dto';
 
 export class AuditSearchQueryDto {
   @ApiProperty({
-    example: 'AIExecutionConsumer',
+    example: 'QaOrchestrator',
     description: 'Filter by agent name',
     required: false,
   })

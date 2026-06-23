@@ -4,8 +4,6 @@ import { Cache } from 'cache-manager';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { PrismaService } from '@/database/prisma.service';
-import { QaResultsService } from '@/qa-automation/qa-results.service';
-import { BugEscapeService } from '@/qa-automation/bug-escape/bug-escape.service';
 import { QualityGateConfigService } from '@/qa-automation/quality-gate-config/quality-gate-config.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import {
@@ -24,7 +22,6 @@ import {
   QaResultBreakdownItemDto,
   ExportQueryDto,
 } from '../dto/quality-dashboard.dto';
-import { BugEscapeQueryDto } from '@/qa-automation/bug-escape/dto/bug-escape-query.dto';
 import { AIProvider } from '@/prisma/client';
 
 @Injectable()
@@ -34,8 +31,6 @@ export class QualityDashboardService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly qaResultsService: QaResultsService,
-    private readonly bugEscapeService: BugEscapeService,
     private readonly qualityGateConfigService: QualityGateConfigService,
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -66,7 +61,7 @@ export class QualityDashboardService {
     // Parallel fetch for summary data
     const [escapeStats, qaStats, pendingReviews, deploymentStats, qualityGateConfigStats] =
       await Promise.all([
-        this.bugEscapeService.calculateEscapeRate({ period } as BugEscapeQueryDto),
+        this.calculateEscapeRate(period),
         this.getOverallQaStats(startDate),
         this.prisma.qaReviewQueue.count({ where: { status: 'PENDING' } }),
         this.getDeploymentStats(startDate),
@@ -118,21 +113,11 @@ export class QualityDashboardService {
       // For MVP we only fully support project grouping efficiently via existing services
       // Other groupings would require more complex queries
 
-      let qaMetrics;
-      if (group_by === 'project') {
-        qaMetrics = await this.qaResultsService.getMetrics(id, startDate);
-      } else {
-        // Fallback for other dimensions or implement custom logic
-        // For now mapping to empty or basic stats
-        qaMetrics = await this.qaResultsService.getMetrics(id, startDate); // This assumes ID matches project for now or returns empty
-      }
-
-      // Bug escapes for this dimension
-      // Reuse bugEscapeService.calculateEscapeRate with filter
-      const escapeQuery: BugEscapeQueryDto = { period };
-      if (group_by === 'project') escapeQuery.project_id = id;
-
-      const escapeStats = await this.bugEscapeService.calculateEscapeRate(escapeQuery);
+      const qaMetrics = await this.getQaMetrics(id, startDate);
+      const escapeStats = await this.calculateEscapeRate(
+        period,
+        group_by === 'project' ? id : undefined,
+      );
 
       // Deployment success rate
       const deploymentStats = await this.getDeploymentStats(
@@ -201,7 +186,7 @@ export class QualityDashboardService {
     const startDate = this.calculateStartDate(period);
 
     // Get raw data
-    const providerEscapes = await this.bugEscapeService.compareProviders();
+    const providerEscapes = await this.compareProviderEscapes();
 
     // We need to aggregate QA results by provider
     const _qaStatsByProvider = await this.prisma.execution.groupBy({
@@ -318,7 +303,7 @@ export class QualityDashboardService {
     }
 
     // 2. Overview Stats
-    const qaMetrics = await this.qaResultsService.getMetrics(dimensionId, startDate);
+    const qaMetrics = await this.getQaMetrics(dimensionId, startDate);
     const deploymentStats = await this.getDeploymentStats(startDate, dimensionId);
 
     // 3. Quality Gate Config
@@ -332,8 +317,7 @@ export class QualityDashboardService {
     ];
 
     // 5. Bug Escapes
-    const escapeQuery: BugEscapeQueryDto = { period, project_id: dimensionId };
-    const escapeStats = await this.bugEscapeService.calculateEscapeRate(escapeQuery);
+    const escapeStats = await this.calculateEscapeRate(period, dimensionId);
 
     // 6. Recent Tickets
     const recentExecutions = await this.prisma.execution.findMany({
@@ -387,7 +371,7 @@ export class QualityDashboardService {
       },
       bug_escapes: {
         total: escapeStats.summary.total_escapes,
-        by_category: await this.bugEscapeService.getEscapesByCategory(
+        by_category: await this.getEscapesByCategory(
           dimensionType === 'project' ? dimensionId : undefined,
         ),
         avg_resolution_time_hours: 0, // Not yet implemented
@@ -505,6 +489,104 @@ export class QualityDashboardService {
       total > 0 ? (results.filter((r) => r.tests_passed).length / total) * 100 : 0;
 
     return { total, passed, failed, passRate, avgCoverage, avgTestPassRate };
+  }
+
+  private async getQaMetrics(projectId: string, startDate: Date, endDate = new Date()) {
+    const results = await this.prisma.qAResult.findMany({
+      where: {
+        created_at: { gte: startDate, lte: endDate },
+        execution: { ticket: { project_id: projectId } },
+      },
+      select: {
+        overall_passed: true,
+        linting_passed: true,
+        tests_passed: true,
+        code_review_passed: true,
+        test_coverage: true,
+      },
+    });
+
+    const totalExecutions = results.length;
+    const passedCount = results.filter((r) => r.overall_passed).length;
+    const rate = (count: number) => (totalExecutions > 0 ? (count / totalExecutions) * 100 : 0);
+    // Average only rows with a recorded coverage value, matching Prisma `_avg`
+    // semantics (NULL coverage rows are excluded from both sum and count) so a
+    // missing reading does not drag the reported average toward zero.
+    const coverageValues = results
+      .map((r) => r.test_coverage)
+      .filter((c): c is number => c != null);
+    const averageCoverage =
+      coverageValues.length > 0
+        ? coverageValues.reduce((sum, c) => sum + c, 0) / coverageValues.length
+        : 0;
+
+    return {
+      totalExecutions,
+      passedCount,
+      failedCount: totalExecutions - passedCount,
+      passRate: rate(passedCount),
+      averageCoverage,
+      lintingPassRate: rate(results.filter((r) => r.linting_passed).length),
+      testPassRate: rate(results.filter((r) => r.tests_passed).length),
+      securityPassRate: rate(results.filter((r) => r.code_review_passed).length),
+    };
+  }
+
+  private async calculateEscapeRate(period: string, projectId?: string) {
+    const [escapes, deployments] = await Promise.all([
+      this.prisma.bugEscape.count({
+        where: projectId ? { project_id: projectId } : {},
+      }),
+      this.prisma.ticket.count({
+        where: {
+          ...(projectId ? { project_id: projectId } : {}),
+          status: { in: ['DEPLOYED', 'COMPLETED'] },
+        },
+      }),
+    ]);
+    const rate = deployments > 0 ? (escapes / deployments) * 100 : 0;
+
+    return {
+      period,
+      summary: {
+        total_deployed: deployments,
+        total_escapes: escapes,
+        escape_rate_percent: parseFloat(rate.toFixed(2)),
+        target_rate_percent: 5.0,
+        status: rate <= 5.0 ? 'within_target' : 'exceeded',
+      },
+    };
+  }
+
+  private async compareProviderEscapes() {
+    const escapes = await this.prisma.bugEscape.groupBy({
+      by: ['ai_provider'],
+      _count: { id: true },
+      where: {
+        detected_at: { gte: new Date(new Date().setMonth(new Date().getMonth() - 3)) },
+      },
+    });
+
+    return escapes.map((e) => ({
+      provider: e.ai_provider || 'unknown',
+      escapes: e._count.id,
+    }));
+  }
+
+  private async getEscapesByCategory(projectId?: string) {
+    const groups = await this.prisma.bugEscape.groupBy({
+      by: ['escape_category'],
+      where: {
+        ...(projectId ? { project_id: projectId } : {}),
+        detected_at: { gte: new Date(new Date().setMonth(new Date().getMonth() - 1)) },
+      },
+      _count: { escape_category: true },
+    });
+
+    return groups.map((g) => ({
+      category: g.escape_category,
+      count: g._count.escape_category,
+    }));
   }
 
   private async getDeploymentStats(startDate: Date, projectId?: string) {

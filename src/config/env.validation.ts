@@ -73,38 +73,9 @@ export const envValidationSchema = Joi.object({
     'string.min': 'JWT_SECRET must be at least 32 characters for security',
   }),
 
-  // AI Providers (Story 2.3)
-  CLAUDE_CODE_ENABLED: Joi.boolean().default(false),
-  GEMINI_ENABLED: Joi.boolean().default(false),
-  GEMINI_API_KEY: Joi.string().allow('').default(''),
-  GEMINI_BASE_URL: Joi.string().uri().allow('').default(''),
-  GEMINI_MODEL: Joi.string().default('gemini-2.5-pro'),
-  CODEX_ENABLED: Joi.boolean().default(false),
-  KIMI_ENABLED: Joi.boolean().default(false),
-  // OpenAI Codex provider
+  // OpenAI API
   OPENAI_API_KEY: Joi.string().allow('').default(''),
   OPENAI_BASE_URL: Joi.string().uri().allow('').default(''),
-  CODEX_MODEL: Joi.string().default('codex-1'),
-  // Kimi provider
-  KIMI_API_KEY: Joi.string().allow('').default(''),
-  KIMI_BASE_URL: Joi.string().uri().allow('').default(''),
-  KIMI_MODEL: Joi.string().default('kimi-k2'),
-  // ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {
-  //   is: true,
-  //   then: Joi.required(),
-  //   otherwise: Joi.optional().allow(''),
-  // }),
-  CLAUDE_CODE_TIMEOUT: Joi.number().default(180000),
-  CLAUDE_MAX_CONCURRENT: Joi.number().default(5),
-
-  AI_COMPLEXITY_THRESHOLD: Joi.number().default(10),
-  AI_RETRY_DELAY_MINUTES: Joi.number().default(5),
-  AI_ALERT_THRESHOLD_MINUTES: Joi.number().default(15),
-  AI_PRIMARY_PROVIDER: Joi.string()
-    .valid('CLAUDE_CODE', 'GEMINI', 'CODEX', 'KIMI')
-    .optional()
-    .allow('')
-    .description('Force routing all tickets to this provider, bypassing complexity scoring'),
 
   // Story 11.2: AI Decision Audit Configuration
   AI_CONFIDENCE_THRESHOLD: Joi.number()
@@ -188,7 +159,6 @@ export const envValidationSchema = Joi.object({
   REDIS_URL: Joi.string().uri({ scheme: 'redis' }).optional(),
 
   // Feature Flags
-  FEATURE_SELF_HEALING: Joi.boolean().default(true),
   FEATURE_COST_TRACKING: Joi.boolean().default(true),
   FEATURE_QUALITY_GATES: Joi.boolean().default(true),
 
@@ -203,7 +173,12 @@ export const envValidationSchema = Joi.object({
   LOOP_MAX_ITERATIONS: loopMaxIterationsSchema.default(5),
   OPENHARNESS_WORKSPACE_DIR: Joi.string().default(process.cwd()),
   OPENHARNESS_MAX_TURNS: Joi.number().integer().min(1).max(1000).default(200),
-  OPENHARNESS_MCP_CONFIG_PATH: Joi.string().default('./docs/openharness/mcp-config.json'),
+  OPENHARNESS_RUN_TIMEOUT_MS: Joi.number().integer().min(1000).max(86400000).default(1800000),
+  OPENHARNESS_MANDATED_MCP_SERVERS: Joi.string().allow('').default('gitnexus'),
+  OPENHARNESS_MANDATED_TOOLS_MODE: Joi.string().valid('warn', 'fail').default('warn'),
+  OPENHARNESS_FORMAT_ENABLED: Joi.boolean().default(true),
+  OPENHARNESS_FORMAT_COMMAND: Joi.string().default('pnpm exec prettier --write'),
+  OPENHARNESS_MCP_CONFIG_PATH: Joi.string().default('./openharness/mcp-config.json'),
   MCP_CONFIG_PATH: Joi.string().optional().allow(''),
 
   // Story 2.7: Anthropic API Configuration (optional - provider disabled if not set)
@@ -232,12 +207,6 @@ export const envValidationSchema = Joi.object({
   CONTEXT_STORAGE_PATH: Joi.string().default('./uploads/context'),
   CONTEXT_SUPPORTED_FORMATS: Joi.string().default('pdf,md,txt,docx'),
 
-  // Story 3.3: Coverage Configuration
-  QA_COVERAGE_THRESHOLD: Joi.number().min(0).max(100).default(80),
-  QA_COVERAGE_ENFORCEMENT: Joi.string().valid('true', 'false').default('true'),
-  QA_BASE_BRANCH: Joi.string().default('main'),
-  QA_GENERATE_HTML_REPORT: Joi.string().valid('true', 'false').default('true'),
-
   // Story 3.4: Security Scanning Configuration (optional - has sensible defaults)
   // FR68: Security vulnerability scanning, secrets detection, code complexity, OWASP patterns
   SECURITY_BLOCK_ON_CRITICAL: Joi.string().valid('true', 'false').default('true'),
@@ -261,16 +230,6 @@ export const envValidationSchema = Joi.object({
   QG_BLOCK_HIGH: Joi.string().valid('true', 'false').default('true'),
   QG_MAX_COMPLEXITY: Joi.number().integer().min(5).max(50).default(20),
   QG_ALLOW_OVERRIDE: Joi.string().valid('true', 'false').default('false'),
-  // Per-category timeouts
-  QG_LINTING_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
-  QG_TESTING_TIMEOUT_MS: Joi.number().integer().min(30000).max(900000).default(300000), // 30s-15min
-  QG_COVERAGE_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
-  QG_SECURITY_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10min
-
-  // Story 13.4: Self-Healing Configuration
-  SELF_HEALING_ENABLED: Joi.boolean()
-    .default(true)
-    .description('Enable AI self-healing for QA failures'),
 
   // Story 14.4: Post-Deployment Health Monitoring Configuration
   HEALTH_MONITORING_ENABLED: Joi.boolean()
@@ -369,22 +328,6 @@ export const envValidationSchema = Joi.object({
     .default('0 */5 * * * *')
     .description('Background cleanup frequency (default: every 5 minutes)'),
 
-  // Story 23.3: Resource Limit Enforcement Configuration
-  // Note: SANDBOX_ENABLE_RESOURCE_LIMITS and SANDBOX_MEMORY_SWAP_LIMIT_MB removed — unused.
-  // These will be fully replaced by OPENSANDBOX_DEFAULT_MEMORY_LIMIT in Epic OS.
-  SANDBOX_MEMORY_LIMIT_MB: Joi.number()
-    .integer()
-    .min(64)
-    .max(8192)
-    .default(512)
-    .description('Memory limit per container in MB (default: 512MB)'),
-  SANDBOX_CPU_LIMIT_PERCENT: Joi.number()
-    .integer()
-    .min(10)
-    .max(400)
-    .default(100)
-    .description('CPU limit as percentage of single core (default: 100% = 1 core)'),
-
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
   CONVERSATIONS_STORAGE_PATH: Joi.string()
@@ -441,71 +384,4 @@ export const envValidationSchema = Joi.object({
   SMTP_FROM: Joi.string().email().required().messages({
     'any.required': 'SMTP_FROM is required. Example: noreply@dsf.com',
   }),
-
-  // Epic OS-1: OpenSandbox server connection
-  OPENSANDBOX_DOMAIN: Joi.string()
-    .default('localhost:8080')
-    .description('OpenSandbox server address (host:port, no scheme)'),
-  OPENSANDBOX_API_KEY: Joi.string()
-    .allow('')
-    .default('')
-    .description('API key for OpenSandbox server authentication (required in production)'),
-  OPENSANDBOX_PROTOCOL: Joi.string()
-    .valid('http', 'https')
-    .default('http')
-    .description('Protocol for OpenSandbox server communication'),
-  OPENSANDBOX_REQUEST_TIMEOUT_MS: Joi.number()
-    .integer()
-    .min(1000)
-    .max(7500000)
-    .default(3900000)
-    .description(
-      'HTTP request timeout for OpenSandbox API calls (ms). Must exceed OPENSANDBOX_SANDBOX_TIMEOUT_S * 1000 so long-running command executions do not hit the connection timeout before the sandbox timeout fires.',
-    ),
-  OPENSANDBOX_AGENT_IMAGE: Joi.string()
-    .default('opensandbox/code-interpreter:v1.0.2')
-    .description('Docker image for sandbox executions'),
-  OPENSANDBOX_SANDBOX_TIMEOUT_S: Joi.number()
-    .integer()
-    .min(60)
-    .max(7200)
-    .default(3600)
-    .description('Maximum sandbox lifetime in seconds (default: 1 hour)'),
-  OPENSANDBOX_READY_TIMEOUT_S: Joi.number()
-    .integer()
-    .min(30)
-    .max(600)
-    .default(120)
-    .description('Seconds to wait for sandbox execd health check before failing (default: 120)'),
-  OPENSANDBOX_MAX_CONCURRENT: Joi.number()
-    .integer()
-    .min(1)
-    .max(50)
-    .default(10)
-    .description('Maximum number of sandboxes running simultaneously'),
-  OPENSANDBOX_DEFAULT_CPU_LIMIT: Joi.string()
-    .default('1')
-    .description(
-      'Default CPU limit for medium resource profile (Kubernetes-style: "0.5", "1", "2")',
-    ),
-  OPENSANDBOX_DEFAULT_MEMORY_LIMIT: Joi.string()
-    .default('512Mi')
-    .description('Default memory limit for medium resource profile (e.g., "512Mi", "1Gi")'),
-  OPENSANDBOX_SECURE_RUNTIME: Joi.string()
-    .allow('')
-    .valid('', 'gvisor', 'kata-qemu', 'firecracker')
-    .default('')
-    .description(
-      'Secure container runtime ("" = standard Docker, "gvisor", "kata-qemu", "firecracker")',
-    ),
-  OPENSANDBOX_NETWORK_DEFAULT_ACTION: Joi.string()
-    .valid('ALLOW', 'DENY')
-    .default('ALLOW')
-    .description('Default egress policy for sandboxes'),
-  OPENSANDBOX_USE_SERVER_PROXY: Joi.boolean()
-    .default(false)
-    .description(
-      'Route execd commands through the OpenSandbox server proxy instead of connecting directly to container. ' +
-        'Required when the sandbox server is remote (not localhost). Set to true in production.',
-    ),
 });
