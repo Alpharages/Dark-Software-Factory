@@ -13,8 +13,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { ExecutionController } from './execution.controller';
 import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider';
 import { AI_METRICS, CONTAINER_METRICS } from '../common/metrics/metrics.constants';
-import { ApprovalService } from './services/approval.service';
-import { ApprovalController } from './controllers/approval.controller';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 // Story 11.4: AI Decision Audit Logging
@@ -87,19 +85,13 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     }),
     forwardRef(() => GitHubModule),
   ],
-  controllers: [
-    ExecutionController,
-    ApprovalController,
-    ExecutionLogsController,
-    ManualInterventionController,
-  ],
+  controllers: [ExecutionController, ExecutionLogsController, ManualInterventionController],
   providers: [
     // Core services
     ExecutionService,
     ExecutionTrackerService,
     ExecutionRepository,
     ExecutionGateway,
-    ApprovalService,
 
     // Queue Metrics Providers (Story 2.10)
     ...queueMetricsProviders,
@@ -207,12 +199,6 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     // QA Failure Resolution (WR-4.3)
     QAFailureResolutionService,
   ],
-  exports: [
-    ExecutionService,
-    ExecutionTrackerService,
-    ExecutionRepository,
-    ExecutionGateway,
-    ApprovalService,
-  ],
+  exports: [ExecutionService, ExecutionTrackerService, ExecutionRepository, ExecutionGateway],
 })
 export class ExecutionModule {}
