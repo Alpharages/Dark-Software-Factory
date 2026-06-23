@@ -339,22 +339,6 @@ export const envValidationSchema = Joi.object({
     .default('0 */5 * * * *')
     .description('Background cleanup frequency (default: every 5 minutes)'),
 
-  // Story 23.3: Resource Limit Enforcement Configuration
-  // Note: SANDBOX_ENABLE_RESOURCE_LIMITS and SANDBOX_MEMORY_SWAP_LIMIT_MB removed — unused.
-  // These will be fully replaced by OPENSANDBOX_DEFAULT_MEMORY_LIMIT in Epic OS.
-  SANDBOX_MEMORY_LIMIT_MB: Joi.number()
-    .integer()
-    .min(64)
-    .max(8192)
-    .default(512)
-    .description('Memory limit per container in MB (default: 512MB)'),
-  SANDBOX_CPU_LIMIT_PERCENT: Joi.number()
-    .integer()
-    .min(10)
-    .max(400)
-    .default(100)
-    .description('CPU limit as percentage of single core (default: 100% = 1 core)'),
-
   // Story 5.5: Client Communication Intelligence
   // OpenAI API for Whisper transcription and GPT-4 analysis
   CONVERSATIONS_STORAGE_PATH: Joi.string()
@@ -411,71 +395,4 @@ export const envValidationSchema = Joi.object({
   SMTP_FROM: Joi.string().email().required().messages({
     'any.required': 'SMTP_FROM is required. Example: noreply@dsf.com',
   }),
-
-  // Epic OS-1: OpenSandbox server connection
-  OPENSANDBOX_DOMAIN: Joi.string()
-    .default('localhost:8080')
-    .description('OpenSandbox server address (host:port, no scheme)'),
-  OPENSANDBOX_API_KEY: Joi.string()
-    .allow('')
-    .default('')
-    .description('API key for OpenSandbox server authentication (required in production)'),
-  OPENSANDBOX_PROTOCOL: Joi.string()
-    .valid('http', 'https')
-    .default('http')
-    .description('Protocol for OpenSandbox server communication'),
-  OPENSANDBOX_REQUEST_TIMEOUT_MS: Joi.number()
-    .integer()
-    .min(1000)
-    .max(7500000)
-    .default(3900000)
-    .description(
-      'HTTP request timeout for OpenSandbox API calls (ms). Must exceed OPENSANDBOX_SANDBOX_TIMEOUT_S * 1000 so long-running command executions do not hit the connection timeout before the sandbox timeout fires.',
-    ),
-  OPENSANDBOX_AGENT_IMAGE: Joi.string()
-    .default('opensandbox/code-interpreter:v1.0.2')
-    .description('Docker image for sandbox executions'),
-  OPENSANDBOX_SANDBOX_TIMEOUT_S: Joi.number()
-    .integer()
-    .min(60)
-    .max(7200)
-    .default(3600)
-    .description('Maximum sandbox lifetime in seconds (default: 1 hour)'),
-  OPENSANDBOX_READY_TIMEOUT_S: Joi.number()
-    .integer()
-    .min(30)
-    .max(600)
-    .default(120)
-    .description('Seconds to wait for sandbox execd health check before failing (default: 120)'),
-  OPENSANDBOX_MAX_CONCURRENT: Joi.number()
-    .integer()
-    .min(1)
-    .max(50)
-    .default(10)
-    .description('Maximum number of sandboxes running simultaneously'),
-  OPENSANDBOX_DEFAULT_CPU_LIMIT: Joi.string()
-    .default('1')
-    .description(
-      'Default CPU limit for medium resource profile (Kubernetes-style: "0.5", "1", "2")',
-    ),
-  OPENSANDBOX_DEFAULT_MEMORY_LIMIT: Joi.string()
-    .default('512Mi')
-    .description('Default memory limit for medium resource profile (e.g., "512Mi", "1Gi")'),
-  OPENSANDBOX_SECURE_RUNTIME: Joi.string()
-    .allow('')
-    .valid('', 'gvisor', 'kata-qemu', 'firecracker')
-    .default('')
-    .description(
-      'Secure container runtime ("" = standard Docker, "gvisor", "kata-qemu", "firecracker")',
-    ),
-  OPENSANDBOX_NETWORK_DEFAULT_ACTION: Joi.string()
-    .valid('ALLOW', 'DENY')
-    .default('ALLOW')
-    .description('Default egress policy for sandboxes'),
-  OPENSANDBOX_USE_SERVER_PROXY: Joi.boolean()
-    .default(false)
-    .description(
-      'Route execd commands through the OpenSandbox server proxy instead of connecting directly to container. ' +
-        'Required when the sandbox server is remote (not localhost). Set to true in production.',
-    ),
 });

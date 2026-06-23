@@ -178,14 +178,6 @@ export const CONTAINER_METRICS = {
   LOG_SUBSCRIPTIONS_ACTIVE: `${METRICS_CONSTANTS.PREFIX}execution_log_subscriptions_active`,
 } as const;
 
-// Epic OS-1: OpenSandbox Metrics (Story OS-1.4)
-export const SANDBOX_METRICS = {
-  EXECUTIONS_TOTAL: `${METRICS_CONSTANTS.PREFIX}opensandbox_executions_total`,
-  EXECUTION_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}opensandbox_execution_duration_seconds`,
-  ACTIVE_SANDBOXES: `${METRICS_CONSTANTS.PREFIX}opensandbox_active_sandboxes`,
-  CONCURRENCY_QUEUE_DEPTH: `${METRICS_CONSTANTS.PREFIX}opensandbox_concurrency_queue_depth`,
-} as const;
-
 // System Metrics
 export const SYSTEM_METRICS = {
   MEMORY_USAGE: `${METRICS_CONSTANTS.PREFIX}memory_usage_bytes`,

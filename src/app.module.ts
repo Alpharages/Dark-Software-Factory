@@ -58,7 +58,6 @@ import { DependenciesModule } from './dependencies/dependencies.module';
 import { FileLocksModule } from './file-locks/file-locks.module';
 import { StorageModule } from './storage/storage.module';
 import { GitMirrorModule } from '@/git-mirror';
-import { SandboxModule } from '@/sandbox'; // Epic OS-1
 import { CleanupModule } from '@/cleanup'; // Story 23.2
 
 // OpenHarness
@@ -101,7 +100,6 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Infrastructure
     DatabaseModule,
     RabbitMQModule,
-    SandboxModule, // Epic OS-1: OpenSandbox Migration
     CleanupModule, // Story 23.2: Automated Container Cleanup
 
     // Authentication
