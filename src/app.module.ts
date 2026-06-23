@@ -25,7 +25,6 @@ import { JwtAuthGuard } from './common/guards';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TicketIntakeModule } from './ticket-intake/ticket-intake.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
-import { AiRoutingModule } from './ai-routing/ai-routing.module';
 import { ExecutionModule } from './execution/execution.module';
 
 // Quality & Deployment
@@ -111,7 +110,6 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     // Core workflow
     WebhooksModule,
     TicketIntakeModule,
-    AiRoutingModule,
     ExecutionModule,
     OpenHarnessModule,
     DispatcherModule,

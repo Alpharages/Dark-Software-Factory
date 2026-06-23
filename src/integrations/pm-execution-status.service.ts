@@ -4,15 +4,14 @@ import { ProjectIntegrationService } from './project-integration.service';
 import { PMProviderFactory } from './providers/pm-provider.factory';
 import { PMFieldPreCheckService } from './pm-field-pre-check.service';
 import { PMFieldAutoFillService, InferenceContext } from './pm-field-auto-fill.service';
-import { AgentSkillRunner } from '@/ai-routing/agent-skills/agent-skill-runner.service';
-import {
-  ClickUpStatusSkill,
-  IClickUpStatusSkillContext,
-} from '@/ai-routing/agent-skills/skills/clickup-status.skill';
-import { ExecutionPhase } from '@/ai-routing/agent-skills/skills/execution-phase.enum';
 import { PrismaService } from '@/database/prisma.service';
 
-export { ExecutionPhase };
+export enum ExecutionPhase {
+  STARTED = 'STARTED',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  QA_FAILED = 'QA_FAILED',
+}
 
 /**
  * PMExecutionStatusService
@@ -27,16 +26,9 @@ export { ExecutionPhase };
  *     This covers every custom field a workspace has marked as required, regardless
  *     of what they are. New required fields are handled automatically.
  *
- *   Layer 2 — Skill flags (handles core ClickUp field automation rules):
- *     ClickUpStatusSkill returns needsAssignee / needsDueDate / needsTimeEstimate.
- *     These are core task fields (not custom fields) that common automation rules
- *     block status transitions on. The skill reasons about whether they're needed
- *     based on the task's current state and the target status.
- *
  * Execution order:
  *   1. CS2 pipeline fills all missing required custom fields
- *   2. Skill sets core field pre-conditions (assignee, due date, estimate)
- *   3. Status transition — all automation conditions satisfied
+ *   2. Status transition — phase maps to the closest live ClickUp status
  *
  * Always best-effort — never throws, never blocks execution.
  */
@@ -49,7 +41,6 @@ export class PMExecutionStatusService {
     private readonly providerFactory: PMProviderFactory,
     private readonly fieldPreCheck: PMFieldPreCheckService,
     private readonly fieldAutoFill: PMFieldAutoFillService,
-    private readonly skillRunner: AgentSkillRunner,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -126,65 +117,12 @@ export class PMExecutionStatusService {
       });
       // ─────────────────────────────────────────────────────────────────────────
 
-      // 6. Build skill context with task's current state
-      const skillContext: IClickUpStatusSkillContext = {
-        taskName: task.name,
-        currentStatus: task.status.name,
-        availableStatuses: statuses.map((s) => s.name),
-        phase,
-        hasAssignee: (task.assignees?.length ?? 0) > 0,
-        hasDueDate: !!task.dueDate,
-        hasTimeEstimate: false, // not in NormalizedTask; skill defaults to checking
-      };
-
-      // 7. Run the AI skill — selects target status AND core field pre-conditions
-      const skill = new ClickUpStatusSkill();
-      const result = await this.skillRunner.run(skill, skillContext, correlationId);
-
-      if (!result) {
-        this.logger.warn(`${tag}Skill returned no result for phase ${phase} — skipping`);
-        return;
-      }
-
-      // 8. Validate skill's status choice against the live list (hallucination guard)
-      const validTarget = statuses.find((s) => s.name.toLowerCase() === result.value.toLowerCase());
+      const targetStatus = this.statusForPhase(phase);
+      const validTarget = statuses.find((s) => s.name.toLowerCase() === targetStatus);
       if (!validTarget) {
-        this.logger.warn(
-          `${tag}Skill selected '${result.value}' which is not in the status list — skipping`,
-        );
+        this.logger.warn(`${tag}No status matching phase ${phase} in list — skipping`);
         return;
       }
-
-      // ── LAYER 2: Core field pre-conditions from the skill decision ─────────────
-      // Handles ClickUp core fields (assignee, due_date, time_estimate) that
-      // automation rules commonly require but aren't in the required-fields API.
-      const decision = ClickUpStatusSkill.decodeDecision(result);
-      if (decision) {
-        const prepOpts: Parameters<typeof provider.prepareForTransition>[1] = {};
-
-        if (decision.needsAssignee) {
-          // Prefer the stored bot user ID (set during OAuth). If missing,
-          // fetch the workspace owner (the user who authorized the OAuth app)
-          // as the fallback assignee so automation rules are satisfied.
-          const assigneeId =
-            integration.bot_user_id ?? (await this.resolveWorkspaceOwner(provider, tag));
-          if (assigneeId) {
-            prepOpts.assigneeId = assigneeId;
-          }
-        }
-        if (decision.needsDueDate) {
-          prepOpts.dueDateMs = Date.now() + 48 * 60 * 60 * 1000; // +48h
-        }
-        if (decision.needsTimeEstimate) {
-          prepOpts.timeEstimateMs = 2 * 60 * 60 * 1000; // 2h
-        }
-
-        if (Object.keys(prepOpts).length > 0) {
-          this.logger.log(`${tag}Setting core pre-conditions: ${Object.keys(prepOpts).join(', ')}`);
-          await provider.prepareForTransition(clickupTaskId, prepOpts);
-        }
-      }
-      // ─────────────────────────────────────────────────────────────────────────
 
       // 9. Apply the transition — all pre-conditions satisfied
       await provider.updateStatus(clickupTaskId, validTarget.name);
@@ -197,6 +135,18 @@ export class PMExecutionStatusService {
       this.logger.warn(
         `${tag}Status update skipped for ticket ${ticketId} (phase: ${phase}): ${err.message}`,
       );
+    }
+  }
+
+  private statusForPhase(phase: ExecutionPhase): string {
+    switch (phase) {
+      case ExecutionPhase.STARTED:
+        return 'coding';
+      case ExecutionPhase.COMPLETED:
+        return 'pr ready';
+      case ExecutionPhase.FAILED:
+      case ExecutionPhase.QA_FAILED:
+        return 'blocked';
     }
   }
 

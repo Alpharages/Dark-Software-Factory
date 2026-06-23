@@ -8,7 +8,6 @@ import { ClickUpService } from '../clickup/clickup.service';
 import { CreateAdrDto } from './dto/create-adr.dto';
 import { AdrStatus } from '@/prisma/client';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
-import { PromptGeneratorService } from '../ai-routing/prompt-generator.service';
 import { ConfigService } from '@nestjs/config';
 
 import { RiskAssessmentService } from './risk-assessment.service';
@@ -45,10 +44,6 @@ const mockConfigService = {
   get: jest.fn().mockReturnValue(null),
 };
 
-const mockPromptGenerator = {
-  generatePrompt: jest.fn(),
-};
-
 const mockRiskService = {
   calculateRiskLevel: jest.fn().mockReturnValue('LOW'),
   calculateRiskScore: jest.fn().mockReturnValue(10),
@@ -82,7 +77,6 @@ describe('Escalation Workflow E2E', () => {
         { provide: ClickUpService, useValue: mockClickUpService },
         { provide: AIDecisionLoggerService, useValue: mockAuditLogger },
         { provide: ConfigService, useValue: mockConfigService },
-        { provide: PromptGeneratorService, useValue: mockPromptGenerator },
         { provide: RiskAssessmentService, useValue: mockRiskService },
         { provide: ConstraintValidatorService, useValue: mockConstraintValidator },
         { provide: AdrMetricsService, useValue: mockAdrMetricsService },

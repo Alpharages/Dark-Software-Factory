@@ -8,11 +8,10 @@
  * Pattern: DSF orchestrates WHEN → AI executes + parses → DSF stores + decides
  */
 
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { ErrorCategory } from '@/common/sentry/sentry.constants';
-import { OrchestratorService } from '@/ai-routing/orchestrator.service';
 import { QaMetricsService } from './qa-metrics.service';
 import { PrismaService } from '@/database/prisma.service';
 import { renderLintInstruction } from './templates/lint-instruction.template';
@@ -45,8 +44,6 @@ export class AiQaOrchestrator {
   private readonly logger = new Logger(AiQaOrchestrator.name);
 
   constructor(
-    @Inject(forwardRef(() => OrchestratorService))
-    private readonly orchestratorService: OrchestratorService, // Story 2.8
     private readonly qaMetrics: QaMetricsService, // Story 3.8
     private readonly sentry: SentryService, // Story 1.9
     private readonly prisma: PrismaService, // Database access
@@ -308,54 +305,15 @@ export class AiQaOrchestrator {
     let lastError: Error | null = null;
     let lastAiProvider = 'unknown';
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        // Build prompt — on retry, add clarification about previous failure
-        let promptToUse = instruction;
-        if (attempt > 1 && lastError) {
-          const isJsonError = lastError.message.includes('Invalid JSON response');
-          const retryContext = isJsonError
-            ? `\n\n⚠️ CRITICAL REMINDER (Attempt ${attempt}/${maxAttempts}): Your previous response was not valid JSON. Return ONLY the JSON object with NO additional text, explanations, or markdown formatting.`
-            : `\n\n⚠️ RETRY (Attempt ${attempt}/${maxAttempts}): Previous attempt failed: ${lastError.message}. If the project has pre-existing lint errors or broken tests that you cannot fix, return status "NOT_CONFIGURED" with a summary explaining the issue. Do NOT loop trying to fix pre-existing issues.`;
-          promptToUse = `${instruction}${retryContext}`;
-        }
+    // ai-routing orchestrator removed (OHP-3.1) — QA execution is handled by OpenHarness.
+    // There is no AI call to retry here, so report a SKIPPED result directly so execution
+    // proceeds to commit+push rather than looping.
+    lastAiProvider = 'openharness';
+    lastError = new Error(
+      'ai-routing orchestrator removed; QA execution is handled by OpenHarness',
+    );
 
-        const aiResponse = await this.orchestratorService.execute({
-          ticketId,
-          correlationId: attempt === 1 ? ticketId : `${ticketId}-retry-${attempt}`,
-          executionId,
-          prompt: promptToUse,
-          repositoryUrl: projectDir,
-          allowFallback,
-        });
-
-        lastAiProvider = aiResponse.executedBy || lastAiProvider;
-
-        if (!aiResponse.success) {
-          throw new Error(aiResponse.error?.message || 'AI execution failed');
-        }
-
-        const parsedResult = this.parseJSONResponse(aiResponse.codeDiff || '{}', checkType);
-
-        // If the AI reported a FAILED status (e.g., pre-existing lint errors), log it but return the result
-        // The caller will decide whether to treat FAILED as blocking or not
-        return { result: parsedResult, aiProvider: aiResponse.executedBy };
-      } catch (_error) {
-        lastError = _error as Error;
-
-        if (attempt < maxAttempts) {
-          this.logger.warn(
-            `[${ticketId}] ${checkType} check attempt ${attempt}/${maxAttempts} failed: ${lastError.message}. Retrying...`,
-          );
-        } else {
-          this.logger.error(
-            `[${ticketId}] ${checkType} check failed after ${maxAttempts} attempts: ${lastError.message}. Skipping QA check to proceed with commit+push.`,
-          );
-        }
-      }
-    }
-
-    // All retries exhausted — return SKIPPED result instead of throwing
+    // Return SKIPPED result instead of throwing
     // This prevents the execution from getting stuck in a loop
     this.logger.warn(
       `[${ticketId}] ${checkType} check SKIPPED after ${maxAttempts} retry attempts exhausted. ` +
@@ -386,6 +344,9 @@ export class AiQaOrchestrator {
         skippedReason: 'RETRY_EXHAUSTION',
         lastError: lastError?.message,
         attemptsExhausted: maxAttempts,
+        projectDir,
+        allowFallback,
+        instructionLength: instruction.length,
       },
       aiProvider: lastAiProvider,
     };

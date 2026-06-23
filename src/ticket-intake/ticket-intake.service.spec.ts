@@ -16,7 +16,6 @@ describe('TicketIntakeService', () => {
     auditLog: { create: jest.Mock };
     execution: { findFirst: jest.Mock }; // Story 20.1: For idempotency check
   };
-  let mockRabbitMQPublisher: { publishToQueue: jest.Mock };
   let mockValidator: { validate: jest.Mock; formatErrorsForComment: jest.Mock };
   let mockQualityService: { calculateScore: jest.Mock };
   let mockIntakeCounter: { inc: jest.Mock };
@@ -90,10 +89,6 @@ describe('TicketIntakeService', () => {
       },
     };
 
-    mockRabbitMQPublisher = {
-      publishToQueue: jest.fn().mockResolvedValue(true),
-    };
-
     const validResult = new ValidationResultDto();
     validResult.isValid = true;
     validResult.errors = [];
@@ -153,7 +148,6 @@ describe('TicketIntakeService', () => {
 
     service = new TicketIntakeService(
       mockPrisma as never,
-      mockRabbitMQPublisher as never,
       mockValidator as unknown as TicketValidatorService,
       mockQualityService as unknown as TicketQualityService,
       mockProjectService as never, // Story 4.9
@@ -186,7 +180,7 @@ describe('TicketIntakeService', () => {
       expect(mockValidator.validate).toHaveBeenCalled();
       expect(mockQualityService.calculateScore).toHaveBeenCalled();
       expect(mockPrisma.ticket.upsert).toHaveBeenCalled();
-      expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalled();
+      expect(mockDispatcher.dispatch).toHaveBeenCalled();
       // Story 20.1: New metrics track provider/trigger instead of event_type
       expect(mockIntakeCounter.inc).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -257,19 +251,9 @@ describe('TicketIntakeService', () => {
       expect(validatorCall.acceptanceCriteria).toContain('Given user submits credentials');
     });
 
-    it('should route validated ticket to AI_ROUTING queue', async () => {
+    it('should validate ticket and dispatch via the dispatcher (no AI routing queue)', async () => {
       await service.processTaskEvent(mockRawEvent);
 
-      expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalledWith(
-        'ai-routing-queue',
-        expect.objectContaining({
-          ticketId: 'ticket-uuid-123',
-          clickupTaskId: 'task-456',
-          qualityScore: 75,
-          qualityGrade: 'good',
-        }),
-        'test-corr-123',
-      );
       expect(mockDispatcher.dispatch).toHaveBeenCalled();
     });
 
@@ -362,7 +346,6 @@ describe('TicketIntakeService', () => {
 
         // Should succeed but not route to AI queue
         expect(result.success).toBe(true);
-        expect(mockRabbitMQPublisher.publishToQueue).not.toHaveBeenCalled();
 
         // Verify idempotency check was called
         expect(mockPrisma.execution.findFirst).toHaveBeenCalledWith(
@@ -380,7 +363,7 @@ describe('TicketIntakeService', () => {
         const result = await service.processTaskEvent(mockTaskEvent);
 
         expect(result.success).toBe(true);
-        expect(mockRabbitMQPublisher.publishToQueue).toHaveBeenCalled();
+        expect(mockDispatcher.dispatch).toHaveBeenCalled();
         expect(mockPrisma.execution.findFirst).toHaveBeenCalled();
       });
     });

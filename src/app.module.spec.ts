@@ -15,7 +15,6 @@ import { AuthModule } from './auth/auth.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TicketIntakeModule } from './ticket-intake/ticket-intake.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
-import { AiRoutingModule } from './ai-routing/ai-routing.module';
 import { ExecutionModule } from './execution/execution.module';
 import { QaAutomationModule } from './qa-automation/qa-automation.module';
 import { GitHubModule } from './github/github.module';
@@ -52,7 +51,6 @@ describe('AppModule', () => {
       { name: 'WebhooksModule', module: WebhooksModule },
       { name: 'TicketIntakeModule', module: TicketIntakeModule },
       { name: 'RabbitMQModule', module: RabbitMQModule },
-      { name: 'AiRoutingModule', module: AiRoutingModule },
       { name: 'ExecutionModule', module: ExecutionModule },
       { name: 'QaAutomationModule', module: QaAutomationModule },
       { name: 'GitHubModule', module: GitHubModule },

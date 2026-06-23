@@ -25,7 +25,6 @@ import { SentryModule } from '../common/sentry/sentry.module';
 import { LoggerModule } from '../common/logger/logger.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { DatabaseModule } from '../database/database.module';
-import { AiRoutingModule } from '../ai-routing/ai-routing.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { ClickUpModule } from '../clickup/clickup.module';
 // Story 11.4: AI Decision Audit Logging
@@ -47,7 +46,6 @@ import { ApprovalGateModule } from '@/approval-gate/approval-gate.module';
     SentryModule,
     LoggerModule, // Required for winston logger injection
     RabbitMQModule,
-    forwardRef(() => AiRoutingModule),
     WebhooksModule,
     ClickUpModule,
     // Story 11.4: AI Decision Audit Logging

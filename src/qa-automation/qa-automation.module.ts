@@ -30,7 +30,6 @@ import { AiQaOrchestrator } from './ai-qa-orchestrator.service'; // Story 3.10
 import { ExecutionCompletedListener } from './listeners/execution-completed.listener';
 
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
-import { AiRoutingModule } from '../ai-routing/ai-routing.module'; // Story 3.10: For OrchestratorService
 import { RealtimeModule } from '../realtime/realtime.module'; // Story 10.3
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
@@ -71,7 +70,6 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     RabbitMQModule,
     LoggerModule,
     AppMetricsModule,
-    forwardRef(() => AiRoutingModule), // Story 3.10: AiQaOrchestrator needs OrchestratorService (circular dep fix)
     forwardRef(() => RealtimeModule), // Story 10.3: For QA notifications
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,

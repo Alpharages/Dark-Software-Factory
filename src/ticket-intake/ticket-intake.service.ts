@@ -4,8 +4,6 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { TicketStatus } from '@/prisma/client';
 import { DispatcherService } from '@/dispatcher/dispatcher.service';
 import { PrismaService } from '../database/prisma.service';
-import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
-import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { TicketValidatorService } from './ticket-validator.service';
 import { TicketQualityService } from './ticket-quality.service';
 // Story 4.9: Project Mapping
@@ -51,7 +49,6 @@ export class TicketIntakeService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly rabbitMQPublisher: RabbitMQPublisherService,
     private readonly validator: TicketValidatorService,
     private readonly qualityService: TicketQualityService,
     // Story 4.9: Project Mapping
@@ -572,24 +569,10 @@ export class TicketIntakeService {
     qualityScore: QualityScoreDto,
     correlationId: string,
   ): Promise<void> {
-    await this.rabbitMQPublisher.publishToQueue(
-      QUEUE_NAMES.AI_ROUTING,
-      {
-        ticketId,
-        clickupTaskId: parsed.clickupTaskId,
-        projectId: parsed.projectId,
-        title: parsed.title,
-        description: parsed.description,
-        acceptanceCriteria: parsed.acceptanceCriteria,
-        tags: parsed.tags,
-        qualityScore: qualityScore.totalScore,
-        qualityGrade: qualityScore.grade,
-        timestamp: new Date().toISOString(),
-      },
-      correlationId,
+    this.logger.debug(
+      `[${correlationId}] Ticket ${ticketId} (${parsed.clickupTaskId}) validated with ` +
+        `quality ${qualityScore.grade}; dispatcher handles execution by status`,
     );
-
-    this.logger.debug(`[${correlationId}] Routed ticket ${ticketId} to ${QUEUE_NAMES.AI_ROUTING}`);
   }
 
   /**

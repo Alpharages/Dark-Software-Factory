@@ -10,7 +10,7 @@ import {
   IStateTransition,
   IExecutionProgress,
 } from './interfaces';
-import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
+import { QAAttempt } from './interfaces'; // WR-6.3
 import {
   StartExecutionDto,
   CompleteExecutionDto,

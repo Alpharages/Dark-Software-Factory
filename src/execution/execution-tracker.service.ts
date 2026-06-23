@@ -27,7 +27,7 @@ import {
   ExecutionProgressEvent,
   ExecutionQAFailedEvent,
 } from '@/realtime/realtime.types';
-import { QAAttempt } from '@/ai-routing/interfaces/ai-provider.interface'; // WR-6.3
+import { QAAttempt } from './interfaces'; // WR-6.3
 import { AI_METRICS, CONTAINER_METRICS } from '@/common/metrics';
 import { ExecutionActivityRepository } from './repositories/execution-activity.repository';
 

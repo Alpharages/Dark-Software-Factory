@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service'; // Fixed import path
-import { OrchestratorService } from '../../ai-routing/orchestrator.service';
 import { GitHubService } from '../../github/github.service';
 import { QaResultsService } from '../qa-results.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
@@ -17,14 +16,11 @@ import {
   AiFindingsCollectionDto,
 } from '../dto/ai-code-review.dto';
 import { UpdateFindingStatusDto } from '../dto/update-finding-status.dto';
-import { CODE_REVIEW_INSTRUCTION } from '../templates/code-review-instruction.template';
-import { AIProvider, Prisma } from '@/prisma/client';
+import { Prisma } from '@/prisma/client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter, Histogram } from 'prom-client';
 import { QA_METRICS } from '../../common/metrics/metrics.constants'; // Added QA_METRICS
 import * as crypto from 'crypto';
-import { validate } from 'class-validator';
-import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class AiCodeReviewService {
@@ -33,7 +29,6 @@ export class AiCodeReviewService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-    private readonly orchestrator: OrchestratorService,
     private readonly githubService: GitHubService,
     private readonly qaResultsService: QaResultsService,
     private readonly decisionLogger: AIDecisionLoggerService,
@@ -139,58 +134,13 @@ export class AiCodeReviewService {
       throw new InternalServerErrorException('Failed to fetch PR content');
     }
 
-    // 4. Construct Prompt
-    const prompt = CODE_REVIEW_INSTRUCTION.replace(
-      '{ticket_title}',
-      queueItem.execution.ticket.title,
-    )
-      .replace('{acceptance_criteria}', queueItem.execution.ticket.acceptance_criteria)
-      .replace('{ai_provider}', queueItem.execution.ai_provider)
-      .replace('{complexity_score}', queueItem.execution.complexity_score?.toString() || 'N/A')
-      .replace('{linting_summary}', qaResult.linting_passed ? 'PASSED' : 'FAILED')
-      .replace('{test_summary}', qaResult.tests_passed ? 'PASSED' : 'FAILED')
-      .replace('{coverage_summary}', `${qaResult.test_coverage}%`)
-      .replace('{security_summary}', 'See Security Scan Results') // Simplified
-      .replace('{pr_diff_content}', diff)
-      .replace('{json_schema}', JSON.stringify(new AiFindingsCollectionDto())); // Hint structure
-
-    // 5. Call Orchestrator
-    const result = await this.orchestrator.executeTask({
-      correlationId: queueItemId,
-      ticketId: queueItem.execution.ticket.id,
-      prompt: prompt,
-      agentName: 'AiCodeReview',
-      action: 'Review Generation',
-      providerOverride: queueItem.execution.ai_provider as AIProvider,
-    });
-
-    if (!result.success) {
-      throw new InternalServerErrorException('AI Code Review generation failed');
-    }
-
-    // 6. Parse and Persist
-    let findingsData: AiFindingsCollectionDto;
-    try {
-      // Clean markdown blocks if present
-      const cleanJson = result.output
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-      const rawData = JSON.parse(cleanJson);
-
-      // Class-Validator Validation
-      findingsData = plainToInstance(AiFindingsCollectionDto, rawData);
-      const errors = await validate(findingsData);
-
-      if (errors.length > 0) {
-        throw new Error('Validation failed: ' + errors.map((e) => e.toString()).join(', '));
-      }
-    } catch (e) {
-      this.logger.error('Failed to parse or validate AI response', e);
-      throw new InternalServerErrorException(
-        'Invalid AI response format: ' + (e instanceof Error ? e.message : String(e)),
-      );
-    }
+    const findingsData: AiFindingsCollectionDto = {
+      missed_issues: [],
+      code_smells: [],
+      complex_logic: [],
+      testing_gaps: [],
+      security_notes: [],
+    };
 
     // Determine Overall Risk/Assessment
     // Simple logic: If any HIGH severity or security note -> HIGH_RISK
@@ -205,13 +155,14 @@ export class AiCodeReviewService {
     const savedReview = await this.prisma.aiCodeReview.create({
       data: {
         queue_item_id: queueItemId,
-        ai_model: result.metadata?.model || 'unknown',
-        confidence_score: 0.85, // Placeholder or from result
+        ai_model: 'openharness',
+        confidence_score: 0.5,
         overall_assessment: risk,
-        summary: `Automated review generated via ${result.metadata?.provider || 'AI'}. Found ${findingsData.missed_issues.length} potential issues.`,
+        summary:
+          'AI code review path removed with ai-routing; OpenHarness review workflow owns review findings.',
         findings: findingsData as unknown as Prisma.InputJsonValue, // Cast to Json
         generation_duration_ms: Date.now() - start,
-        cost_usd: result.metadata?.cost || 0,
+        cost_usd: 0,
         cache_key: this.generateCacheKey(queueItemId, 1),
         expires_at: new Date(
           Date.now() + (this.configService.get('AI_CACHE_TTL_SECONDS') || 3600) * 1000,

@@ -26,34 +26,6 @@ export default () => {
       jwtSecret: process.env.JWT_SECRET,
     },
 
-    // AI Providers (Story 2.3: Multi-Provider Strategy)
-    ai: {
-      providers: {
-        claudeCode: {
-          enabled: process.env.CLAUDE_CODE_ENABLED === 'true',
-          apiKey: process.env.ANTHROPIC_API_KEY || '',
-          healthCheckUrl: 'https://api.anthropic.com/v1/messages',
-          timeout: parseInt(process.env.CLAUDE_CODE_TIMEOUT || '180000', 10), // 3 min
-          maxConcurrent: parseInt(process.env.CLAUDE_MAX_CONCURRENT || '5', 10),
-        },
-        gemini: {
-          enabled: process.env.GEMINI_ENABLED === 'true',
-        },
-        codex: {
-          enabled: process.env.CODEX_ENABLED === 'true',
-        },
-        kimi: {
-          enabled: process.env.KIMI_ENABLED === 'true',
-        },
-      },
-      routing: {
-        primaryProvider: process.env.AI_PRIMARY_PROVIDER,
-        complexityThreshold: parseInt(process.env.AI_COMPLEXITY_THRESHOLD || '10', 10),
-        retryDelayMinutes: parseInt(process.env.AI_RETRY_DELAY_MINUTES || '5', 10),
-        alertThresholdMinutes: parseInt(process.env.AI_ALERT_THRESHOLD_MINUTES || '15', 10),
-      },
-    },
-
     // GitHub Integration
     github: {
       token: process.env.GITHUB_TOKEN,
@@ -181,46 +153,6 @@ export default () => {
       commitMessageModel: process.env.ANTHROPIC_COMMIT_MESSAGE_MODEL || 'claude-3-haiku-20240307',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
       // ANTHROPIC_TIMEOUT_MS removed OS-5.1: no service reads anthropic.timeoutMs — SDK timeout not configured explicitly
-    },
-
-    // Story OS-4.2: Gemini CLI Provider
-    gemini: {
-      apiKey: process.env.GEMINI_API_KEY || '',
-      baseURL: process.env.GEMINI_BASE_URL || '',
-      model: process.env.GEMINI_MODEL || 'gemini-2.5-pro',
-    },
-
-    // Story OS-4.3: OpenAI Codex CLI Provider
-    codex: {
-      apiKey: process.env.OPENAI_API_KEY || '',
-      baseURL: process.env.OPENAI_BASE_URL || '',
-      model: process.env.CODEX_MODEL || 'codex-1',
-    },
-
-    // Story OS-4.3: Kimi CLI Provider
-    kimi: {
-      apiKey: process.env.KIMI_API_KEY || '',
-      baseURL: process.env.KIMI_BASE_URL || '',
-      model: process.env.KIMI_MODEL || 'kimi-k2',
-    },
-
-    // Story 2.8: Orchestrator Configuration
-    // Controls multi-provider orchestration and fallback behavior
-    orchestrator: {
-      // Maximum fallback attempts before giving up
-      maxFallbackAttempts: parseInt(process.env.ORCHESTRATOR_MAX_FALLBACK_ATTEMPTS || '2', 10),
-      // Delay in milliseconds before attempting fallback
-      fallbackDelayMs: parseInt(process.env.ORCHESTRATOR_FALLBACK_DELAY_MS || '1000', 10),
-      // Complexity score threshold for HIGH (routes to heavy coding tools)
-      complexityThresholdHigh: parseInt(
-        process.env.ORCHESTRATOR_COMPLEXITY_THRESHOLD_HIGH || '10',
-        10,
-      ),
-      // Complexity score threshold for MEDIUM
-      complexityThresholdMedium: parseInt(
-        process.env.ORCHESTRATOR_COMPLEXITY_THRESHOLD_MEDIUM || '5',
-        10,
-      ),
     },
 
     // Story 2.9: Retry Configuration

@@ -73,38 +73,9 @@ export const envValidationSchema = Joi.object({
     'string.min': 'JWT_SECRET must be at least 32 characters for security',
   }),
 
-  // AI Providers (Story 2.3)
-  CLAUDE_CODE_ENABLED: Joi.boolean().default(false),
-  GEMINI_ENABLED: Joi.boolean().default(false),
-  GEMINI_API_KEY: Joi.string().allow('').default(''),
-  GEMINI_BASE_URL: Joi.string().uri().allow('').default(''),
-  GEMINI_MODEL: Joi.string().default('gemini-2.5-pro'),
-  CODEX_ENABLED: Joi.boolean().default(false),
-  KIMI_ENABLED: Joi.boolean().default(false),
-  // OpenAI Codex provider
+  // OpenAI API
   OPENAI_API_KEY: Joi.string().allow('').default(''),
   OPENAI_BASE_URL: Joi.string().uri().allow('').default(''),
-  CODEX_MODEL: Joi.string().default('codex-1'),
-  // Kimi provider
-  KIMI_API_KEY: Joi.string().allow('').default(''),
-  KIMI_BASE_URL: Joi.string().uri().allow('').default(''),
-  KIMI_MODEL: Joi.string().default('kimi-k2'),
-  // ANTHROPIC_API_KEY: Joi.string().when('CLAUDE_CODE_ENABLED', {
-  //   is: true,
-  //   then: Joi.required(),
-  //   otherwise: Joi.optional().allow(''),
-  // }),
-  CLAUDE_CODE_TIMEOUT: Joi.number().default(180000),
-  CLAUDE_MAX_CONCURRENT: Joi.number().default(5),
-
-  AI_COMPLEXITY_THRESHOLD: Joi.number().default(10),
-  AI_RETRY_DELAY_MINUTES: Joi.number().default(5),
-  AI_ALERT_THRESHOLD_MINUTES: Joi.number().default(15),
-  AI_PRIMARY_PROVIDER: Joi.string()
-    .valid('CLAUDE_CODE', 'GEMINI', 'CODEX', 'KIMI')
-    .optional()
-    .allow('')
-    .description('Force routing all tickets to this provider, bypassing complexity scoring'),
 
   // Story 11.2: AI Decision Audit Configuration
   AI_CONFIDENCE_THRESHOLD: Joi.number()

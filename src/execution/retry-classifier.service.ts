@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AIErrorCode } from '../ai-routing/interfaces';
+import { AIErrorCode } from './interfaces';
 import { IErrorClassification, ErrorSeverity } from './interfaces';
 
 /**

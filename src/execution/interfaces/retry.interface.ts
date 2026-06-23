@@ -1,4 +1,4 @@
-import { AIErrorCode } from '../../ai-routing/interfaces';
+import { AIErrorCode } from './ai-provider.interface';
 import { ErrorSeverity } from '../../common/sentry/sentry.constants';
 
 /**

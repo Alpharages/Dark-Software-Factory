@@ -2,7 +2,6 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { AuditLogService } from '../common/audit/audit-log.service';
-import { OrchestratorService } from '../ai-routing/orchestrator.service'; // Story 5.6
 import { GenerateReportDto } from './dto/generate-report.dto';
 import { ReportsAggregatorService } from './reports-aggregator.service';
 import { ReportsExporterService } from './reports-exporter.service';
@@ -18,7 +17,6 @@ export class ReportsService {
     private readonly audit: AuditLogService,
     private readonly aggregator: ReportsAggregatorService,
     private readonly exporter: ReportsExporterService,
-    private readonly orchestrator: OrchestratorService,
     private readonly metrics: MetricsService,
     private readonly aiLogger: AIDecisionLoggerService,
   ) {}
@@ -102,61 +100,9 @@ export class ReportsService {
         report.date_end,
       );
 
-      // 2. AI Content Generation (Narrative, Insights) - ADR-008
-      const prompt = `You are an expert project manager. Generate a professional narrative for a sprint report based on the following data:
-            
-            PROJECT: ${report.project.name}
-            PERIOD: ${report.date_start.toLocaleDateString()} to ${report.date_end.toLocaleDateString()}
-            
-            METRICS:
-            - Completed Tickets: ${aggregatedData.summary.completed_tickets}
-            - Total Complexity Points: ${aggregatedData.summary.total_complexity}
-            - Velocity (Pts/Week): ${aggregatedData.summary.velocity}
-            - QA Pass Rate: ${aggregatedData.quality_metrics.average_qa_pass_rate}%
-            - Test Coverage: ${aggregatedData.quality_metrics.average_test_coverage}%
-            
-            UPCOMING:
-            - Planned Tickets: ${aggregatedData.upcoming_sprint_plan.ticket_count}
-            - Top Priorities: ${aggregatedData.upcoming_sprint_plan.top_priorities.map((t: Record<string, unknown>) => t.title).join(', ')}
-            
-            Please provide:
-            1. A concise summary (max 200 chars)
-            2. A detailed narrative of accomplishments (2-3 paragraphs)
-            3. Key strategic insights and recommendations based on the quality metrics and velocity.
-            
-            Output JSON:
-            { "summary": "...", "narrative": "...", "insights": "..." }`;
-
-      const aiResult = await this.orchestrator.executeTask({
-        correlationId: `report-${reportId}`,
-        ticketId: report.project_id,
-        prompt,
-        agentName: 'ReportsService',
-        action: 'generate_report_narrative',
-      });
-
-      let summary = `Summary of sprint for ${report.project.name}`;
-      let narrative = `In this sprint, we completed ${aggregatedData.summary.completed_tickets} tickets with a velocity of ${aggregatedData.summary.velocity} points/week.`;
-      let insights = `QA pass rate is at ${aggregatedData.quality_metrics.average_qa_pass_rate}%.`;
-
-      if (aiResult.success) {
-        try {
-          // Harden JSON parsing (AC#5 fix)
-          const jsonContent = aiResult.output.substring(
-            aiResult.output.indexOf('{'),
-            aiResult.output.lastIndexOf('}') + 1,
-          );
-          const parsed = JSON.parse(jsonContent);
-          summary = parsed.summary || summary;
-          narrative = parsed.narrative || narrative;
-          insights = parsed.insights || insights;
-        } catch (e: unknown) {
-          this.logger.warn(
-            `Failed to parse AI response as JSON, using raw output: ${(e as Error).message}`,
-          );
-          narrative = aiResult.output;
-        }
-      }
+      const summary = `Summary of sprint for ${report.project.name}`;
+      const narrative = `In this sprint, we completed ${aggregatedData.summary.completed_tickets} tickets with a velocity of ${aggregatedData.summary.velocity} points/week.`;
+      const insights = `QA pass rate is at ${aggregatedData.quality_metrics.average_qa_pass_rate}%.`;
 
       // 3. Update Report with data and content
 

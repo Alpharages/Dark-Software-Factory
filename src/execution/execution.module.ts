@@ -14,11 +14,9 @@ import { ExecutionStateMachine } from './state-machine';
 import { RetryHandlerService } from './retry-handler.service';
 import { RetryClassifierService } from './retry-classifier.service';
 import { RetrySchedulerService } from './retry-scheduler.service';
-import { RetryConsumer } from './retry.consumer';
 import { ExecutionController } from './execution.controller';
 // Story 2.10: Queue Processing
 import { AIExecutionPublisher } from './ai-execution.publisher';
-import { AIExecutionConsumer } from './ai-execution.consumer';
 import { SelfHealingOrchestratorService } from './self-healing-orchestrator.service';
 import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider';
 import { AI_METRICS, CONTAINER_METRICS } from '../common/metrics/metrics.constants';
@@ -26,7 +24,6 @@ import { ApprovalService } from './services/approval.service';
 import { ApprovalController } from './controllers/approval.controller';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
-import { AiRoutingModule } from '../ai-routing/ai-routing.module';
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.3: AI Cost Tracking & Optimization
@@ -79,7 +76,6 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     ConfigModule,
     DatabaseModule,
     RabbitMQModule,
-    forwardRef(() => AiRoutingModule), // For OrchestratorService in RetryConsumer & AIExecutionConsumer
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
     // Story 13.3: AI Cost Tracking & Optimization
@@ -124,11 +120,9 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     RetryHandlerService,
     RetryClassifierService,
     RetrySchedulerService,
-    RetryConsumer,
 
     // Queue Processing Services (Story 2.10)
     AIExecutionPublisher,
-    AIExecutionConsumer,
 
     // Self-Healing (Story 13.3.1)
     SelfHealingOrchestratorService,
@@ -296,7 +290,6 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     RetrySchedulerService,
     // Story 2.10: Export queue services
     AIExecutionPublisher,
-    AIExecutionConsumer,
     // Story 13.3.1: Export self-healing service
     SelfHealingOrchestratorService,
     ExecutionGateway,
