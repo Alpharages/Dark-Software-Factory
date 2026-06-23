@@ -3,7 +3,6 @@ import { ClickUpService } from '../clickup/clickup.service';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { PrismaService } from '../database/prisma.service';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { DependencyCheckResult, ETAResult } from './interfaces/dependency-status.interface';
 import { ETAReasoningParamsDto } from './dto/eta-calculation.dto';
@@ -17,7 +16,6 @@ export class DependencyManagerService {
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     private readonly metricsService: MetricsService,
     private readonly prisma: PrismaService,
-    private readonly rabbitMQService: RabbitMQService,
     private readonly rabbitMQPublisher: RabbitMQPublisherService,
   ) {}
 
@@ -533,20 +531,5 @@ export class DependencyManagerService {
     }
 
     return parts.join('. ') + '.';
-  }
-
-  /**
-   * Get RabbitMQ queue depth for a given queue.
-   * Returns 0 on error (graceful fallback).
-   */
-  private async getQueueDepth(queueName: string): Promise<number> {
-    try {
-      const queueInfo = await this.rabbitMQService.getQueueStats(queueName);
-      return queueInfo.messageCount || 0;
-    } catch (error: unknown) {
-      const err = error as Error;
-      this.logger.error(`Failed to get queue depth for ${queueName}: ${err.message}`, err.stack);
-      return 0; // Graceful fallback
-    }
   }
 }

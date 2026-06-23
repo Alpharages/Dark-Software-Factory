@@ -274,10 +274,6 @@ export const LABELS = {
 export const AI_PROVIDERS = ['cursor', 'claude_code', 'fallback'] as const;
 export type AIProvider = (typeof AI_PROVIDERS)[number];
 
-// QA Check types
-export const QA_CHECK_TYPES = ['linting', 'testing', 'security', 'coverage'] as const;
-export type QACheckType = (typeof QA_CHECK_TYPES)[number];
-
 // Status values
 export const STATUS_VALUES = ['success', 'failed', 'pending', 'timeout'] as const;
 export type StatusValue = (typeof STATUS_VALUES)[number];

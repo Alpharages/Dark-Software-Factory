@@ -509,9 +509,15 @@ export class QualityDashboardService {
     const totalExecutions = results.length;
     const passedCount = results.filter((r) => r.overall_passed).length;
     const rate = (count: number) => (totalExecutions > 0 ? (count / totalExecutions) * 100 : 0);
+    // Average only rows with a recorded coverage value, matching Prisma `_avg`
+    // semantics (NULL coverage rows are excluded from both sum and count) so a
+    // missing reading does not drag the reported average toward zero.
+    const coverageValues = results
+      .map((r) => r.test_coverage)
+      .filter((c): c is number => c != null);
     const averageCoverage =
-      totalExecutions > 0
-        ? results.reduce((sum, r) => sum + (r.test_coverage || 0), 0) / totalExecutions
+      coverageValues.length > 0
+        ? coverageValues.reduce((sum, c) => sum + c, 0) / coverageValues.length
         : 0;
 
     return {

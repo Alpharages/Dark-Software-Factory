@@ -4,14 +4,12 @@ import { ClickUpService } from '../clickup/clickup.service';
 import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { PrismaService } from '../database/prisma.service';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 
 describe('DependencyManagerService', () => {
   let service: DependencyManagerService;
   let clickUpService: jest.Mocked<ClickUpService>;
   let prismaService: jest.Mocked<PrismaService>;
-  let rabbitmqService: jest.Mocked<RabbitMQService>;
   let rabbitmqPublisher: jest.Mocked<RabbitMQPublisherService>;
 
   interface MockClickUpApiTask {
@@ -52,11 +50,6 @@ describe('DependencyManagerService', () => {
       },
     };
 
-    const mockRabbitMQService = {
-      getQueueStats: jest.fn().mockResolvedValue({ messageCount: 0, consumerCount: 0 }),
-      getChannel: jest.fn(),
-    };
-
     const mockRabbitMQPublisher = {
       publishToQueue: jest.fn().mockResolvedValue(true),
       publishWithRetry: jest.fn().mockResolvedValue(true),
@@ -69,7 +62,6 @@ describe('DependencyManagerService', () => {
         { provide: AIDecisionLoggerService, useValue: mockAIDecisionLogger },
         { provide: MetricsService, useValue: mockMetricsService },
         { provide: PrismaService, useValue: mockPrismaService },
-        { provide: RabbitMQService, useValue: mockRabbitMQService },
         { provide: RabbitMQPublisherService, useValue: mockRabbitMQPublisher },
       ],
     }).compile();
@@ -77,7 +69,6 @@ describe('DependencyManagerService', () => {
     service = module.get<DependencyManagerService>(DependencyManagerService);
     clickUpService = module.get(ClickUpService);
     prismaService = module.get(PrismaService);
-    rabbitmqService = module.get(RabbitMQService);
     rabbitmqPublisher = module.get(RabbitMQPublisherService);
   });
 
@@ -165,12 +156,6 @@ describe('DependencyManagerService', () => {
 
       // Mock execution history for ETA
       (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce([]);
-
-      // Mock RabbitMQ queue depth
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
-        messageCount: 5,
-        consumerCount: 1,
-      });
 
       const result = await service.checkDependencies('ticket-123');
 
@@ -265,12 +250,6 @@ describe('DependencyManagerService', () => {
         },
       ]);
 
-      // Legacy queue depth is ignored; agent execution is outside DSF.
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
-        messageCount: 5,
-        consumerCount: 1,
-      });
-
       const result = await service.calculateETA('ticket-123', ['dep-1', 'dep-2']);
 
       expect(result.historicalAverage).toBeCloseTo(10, 1); // (8+10+12)/3 = 10
@@ -294,12 +273,6 @@ describe('DependencyManagerService', () => {
         status: { status: 'Open' },
       });
 
-      // Mock RabbitMQ queue depth
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
-        messageCount: 2,
-        consumerCount: 1,
-      });
-
       const result = await service.calculateETA('ticket-123', ['dep-1']);
 
       expect(result.historicalAverage).toBeNull();
@@ -319,12 +292,6 @@ describe('DependencyManagerService', () => {
         },
       ]);
 
-      // Legacy queue depth no longer contributes to ETA.
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
-        messageCount: 20,
-        consumerCount: 1,
-      });
-
       const result = await service.calculateETA('ticket-123', ['dep-1']);
 
       expect(result.queuePosition).toBe(0);
@@ -341,32 +308,10 @@ describe('DependencyManagerService', () => {
       }));
 
       (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce(executions);
-      (rabbitmqService.getQueueStats as jest.Mock).mockResolvedValueOnce({
-        messageCount: 1,
-        consumerCount: 1,
-      });
 
       const result = await service.calculateETA('ticket-123', []);
 
       expect(result.confidence).toBeGreaterThan(0.7); // High confidence with 10 samples
-    });
-
-    it('should handle RabbitMQ queue stats failures gracefully', async () => {
-      (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce([]);
-      (clickUpService.getTask as jest.Mock).mockResolvedValueOnce({
-        id: 'ticket-123',
-        name: 'Task 123',
-        description: '',
-        status: { status: 'Open' },
-      });
-      (rabbitmqService.getQueueStats as jest.Mock).mockRejectedValueOnce(
-        new Error('Queue unavailable'),
-      );
-
-      const result = await service.calculateETA('ticket-123', []);
-
-      expect(result.queuePosition).toBe(0); // Default to 0 on error
-      expect(result.estimatedWaitMinutes).toBeGreaterThan(0);
     });
   });
 
