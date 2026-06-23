@@ -44,9 +44,6 @@ export const AI_METRICS = {
   TOKENS_INPUT_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_tokens_input_total`,
   TOKENS_OUTPUT_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_tokens_output_total`,
   PROVIDER_STATUS: `${METRICS_CONSTANTS.PREFIX}ai_provider_status`,
-  // Story 13.3.1: Self-Healing
-  SELF_HEALING_ATTEMPTS_TOTAL: `${METRICS_CONSTANTS.PREFIX}ai_self_healing_attempts_total`,
-  SELF_HEALING_PROGRESS: `${METRICS_CONSTANTS.PREFIX}ai_self_healing_progress`,
 } as const;
 
 // Business Metrics - QA
@@ -83,9 +80,6 @@ export const QA_METRICS = {
   // Story 3.6: QA Results Storage & Retrieval metrics
   QA_RESULTS_QUERIES_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_results_queries_total`,
   QA_RESULTS_QUERY_DURATION: `${METRICS_CONSTANTS.PREFIX}qa_results_query_duration_seconds`,
-  // Story 13.4: QA Self-Healing Integration metrics
-  SELF_HEALING_TRIGGERED_TOTAL: `${METRICS_CONSTANTS.PREFIX}qa_self_healing_triggered_total`,
-  ORCHESTRATOR_SELF_HEALING_DURATION_SECONDS: `${METRICS_CONSTANTS.PREFIX}qa_orchestrator_self_healing_duration_seconds`,
   // Story 8.1: QA Review Queue & Sampling Configuration metrics
   REVIEW_QUEUE_DEPTH: `${METRICS_CONSTANTS.PREFIX}qa_review_queue_depth`,
   REVIEW_SAMPLING_RATE: `${METRICS_CONSTANTS.PREFIX}qa_review_sampling_rate`,
@@ -262,12 +256,7 @@ export const AI_PROVIDER_RATES = {
 } as const;
 
 // Queue Names (must match RabbitMQ configuration from Story 1.5)
-export const QUEUE_NAMES = [
-  'ai-execution-queue',
-  'qa-check-queue',
-  'deployment-queue',
-  'monitoring-queue',
-] as const;
+export const QUEUE_NAMES = ['qa-check-queue', 'deployment-queue', 'monitoring-queue'] as const;
 export type QueueName = (typeof QUEUE_NAMES)[number];
 
 // Common Labels

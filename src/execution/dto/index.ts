@@ -1,5 +1,4 @@
 export * from './execution.dto';
-export * from './retry.dto';
 export * from './queue-message.dto';
 
 // Story 10-U-5: Manual Intervention Circuit Breaker

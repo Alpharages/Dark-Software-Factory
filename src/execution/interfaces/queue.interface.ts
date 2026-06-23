@@ -6,7 +6,7 @@
 import { AIProvider } from '@/prisma/client';
 
 /**
- * Message published to ai-execution-queue
+ * Message published to a RabbitMQ queue
  */
 export interface IAIExecutionMessage {
   /** Unique message identifier */

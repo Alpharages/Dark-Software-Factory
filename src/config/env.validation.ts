@@ -159,7 +159,6 @@ export const envValidationSchema = Joi.object({
   REDIS_URL: Joi.string().uri({ scheme: 'redis' }).optional(),
 
   // Feature Flags
-  FEATURE_SELF_HEALING: Joi.boolean().default(true),
   FEATURE_COST_TRACKING: Joi.boolean().default(true),
   FEATURE_QUALITY_GATES: Joi.boolean().default(true),
 
@@ -242,11 +241,6 @@ export const envValidationSchema = Joi.object({
   QG_TESTING_TIMEOUT_MS: Joi.number().integer().min(30000).max(900000).default(300000), // 30s-15min
   QG_COVERAGE_TIMEOUT_MS: Joi.number().integer().min(10000).max(300000).default(60000), // 10s-5min
   QG_SECURITY_TIMEOUT_MS: Joi.number().integer().min(60000).max(600000).default(180000), // 1-10min
-
-  // Story 13.4: Self-Healing Configuration
-  SELF_HEALING_ENABLED: Joi.boolean()
-    .default(true)
-    .description('Enable AI self-healing for QA failures'),
 
   // Story 14.4: Post-Deployment Health Monitoring Configuration
   HEALTH_MONITORING_ENABLED: Joi.boolean()

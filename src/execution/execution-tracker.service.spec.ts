@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
-import { ExecutionStateMachine } from './state-machine';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ExecutionStatus, AIProvider, PRRiskLevel } from '@/prisma/client';
 import { RealtimeService } from '@/realtime/realtime.service';
@@ -11,7 +10,6 @@ import { ExecutionActivityRepository } from './repositories/execution-activity.r
 describe('ExecutionTrackerService', () => {
   let service: ExecutionTrackerService;
   let repository: jest.Mocked<ExecutionRepository>;
-  let stateMachine: jest.Mocked<ExecutionStateMachine>;
   let publisher: jest.Mocked<RabbitMQPublisherService>;
 
   const mockExecution = {
@@ -90,16 +88,6 @@ describe('ExecutionTrackerService', () => {
           },
         },
         {
-          provide: ExecutionStateMachine,
-          useValue: {
-            transition: jest.fn(),
-            canStart: jest.fn(),
-            canComplete: jest.fn(),
-            canRetry: jest.fn(),
-            isTerminal: jest.fn(),
-          },
-        },
-        {
           provide: RabbitMQPublisherService,
           useValue: {
             publishToQueue: jest.fn(),
@@ -117,10 +105,6 @@ describe('ExecutionTrackerService', () => {
         {
           provide: 'PROM_METRIC_DSF_EXECUTION_STATUS_GAUGE',
           useValue: mockMetricGauge,
-        },
-        {
-          provide: 'PROM_METRIC_DSF_EXECUTION_RETRY_TOTAL',
-          useValue: mockMetricCounter,
         },
         // Story 23.2: Cleanup dependencies
         {
@@ -159,7 +143,6 @@ describe('ExecutionTrackerService', () => {
 
     service = module.get<ExecutionTrackerService>(ExecutionTrackerService);
     repository = module.get(ExecutionRepository);
-    stateMachine = module.get(ExecutionStateMachine);
     publisher = module.get(RabbitMQPublisherService);
 
     // Default mocks
@@ -263,13 +246,6 @@ describe('ExecutionTrackerService', () => {
   describe('markInProgress', () => {
     it('should transition execution to IN_PROGRESS', async () => {
       repository.findById.mockResolvedValue(mockExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.QUEUED,
-        newStatus: ExecutionStatus.IN_PROGRESS,
-        reason: 'AI execution started',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.IN_PROGRESS,
@@ -281,12 +257,6 @@ describe('ExecutionTrackerService', () => {
       const result = await service.markInProgress('exec-123', 'corr-123');
 
       expect(result.newStatus).toBe(ExecutionStatus.IN_PROGRESS);
-      expect(stateMachine.transition).toHaveBeenCalledWith(
-        'exec-123',
-        ExecutionStatus.QUEUED,
-        ExecutionStatus.IN_PROGRESS,
-        'AI execution started',
-      );
     });
 
     it('should throw if execution not found', async () => {
@@ -313,13 +283,6 @@ describe('ExecutionTrackerService', () => {
         started_at: new Date(Date.now() - 5000),
       };
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.COMPLETED,
-        reason: 'AI execution completed successfully',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.COMPLETED,
@@ -345,13 +308,6 @@ describe('ExecutionTrackerService', () => {
         started_at: new Date(Date.now() - 5000),
       };
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.COMPLETED,
-        reason: 'AI execution completed successfully',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.COMPLETED,
@@ -377,19 +333,12 @@ describe('ExecutionTrackerService', () => {
       errorCode: 'TEST_ERR',
     };
 
-    it('should fail execution and schedule retry if retryable', async () => {
+    it('should fail execution without requeueing retry', async () => {
       const inProgressExecution = {
         ...mockExecution,
         status: ExecutionStatus.IN_PROGRESS,
       };
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.FAILED,
-        reason: 'Test error',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.FAILED,
@@ -397,21 +346,11 @@ describe('ExecutionTrackerService', () => {
       repository.createAuditLog.mockResolvedValue();
       repository.updateTicketStatus.mockResolvedValue();
       publisher.publishToQueue.mockResolvedValue(true);
-      repository.canRetry.mockResolvedValue({
-        canRetry: true,
-        retryCount: 0,
-        maxRetries: 3,
-      });
-      repository.incrementRetryAndRequeue.mockResolvedValue({
-        ...inProgressExecution,
-        status: ExecutionStatus.QUEUED,
-        retry_count: 1,
-      });
 
       const result = await service.failExecution(failureData, 'corr-123');
 
       expect(result.newStatus).toBe(ExecutionStatus.FAILED);
-      expect(repository.incrementRetryAndRequeue).toHaveBeenCalledWith('exec-123');
+      expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
     });
 
     it('should not retry if max retries exceeded', async () => {
@@ -421,13 +360,6 @@ describe('ExecutionTrackerService', () => {
         retry_count: 3,
       };
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.FAILED,
-        reason: 'Test error',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.FAILED,
@@ -470,13 +402,6 @@ describe('ExecutionTrackerService', () => {
         ticket: { project_id: 'proj-1' },
       } as any;
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.QA_FAILED as any,
-        reason: 'QA failed 3 times',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.QA_FAILED as any,
@@ -527,12 +452,6 @@ describe('ExecutionTrackerService', () => {
         ticket: { project_id: 'proj-1' },
       } as any;
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.QA_FAILED as any,
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.QA_FAILED as any,
@@ -558,19 +477,13 @@ describe('ExecutionTrackerService', () => {
       );
     });
 
-    it('should NOT call scheduleRetry (QA_FAILED is never auto-retried)', async () => {
+    it('should leave QA_FAILED without automatic retry', async () => {
       const inProgressExecution = {
         ...mockExecution,
         status: ExecutionStatus.IN_PROGRESS,
         ticket: { project_id: 'proj-1' },
       } as any;
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.QA_FAILED as any,
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.QA_FAILED as any,
@@ -591,12 +504,6 @@ describe('ExecutionTrackerService', () => {
         ticket: { project_id: 'proj-1' },
       } as any;
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.QA_FAILED as any,
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.QA_FAILED as any,
@@ -620,19 +527,12 @@ describe('ExecutionTrackerService', () => {
       lastKnownProgress: 'Generating code...',
     };
 
-    it('should timeout execution and schedule retry', async () => {
+    it('should timeout execution without requeueing retry', async () => {
       const inProgressExecution = {
         ...mockExecution,
         status: ExecutionStatus.IN_PROGRESS,
       };
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.TIMEOUT,
-        reason: 'Execution timed out after 300 seconds',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.TIMEOUT,
@@ -640,21 +540,11 @@ describe('ExecutionTrackerService', () => {
       repository.createAuditLog.mockResolvedValue();
       repository.updateTicketStatus.mockResolvedValue();
       publisher.publishToQueue.mockResolvedValue(true);
-      repository.canRetry.mockResolvedValue({
-        canRetry: true,
-        retryCount: 0,
-        maxRetries: 3,
-      });
-      repository.incrementRetryAndRequeue.mockResolvedValue({
-        ...inProgressExecution,
-        status: ExecutionStatus.QUEUED,
-        retry_count: 1,
-      });
 
       const result = await service.timeoutExecution(timeoutData, 'corr-123');
 
       expect(result.newStatus).toBe(ExecutionStatus.TIMEOUT);
-      expect(repository.incrementRetryAndRequeue).toHaveBeenCalledWith('exec-123');
+      expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
     });
 
     it('should track timeout duration in metrics', async () => {
@@ -663,13 +553,6 @@ describe('ExecutionTrackerService', () => {
         status: ExecutionStatus.IN_PROGRESS,
       };
       repository.findById.mockResolvedValue(inProgressExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.IN_PROGRESS,
-        newStatus: ExecutionStatus.TIMEOUT,
-        reason: 'Execution timed out after 300 seconds',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...inProgressExecution,
         status: ExecutionStatus.TIMEOUT,
@@ -695,13 +578,6 @@ describe('ExecutionTrackerService', () => {
   describe('cancelExecution', () => {
     it('should cancel execution', async () => {
       repository.findById.mockResolvedValue(mockExecution);
-      stateMachine.transition.mockReturnValue({
-        executionId: 'exec-123',
-        previousStatus: ExecutionStatus.QUEUED,
-        newStatus: ExecutionStatus.CANCELLED,
-        reason: 'User cancelled',
-        transitionedAt: new Date(),
-      });
       repository.updateStatus.mockResolvedValue({
         ...mockExecution,
         status: ExecutionStatus.CANCELLED,

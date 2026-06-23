@@ -9,11 +9,11 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import type { Counter } from 'prom-client';
 import { ExecutionRepository } from '../execution.repository';
 import { ExecutionTrackerService } from '../execution-tracker.service';
-import { ExecutionStateMachine } from '../state-machine';
 import { ExecutionOverrideRepository } from '../repositories/execution-override.repository';
 import { RealtimeService } from '../../realtime/realtime.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { ExecutionStatus, Execution } from '@/prisma/client';
+import { isFinalExecutionStatus } from '../enums';
 import {
   ExecutionPausedEvent,
   ExecutionResumedEvent,
@@ -57,7 +57,6 @@ export class ManualInterventionService {
   constructor(
     private readonly executionRepository: ExecutionRepository,
     private readonly executionTracker: ExecutionTrackerService,
-    private readonly stateMachine: ExecutionStateMachine,
     private readonly overrideRepository: ExecutionOverrideRepository,
     @Optional() private readonly realtimeService: RealtimeService | null,
     private readonly auditLogService: AuditLogService,
@@ -93,7 +92,7 @@ export class ManualInterventionService {
     }
 
     // Check if already in terminal state
-    if (this.stateMachine.isTerminal(execution.status)) {
+    if (isFinalExecutionStatus(execution.status)) {
       throw new ConflictException(`Cannot pause execution in terminal state: ${execution.status}`);
     }
 
@@ -103,7 +102,7 @@ export class ManualInterventionService {
     }
 
     // Validate transition
-    if (!this.stateMachine.canTransition(execution.status, ExecutionStatus.PAUSED)) {
+    if (execution.status !== ExecutionStatus.IN_PROGRESS) {
       throw new BadRequestException(`Cannot pause execution from ${execution.status} state`);
     }
 
@@ -256,7 +255,7 @@ export class ManualInterventionService {
     }
 
     // Check if already in terminal state
-    if (this.stateMachine.isTerminal(execution.status)) {
+    if (isFinalExecutionStatus(execution.status)) {
       throw new ConflictException(`Execution is already in terminal state: ${execution.status}`);
     }
 

@@ -33,9 +33,9 @@ export class AuditTimelineResponseDto {
       properties: {
         id: { type: 'string', example: 'uuid-here' },
         timestamp: { type: 'string', example: '2025-12-22T10:30:00.000Z' },
-        agent_name: { type: 'string', example: 'AIExecutionConsumer' },
-        action: { type: 'string', example: 'ai_provider_selection' },
-        reasoning: { type: 'string', example: 'Selected Cursor...' },
+        agent_name: { type: 'string', example: 'QaOrchestrator' },
+        action: { type: 'string', example: 'quality_gate_evaluation' },
+        reasoning: { type: 'string', example: 'All quality gates passed...' },
         ticket_id: { type: 'string', example: 'DSF-123' },
         execution_id: { type: 'string', nullable: true },
         input_data: { type: 'object' },

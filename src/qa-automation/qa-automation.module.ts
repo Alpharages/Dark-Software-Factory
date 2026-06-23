@@ -34,7 +34,6 @@ import { RealtimeModule } from '../realtime/realtime.module'; // Story 10.3
 // Story 11.4: AI Decision Audit Logging
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.4: Self-Healing Integration
-import { ExecutionModule } from '../execution/execution.module';
 import { ProductionApprovalModule } from './production-approval/production-approval.module';
 import { QualityGateConfigModule } from './quality-gate-config/quality-gate-config.module';
 import { GitHubModule } from '../github/github.module';
@@ -73,8 +72,6 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
     forwardRef(() => RealtimeModule), // Story 10.3: For QA notifications
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,
-    // Story 13.4: Self-Healing Integration
-    forwardRef(() => ExecutionModule), // Provides SelfHealingOrchestratorService
     // Story 8.3: Production Approval
     ProductionApprovalModule,
     QualityGateConfigModule,
@@ -191,19 +188,6 @@ import { BugEscapeModule } from './bug-escape/bug-escape.module'; // Story 8.5
       name: QUEUE_METRICS.PROCESSING_RATE,
       help: 'Queue processing rate (messages per minute)',
       labelNames: [LABELS.QUEUE, LABELS.STATUS],
-    }),
-
-    // Story 13.4: Self-Healing Integration metrics
-    makeCounterProvider({
-      name: QA_METRICS.SELF_HEALING_TRIGGERED_TOTAL,
-      help: 'Total number of self-healing workflows triggered by QA failures',
-      labelNames: ['ticket_id', 'execution_id'],
-    }),
-    makeHistogramProvider({
-      name: QA_METRICS.ORCHESTRATOR_SELF_HEALING_DURATION_SECONDS,
-      help: 'Time spent in self-healing workflow (histogram)',
-      labelNames: ['outcome'], // SUCCESS, ESCALATED, MAX_ATTEMPTS
-      buckets: [5, 10, 30, 60, 120, 300], // seconds
     }),
 
     // Story 3.8 - QA Metrics & Prometheus Integration

@@ -111,7 +111,6 @@ export default () => {
 
     // Feature Flags
     features: {
-      selfHealing: process.env.FEATURE_SELF_HEALING === 'true',
       costTracking: process.env.FEATURE_COST_TRACKING === 'true',
       qualityGates: process.env.FEATURE_QUALITY_GATES === 'true',
       // When true, automatically approves executions after QA passes,
@@ -153,14 +152,6 @@ export default () => {
       commitMessageModel: process.env.ANTHROPIC_COMMIT_MESSAGE_MODEL || 'claude-3-haiku-20240307',
       maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
       // ANTHROPIC_TIMEOUT_MS removed OS-5.1: no service reads anthropic.timeoutMs — SDK timeout not configured explicitly
-    },
-
-    // Story 2.9: Retry Configuration
-    retry: {
-      maxAttempts: parseInt(process.env.RETRY_MAX_ATTEMPTS || '3', 10),
-      baseDelayMs: parseInt(process.env.RETRY_BASE_DELAY_MS || '1000', 10),
-      backoffMultiplier: parseFloat(process.env.RETRY_BACKOFF_MULTIPLIER || '2'),
-      maxDelayMs: parseInt(process.env.RETRY_MAX_DELAY_MS || '30000', 10),
     },
 
     // Story 2.11: Quality Scoring Configuration
@@ -247,10 +238,6 @@ export default () => {
       results: {
         defaultPageSize: parseInt(process.env.QA_RESULTS_DEFAULT_PAGE_SIZE || '20', 10),
         maxPageSize: parseInt(process.env.QA_RESULTS_MAX_PAGE_SIZE || '100', 10),
-      },
-      // Story 13.4: Self-Healing Configuration
-      selfHealing: {
-        enabled: process.env.SELF_HEALING_ENABLED !== 'false', // Defaults to true
       },
     },
 

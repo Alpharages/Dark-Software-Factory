@@ -115,32 +115,13 @@ export class ApprovalService {
       data: { status: TicketStatus.AWAITING_REWORK },
     });
 
+    // The ticket's AWAITING_REWORK status (above) + the dispatcher drive the
+    // actual rework run now (OHP-2/OHP-3.2). The execution row is reset to
+    // QUEUED purely for audit/visibility — nothing consumes it directly.
     await this.prisma.execution.update({
       where: { id: executionId },
       data: { status: ExecutionStatus.QUEUED, retry_count: { increment: 1 } },
     });
-
-    // AC#7: Emit retry event with feedback context
-    await this.rabbitPublisher.publishToExchange(
-      EXCHANGE_NAMES.ORCHESTRATOR_EVENTS,
-      ROUTING_KEYS.AI_EXECUTION_RETRY,
-      {
-        type: 'AI_EXECUTION_RETRY',
-        executionId,
-        ticketId: execution.ticket_id,
-        correlationId: `rework-${executionId.substring(0, 8)}`,
-        context: {
-          ticketId: execution.ticket_id,
-          originalRequestTime: new Date(),
-          previousErrors: [],
-          cumulativeDurationMs: 0,
-          retryCount: execution.retry_count + 1,
-          feedback, // AC#7: Inject feedback
-        },
-        scheduledAt: new Date().toISOString(),
-        delayMs: 0,
-      },
-    );
 
     this.logger.log(`Execution ${executionId} sent for rework by PM ${pmId}`);
     return { success: true, status: TicketStatus.AWAITING_REWORK };

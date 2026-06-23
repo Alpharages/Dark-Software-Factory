@@ -6,7 +6,6 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Observable, Subscription } from 'rxjs';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { ExecutionRepository } from './execution.repository';
-import { ExecutionStateMachine } from './state-machine';
 import { LogLevel, detectLogLevel } from './gateways/execution.gateway';
 import {
   IStartExecutionInput,
@@ -73,7 +72,6 @@ export class ExecutionTrackerService implements OnModuleInit {
 
   constructor(
     private readonly repository: ExecutionRepository,
-    private readonly stateMachine: ExecutionStateMachine,
     private readonly publisher: RabbitMQPublisherService,
     private readonly configService: ConfigService,
     @InjectMetric(AI_METRICS.EXECUTIONS_TOTAL)
@@ -82,8 +80,6 @@ export class ExecutionTrackerService implements OnModuleInit {
     private readonly durationHistogram: Histogram<string>,
     @InjectMetric('dsf_execution_status_gauge')
     private readonly statusGauge: Gauge<string>,
-    @InjectMetric('dsf_execution_retry_total')
-    private readonly retryCounter: Counter<string>,
     @InjectMetric(CONTAINER_METRICS.LOG_BYTES_TOTAL)
     private readonly containerLogBytesCounter: Counter<string>,
     @InjectMetric(CONTAINER_METRICS.EXEC_DURATION_SECONDS)
@@ -169,10 +165,8 @@ export class ExecutionTrackerService implements OnModuleInit {
    */
   async markInProgress(executionId: string, correlationId: string): Promise<IStateTransition> {
     const execution = await this.getExecutionOrThrow(executionId);
-
-    const transition = this.stateMachine.transition(
-      executionId,
-      execution.status,
+    const transition = this.createTransition(
+      execution,
       ExecutionStatus.IN_PROGRESS,
       'AI execution started',
     );
@@ -216,13 +210,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     reason: string = 'QA passed, awaiting manual approval',
   ): Promise<IStateTransition> {
     const execution = await this.getExecutionOrThrow(executionId);
-
-    const transition = this.stateMachine.transition(
-      executionId,
-      execution.status,
-      ExecutionStatus.AWAITING_APPROVAL,
-      reason,
-    );
+    const transition = this.createTransition(execution, ExecutionStatus.AWAITING_APPROVAL, reason);
 
     await this.applyTransition(execution, transition, correlationId);
     return transition;
@@ -237,10 +225,8 @@ export class ExecutionTrackerService implements OnModuleInit {
   ): Promise<IStateTransition> {
     const { executionId, codeOutput, filesChanged, confidenceScore } = completion;
     const execution = await this.getExecutionOrThrow(executionId);
-
-    const transition = this.stateMachine.transition(
-      executionId,
-      execution.status,
+    const transition = this.createTransition(
+      execution,
       ExecutionStatus.COMPLETED,
       'AI execution completed successfully',
     );
@@ -339,13 +325,7 @@ export class ExecutionTrackerService implements OnModuleInit {
   ): Promise<IStateTransition> {
     const { executionId, errorMessage, isRetryable, errorCode } = failure;
     const execution = await this.getExecutionOrThrow(executionId);
-
-    const transition = this.stateMachine.transition(
-      executionId,
-      execution.status,
-      ExecutionStatus.FAILED,
-      errorMessage,
-    );
+    const transition = this.createTransition(execution, ExecutionStatus.FAILED, errorMessage);
 
     try {
       await this.repository.updateStatus(executionId, ExecutionStatus.FAILED, {
@@ -393,21 +373,6 @@ export class ExecutionTrackerService implements OnModuleInit {
       // Track metrics
       this.executionCounter.inc({ provider: execution.ai_provider, status: 'failed' });
       await this.updateStatusGauges();
-
-      // Auto-retry if eligible
-      if (isRetryable) {
-        const retryInfo = await this.repository.canRetry(executionId);
-        if (retryInfo.canRetry) {
-          this.logger.log(
-            `[${correlationId}] Scheduling retry ${retryInfo.retryCount + 1}/${retryInfo.maxRetries}`,
-          );
-          await this.scheduleRetry(executionId, correlationId);
-        } else {
-          this.logger.warn(
-            `[${correlationId}] Max retries (${retryInfo.maxRetries}) exceeded for ${executionId}`,
-          );
-        }
-      }
     } catch (e) {
       this.logger.error(`[${correlationId}] Error in failExecution:`, e);
       throw e;
@@ -445,13 +410,7 @@ export class ExecutionTrackerService implements OnModuleInit {
   ): Promise<IStateTransition> {
     const { executionId, errorMessage, branchName, qaRetryCount, qaAttempts } = failure;
     const execution = await this.getExecutionOrThrow(executionId);
-
-    const transition = this.stateMachine.transition(
-      executionId,
-      execution.status,
-      ExecutionStatus.QA_FAILED,
-      errorMessage,
-    );
+    const transition = this.createTransition(execution, ExecutionStatus.QA_FAILED, errorMessage);
 
     try {
       // Atomically update status + branch name in a single DB call (P3: prevents partial-write)
@@ -529,12 +488,7 @@ export class ExecutionTrackerService implements OnModuleInit {
       `Execution timed out after ${timeoutSeconds} seconds` +
       (lastKnownProgress ? ` (last progress: ${lastKnownProgress})` : '');
 
-    const transition = this.stateMachine.transition(
-      executionId,
-      execution.status,
-      ExecutionStatus.TIMEOUT,
-      errorMessage,
-    );
+    const transition = this.createTransition(execution, ExecutionStatus.TIMEOUT, errorMessage);
 
     try {
       await this.repository.updateStatus(executionId, ExecutionStatus.TIMEOUT, {
@@ -583,19 +537,6 @@ export class ExecutionTrackerService implements OnModuleInit {
         timeoutSeconds,
       );
       await this.updateStatusGauges();
-
-      // Auto-retry if eligible (TIMEOUT is retryable)
-      const retryInfo = await this.repository.canRetry(executionId);
-      if (retryInfo.canRetry) {
-        this.logger.log(
-          `[${correlationId}] Scheduling retry after timeout ${retryInfo.retryCount + 1}/${retryInfo.maxRetries}`,
-        );
-        await this.scheduleRetry(executionId, correlationId);
-      } else {
-        this.logger.warn(
-          `[${correlationId}] Max retries (${retryInfo.maxRetries}) exceeded for timed out execution ${executionId}`,
-        );
-      }
     } catch (e) {
       this.logger.error(`[${correlationId}] Error in timeoutExecution:`, e);
       throw e;
@@ -628,13 +569,7 @@ export class ExecutionTrackerService implements OnModuleInit {
     correlationId: string,
   ): Promise<IStateTransition> {
     const execution = await this.getExecutionOrThrow(executionId);
-
-    const transition = this.stateMachine.transition(
-      executionId,
-      execution.status,
-      ExecutionStatus.CANCELLED,
-      reason,
-    );
+    const transition = this.createTransition(execution, ExecutionStatus.CANCELLED, reason);
 
     try {
       await this.applyTransition(execution, transition, correlationId);
@@ -661,50 +596,6 @@ export class ExecutionTrackerService implements OnModuleInit {
     });
 
     return transition;
-  }
-
-  /**
-   * Schedule a retry for failed execution
-   */
-  async scheduleRetry(executionId: string, correlationId: string): Promise<void> {
-    const execution = await this.repository.incrementRetryAndRequeue(executionId);
-
-    // Log audit
-    await this.repository.createAuditLog({
-      entityType: 'execution',
-      entityId: executionId,
-      action: 'retried',
-      actorType: 'system',
-      actorId: null,
-      beforeState: { status: ExecutionStatus.FAILED },
-      afterState: {
-        status: ExecutionStatus.QUEUED,
-        retryCount: execution.retry_count,
-      },
-      createdAt: new Date(),
-    });
-
-    // Track retry metric
-    this.retryCounter.inc({ provider: execution.ai_provider });
-
-    // Emit event for retry
-    await this.emitExecutionEvent({
-      eventType: 'STATUS_CHANGED',
-      correlationId,
-      executionId,
-      ticketId: execution.ticket_id,
-      provider: execution.ai_provider,
-      status: ExecutionStatus.QUEUED,
-      timestamp: new Date().toISOString(),
-      payload: {
-        retryCount: execution.retry_count,
-        reason: 'Scheduled for retry',
-      },
-    });
-
-    this.logger.log(
-      `[${correlationId}] Execution ${executionId} scheduled for retry (attempt ${execution.retry_count})`,
-    );
   }
 
   /**
@@ -788,6 +679,20 @@ export class ExecutionTrackerService implements OnModuleInit {
       throw new Error(`Execution ${executionId} not found`);
     }
     return execution;
+  }
+
+  private createTransition(
+    execution: Execution,
+    newStatus: ExecutionStatus,
+    reason?: string,
+  ): IStateTransition {
+    return {
+      executionId: execution.id,
+      previousStatus: execution.status,
+      newStatus,
+      reason,
+      transitionedAt: new Date(),
+    };
   }
 
   /**

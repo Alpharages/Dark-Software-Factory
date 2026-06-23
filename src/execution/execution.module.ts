@@ -10,14 +10,7 @@ import { ExecutionTrackerService } from './execution-tracker.service';
 import { ExecutionRepository } from './execution.repository';
 import { ExecutionGateway } from './gateways/execution.gateway';
 import { JwtModule } from '@nestjs/jwt';
-import { ExecutionStateMachine } from './state-machine';
-import { RetryHandlerService } from './retry-handler.service';
-import { RetryClassifierService } from './retry-classifier.service';
-import { RetrySchedulerService } from './retry-scheduler.service';
 import { ExecutionController } from './execution.controller';
-// Story 2.10: Queue Processing
-import { AIExecutionPublisher } from './ai-execution.publisher';
-import { SelfHealingOrchestratorService } from './self-healing-orchestrator.service';
 import { queueMetricsProviders } from '../common/metrics/queue-metrics.provider';
 import { AI_METRICS, CONTAINER_METRICS } from '../common/metrics/metrics.constants';
 import { ApprovalService } from './services/approval.service';
@@ -28,8 +21,6 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 // Story 13.3: AI Cost Tracking & Optimization
 import { CostTrackingModule } from '../cost-tracking/cost-tracking.module';
-// Story 13.3.1: Self-Healing with Progress Validation
-import { ProgressValidatorModule } from '../ai-monitoring/progress-validator.module';
 import { ClickUpModule } from '../clickup/clickup.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 // Story 7.7: AI Capability Management & Limitations
@@ -63,12 +54,9 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
  *
  * Provides:
  * - Execution lifecycle management
- * - State machine for valid transitions
  * - Audit logging for all state changes
  * - RabbitMQ event emission
  * - Prometheus metrics
- * - Retry logic and error handling
- * - Queue publishing and consuming (Story 2.10)
  * - WebSocket event streaming (Story 10.2)
  */
 @Module({
@@ -80,8 +68,6 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     AIDecisionLoggerModule,
     // Story 13.3: AI Cost Tracking & Optimization
     CostTrackingModule,
-    // Story 13.3.1: Self-Healing with Progress Validation
-    ProgressValidatorModule,
     ClickUpModule,
     IntegrationsModule,
     AppMetricsModule,
@@ -113,19 +99,7 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     ExecutionTrackerService,
     ExecutionRepository,
     ExecutionGateway,
-    ExecutionStateMachine,
     ApprovalService,
-
-    // Retry Services (Story 2.9)
-    RetryHandlerService,
-    RetryClassifierService,
-    RetrySchedulerService,
-
-    // Queue Processing Services (Story 2.10)
-    AIExecutionPublisher,
-
-    // Self-Healing (Story 13.3.1)
-    SelfHealingOrchestratorService,
 
     // Queue Metrics Providers (Story 2.10)
     ...queueMetricsProviders,
@@ -148,42 +122,6 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
       labelNames: ['provider', 'status'],
     }),
     makeCounterProvider({
-      name: 'dsf_execution_retry_total', // Should ideally be in constants too
-      help: 'Total execution retry count',
-      labelNames: ['provider'],
-    }),
-
-    // Retry Metrics (Story 2.9)
-    makeCounterProvider({
-      name: 'retry_attempts_total',
-      help: 'Total retry attempts',
-      labelNames: ['error_code', 'provider', 'retryable'],
-    }),
-    makeCounterProvider({
-      name: 'retry_exhausted_total',
-      help: 'Retries exhausted (permanent failures)',
-      labelNames: ['error_code'],
-    }),
-    makeCounterProvider({
-      name: 'retry_success_total',
-      help: 'Successful retry completions',
-    }),
-    makeCounterProvider({
-      name: 'retry_scheduled_total',
-      help: 'Retries scheduled',
-      labelNames: ['attempt'],
-    }),
-    makeHistogramProvider({
-      name: 'retry_delay_seconds',
-      help: 'Retry delay in seconds',
-      buckets: [1, 2, 4, 8, 16, 30, 60],
-    }),
-    makeGaugeProvider({
-      name: 'retry_active_count',
-      help: 'Currently active retries awaiting execution',
-    }),
-
-    makeCounterProvider({
       name: CONTAINER_METRICS.LOG_BYTES_TOTAL,
       help: 'Total bytes of container logs streamed',
       labelNames: ['execution_id', 'source'],
@@ -193,17 +131,6 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
       help: 'Duration of container execution steps',
       labelNames: ['execution_id', 'status'],
       buckets: [1, 5, 10, 30, 60, 120, 300],
-    }),
-    // Self-Healing Metrics (Story 13.3.1)
-    makeCounterProvider({
-      name: AI_METRICS.SELF_HEALING_ATTEMPTS_TOTAL,
-      help: 'Total self-healing attempts by outcome',
-      labelNames: ['ticket_id', 'outcome'], // outcome: success, escalated, max_attempts
-    }),
-    makeGaugeProvider({
-      name: AI_METRICS.SELF_HEALING_PROGRESS,
-      help: 'Self-healing progress percentage (error reduction)',
-      labelNames: ['ticket_id'],
     }),
     // Story 10.2: WebSocket Emission Metrics
     makeCounterProvider({
@@ -284,14 +211,6 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     ExecutionService,
     ExecutionTrackerService,
     ExecutionRepository,
-    ExecutionStateMachine,
-    RetryHandlerService,
-    RetryClassifierService,
-    RetrySchedulerService,
-    // Story 2.10: Export queue services
-    AIExecutionPublisher,
-    // Story 13.3.1: Export self-healing service
-    SelfHealingOrchestratorService,
     ExecutionGateway,
     ApprovalService,
   ],

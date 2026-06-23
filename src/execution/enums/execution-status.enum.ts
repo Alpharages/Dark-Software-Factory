@@ -100,6 +100,24 @@ export const TERMINAL_STATES: ExecutionStatus[] = [
 ];
 
 /**
+ * States in which an execution has come to rest — no further automated
+ * processing or manual intervention (pause / emergency-stop) applies.
+ *
+ * Broader than {@link TERMINAL_STATES} (the strict no-transition-out set):
+ * with the bespoke retry subsystem removed (OHP-3.2), FAILED / TIMEOUT /
+ * QA_FAILED are no longer auto-requeued, so they are effectively final for the
+ * purposes of lifecycle gating.
+ */
+export const FINAL_EXECUTION_STATES: ExecutionStatus[] = [
+  ExecutionStatus.COMPLETED,
+  ExecutionStatus.FAILED,
+  ExecutionStatus.CANCELLED,
+  ExecutionStatus.TIMEOUT,
+  ExecutionStatus.QA_FAILED,
+  ExecutionStatus.EMERGENCY_STOPPED,
+];
+
+/**
  * States that can be retried
  */
 export const RETRYABLE_STATES: ExecutionStatus[] = [
@@ -138,6 +156,15 @@ export function isValidTransition(from: ExecutionStatus, to: ExecutionStatus): b
  */
 export function isTerminalStatus(status: ExecutionStatus): boolean {
   return TERMINAL_STATES.includes(status);
+}
+
+/**
+ * Check if status is final — execution has come to rest and no further
+ * automated processing or manual intervention applies. See
+ * {@link FINAL_EXECUTION_STATES}.
+ */
+export function isFinalExecutionStatus(status: ExecutionStatus): boolean {
+  return FINAL_EXECUTION_STATES.includes(status);
 }
 
 /**

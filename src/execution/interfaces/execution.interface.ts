@@ -5,7 +5,15 @@
  */
 
 import { AIProvider, ExecutionStatus } from '@/prisma/client';
-import { QAAttempt } from './ai-provider.interface'; // WR-6.3
+
+export interface QAAttempt {
+  attemptNumber: number;
+  lintStatus: 'passed' | 'failed' | 'skipped';
+  lintErrors?: { count: number; details: unknown[] };
+  testStatus: 'passed' | 'failed' | 'skipped';
+  testResults?: { passed: number; failed: number; details: unknown[] };
+  durationMs: number;
+}
 
 /**
  * Input for starting a new execution

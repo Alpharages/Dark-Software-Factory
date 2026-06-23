@@ -43,12 +43,10 @@ export const QUEUE_NAMES = {
   // Story 2.1-2.2: Ticket intake pipeline
   TICKET_INTAKE: 'ticket-intake-queue',
   // Core execution queues
-  AI_EXECUTION: 'ai-execution-queue',
   QA_CHECK: 'qa-check-queue',
   DEPLOYMENT: 'deployment-queue',
   MONITORING: 'monitoring-queue',
   DEAD_LETTER: 'dead-letter-queue',
-  AI_EXECUTION_RETRY: 'ai-execution-retry-queue', // Story 2.9
   GITHUB_WEBHOOK: 'github-webhook-queue', // Story 14.1
   GITHUB_PR_REMINDER: 'github-pr-reminder-queue', // Story 14.2
   GITHUB_PR_REMINDER_WAIT: 'github-pr-reminder-wait-queue', // Story 14.2 Delay Queue
@@ -68,12 +66,6 @@ export const EXCHANGE_NAMES = {
  * Routing keys (dot notation per architecture)
  */
 export const ROUTING_KEYS = {
-  // AI Execution
-  AI_EXECUTION_STARTED: 'ai.execution.started',
-  AI_EXECUTION_COMPLETED: 'ai.execution.completed',
-  AI_EXECUTION_FAILED: 'ai.execution.failed',
-  AI_EXECUTION_RETRY: 'ai.execution.retry',
-
   // QA Check
   QA_CHECK_STARTED: 'qa.check.started',
   QA_CHECK_COMPLETED: 'qa.check.completed',

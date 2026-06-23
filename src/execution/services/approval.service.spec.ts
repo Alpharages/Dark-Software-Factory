@@ -4,7 +4,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { ExecutionTrackerService } from '../execution-tracker.service';
 import { RabbitMQPublisherService } from '@/rabbitmq/rabbitmq-publisher.service';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
-import { ExecutionStatus, ApprovalDecision } from '@/prisma/client';
+import { ExecutionStatus, ApprovalDecision, TicketStatus } from '@/prisma/client';
 
 describe('ApprovalService', () => {
   let service: ApprovalService;
@@ -94,7 +94,7 @@ describe('ApprovalService', () => {
   });
 
   describe('rework', () => {
-    it('should trigger rework with feedback', async () => {
+    it('should mark execution queued for rework with feedback', async () => {
       const executionId = 'exec-1';
       const feedback = 'Fix lint errors';
       const execution = {
@@ -108,13 +108,15 @@ describe('ApprovalService', () => {
 
       await service.rework(executionId, 'pm-1', feedback);
 
-      expect(mockPublisher.publishToExchange).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({
-          context: expect.objectContaining({ feedback }),
-        }),
-      );
+      expect(mockPrisma.ticket.update).toHaveBeenCalledWith({
+        where: { id: 'ticket-1' },
+        data: { status: TicketStatus.AWAITING_REWORK },
+      });
+      expect(mockPrisma.execution.update).toHaveBeenCalledWith({
+        where: { id: executionId },
+        data: { status: ExecutionStatus.QUEUED, retry_count: { increment: 1 } },
+      });
+      expect(mockPublisher.publishToExchange).not.toHaveBeenCalled();
     });
   });
 

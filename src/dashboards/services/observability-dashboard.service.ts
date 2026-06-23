@@ -172,13 +172,9 @@ export class ObservabilityDashboardService {
 
       // Merge RabbitMQ metrics with processing rates
       return {
-        'ai-execution-queue': {
-          ...rabbitMQMetrics['ai-execution-queue'],
-          rate: processingRatePerHour,
-        },
         'qa-check-queue': {
           ...rabbitMQMetrics['qa-check-queue'],
-          rate: dailyRate,
+          rate: processingRatePerHour,
         },
         'deployment-queue': {
           ...rabbitMQMetrics['deployment-queue'],

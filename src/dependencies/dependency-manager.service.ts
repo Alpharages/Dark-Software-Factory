@@ -249,7 +249,7 @@ export class DependencyManagerService {
       }
 
       // Step 5: Get current queue depth from RabbitMQ
-      const queueDepth = await this.getQueueDepth('ai-execution-queue');
+      const queueDepth = await this.getQueueDepth('qa-check-queue');
       const queuePosition = queueDepth;
 
       // Step 6: Calculate total ETA

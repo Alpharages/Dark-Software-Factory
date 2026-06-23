@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException } from '@nestjs/common';
 import { ExecutionService } from './execution.service';
 import { ExecutionTrackerService } from './execution-tracker.service';
-import { ExecutionStateMachine, InvalidStateTransitionError } from './state-machine';
 import { ExecutionStatus, AIProvider, PRRiskLevel } from '@/prisma/client';
 import {
   StartExecutionDto,
@@ -18,7 +17,6 @@ import { EventBusService } from '@/common/event-bus.service';
 describe('ExecutionService', () => {
   let service: ExecutionService;
   let trackerService: ExecutionTrackerService;
-  let stateMachine: ExecutionStateMachine;
 
   const mockExecution = {
     id: 'exec-123',
@@ -89,15 +87,6 @@ describe('ExecutionService', () => {
           },
         },
         {
-          provide: ExecutionStateMachine,
-          useValue: {
-            canStart: jest.fn(),
-            canComplete: jest.fn(),
-            isTerminal: jest.fn(),
-            transition: jest.fn(),
-          },
-        },
-        {
           provide: QaCheckPublisher,
           useValue: {
             publishQaCheck: jest.fn().mockResolvedValue(undefined),
@@ -121,7 +110,6 @@ describe('ExecutionService', () => {
 
     service = module.get<ExecutionService>(ExecutionService);
     trackerService = module.get<ExecutionTrackerService>(ExecutionTrackerService);
-    stateMachine = module.get<ExecutionStateMachine>(ExecutionStateMachine);
   });
 
   afterEach(() => {
@@ -344,29 +332,19 @@ describe('ExecutionService', () => {
   });
 
   describe('state machine helpers', () => {
-    it('should check if can start from QUEUED', () => {
-      jest.spyOn(stateMachine, 'canStart').mockReturnValue(true);
-
-      const result = service.canStart(ExecutionStatus.QUEUED);
-
-      expect(result).toBe(true);
-      expect(stateMachine.canStart).toHaveBeenCalledWith(ExecutionStatus.QUEUED);
+    it('should only start from terminal statuses', () => {
+      expect(service.canStart(ExecutionStatus.COMPLETED)).toBe(true);
+      expect(service.canStart(ExecutionStatus.QUEUED)).toBe(false);
     });
 
     it('should check if can complete', () => {
-      jest.spyOn(stateMachine, 'canComplete').mockReturnValue(true);
-
-      const result = service.canComplete(ExecutionStatus.IN_PROGRESS);
-
-      expect(result).toBe(true);
+      expect(service.canComplete(ExecutionStatus.IN_PROGRESS)).toBe(true);
+      expect(service.canComplete(ExecutionStatus.QUEUED)).toBe(false);
     });
 
     it('should check if status is terminal', () => {
-      jest.spyOn(stateMachine, 'isTerminal').mockReturnValue(true);
-
-      const result = service.isTerminal(ExecutionStatus.COMPLETED);
-
-      expect(result).toBe(true);
+      expect(service.isTerminal(ExecutionStatus.COMPLETED)).toBe(true);
+      expect(service.isTerminal(ExecutionStatus.IN_PROGRESS)).toBe(false);
     });
   });
 
@@ -473,105 +451,6 @@ describe('ExecutionService', () => {
       const result = await service.canStartExecution('ticket-123', true);
 
       expect(result).toBe(true);
-    });
-  });
-});
-
-describe('ExecutionStateMachine', () => {
-  let stateMachine: ExecutionStateMachine;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [ExecutionStateMachine],
-    }).compile();
-
-    stateMachine = module.get<ExecutionStateMachine>(ExecutionStateMachine);
-  });
-
-  it('should be defined', () => {
-    expect(stateMachine).toBeDefined();
-  });
-
-  describe('valid transitions', () => {
-    it('should allow QUEUED → IN_PROGRESS', () => {
-      const transition = stateMachine.transition(
-        'exec-123',
-        ExecutionStatus.QUEUED,
-        ExecutionStatus.IN_PROGRESS,
-        'Starting',
-      );
-
-      expect(transition).toBeDefined();
-      expect(transition.previousStatus).toBe(ExecutionStatus.QUEUED);
-      expect(transition.newStatus).toBe(ExecutionStatus.IN_PROGRESS);
-    });
-
-    it('should allow IN_PROGRESS → COMPLETED', () => {
-      const transition = stateMachine.transition(
-        'exec-123',
-        ExecutionStatus.IN_PROGRESS,
-        ExecutionStatus.COMPLETED,
-        'Done',
-      );
-
-      expect(transition).toBeDefined();
-      expect(transition.newStatus).toBe(ExecutionStatus.COMPLETED);
-    });
-
-    it('should allow FAILED → QUEUED (retry)', () => {
-      const transition = stateMachine.transition(
-        'exec-123',
-        ExecutionStatus.FAILED,
-        ExecutionStatus.QUEUED,
-        'Retry',
-      );
-
-      expect(transition).toBeDefined();
-      expect(transition.newStatus).toBe(ExecutionStatus.QUEUED);
-    });
-  });
-
-  describe('invalid transitions', () => {
-    it('should reject QUEUED → COMPLETED', () => {
-      expect(() => {
-        stateMachine.transition('exec-123', ExecutionStatus.QUEUED, ExecutionStatus.COMPLETED);
-      }).toThrow(InvalidStateTransitionError);
-    });
-
-    it('should reject COMPLETED → IN_PROGRESS', () => {
-      expect(() => {
-        stateMachine.transition('exec-123', ExecutionStatus.COMPLETED, ExecutionStatus.IN_PROGRESS);
-      }).toThrow(InvalidStateTransitionError);
-    });
-  });
-
-  describe('same state', () => {
-    it('should return no-op for same state', () => {
-      const transition = stateMachine.transition(
-        'exec-123',
-        ExecutionStatus.QUEUED,
-        ExecutionStatus.QUEUED,
-      );
-
-      expect(transition.reason).toBe('No change');
-    });
-  });
-
-  describe('helper methods', () => {
-    it('should correctly identify retryable status', () => {
-      const result = stateMachine.canRetry(ExecutionStatus.FAILED, 1, 3);
-      expect(result).toBe(true);
-    });
-
-    it('should reject retry if max retries exceeded', () => {
-      const result = stateMachine.canRetry(ExecutionStatus.FAILED, 3, 3);
-      expect(result).toBe(false);
-    });
-
-    it('should identify terminal states', () => {
-      expect(stateMachine.isTerminal(ExecutionStatus.COMPLETED)).toBe(true);
-      expect(stateMachine.isTerminal(ExecutionStatus.CANCELLED)).toBe(true);
-      expect(stateMachine.isTerminal(ExecutionStatus.IN_PROGRESS)).toBe(false);
     });
   });
 });
