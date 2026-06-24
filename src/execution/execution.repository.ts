@@ -189,57 +189,6 @@ export class ExecutionRepository {
   }
 
   /**
-   * Increment retry count and reset to QUEUED.
-   *
-   * Uses updateMany to avoid P2025 NotFound if the record was cleaned up
-   * before the retry fires. Re-fetches afterward to return the updated record.
-   */
-  async incrementRetryAndRequeue(id: string): Promise<Execution> {
-    const existing = await this.prisma.execution.findUnique({ where: { id } });
-    if (!existing) {
-      this.logger.warn(`Execution ${id} not found during incrementRetryAndRequeue — skipping`);
-      return { id, status: ExecutionStatus.QUEUED, retry_count: 0 } as Execution;
-    }
-
-    await this.prisma.execution.updateMany({
-      where: { id },
-      data: {
-        retry_count: { increment: 1 },
-        status: ExecutionStatus.QUEUED,
-        // Clear failure timestamps for retry
-        failed_at: null,
-        error_message: null,
-      },
-    });
-
-    // Re-fetch the updated record
-    const updated = await this.prisma.execution.findUnique({ where: { id } });
-    return updated ?? existing;
-  }
-
-  /**
-   * Check if execution can retry
-   */
-  async canRetry(
-    id: string,
-  ): Promise<{ canRetry: boolean; retryCount: number; maxRetries: number }> {
-    const execution = await this.prisma.execution.findUnique({
-      where: { id },
-      select: { retry_count: true, max_retries: true, status: true },
-    });
-
-    if (!execution) {
-      return { canRetry: false, retryCount: 0, maxRetries: 0 };
-    }
-
-    return {
-      canRetry: execution.retry_count < execution.max_retries,
-      retryCount: execution.retry_count,
-      maxRetries: execution.max_retries,
-    };
-  }
-
-  /**
    * Get executions by status
    */
   async findByStatus(
