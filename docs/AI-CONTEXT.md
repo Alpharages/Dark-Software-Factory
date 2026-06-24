@@ -25,6 +25,12 @@ genuinely reusable signal, not on every run. The OHP-1.2 validation change (a tr
 had none, so zero Lore writes is the correct outcome, not a gap; AC3 ("lessons saved to Lore")
 means saved-when-warranted.
 
+**Epic OHP-1 closed (✅ Done, QA-verified 2026-06-25).** All five stories (MCP wiring, headless
+skill run, per-ticket runner, stream→realtime adapter, local MVP `POST /api/v1/executions/test`)
+are implemented and exercised end-to-end by the OHP-2 dispatcher loop. QA gate green: typecheck,
+lint, `nest build`, full Jest suite (170 suites / 1726 tests). ClickUp epic `86ey07087` (+ all 5
+subtasks) Closed; durable record is the OHP-1 Outcome block in `docs/epics.md`.
+
 **OHP-2.6 validation: PASSED (2026-06-25). Epic OHP-2 closed (✅ Done).** Epic OHP-2
 (status-driven dispatcher + loop + approval gate) is validated end-to-end on independent throwaway
 ticket `86ey22p7b`. The full loop ran hands-off: `to do → ready for review → ready for qa →

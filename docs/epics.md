@@ -34,7 +34,7 @@ already are the state machine.
 | Epic  | Name                                                       | Phase | Status   | Depends on |
 | ----- | ---------------------------------------------------------- | ----- | -------- | ---------- |
 | OHP-0 | Pivot Validation Spike                                     | 0     | ✅ Done  | —          |
-| OHP-1 | OpenHarness Engine + BMAD/Lore Integration (single-tenant) | 1     | Proposed | OHP-0      |
+| OHP-1 | OpenHarness Engine + BMAD/Lore Integration (single-tenant) | 1     | ✅ Done  | OHP-0      |
 | OHP-2 | Status-Driven Dispatcher + Loop + Approval Gate            | 2     | ✅ Done  | OHP-1      |
 | OHP-3 | Decommission Bespoke DSF Runtime                           | 3     | Proposed | OHP-2      |
 | OHP-4 | Multi-Tenant Control Plane + Productionize                 | 4     | Proposed | OHP-2      |
@@ -62,13 +62,31 @@ headlessly on a subscription and produce near-mergeable work that streams to a d
 
 ---
 
-## Epic OHP-1 — OpenHarness Engine + BMAD/Lore Integration (single-tenant)
+## Epic OHP-1 — OpenHarness Engine + BMAD/Lore Integration (single-tenant) ✅ Done
 
 **Goal:** Run the _real_ workflow (a BMAD skill), not a raw prompt, through OpenHarness on
 one real ticket from your own ClickUp — and capture/stream the result into DSF.
 
 **Depends on:** OHP-0. **Scope:** single-tenant (your ClickUp token), local MVP, no RabbitMQ
 required yet.
+
+**Outcome (verified 2026-06-25):** All five stories landed and are exercised end-to-end by the
+downstream OHP-2 dispatcher loop, which runs entirely on this epic's runner + stream adapter +
+Execution persistence. QA gate green: `pnpm typecheck`, `pnpm lint`, `nest build`, and the full
+Jest suite (170 suites / 1726 tests) all pass; the OpenHarness module alone covers 6 suites / 50
+tests. Code surfaces: MCP wiring (`openharness/mcp-config.json` → bmad + lore + gitnexus,
+`scripts/oh-mcp-smoke.sh`, `docs/openharness/mcp-setup.md`); headless skill run wrappers
+(`scripts/oh-run-skill.sh`, `scripts/claude-run-skill.sh`); per-ticket runner
+(`openharness/openharness-runner.service.ts` + `openharness-stream.parser.ts` → persists an
+`Execution` row with status/files/tools/summary, failures recorded with terminal status);
+stream→realtime adapter (`openharness/stream/openharness-stream.adapter.ts` maps
+`tool_started`/`assistant_delta`/`assistant_complete` → `execution-activity`/`execution.log`);
+and the local MVP entry point (`POST /api/v1/executions/test`,
+`openharness/openharness-execution.controller.ts`, config-driven run profile in
+`config/configuration.ts`). _Note:_ the OHP-1.2 per-leg `oh`/Claude stream logs were intentionally
+not retained in-repo (same convention as OHP-2.6); the durable record is the live ClickUp trail and
+this Outcome block. Lore lesson-saving is AI-discretionary — zero writes on a no-signal run is the
+correct outcome, not a gap (see `docs/AI-CONTEXT.md`).
 
 ### Stories
 
