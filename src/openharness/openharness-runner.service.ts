@@ -1,8 +1,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { spawn } from 'child_process';
+import { spawn, execFileSync } from 'child_process';
 import * as readline from 'readline';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 import { ExecutionRepository } from '@/execution/execution.repository';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { PrismaService } from '@/database/prisma.service';
@@ -19,7 +21,13 @@ type MandatedToolsMode = 'warn' | 'fail';
  * (getResult/getFilesChanged/getToolsUsed) rather than the live adapter path.
  * Anything outside this set and the live-event set is logged and skipped (AC5).
  */
-const KNOWN_OH_EVENT_TYPES = new Set<string>(['progress', 'result', 'qa_attempt', 'assistant']);
+const KNOWN_OH_EVENT_TYPES = new Set<string>([
+  'progress',
+  'result',
+  'qa_attempt',
+  'assistant',
+  'error',
+]);
 
 export interface OpenHarnessRunOptions {
   skill: string;
@@ -59,6 +67,19 @@ export class OpenHarnessRunnerService {
       this.configService.get<string>('openharness.formatCommand') ?? 'pnpm exec prettier --write';
     const model = this.requiredConfig('openharness.model');
     const binaryPath = this.requiredConfig('openharness.binaryPath');
+    // Agent runtime selector. 'claude' spawns the first-party Claude Code wrapper
+    // (legitimately on the Claude subscription's plan limits); anything else keeps
+    // the default OpenHarness path unchanged.
+    const runtime = this.configService.get<string>('openharness.runtime') ?? 'oh';
+    const claudeModel = this.configService.get<string>('openharness.claudeModel') ?? 'sonnet';
+    const isolateWorkspace =
+      this.configService.get<boolean>('openharness.isolateWorkspace') ?? false;
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { clickup_task_id: true },
+    });
+    const clickUpTaskId = ticket?.clickup_task_id ?? ticketId;
+    const childPrompt = `Execute the bmad workflow ${skill} for ClickUp ticket ${clickUpTaskId} by calling bmad({operation:"execute", workflow:"${skill}", message:"${clickUpTaskId}"}).`;
 
     const execution = await this.executionRepository.create({
       ticketId,
@@ -74,9 +95,10 @@ export class OpenHarnessRunnerService {
 
     // Record the engine model once, up-front, in a single write — avoids
     // duplicating the selected_model write across the success/failure branches.
+    // The claude runtime runs a different model than the oh `model` config.
     await this.prisma.execution.update({
       where: { id: execution.id },
-      data: { selected_model: model },
+      data: { selected_model: runtime === 'claude' ? claudeModel : model },
     });
 
     // Resolve the MCP config to an ABSOLUTE path against this process's cwd
@@ -115,28 +137,95 @@ export class OpenHarnessRunnerService {
       this.logger.warn(`[${execution.id}] ${message}`);
     }
 
+    // Provision an isolated worktree so the agent never mutates the live working
+    // tree. If isolation is requested but fails, fail closed rather than running
+    // in-place against the repo (the unsafe behaviour OHP-2.6 flagged).
+    let runWorkspaceDir = workspaceDir;
+    if (isolateWorkspace) {
+      try {
+        // Persistent per-ticket branch: every leg of a ticket's loop shares one
+        // branch, so a prior leg's commit is visible to the next (review/QA see
+        // the implement diff). The worktree is per-run and torn down each leg;
+        // the branch survives in the object store. Resolves OHP-2.6 Finding 3.
+        const ticketBranch = `ohp/${clickUpTaskId}`;
+        runWorkspaceDir = this.provisionWorktree(workspaceDir, execution.id, ticketBranch);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        await this.executionTracker.failExecution(
+          {
+            executionId: execution.id,
+            errorMessage: `Workspace isolation failed: ${message}`,
+            isRetryable: false,
+          },
+          execution.id,
+        );
+        return execution.id;
+      }
+    }
+
     return new Promise((resolve) => {
+      const wrapperFile =
+        runtime === 'claude' ? 'scripts/claude-run-skill.sh' : 'scripts/oh-run-skill.sh';
+      const wrapperPath = path.resolve(process.cwd(), wrapperFile);
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      const useWrapper = fs.existsSync(wrapperPath);
       const child = spawn(
-        binaryPath,
-        [
-          '-p',
-          skill,
-          '--output-format',
-          'stream-json',
-          '--permission-mode',
-          'full_auto',
-          '--max-turns',
-          String(maxTurns),
-          '--mcp-config',
-          mcpConfigPath,
-        ],
+        useWrapper ? wrapperPath : binaryPath,
+        useWrapper
+          ? [clickUpTaskId, path.join(os.tmpdir(), `${execution.id}.stream.json`)]
+          : [
+              '-p',
+              childPrompt,
+              '--output-format',
+              'stream-json',
+              '--permission-mode',
+              'full_auto',
+              '--max-turns',
+              String(maxTurns),
+              '--mcp-config',
+              mcpConfigPath,
+            ],
         {
-          cwd: workspaceDir,
+          cwd: runWorkspaceDir,
           env: {
             ...process.env,
-            CLICKUP_API_KEY: this.configService.get<string>('CLICKUP_API_KEY') || '',
-            LORE_SLUG: this.configService.get<string>('LORE_SLUG') || '',
-            LORE_KEY: this.configService.get<string>('LORE_KEY') || '',
+            CLICKUP_API_KEY:
+              this.configService.get<string>('CLICKUP_API_KEY') ||
+              process.env.CLICKUP_API_KEY ||
+              '',
+            CLICKUP_TEAM_ID:
+              this.configService.get<string>('CLICKUP_TEAM_ID') ||
+              process.env.CLICKUP_TEAM_ID ||
+              '',
+            BMAD_SERVER_URL:
+              this.configService.get<string>('BMAD_SERVER_URL') ||
+              process.env.BMAD_SERVER_URL ||
+              '',
+            BMAD_API_KEY:
+              this.configService.get<string>('BMAD_API_KEY') || process.env.BMAD_API_KEY || '',
+            LORE_SERVER_URL:
+              this.configService.get<string>('LORE_SERVER_URL') ||
+              process.env.LORE_SERVER_URL ||
+              '',
+            LORE_API_KEY:
+              this.configService.get<string>('LORE_API_KEY') || process.env.LORE_API_KEY || '',
+            LORE_SLUG: this.configService.get<string>('LORE_SLUG') || process.env.LORE_SLUG || '',
+            LORE_KEY: this.configService.get<string>('LORE_KEY') || process.env.LORE_KEY || '',
+            OH_RUN_WORKFLOW: skill,
+            OH_RUN_MCP_CONFIG: mcpConfigPath,
+            OH_RUN_MODEL: model,
+            // Consumed only by scripts/claude-run-skill.sh (runtime === 'claude').
+            CLAUDE_RUN_MODEL: claudeModel,
+            OH_RUN_MAX_TURNS: String(maxTurns),
+            OH_RUN_STREAM_STDOUT: useWrapper ? '1' : '',
+            ...(useWrapper
+              ? {}
+              : {
+                  OPENHARNESS_CONFIG_DIR: path.join(
+                    os.tmpdir(),
+                    `${execution.id}-openharness-config`,
+                  ),
+                }),
           },
         },
       );
@@ -198,6 +287,11 @@ export class OpenHarnessRunnerService {
           } catch (e) {
             this.logger.error(e);
           } finally {
+            // Tear down the isolated worktree on every terminal path (success,
+            // failure, timeout). Best-effort: never block resolution on cleanup.
+            if (isolateWorkspace && runWorkspaceDir !== workspaceDir) {
+              this.removeWorktree(workspaceDir, runWorkspaceDir);
+            }
             resolve(execution.id);
           }
         })();
@@ -240,7 +334,7 @@ export class OpenHarnessRunnerService {
           if (code === 0 && result && result.status !== 'FAILED') {
             try {
               await this.guardrails.formatOwnFiles(
-                workspaceDir,
+                runWorkspaceDir,
                 filesChanged,
                 formatEnabled,
                 formatCommand,
@@ -317,5 +411,89 @@ export class OpenHarnessRunnerService {
       throw new Error(`Missing OpenHarness configuration: ${key}`);
     }
     return value;
+  }
+
+  /**
+   * Create a per-run git worktree under a temp path, checked out on the shared
+   * per-ticket `branch`. The worktree is a clean checkout that shares `repoDir`'s
+   * object store, so the agent can commit without touching the live working tree.
+   * The branch persists across legs (created from HEAD on first use, reused
+   * thereafter) so each leg sees prior legs' commits. `node_modules` is symlinked
+   * so the agent can run tests/typecheck. Returns the worktree path.
+   */
+  private provisionWorktree(repoDir: string, executionId: string, branch: string): string {
+    const dir = path.join(os.tmpdir(), 'dsf-workspaces', executionId);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    fs.mkdirSync(path.dirname(dir), { recursive: true });
+    // Drop registrations for worktrees whose dirs were already removed.
+    try {
+      execFileSync('git', ['-C', repoDir, 'worktree', 'prune'], { stdio: 'pipe' });
+    } catch {
+      /* ignore */
+    }
+    const branchExists = ((): boolean => {
+      try {
+        execFileSync(
+          'git',
+          ['-C', repoDir, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`],
+          {
+            stdio: 'pipe',
+          },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+    if (branchExists) {
+      // Reuse the persistent branch so prior legs' commits are visible.
+      execFileSync('git', ['-C', repoDir, 'worktree', 'add', dir, branch], { stdio: 'pipe' });
+    } else {
+      const head = execFileSync('git', ['-C', repoDir, 'rev-parse', 'HEAD'], {
+        encoding: 'utf8',
+      }).trim();
+      execFileSync('git', ['-C', repoDir, 'worktree', 'add', '-b', branch, dir, head], {
+        stdio: 'pipe',
+      });
+    }
+    // Make the worktree a runnable dev env (tests/typecheck) by sharing node_modules.
+    const nodeModules = path.join(repoDir, 'node_modules');
+    const worktreeNodeModules = path.join(dir, 'node_modules');
+    if (
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      fs.existsSync(nodeModules) &&
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      !fs.existsSync(worktreeNodeModules)
+    ) {
+      try {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        fs.symlinkSync(nodeModules, worktreeNodeModules, 'dir');
+      } catch {
+        /* ignore — tests may be blocked but AC file checks still work */
+      }
+    }
+    this.logger.log(`[${executionId}] Provisioned isolated worktree at ${dir} (branch ${branch})`);
+    return dir;
+  }
+
+  /** Remove a worktree created by {@link provisionWorktree}. Best-effort. */
+  private removeWorktree(repoDir: string, worktreeDir: string): void {
+    try {
+      execFileSync('git', ['-C', repoDir, 'worktree', 'remove', '--force', worktreeDir], {
+        stdio: 'pipe',
+      });
+    } catch {
+      // Fall back to pruning the registration and removing the directory.
+      try {
+        execFileSync('git', ['-C', repoDir, 'worktree', 'prune'], { stdio: 'pipe' });
+      } catch {
+        /* ignore */
+      }
+      try {
+        fs.rmSync(worktreeDir, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    }
   }
 }

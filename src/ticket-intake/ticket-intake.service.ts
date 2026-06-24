@@ -444,6 +444,8 @@ export class TicketIntakeService {
       /##?\s*acceptance\s*criteria[:\s]*\n?([\s\S]*?)(?=\n##|\n\*\*[A-Z]|$)/i,
       // Bold label pattern
       /\*\*acceptance\s*criteria\*\*[:\s]*\n?([\s\S]*?)(?=\n\*\*|$)/i,
+      // Plain text label pattern from ClickUp text_content
+      /(?:^|\n)acceptance\s*criteria[:\s]*\n+([\s\S]*?)(?=\n[A-Z][A-Za-z ]+\n|$)/i,
       // Given/When/Then pattern
       /given[\s\S]*?then[\s\S]*?(?=\n##|$)/i,
     ];

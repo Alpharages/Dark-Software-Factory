@@ -329,4 +329,43 @@ describe('DispatcherService', () => {
       });
     });
   });
+
+  describe('idempotency — concurrent duplicate events', () => {
+    it('skips a second concurrent dispatch for the same task while one is in flight', async () => {
+      // Hold the first run open so the two dispatches genuinely overlap. The DB
+      // active-execution check cannot catch this race (no row exists yet); the
+      // in-process per-ticket lock must.
+      let releaseRun: (id: string) => void = () => {};
+      runner.runForTicket.mockImplementation(
+        () =>
+          new Promise<string>((resolve) => {
+            releaseRun = resolve;
+          }),
+      );
+
+      const first = service.dispatch(event);
+      // Let `first` acquire the per-ticket lock and reach the (held) runner call.
+      await new Promise((r) => setImmediate(r));
+
+      const second = await service.dispatch(event); // skipped while first is in flight
+
+      expect(second).toEqual({ dispatched: false, reason: 'active-execution' });
+      expect(runner.runForTicket).toHaveBeenCalledTimes(1);
+
+      releaseRun('exec-1');
+      await expect(first).resolves.toEqual({
+        dispatched: true,
+        executionId: 'exec-1',
+        skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW,
+      });
+    });
+
+    it('releases the in-flight lock so a later dispatch for the same task proceeds', async () => {
+      await service.dispatch(event);
+      const again = await service.dispatch(event);
+
+      expect(again).toMatchObject({ dispatched: true });
+      expect(runner.runForTicket).toHaveBeenCalledTimes(2);
+    });
+  });
 });

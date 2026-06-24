@@ -125,6 +125,21 @@ export default () => {
     openharness: {
       binaryPath: process.env.OPENHARNESS_BINARY_PATH || 'oh',
       model: process.env.OPENHARNESS_MODEL || 'gpt-5.4',
+      // Agent runtime that executes a leg. 'oh' (default) drives the OpenHarness
+      // CLI; 'claude' drives the first-party Claude Code CLI via
+      // scripts/claude-run-skill.sh. The 'claude' runtime exists because `oh`,
+      // as a third-party app, cannot draw a Claude subscription from plan limits
+      // (Anthropic routes third-party apps to extra usage), whereas Claude Code
+      // is first-party. See docs/openharness/runs/ohp-2.6-*.report.md.
+      runtime: process.env.OPENHARNESS_RUNTIME || 'oh',
+      // Model used only when runtime === 'claude' (an alias like 'sonnet'/'opus'
+      // or a full model id). Independent of `model`, which targets the oh CLI.
+      claudeModel: process.env.OPENHARNESS_CLAUDE_MODEL || 'sonnet',
+      // When true, each run executes in an isolated git worktree (clean checkout
+      // at the repo HEAD) instead of `workspaceDir` directly, so agents never
+      // mutate the live working tree and concurrent runs cannot collide
+      // (OHP-2.6 safety finding). The worktree is removed on every terminal path.
+      isolateWorkspace: process.env.OPENHARNESS_ISOLATE_WORKSPACE === 'true',
       defaultSkill: process.env.OPENHARNESS_DEFAULT_SKILL || 'clickup-dev-implement',
       workspaceDir: process.env.OPENHARNESS_WORKSPACE_DIR || process.cwd(),
       maxTurns: parseInt(process.env.OPENHARNESS_MAX_TURNS || '200', 10),

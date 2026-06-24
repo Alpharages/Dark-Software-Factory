@@ -111,6 +111,72 @@ describe('ClickUpProvider', () => {
     });
   });
 
+  describe('getUpdatedTasks', () => {
+    it('hydrates description when the team task list omits it', async () => {
+      mockAxiosInstance.get
+        .mockResolvedValueOnce({
+          data: {
+            tasks: [
+              {
+                id: 'task-1',
+                name: 'Task 1',
+                status: { status: 'in progress', color: '#000' },
+                url: 'https://clickup.com/t/task-1',
+                date_updated: '123456789',
+                list: { id: 'list-1' },
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'task-1',
+            name: 'Task 1',
+            description:
+              '## Acceptance Criteria\nGiven validation When polling runs Then intake succeeds',
+            status: { status: 'in progress', color: '#000' },
+            url: 'https://clickup.com/t/task-1',
+          },
+        });
+
+      const result = await provider.getUpdatedTasks('team-1', new Date(1000));
+
+      expect(result[0].description).toContain('Acceptance Criteria');
+      expect(result[0].listId).toBe('list-1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/team/team-1/task', {
+        params: {
+          date_updated_gt: 1000,
+          include_closed: true,
+          subtasks: true,
+          order_by: 'updated',
+        },
+      });
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/task/task-1');
+    });
+
+    it('deduplicates tasks returned more than once by the team task endpoint', async () => {
+      // ClickUp can surface the same task multiple times when subtasks:true.
+      // Each duplicate would otherwise become a separate intake/dispatch (OHP-2.6).
+      const dupTask = {
+        id: 'task-dup',
+        name: 'Dup Task',
+        description: 'has body',
+        status: { status: 'to do', color: '#000' },
+        url: 'https://clickup.com/t/task-dup',
+        date_updated: '123456789',
+        list: { id: 'list-1' },
+      };
+      mockAxiosInstance.get.mockResolvedValueOnce({
+        data: { tasks: [dupTask, dupTask, dupTask] },
+      });
+
+      const result = await provider.getUpdatedTasks('team-1', new Date(1000));
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('task-dup');
+    });
+  });
+
   describe('updateStatus', () => {
     it('should call PUT /task/:id', async () => {
       mockAxiosInstance.put.mockResolvedValue({ status: 200 });

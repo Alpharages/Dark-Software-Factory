@@ -251,6 +251,17 @@ describe('TicketIntakeService', () => {
       expect(validatorCall.acceptanceCriteria).toContain('Given user submits credentials');
     });
 
+    it('should extract acceptance criteria from ClickUp plain text content', async () => {
+      await service.processTaskEvent({
+        ...mockRawEvent,
+        taskDescription:
+          'Scope\n\nDo the thing.\n\nAcceptance Criteria\n\nA docs-only diff is produced.\nThe ticket advances through review.',
+      });
+
+      const validatorCall = mockValidator.validate.mock.calls[0][0];
+      expect(validatorCall.acceptanceCriteria).toContain('A docs-only diff is produced.');
+    });
+
     it('should validate ticket and dispatch via the dispatcher (no AI routing queue)', async () => {
       await service.processTaskEvent(mockRawEvent);
 

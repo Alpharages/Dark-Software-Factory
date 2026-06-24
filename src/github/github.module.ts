@@ -46,7 +46,7 @@ import { ApprovalGateModule } from '@/approval-gate/approval-gate.module';
     SentryModule,
     LoggerModule, // Required for winston logger injection
     RabbitMQModule,
-    WebhooksModule,
+    forwardRef(() => WebhooksModule),
     ClickUpModule,
     // Story 11.4: AI Decision Audit Logging
     AIDecisionLoggerModule,

@@ -20,7 +20,36 @@ export class OpenHarnessStreamParser {
       }
 
       if (type === 'result') {
-        this.result = parsed as OhResultEvent;
+        // Claude Code (`claude -p … --output-format stream-json`) emits its
+        // terminal event as `result` too, but with a different shape:
+        // `{ subtype, is_error, result }` — no `status`/`summary`/`files_changed`.
+        // Normalize it to the OhResultEvent contract the runner consumes. The
+        // native oh `result` event (which carries `status`) falls through
+        // unchanged via the else branch.
+        const ev = parsed as OhResultEvent & {
+          is_error?: boolean;
+          result?: string;
+          subtype?: string;
+        };
+        if (
+          ev.status === undefined &&
+          (ev.is_error !== undefined || typeof ev.result === 'string')
+        ) {
+          this.result = {
+            type: 'result',
+            status: ev.is_error ? 'FAILED' : 'COMPLETED',
+            summary: typeof ev.result === 'string' ? ev.result : undefined,
+            error_message: ev.is_error
+              ? typeof ev.result === 'string'
+                ? ev.result
+                : (ev.subtype ?? 'Claude Code run failed')
+              : undefined,
+            error_context: ev.is_error ? JSON.stringify(ev) : undefined,
+            files_changed: ev.files_changed,
+          };
+        } else {
+          this.result = ev;
+        }
         this.collectFilesChanged(this.result.files_changed);
         return parsed;
       }
@@ -32,13 +61,26 @@ export class OpenHarnessStreamParser {
       // version emits one) still overrides this via the branch above.
       if (type === 'assistant_complete') {
         const ev = parsed as { summary?: string; text?: string; files_changed?: unknown[] };
+        const summary = ev.summary ?? ev.text;
+        if (!summary && !Array.isArray(ev.files_changed)) return parsed;
         this.result = {
           type: 'result',
           status: 'COMPLETED',
-          summary: ev.summary ?? ev.text,
+          summary,
           files_changed: ev.files_changed,
         };
         this.collectFilesChanged(ev.files_changed);
+        return parsed;
+      }
+
+      if (type === 'error') {
+        const ev = parsed as { message?: string; error?: string; details?: unknown };
+        this.result = {
+          type: 'result',
+          status: 'FAILED',
+          error_message: ev.message ?? ev.error ?? 'OpenHarness emitted an error event',
+          error_context: JSON.stringify(ev),
+        };
         return parsed;
       }
 

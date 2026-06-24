@@ -38,6 +38,18 @@ export type DispatchResult =
 export class DispatcherService {
   private readonly logger = new Logger(DispatcherService.name);
 
+  /**
+   * In-process per-ticket dispatch lock. The DB active-execution check
+   * (`findFirst` → `runForTicket` create) is not atomic: two concurrent
+   * dispatches for the SAME status event both pass the check before either
+   * creates a row, yielding a double-dispatch (OHP-2.6 idempotency finding —
+   * reproduced when the poller delivered duplicate task messages). This set
+   * serialises dispatch per external task id within the instance; a held entry
+   * means a run is already in flight, so the duplicate is skipped. Single-tenant
+   * MVP scope — a multi-instance deployment additionally needs a DB-level guard.
+   */
+  private readonly inFlightTickets = new Set<string>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly statusSkillMap: StatusSkillMapService,
@@ -59,6 +71,24 @@ export class DispatcherService {
       return { dispatched: false, reason: 'missing-status' };
     }
 
+    // Atomically claim this task so a concurrent duplicate event cannot race past
+    // the (non-atomic) active-execution check below. Held until dispatch resolves,
+    // which — because dispatch awaits the full run — spans the entire execution.
+    if (this.inFlightTickets.has(event.externalId)) {
+      this.logger.debug(
+        `[${event.correlationId}] Dispatch skipped: dispatch already in flight for ${event.externalId}`,
+      );
+      return { dispatched: false, reason: 'active-execution' };
+    }
+    this.inFlightTickets.add(event.externalId);
+    try {
+      return await this.dispatchInner(event, status);
+    } finally {
+      this.inFlightTickets.delete(event.externalId);
+    }
+  }
+
+  private async dispatchInner(event: ITaskEvent, status: string): Promise<DispatchResult> {
     const ticket = await this.prisma.ticket.findUnique({
       where: { clickup_task_id: event.externalId },
       select: {
@@ -203,6 +233,24 @@ export class DispatcherService {
    * returns a `DispatchResult` describing the outcome.
    */
   async redispatchImplement(ticketId: string, correlationId: string): Promise<DispatchResult> {
+    if (this.inFlightTickets.has(ticketId)) {
+      this.logger.debug(
+        `[${correlationId}] Re-dispatch skipped: dispatch already in flight for ticket ${ticketId}`,
+      );
+      return { dispatched: false, reason: 'active-execution' };
+    }
+    this.inFlightTickets.add(ticketId);
+    try {
+      return await this.redispatchImplementInner(ticketId, correlationId);
+    } finally {
+      this.inFlightTickets.delete(ticketId);
+    }
+  }
+
+  private async redispatchImplementInner(
+    ticketId: string,
+    correlationId: string,
+  ): Promise<DispatchResult> {
     const skill = OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT;
 
     const activeExecution = await this.prisma.execution.findFirst({
