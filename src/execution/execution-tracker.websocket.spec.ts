@@ -24,8 +24,6 @@ describe('ExecutionTrackerService WebSocket Streaming', () => {
     updateStatus: jest.fn(),
     createAuditLog: jest.fn(),
     updateTicketStatus: jest.fn(),
-    incrementRetryAndRequeue: jest.fn(),
-    canRetry: jest.fn(),
     getActiveCountByProvider: jest.fn(),
   };
 

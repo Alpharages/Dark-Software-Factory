@@ -640,7 +640,6 @@ export class FinancialMetricsService {
               status: true,
               started_at: true,
               completed_at: true,
-              retry_count: true,
             },
           });
 
@@ -660,11 +659,6 @@ export class FinancialMetricsService {
                 }, 0) / executions.length
               : 0;
 
-          // Calculate self-healing rate (executions with retry_count > 0)
-          const selfHealingCount = executions.filter((e) => (e.retry_count || 0) > 0).length;
-          const selfHealingRate =
-            executions.length > 0 ? (selfHealingCount / executions.length) * 100 : 0;
-
           const totalCost = parseFloat(agg._sum.cost_usd?.toString() || '0');
           const totalTokens = agg._sum.tokens_total || 0;
           const executionCount = agg._count;
@@ -679,7 +673,6 @@ export class FinancialMetricsService {
             costPer1kTokens:
               totalTokens > 0 ? ((totalCost / totalTokens) * 1000).toFixed(4) : '0.0000',
             avgExecutionTimeSec: Math.round(avgTime),
-            selfHealingRate: parseFloat(selfHealingRate.toFixed(1)),
           };
         }),
       );

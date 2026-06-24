@@ -125,7 +125,7 @@ export class QAFailureResolutionService {
       `This PR was opened via the DSF PM resolution workflow after QA retries were exhausted.\n\n` +
       `**Branch:** \`${execution.qa_failed_branch}\`\n` +
       `**Ticket:** ${ticket.clickup_task_id ?? ticket.id}\n\n` +
-      `> ⚠️ QA self-healing did not produce a passing build. Please review the code and failing tests before merging.`;
+      `> ⚠️ Automated QA retries did not produce a passing build. Please review the code and failing tests before merging.`;
 
     const targetBranch = project.default_branch || 'main';
     const installationId = project.gitHubAccount?.installationId ?? undefined;

@@ -80,8 +80,6 @@ describe('ExecutionTrackerService', () => {
             findByTicketId: jest.fn(),
             updateStatus: jest.fn(),
             update: jest.fn(),
-            incrementRetryAndRequeue: jest.fn(),
-            canRetry: jest.fn(),
             createAuditLog: jest.fn(),
             updateTicketStatus: jest.fn(),
             getActiveCountByProvider: jest.fn(),
@@ -350,10 +348,9 @@ describe('ExecutionTrackerService', () => {
       const result = await service.failExecution(failureData, 'corr-123');
 
       expect(result.newStatus).toBe(ExecutionStatus.FAILED);
-      expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
     });
 
-    it('should not retry if max retries exceeded', async () => {
+    it('should leave a failed execution in FAILED without requeueing', async () => {
       const inProgressExecution = {
         ...mockExecution,
         status: ExecutionStatus.IN_PROGRESS,
@@ -367,15 +364,15 @@ describe('ExecutionTrackerService', () => {
       repository.createAuditLog.mockResolvedValue();
       repository.updateTicketStatus.mockResolvedValue();
       publisher.publishToQueue.mockResolvedValue(true);
-      repository.canRetry.mockResolvedValue({
-        canRetry: false,
-        retryCount: 3,
-        maxRetries: 3,
-      });
 
-      await service.failExecution(failureData, 'corr-123');
+      const result = await service.failExecution(failureData, 'corr-123');
 
-      expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
+      expect(result.newStatus).toBe(ExecutionStatus.FAILED);
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'exec-123',
+        ExecutionStatus.FAILED,
+        expect.anything(),
+      );
     });
   });
 
@@ -494,7 +491,11 @@ describe('ExecutionTrackerService', () => {
 
       await service.qaFailExecution(qaFailureData, 'corr-123');
 
-      expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'exec-123',
+        ExecutionStatus.QA_FAILED,
+        expect.anything(),
+      );
     });
 
     it('should create audit log with action qa_failed', async () => {
@@ -544,7 +545,6 @@ describe('ExecutionTrackerService', () => {
       const result = await service.timeoutExecution(timeoutData, 'corr-123');
 
       expect(result.newStatus).toBe(ExecutionStatus.TIMEOUT);
-      expect(repository.incrementRetryAndRequeue).not.toHaveBeenCalled();
     });
 
     it('should track timeout duration in metrics', async () => {
@@ -560,11 +560,6 @@ describe('ExecutionTrackerService', () => {
       repository.createAuditLog.mockResolvedValue();
       repository.updateTicketStatus.mockResolvedValue();
       publisher.publishToQueue.mockResolvedValue(true);
-      repository.canRetry.mockResolvedValue({
-        canRetry: false,
-        retryCount: 3,
-        maxRetries: 3,
-      });
 
       await service.timeoutExecution(timeoutData, 'corr-123');
 

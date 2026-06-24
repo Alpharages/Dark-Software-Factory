@@ -148,7 +148,11 @@ until OHP-2 proves the dispatcher is the sole execution path; each deletion exit
   _AC:_ module gone; `app.module.ts` and queues cleaned; `pnpm check` green.
 - **OHP-3.2 — Remove `execution/` state machine + retry/self-healing entirely.**
   Delete the bespoke state machine, retry handler, self-healing orchestrator.
-  _AC:_ module gone; no references remain; `pnpm check` green.
+  _AC:_ bespoke runtime gone (`ai-execution.consumer`, `retry.consumer`, retry/self-healing
+  code); no references remain; `pnpm check` green. _Note:_ the `execution/` module is **retained
+  and repurposed** as the execution-record store (tracker, repository, gateway, log streaming,
+  activity persistence) that the OpenHarness runner writes to — only the bespoke state-machine
+  and retry/self-healing code was deleted, not the directory.
 - **OHP-3.3 — Replace bespoke `sandbox/`+`docker/` exec.**
   Remove custom execution plumbing; keep only the thin container wrapper around `oh`.
   _AC:_ only the OpenHarness container wrapper remains; old exec paths deleted.

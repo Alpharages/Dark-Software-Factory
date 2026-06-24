@@ -85,12 +85,6 @@ export class ModelMetricsDto {
     example: 125,
   })
   avgExecutionTimeSec!: number;
-
-  @ApiProperty({
-    description: 'Self-healing rate percentage',
-    example: 11.1,
-  })
-  selfHealingRate!: number;
 }
 
 /**
