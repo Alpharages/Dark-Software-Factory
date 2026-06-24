@@ -36,6 +36,9 @@ describe('OpenHarnessRunnerService', () => {
     };
 
     mockPrisma = {
+      ticket: {
+        findUnique: jest.fn().mockResolvedValue({ clickup_task_id: '86test123' }),
+      },
       execution: {
         update: jest.fn().mockResolvedValue(true),
       },
@@ -134,6 +137,16 @@ describe('OpenHarnessRunnerService', () => {
       ['a.ts'],
       true,
       'pnpm exec prettier --write',
+    );
+    expect(child_process.spawn).toHaveBeenCalledWith(
+      expect.stringContaining('scripts/oh-run-skill.sh'),
+      ['86test123', expect.stringContaining('exec-123.stream.json')],
+      expect.objectContaining({
+        env: expect.objectContaining({
+          OH_RUN_WORKFLOW: 'test-skill',
+          OH_RUN_STREAM_STDOUT: '1',
+        }),
+      }),
     );
   });
 

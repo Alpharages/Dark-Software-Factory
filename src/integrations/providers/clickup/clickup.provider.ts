@@ -267,8 +267,26 @@ export class ClickUpProvider implements IPMProvider {
         },
       }),
     );
-    const tasks: ClickUpTask[] = response.data.tasks || [];
-    return tasks.map((t) => this.mapTask(t));
+    const rawTasks: ClickUpTask[] = response.data.tasks || [];
+    // Deduplicate by task id before mapping. ClickUp's `/team/{id}/task` endpoint
+    // with `subtasks: true` can return the same task more than once (e.g. a task
+    // surfaced both directly and as a subtask of another updated task). Without
+    // this, each duplicate becomes a separate intake message and triggers a
+    // redundant dispatch for one status event (OHP-2.6 idempotency finding).
+    const seen = new Set<string>();
+    const tasks = rawTasks.filter((task) => {
+      if (seen.has(task.id)) return false;
+      seen.add(task.id);
+      return true;
+    });
+    return Promise.all(
+      tasks.map(async (task) => {
+        const normalized = this.mapTask(task);
+        if (normalized.description) return normalized;
+        const fullTask = await this.getTask(task.id);
+        return { ...normalized, description: fullTask.description };
+      }),
+    );
   }
 
   normalizeEvent(payload: unknown): IRawTaskEvent {

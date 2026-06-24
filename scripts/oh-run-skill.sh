@@ -120,6 +120,10 @@ done
 
 mv "$TEMP_OUTPUT" "$OUTPUT_PATH"
 
+if [[ "${OH_RUN_STREAM_STDOUT:-}" == "1" ]]; then
+  cat "$OUTPUT_PATH"
+fi
+
 oh mcp remove bmad >/dev/null 2>&1 || true
 oh mcp remove lore >/dev/null 2>&1 || true
 if [[ $SETTINGS_EXISTED -eq 1 ]]; then

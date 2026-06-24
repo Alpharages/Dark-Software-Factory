@@ -67,6 +67,21 @@ describe('OpenHarnessStreamParser', () => {
     expect(parser.getResult()).toMatchObject({ status: 'COMPLETED', summary: 'Blue and green.' });
   });
 
+  it('ignores empty assistant_complete events', () => {
+    parser.parseLine(JSON.stringify({ type: 'assistant_complete', text: '' }));
+
+    expect(parser.getResult()).toBeNull();
+  });
+
+  it('turns OpenHarness error events into failed results', () => {
+    parser.parseLine(JSON.stringify({ type: 'error', message: 'wrapper failed' }));
+
+    expect(parser.getResult()).toMatchObject({
+      status: 'FAILED',
+      error_message: 'wrapper failed',
+    });
+  });
+
   it('accumulates tools used from tool_started events', () => {
     parser.parseLine(JSON.stringify({ type: 'tool_started', tool_name: 'Bash' }));
     parser.parseLine(JSON.stringify({ type: 'tool_started', name: 'Read' }));
@@ -84,5 +99,49 @@ describe('OpenHarnessStreamParser', () => {
   it('should ignore non-JSON noise', () => {
     const result = parser.parseLine('some random noise line');
     expect(result).toBeNull();
+  });
+
+  // Claude Code runtime (scripts/claude-run-skill.sh) emits a `result` event with
+  // a different shape than oh: { subtype, is_error, result } and no `status`.
+  it('normalizes a successful Claude Code result event', () => {
+    parser.parseLine(
+      JSON.stringify({ type: 'result', subtype: 'success', is_error: false, result: 'All done.' }),
+    );
+
+    expect(parser.getResult()).toMatchObject({
+      status: 'COMPLETED',
+      summary: 'All done.',
+    });
+  });
+
+  it('normalizes a failed Claude Code result event (is_error true)', () => {
+    parser.parseLine(
+      JSON.stringify({
+        type: 'result',
+        subtype: 'error_max_turns',
+        is_error: true,
+      }),
+    );
+
+    expect(parser.getResult()).toMatchObject({
+      status: 'FAILED',
+      error_message: 'error_max_turns',
+    });
+  });
+
+  it('accumulates tool_use names from a Claude Code assistant event', () => {
+    parser.parseLine(
+      JSON.stringify({
+        type: 'assistant',
+        message: {
+          content: [
+            { type: 'text', text: 'Calling a tool' },
+            { type: 'tool_use', name: 'mcp__bmad__bmad', input: {} },
+          ],
+        },
+      }),
+    );
+
+    expect(parser.getToolsUsed()).toEqual(['mcp__bmad__bmad']);
   });
 });
