@@ -25,10 +25,10 @@ export class DecisionDashboardController {
   async submitDecision(
     @Param('ticketId') ticketId: string,
     @Body() decisionDto: DecisionDto,
-    @Req() req: { user: { sub: string; role?: string } },
+    @Req() req: { user: { id: string; role?: string } },
   ) {
     // Extract user ID and role from JWT
-    const userId = req.user?.sub || 'unknown';
+    const userId = req.user?.id || 'unknown';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userRole = (req.user as any)?.role || 'unknown';
     return this.decisionService.processDecision(ticketId, userId, userRole, decisionDto);
@@ -40,9 +40,9 @@ export class DecisionDashboardController {
   async overrideDecision(
     @Param('ticketId') ticketId: string,
     @Body() body: { reason: string },
-    @Req() req: { user: { sub: string; role?: string } },
+    @Req() req: { user: { id: string; role?: string } },
   ) {
-    const userId = req.user?.sub || 'unknown';
+    const userId = req.user?.id || 'unknown';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userRole = (req.user as any)?.role || 'MANAGER';
     return this.decisionService.processDecision(ticketId, userId, userRole, {

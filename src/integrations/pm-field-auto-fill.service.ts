@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
 import { ProjectIntegration } from '@prisma/client';
 import { PMProviderFactory } from './providers/pm-provider.factory';
 import { SentryService } from '@/common/sentry/sentry.service';
+import { SubscriptionCompletionService } from '@/common/ai/subscription-completion.service';
 import {
   NormalizedField,
   NormalizedFieldType,
@@ -40,20 +39,12 @@ export interface InferredFillResult {
 @Injectable()
 export class PMFieldAutoFillService {
   private readonly logger = new Logger(PMFieldAutoFillService.name);
-  private readonly anthropic: Anthropic | null;
 
   constructor(
     private readonly providerFactory: PMProviderFactory,
     private readonly sentry: SentryService,
-    private readonly configService: ConfigService,
-  ) {
-    const apiKey = this.configService.get<string>('anthropic.apiKey');
-    this.anthropic = apiKey ? new Anthropic({ apiKey }) : null;
-
-    if (!this.anthropic) {
-      this.logger.warn('CS2-3: Anthropic API key missing, AI inference will be disabled');
-    }
-  }
+    private readonly subscription: SubscriptionCompletionService,
+  ) {}
 
   /**
    * AC1: fillFactualFields logic.
@@ -162,10 +153,10 @@ export class PMFieldAutoFillService {
       return { filledFields: [], manualFields };
     }
 
-    // AC3: Fail-open if Anthropic not configured
-    if (!this.anthropic) {
+    // AC3: Fail-open if the Claude subscription CLI is unavailable
+    if (!(await this.subscription.isAvailable())) {
       this.logger.warn(
-        `[${correlationId}] CS2-3: AI inference skipped (API key missing) — marking ${estimatableFields.length} fields as manual`,
+        `[${correlationId}] CS2-3: AI inference skipped (claude CLI unavailable) — marking ${estimatableFields.length} fields as manual`,
       );
       return {
         filledFields: [],
@@ -180,31 +171,18 @@ export class PMFieldAutoFillService {
       );
 
       const prompt = this.buildInferencePrompt(estimatableFields, inferenceContext);
-      const model =
-        this.configService.get<string>('anthropic.commitMessageModel') ||
-        'claude-haiku-4-5-20251001';
 
-      // AC10: 10s timeout via Promise.race with clearTimeout cleanup
-      let timeoutId!: NodeJS.Timeout;
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('CS2-3: Claude inference timeout')), 10_000);
-      });
-
-      const claudeCallPromise = this.anthropic.messages.create({
-        model,
-        max_tokens: 500,
-        system:
-          'You are a project management assistant. Respond ONLY with a valid JSON object where keys are field IDs and values are inferred field values. Do not include any prose or markdown — only raw JSON.',
-        messages: [{ role: 'user', content: prompt }],
-      });
-
-      let response: Awaited<typeof claudeCallPromise>;
+      // AC10: 10s timeout enforced by the subscription helper itself.
+      let responseText: string;
       try {
-        response = await Promise.race([claudeCallPromise, timeoutPromise]);
-        clearTimeout(timeoutId);
-      } catch (raceError) {
-        clearTimeout(timeoutId);
-        if ((raceError as Error).message === 'CS2-3: Claude inference timeout') {
+        responseText = await this.subscription.complete(prompt, {
+          system:
+            'You are a project management assistant. Respond ONLY with a valid JSON object where keys are field IDs and values are inferred field values. Do not include any prose or markdown — only raw JSON.',
+          timeoutMs: 10_000,
+        });
+      } catch (callError) {
+        // AC13: a timeout is an expected, benign outcome — fail open quietly.
+        if ((callError as Error).message.includes('timed out')) {
           this.logger.warn(
             `[${correlationId}] CS2-3: Claude inference timed out (10s) for task ${taskId} — all fields to manualFields`,
           );
@@ -214,18 +192,14 @@ export class PMFieldAutoFillService {
             inferFailed: true,
           };
         }
-        throw raceError;
-      }
-
-      const content = response.content[0];
-      if (content.type !== 'text') {
-        throw new Error('AI Inference returned unexpected content type');
+        // AC16: other call failures bubble to the outer fail-open handler (Sentry capture).
+        throw callError;
       }
 
       // AC14: Parse JSON response
       let inferredValues: Record<string, unknown>;
       try {
-        const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error('No JSON found in response');
         inferredValues = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
       } catch (parseError) {

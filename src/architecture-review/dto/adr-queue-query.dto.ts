@@ -28,12 +28,16 @@ export class AdrReviewQueueQueryDto {
   max_confidence?: number;
 
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.toLowerCase() : value))
   @IsEnum(['risk_level', 'created_at', 'confidence'], {
     message: 'sort_by must be one of: risk_level, created_at, confidence',
   })
   sort_by?: 'risk_level' | 'created_at' | 'confidence' = 'risk_level';
 
+  // Accept case-insensitive sort order (FE sends lowercase); the service lowercases
+  // internally anyway, so normalize to uppercase here to satisfy the enum.
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))
   @IsEnum(['ASC', 'DESC'], { message: 'sort_order must be ASC or DESC' })
   sort_order?: 'ASC' | 'DESC' = 'DESC';
 }

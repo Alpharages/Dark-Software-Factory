@@ -2,15 +2,14 @@
  * GitHub PR Orchestrator Service
  *
  * Story 4.4: Pull Request Creation & Metadata
- * Generates PR title/description via Anthropic SDK, then creates the PR
- * directly via GitHub REST API (Octokit) — not via AI CLI in container.
+ * Generates PR title/description via the Claude subscription, then creates the
+ * PR directly via GitHub REST API (Octokit) — not via AI CLI in container.
  *
- * Flow: Anthropic SDK → generate title/body → GitHubService.createPullRequest (Octokit)
+ * Flow: SubscriptionCompletionService → generate title/body → GitHubService.createPullRequest (Octokit)
  */
 
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+import { SubscriptionCompletionService } from '@/common/ai/subscription-completion.service';
 import { PrismaService } from '@/database/prisma.service';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
@@ -25,8 +24,6 @@ import { GitHubService } from '../github.service';
 
 @Injectable()
 export class GitHubPROrchestrator {
-  private readonly anthropic: Anthropic | null = null;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly rabbitMQ: RabbitMQService,
@@ -38,13 +35,8 @@ export class GitHubPROrchestrator {
     private readonly autoMergeService: PRAutoMergeService,
     private readonly reminderService: PRReminderService,
     private readonly githubService: GitHubService,
-    private readonly config: ConfigService,
-  ) {
-    const apiKey = this.config.get<string>('anthropic.apiKey');
-    if (apiKey) {
-      this.anthropic = new Anthropic({ apiKey });
-    }
-  }
+    private readonly subscription: SubscriptionCompletionService,
+  ) {}
 
   /**
    * Orchestrates PR creation.
@@ -81,13 +73,13 @@ export class GitHubPROrchestrator {
         throw new Error(`GitHub push record not found for execution ${executionId}`);
       }
 
-      this.logger.log('Generating PR title/description via Anthropic SDK', {
+      this.logger.log('Generating PR title/description via Claude subscription', {
         executionId,
         repository: githubPush.repository,
         branch: githubPush.branch_name,
       });
 
-      // Step 1: Generate PR title and description using Anthropic SDK directly
+      // Step 1: Generate PR title and description via the Claude subscription
       // (not via container provider — containers lack `gh` CLI auth)
       const { prTitle, prBody } = await this.generatePRTitleAndBody({
         ticketId: execution.ticket.clickup_task_id,
@@ -286,8 +278,8 @@ export class GitHubPROrchestrator {
   }
 
   /**
-   * Generate PR title and description via Anthropic SDK.
-   * Falls back to a template if the SDK is unavailable or the response is unparseable.
+   * Generate PR title and description via the Claude subscription.
+   * Falls back to a template if the CLI is unavailable or the response is unparseable.
    */
   private async generatePRTitleAndBody(context: {
     ticketId: string;
@@ -303,8 +295,8 @@ export class GitHubPROrchestrator {
       prBody: `## Ticket\n\nClickUp: ${ticketId}\n\n## Changes\n\n_AI-generated code changes for: ${ticketTitle}_\n\n## Branch\n\n\`${branchName}\` → \`${baseBranch}\``,
     };
 
-    if (!this.anthropic) {
-      this.logger.warn('Anthropic SDK not configured — using fallback PR title/body');
+    if (!(await this.subscription.isAvailable())) {
+      this.logger.warn('Claude subscription not available — using fallback PR title/body');
       return fallback;
     }
 
@@ -323,13 +315,7 @@ Requirements:
 Return ONLY valid JSON with no other text:
 {"prTitle": "<title>", "prBody": "<markdown body>"}`;
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }],
-      });
-
-      const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
+      const text = (await this.subscription.complete(prompt)).trim();
 
       // Extract JSON from response
       const jsonMatch = text.match(/\{[\s\S]*"prTitle"[\s\S]*"prBody"[\s\S]*\}/);

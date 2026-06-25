@@ -15,9 +15,16 @@ import { PMFieldAutoFillService } from './pm-field-auto-fill.service';
 import { PMVerificationCommentService } from './pm-verification-comment.service';
 import { PMActionableFailureCommentService } from './pm-actionable-failure-comment.service';
 import { PMExecutionStatusService } from './pm-execution-status.service';
+import { SubscriptionCompletionModule } from '@/common/ai/subscription-completion.module';
 
 @Module({
-  imports: [forwardRef(() => ClickUpModule), DatabaseModule, EncryptionModule, SentryModule],
+  imports: [
+    forwardRef(() => ClickUpModule),
+    DatabaseModule,
+    EncryptionModule,
+    SentryModule,
+    SubscriptionCompletionModule,
+  ],
   controllers: [IntegrationsController, ClickUpOAuthController],
   providers: [
     ProjectIntegrationService,

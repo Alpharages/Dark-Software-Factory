@@ -3,12 +3,12 @@
  * Story 4.4: Pull Request Creation & Metadata
  * AC#1, #3, #4, #5, #6: Full PR orchestration flow
  *
- * PR creation now uses Anthropic SDK for title/body generation and
+ * PR creation now uses the Claude subscription for title/body generation and
  * GitHubService (Octokit) for the actual API call — no container CLI.
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
+import { SubscriptionCompletionService } from '@/common/ai/subscription-completion.service';
 import { GitHubPROrchestrator } from './github-pr-orchestrator.service';
 import { GitHubService } from '../github.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -89,9 +89,12 @@ describe('GitHubPROrchestrator', () => {
       providers: [
         GitHubPROrchestrator,
         {
-          provide: ConfigService,
-          // No Anthropic API key → fallback title/body used in tests
-          useValue: { get: jest.fn().mockReturnValue(undefined) },
+          provide: SubscriptionCompletionService,
+          // Claude subscription unavailable → fallback title/body used in tests
+          useValue: {
+            isAvailable: jest.fn().mockResolvedValue(false),
+            complete: jest.fn(),
+          },
         },
         {
           provide: GitHubService,

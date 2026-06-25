@@ -22,10 +22,10 @@ export class PmDashboardController {
   @ApiOperation({ summary: 'Search tickets across projects' })
   @ApiResponse({ status: 200, description: 'Return matching tickets' })
   async searchTickets(
-    @Request() req: { user: { sub: string; role: UserRole } },
+    @Request() req: { user: { id: string; role: UserRole } },
     @Query() query: TicketSearchQueryDto,
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     const role = req.user.role;
     this.metricsService.incrementCounter('pm_dashboard_api_calls_total', {
       endpoint: 'search',
@@ -39,10 +39,10 @@ export class PmDashboardController {
   @ApiOperation({ summary: 'Get all projects for the PM dashboard' })
   @ApiResponse({ status: 200, description: 'Return projects with ticket counts' })
   async getProjects(
-    @Request() req: { user: { sub: string; role: UserRole } },
+    @Request() req: { user: { id: string; role: UserRole } },
     @Query() query: ProjectQueryDto,
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     const role = req.user.role;
     this.metricsService.incrementCounter('pm_dashboard_api_calls_total', {
       endpoint: 'projects',
@@ -55,8 +55,8 @@ export class PmDashboardController {
   @Roles('PM', 'MANAGER', 'ADMIN')
   @ApiOperation({ summary: 'Get aggregate stats for PM dashboard' })
   @ApiResponse({ status: 200, description: 'Return dashboard summary statistics' })
-  async getSummary(@Request() req: { user: { sub: string; role: UserRole } }) {
-    const userId = req.user.sub;
+  async getSummary(@Request() req: { user: { id: string; role: UserRole } }) {
+    const userId = req.user.id;
     const role = req.user.role;
     this.metricsService.incrementCounter('pm_dashboard_api_calls_total', {
       endpoint: 'summary',
@@ -74,8 +74,8 @@ export class PmDashboardController {
     type: FinancialSummaryDto,
   })
   @ApiResponse({ status: 403, description: 'Forbidden – MANAGER or ADMIN role required' })
-  async getFinancialSummary(@Request() req: { user: { sub: string; role: UserRole } }) {
-    const userId = req.user.sub;
+  async getFinancialSummary(@Request() req: { user: { id: string; role: UserRole } }) {
+    const userId = req.user.id;
     const role = req.user.role;
     this.metricsService.incrementCounter('pm_dashboard_api_calls_total', {
       endpoint: 'financial-summary',

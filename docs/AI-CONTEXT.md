@@ -59,3 +59,18 @@ OHP-2.6 fixed three dispatch-path defects (all with tests): no workspace isolati
 (provider didn't dedupe by task id + non-atomic dispatch guard), and cross-leg diff loss. The
 earlier `86ey21q2a` attempt (`ohp-2.6-86ey21q2a.report.md`) is superseded — it was blocked on the
 `oh`/Codex network/usage path, not DSF code.
+
+## Removed env var: `ANTHROPIC_API_KEY` (QA F8, 2026-06-26) — do NOT re-add
+
+DSF has **zero pay-per-token Anthropic usage**. `ANTHROPIC_API_KEY` (and the `@anthropic-ai/sdk`
+dependency) were removed. The three former direct-API consumers — PM field auto-fill
+(`integrations/pm-field-auto-fill.service.ts`), PR title/body generation
+(`github/services/github-pr-orchestrator.service.ts`), and file-conflict prediction
+(`file-locks/file-prediction.provider.ts`) — now go through `SubscriptionCompletionService`
+(`common/ai/subscription-completion.service.ts`), a one-shot `claude -p … --output-format json
+--max-turns 1` helper that runs on the **Claude subscription** (CLI auth, plan limits), the same
+zero-marginal-cost path as the agent runtime. It unsets `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`
+for the child. Consumers gate on `subscription.isAvailable()` and fail open to their existing
+heuristic/fallback behaviour. Config moved from `anthropic.apiKey`/`model`/`maxTokens` to
+`anthropic.subscriptionModel`/`subscriptionCliPath`/`subscriptionTimeoutMs`. If a new feature needs
+an LLM call, use `SubscriptionCompletionService` — never `new Anthropic()` / an API key.

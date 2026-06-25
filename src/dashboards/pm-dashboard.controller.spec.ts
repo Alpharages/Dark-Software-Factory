@@ -47,8 +47,8 @@ describe('PmDashboardController', () => {
   });
 
   describe('getProjects', () => {
-    it('should call service.getProjects with user sub and role', async () => {
-      const mockReq = { user: { sub: 'pm-123', role: 'PM' as UserRole } };
+    it('should call service.getProjects with user id and role', async () => {
+      const mockReq = { user: { id: 'pm-123', role: 'PM' as UserRole } };
       const mockQuery = { page: 1, limit: 10 } as ProjectQueryDto;
 
       await controller.getProjects(mockReq, mockQuery);
@@ -57,7 +57,7 @@ describe('PmDashboardController', () => {
     });
 
     it('should return projects for PM', async () => {
-      const req = { user: { sub: 'pm-123', role: 'PM' as UserRole } };
+      const req = { user: { id: 'pm-123', role: 'PM' as UserRole } };
       mockPmDashboardService.getProjects.mockResolvedValue({ data: [], pagination: {} });
 
       const result = await controller.getProjects(req, {} as ProjectQueryDto);
@@ -66,8 +66,8 @@ describe('PmDashboardController', () => {
   });
 
   describe('getSummary', () => {
-    it('should call service.getSummary with user sub and role', async () => {
-      const mockReq = { user: { sub: 'pm-123', role: 'PM' as UserRole } };
+    it('should call service.getSummary with user id and role', async () => {
+      const mockReq = { user: { id: 'pm-123', role: 'PM' as UserRole } };
 
       await controller.getSummary(mockReq);
 
@@ -75,7 +75,7 @@ describe('PmDashboardController', () => {
     });
 
     it('should return summary for PM', async () => {
-      const req = { user: { sub: 'pm-123', role: 'PM' as UserRole } };
+      const req = { user: { id: 'pm-123', role: 'PM' as UserRole } };
       mockPmDashboardService.getSummary.mockResolvedValue({});
 
       const result = await controller.getSummary(req);
@@ -84,8 +84,8 @@ describe('PmDashboardController', () => {
   });
 
   describe('getFinancialSummary', () => {
-    it('should call service.getFinancialSummary with user sub and role', async () => {
-      const mockReq = { user: { sub: 'manager-123', role: 'MANAGER' as UserRole } };
+    it('should call service.getFinancialSummary with user id and role', async () => {
+      const mockReq = { user: { id: 'manager-123', role: 'MANAGER' as UserRole } };
 
       await controller.getFinancialSummary(mockReq);
 
@@ -96,7 +96,7 @@ describe('PmDashboardController', () => {
     });
 
     it('should return financial summary payload', async () => {
-      const req = { user: { sub: 'admin-123', role: 'ADMIN' as UserRole } };
+      const req = { user: { id: 'admin-123', role: 'ADMIN' as UserRole } };
       const payload = {
         cost_per_ticket: 42.5,
         daily_budget_burn: Array(14).fill(0),
