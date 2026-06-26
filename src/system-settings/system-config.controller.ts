@@ -43,7 +43,7 @@ export class SystemConfigController {
   @ApiResponse({ status: 201, description: 'Configuration created/updated' })
   async createConfig(@Body() createConfigDto: CreateSystemConfigDto, @Req() req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (req as any).user?.sub;
+    const userId = (req as any).user?.id;
     return this.systemConfigService.set(
       createConfigDto.key,
       createConfigDto.value,
@@ -63,7 +63,7 @@ export class SystemConfigController {
     @Req() req: Request,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (req as any).user?.sub;
+    const userId = (req as any).user?.id;
     return this.systemConfigService.set(
       key,
       updateConfigDto.value,
@@ -79,7 +79,7 @@ export class SystemConfigController {
   @ApiResponse({ status: 200, description: 'Configurations reset' })
   async resetConfigPost(@Body() body: { keys?: string[] }, @Req() req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (req as any).user?.sub;
+    const userId = (req as any).user?.id;
     if (body.keys && body.keys.length > 0) {
       await Promise.all(body.keys.map((key) => this.systemConfigService.reset(key, userId)));
       return { success: true, message: `Configurations ${body.keys.join(', ')} reset to defaults` };
@@ -95,7 +95,7 @@ export class SystemConfigController {
   @ApiResponse({ status: 200, description: 'Configuration reset' })
   async resetConfig(@Param('key') key: string, @Req() req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (req as any).user?.sub;
+    const userId = (req as any).user?.id;
     await this.systemConfigService.reset(key, userId);
     return { success: true, message: `Configuration ${key} reset to defaults (env)` };
   }

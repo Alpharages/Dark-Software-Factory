@@ -25,13 +25,21 @@ genuinely reusable signal, not on every run. The OHP-1.2 validation change (a tr
 had none, so zero Lore writes is the correct outcome, not a gap; AC3 ("lessons saved to Lore")
 means saved-when-warranted.
 
-**OHP-2.6 validation: PASSED (2026-06-25).** Epic OHP-2 (status-driven dispatcher + loop +
-approval gate) is validated end-to-end. Independent validation ticket `86ey22p7b`; evidence report
-`docs/openharness/runs/ohp-2.6-86ey22p7b.report.md` with retained per-leg stream logs
-(`ohp-2.6-86ey22p7b.green-{implement,review,qa}.stream.json` for the green run; the Run-A
-`{implement,review1,reimplement,review2,qa}` set captures a real rejection loop-back). The full
-loop ran hands-off: `to do → ready for review → ready for qa → Closed`, with QA PASSED, plus a
-genuine `changes_requested → re-implement → approved` loop-back in the prior pass.
+**Epic OHP-1 closed (✅ Done, QA-verified 2026-06-25).** All five stories (MCP wiring, headless
+skill run, per-ticket runner, stream→realtime adapter, local MVP `POST /api/v1/executions/test`)
+are implemented and exercised end-to-end by the OHP-2 dispatcher loop. QA gate green: typecheck,
+lint, `nest build`, full Jest suite (170 suites / 1726 tests). ClickUp epic `86ey07087` (+ all 5
+subtasks) Closed; durable record is the OHP-1 Outcome block in `docs/epics.md`.
+
+**OHP-2.6 validation: PASSED (2026-06-25). Epic OHP-2 closed (✅ Done).** Epic OHP-2
+(status-driven dispatcher + loop + approval gate) is validated end-to-end on independent throwaway
+ticket `86ey22p7b`. The full loop ran hands-off: `to do → ready for review → ready for qa →
+Closed`, with QA PASSED, plus a genuine `changes_requested → re-implement → approved` loop-back in
+the prior pass (Run A). The per-leg `oh`/Claude stream logs and report were **not** retained in-repo
+(intentionally removed, like the OHP-1.2 artifacts); the durable record is the live ClickUp trail on
+`86ey22p7b` plus the OHP-2 Outcome block in `docs/epics.md`. _Residual:_ AC3's manual approval hold
+was not exercised in the live run (auto-approve was on) — the gate logic is covered by unit tests
+(`approval-gate.service.spec.ts`, `approval-gate.controller.spec.ts`).
 
 Two things future agents must know:
 
@@ -51,3 +59,18 @@ OHP-2.6 fixed three dispatch-path defects (all with tests): no workspace isolati
 (provider didn't dedupe by task id + non-atomic dispatch guard), and cross-leg diff loss. The
 earlier `86ey21q2a` attempt (`ohp-2.6-86ey21q2a.report.md`) is superseded — it was blocked on the
 `oh`/Codex network/usage path, not DSF code.
+
+## Removed env var: `ANTHROPIC_API_KEY` (QA F8, 2026-06-26) — do NOT re-add
+
+DSF has **zero pay-per-token Anthropic usage**. `ANTHROPIC_API_KEY` (and the `@anthropic-ai/sdk`
+dependency) were removed. The three former direct-API consumers — PM field auto-fill
+(`integrations/pm-field-auto-fill.service.ts`), PR title/body generation
+(`github/services/github-pr-orchestrator.service.ts`), and file-conflict prediction
+(`file-locks/file-prediction.provider.ts`) — now go through `SubscriptionCompletionService`
+(`common/ai/subscription-completion.service.ts`), a one-shot `claude -p … --output-format json
+--max-turns 1` helper that runs on the **Claude subscription** (CLI auth, plan limits), the same
+zero-marginal-cost path as the agent runtime. It unsets `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`
+for the child. Consumers gate on `subscription.isAvailable()` and fail open to their existing
+heuristic/fallback behaviour. Config moved from `anthropic.apiKey`/`model`/`maxTokens` to
+`anthropic.subscriptionModel`/`subscriptionCliPath`/`subscriptionTimeoutMs`. If a new feature needs
+an LLM call, use `SubscriptionCompletionService` — never `new Anthropic()` / an API key.

@@ -1,62 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
 import {
   PredictFileModificationsInput,
   PredictFileModificationsResult,
 } from './interfaces/file-prediction.interface';
 import { MetricsService } from '@/common/metrics/metrics.service';
+import { SubscriptionCompletionService } from '@/common/ai/subscription-completion.service';
 
 /**
  * Thin AI delegation wrapper for file modification prediction (AC#1).
  *
- * Implementation will delegate to an AI provider and return strict JSON.
+ * Delegates to the Claude subscription (SubscriptionCompletionService) and
+ * returns strict JSON; falls back to a keyword heuristic when AI is
+ * unavailable or fails.
  */
 @Injectable()
 export class FilePredictionProvider {
   private readonly logger = new Logger(FilePredictionProvider.name);
-  private client: Anthropic | null = null;
-  private model: string;
-  private maxTokens: number;
 
   constructor(
-    private readonly config: ConfigService,
     private readonly metrics: MetricsService,
-  ) {
-    this.model = this.config.get<string>('anthropic.model') || 'claude-sonnet-4-20250514';
-    this.maxTokens = this.config.get<number>('anthropic.maxTokens') || 1200;
-
-    const apiKey = this.config.get<string>('anthropic.apiKey');
-    if (apiKey) {
-      this.client = new Anthropic({ apiKey });
-    }
-  }
+    private readonly subscription: SubscriptionCompletionService,
+  ) {}
 
   async predict(input: PredictFileModificationsInput): Promise<PredictFileModificationsResult> {
-    // Fallback path (dev/test environments often won't have ANTHROPIC_API_KEY)
-    if (!this.client) {
+    // Fallback path (environments without the first-party `claude` CLI available)
+    if (!(await this.subscription.isAvailable())) {
       this.safeIncrementCounter('file_prediction_ai_failures_total', { reason: 'not_configured' });
-      return this.heuristicFallback(
-        input,
-        'AI provider not configured (missing ANTHROPIC_API_KEY).',
-      );
+      return this.heuristicFallback(input, 'AI provider not configured (claude CLI unavailable).');
     }
 
     const prompt = this.buildPrompt(input);
 
     try {
-      const message = await this.client.messages.create({
-        model: this.model,
-        max_tokens: this.maxTokens,
-        temperature: 0.2,
-        messages: [{ role: 'user', content: prompt }],
-      });
-
-      const text = message.content
-        .map((b) => (b.type === 'text' ? b.text : ''))
-        .filter(Boolean)
-        .join('\n')
-        .trim();
+      const text = (await this.subscription.complete(prompt)).trim();
 
       const parsed = this.parseStrictJson(text);
       return {

@@ -181,17 +181,17 @@ export const envValidationSchema = Joi.object({
   OPENHARNESS_MCP_CONFIG_PATH: Joi.string().default('./openharness/mcp-config.json'),
   MCP_CONFIG_PATH: Joi.string().optional().allow(''),
 
-  // Story 2.7: Anthropic API Configuration (optional - provider disabled if not set)
-  ANTHROPIC_MODEL: Joi.string().default('claude-sonnet-4-20250514'),
-  ANTHROPIC_COMMIT_MESSAGE_MODEL: Joi.string()
-    .default('claude-3-haiku-20240307')
-    .description('Model for commit message generation (default: Haiku 3.5)'),
-  ANTHROPIC_BASE_URL: Joi.string()
-    .uri()
-    .allow('')
+  // QA F8: Claude subscription completion (replaces the removed pay-per-token
+  // Anthropic API path; ANTHROPIC_API_KEY is no longer used). All optional.
+  ANTHROPIC_SUBSCRIPTION_MODEL: Joi.string()
     .optional()
-    .description('Anthropic API base URL override (e.g., for local proxies or LiteLLM)'),
-  ANTHROPIC_MAX_TOKENS: Joi.number().min(1000).max(100000).default(8000),
+    .allow('')
+    .description('Model alias/id for subscription completions (default: sonnet)'),
+  CLAUDE_CLI_PATH: Joi.string()
+    .optional()
+    .allow('')
+    .description('Path to the first-party Claude Code CLI (default: claude)'),
+  ANTHROPIC_SUBSCRIPTION_TIMEOUT_MS: Joi.number().min(1000).max(120000).default(30000),
   // Story 2.11: Quality Scoring Configuration (optional - has sensible defaults)
   QUALITY_SCORE_THRESHOLD_EXCELLENT: Joi.number().integer().min(0).max(100).default(90),
   QUALITY_SCORE_THRESHOLD_GOOD: Joi.number().integer().min(0).max(100).default(70),

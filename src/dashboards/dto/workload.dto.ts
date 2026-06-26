@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsInt, Min, Max, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class UpdateMaxTicketsDto {
@@ -24,6 +25,7 @@ export class HistoricalTrendsQueryDto {
     maximum: 365,
   })
   @IsOptional()
+  @Type(() => Number) // Coerce the `days` query-string (e.g. "30") to a number before @IsInt runs
   @IsInt()
   @Min(1)
   @Max(365)

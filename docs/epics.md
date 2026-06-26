@@ -34,8 +34,8 @@ already are the state machine.
 | Epic  | Name                                                       | Phase | Status   | Depends on |
 | ----- | ---------------------------------------------------------- | ----- | -------- | ---------- |
 | OHP-0 | Pivot Validation Spike                                     | 0     | ✅ Done  | —          |
-| OHP-1 | OpenHarness Engine + BMAD/Lore Integration (single-tenant) | 1     | Proposed | OHP-0      |
-| OHP-2 | Status-Driven Dispatcher + Loop + Approval Gate            | 2     | Proposed | OHP-1      |
+| OHP-1 | OpenHarness Engine + BMAD/Lore Integration (single-tenant) | 1     | ✅ Done  | OHP-0      |
+| OHP-2 | Status-Driven Dispatcher + Loop + Approval Gate            | 2     | ✅ Done  | OHP-1      |
 | OHP-3 | Decommission Bespoke DSF Runtime                           | 3     | Proposed | OHP-2      |
 | OHP-4 | Multi-Tenant Control Plane + Productionize                 | 4     | Proposed | OHP-2      |
 
@@ -62,13 +62,31 @@ headlessly on a subscription and produce near-mergeable work that streams to a d
 
 ---
 
-## Epic OHP-1 — OpenHarness Engine + BMAD/Lore Integration (single-tenant)
+## Epic OHP-1 — OpenHarness Engine + BMAD/Lore Integration (single-tenant) ✅ Done
 
 **Goal:** Run the _real_ workflow (a BMAD skill), not a raw prompt, through OpenHarness on
 one real ticket from your own ClickUp — and capture/stream the result into DSF.
 
 **Depends on:** OHP-0. **Scope:** single-tenant (your ClickUp token), local MVP, no RabbitMQ
 required yet.
+
+**Outcome (verified 2026-06-25):** All five stories landed and are exercised end-to-end by the
+downstream OHP-2 dispatcher loop, which runs entirely on this epic's runner + stream adapter +
+Execution persistence. QA gate green: `pnpm typecheck`, `pnpm lint`, `nest build`, and the full
+Jest suite (170 suites / 1726 tests) all pass; the OpenHarness module alone covers 6 suites / 50
+tests. Code surfaces: MCP wiring (`openharness/mcp-config.json` → bmad + lore + gitnexus,
+`scripts/oh-mcp-smoke.sh`, `docs/openharness/mcp-setup.md`); headless skill run wrappers
+(`scripts/oh-run-skill.sh`, `scripts/claude-run-skill.sh`); per-ticket runner
+(`openharness/openharness-runner.service.ts` + `openharness-stream.parser.ts` → persists an
+`Execution` row with status/files/tools/summary, failures recorded with terminal status);
+stream→realtime adapter (`openharness/stream/openharness-stream.adapter.ts` maps
+`tool_started`/`assistant_delta`/`assistant_complete` → `execution-activity`/`execution.log`);
+and the local MVP entry point (`POST /api/v1/executions/test`,
+`openharness/openharness-execution.controller.ts`, config-driven run profile in
+`config/configuration.ts`). _Note:_ the OHP-1.2 per-leg `oh`/Claude stream logs were intentionally
+not retained in-repo (same convention as OHP-2.6); the durable record is the live ClickUp trail and
+this Outcome block. Lore lesson-saving is AI-discretionary — zero writes on a no-signal run is the
+correct outcome, not a gap (see `docs/AI-CONTEXT.md`).
 
 ### Stories
 
@@ -97,38 +115,58 @@ required yet.
 
 ---
 
-## Epic OHP-2 — Status-Driven Dispatcher + Loop + Approval Gate
+## Epic OHP-2 — Status-Driven Dispatcher + Loop + Approval Gate ✅ Done
 
 **Goal:** Automate the implement→review→QA loop you run manually today, driven entirely by
 ClickUp status — with a human gate before merge.
 
 **Depends on:** OHP-1.
 
+**Outcome (validated 2026-06-25):** The full status-driven loop ran hands-off end-to-end on an
+independent throwaway ticket (`86ey22p7b`): `to do → ready for review → ready for qa → Closed`,
+QA PASSED, plus a genuine `changes_requested → re-implement → approved` loop-back in the prior
+pass. Validation surfaced and fixed three real dispatch defects (no workspace isolation,
+double-dispatch, cross-leg diff loss), each with tests. QA gate green: typecheck, lint, `nest
+build`, and full Jest suite (170 suites / 1726 tests) all pass. The per-leg run artifacts were not
+retained in-repo; the durable record is the live ClickUp trail on `86ey22p7b`. _Residual:_ AC3's
+manual approval
+hold was not exercised in the live run (auto-approve was on); the gate logic is covered by unit
+tests (`approval-gate.service.spec.ts`, `approval-gate.controller.spec.ts`) — refuses merge
+without a recorded decision, atomic single-merge claim, fails closed on missing decider.
+
 ### Stories
 
 - **OHP-2.1 — Status→skill mapping/config.**
   Declarative map of which ClickUp status triggers which BMAD skill.
-  _AC:_ config-driven; no hardcoded status names in logic.
+  _AC:_ config-driven; no hardcoded status names in logic. — _done_ (`config/status-skill-map.config.ts`,
+  `openharness/status-skill-map.service.ts`; `STATUS_SKILL_MAP` env override, normalized lookups).
 - **OHP-2.2 — Dispatcher service.**
   React to ClickUp status changes (via existing multi-tenant webhooks) → spawn the matching
   skill run through the OHP-1 runner.
   _AC:_ a status change to the trigger status starts `clickup-dev-implement`; `in review`
-  starts `clickup-code-review`; `ready for qa` starts `clickup-qa`.
+  starts `clickup-code-review`; `ready for qa` starts `clickup-qa`. — _done_ (`dispatcher/dispatcher.service.ts`
+  → `OpenHarnessRunnerService.runForTicket`).
 - **OHP-2.3 — Loop handling.**
   `changes_requested`/`failed` → re-dispatch `clickup-dev-implement`; `approved` → QA;
   `passed` → done.
-  _AC:_ a rejected review loops back to implement automatically; idempotent (no double-runs).
+  _AC:_ a rejected review loops back to implement automatically; idempotent (no double-runs). — _done_
+  (loop-cap `LOOP_MAX_ITERATIONS`, in-flight per-ticket lock, active-execution check).
 - **OHP-2.4 — Human review/approval gate.**
   No blind auto-merge — an explicit approval step before the PR merges. UI + backend.
-  _AC:_ a run cannot merge without recorded approval; the gate is visible in the dashboard.
+  _AC:_ a run cannot merge without recorded approval; the gate is visible in the dashboard. — _done_
+  (`approval-gate/`: `openGate`/`recordDecision`/`approve`/`loopBack`, atomic gate claim, role-gated
+  API, `ApprovalRecord` audit trail; emits `execution.approval-required`).
 - **OHP-2.5 — Run guardrails.**
   Format only the agent's own files; wire any repo-mandated MCP tools (e.g. GitNexus);
   enforce `max-turns`/timeouts.
-  _AC:_ a run never reformats unrelated files; mandated tools available or the run flags it.
+  _AC:_ a run never reformats unrelated files; mandated tools available or the run flags it. — _done_
+  (`openharness/run-guardrails.service.ts`: format-own-files allowlist + traversal guard; mandated-MCP
+  warn/fail mode; `OPENHARNESS_MAX_TURNS`/`OPENHARNESS_RUN_TIMEOUT_MS`).
 - **OHP-2.6 — End-to-end loop validation.**
   One real ticket flows intake → implement → review → (loop) → QA → approved, hands-off
   except the gate.
-  _AC:_ documented passing run with the full status trail in ClickUp.
+  _AC:_ documented passing run with the full status trail in ClickUp. — _done_ (see Outcome above;
+  durable record is the live ClickUp trail on `86ey22p7b`).
 
 ---
 

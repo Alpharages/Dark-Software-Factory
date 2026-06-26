@@ -88,7 +88,7 @@ export class ConversationsController {
     )
     file: Express.Multer.File,
     @Body() dto: CreateConversationDto,
-    @CurrentUser() user: { sub: string },
+    @CurrentUser() user: { id: string },
   ): Promise<ConversationResponseDto> {
     if (!file) throw new BadRequestException('Audio file is required');
 
@@ -106,7 +106,7 @@ export class ConversationsController {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     await fs.writeFile(filePath, file.buffer);
 
-    return this.conversationsService.createConversation(dto, user.sub, filePath);
+    return this.conversationsService.createConversation(dto, user.id, filePath);
   }
 
   /**
@@ -120,9 +120,9 @@ export class ConversationsController {
   @ApiResponse({ status: 201 })
   async createConversation(
     @Body() dto: CreateConversationDto,
-    @CurrentUser() user: { sub: string },
+    @CurrentUser() user: { id: string },
   ): Promise<ConversationResponseDto> {
-    return this.conversationsService.createConversation(dto, user.sub);
+    return this.conversationsService.createConversation(dto, user.id);
   }
 
   /**

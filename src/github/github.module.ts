@@ -36,10 +36,12 @@ import { EncryptionModule } from '../common/encryption/encryption.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { RealtimeModule } from '@/realtime/realtime.module';
 import { ApprovalGateModule } from '@/approval-gate/approval-gate.module';
+import { SubscriptionCompletionModule } from '@/common/ai/subscription-completion.module';
 
 @Module({
   imports: [
     ConfigModule,
+    SubscriptionCompletionModule,
     DatabaseModule,
     AuditLogModule,
     AppMetricsModule,

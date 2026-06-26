@@ -5,9 +5,9 @@ import {
   ExecutionContext,
   InferenceContext,
 } from './pm-field-auto-fill.service';
-import { ConfigService } from '@nestjs/config';
 import { PMProviderFactory } from './providers/pm-provider.factory';
 import { SentryService } from '@/common/sentry/sentry.service';
+import { SubscriptionCompletionService } from '@/common/ai/subscription-completion.service';
 import { IPMProvider } from './providers/pm-provider.interface';
 import { NormalizedField, NormalizedFieldType } from './providers/dto/normalized-field.dto';
 import { ProjectIntegration, PMProvider } from '@prisma/client';
@@ -17,8 +17,7 @@ describe('PMFieldAutoFillService', () => {
   let providerFactory: jest.Mocked<PMProviderFactory>;
   let provider: jest.Mocked<IPMProvider>;
   let sentry: jest.Mocked<SentryService>;
-  let configService: jest.Mocked<ConfigService>;
-  let mockAnthropic: any;
+  let subscription: jest.Mocked<SubscriptionCompletionService>;
 
   const mockIntegration: ProjectIntegration = {
     id: 'int-123',
@@ -63,11 +62,9 @@ describe('PMFieldAutoFillService', () => {
       captureException: jest.fn(),
     } as any;
 
-    configService = {
-      get: jest.fn().mockImplementation((key: string) => {
-        if (key === 'anthropic.apiKey') return 'fake-key';
-        return undefined;
-      }),
+    subscription = {
+      isAvailable: jest.fn().mockResolvedValue(true),
+      complete: jest.fn(),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -75,19 +72,12 @@ describe('PMFieldAutoFillService', () => {
         PMFieldAutoFillService,
         { provide: PMProviderFactory, useValue: providerFactory },
         { provide: SentryService, useValue: sentry },
-        { provide: ConfigService, useValue: configService },
+        { provide: SubscriptionCompletionService, useValue: subscription },
       ],
     }).compile();
 
     service = module.get<PMFieldAutoFillService>(PMFieldAutoFillService);
 
-    // Mock Anthropic client
-    mockAnthropic = {
-      messages: {
-        create: jest.fn(),
-      },
-    };
-    (service as any).anthropic = mockAnthropic;
     // Disable logging for tests
     jest.spyOn(Logger.prototype, 'debug').mockImplementation(() => {});
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
@@ -411,11 +401,11 @@ describe('PMFieldAutoFillService', () => {
 
       expect(result.manualFields).toHaveLength(1);
       expect(result.manualFields[0].id).toBe('f1');
-      expect(mockAnthropic.messages.create).not.toHaveBeenCalled();
+      expect(subscription.complete).not.toHaveBeenCalled();
     });
 
-    it('should handle missing Anthropic client gracefully (AC3)', async () => {
-      (service as any).anthropic = null;
+    it('should handle unavailable Claude subscription gracefully (AC3)', async () => {
+      subscription.isAvailable.mockResolvedValue(false);
       const fields: NormalizedField[] = [
         { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
       ];
@@ -447,18 +437,13 @@ describe('PMFieldAutoFillService', () => {
         { id: 'f3', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              f1: 5,
-              f2: 'High',
-              f3: 'true',
-            }),
-          },
-        ],
-      });
+      subscription.complete.mockResolvedValue(
+        JSON.stringify({
+          f1: 5,
+          f2: 'High',
+          f3: 'true',
+        }),
+      );
 
       const result = await service.fillInferredFields(
         mockIntegration,
@@ -477,14 +462,16 @@ describe('PMFieldAutoFillService', () => {
     });
 
     it('should handle AI timeout gracefully (AC13)', async () => {
-      jest.useFakeTimers();
       const fields: NormalizedField[] = [
         { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
       ];
 
-      mockAnthropic.messages.create.mockReturnValue(new Promise(() => {})); // Never resolves
+      // The subscription helper enforces its own timeout and rejects.
+      subscription.complete.mockRejectedValue(
+        new Error('Subscription completion timed out after 10000ms'),
+      );
 
-      const resultPromise = service.fillInferredFields(
+      const result = await service.fillInferredFields(
         mockIntegration,
         'taskId',
         fields,
@@ -492,12 +479,10 @@ describe('PMFieldAutoFillService', () => {
         'cid',
       );
 
-      jest.advanceTimersByTime(11000);
-      const result = await resultPromise;
-
       expect(result.inferFailed).toBe(true);
       expect(result.manualFields).toHaveLength(1);
-      jest.useRealTimers();
+      // A timeout is benign — it must NOT be reported to Sentry.
+      expect(sentry.captureException).not.toHaveBeenCalled();
     });
 
     it('should handle malformed AI response (AC14)', async () => {
@@ -505,14 +490,7 @@ describe('PMFieldAutoFillService', () => {
         { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [
-          {
-            type: 'text',
-            text: 'Not JSON at all',
-          },
-        ],
-      });
+      subscription.complete.mockResolvedValue('Not JSON at all');
 
       const result = await service.fillInferredFields(
         mockIntegration,
@@ -541,14 +519,7 @@ describe('PMFieldAutoFillService', () => {
         },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ f1: 3, f2: 'Low' }),
-          },
-        ],
-      });
+      subscription.complete.mockResolvedValue(JSON.stringify({ f1: 3, f2: 'Low' }));
 
       provider.setFieldValue
         .mockRejectedValueOnce(new Error('Provider Error'))
@@ -585,9 +556,7 @@ describe('PMFieldAutoFillService', () => {
         },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [{ type: 'text', text: JSON.stringify({ f1: 'High' }) }],
-      });
+      subscription.complete.mockResolvedValue(JSON.stringify({ f1: 'High' }));
 
       const result = await service.fillInferredFields(
         mockIntegration,
@@ -617,9 +586,7 @@ describe('PMFieldAutoFillService', () => {
         },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [{ type: 'text', text: JSON.stringify({ f1: 'Critical' }) }],
-      });
+      subscription.complete.mockResolvedValue(JSON.stringify({ f1: 'Critical' }));
 
       const result = await service.fillInferredFields(
         mockIntegration,
@@ -641,9 +608,7 @@ describe('PMFieldAutoFillService', () => {
         { id: 'f1', name: 'Story Points', type: NormalizedFieldType.NUMBER, required: true },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [{ type: 'text', text: JSON.stringify({ f1: 'high' }) }],
-      });
+      subscription.complete.mockResolvedValue(JSON.stringify({ f1: 'high' }));
 
       const result = await service.fillInferredFields(
         mockIntegration,
@@ -665,9 +630,7 @@ describe('PMFieldAutoFillService', () => {
         { id: 'f1', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [{ type: 'text', text: JSON.stringify({ f1: 'true' }) }],
-      });
+      subscription.complete.mockResolvedValue(JSON.stringify({ f1: 'true' }));
 
       const result = await service.fillInferredFields(
         mockIntegration,
@@ -687,9 +650,7 @@ describe('PMFieldAutoFillService', () => {
         { id: 'f1', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [{ type: 'text', text: JSON.stringify({ f1: 'maybe' }) }],
-      });
+      subscription.complete.mockResolvedValue(JSON.stringify({ f1: 'maybe' }));
 
       const result = await service.fillInferredFields(
         mockIntegration,
@@ -719,13 +680,11 @@ describe('PMFieldAutoFillService', () => {
         { id: 'f3', name: 'Feature Flag', type: NormalizedFieldType.CHECKBOX, required: true },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [{ type: 'text', text: JSON.stringify({ f1: '5', f2: 'High', f3: 'true' }) }],
-      });
+      subscription.complete.mockResolvedValue(JSON.stringify({ f1: '5', f2: 'High', f3: 'true' }));
 
       await service.fillInferredFields(mockIntegration, 'taskId', fields, mockInferenceCtx, 'cid');
 
-      expect(mockAnthropic.messages.create).toHaveBeenCalledTimes(1);
+      expect(subscription.complete).toHaveBeenCalledTimes(1);
     });
 
     it('should include field options in prompt (AC12)', async () => {
@@ -742,19 +701,17 @@ describe('PMFieldAutoFillService', () => {
         },
       ];
 
-      mockAnthropic.messages.create.mockResolvedValue({
-        content: [{ type: 'text', text: '{}' }],
-      });
+      subscription.complete.mockResolvedValue('{}');
 
       await service.fillInferredFields(mockIntegration, 'taskId', fields, mockInferenceCtx, 'cid');
 
-      const prompt = mockAnthropic.messages.create.mock.calls[0][0].messages[0].content;
+      const prompt = subscription.complete.mock.calls[0][0];
       expect(prompt).toContain('High');
       expect(prompt).toContain('Low');
     });
 
     it('should handle outer try/catch fail-open (AC16)', async () => {
-      mockAnthropic.messages.create.mockRejectedValue(new Error('Network Crash'));
+      subscription.complete.mockRejectedValue(new Error('Network Crash'));
 
       const fields: NormalizedField[] = [
         { id: 'f1', name: 'Points', type: NormalizedFieldType.NUMBER, required: true },

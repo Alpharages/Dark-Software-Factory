@@ -157,16 +157,23 @@ export default () => {
         './openharness/mcp-config.json',
     },
 
-    // Story 2.7: Anthropic Claude API Configuration (updated OS-3.2: stale refs removed)
-    // Model: claude-sonnet-4-20250514 is the latest Sonnet model as of implementation
+    // Claude subscription completion (QA F8: replaces the removed direct,
+    // pay-per-token Anthropic API path). All one-shot AI calls (PM field
+    // auto-fill, PR title/body, file-conflict prediction) go through the
+    // first-party `claude` CLI on the subscription via
+    // SubscriptionCompletionService — zero marginal cost, consistent with the
+    // agent execution runtime. ANTHROPIC_API_KEY is intentionally not read.
     anthropic: {
-      apiKey: process.env.ANTHROPIC_API_KEY || '',
-      baseURL: process.env.ANTHROPIC_BASE_URL,
-      model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
-      // lightweight tasks (commit messages, file predictions)
-      commitMessageModel: process.env.ANTHROPIC_COMMIT_MESSAGE_MODEL || 'claude-3-haiku-20240307',
-      maxTokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '8000', 10),
-      // ANTHROPIC_TIMEOUT_MS removed OS-5.1: no service reads anthropic.timeoutMs — SDK timeout not configured explicitly
+      // Model alias/id for subscription completions (flat-rate; model choice
+      // does not affect cost). Falls back to the agent-runtime Claude model.
+      subscriptionModel:
+        process.env.ANTHROPIC_SUBSCRIPTION_MODEL ||
+        process.env.OPENHARNESS_CLAUDE_MODEL ||
+        'sonnet',
+      // Path to the first-party Claude Code CLI.
+      subscriptionCliPath: process.env.CLAUDE_CLI_PATH || 'claude',
+      // Hard timeout (ms) for a single one-shot completion.
+      subscriptionTimeoutMs: parseInt(process.env.ANTHROPIC_SUBSCRIPTION_TIMEOUT_MS || '30000', 10),
     },
 
     // Story 2.11: Quality Scoring Configuration

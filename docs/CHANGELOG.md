@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-25
+
+- **Epic OHP-2 (Status-Driven Dispatcher + Loop + Approval Gate) closed — marked ✅ Done in
+  `docs/epics.md`.** QA verification: all six stories (OHP-2.1–2.6) implemented with unit tests;
+  full QA gate green (typecheck clean, ESLint clean, `nest build` clean, Jest 170 suites / 1726
+  tests all pass). OHP-2.6 end-to-end loop validated hands-off (`86ey22p7b`:
+  `to do → ready for review → ready for qa → Closed`, QA PASSED, with a real rejection loop-back).
+  Documented residual: AC3's manual approval hold was not exercised live (auto-approve on); the
+  gate is covered by unit tests only.
+- The OHP-2.6 run artifacts under `docs/openharness/runs/` (report + per-leg stream logs) were
+  intentionally removed and are **not** retained in-repo, consistent with the OHP-1.2 run-artifact
+  cleanup. The validation outcome is recorded in `docs/epics.md` (OHP-2 Outcome) and
+  `docs/AI-CONTEXT.md`; the live ClickUp trail on ticket `86ey22p7b` is the durable record.
+
 ## 2026-06-19
 
 - Added OpenHarness MCP wiring for the OHP-1 single-tenant spike in

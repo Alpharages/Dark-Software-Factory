@@ -35,7 +35,7 @@ export class ReportsController {
   @ApiResponse({ status: 201, description: 'Report generated or fetched from cache' })
   async generateSprintReport(@Body() generateReportDto: GenerateReportDto, @Req() req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (req as any).user?.sub;
+    const userId = (req as any).user?.id;
     this.logger.log(
       `Generating sprint report for project ${generateReportDto.project_id} by user ${userId}`,
     );
@@ -49,7 +49,7 @@ export class ReportsController {
   @ApiResponse({ status: 404, description: 'Report not found' })
   async getReport(@Param('id') id: string, @Req() req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userId = (req as any).user?.sub;
+    const userId = (req as any).user?.id;
     return this.reportsService.getReport(id, userId);
   }
 
@@ -63,7 +63,7 @@ export class ReportsController {
     @Res() res: Response,
     @Req() req: Request,
   ) {
-    const userId = (req as unknown as { user: { sub: string } }).user.sub;
+    const userId = (req as unknown as { user: { id: string } }).user.id;
     this.logger.log(`Downloading report ${id} in ${format} format by user ${userId}`);
     const fileStream = await this.reportsService.getReportFileStream(id, format, userId);
 

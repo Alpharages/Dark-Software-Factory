@@ -25,7 +25,7 @@ import {
 
 interface AuthenticatedRequest extends Request {
   user: {
-    sub: string;
+    id: string;
     [key: string]: unknown;
   };
 }
@@ -54,7 +54,7 @@ export class AnomalyDetectionController {
     @Body() update: AnomalyResolutionDto,
     @Request() req: AuthenticatedRequest,
   ): Promise<AnomalyDto> {
-    return this.anomalyDetectionService.resolveAnomaly(id, update, req.user.sub);
+    return this.anomalyDetectionService.resolveAnomaly(id, update, req.user.id);
   }
 
   @Post('trigger')
@@ -82,7 +82,7 @@ export class AnomalyDetectionController {
     @Body() update: AnomalyConfigDto,
     @Request() req: AuthenticatedRequest,
   ): Promise<AnomalyConfigDto> {
-    return this.anomalyDetectionService.updateAnomalyConfig(update, req.user.sub);
+    return this.anomalyDetectionService.updateAnomalyConfig(update, req.user.id);
   }
 
   @Get('history')
