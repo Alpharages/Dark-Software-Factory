@@ -101,15 +101,34 @@ unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
 PROMPT="Execute the BMAD workflow ${WORKFLOW} for ClickUp ticket ${TASK_ID}. First call the MCP tool mcp__bmad__bmad with {\"operation\":\"execute\",\"workflow\":\"${WORKFLOW}\",\"message\":\"${TASK_ID}\"}. Continue from the returned workflow instructions until completion. Keep work scoped to the ClickUp task. Format only files changed by this run. Use the valid review status for this list when complete. Do not print environment or configuration values."
 
 set +e
-claude -p "$PROMPT" \
-  --model "$MODEL" \
-  --output-format stream-json \
-  --verbose \
-  --permission-mode bypassPermissions \
-  --mcp-config "$MCP_FILE" \
-  --strict-mcp-config \
-  --max-turns "$MAX_TURNS" >"$TEMP_OUTPUT"
-CLAUDE_STATUS=$?
+if [[ "${OH_RUN_STREAM_STDOUT:-}" == "1" ]]; then
+  # Live mode: tee the stream-json to stdout AS IT IS PRODUCED so the DSF runner
+  # parses events in real time and the dashboard shows a live activity feed —
+  # while still capturing the full run to TEMP_OUTPUT for the secret check + log.
+  # PIPESTATUS[0] preserves claude's exit code (tee would otherwise mask it).
+  # Note: in live mode events reach stdout before the post-hoc secret scan below;
+  # the prompt forbids printing env/config values and this is a single-tenant MVP,
+  # so the file scan remains as defense-in-depth on the persisted artifact.
+  claude -p "$PROMPT" \
+    --model "$MODEL" \
+    --output-format stream-json \
+    --verbose \
+    --permission-mode bypassPermissions \
+    --mcp-config "$MCP_FILE" \
+    --strict-mcp-config \
+    --max-turns "$MAX_TURNS" | tee "$TEMP_OUTPUT"
+  CLAUDE_STATUS=${PIPESTATUS[0]}
+else
+  claude -p "$PROMPT" \
+    --model "$MODEL" \
+    --output-format stream-json \
+    --verbose \
+    --permission-mode bypassPermissions \
+    --mcp-config "$MCP_FILE" \
+    --strict-mcp-config \
+    --max-turns "$MAX_TURNS" >"$TEMP_OUTPUT"
+  CLAUDE_STATUS=$?
+fi
 set -e
 
 for env_name in "${secret_env[@]}"; do
@@ -121,8 +140,9 @@ done
 
 mv "$TEMP_OUTPUT" "$OUTPUT_PATH"
 
-if [[ "${OH_RUN_STREAM_STDOUT:-}" == "1" ]]; then
-  cat "$OUTPUT_PATH"
-fi
+# In live mode (OH_RUN_STREAM_STDOUT=1) the stream was already emitted to stdout
+# via `tee` as it was produced, so there is nothing left to replay here. The
+# non-streaming path intentionally writes only the log file (no stdout), matching
+# the prior behaviour.
 
 exit "$CLAUDE_STATUS"

@@ -199,6 +199,12 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     // QA Failure Resolution (WR-4.3)
     QAFailureResolutionService,
   ],
-  exports: [ExecutionService, ExecutionTrackerService, ExecutionRepository, ExecutionGateway],
+  exports: [
+    ExecutionService,
+    ExecutionTrackerService,
+    ExecutionRepository,
+    ExecutionActivityRepository,
+    ExecutionGateway,
+  ],
 })
 export class ExecutionModule {}
