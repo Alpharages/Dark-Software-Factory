@@ -1,4 +1,6 @@
 import { ExecutionRepository } from '@/execution/execution.repository';
+import { ExecutionActivityRepository } from '@/execution/repositories/execution-activity.repository';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { LogLevel } from '@/execution/gateways/execution.gateway';
 import { RealtimeService } from '@/realtime/realtime.service';
 import { OpenHarnessStreamAdapter } from './openharness-stream.adapter';
@@ -12,6 +14,12 @@ describe('OpenHarnessStreamAdapter', () => {
   let executionRepository: {
     findById: jest.Mock;
   };
+  let activityRepository: {
+    save: jest.Mock;
+  };
+  let executionTracker: {
+    emitProgress: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -22,10 +30,18 @@ describe('OpenHarnessStreamAdapter', () => {
     executionRepository = {
       findById: jest.fn().mockResolvedValue({ ticket: { project_id: 'project-1' } }),
     };
+    activityRepository = {
+      save: jest.fn().mockResolvedValue({}),
+    };
+    executionTracker = {
+      emitProgress: jest.fn().mockResolvedValue(undefined),
+    };
 
     adapter = new OpenHarnessStreamAdapter(
       realtimeService as unknown as RealtimeService,
       executionRepository as unknown as ExecutionRepository,
+      activityRepository as unknown as ExecutionActivityRepository,
+      executionTracker as unknown as ExecutionTrackerService,
     );
   });
 
@@ -197,5 +213,122 @@ describe('OpenHarnessStreamAdapter', () => {
     );
     expect(realtimeService.emitToProject).not.toHaveBeenCalled();
     expect(realtimeService.emitToRole).not.toHaveBeenCalled();
+  });
+
+  // ── Claude Code (`claude -p`) event vocabulary ──────────────────────────
+  describe('Claude Code event mapping', () => {
+    it('maps a Claude assistant tool_use block to an AI activity and persists it', async () => {
+      await adapter.handleEvent('exec-1', 'ticket-1', {
+        type: 'assistant',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'tool_use', id: 't1', name: 'Edit', input: { file_path: 'src/x.ts' } }],
+        },
+      });
+
+      expect(realtimeService.emitToProject).toHaveBeenCalledWith(
+        'project-1',
+        'execution-activity',
+        expect.objectContaining({
+          activity: 'Running Edit',
+          detail: 'src/x.ts',
+          category: 'FILE_OP',
+        }),
+      );
+      // Persisted with the SAME timestamp emitted over the socket (reload dedupe).
+      const emitted = realtimeService.emitToProject.mock.calls.find(
+        (c) => c[1] === 'execution-activity',
+      )?.[2];
+      expect(activityRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionId: 'exec-1',
+          activity: 'Running Edit',
+          category: 'FILE_OP',
+          timestamp: new Date(emitted.timestamp),
+        }),
+      );
+    });
+
+    it('maps a Claude assistant text block to an AI_THINKING activity', async () => {
+      await adapter.handleEvent('exec-1', 'ticket-1', {
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'Planning the change' }] },
+      });
+
+      expect(realtimeService.emitToProject).toHaveBeenCalledWith(
+        'project-1',
+        'execution-activity',
+        expect.objectContaining({ activity: 'Planning the change', category: 'AI_THINKING' }),
+      );
+    });
+
+    it('flags a Claude tool_result error as an ERROR activity', async () => {
+      await adapter.handleEvent('exec-1', 'ticket-1', {
+        type: 'user',
+        message: {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 't1', is_error: true, content: 'boom' }],
+        },
+      });
+
+      expect(realtimeService.emitToProject).toHaveBeenCalledWith(
+        'project-1',
+        'execution-activity',
+        expect.objectContaining({ activity: 'Tool error', category: 'ERROR', detail: 'boom' }),
+      );
+    });
+
+    it('surfaces the Claude system init event as a SETUP activity', async () => {
+      await adapter.handleEvent('exec-1', 'ticket-1', {
+        type: 'system',
+        subtype: 'init',
+        model: 'claude-sonnet',
+      });
+
+      expect(realtimeService.emitToProject).toHaveBeenCalledWith(
+        'project-1',
+        'execution-activity',
+        expect.objectContaining({
+          activity: 'AI session started',
+          category: 'SETUP',
+          detail: 'Model: claude-sonnet',
+        }),
+      );
+    });
+
+    it('advances the progress bar (step + monotonic percent) off each activity', async () => {
+      await adapter.handleEvent('exec-1', 'ticket-1', {
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'Step one' }] },
+      });
+      await adapter.handleEvent('exec-1', 'ticket-1', {
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'Step two' }] },
+      });
+
+      const calls = executionTracker.emitProgress.mock.calls;
+      expect(calls.length).toBeGreaterThanOrEqual(2);
+      // (executionId, ticketId, projectId, currentStep, percentComplete)
+      expect(calls[0][3]).toBe('Step one');
+      expect(calls[1][3]).toBe('Step two');
+      // Monotonic, never hits 100% mid-run.
+      expect(calls[1][4]).toBeGreaterThan(calls[0][4]);
+      expect(calls[1][4]).toBeLessThan(100);
+    });
+
+    it('keeps the live stream alive even if persistence fails', async () => {
+      activityRepository.save.mockRejectedValueOnce(new Error('db down'));
+
+      await adapter.handleEvent('exec-1', 'ticket-1', {
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'still streaming' }] },
+      });
+
+      expect(realtimeService.emitToProject).toHaveBeenCalledWith(
+        'project-1',
+        'execution-activity',
+        expect.objectContaining({ activity: 'still streaming' }),
+      );
+    });
   });
 });

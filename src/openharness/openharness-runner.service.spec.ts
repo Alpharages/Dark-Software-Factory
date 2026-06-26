@@ -33,6 +33,7 @@ describe('OpenHarnessRunnerService', () => {
       completeExecution: jest.fn().mockResolvedValue(true),
       failExecution: jest.fn().mockResolvedValue(true),
       timeoutExecution: jest.fn().mockResolvedValue(true),
+      emitProgress: jest.fn().mockResolvedValue(undefined),
     };
 
     mockPrisma = {

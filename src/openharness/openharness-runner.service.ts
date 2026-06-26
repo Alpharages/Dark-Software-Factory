@@ -356,12 +356,24 @@ export class OpenHarnessRunnerService {
               return;
             }
 
+            // Persist 100% alongside tools_used so a reloaded/closed card shows a
+            // full bar — emitProgress's mid-run writes only carried {currentStep,
+            // percentComplete}, and without this the final write would reset it.
             await this.prisma.execution.update({
               where: { id: execution.id },
               data: {
-                progress: { tools_used: toolsUsed } as Prisma.InputJsonValue,
+                progress: {
+                  tools_used: toolsUsed,
+                  currentStep: 'Completed',
+                  percentComplete: 100,
+                } as Prisma.InputJsonValue,
               },
             });
+
+            // Snap the live progress bar to 100% (the mid-run creep caps below it).
+            await this.executionTracker
+              .emitProgress(execution.id, ticketId, null, 'Completed', 100, 'COMPLETED')
+              .catch(() => undefined);
 
             await this.executionTracker.completeExecution(
               {

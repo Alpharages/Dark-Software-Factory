@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ExecutionRepository } from '@/execution/execution.repository';
+import { ExecutionActivityRepository } from '@/execution/repositories/execution-activity.repository';
+import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import {
   ActivityCategory,
   ContainerActivityPayload,
@@ -8,11 +10,18 @@ import {
 } from '@/execution/gateways/execution.gateway';
 import { RealtimeService } from '@/realtime/realtime.service';
 import {
+  ClaudeAssistantEvent,
+  ClaudeSystemEvent,
+  ClaudeUserEvent,
   OpenHarnessAssistantCompleteEvent,
   OpenHarnessAssistantDeltaEvent,
   OpenHarnessStreamEvent,
   OpenHarnessToolStartedEvent,
 } from './openharness-event.types';
+
+/** Max chars of free-form text/tool output persisted + shown in the timeline. */
+const MAX_DETAIL_CHARS = 160;
+const MAX_RAW_CHARS = 4000;
 
 interface BufferedLogEntry {
   message: string;
@@ -26,10 +35,19 @@ export class OpenHarnessStreamAdapter {
   private readonly projectIdCache = new Map<string, string>();
   private readonly logStreamBuffer = new Map<string, BufferedLogEntry>();
   private readonly logStreamThrottleMs = parseInt(process.env.LOG_STREAM_THROTTLE_MS || '100', 10);
+  // Last progress percent emitted per execution. Agentic runs carry no true
+  // progress signal, so we synthesize a monotonic value that decelerates toward
+  // a cap (PROGRESS_CAP) — visible movement without claiming false precision.
+  // The runner sets 100% on terminal success.
+  private readonly progressPercent = new Map<string, number>();
+  private static readonly PROGRESS_CAP = 90;
+  private static readonly PROGRESS_START = 5;
 
   constructor(
     private readonly realtimeService: RealtimeService,
     private readonly executionRepository: ExecutionRepository,
+    private readonly activityRepository: ExecutionActivityRepository,
+    private readonly executionTracker: ExecutionTrackerService,
   ) {}
 
   async handleEvent(
@@ -55,6 +73,16 @@ export class OpenHarnessStreamAdapter {
             ticketId,
             event as OpenHarnessAssistantCompleteEvent,
           );
+          return;
+        // ── Claude Code (`claude -p`) vocabulary ──────────────────────────
+        case 'system':
+          await this.handleClaudeSystem(executionId, ticketId, event as ClaudeSystemEvent);
+          return;
+        case 'assistant':
+          await this.handleClaudeAssistant(executionId, ticketId, event as ClaudeAssistantEvent);
+          return;
+        case 'user':
+          await this.handleClaudeUser(executionId, ticketId, event as ClaudeUserEvent);
           return;
         default:
           this.logger.warn(`Skipping unknown OpenHarness stream event: ${event.type}`);
@@ -121,6 +149,162 @@ export class OpenHarnessStreamAdapter {
     this.releaseExecution(executionId);
   }
 
+  /**
+   * Claude `system` event — typically the `init` marker carrying the model and
+   * available tools. Emitted once at the start of a leg as a SETUP activity so
+   * the dashboard shows the run has begun.
+   */
+  private async handleClaudeSystem(
+    executionId: string,
+    ticketId: string,
+    event: ClaudeSystemEvent,
+  ): Promise<void> {
+    if (event.subtype && event.subtype !== 'init') return; // only surface init
+    const projectId = await this.resolveProjectId(executionId);
+    const detail = typeof event.model === 'string' ? `Model: ${event.model}` : undefined;
+    this.emitActivity(projectId, {
+      executionId,
+      ticketId,
+      timestamp: new Date().toISOString(),
+      activity: 'AI session started',
+      detail,
+      rawContent: this.truncate(this.stringifyEvent(event), MAX_RAW_CHARS),
+      category: 'SETUP',
+      icon: 'settings',
+      projectId,
+    });
+  }
+
+  /**
+   * Claude `assistant` event — one assistant turn. Each content block becomes an
+   * activity: `text` → AI_THINKING (what the agent is reasoning/saying),
+   * `tool_use` → a category derived from the tool (AI_CODING / FILE_OP / etc.).
+   */
+  private async handleClaudeAssistant(
+    executionId: string,
+    ticketId: string,
+    event: ClaudeAssistantEvent,
+  ): Promise<void> {
+    const blocks = event.message?.content;
+    if (!Array.isArray(blocks) || blocks.length === 0) return;
+    const projectId = await this.resolveProjectId(executionId);
+
+    for (const block of blocks) {
+      if (block.type === 'text' && typeof block.text === 'string' && block.text.trim()) {
+        const text = block.text.trim();
+        this.emitActivity(projectId, {
+          executionId,
+          ticketId,
+          timestamp: new Date().toISOString(),
+          activity: this.firstLine(text),
+          detail: undefined,
+          rawContent: this.truncate(text, MAX_RAW_CHARS),
+          category: 'AI_THINKING',
+          icon: 'brain',
+          projectId,
+        });
+      } else if (block.type === 'tool_use' && block.name) {
+        const { category, icon } = this.classifyTool(block.name);
+        this.emitActivity(projectId, {
+          executionId,
+          ticketId,
+          timestamp: new Date().toISOString(),
+          activity: `Running ${block.name}`,
+          detail: this.toolInputSummary(block.input),
+          rawContent: this.truncate(this.stringifyEvent(block.input), MAX_RAW_CHARS),
+          category,
+          icon,
+          projectId,
+        });
+      }
+    }
+  }
+
+  /**
+   * Claude `user` event — tool results fed back to the model. Surfaced as a
+   * concise activity (errors flagged), with the full output available on expand.
+   */
+  private async handleClaudeUser(
+    executionId: string,
+    ticketId: string,
+    event: ClaudeUserEvent,
+  ): Promise<void> {
+    const blocks = event.message?.content;
+    if (!Array.isArray(blocks) || blocks.length === 0) return;
+    const projectId = await this.resolveProjectId(executionId);
+
+    for (const block of blocks) {
+      if (block.type !== 'tool_result') continue;
+      const isError = block.is_error === true;
+      const content = this.stringifyContent(block.content);
+      this.emitActivity(projectId, {
+        executionId,
+        ticketId,
+        timestamp: new Date().toISOString(),
+        activity: isError ? 'Tool error' : 'Tool result',
+        detail: content ? this.truncate(content, MAX_DETAIL_CHARS) : undefined,
+        rawContent: content ? this.truncate(content, MAX_RAW_CHARS) : undefined,
+        category: isError ? 'ERROR' : 'SYSTEM',
+        icon: isError ? 'alert-triangle' : 'terminal',
+        projectId,
+      });
+    }
+  }
+
+  /** Map a Claude tool name to a dashboard activity category + Lucide icon hint. */
+  private classifyTool(toolName: string): { category: ActivityCategory; icon: string } {
+    const name = toolName.toLowerCase();
+    if (/(write|edit|multiedit|notebookedit)/.test(name)) {
+      return { category: 'FILE_OP', icon: 'file-edit' };
+    }
+    if (/(read|glob|grep|ls)/.test(name)) {
+      return { category: 'FILE_OP', icon: 'package-search' };
+    }
+    if (name.includes('bash')) {
+      return { category: 'BUILD', icon: 'terminal' };
+    }
+    if (name.includes('task') || name.includes('agent')) {
+      return { category: 'AI_THINKING', icon: 'brain' };
+    }
+    // MCP tools (bmad/lore/clickup/etc.) and anything else: generic AI coding.
+    return { category: 'AI_CODING', icon: 'code' };
+  }
+
+  private firstLine(text: string): string {
+    const line = text.split('\n').find((l) => l.trim()) ?? text;
+    return this.truncate(line.trim(), MAX_DETAIL_CHARS);
+  }
+
+  private toolInputSummary(input: unknown): string | undefined {
+    if (input === undefined || input === null) return undefined;
+    if (typeof input === 'object') {
+      const obj = input as Record<string, unknown>;
+      // Prefer the most descriptive common fields.
+      const key = obj.file_path ?? obj.path ?? obj.command ?? obj.pattern ?? obj.query;
+      if (typeof key === 'string') return this.truncate(key, MAX_DETAIL_CHARS);
+    }
+    return this.truncate(this.stringifyEvent(input), MAX_DETAIL_CHARS);
+  }
+
+  private stringifyContent(content: unknown): string {
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content
+        .map((c) =>
+          c && typeof c === 'object' && 'text' in (c as Record<string, unknown>)
+            ? String((c as Record<string, unknown>).text)
+            : this.stringifyEvent(c),
+        )
+        .join('\n');
+    }
+    return this.stringifyEvent(content);
+  }
+
+  private truncate(value: string, max: number): string {
+    if (value.length <= max) return value;
+    return `${value.slice(0, max)}…`;
+  }
+
   private async resolveProjectId(executionId: string): Promise<string | null> {
     const cached = this.projectIdCache.get(executionId);
     if (cached) return cached;
@@ -142,6 +326,7 @@ export class OpenHarnessStreamAdapter {
   /** Release all per-execution state once a run can emit no further events. */
   private releaseExecution(executionId: string): void {
     this.projectIdCache.delete(executionId);
+    this.progressPercent.delete(executionId);
     for (const source of ['stdout', 'stderr'] as const) {
       const bufferKey = `${executionId}:${source}`;
       const entry = this.logStreamBuffer.get(bufferKey);
@@ -191,6 +376,34 @@ export class OpenHarnessStreamAdapter {
   }
 
   private emitActivity(projectId: string | null, payload: ContainerActivityPayload): void {
+    // Persist first (fire-and-forget) so the timeline survives a page reload and
+    // is queryable via GET /executions/:id/logs. The persisted row reuses the
+    // payload's exact ISO timestamp so the frontend can dedupe a live socket
+    // event against the replayed-on-reload copy. A DB failure must never break
+    // the live stream, so we only log it.
+    this.activityRepository
+      .save({
+        executionId: payload.executionId,
+        activity: payload.activity,
+        detail: payload.detail ?? null,
+        rawContent: payload.rawContent ?? null,
+        category: payload.category,
+        icon: payload.icon,
+        suggestedPercent: payload.suggestedPercent ?? null,
+        timestamp: new Date(payload.timestamp),
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Failed to persist execution activity for ${payload.executionId}: ${message}`,
+        );
+      });
+
+    // Advance the progress bar + current-step label off the back of this activity.
+    // Without this the dashboard sits at "STARTING EXECUTION 0%" for the whole run
+    // because the agent stream carries no explicit progress field.
+    this.bumpProgress(payload, projectId);
+
     if (projectId) {
       this.realtimeService.emitToProject(projectId, 'execution-activity', payload);
       return;
@@ -198,6 +411,36 @@ export class OpenHarnessStreamAdapter {
 
     this.realtimeService.emitToRole('ADMIN', 'execution-activity', payload);
     this.realtimeService.emitToRole('MANAGER', 'execution-activity', payload);
+  }
+
+  /**
+   * Translate the latest activity into a progress update (label + percent) and
+   * push it through ExecutionTracker, which persists `{currentStep, percentComplete}`
+   * (reload-safe) and emits `execution-progress-update` for the live card.
+   *
+   * Percent is a synthesized monotonic creep: an explicit `suggestedPercent` wins
+   * if present, otherwise it decelerates toward PROGRESS_CAP so the bar always
+   * moves forward but never reaches 100% until the runner marks the leg complete.
+   */
+  private bumpProgress(payload: ContainerActivityPayload, projectId: string | null): void {
+    const prev =
+      this.progressPercent.get(payload.executionId) ?? OpenHarnessStreamAdapter.PROGRESS_START;
+    let next: number;
+    if (typeof payload.suggestedPercent === 'number') {
+      next = Math.max(prev, Math.min(100, payload.suggestedPercent));
+    } else {
+      const cap = OpenHarnessStreamAdapter.PROGRESS_CAP;
+      const step = Math.max(1, Math.ceil((cap - prev) / 12));
+      next = Math.min(cap, prev + step);
+    }
+    this.progressPercent.set(payload.executionId, next);
+
+    void this.executionTracker
+      .emitProgress(payload.executionId, payload.ticketId, projectId, payload.activity, next)
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Failed to emit progress for ${payload.executionId}: ${message}`);
+      });
   }
 
   private emitLog(

@@ -102,13 +102,27 @@ TEMP_OUTPUT="$TMP_DIR/run.stream.json"
 PROMPT="Execute the BMAD workflow ${WORKFLOW} for ClickUp ticket ${TASK_ID}. First call the MCP tool mcp__bmad__bmad with {\"operation\":\"execute\",\"workflow\":\"${WORKFLOW}\",\"message\":\"${TASK_ID}\"}. Continue from the returned workflow instructions until completion. Keep work scoped to the ClickUp task. Format only files changed by this run. Use the valid review status for this list when complete. Do not call configuration-inspection tools or print environment/configuration values."
 
 set +e
-oh -p "$PROMPT" \
-  --model "$MODEL" \
-  --output-format stream-json \
-  --permission-mode full_auto \
-  --disallowed-tools config \
-  --max-turns "$MAX_TURNS" >"$TEMP_OUTPUT"
-OH_STATUS=$?
+if [[ "${OH_RUN_STREAM_STDOUT:-}" == "1" ]]; then
+  # Live mode: tee the stream-json to stdout AS IT IS PRODUCED so the DSF runner
+  # parses events in real time (live dashboard feed) while still capturing the
+  # full run to TEMP_OUTPUT for the secret scan + log. PIPESTATUS[0] preserves
+  # oh's real exit code (tee would otherwise mask it).
+  oh -p "$PROMPT" \
+    --model "$MODEL" \
+    --output-format stream-json \
+    --permission-mode full_auto \
+    --disallowed-tools config \
+    --max-turns "$MAX_TURNS" | tee "$TEMP_OUTPUT"
+  OH_STATUS=${PIPESTATUS[0]}
+else
+  oh -p "$PROMPT" \
+    --model "$MODEL" \
+    --output-format stream-json \
+    --permission-mode full_auto \
+    --disallowed-tools config \
+    --max-turns "$MAX_TURNS" >"$TEMP_OUTPUT"
+  OH_STATUS=$?
+fi
 set -e
 
 for env_name in "${secret_env[@]}"; do
@@ -120,9 +134,9 @@ done
 
 mv "$TEMP_OUTPUT" "$OUTPUT_PATH"
 
-if [[ "${OH_RUN_STREAM_STDOUT:-}" == "1" ]]; then
-  cat "$OUTPUT_PATH"
-fi
+# In live mode (OH_RUN_STREAM_STDOUT=1) the stream was already emitted to stdout
+# via `tee` as it was produced, so nothing is replayed here. The non-streaming
+# path intentionally writes only the log file (no stdout), as before.
 
 oh mcp remove bmad >/dev/null 2>&1 || true
 oh mcp remove lore >/dev/null 2>&1 || true
