@@ -104,7 +104,7 @@
     "@types/archiver": "^7.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/nodemailer": "^7.0.4",
-    "@willsoto/nestjs-prometheus": "^6.0.2",
+    "@willsoto/nestjs-prometheus": "^6.1.0",
     "amqplib": "^0.10.9",
     "archiver": "^7.0.1",
     "axios": "^1.13.2",
