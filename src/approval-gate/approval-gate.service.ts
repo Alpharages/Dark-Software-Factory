@@ -11,6 +11,7 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { PrismaService } from '@/database/prisma.service';
 import { DispatcherService } from '@/dispatcher/dispatcher.service';
 import { GitHubService } from '@/github/github.service';
+import { GitHubPROrchestrator } from '@/github/services/github-pr-orchestrator.service';
 import { RealtimeService } from '@/realtime/realtime.service';
 
 const APPROVAL_EVENT = 'execution.approval-required';
@@ -49,6 +50,7 @@ export class ApprovalGateService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly github: GitHubService,
+    private readonly prOrchestrator: GitHubPROrchestrator,
     private readonly realtime: RealtimeService,
     // forwardRef: the dispatcher opens the gate and the gate feeds REJECT/REWORK
     // back into the dispatcher's guarded re-dispatch path — a deliberate cycle.
@@ -207,10 +209,27 @@ export class ApprovalGateService {
 
   private async approve(execution: GateExecution, input: DecisionInput) {
     await this.assertApproved(input.executionId);
-    const githubPush = await this.prisma.gitHubPush.findFirst({
+    let githubPush = await this.prisma.gitHubPush.findFirst({
       where: { execution_id: input.executionId },
       orderBy: { created_at: 'desc' },
     });
+    if (!githubPush)
+      throw new BadRequestException('Execution has no pushed branch — nothing to open or merge');
+
+    // PR-open approval gate: when require_pr_approval is on, the code-delivery
+    // step pushed the branch but deferred opening the PR until now. Open it on
+    // approval, then proceed to merge. When approval is off the PR already
+    // exists (pr_number set) and this is skipped.
+    if (!githubPush.pr_number) {
+      const pr = await this.prOrchestrator.createPullRequest(input.executionId, input.executionId);
+      if (!pr.success || !pr.prNumber) {
+        throw new Error(`Failed to open pull request on approval: ${pr.error ?? 'unknown error'}`);
+      }
+      githubPush = await this.prisma.gitHubPush.findFirst({
+        where: { execution_id: input.executionId },
+        orderBy: { created_at: 'desc' },
+      });
+    }
     if (!githubPush?.pr_number)
       throw new BadRequestException('Execution has no pull request to merge');
 

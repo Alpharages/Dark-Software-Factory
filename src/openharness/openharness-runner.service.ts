@@ -14,6 +14,9 @@ import { OpenHarnessStreamParser } from './openharness-stream.parser';
 import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
 import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
+import { ProjectWorkspaceService } from './project-workspace.service';
+import { OpenHarnessCodeReadyEvent } from './events/openharness-code-ready.event';
+import { EventBusService } from '@/common/event-bus.service';
 
 type MandatedToolsMode = 'warn' | 'fail';
 /**
@@ -46,6 +49,8 @@ export class OpenHarnessRunnerService {
     private readonly executionTracker: ExecutionTrackerService,
     private readonly prisma: PrismaService,
     private readonly guardrails: OpenHarnessRunGuardrailsService,
+    private readonly projectWorkspace: ProjectWorkspaceService,
+    private readonly eventBus: EventBusService,
     @Optional()
     private readonly streamAdapter?: OpenHarnessStreamAdapter,
   ) {}
@@ -137,18 +142,44 @@ export class OpenHarnessRunnerService {
       this.logger.warn(`[${execution.id}] ${message}`);
     }
 
+    // Resolve the working directory to a clone of the *ticket's project* repo, so
+    // the agent works in — and the branch is later pushed to — the correct GitHub
+    // remote, not the DSF backend repo (the old process.cwd() default). Fails the
+    // run if a configured project repo cannot be prepared, rather than silently
+    // committing into the wrong repository.
+    let baseRepoDir = workspaceDir;
+    let projectRepo: { id: string; repositoryUrl: string; defaultBranch: string } | null = null;
+    try {
+      const resolved = await this.projectWorkspace.resolveWorkspaceDir(ticketId, workspaceDir);
+      baseRepoDir = resolved.dir;
+      projectRepo = resolved.project;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.executionTracker.failExecution(
+        {
+          executionId: execution.id,
+          errorMessage: `Project workspace preparation failed: ${message}`,
+          isRetryable: false,
+        },
+        execution.id,
+      );
+      return execution.id;
+    }
+
+    // Branch the agent commits to; also the ref the code-delivery push targets.
+    const ticketBranch = `ohp/${clickUpTaskId}`;
+
     // Provision an isolated worktree so the agent never mutates the live working
     // tree. If isolation is requested but fails, fail closed rather than running
     // in-place against the repo (the unsafe behaviour OHP-2.6 flagged).
-    let runWorkspaceDir = workspaceDir;
+    let runWorkspaceDir = baseRepoDir;
     if (isolateWorkspace) {
       try {
         // Persistent per-ticket branch: every leg of a ticket's loop shares one
         // branch, so a prior leg's commit is visible to the next (review/QA see
         // the implement diff). The worktree is per-run and torn down each leg;
         // the branch survives in the object store. Resolves OHP-2.6 Finding 3.
-        const ticketBranch = `ohp/${clickUpTaskId}`;
-        runWorkspaceDir = this.provisionWorktree(workspaceDir, execution.id, ticketBranch);
+        runWorkspaceDir = this.provisionWorktree(baseRepoDir, execution.id, ticketBranch);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         await this.executionTracker.failExecution(
@@ -289,8 +320,8 @@ export class OpenHarnessRunnerService {
           } finally {
             // Tear down the isolated worktree on every terminal path (success,
             // failure, timeout). Best-effort: never block resolution on cleanup.
-            if (isolateWorkspace && runWorkspaceDir !== workspaceDir) {
-              this.removeWorktree(workspaceDir, runWorkspaceDir);
+            if (isolateWorkspace && runWorkspaceDir !== baseRepoDir) {
+              this.removeWorktree(baseRepoDir, runWorkspaceDir);
             }
             resolve(execution.id);
           }
@@ -388,6 +419,27 @@ export class OpenHarnessRunnerService {
               },
               execution.id,
             );
+
+            // Hand off to GitHub delivery: push the committed branch (and, when
+            // approval is not required, open the PR). Only when the run executed
+            // in an isolated worktree on a real project repo — otherwise there is
+            // no dedicated branch / remote to push to. Decoupled via the EventBus
+            // so this module never imports the GitHub module.
+            if (isolateWorkspace && projectRepo) {
+              this.eventBus.emit(
+                'openharness.code-ready',
+                new OpenHarnessCodeReadyEvent(
+                  execution.id,
+                  ticketId,
+                  projectRepo.id,
+                  ticketBranch,
+                  baseRepoDir,
+                  projectRepo.repositoryUrl,
+                  skill,
+                  execution.id,
+                ),
+              );
+            }
           } else {
             let errorMessage = result?.error_message || `Process exited with code ${code}`;
             const errorContext = result?.error_context || '';

@@ -5,6 +5,7 @@ import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { PrismaService } from '@/database/prisma.service';
 import { DispatcherService } from '@/dispatcher/dispatcher.service';
 import { GitHubService } from '@/github/github.service';
+import { GitHubPROrchestrator } from '@/github/services/github-pr-orchestrator.service';
 import { RealtimeService } from '@/realtime/realtime.service';
 import { ApprovalGateService } from './approval-gate.service';
 
@@ -36,6 +37,7 @@ describe('ApprovalGateService', () => {
     approvalRecord: { findFirst: jest.Mock; create: jest.Mock };
   };
   let github: { mergePullRequest: jest.Mock };
+  let prOrchestrator: { createPullRequest: jest.Mock };
   let realtime: { emitToProject: jest.Mock; emitToRole: jest.Mock };
   let dispatcher: { redispatchImplement: jest.Mock };
   let config: { get: jest.Mock };
@@ -65,6 +67,13 @@ describe('ApprovalGateService', () => {
       },
     };
     github = { mergePullRequest: jest.fn().mockResolvedValue({ sha: 'sha-1' }) };
+    prOrchestrator = {
+      createPullRequest: jest.fn().mockResolvedValue({
+        success: true,
+        prNumber: 7,
+        prUrl: 'https://github.com/owner/repo/pull/7',
+      }),
+    };
     realtime = { emitToProject: jest.fn(), emitToRole: jest.fn() };
     dispatcher = {
       redispatchImplement: jest.fn().mockResolvedValue({
@@ -82,6 +91,7 @@ describe('ApprovalGateService', () => {
     service = new ApprovalGateService(
       prisma as never as PrismaService,
       github as never as GitHubService,
+      prOrchestrator as never as GitHubPROrchestrator,
       realtime as never as RealtimeService,
       dispatcher as never as DispatcherService,
       config as never as ConfigService,
@@ -145,6 +155,31 @@ describe('ApprovalGateService', () => {
       decision: ApprovalDecision.APPROVE,
       prUrl: 'https://github.com/owner/repo/pull/7',
     });
+  });
+
+  it('opens the PR on approval when it was deferred, then merges', async () => {
+    // require_pr_approval flow: the branch was pushed but the PR not yet opened,
+    // so the first GitHubPush read has no pr_number. After createPullRequest the
+    // record gains pr_number 7 and the merge proceeds.
+    prisma.approvalRecord.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'approval-1' });
+    prisma.gitHubPush.findFirst
+      .mockResolvedValueOnce({ repository: 'owner/repo', pr_number: null, pr_url: null })
+      .mockResolvedValueOnce({
+        repository: 'owner/repo',
+        pr_number: 7,
+        pr_url: 'https://github.com/owner/repo/pull/7',
+      });
+
+    await service.recordDecision({
+      executionId: 'exec-1',
+      deciderId: 'pm-1',
+      decision: ApprovalDecision.APPROVE,
+    });
+
+    expect(prOrchestrator.createPullRequest).toHaveBeenCalledWith('exec-1', 'exec-1');
+    expect(github.mergePullRequest).toHaveBeenCalledWith('owner', 'repo', 7, 'squash', 'install-1');
   });
 
   it.each([ApprovalDecision.REWORK, ApprovalDecision.REJECT])(

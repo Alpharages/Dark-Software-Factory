@@ -10,6 +10,8 @@ import { PassThrough } from 'stream';
 import * as child_process from 'child_process';
 import { AIProvider } from '@/prisma/client';
 import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
+import { ProjectWorkspaceService } from './project-workspace.service';
+import { EventBusService } from '@/common/event-bus.service';
 
 jest.mock('child_process');
 
@@ -21,6 +23,8 @@ describe('OpenHarnessRunnerService', () => {
   let mockConfig: Record<string, jest.Mock>;
   let mockStreamAdapter: Record<string, jest.Mock>;
   let mockGuardrails: Record<string, jest.Mock>;
+  let mockProjectWorkspace: Record<string, jest.Mock>;
+  let mockEventBus: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     mockExecutionRepo = {
@@ -68,6 +72,17 @@ describe('OpenHarnessRunnerService', () => {
       findMissingMandatedMcpServers: jest.fn().mockReturnValue([]),
       formatOwnFiles: jest.fn().mockResolvedValue({ formattedFiles: [] }),
     };
+    // Default: no per-project repo resolved — run in the given workspaceDir,
+    // matching the runner's pre-delivery behaviour (no code-ready emission).
+    mockProjectWorkspace = {
+      resolveWorkspaceDir: jest
+        .fn()
+        .mockImplementation(async (_ticketId: string, fallbackDir: string) => ({
+          dir: fallbackDir,
+          project: null,
+        })),
+    };
+    mockEventBus = { emit: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -77,6 +92,8 @@ describe('OpenHarnessRunnerService', () => {
         { provide: ExecutionTrackerService, useValue: mockExecutionTracker },
         { provide: PrismaService, useValue: mockPrisma },
         { provide: OpenHarnessRunGuardrailsService, useValue: mockGuardrails },
+        { provide: ProjectWorkspaceService, useValue: mockProjectWorkspace },
+        { provide: EventBusService, useValue: mockEventBus },
         { provide: OpenHarnessStreamAdapter, useValue: mockStreamAdapter },
       ],
     }).compile();

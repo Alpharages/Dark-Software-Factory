@@ -38,6 +38,13 @@ export default () => {
       webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
       autoMergeLowRisk: process.env.GITHUB_AUTO_MERGE_LOW_RISK === 'true',
       remindersEnabled: process.env.GITHUB_REMINDERS_ENABLED !== 'false',
+      // Global default for the PR-open approval gate. When true (default), an
+      // execution's branch is pushed to GitHub on success but the PR is only
+      // opened after PM approval. When false, the PR is opened immediately after
+      // the push. Overridable per-project via Project.require_pr_approval (the
+      // project value wins when non-null). Consumed by the code-delivery
+      // listener (push → conditional PR) and the approval gate (approve → PR).
+      requireApprovalForPr: process.env.GITHUB_REQUIRE_PR_APPROVAL !== 'false',
     },
 
     // ClickUp Integration
@@ -142,6 +149,11 @@ export default () => {
       isolateWorkspace: process.env.OPENHARNESS_ISOLATE_WORKSPACE === 'true',
       defaultSkill: process.env.OPENHARNESS_DEFAULT_SKILL || 'clickup-dev-implement',
       workspaceDir: process.env.OPENHARNESS_WORKSPACE_DIR || process.cwd(),
+      // Root under which per-project repo clones are kept (one clone per project,
+      // reused across runs). Each ticket's run executes in — and pushes from — a
+      // clone of its own project repo, not the DSF backend repo. Defaults to a
+      // tmp dir; set to a persistent path in production to avoid re-cloning.
+      projectWorkspacesRoot: process.env.OPENHARNESS_PROJECT_WORKSPACES_ROOT || undefined,
       maxTurns: parseInt(process.env.OPENHARNESS_MAX_TURNS || '200', 10),
       runTimeoutMs: parseInt(process.env.OPENHARNESS_RUN_TIMEOUT_MS || '1800000', 10),
       mandatedMcpServers: (process.env.OPENHARNESS_MANDATED_MCP_SERVERS || 'gitnexus')

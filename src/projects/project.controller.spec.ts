@@ -42,6 +42,7 @@ describe('ProjectController', () => {
     code_review_status: null,
     qa_max_retries: 3,
     max_execution_retries: 3,
+    require_pr_approval: null,
   };
 
   const mockIntegration = {

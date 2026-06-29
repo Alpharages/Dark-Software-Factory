@@ -115,6 +115,10 @@ export const envValidationSchema = Joi.object({
   }),
   GITHUB_AUTO_MERGE_LOW_RISK: Joi.boolean().default(false),
   GITHUB_REMINDERS_ENABLED: Joi.boolean().default(true),
+  // Global default for the PR-open approval gate (per-project overridable via
+  // Project.require_pr_approval). true = push branch on success, open PR only
+  // after PM approval; false = open PR immediately after push.
+  GITHUB_REQUIRE_PR_APPROVAL: Joi.boolean().default(true),
 
   // GitHub App (optional, alternative to token)
   GITHUB_APP_ID: Joi.number().optional(),
