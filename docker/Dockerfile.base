@@ -11,7 +11,7 @@
 #   docker build -f docker/Dockerfile.base -t dsf-agents-base:latest .
 # ===========================================
 
-FROM opensandbox/code-interpreter:v1.0.2
+FROM opensandbox/code-interpreter:v1.1.0
 
 USER root
 
