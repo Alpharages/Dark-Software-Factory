@@ -41,10 +41,11 @@ export class PRReminderService {
     }
 
     const { owner, repo } = this.parseRepository(repository);
+    const installationId = await this.resolveInstallationId(executionId);
 
     try {
       // Check if PR is still open before scheduling
-      const pr = await this.github.getPullRequest(owner, repo, prNumber, executionId);
+      const pr = await this.github.getPullRequest(owner, repo, prNumber, installationId);
       if (pr.state !== 'open' || pr.merged === true) {
         this.logger.debug(
           `PR ${repository}#${prNumber} is already ${pr.merged ? 'merged' : pr.state}, not scheduling reminders.`,
@@ -81,10 +82,11 @@ export class PRReminderService {
   async processReminder(payload: PRReminderPayload): Promise<void> {
     const { executionId, repository, prNumber, attempt } = payload;
     const { owner, repo } = this.parseRepository(repository);
+    const installationId = await this.resolveInstallationId(executionId);
 
     try {
       // 1. Check if PR is still open and needs a reminder
-      const pr = await this.github.getPullRequest(owner, repo, prNumber, executionId);
+      const pr = await this.github.getPullRequest(owner, repo, prNumber, installationId);
 
       if (pr.state !== 'open' || pr.merged === true) {
         this.logger.log(
@@ -102,7 +104,7 @@ export class PRReminderService {
 
       const message = reminderMessages[attempt.toString()] || reminderMessages['1'];
 
-      await this.github.addPRComment(owner, repo, prNumber, message, executionId);
+      await this.github.addPRComment(owner, repo, prNumber, message, installationId);
 
       // 3. Log decision
       await this.aiDecisionLogger.logDecision({
@@ -155,6 +157,26 @@ export class PRReminderService {
         executionId,
       });
     }
+  }
+
+  /**
+   * Resolve the GitHub App installationId for the execution's project so Octokit
+   * authenticates with the per-project DB token. Returns undefined when the
+   * project has no linked account (caller then relies on the legacy global PAT,
+   * if configured).
+   */
+  private async resolveInstallationId(executionId: string): Promise<string | undefined> {
+    const execution = await this.prisma.execution.findUnique({
+      where: { id: executionId },
+      select: {
+        ticket: {
+          select: {
+            project: { select: { gitHubAccount: { select: { installationId: true } } } },
+          },
+        },
+      },
+    });
+    return execution?.ticket?.project?.gitHubAccount?.installationId ?? undefined;
   }
 
   private parseRepository(repository: string): { owner: string; repo: string } {

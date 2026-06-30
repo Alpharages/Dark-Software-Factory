@@ -42,9 +42,13 @@ export class PRAutoMergeService {
     }
 
     try {
-      // 1. Fetch execution to get risk level
+      // 1. Fetch execution to get risk level + the project's GitHub account so
+      // Octokit authenticates with the per-project DB token (not a global PAT).
       const execution = await this.prisma.execution.findUnique({
         where: { id: executionId },
+        include: {
+          ticket: { include: { project: { include: { gitHubAccount: true } } } },
+        },
       });
 
       if (!execution || execution.risk_level !== PRRiskLevel.LOW) {
@@ -54,10 +58,12 @@ export class PRAutoMergeService {
         return false;
       }
 
+      const installationId = execution.ticket?.project?.gitHubAccount?.installationId ?? undefined;
+
       await this.approvalGate.assertApproved(executionId);
 
       // 2. Fetch PR to ensure it's mergeable
-      let pr: GitHubPR = await this.github.getPullRequest(owner, repo, prNumber, executionId);
+      let pr: GitHubPR = await this.github.getPullRequest(owner, repo, prNumber, installationId);
 
       if (pr.state !== 'open') {
         this.logger.warn(
@@ -73,7 +79,7 @@ export class PRAutoMergeService {
         );
         // Wait 3 seconds and retry once
         await new Promise((resolve) => setTimeout(resolve, 3000));
-        pr = await this.github.getPullRequest(owner, repo, prNumber, executionId);
+        pr = await this.github.getPullRequest(owner, repo, prNumber, installationId);
       }
 
       if (pr.mergeable === false) {
@@ -100,7 +106,7 @@ export class PRAutoMergeService {
         repo,
         prNumber,
         'squash',
-        executionId,
+        installationId,
       );
 
       // 4. Log decision

@@ -43,7 +43,15 @@ describe('PRReminderService', () => {
         },
         {
           provide: PrismaService,
-          useValue: {},
+          useValue: {
+            execution: {
+              // resolveInstallationId chains execution → ticket → project →
+              // gitHubAccount; this mock returns the per-project installationId.
+              findUnique: jest.fn().mockResolvedValue({
+                ticket: { project: { gitHubAccount: { installationId: 'inst-1' } } },
+              }),
+            },
+          },
         },
       ],
     }).compile();
@@ -67,7 +75,9 @@ describe('PRReminderService', () => {
 
     await service.scheduleInitialReminder('exec-1', 'owner/repo', 1);
 
-    expect(githubService.getPullRequest).toHaveBeenCalled();
+    // Octokit auth uses the project's per-project installationId (DB token),
+    // not the executionId (the prior bug, which only worked via the global PAT).
+    expect(githubService.getPullRequest).toHaveBeenCalledWith('owner', 'repo', 1, 'inst-1');
     expect(publisher.publishToQueue).toHaveBeenCalledWith(
       QUEUE_NAMES.GITHUB_PR_REMINDER_WAIT,
       expect.objectContaining({ attempt: 1 }),

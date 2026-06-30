@@ -99,12 +99,16 @@ export const envValidationSchema = Joi.object({
   AI_REVIEW_RATE_LIMIT_PER_MINUTE: Joi.number().integer().min(1).max(60).default(10),
   AI_REVIEW_MAX_DIFF_LINES: Joi.number().integer().min(100).max(5000).default(1000),
 
-  // GitHub Integration (REQUIRED)
+  // GitHub Integration (OPTIONAL legacy fallback)
+  // Per-project GitHub auth now comes from the linked GitHubAccount in the DB
+  // (OAuth access token + installationId). This global PAT is only a legacy
+  // fallback for callers that don't resolve a per-project token, so it is no
+  // longer required — leave it unset to run DB-token-only.
   GITHUB_TOKEN: Joi.string()
     .pattern(/^(ghp_|ghs_|github_pat_)/)
-    .required()
+    .optional()
+    .allow('')
     .messages({
-      'any.required': 'GITHUB_TOKEN is required for GitHub integration',
       'string.pattern.base':
         'GITHUB_TOKEN must be a valid GitHub token (starts with ghp_, ghs_, or github_pat_)',
     }),

@@ -89,6 +89,7 @@ describe('PRAutoMergeService', () => {
     (prismaService.execution.findUnique as jest.Mock).mockResolvedValue({
       risk_level: PRRiskLevel.LOW,
       ticket_id: 'ticket-1',
+      ticket: { project: { gitHubAccount: { installationId: 'inst-1' } } },
     });
     (githubService.getPullRequest as jest.Mock).mockResolvedValue({
       state: 'open',
@@ -104,12 +105,14 @@ describe('PRAutoMergeService', () => {
 
     expect(result).toBe(true);
     expect(approvalGate.assertApproved).toHaveBeenCalledWith('exec-1');
+    // Octokit auth uses the project's per-project installationId (DB token),
+    // not the executionId (the prior bug, which only worked via the global PAT).
     expect(githubService.mergePullRequest).toHaveBeenCalledWith(
       'owner',
       'repo',
       1,
       'squash',
-      'exec-1',
+      'inst-1',
     );
     expect(aiDecisionLogger.logDecision).toHaveBeenCalled();
   });
