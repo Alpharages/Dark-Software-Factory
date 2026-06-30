@@ -62,6 +62,19 @@ export class GitHubBranchPushService {
     const commitSha = this.git(repoDir, ['rev-parse', branch]).trim();
     const authUrl = await this.resolveAuthUrl(projectId, repositoryUrl);
 
+    // Refresh the remote-tracking ref for this branch so --force-with-lease has
+    // an accurate lease on RE-deliveries. The per-project clone is reused across
+    // runs and only ever fetches the default branch, so `origin/<branch>` is
+    // stale (or absent) after a prior delivery — and git then rejects the
+    // re-push with "! [rejected] ... (stale info)". Best-effort: the branch may
+    // not exist on the remote yet (first delivery), in which case there is
+    // simply nothing to lease against and the create-push proceeds.
+    try {
+      this.git(repoDir, ['fetch', authUrl, `+refs/heads/${branch}:refs/remotes/origin/${branch}`]);
+    } catch {
+      /* branch absent on remote (first delivery) — no lease ref to refresh */
+    }
+
     try {
       this.git(repoDir, [
         'push',
