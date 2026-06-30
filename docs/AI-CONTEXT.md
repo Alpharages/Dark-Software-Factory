@@ -74,3 +74,32 @@ for the child. Consumers gate on `subscription.isAvailable()` and fail open to t
 heuristic/fallback behaviour. Config moved from `anthropic.apiKey`/`model`/`maxTokens` to
 `anthropic.subscriptionModel`/`subscriptionCliPath`/`subscriptionTimeoutMs`. If a new feature needs
 an LLM call, use `SubscriptionCompletionService` — never `new Anthropic()` / an API key.
+
+## GitHub auth is DB-token-only; `GITHUB_TOKEN` is an optional legacy fallback (2026-06-30)
+
+GitHub authentication is sourced from the **linked `GitHubAccount` row in the DB** (per project via
+`project.github_account_id` → OAuth `access_token` + `installationId`), not a global PAT. The app
+boots and runs with **no `GITHUB_TOKEN` set**; the env var is now an optional, blank-allowed legacy
+fallback in `env.validation.ts` (was `.required()` — it is no longer). Do NOT re-add the `.required()`
+rule, and do NOT introduce new GitHub calls that depend on a global PAT.
+
+Two token mechanisms, both DB-sourced — use the right one:
+
+- **git clone/fetch/push** (`git` over HTTPS): build an authenticated URL via
+  `GitHubTokenResolverService.resolveForProject(projectId, url)` (decrypts the account token into
+  `https://x-access-token:<token>@…`). This is what `GitHubBranchPushService` uses; it never relies on
+  the local machine's `gh`/SSH credential helper, so it works on a live server.
+- **GitHub REST API** (`Octokit`, i.e. PR create/merge/comment): pass the project's `installationId`
+  to the `GitHubService` method. `GitHubAuthService.getAuthenticatedClient(installationId)` looks the
+  account up by `installationId` and uses its DB token. Resolve it from
+  `execution → ticket → project → gitHubAccount.installationId` (see
+  `github-pr-orchestrator.service.ts`, `approval-gate.service.ts`, `pr-auto-merge.service.ts`,
+  `pr-reminder.service.ts`). **Pitfall fixed 2026-06-30:** `pr-auto-merge` and `pr-reminder` were
+  passing `executionId` into the `installationId` parameter, so Octokit silently fell back to the
+  global PAT — which would have broken the instant `GITHUB_TOKEN` was removed. Always pass a real
+  `installationId`, never the executionId/correlationId.
+
+Note: the agent's OWN `git push` inside the bmad skill is a separate concern — its worktree `origin`
+has the token stripped (`project-workspace.service.ts`), so on a server with no `gh`/SSH it cannot
+push. DSF's `GitHubBranchPushService` is the authoritative pusher and covers delivery regardless; the
+only residual risk is a bmad skill that treats its own push failure as fatal.
