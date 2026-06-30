@@ -50,6 +50,10 @@ export class ApprovalGateService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly github: GitHubService,
+    // forwardRef: GitHubPROrchestrator → PRAutoMergeService → ApprovalGateService
+    // forms a provider cycle (PRAutoMergeService asserts approval), so this edge
+    // must be lazy or Nest cannot resolve PRAutoMergeService at boot.
+    @Inject(forwardRef(() => GitHubPROrchestrator))
     private readonly prOrchestrator: GitHubPROrchestrator,
     private readonly realtime: RealtimeService,
     // forwardRef: the dispatcher opens the gate and the gate feeds REJECT/REWORK

@@ -248,10 +248,24 @@ export class ClickUpProvider implements IPMProvider {
           reverse: 'true',
           page: page.toString(),
           limit: limit.toString(),
+          // Include subtasks so a ticket created as a subtask is still imported
+          // and dispatched (ClickUp's list endpoint returns only top-level tasks
+          // otherwise). Matches the polling path (getUpdatedTasks).
+          subtasks: 'true',
         },
       }),
     );
-    return { tasks: response.data.tasks || [] };
+    // ClickUp can return the same task twice when subtasks are included (surfaced
+    // both directly and as another task's subtask); dedup by id so each ticket
+    // yields a single intake/dispatch (OHP-2.6 idempotency finding).
+    const raw: ClickUpListTask[] = response.data.tasks || [];
+    const seen = new Set<string>();
+    const tasks = raw.filter((task) => {
+      if (seen.has(task.id)) return false;
+      seen.add(task.id);
+      return true;
+    });
+    return { tasks };
   }
 
   async getUpdatedTasks(teamId: string, since: Date): Promise<NormalizedTask[]> {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GitHubService, GitHubPR } from '../github.service';
 import { ApprovalGateService } from '@/approval-gate/approval-gate.service';
@@ -17,6 +17,11 @@ export class PRAutoMergeService {
     private readonly prisma: PrismaService,
     private readonly aiDecisionLogger: AIDecisionLoggerService,
     private readonly metrics: MetricsService,
+    // forwardRef: ApprovalGateService → GitHubPROrchestrator → PRAutoMergeService
+    // → ApprovalGateService is a provider cycle (the gate opens a PR via the
+    // orchestrator, which can auto-merge, which asserts approval). Deferring this
+    // back-edge lets Nest resolve the cycle at boot.
+    @Inject(forwardRef(() => ApprovalGateService))
     private readonly approvalGate: ApprovalGateService,
   ) {}
 
