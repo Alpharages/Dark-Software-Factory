@@ -55,15 +55,22 @@ export class GitHubPROrchestrator {
     });
 
     try {
-      // Load execution with ticket data
+      // Load execution with ticket + project data (project carries the default
+      // branch the PR must target).
       const execution = await this.prisma.execution.findUnique({
         where: { id: executionId },
-        include: { ticket: true },
+        include: { ticket: { include: { project: true } } },
       });
 
       if (!execution) {
         throw new Error(`Execution ${executionId} not found`);
       }
+
+      // Target the project's configured default branch, not a hardcoded 'main'.
+      // The per-ticket `ohp/<id>` branch is forked from the project's default
+      // branch, so opening the PR against the wrong base fails with
+      // "no history in common with main".
+      const baseBranch = execution.ticket.project?.default_branch || 'main';
 
       const githubPush = await this.prisma.gitHubPush.findFirst({
         where: { execution_id: executionId },
@@ -86,7 +93,7 @@ export class GitHubPROrchestrator {
         ticketTitle: execution.ticket.title,
         ticketDescription: execution.ticket.description ?? undefined,
         branchName: githubPush.branch_name,
-        baseBranch: 'main',
+        baseBranch,
       });
 
       // Step 2: Parse owner/repo from repository URL
@@ -103,7 +110,7 @@ export class GitHubPROrchestrator {
         owner,
         repo,
         head: githubPush.branch_name,
-        base: 'main',
+        base: baseBranch,
       });
 
       const prData = (await this.githubService.createPullRequest(
@@ -112,7 +119,7 @@ export class GitHubPROrchestrator {
         prTitle,
         prBody,
         githubPush.branch_name,
-        'main',
+        baseBranch,
         installationId,
       )) as { number: number; html_url: string };
 
