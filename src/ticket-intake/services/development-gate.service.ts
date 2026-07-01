@@ -24,7 +24,7 @@ export class DevelopmentGateService {
 
   /**
    * FR-CS20: Development gate — compare task status against ai_trigger_status.
-   * Sync method — no DB calls needed (integration is already resolved at both call sites).
+   * Project-aware mapped-status lookup may read DB-backed override rows.
    *
    * @param taskId     - External task ID (for logging)
    * @param taskStatus - Raw status string from PM provider
@@ -32,15 +32,15 @@ export class DevelopmentGateService {
    * @param source     - 'webhook' | 'polling' (affects which counter is incremented on mismatch)
    * @param correlationId - For structured logging
    */
-  check(
+  async check(
     taskId: string,
     taskStatus: string,
     integration: GateIntegration,
     source: 'webhook' | 'polling',
     correlationId: string,
-  ): DevelopmentGateDecision {
+  ): Promise<DevelopmentGateDecision> {
     const { ai_trigger_status, provider, project_id } = integration;
-    const mappedSkill = this.statusSkillMap.resolveSkill(taskStatus);
+    const mappedSkill = await this.statusSkillMap.resolveSkill(taskStatus, project_id);
     if (mappedSkill) {
       return { allowed: true, reason: 'mapped_status' };
     }

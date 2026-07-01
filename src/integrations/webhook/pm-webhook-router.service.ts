@@ -78,7 +78,7 @@ export class PmWebhookRouterService {
         ? (((taskStatusRaw as Record<string, unknown>)['status'] as string) ?? '')
         : '';
 
-    const gateDecision = this.developmentGate.check(
+    const gateDecision = await this.developmentGate.check(
       taskId,
       taskStatus,
       integration,

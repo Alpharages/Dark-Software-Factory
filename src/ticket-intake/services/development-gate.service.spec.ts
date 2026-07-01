@@ -39,7 +39,7 @@ describe('DevelopmentGateService', () => {
       incrementCounter: jest.fn(),
     };
     statusSkillMap = {
-      resolveSkill: jest.fn().mockReturnValue(null),
+      resolveSkill: jest.fn().mockResolvedValue(null),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -61,8 +61,8 @@ describe('DevelopmentGateService', () => {
   });
 
   describe('check', () => {
-    it('should ALLOW when status matches trigger status (case-insensitive, trimmed)', () => {
-      const result = service.check(
+    it('should ALLOW when status matches trigger status (case-insensitive, trimmed)', async () => {
+      const result = await service.check(
         'task-1',
         ' READY FOR AI ',
         mockIntegration,
@@ -75,21 +75,28 @@ describe('DevelopmentGateService', () => {
       expect(logger.warn).not.toHaveBeenCalled();
     });
 
-    it('should ALLOW status mapped to an OpenHarness skill even when not the trigger status', () => {
-      statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_CODE_REVIEW);
+    it('should ALLOW status mapped to an OpenHarness skill even when not the trigger status', async () => {
+      statusSkillMap.resolveSkill.mockResolvedValue(OpenHarnessSkill.CLICKUP_CODE_REVIEW);
 
-      const result = service.check('task-1', 'In Review', mockIntegration, 'webhook', 'corr-1');
+      const result = await service.check(
+        'task-1',
+        'In Review',
+        mockIntegration,
+        'webhook',
+        'corr-1',
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.reason).toBe('mapped_status');
+      expect(statusSkillMap.resolveSkill).toHaveBeenCalledWith('In Review', 'proj-1');
       expect(logger.warn).not.toHaveBeenCalled();
       expect(metrics.incrementCounter).not.toHaveBeenCalled();
     });
 
-    it('should REJECT and log warn when ai_trigger_status is missing', () => {
+    it('should REJECT and log warn when ai_trigger_status is missing', async () => {
       const integrationNoTrigger = { ...mockIntegration, ai_trigger_status: null };
 
-      const result = service.check(
+      const result = await service.check(
         'task-1',
         'any',
         integrationNoTrigger as any,
@@ -108,8 +115,8 @@ describe('DevelopmentGateService', () => {
       });
     });
 
-    it('should REJECT and log debug when status does not match trigger status (webhook — polling counter NOT incremented)', () => {
-      const result = service.check(
+    it('should REJECT and log debug when status does not match trigger status (webhook — polling counter NOT incremented)', async () => {
+      const result = await service.check(
         'task-1',
         'in progress',
         mockIntegration as any,
@@ -126,8 +133,8 @@ describe('DevelopmentGateService', () => {
       expect(metrics.incrementCounter).not.toHaveBeenCalled();
     });
 
-    it('should increment pm_polling_tasks_skipped_total for polling when status mismatch', () => {
-      service.check('task-1', 'backlog', mockIntegration as any, 'polling', 'corr-1');
+    it('should increment pm_polling_tasks_skipped_total for polling when status mismatch', async () => {
+      await service.check('task-1', 'backlog', mockIntegration as any, 'polling', 'corr-1');
 
       expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_polling_tasks_skipped_total', {
         provider: PMProvider.CLICKUP,
@@ -135,10 +142,10 @@ describe('DevelopmentGateService', () => {
       });
     });
 
-    it('should increment pm_tasks_dropped_no_trigger_total for webhooks when trigger missing', () => {
+    it('should increment pm_tasks_dropped_no_trigger_total for webhooks when trigger missing', async () => {
       const integrationNoTrigger = { ...mockIntegration, ai_trigger_status: '' };
 
-      service.check('task-1', 'any', integrationNoTrigger as any, 'webhook', 'corr-1');
+      await service.check('task-1', 'any', integrationNoTrigger as any, 'webhook', 'corr-1');
 
       expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_tasks_dropped_no_trigger_total', {
         provider: PMProvider.CLICKUP,
@@ -146,10 +153,10 @@ describe('DevelopmentGateService', () => {
       });
     });
 
-    it('should increment pm_polling_tasks_skipped_total for polling when trigger missing', () => {
+    it('should increment pm_polling_tasks_skipped_total for polling when trigger missing', async () => {
       const integrationNoTrigger = { ...mockIntegration, ai_trigger_status: '' };
 
-      service.check('task-1', 'any', integrationNoTrigger as any, 'polling', 'corr-1');
+      await service.check('task-1', 'any', integrationNoTrigger as any, 'polling', 'corr-1');
 
       expect(metrics.incrementCounter).toHaveBeenCalledWith('pm_tasks_dropped_no_trigger_total', {
         provider: PMProvider.CLICKUP,
@@ -157,10 +164,10 @@ describe('DevelopmentGateService', () => {
       });
     });
 
-    it('should handle different providers', () => {
+    it('should handle different providers', async () => {
       const githubIntegration = { ...mockIntegration, provider: 'GITHUB' as any };
 
-      const result = service.check(
+      const result = await service.check(
         'task-1',
         'ready for ai',
         githubIntegration as any,

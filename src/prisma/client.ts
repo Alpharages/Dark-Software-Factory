@@ -1,5 +1,6 @@
 import {
   Project,
+  ProjectStatusSkillMap,
   Ticket,
   Execution,
   ExecutionLog,
@@ -57,6 +58,7 @@ export * from './enums';
 
 // Model Compatibility
 export type ProjectModel = Project;
+export type ProjectStatusSkillMapModel = ProjectStatusSkillMap;
 export type TicketModel = Ticket;
 export type ExecutionModel = Execution;
 export type ExecutionLogModel = ExecutionLog;
@@ -106,4 +108,3 @@ export type QualityAnomalyModel = QualityAnomaly;
 export type QualityAnomalyConfigModel = QualityAnomalyConfig;
 export type ExecutionOverrideModel = ExecutionOverride;
 export type ConnectedAppModel = ConnectedApp;
-

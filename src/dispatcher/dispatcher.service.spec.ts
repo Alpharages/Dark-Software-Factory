@@ -21,6 +21,7 @@ describe('DispatcherService', () => {
   const makeTicket = (aiTriggerStatus = 'ready for ai') => ({
     id: 'ticket-uuid-1',
     project: {
+      id: 'project-1',
       integrations: [{ provider: PMProvider.CLICKUP, ai_trigger_status: aiTriggerStatus }],
     },
   });
@@ -49,7 +50,7 @@ describe('DispatcherService', () => {
       },
     };
     statusSkillMap = {
-      resolveSkill: jest.fn().mockReturnValue(OpenHarnessSkill.CLICKUP_CODE_REVIEW),
+      resolveSkill: jest.fn().mockResolvedValue(OpenHarnessSkill.CLICKUP_CODE_REVIEW),
       isLoopTerminal: jest.fn().mockReturnValue(false),
       loopMaxIterations: 5,
     };
@@ -87,10 +88,11 @@ describe('DispatcherService', () => {
       skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW,
       workspaceDir: '/workspaces/dsf',
     });
+    expect(statusSkillMap.resolveSkill).toHaveBeenCalledWith('in review', 'project-1');
   });
 
   it('dispatches ready-for-QA mapped status to QA skill', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_QA);
+    statusSkillMap.resolveSkill.mockResolvedValue(OpenHarnessSkill.CLICKUP_QA);
 
     const result = await service.dispatch({
       ...event,
@@ -109,7 +111,7 @@ describe('DispatcherService', () => {
   });
 
   it('dispatches the per-project trigger status to the configured default skill', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.resolveSkill.mockResolvedValue(null);
     prisma.ticket.findUnique.mockResolvedValueOnce(makeTicket('Ready For AI'));
 
     const result = await service.dispatch({
@@ -126,7 +128,7 @@ describe('DispatcherService', () => {
   });
 
   it('no-ops unmapped non-trigger status', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.resolveSkill.mockResolvedValue(null);
 
     const result = await service.dispatch({
       ...event,
@@ -138,7 +140,7 @@ describe('DispatcherService', () => {
   });
 
   it('no-ops loop-terminal statuses distinctly from unmapped statuses', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.resolveSkill.mockResolvedValue(null);
     statusSkillMap.isLoopTerminal.mockReturnValue(true);
 
     const result = await service.dispatch({
@@ -151,7 +153,7 @@ describe('DispatcherService', () => {
   });
 
   it('opens the approval gate for loop-terminal statuses with a completed execution', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.resolveSkill.mockResolvedValue(null);
     statusSkillMap.isLoopTerminal.mockReturnValue(true);
     prisma.execution.findFirst.mockResolvedValueOnce({ id: 'exec-done' });
 
@@ -170,7 +172,7 @@ describe('DispatcherService', () => {
   });
 
   it('dispatches failed QA back to implement', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
+    statusSkillMap.resolveSkill.mockResolvedValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
 
     const result = await service.dispatch({
       ...event,
@@ -209,7 +211,7 @@ describe('DispatcherService', () => {
   });
 
   it('allows re-dispatch after prior execution is terminal', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
+    statusSkillMap.resolveSkill.mockResolvedValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
     prisma.execution.findFirst.mockResolvedValueOnce(null);
     prisma.execution.count.mockResolvedValueOnce(1);
 
@@ -223,7 +225,7 @@ describe('DispatcherService', () => {
   });
 
   it('suppresses implement loopback when loop cap is reached', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
+    statusSkillMap.resolveSkill.mockResolvedValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
     prisma.execution.count.mockResolvedValueOnce(5);
 
     const result = await service.dispatch({
@@ -255,7 +257,7 @@ describe('DispatcherService', () => {
   });
 
   it('never rethrows when opening the approval gate fails (fire-and-forget)', async () => {
-    statusSkillMap.resolveSkill.mockReturnValue(null);
+    statusSkillMap.resolveSkill.mockResolvedValue(null);
     statusSkillMap.isLoopTerminal.mockReturnValue(true);
     prisma.execution.findFirst.mockResolvedValueOnce({ id: 'exec-done' });
     approvalGate.openGate.mockRejectedValueOnce(new Error('gate boom'));

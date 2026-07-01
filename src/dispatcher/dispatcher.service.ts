@@ -99,6 +99,7 @@ export class DispatcherService {
               where: this.providerWhere(event),
               select: { provider: true, ai_trigger_status: true },
             },
+            id: true,
           },
         },
       },
@@ -111,7 +112,7 @@ export class DispatcherService {
       return { dispatched: false, reason: 'ticket-not-found' };
     }
 
-    const mappedSkill = this.statusSkillMap.resolveSkill(status);
+    const mappedSkill = await this.statusSkillMap.resolveSkill(status, ticket.project.id);
     const skill =
       mappedSkill ??
       (this.isProjectTrigger(status, ticket.project.integrations[0]?.ai_trigger_status)

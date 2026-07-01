@@ -37,7 +37,7 @@ describe('PmWebhookRouterService', () => {
     projectIntegrationService = { findByWebhookId: jest.fn() };
     webhooksService = { processWebhook: jest.fn().mockResolvedValue({ success: true }) };
     logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
-    developmentGate = { check: jest.fn().mockReturnValue({ allowed: true }) } as any;
+    developmentGate = { check: jest.fn().mockResolvedValue({ allowed: true }) } as any;
     invalidSignatureCounter = { inc: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -140,7 +140,7 @@ describe('PmWebhookRouterService', () => {
       const secret = 'my-secret';
       const integration = makeIntegration({ webhook_secret: secret });
       projectIntegrationService.findByWebhookId.mockResolvedValue(integration as any);
-      developmentGate.check.mockReturnValue({ allowed: false, reason: 'status_mismatch' });
+      developmentGate.check.mockResolvedValue({ allowed: false, reason: 'status_mismatch' });
 
       const body = {
         webhook_id: 'wh-abc',

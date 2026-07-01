@@ -90,7 +90,7 @@ describe('PmPollingOrchestrator', () => {
         },
         {
           provide: DevelopmentGateService,
-          useValue: { check: jest.fn().mockReturnValue({ allowed: true }) },
+          useValue: { check: jest.fn().mockResolvedValue({ allowed: true }) },
         },
       ],
     }).compile();
@@ -203,7 +203,7 @@ describe('PmPollingOrchestrator', () => {
     } as any);
     integrationService.updateIntegration.mockResolvedValue(raw as any);
 
-    developmentGate.check.mockReturnValue({ allowed: false, reason: 'status_mismatch' });
+    developmentGate.check.mockResolvedValue({ allowed: false, reason: 'status_mismatch' });
 
     await orchestrator.pollDueIntegrations();
 
@@ -225,7 +225,7 @@ describe('PmPollingOrchestrator', () => {
     } as any);
     integrationService.updateIntegration.mockResolvedValue(raw as any);
 
-    developmentGate.check.mockReturnValue({ allowed: false, reason: 'trigger_not_configured' });
+    developmentGate.check.mockResolvedValue({ allowed: false, reason: 'trigger_not_configured' });
 
     await orchestrator.pollDueIntegrations();
 
@@ -247,8 +247,8 @@ describe('PmPollingOrchestrator', () => {
 
     // Mock gate: allow first, reject second
     developmentGate.check
-      .mockReturnValueOnce({ allowed: true, reason: 'allowed' })
-      .mockReturnValueOnce({ allowed: false, reason: 'status_mismatch' });
+      .mockResolvedValueOnce({ allowed: true, reason: 'allowed' })
+      .mockResolvedValueOnce({ allowed: false, reason: 'status_mismatch' });
 
     await orchestrator.pollDueIntegrations();
 

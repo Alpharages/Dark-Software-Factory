@@ -38,9 +38,25 @@ model Project {
   github_account_id     String?                @map("github_account_id")
   gitHubAccount         GitHubAccount?         @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
   integrations          ProjectIntegration[]
+  status_skill_maps     ProjectStatusSkillMap[]
 
   @@index([github_account_id])
   @@map("projects")
+}
+
+model ProjectStatusSkillMap {
+  id                String   @id @default(uuid())
+  project_id        String
+  status            String
+  normalized_status String
+  skill             String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  project           Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, normalized_status])
+  @@index([project_id])
+  @@map("project_status_skill_maps")
 }
 
 model Ticket {

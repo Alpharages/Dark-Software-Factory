@@ -56,7 +56,7 @@ export class PmPollingOrchestrator {
           const messageId = `polling-${integration.id}-${task.id}-${Date.now()}`;
 
           // CS1-6: Development gate — only tasks at trigger status enter the dev queue
-          const gateDecision = this.developmentGate.check(
+          const gateDecision = await this.developmentGate.check(
             task.id,
             task.status.name,
             integration,
