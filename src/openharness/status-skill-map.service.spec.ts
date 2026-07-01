@@ -200,6 +200,35 @@ describe('StatusSkillMapService', () => {
     await expect(dbGlobalService.resolveSkill('in review')).resolves.toBeNull();
   });
 
+  it('reflects a SystemConfig edit immediately after invalidateGlobalCache (AC4, no redeploy)', async () => {
+    const prisma = makePrisma();
+    (prisma.systemConfig.findUnique as jest.Mock).mockResolvedValueOnce({
+      value: JSON.stringify(DEFAULT_STATUS_SKILL_MAP),
+    });
+    const service = new StatusSkillMapService(
+      {
+        get: jest.fn().mockReturnValue({
+          entries: DEFAULT_STATUS_SKILL_MAP,
+          loopTerminalStatuses: DEFAULT_LOOP_TERMINAL_STATUSES,
+          loopMaxIterations: 5,
+        }),
+      } as unknown as ConfigService,
+      prisma,
+    );
+
+    await expect(service.resolveSkill('approved')).resolves.toBe(OpenHarnessSkill.CLICKUP_QA);
+
+    (prisma.systemConfig.findUnique as jest.Mock).mockResolvedValueOnce({
+      value: JSON.stringify([{ status: 'approved', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW }]),
+    });
+    // Without invalidation the 30s TTL cache would still serve the stale entry.
+    service.invalidateGlobalCache();
+
+    await expect(service.resolveSkill('approved')).resolves.toBe(
+      OpenHarnessSkill.CLICKUP_CODE_REVIEW,
+    );
+  });
+
   it('keeps ClickUp status literals out of lookup logic', () => {
     const source = readFileSync(__dirname + '/status-skill-map.service.ts', 'utf8');
 

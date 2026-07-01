@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '@/database/prisma.service';
 import { OpenHarnessSkill } from './skills.enum';
 
-const GLOBAL_STATUS_SKILL_MAP_CONFIG_KEY = 'status_skill_map.global';
+export const GLOBAL_STATUS_SKILL_MAP_CONFIG_KEY = 'status_skill_map.global';
 const CACHE_TTL_MS = 30_000;
 
 type SkillMapCache = {
@@ -74,6 +74,14 @@ export class StatusSkillMapService {
 
   isLoopTerminal(status: string | null | undefined): boolean {
     return !!status && this.loopTerminalStatuses.has(normalizeStatus(status));
+  }
+
+  /**
+   * Drops the cached global map so the next resolveSkill() re-reads SystemConfig.
+   * Called by the admin write path after a successful save — AC4 "no redeploy".
+   */
+  invalidateGlobalCache(): void {
+    this.globalCache = null;
   }
 
   private async effectiveProjectMap(projectId: string): Promise<Map<string, OpenHarnessSkill>> {
