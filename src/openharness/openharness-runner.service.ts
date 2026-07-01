@@ -15,6 +15,7 @@ import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openhar
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
 import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 import { ProjectWorkspaceService } from './project-workspace.service';
+import { SkillModelMapService } from './skill-model-map.service';
 import { OpenHarnessCodeReadyEvent } from './events/openharness-code-ready.event';
 import { EventBusService } from '@/common/event-bus.service';
 
@@ -51,6 +52,7 @@ export class OpenHarnessRunnerService {
     private readonly guardrails: OpenHarnessRunGuardrailsService,
     private readonly projectWorkspace: ProjectWorkspaceService,
     private readonly eventBus: EventBusService,
+    private readonly skillModelMap: SkillModelMapService,
     @Optional()
     private readonly streamAdapter?: OpenHarnessStreamAdapter,
   ) {}
@@ -70,13 +72,13 @@ export class OpenHarnessRunnerService {
     const formatEnabled = this.configService.get<boolean>('openharness.formatEnabled') ?? true;
     const formatCommand =
       this.configService.get<string>('openharness.formatCommand') ?? 'pnpm exec prettier --write';
-    const model = this.requiredConfig('openharness.model');
     const binaryPath = this.requiredConfig('openharness.binaryPath');
-    // Agent runtime selector. 'claude' spawns the first-party Claude Code wrapper
-    // (legitimately on the Claude subscription's plan limits); anything else keeps
-    // the default OpenHarness path unchanged.
-    const runtime = this.configService.get<string>('openharness.runtime') ?? 'oh';
-    const claudeModel = this.configService.get<string>('openharness.claudeModel') ?? 'sonnet';
+    // Model + agent runtime are resolved from the global skill→model map (A3),
+    // falling back to static config when the map has no entry for this skill.
+    // 'claude' runtime spawns the first-party Claude Code wrapper (legitimately
+    // on the Claude subscription's plan limits); anything else keeps the
+    // default OpenHarness path unchanged.
+    const { model, runtime } = await this.skillModelMap.resolveModel(skill);
     const isolateWorkspace =
       this.configService.get<boolean>('openharness.isolateWorkspace') ?? false;
     const ticket = await this.prisma.ticket.findUnique({
@@ -100,10 +102,9 @@ export class OpenHarnessRunnerService {
 
     // Record the engine model once, up-front, in a single write — avoids
     // duplicating the selected_model write across the success/failure branches.
-    // The claude runtime runs a different model than the oh `model` config.
     await this.prisma.execution.update({
       where: { id: execution.id },
-      data: { selected_model: runtime === 'claude' ? claudeModel : model },
+      data: { selected_model: model },
     });
 
     // Resolve the MCP config to an ABSOLUTE path against this process's cwd
@@ -244,9 +245,11 @@ export class OpenHarnessRunnerService {
             LORE_KEY: this.configService.get<string>('LORE_KEY') || process.env.LORE_KEY || '',
             OH_RUN_WORKFLOW: skill,
             OH_RUN_MCP_CONFIG: mcpConfigPath,
-            OH_RUN_MODEL: model,
-            // Consumed only by scripts/claude-run-skill.sh (runtime === 'claude').
-            CLAUDE_RUN_MODEL: claudeModel,
+            // Each wrapper falls back to its own default when its var is unset/empty
+            // (`${OH_RUN_MODEL:-gpt-5.4}` / `${CLAUDE_RUN_MODEL:-sonnet}`), so only
+            // the var matching the resolved runtime needs the real value.
+            OH_RUN_MODEL: runtime === 'oh' ? model : '',
+            CLAUDE_RUN_MODEL: runtime === 'claude' ? model : '',
             OH_RUN_MAX_TURNS: String(maxTurns),
             OH_RUN_STREAM_STDOUT: useWrapper ? '1' : '',
             ...(useWrapper

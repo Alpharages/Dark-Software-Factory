@@ -12,6 +12,7 @@ import { AIProvider } from '@/prisma/client';
 import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 import { ProjectWorkspaceService } from './project-workspace.service';
 import { EventBusService } from '@/common/event-bus.service';
+import { SkillModelMapService } from './skill-model-map.service';
 
 jest.mock('child_process');
 
@@ -25,6 +26,7 @@ describe('OpenHarnessRunnerService', () => {
   let mockGuardrails: Record<string, jest.Mock>;
   let mockProjectWorkspace: Record<string, jest.Mock>;
   let mockEventBus: Record<string, jest.Mock>;
+  let mockSkillModelMap: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     mockExecutionRepo = {
@@ -83,6 +85,11 @@ describe('OpenHarnessRunnerService', () => {
         })),
     };
     mockEventBus = { emit: jest.fn() };
+    mockSkillModelMap = {
+      resolveModel: jest
+        .fn()
+        .mockResolvedValue({ model: 'gpt-5.4', provider: 'openai', runtime: 'oh' }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -94,6 +101,7 @@ describe('OpenHarnessRunnerService', () => {
         { provide: OpenHarnessRunGuardrailsService, useValue: mockGuardrails },
         { provide: ProjectWorkspaceService, useValue: mockProjectWorkspace },
         { provide: EventBusService, useValue: mockEventBus },
+        { provide: SkillModelMapService, useValue: mockSkillModelMap },
         { provide: OpenHarnessStreamAdapter, useValue: mockStreamAdapter },
       ],
     }).compile();
@@ -439,5 +447,66 @@ describe('OpenHarnessRunnerService', () => {
       where: { id: 'exec-123' },
       data: { selected_model: expect.any(String) },
     });
+  });
+
+  it('resolves model/runtime from the skill→model map and drives wrapper/env/selected_model (A3 AC3)', async () => {
+    mockSkillModelMap.resolveModel.mockResolvedValue({
+      model: 'opus',
+      provider: 'claude',
+      runtime: 'claude',
+    });
+    const mockChild = new EventEmitter() as any;
+    mockChild.stdout = new PassThrough();
+    mockChild.stderr = new PassThrough();
+    mockChild.kill = jest.fn();
+    (child_process.spawn as jest.Mock).mockReturnValue(mockChild);
+
+    const runPromise = service.runForTicket('ticket-1', {
+      skill: 'clickup-code-review',
+      workspaceDir: '/tmp',
+    });
+    setTimeout(() => mockChild.emit('close', 0), 10);
+    await runPromise;
+
+    expect(mockSkillModelMap.resolveModel).toHaveBeenCalledWith('clickup-code-review');
+    expect(mockPrisma.execution.update).toHaveBeenCalledWith({
+      where: { id: 'exec-123' },
+      data: { selected_model: 'opus' },
+    });
+    expect(child_process.spawn).toHaveBeenCalledWith(
+      expect.stringContaining('scripts/claude-run-skill.sh'),
+      expect.any(Array),
+      expect.objectContaining({
+        env: expect.objectContaining({ CLAUDE_RUN_MODEL: 'opus', OH_RUN_MODEL: '' }),
+      }),
+    );
+  });
+
+  it('falls back to the oh wrapper/env when the map resolves an oh runtime (AC4)', async () => {
+    mockSkillModelMap.resolveModel.mockResolvedValue({
+      model: 'gpt-5.4',
+      provider: 'openai',
+      runtime: 'oh',
+    });
+    const mockChild = new EventEmitter() as any;
+    mockChild.stdout = new PassThrough();
+    mockChild.stderr = new PassThrough();
+    mockChild.kill = jest.fn();
+    (child_process.spawn as jest.Mock).mockReturnValue(mockChild);
+
+    const runPromise = service.runForTicket('ticket-1', {
+      skill: 'clickup-dev-implement',
+      workspaceDir: '/tmp',
+    });
+    setTimeout(() => mockChild.emit('close', 0), 10);
+    await runPromise;
+
+    expect(child_process.spawn).toHaveBeenCalledWith(
+      expect.stringContaining('scripts/oh-run-skill.sh'),
+      expect.any(Array),
+      expect.objectContaining({
+        env: expect.objectContaining({ OH_RUN_MODEL: 'gpt-5.4', CLAUDE_RUN_MODEL: '' }),
+      }),
+    );
   });
 });

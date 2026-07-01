@@ -59,6 +59,19 @@ model ProjectStatusSkillMap {
   @@map("project_status_skill_maps")
 }
 
+model SkillModelMap {
+  id         String   @id @default(uuid())
+  skill      String   @unique // validated against OpenHarnessSkill at write time
+  model      String // e.g. 'gpt-5.4' (oh) or 'opus'/'sonnet' (claude)
+  provider   String // 'openai' | 'claude'
+  runtime    String // 'oh' | 'claude'
+  updated_by String?
+  updated_at DateTime @updatedAt
+  created_at DateTime @default(now())
+
+  @@map("skill_model_maps")
+}
+
 model Ticket {
   id                   String               @id @default(uuid())
   clickup_task_id      String               @unique

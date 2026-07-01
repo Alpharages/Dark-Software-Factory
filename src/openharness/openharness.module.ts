@@ -6,6 +6,7 @@ import { RealtimeModule } from '@/realtime/realtime.module';
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
 import { OpenHarnessExecutionController } from './openharness-execution.controller';
 import { StatusSkillMapService } from './status-skill-map.service';
+import { SkillModelMapService } from './skill-model-map.service';
 import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 import { ProjectWorkspaceService } from './project-workspace.service';
 
@@ -17,6 +18,7 @@ import { ProjectWorkspaceService } from './project-workspace.service';
     OpenHarnessRunGuardrailsService,
     OpenHarnessStreamAdapter,
     StatusSkillMapService,
+    SkillModelMapService,
     ProjectWorkspaceService,
   ],
   exports: [
@@ -24,6 +26,7 @@ import { ProjectWorkspaceService } from './project-workspace.service';
     OpenHarnessRunGuardrailsService,
     OpenHarnessStreamAdapter,
     StatusSkillMapService,
+    SkillModelMapService,
     ProjectWorkspaceService,
   ],
 })

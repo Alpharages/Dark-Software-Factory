@@ -2,6 +2,7 @@ import { PrismaClient, TicketStatus, AIProvider, ExecutionStatus } from '@prisma
 import { seedAdminUser } from './seeds/admin.seeder';
 import { seedSystemConfig } from './seeds/system-config.seeder';
 import { seedStatusSkillMap } from './seeds/status-skill-map.seeder';
+import { seedSkillModelMap } from './seeds/skill-model-map.seeder';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
@@ -22,6 +23,7 @@ async function main() {
   // Seed System Configs
   await seedSystemConfig(prisma);
   await seedStatusSkillMap(prisma);
+  await seedSkillModelMap(prisma);
 
   // Create sample project (idempotent)
   await prisma.project.upsert({
