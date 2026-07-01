@@ -17,21 +17,42 @@ describe('AiAccountsController', () => {
     controller = new AiAccountsController(service as unknown as AiAccountsService);
   });
 
+  // Minimal Fastify request stub exposing the @fastify/multipart surface the controller uses.
+  const filePart = (csv: string, truncated = false) => ({
+    toBuffer: async () => Buffer.from(csv),
+    file: { truncated },
+  });
+  const mockReq = (part: unknown, isMultipart = true) =>
+    ({ isMultipart: () => isMultipart, file: jest.fn().mockResolvedValue(part) }) as never;
+
   it('import() forwards the uploaded file buffer to the service', async () => {
-    const file = { buffer: Buffer.from('csv') } as Express.Multer.File;
-    const result = await controller.import(file);
+    const result = await controller.import(mockReq(filePart('csv')));
 
     expect(result).toEqual({ imported: 2, skipped: 0, errors: [] });
-    expect(service.importFromCsv).toHaveBeenCalledWith(file.buffer);
+    expect(service.importFromCsv).toHaveBeenCalledWith(Buffer.from('csv'));
   });
 
   it('import() returns only counts + redacted errors, never credential data', async () => {
-    const result = await controller.import({ buffer: Buffer.from('x') } as Express.Multer.File);
+    const result = await controller.import(mockReq(filePart('x')));
     expect(Object.keys(result)).toEqual(['imported', 'skipped', 'errors']);
   });
 
   it('import() rejects a missing file with 400', async () => {
-    await expect(controller.import(undefined)).rejects.toThrow(BadRequestException);
+    await expect(controller.import(mockReq(null))).rejects.toThrow(BadRequestException);
+    expect(service.importFromCsv).not.toHaveBeenCalled();
+  });
+
+  it('import() rejects a non-multipart request with 400', async () => {
+    await expect(controller.import(mockReq(filePart('x'), false))).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(service.importFromCsv).not.toHaveBeenCalled();
+  });
+
+  it('import() rejects an oversized (truncated) upload with 400', async () => {
+    await expect(controller.import(mockReq(filePart('x', true)))).rejects.toThrow(
+      BadRequestException,
+    );
     expect(service.importFromCsv).not.toHaveBeenCalled();
   });
 

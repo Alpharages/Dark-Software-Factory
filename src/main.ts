@@ -29,6 +29,7 @@ if (process.env.SENTRY_DSN) {
 // Now import NestJS and app modules
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import fastifyMultipart from '@fastify/multipart';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { VersioningType, RequestMethod } from '@nestjs/common';
 import { AppModule } from './app.module';
@@ -45,6 +46,14 @@ async function bootstrap() {
       rawBody: true,
     },
   );
+
+  // Multipart/form-data support (Fastify-native). multer/@nestjs/platform-express is Express-only
+  // and never populates uploads under the Fastify adapter — the ADMIN CSV import route reads the
+  // file straight off the Fastify request. 5 MB cap, single file; truncation surfaced, not thrown.
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    throwFileSizeLimit: false,
+  });
 
   const logger = app.get(LoggerService);
   app.useLogger(logger);

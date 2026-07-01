@@ -6,11 +6,11 @@ import {
   Param,
   Patch,
   Post,
-  UploadedFile,
+  Req,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import type { FastifyRequest } from 'fastify';
+import '@fastify/multipart'; // augments FastifyRequest with isMultipart()/file()
 import {
   ApiBearerAuth,
   ApiBody,
@@ -38,12 +38,10 @@ import { SetAiAccountEnabledDto } from './dto/set-enabled.dto';
 export class AiAccountsController {
   constructor(private readonly accounts: AiAccountsService) {}
 
-  // ponytail: the CSV rides in the multipart file buffer (`file.buffer`), never in
-  // `request.body`, so the global LoggingInterceptor (which only logs request.body) never sees
-  // credential bytes — no per-route body-log opt-out needed (AC3).
+  // The CSV rides in the multipart file stream, never in `request.body`, so the global
+  // LoggingInterceptor (which only logs request.body) never sees credential bytes (AC3).
   @Post('import')
   @Roles(Role.ADMIN)
-  @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
     summary: 'Import AI accounts from a CSV (ADMIN). Import-only, encrypted at rest.',
   })
@@ -62,11 +60,19 @@ export class AiAccountsController {
     },
   })
   @ApiResponse({ status: 201, description: 'Import summary: counts + redacted per-row errors' })
-  async import(@UploadedFile() file?: Express.Multer.File) {
-    if (!file?.buffer) {
+  async import(@Req() req: FastifyRequest) {
+    if (!req.isMultipart()) {
+      throw new BadRequestException('Expected multipart/form-data with a "file" field.');
+    }
+    const part = await req.file();
+    if (!part) {
       throw new BadRequestException('CSV file is required (multipart field "file").');
     }
-    return this.accounts.importFromCsv(file.buffer);
+    const buffer = await part.toBuffer();
+    if (part.file.truncated) {
+      throw new BadRequestException('CSV exceeds the maximum allowed size (5 MB).');
+    }
+    return this.accounts.importFromCsv(buffer);
   }
 
   @Get()

@@ -181,6 +181,26 @@ describe('AiAccountsService', () => {
       expect(summary.errors[0].reason).toMatch(/missing required column/);
     });
 
+    it('edge: duplicate (provider,label) within one file imports once, skips the rest', async () => {
+      const summary = await service.importFromCsv(csv(CLAUDE_ROW, CLAUDE_ROW));
+      expect(summary.imported).toBe(1);
+      expect(summary.skipped).toBe(1);
+      expect(prisma._rows).toHaveLength(1);
+      expect(summary.errors[0]).toMatchObject({ row: 2 });
+      expect(summary.errors[0].reason).toMatch(/duplicate/);
+    });
+
+    it('AC6: rejects credentials missing a provider-required key (redacted, key name only)', async () => {
+      // claude row without "password"
+      const summary = await service.importFromCsv(
+        csv(`x,claude,claude,"{""email"":""${SECRET_EMAIL}""}","{}"`),
+      );
+      expect(summary.imported).toBe(0);
+      expect(summary.skipped).toBe(1);
+      expect(summary.errors[0].reason).toMatch(/missing required key "password"/);
+      expect(summary.errors[0].reason).not.toContain(SECRET_EMAIL);
+    });
+
     it('edge: mixed valid/invalid rows import partially with per-row errors', async () => {
       const summary = await service.importFromCsv(
         csv(CLAUDE_ROW, `bad,openai,claude,"{}","{}"`, OPENAI_ROW),
