@@ -254,3 +254,149 @@ only `bmad-mcp-server` needs a code change (OHP-4.2).
 - Whether OpenHarness can drive the full `bmad` execute workflow — resolved in OHP-1.2.
 - Commercial ToS / billing model — resolved in OHP-4.6.
 - OpenHarness maturity (young HKUDS/MIT project) — mitigate by vendoring/pinning.
+
+---
+
+# Post-Pivot Feature Epics
+
+These epics extend the post-pivot control shell with new capabilities. They are independent of
+the OHP-3/OHP-4 roadmap above and of each other. Authored from an in-session feature discussion
+on 2026-07-01.
+
+## Epic Summary
+
+| Epic   | Name                                         | Status   | Depends on | ClickUp                                          |
+| ------ | -------------------------------------------- | -------- | ---------- | ------------------------------------------------ |
+| Epic A | Skill & Model Routing                        | Proposed | —          | [86ey4235p](https://app.clickup.com/t/86ey4235p) |
+| Epic B | Dependency-aware ticket execution sequencing | Proposed | —          | [86ey4237n](https://app.clickup.com/t/86ey4237n) |
+
+---
+
+## Epic A — Skill & Model Routing
+
+**Goal:** Replace DSF's static, single-model, single-account agent execution with (1) a **global
+skill→model mapping** managed by admins, (2) a **multi-account, quota-aware load balancer** spanning
+Claude + ChatGPT/OpenAI accounts, and (3) a **per-project status→skill map** with a global fallback,
+plus per-skill compute stats.
+
+This combines two layers of one system: the skill→model map and status→skill map are the **control
+plane**, and the load balancer is the **data plane** that enforces them at dispatch time.
+
+**Depends on:** — (independent). **Scope:** backend routing + admin config UI; no new skills beyond
+the existing 3-skill enum.
+
+**Current state (as-is):**
+
+- Model/runtime selection is static & global — `OpenHarnessRunnerService.runForTicket()`
+  (`src/openharness/openharness-runner.service.ts:73-79`) reads `openharness.model`/`runtime`/`claudeModel`
+  straight from config. No per-skill model choice, no account pool, no failover (`maxRetries: 0`, line 96).
+- Skills are a fixed enum of 3 (`src/openharness/skills.enum.ts`): `clickup-dev-implement`,
+  `clickup-code-review`, `clickup-qa`.
+- The status→skill map is a global env var (`STATUS_SKILL_MAP`), parsed in
+  `src/config/status-skill-map.config.ts`, resolved by `StatusSkillMapService.resolveSkill()`.
+- `CostOptimizerService.selectOptimalModel()` (`src/cost-tracking/cost-optimizer.service.ts:56`)
+  exists but is **dead code** (zero callers) — the natural selector seam.
+- No per-skill cost/compute tracking; OpenHarness runs emit **zero** cost rows today.
+- ChatGPT/OpenAI via the `oh` runtime is already proven working; Claude runs via
+  `scripts/claude-run-skill.sh` on the subscription (zero-token rule still holds — see `docs/AI-CONTEXT.md`).
+
+### Stories
+
+- **A1 — Project-level status→skill map with global fallback.**
+  Move `STATUS_SKILL_MAP` out of `.env` into the DB. Per-project `{status, skill}` entries where
+  **multiple statuses MAY map to one skill** (e.g. `rejected` + `in progress` → `clickup-dev-implement`).
+  Keep a global default map. Resolution: project-level if set, else global default;
+  `StatusSkillMapService.resolveSkill()` becomes project-aware.
+  _AC:_ env behavior preserved as the global default; a project with no map behaves as today; loop
+  terminals (`passed`/`done`) and `loopMaxIterations` still work.
+- **A2 — Admin UI: global status→skill defaults.**
+  Backend API + dashboard surface to view/edit the global default status→skill map.
+  _AC:_ admin can add/remove/edit `{status, skill}` entries; changes take effect without redeploy.
+- **A3 — Global skill→model mapping (admin UI).**
+  One global map (not per-project): each skill → a model, where each model resolves to a
+  **provider + runtime** (e.g. `implement → OpenAI via oh`; `code-review` + `qa → Claude top model via claude`).
+  _AC:_ cheap model for `clickup-dev-implement`; top-rated model for `clickup-code-review` and
+  `clickup-qa`; map drives the runner's model/runtime choice (replaces static config read).
+- **A4 — Multi-account credential pool (encrypted).**
+  Pool covering both providers: Claude (`claude` runtime, subscription email/password) and
+  OpenAI/ChatGPT (`oh` runtime, already working). Import via **CSV** → **encrypted at rest** using
+  existing `ENCRYPTION_KEY`/`common/encryption`. One row per account: `provider`, `runtime`,
+  encrypted credentials, per-provider quota config.
+  _AC:_ credentials encrypted at rest; CSV is import-only and gitignored, never logged; account can
+  be enabled/disabled.
+- **A5 — Quota-aware load balancer (core).**
+  Track each account's quota — Claude: **5-hour rolling window AND weekly limit** (must not burn one
+  account's weekly budget early and starve the rest of the week); OpenAI/ChatGPT: its own limits.
+  Pick an account of the right provider for the chosen model (A3), respecting availability + remaining
+  budget; rotate/spread; failover when exhausted/failing. Repurpose `CostOptimizerService` as the seam.
+  _AC:_ with N accounts, load spreads so no single account is exhausted prematurely; an
+  exhausted/failing account is skipped and the next eligible one is chosen.
+- **A6 — Wire selection into the runner.**
+  `runForTicket()` selects model (A3) → eligible account (A5) → drives the correct wrapper
+  (`oh` vs `claude`) + env (`OH_RUN_MODEL`/`CLAUDE_RUN_MODEL`, account credentials); persists
+  `selected_model` + account on the `Execution`.
+  _AC:_ no static `openharness.model`/`runtime` read on the hot path; chosen model + account recorded.
+- **A7 — Per-skill compute stats.**
+  Emit a cost/compute record per skill run (none today), aggregated per skill (+ per project).
+  _AC:_ each completed run writes a record keyed by skill + project + account/model with
+  tokens/cost/duration; aggregation queryable.
+
+**Proposed data model:** `ProjectStatusSkillMap` (or JSON on `Project`); global default map
+(`SystemConfig`/table); `SkillModelMap` (global skill → {model, provider, runtime}); `AiAccount`
+(pool row, encrypted creds, quota config); `AiAccountUsage` (rolling 5h + weekly accounting);
+per-skill cost rows (extend `AICostLog`/`CostRecord` with `skill` + `project_id`, or new table).
+
+**Risks / decisions:**
+
+- **Credential security** — email/password is sensitive; encrypt at rest, gitignore the CSV, never
+  log (hard AC on A4).
+- **Claude login automation** — subscription login is an interactive OAuth/browser flow, possibly
+  MFA/captcha. **Recommend a spike before A5.** ChatGPT via `oh` is already proven, so this narrows
+  to Claude only.
+- **Quota visibility** — Claude does not cleanly expose remaining 5h/weekly quota; A5 likely tracks
+  our own consumption estimates against a configured weekly budget per account.
+
+---
+
+## Epic B — Dependency-aware ticket execution sequencing
+
+**Goal:** DSF must respect ticket/task **dependencies**. If ticket A depends on ticket B, B must
+finish executing before A starts. Today the dispatcher treats every ticket independently and has no
+dependency awareness.
+
+**Depends on:** — (independent).
+
+**Current state (as-is):** `DispatcherService` (`src/dispatcher/dispatcher.service.ts`) is purely
+status-driven and per-ticket — it resolves a skill from status and dispatches immediately
+(`runner.runForTicket`, line 210), hardcoding `ai_provider: AIProvider.OPENHARNESS` (lines 193, 273).
+No concept of inter-ticket dependencies exists in the dispatch path.
+
+### Stories
+
+- **B1 — Dependency sync (provider-abstracted).**
+  Pull ticket dependencies from **ClickUp** native links (`waiting_on` / `blocking`), behind an
+  abstraction so **Jira / Asana** can plug in later (each provider has its own representation).
+  _AC:_ ClickUp dependency links are synced into DSF; source is abstracted behind a provider
+  interface; existing ClickUp sync/polling is reused where possible.
+- **B2 — Dependency model.**
+  Store blockers / blocked-by per ticket in DSF's DB.
+  _AC:_ a ticket records which tickets it is waiting on; relationships survive resyncs and are
+  queryable by the dispatcher.
+- **B3 — Dispatcher gate with PM-configurable behavior.**
+  Before dispatching ticket A, check its blockers; if any is not terminal/done, do not dispatch.
+  PM chooses, per project (and/or per ticket), between **hold** (wait for manual release) and
+  **auto-resume** (dispatch automatically when all blockers complete).
+  _AC:_ a ticket with unfinished blockers is never dispatched; when blockers complete, behavior
+  follows the PM's hold/auto-resume setting; auto-resume needs no manual action; hold requires
+  explicit release.
+
+**Proposed data model:** `TicketDependency` (`ticket_id` ↔ `depends_on_ticket_id` + provider source);
+per-project (or per-ticket) `dependency_block_behavior` = `hold | auto_resume` (column on
+`Project`/`ProjectIntegration` + optional per-ticket override).
+
+**Notes / decisions:**
+
+- Dependency source of truth = ClickUp for now (future: Jira, Asana), each via its own provider mapping.
+- Blocked behavior is PM-configurable (hold vs auto-resume), not hardcoded.
+- Out of scope: cross-project dependencies (single-project graph first); cycle-resolution UX beyond
+  detect-and-surface (a cycle should be detected and reported, not silently deadlocked).
