@@ -24,8 +24,7 @@ export interface StatusSkillMapConfig {
  * dispatches the implement leg via that per-project gate + `OPENHARNESS_DEFAULT_SKILL`.
  *
  * This map therefore carries only the fixed downstream transitions, which ARE
- * global loop constants. Operators who run a single global implement trigger can
- * still add it through the `STATUS_SKILL_MAP` override (config swap, not code change).
+ * global loop constants. Project-specific statuses now live in the database.
  */
 export const DEFAULT_STATUS_SKILL_MAP: StatusSkillMapEntry[] = [
   { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
@@ -33,8 +32,8 @@ export const DEFAULT_STATUS_SKILL_MAP: StatusSkillMapEntry[] = [
   // Space-separated, lower-cased keys — the form `normalizeStatus` produces from a
   // raw ClickUp display status. An underscore key (e.g. `changes_requested`) would
   // never match, since normalizeStatus collapses whitespace but never inserts
-  // underscores. Operators whose workspace uses different status names override the
-  // whole map via STATUS_SKILL_MAP (config swap, not code change).
+  // underscores. Operators whose workspace uses different status names configure
+  // project rows or the DB-backed global map.
   { status: 'changes requested', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
   { status: 'failed', skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT },
   { status: 'approved', skill: OpenHarnessSkill.CLICKUP_QA },
@@ -59,34 +58,30 @@ function isSkill(value: string): value is OpenHarnessSkill {
 
 function entryFromUnknown(value: unknown, index: number): StatusSkillMapEntry {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`STATUS_SKILL_MAP entry ${index} must be an object`);
+    throw new Error(`status skill map entry ${index} must be an object`);
   }
 
   const entry = value as Record<string, unknown>;
   if (typeof entry.status !== 'string' || entry.status.trim() === '') {
-    throw new Error(`STATUS_SKILL_MAP entry ${index} needs a non-empty status`);
+    throw new Error(`status skill map entry ${index} needs a non-empty status`);
   }
   if (typeof entry.skill !== 'string' || !isSkill(entry.skill)) {
-    throw new Error(`STATUS_SKILL_MAP entry ${index} has unknown skill: ${String(entry.skill)}`);
+    throw new Error(`status skill map entry ${index} has unknown skill: ${String(entry.skill)}`);
   }
 
   return { status: entry.status, skill: entry.skill };
 }
 
-export function parseStatusSkillMap(raw = process.env.STATUS_SKILL_MAP): StatusSkillMapEntry[] {
-  if (raw === undefined) {
-    return DEFAULT_STATUS_SKILL_MAP.map((entry) => ({ ...entry }));
-  }
-
+export function parseStatusSkillMap(raw: string): StatusSkillMapEntry[] {
   if (raw.trim() === '') {
-    throw new Error('STATUS_SKILL_MAP must be non-empty JSON when set');
+    throw new Error('status skill map must be non-empty JSON');
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error('STATUS_SKILL_MAP must be valid JSON');
+    throw new Error('status skill map must be valid JSON');
   }
 
   // Guard non-collection JSON (null, numbers, booleans, bare strings) before
@@ -94,7 +89,7 @@ export function parseStatusSkillMap(raw = process.env.STATUS_SKILL_MAP): StatusS
   // primitives/strings yield nonsensical per-character "unknown skill" errors.
   if (parsed === null || typeof parsed !== 'object') {
     throw new Error(
-      'STATUS_SKILL_MAP must be a JSON array of { status, skill } entries or a JSON object mapping status → skill',
+      'status skill map must be a JSON array of { status, skill } entries or a JSON object mapping status → skill',
     );
   }
 
@@ -105,7 +100,7 @@ export function parseStatusSkillMap(raw = process.env.STATUS_SKILL_MAP): StatusS
       );
 
   if (entries.length === 0) {
-    throw new Error('STATUS_SKILL_MAP must include at least one entry');
+    throw new Error('status skill map must include at least one entry');
   }
 
   // Reject duplicate statuses (case/whitespace-insensitive) rather than silently
@@ -116,7 +111,7 @@ export function parseStatusSkillMap(raw = process.env.STATUS_SKILL_MAP): StatusS
     const key = normalizeStatus(entry.status);
     if (seen.has(key)) {
       throw new Error(
-        `STATUS_SKILL_MAP has a duplicate status (case/whitespace-insensitive): ${entry.status}`,
+        `status skill map has a duplicate status (case/whitespace-insensitive): ${entry.status}`,
       );
     }
     seen.add(key);
@@ -166,7 +161,7 @@ export function parseLoopMaxIterations(raw = process.env.LOOP_MAX_ITERATIONS): n
 
 export default registerAs('statusSkillMap', (): StatusSkillMapConfig => {
   return {
-    entries: parseStatusSkillMap(),
+    entries: DEFAULT_STATUS_SKILL_MAP.map((entry) => ({ ...entry })),
     loopTerminalStatuses: parseLoopTerminalStatuses(),
     loopMaxIterations: parseLoopMaxIterations(),
   };

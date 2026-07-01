@@ -18,10 +18,6 @@ const validEnv = {
 };
 
 describe('status skill map config', () => {
-  it('uses default loop entries when STATUS_SKILL_MAP is unset', () => {
-    expect(parseStatusSkillMap()).toEqual(DEFAULT_STATUS_SKILL_MAP);
-  });
-
   it('includes loop entries in the default map', () => {
     expect(DEFAULT_STATUS_SKILL_MAP).toEqual([
       { status: 'in review', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW },
@@ -45,7 +41,7 @@ describe('status skill map config', () => {
     expect(() => parseLoopMaxIterations('0')).toThrow('LOOP_MAX_ITERATIONS');
   });
 
-  it('parses STATUS_SKILL_MAP overrides from a JSON array', () => {
+  it('parses DB-backed status skill maps from a JSON array', () => {
     expect(
       parseStatusSkillMap(
         JSON.stringify([{ status: 'custom review', skill: OpenHarnessSkill.CLICKUP_QA }]),
@@ -53,14 +49,14 @@ describe('status skill map config', () => {
     ).toEqual([{ status: 'custom review', skill: OpenHarnessSkill.CLICKUP_QA }]);
   });
 
-  it('parses STATUS_SKILL_MAP overrides from a JSON object', () => {
+  it('parses DB-backed status skill maps from a JSON object', () => {
     expect(
       parseStatusSkillMap(JSON.stringify({ 'ready for qa': OpenHarnessSkill.CLICKUP_CODE_REVIEW })),
     ).toEqual([{ status: 'ready for qa', skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW }]);
   });
 
   it('rejects empty or malformed map values', () => {
-    expect(() => parseStatusSkillMap('')).toThrow('STATUS_SKILL_MAP');
+    expect(() => parseStatusSkillMap('')).toThrow('status skill map');
     expect(() => parseStatusSkillMap('not-json')).toThrow('valid JSON');
     expect(() => parseStatusSkillMap('[]')).toThrow('at least one entry');
   });
@@ -85,16 +81,16 @@ describe('status skill map config', () => {
     ).toThrow('duplicate status');
   });
 
-  it('rejects unknown skills through Joi startup validation', () => {
+  it('does not expose STATUS_SKILL_MAP through Joi startup validation', () => {
     const { error } = envValidationSchema.validate(
       {
         ...validEnv,
         STATUS_SKILL_MAP: JSON.stringify([{ status: 'x', skill: 'not-a-skill' }]),
       },
-      { abortEarly: false, allowUnknown: true },
+      { abortEarly: false, allowUnknown: false },
     );
 
-    expect(error?.message).toContain('not-a-skill');
+    expect(error?.message).toContain('STATUS_SKILL_MAP');
   });
 
   it('rejects bad loop settings through Joi startup validation', () => {

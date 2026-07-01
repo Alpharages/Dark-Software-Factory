@@ -139,7 +139,7 @@ without a recorded decision, atomic single-merge claim, fails closed on missing 
 - **OHP-2.1 — Status→skill mapping/config.**
   Declarative map of which ClickUp status triggers which BMAD skill.
   _AC:_ config-driven; no hardcoded status names in logic. — _done_ (`config/status-skill-map.config.ts`,
-  `openharness/status-skill-map.service.ts`; `STATUS_SKILL_MAP` env override, normalized lookups).
+  `openharness/status-skill-map.service.ts`; normalized lookups).
 - **OHP-2.2 — Dispatcher service.**
   React to ClickUp status changes (via existing multi-tenant webhooks) → spawn the matching
   skill run through the OHP-1 runner.
@@ -292,8 +292,7 @@ the existing 3-skill enum.
   straight from config. No per-skill model choice, no account pool, no failover (`maxRetries: 0`, line 96).
 - Skills are a fixed enum of 3 (`src/openharness/skills.enum.ts`): `clickup-dev-implement`,
   `clickup-code-review`, `clickup-qa`.
-- The status→skill map is a global env var (`STATUS_SKILL_MAP`), parsed in
-  `src/config/status-skill-map.config.ts`, resolved by `StatusSkillMapService.resolveSkill()`.
+- The status→skill map is resolved by `StatusSkillMapService.resolveSkill()`.
 - `CostOptimizerService.selectOptimalModel()` (`src/cost-tracking/cost-optimizer.service.ts:56`)
   exists but is **dead code** (zero callers) — the natural selector seam.
 - No per-skill cost/compute tracking; OpenHarness runs emit **zero** cost rows today.
@@ -303,11 +302,11 @@ the existing 3-skill enum.
 ### Stories
 
 - **A1 — Project-level status→skill map with global fallback.**
-  Move `STATUS_SKILL_MAP` out of `.env` into the DB. Per-project `{status, skill}` entries where
+  Move status→skill overrides into the DB. Per-project `{status, skill}` entries where
   **multiple statuses MAY map to one skill** (e.g. `rejected` + `in progress` → `clickup-dev-implement`).
   Keep a global default map. Resolution: project-level if set, else global default;
   `StatusSkillMapService.resolveSkill()` becomes project-aware.
-  _AC:_ env behavior preserved as the global default; a project with no map behaves as today; loop
+  _AC:_ a project with no map behaves as today; loop
   terminals (`passed`/`done`) and `loopMaxIterations` still work.
 - **A2 — Admin UI: global status→skill defaults.**
   Backend API + dashboard surface to view/edit the global default status→skill map.

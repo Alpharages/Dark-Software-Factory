@@ -1,20 +1,5 @@
 import * as Joi from 'joi';
-import {
-  parseLoopMaxIterations,
-  parseLoopTerminalStatuses,
-  parseStatusSkillMap,
-} from './status-skill-map.config';
-
-const statusSkillMapSchema = Joi.string()
-  .custom((value: string, helpers) => {
-    try {
-      parseStatusSkillMap(value);
-      return value;
-    } catch (error) {
-      return helpers.error('any.invalid', { message: (error as Error).message });
-    }
-  }, 'status skill map validation')
-  .messages({ 'any.invalid': '{{#message}}' });
+import { parseLoopMaxIterations, parseLoopTerminalStatuses } from './status-skill-map.config';
 
 const loopTerminalStatusesSchema = Joi.string()
   .custom((value: string, helpers) => {
@@ -176,7 +161,6 @@ export const envValidationSchema = Joi.object({
   OPENHARNESS_BINARY_PATH: Joi.string().default('oh'),
   OPENHARNESS_MODEL: Joi.string().default('gpt-5.4'),
   OPENHARNESS_DEFAULT_SKILL: Joi.string().default('clickup-dev-implement'),
-  STATUS_SKILL_MAP: statusSkillMapSchema.optional(),
   LOOP_TERMINAL_STATUSES: loopTerminalStatusesSchema.optional(),
   LOOP_MAX_ITERATIONS: loopMaxIterationsSchema.default(5),
   OPENHARNESS_WORKSPACE_DIR: Joi.string().default(process.cwd()),
