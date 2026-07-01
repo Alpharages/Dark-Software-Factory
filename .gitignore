@@ -43,6 +43,11 @@ lerna-debug.log*
 .env.prod
 .env.local
 
+# AI account credential imports — NEVER commit (A4). Import-only artifacts.
+# The redacted docs/examples/ai-accounts.example.csv is intentionally NOT matched.
+*.accounts.csv
+secrets/*.csv
+
 # temp directory
 .temp
 .tmp

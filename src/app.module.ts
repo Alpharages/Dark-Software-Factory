@@ -66,6 +66,8 @@ import { DispatcherModule } from './dispatcher/dispatcher.module';
 
 // Story 15.2
 import { SystemConfigModule } from './system-settings/system-config.module';
+// Epic A / A4
+import { AiAccountsModule } from './ai-accounts/ai-accounts.module';
 // Story 7.1
 import { ArchitectureReviewModule } from './architecture-review/architecture-review.module';
 import { StartupChecksModule } from './common/startup/startup-checks.module';
@@ -150,6 +152,9 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
 
     // Story 15.2: System Settings
     SystemConfigModule,
+
+    // Epic A / A4: Multi-account AI credential pool
+    AiAccountsModule,
 
     // Story 7.1: Architecture Review (ADR Generation)
     ArchitectureReviewModule,

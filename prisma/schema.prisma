@@ -1314,3 +1314,24 @@ model ConnectedApp {
   @@index([user_id, provider])
   @@map("connected_apps")
 }
+
+/// Multi-account AI credential pool (Epic A / A4). One row per subscription account
+/// across both providers. Credentials are AES-256-GCM encrypted via EncryptionService
+/// (same posture as ConnectedApp/GitHubAccount) and never persisted or returned as
+/// plaintext. quota_config is stored config only — A5 consumes it (usage tracking +
+/// load balancing live in AiAccountUsage, out of scope here).
+model AiAccount {
+  id           String   @id @default(uuid())
+  label        String // human-friendly, e.g. "claude-acct-1"
+  provider     String // 'claude' | 'openai' (validated in code, matches SkillModelMap vocab)
+  runtime      String // 'claude' | 'oh'     (validated in code; claude↔claude, openai↔oh)
+  credentials  String // AES-256-GCM blob 'iv:authTag:ciphertext' via EncryptionService
+  quota_config Json // per-provider quota config; consumed by A5 (not enforced here)
+  enabled      Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@unique([provider, label]) // idempotent re-import key
+  @@index([provider, enabled]) // A5 queries eligible accounts by provider
+  @@map("ai_accounts")
+}
