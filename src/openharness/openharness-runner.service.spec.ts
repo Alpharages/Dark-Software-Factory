@@ -13,6 +13,9 @@ import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 import { ProjectWorkspaceService } from './project-workspace.service';
 import { EventBusService } from '@/common/event-bus.service';
 import { SkillModelMapService } from './skill-model-map.service';
+import { AiAccountSelectorService } from '@/ai-accounts/account-selector.service';
+import { AiAccountsService } from '@/ai-accounts/ai-accounts.service';
+import { NoEligibleAccountError } from '@/ai-accounts/errors/no-eligible-account.error';
 
 jest.mock('child_process');
 
@@ -27,6 +30,8 @@ describe('OpenHarnessRunnerService', () => {
   let mockProjectWorkspace: Record<string, jest.Mock>;
   let mockEventBus: Record<string, jest.Mock>;
   let mockSkillModelMap: Record<string, jest.Mock>;
+  let mockAccountSelector: Record<string, jest.Mock>;
+  let mockAiAccounts: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     mockExecutionRepo = {
@@ -90,6 +95,13 @@ describe('OpenHarnessRunnerService', () => {
         .fn()
         .mockResolvedValue({ model: 'gpt-5.4', provider: 'openai', runtime: 'oh' }),
     };
+    mockAccountSelector = {
+      selectAccount: jest.fn().mockResolvedValue({ id: 'acct-openai' }),
+      recordUsage: jest.fn().mockResolvedValue(undefined),
+    };
+    mockAiAccounts = {
+      getDecryptedCredentials: jest.fn().mockResolvedValue({ token: 'sk-selected' }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -102,6 +114,8 @@ describe('OpenHarnessRunnerService', () => {
         { provide: ProjectWorkspaceService, useValue: mockProjectWorkspace },
         { provide: EventBusService, useValue: mockEventBus },
         { provide: SkillModelMapService, useValue: mockSkillModelMap },
+        { provide: AiAccountSelectorService, useValue: mockAccountSelector },
+        { provide: AiAccountsService, useValue: mockAiAccounts },
         { provide: OpenHarnessStreamAdapter, useValue: mockStreamAdapter },
       ],
     }).compile();
@@ -164,6 +178,9 @@ describe('OpenHarnessRunnerService', () => {
       true,
       'pnpm exec prettier --write',
     );
+    expect(mockConfig.get).not.toHaveBeenCalledWith('openharness.model');
+    expect(mockConfig.get).not.toHaveBeenCalledWith('openharness.runtime');
+    expect(mockConfig.get).not.toHaveBeenCalledWith('openharness.claudeModel');
     expect(child_process.spawn).toHaveBeenCalledWith(
       expect.stringContaining('scripts/oh-run-skill.sh'),
       ['86test123', expect.stringContaining('exec-123.stream.json')],
@@ -171,9 +188,14 @@ describe('OpenHarnessRunnerService', () => {
         env: expect.objectContaining({
           OH_RUN_WORKFLOW: 'test-skill',
           OH_RUN_STREAM_STDOUT: '1',
+          OPENAI_API_KEY: 'sk-selected',
         }),
       }),
     );
+    expect(mockAccountSelector.recordUsage).toHaveBeenCalledWith('acct-openai', {
+      requests: 1,
+      tokens: 0,
+    });
   });
 
   it('fails before spawn when mandated MCP servers are missing in fail mode', async () => {
@@ -324,6 +346,10 @@ describe('OpenHarnessRunnerService', () => {
       },
       'exec-123',
     );
+    expect(mockAccountSelector.recordUsage).toHaveBeenCalledWith('acct-openai', {
+      requests: 1,
+      tokens: 0,
+    });
   });
 
   it('should fail (not complete) on clean exit with no parseable result — AC2c', async () => {
@@ -421,6 +447,11 @@ describe('OpenHarnessRunnerService', () => {
       expect(mockExecutionTracker.timeoutExecution).toHaveBeenCalledTimes(1);
       expect(mockExecutionTracker.failExecution).not.toHaveBeenCalled();
       expect(mockExecutionTracker.completeExecution).not.toHaveBeenCalled();
+      expect(mockAccountSelector.recordUsage).toHaveBeenCalledTimes(1);
+      expect(mockAccountSelector.recordUsage).toHaveBeenCalledWith('acct-openai', {
+        requests: 1,
+        tokens: 0,
+      });
     } finally {
       jest.useRealTimers();
     }
@@ -445,7 +476,7 @@ describe('OpenHarnessRunnerService', () => {
     );
     expect(mockPrisma.execution.update).toHaveBeenCalledWith({
       where: { id: 'exec-123' },
-      data: { selected_model: expect.any(String) },
+      data: { selected_model: expect.any(String), selected_account_id: 'acct-openai' },
     });
   });
 
@@ -454,6 +485,11 @@ describe('OpenHarnessRunnerService', () => {
       model: 'opus',
       provider: 'claude',
       runtime: 'claude',
+    });
+    mockAccountSelector.selectAccount.mockResolvedValue({ id: 'acct-claude' });
+    mockAiAccounts.getDecryptedCredentials.mockResolvedValue({
+      email: 'claude@example.com',
+      password: 'secret',
     });
     const mockChild = new EventEmitter() as any;
     mockChild.stdout = new PassThrough();
@@ -465,21 +501,52 @@ describe('OpenHarnessRunnerService', () => {
       skill: 'clickup-code-review',
       workspaceDir: '/tmp',
     });
+    // Claude result event carrying a usage block — tokens must flow to recordUsage.
+    mockChild.stdout.write(
+      JSON.stringify({
+        type: 'result',
+        is_error: false,
+        result: 'done',
+        usage: { input_tokens: 100, output_tokens: 50 },
+      }) + '\n',
+    );
     setTimeout(() => mockChild.emit('close', 0), 10);
     await runPromise;
 
     expect(mockSkillModelMap.resolveModel).toHaveBeenCalledWith('clickup-code-review');
     expect(mockPrisma.execution.update).toHaveBeenCalledWith({
       where: { id: 'exec-123' },
-      data: { selected_model: 'opus' },
+      data: { selected_model: 'opus', selected_account_id: 'acct-claude' },
     });
+    expect(mockAccountSelector.selectAccount).toHaveBeenCalledWith({
+      provider: 'claude',
+      runtime: 'claude',
+      model: 'opus',
+    });
+    // Account selection is driven by a per-account CLAUDE_CONFIG_DIR — the only
+    // headless way to bind the run to a specific Claude subscription session.
     expect(child_process.spawn).toHaveBeenCalledWith(
       expect.stringContaining('scripts/claude-run-skill.sh'),
       expect.any(Array),
       expect.objectContaining({
-        env: expect.objectContaining({ CLAUDE_RUN_MODEL: 'opus', OH_RUN_MODEL: '' }),
+        env: expect.objectContaining({
+          CLAUDE_RUN_MODEL: 'opus',
+          OH_RUN_MODEL: '',
+          CLAUDE_CONFIG_DIR: expect.stringContaining('acct-claude'),
+        }),
       }),
     );
+    // AC7: the decrypted email/password must never reach the child env.
+    const spawnEnv = (child_process.spawn as jest.Mock).mock.calls[0][2].env as Record<
+      string,
+      unknown
+    >;
+    expect(spawnEnv).not.toHaveProperty('CLAUDE_ACCOUNT_EMAIL');
+    expect(spawnEnv).not.toHaveProperty('CLAUDE_ACCOUNT_PASSWORD');
+    expect(mockAccountSelector.recordUsage).toHaveBeenCalledWith('acct-claude', {
+      requests: 1,
+      tokens: 150,
+    });
   });
 
   it('falls back to the oh wrapper/env when the map resolves an oh runtime (AC4)', async () => {
@@ -508,5 +575,26 @@ describe('OpenHarnessRunnerService', () => {
         env: expect.objectContaining({ OH_RUN_MODEL: 'gpt-5.4', CLAUDE_RUN_MODEL: '' }),
       }),
     );
+  });
+
+  it('fails explicitly without spawning when no eligible account exists', async () => {
+    mockAccountSelector.selectAccount.mockRejectedValue(new NoEligibleAccountError('openai', 'oh'));
+
+    const execId = await service.runForTicket('ticket-1', {
+      skill: 'clickup-dev-implement',
+      workspaceDir: '/tmp',
+    });
+
+    expect(execId).toBe('exec-123');
+    expect(child_process.spawn).not.toHaveBeenCalled();
+    expect(mockExecutionTracker.failExecution).toHaveBeenCalledWith(
+      {
+        executionId: 'exec-123',
+        errorMessage: 'No eligible AI account for provider "openai" and runtime "oh".',
+        isRetryable: false,
+      },
+      'exec-123',
+    );
+    expect(mockAiAccounts.getDecryptedCredentials).not.toHaveBeenCalled();
   });
 });

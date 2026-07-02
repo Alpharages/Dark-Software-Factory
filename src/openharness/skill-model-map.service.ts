@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/database/prisma.service';
 import { OpenHarnessSkill } from './skills.enum';
+import type { AiProvider, AiRuntime } from '@/ai-accounts/account-selector.service';
 
 export interface ResolvedSkillModel {
   model: string;
-  provider: string;
-  runtime: string;
+  provider: AiProvider;
+  runtime: AiRuntime;
 }
 
 type SkillModelMapRow = {

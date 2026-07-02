@@ -144,4 +144,28 @@ describe('OpenHarnessStreamParser', () => {
 
     expect(parser.getToolsUsed()).toEqual(['mcp__bmad__bmad']);
   });
+
+  it('sums all *_tokens fields from a Claude result usage block', () => {
+    parser.parseLine(
+      JSON.stringify({
+        type: 'result',
+        is_error: false,
+        result: 'done',
+        usage: {
+          input_tokens: 100,
+          output_tokens: 50,
+          cache_read_input_tokens: 10,
+          service_tier: 'standard', // non-token field, ignored
+        },
+      }),
+    );
+
+    expect(parser.getTokensUsed()).toBe(160);
+  });
+
+  it('reports zero tokens when the stream carries no usage block', () => {
+    parser.parseLine(JSON.stringify({ type: 'result', status: 'COMPLETED', summary: 'done' }));
+
+    expect(parser.getTokensUsed()).toBe(0);
+  });
 });

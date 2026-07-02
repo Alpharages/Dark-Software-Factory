@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
 import { PrismaService } from '@/database/prisma.service';
 import { EncryptionService } from '@/common/encryption/encryption.service';
 import { AiAccountsService } from './ai-accounts.service';
@@ -73,22 +76,35 @@ describe('AiAccountsService', () => {
   let service: AiAccountsService;
   let prisma: ReturnType<typeof makePrismaStub>;
   let encryption: EncryptionService;
+  let claudeAccountsBase: string;
 
   beforeEach(async () => {
     prisma = makePrismaStub();
     encryption = new EncryptionService({
       get: () => TEST_KEY,
     } as unknown as ConfigService);
+    claudeAccountsBase = await fs.mkdtemp(path.join(os.tmpdir(), 'dsf-claude-sessions-'));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AiAccountsService,
         { provide: PrismaService, useValue: prisma },
         { provide: EncryptionService, useValue: encryption },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) =>
+              key === 'openharness.claudeAccountsDir' ? claudeAccountsBase : undefined,
+          },
+        },
       ],
     }).compile();
 
     service = module.get(AiAccountsService);
+  });
+
+  afterEach(async () => {
+    await fs.rm(claudeAccountsBase, { recursive: true, force: true });
   });
 
   describe('importFromCsv', () => {
@@ -247,6 +263,61 @@ describe('AiAccountsService', () => {
 
     it('throws NotFound for an unknown id', async () => {
       await expect(service.getDecryptedCredentials('nope')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('listClaudeSessions', () => {
+    // Seed a claude account row with a known id so we can build its config dir deterministically.
+    function seedClaude(id: string, label = id, enabled = true) {
+      prisma._rows.push({
+        id,
+        label,
+        provider: 'claude',
+        runtime: 'claude',
+        enabled,
+        credentials: 'x',
+        quota_config: {},
+      });
+    }
+
+    async function writeCreds(id: string, body: unknown) {
+      const dir = path.join(claudeAccountsBase, id);
+      // Test-controlled path under a mkdtemp dir — not user input.
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      await fs.mkdir(dir, { recursive: true });
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      await fs.writeFile(path.join(dir, '.credentials.json'), JSON.stringify(body), 'utf8');
+    }
+
+    it('reports missing when no config dir has been provisioned', async () => {
+      seedClaude('acct-missing');
+      const [session] = await service.listClaudeSessions();
+      expect(session).toMatchObject({ id: 'acct-missing', status: 'missing', expiresAt: null });
+      expect(session.configDir).toContain('acct-missing');
+    });
+
+    it('classifies active / expiring / expired from the OAuth expiresAt', async () => {
+      const now = Date.now();
+      seedClaude('acct-active');
+      seedClaude('acct-expiring');
+      seedClaude('acct-expired');
+      await writeCreds('acct-active', { claudeAiOauth: { expiresAt: now + 48 * 3600 * 1000 } });
+      await writeCreds('acct-expiring', { claudeAiOauth: { expiresAt: now + 3600 * 1000 } });
+      await writeCreds('acct-expired', { claudeAiOauth: { expiresAt: now - 3600 * 1000 } });
+
+      const byId = Object.fromEntries((await service.listClaudeSessions()).map((s) => [s.id, s]));
+      expect(byId['acct-active'].status).toBe('active');
+      expect(byId['acct-expiring'].status).toBe('expiring');
+      expect(byId['acct-expired'].status).toBe('expired');
+      expect(byId['acct-active'].lastLoginAt?.getTime()).toBeGreaterThan(0);
+    });
+
+    it('reports unknown when the creds file has no readable expiry', async () => {
+      seedClaude('acct-unknown');
+      await writeCreds('acct-unknown', { somethingElse: true });
+      const [session] = await service.listClaudeSessions();
+      expect(session.status).toBe('unknown');
+      expect(session.lastLoginAt?.getTime()).toBeGreaterThan(0);
     });
   });
 });

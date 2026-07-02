@@ -5,6 +5,7 @@ export class OpenHarnessStreamParser {
   private toolsUsed: Set<string> = new Set();
   private progress: unknown = null;
   private result: OhResultEvent | null = null;
+  private tokensUsed = 0;
 
   parseLine(line: string): OhEvent | null {
     try {
@@ -51,6 +52,10 @@ export class OpenHarnessStreamParser {
           this.result = ev;
         }
         this.collectFilesChanged(this.result.files_changed);
+        // Claude Code's terminal `result` event carries a `usage` block
+        // ({input_tokens, output_tokens, cache_*}). Capture the total so the
+        // account selector can meter token budgets, not just request counts.
+        this.tokensUsed = this.extractTokens(parsed);
         return parsed;
       }
 
@@ -138,5 +143,24 @@ export class OpenHarnessStreamParser {
 
   getResult(): OhResultEvent | null {
     return this.result;
+  }
+
+  /** Total tokens consumed by the run (0 when the stream carries no usage). */
+  getTokensUsed(): number {
+    return this.tokensUsed;
+  }
+
+  /** Sum every *_tokens field in a `usage` block — covers input/output/cache. */
+  private extractTokens(raw: unknown): number {
+    if (!raw || typeof raw !== 'object') return 0;
+    const usage = (raw as { usage?: unknown }).usage;
+    if (!usage || typeof usage !== 'object') return 0;
+    let total = 0;
+    for (const [key, value] of Object.entries(usage)) {
+      if (key.endsWith('tokens') && typeof value === 'number' && Number.isFinite(value)) {
+        total += value;
+      }
+    }
+    return total;
   }
 }

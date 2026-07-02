@@ -48,6 +48,7 @@ describe('CleanupSchedulerService', () => {
       risk_level: null,
       circular_dep_detected: false,
       selected_model: null,
+      selected_account_id: null,
       task_type: null,
       progress: null,
       qa_attempts: null, // WR-6.1
@@ -85,6 +86,7 @@ describe('CleanupSchedulerService', () => {
       risk_level: null,
       circular_dep_detected: false,
       selected_model: null,
+      selected_account_id: null,
       task_type: null,
       progress: null,
       qa_attempts: null, // WR-6.1

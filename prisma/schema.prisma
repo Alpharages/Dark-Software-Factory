@@ -135,6 +135,7 @@ model Execution {
   file_modifications    Json?
   risk_level            PRRiskLevel?
   selected_model        String?
+  selected_account_id   String?
   task_type             TaskType?
   container_id          String?
   debug_mode            Boolean             @default(false)
@@ -145,6 +146,7 @@ model Execution {
   aiDecisionLogs        AIDecisionLog[]
   approvalRecords       ApprovalRecord[]
   bug_escapes           BugEscape[]
+  selected_account      AiAccount?          @relation(fields: [selected_account_id], references: [id], onDelete: SetNull)
   ticket                Ticket              @relation(fields: [ticket_id], references: [id])
   fileLockQueueEntries  FileLockQueue[]
   fileLocks             FileLock[]
@@ -157,6 +159,7 @@ model Execution {
   @@index([ticket_id, status])
   @@index([ai_provider, status])
   @@index([scheduled_retry_at])
+  @@index([selected_account_id])
   @@map("executions")
 }
 
@@ -1331,6 +1334,7 @@ model AiAccount {
   created_at   DateTime         @default(now())
   updated_at   DateTime         @updatedAt
   usage        AiAccountUsage[]
+  executions   Execution[]
 
   @@unique([provider, label]) // idempotent re-import key
   @@index([provider, enabled]) // A5 queries eligible accounts by provider

@@ -9,9 +9,10 @@ import { StatusSkillMapService } from './status-skill-map.service';
 import { SkillModelMapService } from './skill-model-map.service';
 import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 import { ProjectWorkspaceService } from './project-workspace.service';
+import { AiAccountsModule } from '@/ai-accounts/ai-accounts.module';
 
 @Module({
-  imports: [DatabaseModule, ExecutionModule, RealtimeModule],
+  imports: [DatabaseModule, ExecutionModule, RealtimeModule, AiAccountsModule],
   controllers: [OpenHarnessExecutionController],
   providers: [
     OpenHarnessRunnerService,

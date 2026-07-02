@@ -83,6 +83,18 @@ export class AiAccountsController {
     return this.accounts.list();
   }
 
+  @Get('claude-sessions')
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Claude login-session status per claude account (ADMIN).',
+    description:
+      "Probes each claude account's per-account config dir. Status: active | expiring | expired | unknown | missing. Re-login a missing/expired account with scripts/claude-account-login.sh <id>.",
+  })
+  @ApiResponse({ status: 200, description: 'Per-account Claude session status' })
+  async claudeSessions() {
+    return this.accounts.listClaudeSessions();
+  }
+
   @Patch(':id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Enable/disable an account (ADMIN).' })

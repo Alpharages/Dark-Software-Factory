@@ -10,7 +10,9 @@ MAX_TURNS="${OH_RUN_MAX_TURNS:-200}"
 
 required_commands=(node oh)
 required_env=(BMAD_SERVER_URL BMAD_API_KEY CLICKUP_API_KEY CLICKUP_TEAM_ID LORE_SERVER_URL LORE_API_KEY)
-secret_env=(BMAD_API_KEY CLICKUP_API_KEY LORE_API_KEY)
+# OPENAI_API_KEY is injected per-run by the DSF runner (the selected account's
+# token) — scrub it from the persisted stream alongside the MCP secrets.
+secret_env=(BMAD_API_KEY CLICKUP_API_KEY LORE_API_KEY OPENAI_API_KEY)
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -126,6 +128,9 @@ fi
 set -e
 
 for env_name in "${secret_env[@]}"; do
+  # Skip unset/empty vars — grep -Fq "" matches every line and would falsely
+  # flag every run (e.g. OPENAI_API_KEY is absent on non-openai legs).
+  [[ -n "${!env_name:-}" ]] || continue
   if grep -Fq "${!env_name}" "$TEMP_OUTPUT"; then
     rm -f "$TEMP_OUTPUT"
     fail "stream output contained the literal value of $env_name; refusing to write unsafe log"

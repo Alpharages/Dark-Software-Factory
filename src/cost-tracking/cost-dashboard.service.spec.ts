@@ -110,6 +110,7 @@ describe('CostDashboardService', () => {
             status: 'SUCCESS',
             ai_provider: 'CLAUDE_CODE',
             selected_model: 'gpt-4o',
+            selected_account_id: null,
           },
         },
       ];

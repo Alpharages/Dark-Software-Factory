@@ -44,6 +44,7 @@ describe('ExecutionTrackerService', () => {
     circular_dep_detected: false,
     // Story 13.2: Cost Optimization
     selected_model: null,
+    selected_account_id: null,
     task_type: null,
     // Story 23.2: Container cleanup tracking
     container_id: null,

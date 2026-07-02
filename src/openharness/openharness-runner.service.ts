@@ -18,6 +18,9 @@ import { ProjectWorkspaceService } from './project-workspace.service';
 import { SkillModelMapService } from './skill-model-map.service';
 import { OpenHarnessCodeReadyEvent } from './events/openharness-code-ready.event';
 import { EventBusService } from '@/common/event-bus.service';
+import { AiAccountsService } from '@/ai-accounts/ai-accounts.service';
+import { AiAccountSelectorService } from '@/ai-accounts/account-selector.service';
+import { NoEligibleAccountError } from '@/ai-accounts/errors/no-eligible-account.error';
 
 type MandatedToolsMode = 'warn' | 'fail';
 /**
@@ -53,6 +56,8 @@ export class OpenHarnessRunnerService {
     private readonly projectWorkspace: ProjectWorkspaceService,
     private readonly eventBus: EventBusService,
     private readonly skillModelMap: SkillModelMapService,
+    private readonly accountSelector: AiAccountSelectorService,
+    private readonly aiAccounts: AiAccountsService,
     @Optional()
     private readonly streamAdapter?: OpenHarnessStreamAdapter,
   ) {}
@@ -78,7 +83,7 @@ export class OpenHarnessRunnerService {
     // 'claude' runtime spawns the first-party Claude Code wrapper (legitimately
     // on the Claude subscription's plan limits); anything else keeps the
     // default OpenHarness path unchanged.
-    const { model, runtime } = await this.skillModelMap.resolveModel(skill);
+    const { model, provider, runtime } = await this.skillModelMap.resolveModel(skill);
     const isolateWorkspace =
       this.configService.get<boolean>('openharness.isolateWorkspace') ?? false;
     const ticket = await this.prisma.ticket.findUnique({
@@ -100,11 +105,58 @@ export class OpenHarnessRunnerService {
 
     await this.executionTracker.markInProgress(execution.id, execution.id);
 
-    // Record the engine model once, up-front, in a single write — avoids
-    // duplicating the selected_model write across the success/failure branches.
+    let selectedAccountId = '';
+    let accountEnv: Record<string, string> = {};
+    try {
+      const account = await this.accountSelector.selectAccount({ provider, runtime, model });
+      const credentials = await this.aiAccounts.getDecryptedCredentials(account.id);
+      if (provider === 'openai') {
+        const token = credentials.token;
+        if (typeof token !== 'string' || token.trim() === '') {
+          throw new Error('selected OpenAI account is missing token credentials');
+        }
+        // `oh` / the OpenAI SDK read OPENAI_API_KEY from the environment natively.
+        accountEnv = { OPENAI_API_KEY: token };
+      } else {
+        // The `claude` CLI has no headless email/password login — the only way to
+        // drive a *specific* Claude subscription account is to point it at that
+        // account's own logged-in config dir. We validate the stored credentials
+        // decrypt cleanly (integrity/provisioning check) but never inject them:
+        // they are inert to `claude` and would only widen the secret surface.
+        // Selection is enforced via a per-account CLAUDE_CONFIG_DIR instead — an
+        // un-provisioned account fails closed ("not logged in") rather than
+        // silently running under whatever ambient ~/.claude session exists.
+        const email = credentials.email;
+        if (typeof email !== 'string' || email.trim() === '') {
+          throw new Error('selected Claude account is missing credentials');
+        }
+        const accountsDir =
+          this.configService.get<string>('openharness.claudeAccountsDir') ??
+          path.join(os.homedir(), '.dsf', 'claude-accounts');
+        accountEnv = { CLAUDE_CONFIG_DIR: path.join(accountsDir, account.id) };
+      }
+      selectedAccountId = account.id;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.executionTracker.failExecution(
+        {
+          executionId: execution.id,
+          errorMessage:
+            error instanceof NoEligibleAccountError
+              ? message
+              : `AI account preparation failed: ${message}`,
+          isRetryable: false,
+        },
+        execution.id,
+      );
+      return execution.id;
+    }
+
+    // Record routing once, up-front, in a single write — avoids duplicating the
+    // selected_model/account write across the success/failure branches.
     await this.prisma.execution.update({
       where: { id: execution.id },
-      data: { selected_model: model },
+      data: { selected_model: model, selected_account_id: selectedAccountId },
     });
 
     // Resolve the MCP config to an ABSOLUTE path against this process's cwd
@@ -252,6 +304,7 @@ export class OpenHarnessRunnerService {
             CLAUDE_RUN_MODEL: runtime === 'claude' ? model : '',
             OH_RUN_MAX_TURNS: String(maxTurns),
             OH_RUN_STREAM_STDOUT: useWrapper ? '1' : '',
+            ...accountEnv,
             ...(useWrapper
               ? {}
               : {
@@ -321,6 +374,20 @@ export class OpenHarnessRunnerService {
           } catch (e) {
             this.logger.error(e);
           } finally {
+            // Record usage on every terminal path for a spawned run — even if the
+            // terminal persist above threw — so the account's budget reflects the
+            // work it actually did. Independent try/catch: a usage-write failure
+            // must not swallow the resolve() or the worktree teardown below.
+            if (selectedAccountId) {
+              try {
+                await this.accountSelector.recordUsage(selectedAccountId, {
+                  requests: 1,
+                  tokens: parser.getTokensUsed(),
+                });
+              } catch (e) {
+                this.logger.error(e);
+              }
+            }
             // Tear down the isolated worktree on every terminal path (success,
             // failure, timeout). Best-effort: never block resolution on cleanup.
             if (isolateWorkspace && runWorkspaceDir !== baseRepoDir) {

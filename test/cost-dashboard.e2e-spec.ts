@@ -34,6 +34,7 @@ describe('Cost Dashboard (e2e)', () => {
         status: 'COMPLETED',
         ai_provider: AIProvider.CLAUDE_CODE,
         selected_model: 'gpt-4o',
+        selected_account_id: null,
       },
     },
   ];

@@ -207,6 +207,7 @@ describe('CostOptimizerService', () => {
         {
           original_model: 'gpt-4o',
           selected_model: 'gpt-3.5-turbo',
+          selected_account_id: null,
           project_id: 'project-123',
         },
       );

@@ -2,6 +2,9 @@
  * Type-safe configuration object
  * Loaded from environment variables with validation
  */
+import * as os from 'os';
+import * as path from 'path';
+
 export default () => {
   const nodeEnv = process.env.NODE_ENV || 'development';
   return {
@@ -142,6 +145,14 @@ export default () => {
       // Model used only when runtime === 'claude' (an alias like 'sonnet'/'opus'
       // or a full model id). Independent of `model`, which targets the oh CLI.
       claudeModel: process.env.OPENHARNESS_CLAUDE_MODEL || 'sonnet',
+      // Root under which each Claude AiAccount's Claude-Code config dir lives
+      // (one dir per account id). The runner injects CLAUDE_CONFIG_DIR=<root>/<id>
+      // so the selected account's own logged-in subscription session drives the
+      // run — the only headless way to switch between Claude accounts (the CLI
+      // has no email/password login). Each dir must be logged in once out of band.
+      claudeAccountsDir:
+        process.env.OPENHARNESS_CLAUDE_ACCOUNTS_DIR ||
+        path.join(os.homedir(), '.dsf', 'claude-accounts'),
       // When true, each run executes in an isolated git worktree (clean checkout
       // at the repo HEAD) instead of `workspaceDir` directly, so agents never
       // mutate the live working tree and concurrent runs cannot collide

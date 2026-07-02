@@ -39,6 +39,7 @@ describe('CleanupService', () => {
     risk_level: null,
     circular_dep_detected: false,
     selected_model: null,
+    selected_account_id: null,
     task_type: null,
     created_at: new Date(),
     updated_at: new Date(),
