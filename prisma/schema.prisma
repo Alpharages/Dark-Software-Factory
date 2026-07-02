@@ -1321,17 +1321,33 @@ model ConnectedApp {
 /// plaintext. quota_config is stored config only — A5 consumes it (usage tracking +
 /// load balancing live in AiAccountUsage, out of scope here).
 model AiAccount {
-  id           String   @id @default(uuid())
+  id           String           @id @default(uuid())
   label        String // human-friendly, e.g. "claude-acct-1"
   provider     String // 'claude' | 'openai' (validated in code, matches SkillModelMap vocab)
   runtime      String // 'claude' | 'oh'     (validated in code; claude↔claude, openai↔oh)
   credentials  String // AES-256-GCM blob 'iv:authTag:ciphertext' via EncryptionService
   quota_config Json // per-provider quota config; consumed by A5 (not enforced here)
-  enabled      Boolean  @default(true)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  enabled      Boolean          @default(true)
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @updatedAt
+  usage        AiAccountUsage[]
 
   @@unique([provider, label]) // idempotent re-import key
   @@index([provider, enabled]) // A5 queries eligible accounts by provider
   @@map("ai_accounts")
+}
+
+model AiAccountUsage {
+  id           String    @id @default(uuid())
+  account_id   String
+  window_kind  String // 'rolling_5h' | 'weekly' | 'provider_generic'
+  window_start DateTime
+  window_end   DateTime
+  tokens_used  Int       @default(0)
+  requests     Int       @default(0)
+  updated_at   DateTime  @updatedAt
+  account      AiAccount @relation(fields: [account_id], references: [id], onDelete: Cascade)
+
+  @@unique([account_id, window_kind, window_start])
+  @@map("ai_account_usage")
 }
