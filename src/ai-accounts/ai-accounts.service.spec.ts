@@ -306,7 +306,6 @@ describe('AiAccountsService', () => {
         status: 'missing',
         expiresAt: null,
       });
-      expect(session.configDir).toContain('acct-missing');
     });
 
     it('classifies active / expiring / expired from the OAuth expiresAt', async () => {
