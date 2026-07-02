@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { AICostTrackerService } from './ai-cost-tracker.service';
-import { CostOptimizerService } from './cost-optimizer.service';
 import { CostDashboardService } from './cost-dashboard.service';
 import { CostDashboardController } from './cost-dashboard.controller';
 import { DatabaseModule } from '../database/database.module';
@@ -21,7 +20,7 @@ import { LoggerModule } from '../common/logger/logger.module';
     }),
   ],
   controllers: [CostDashboardController],
-  providers: [AICostTrackerService, CostOptimizerService, CostDashboardService],
-  exports: [AICostTrackerService, CostOptimizerService, CostDashboardService],
+  providers: [AICostTrackerService, CostDashboardService],
+  exports: [AICostTrackerService, CostDashboardService],
 })
 export class CostTrackingModule {}
