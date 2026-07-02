@@ -102,6 +102,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     agentName: string;
     operationType: string;
     projectId?: string;
+    skill?: string;
   }): void {
     this.businessCollector.recordAICost(data);
   }

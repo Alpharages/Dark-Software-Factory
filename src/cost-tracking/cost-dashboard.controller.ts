@@ -23,7 +23,13 @@ import { CorrelationId } from '@/common/decorators/correlation-id.decorator';
 import { Role } from '@/auth/constants/roles.enum';
 import { LoggerService } from '@/common/logger/logger.service';
 import { CostDashboardService } from './cost-dashboard.service';
-import { CostSummaryDto, TicketCostDto, BreakdownDto, BreakdownQueryDto } from './dto';
+import {
+  CostSummaryDto,
+  TicketCostDto,
+  BreakdownDto,
+  BreakdownQueryDto,
+  SkillComputeStatsDto,
+} from './dto';
 
 @ApiTags('Cost Tracking')
 @ApiBearerAuth()
@@ -219,5 +225,23 @@ export class CostDashboardController {
 
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Get('skill-compute-stats')
+  @Roles(Role.PM, Role.TL, Role.QA, Role.MANAGER, Role.ADMIN)
+  @Throttle({ default: { limit: 50, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Get OpenHarness compute stats grouped by skill and project',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Skill compute stats retrieved successfully',
+    type: SkillComputeStatsDto,
+  })
+  async getSkillComputeStats(
+    @CorrelationId() correlationId?: string,
+  ): Promise<SkillComputeStatsDto> {
+    this.logger.debug('Getting skill compute stats', { correlationId });
+    return await this.costService.getSkillComputeStats(correlationId);
   }
 }

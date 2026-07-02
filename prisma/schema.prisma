@@ -498,23 +498,29 @@ model FileLockQueue {
 }
 
 model AICostLog {
-  id             String     @id @default(uuid())
-  execution_id   String?
-  ticket_id      String?
-  timestamp      DateTime   @default(now())
-  ai_provider    AIProvider
-  model_name     String
-  operation_type String
-  tokens_input   Int?
-  tokens_output  Int?
-  tokens_total   Int?
-  cost_usd       Decimal    @db.Decimal(10, 6)
-  execution      Execution? @relation(fields: [execution_id], references: [id])
-  ticket         Ticket?    @relation(fields: [ticket_id], references: [id])
+  id                  String     @id @default(uuid())
+  execution_id        String?
+  ticket_id           String?
+  timestamp           DateTime   @default(now())
+  ai_provider         AIProvider
+  model_name          String
+  operation_type      String
+  tokens_input        Int?
+  tokens_output       Int?
+  tokens_total        Int?
+  cost_usd            Decimal    @db.Decimal(10, 6)
+  skill               String?
+  project_id          String?
+  selected_account_id String?
+  duration_ms         Int?
+  execution           Execution? @relation(fields: [execution_id], references: [id])
+  ticket              Ticket?    @relation(fields: [ticket_id], references: [id])
 
   @@index([execution_id])
   @@index([ticket_id, timestamp])
   @@index([ai_provider, timestamp])
+  @@index([skill, timestamp])
+  @@index([project_id, skill])
   @@map("ai_cost_logs")
 }
 

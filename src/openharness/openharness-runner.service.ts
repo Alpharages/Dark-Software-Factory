@@ -21,6 +21,7 @@ import { EventBusService } from '@/common/event-bus.service';
 import { AiAccountsService } from '@/ai-accounts/ai-accounts.service';
 import { AiAccountSelectorService } from '@/ai-accounts/account-selector.service';
 import { NoEligibleAccountError } from '@/ai-accounts/errors/no-eligible-account.error';
+import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
 
 type MandatedToolsMode = 'warn' | 'fail';
 /**
@@ -58,6 +59,7 @@ export class OpenHarnessRunnerService {
     private readonly skillModelMap: SkillModelMapService,
     private readonly accountSelector: AiAccountSelectorService,
     private readonly aiAccounts: AiAccountsService,
+    private readonly costTracker: AICostTrackerService,
     @Optional()
     private readonly streamAdapter?: OpenHarnessStreamAdapter,
   ) {}
@@ -374,6 +376,20 @@ export class OpenHarnessRunnerService {
           } catch (e) {
             this.logger.error(e);
           } finally {
+            const tokenUsage = parser.getTokenUsage();
+            try {
+              await this.logRunCost({
+                executionId: execution.id,
+                ticketId,
+                skill,
+                model,
+                selectedAccountId,
+                inputTokens: tokenUsage.inputTokens,
+                outputTokens: tokenUsage.outputTokens,
+              });
+            } catch (e) {
+              this.logger.error(e);
+            }
             // Record usage on every terminal path for a spawned run — even if the
             // terminal persist above threw — so the account's budget reflects the
             // work it actually did. Independent try/catch: a usage-write failure
@@ -545,6 +561,47 @@ export class OpenHarnessRunnerService {
       throw new Error(`Missing OpenHarness configuration: ${key}`);
     }
     return value;
+  }
+
+  private async logRunCost(params: {
+    executionId: string;
+    ticketId: string;
+    skill: string;
+    model: string;
+    selectedAccountId: string;
+    inputTokens: number | null;
+    outputTokens: number | null;
+  }): Promise<void> {
+    const execution = await this.prisma.execution.findUnique({
+      where: { id: params.executionId },
+      select: {
+        started_at: true,
+        completed_at: true,
+        failed_at: true,
+        selected_model: true,
+        selected_account_id: true,
+        ticket: { select: { project_id: true } },
+      },
+    });
+    const terminalAt = execution?.completed_at ?? execution?.failed_at ?? new Date();
+    const durationMs = execution?.started_at
+      ? Math.max(0, terminalAt.getTime() - execution.started_at.getTime())
+      : null;
+
+    await this.costTracker.logCost({
+      executionId: params.executionId,
+      ticketId: params.ticketId,
+      provider: AIProvider.OPENHARNESS,
+      model: execution?.selected_model ?? params.model,
+      selectedAccountId: (execution?.selected_account_id ?? params.selectedAccountId) || null,
+      projectId: execution?.ticket?.project_id ?? undefined,
+      skill: params.skill,
+      durationMs,
+      inputTokens: params.inputTokens,
+      outputTokens: params.outputTokens,
+      operationType: 'openharness-run',
+      agentName: params.skill,
+    });
   }
 
   /**

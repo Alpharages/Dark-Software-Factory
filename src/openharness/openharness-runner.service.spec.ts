@@ -16,6 +16,7 @@ import { SkillModelMapService } from './skill-model-map.service';
 import { AiAccountSelectorService } from '@/ai-accounts/account-selector.service';
 import { AiAccountsService } from '@/ai-accounts/ai-accounts.service';
 import { NoEligibleAccountError } from '@/ai-accounts/errors/no-eligible-account.error';
+import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
 
 jest.mock('child_process');
 
@@ -32,6 +33,7 @@ describe('OpenHarnessRunnerService', () => {
   let mockSkillModelMap: Record<string, jest.Mock>;
   let mockAccountSelector: Record<string, jest.Mock>;
   let mockAiAccounts: Record<string, jest.Mock>;
+  let mockCostTracker: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     mockExecutionRepo = {
@@ -53,6 +55,14 @@ describe('OpenHarnessRunnerService', () => {
       },
       execution: {
         update: jest.fn().mockResolvedValue(true),
+        findUnique: jest.fn().mockResolvedValue({
+          started_at: new Date('2026-07-02T10:00:00.000Z'),
+          completed_at: new Date('2026-07-02T10:00:12.000Z'),
+          failed_at: null,
+          selected_model: 'gpt-5.4',
+          selected_account_id: 'acct-openai',
+          ticket: { project_id: 'project-1' },
+        }),
       },
     };
 
@@ -102,6 +112,9 @@ describe('OpenHarnessRunnerService', () => {
     mockAiAccounts = {
       getDecryptedCredentials: jest.fn().mockResolvedValue({ token: 'sk-selected' }),
     };
+    mockCostTracker = {
+      logCost: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -116,6 +129,7 @@ describe('OpenHarnessRunnerService', () => {
         { provide: SkillModelMapService, useValue: mockSkillModelMap },
         { provide: AiAccountSelectorService, useValue: mockAccountSelector },
         { provide: AiAccountsService, useValue: mockAiAccounts },
+        { provide: AICostTrackerService, useValue: mockCostTracker },
         { provide: OpenHarnessStreamAdapter, useValue: mockStreamAdapter },
       ],
     }).compile();
@@ -196,6 +210,21 @@ describe('OpenHarnessRunnerService', () => {
       requests: 1,
       tokens: 0,
     });
+    expect(mockCostTracker.logCost).toHaveBeenCalledTimes(1);
+    expect(mockCostTracker.logCost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        executionId: 'exec-123',
+        ticketId: 'ticket-1',
+        provider: AIProvider.OPENHARNESS,
+        model: 'gpt-5.4',
+        selectedAccountId: 'acct-openai',
+        projectId: 'project-1',
+        skill: 'test-skill',
+        durationMs: 12000,
+        inputTokens: null,
+        outputTokens: null,
+      }),
+    );
   });
 
   it('fails before spawn when mandated MCP servers are missing in fail mode', async () => {
@@ -452,6 +481,7 @@ describe('OpenHarnessRunnerService', () => {
         requests: 1,
         tokens: 0,
       });
+      expect(mockCostTracker.logCost).toHaveBeenCalledTimes(1);
     } finally {
       jest.useRealTimers();
     }
@@ -547,6 +577,13 @@ describe('OpenHarnessRunnerService', () => {
       requests: 1,
       tokens: 150,
     });
+    expect(mockCostTracker.logCost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skill: 'clickup-code-review',
+        inputTokens: 100,
+        outputTokens: 50,
+      }),
+    );
   });
 
   it('falls back to the oh wrapper/env when the map resolves an oh runtime (AC4)', async () => {

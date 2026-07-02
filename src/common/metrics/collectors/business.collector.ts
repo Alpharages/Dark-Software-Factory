@@ -263,6 +263,7 @@ export class BusinessCollector {
     agentName: string;
     operationType: string;
     projectId?: string;
+    skill?: string;
   }): void {
     const labels: Record<string, string> = {
       [LABELS.PROVIDER]: data.provider,
@@ -271,6 +272,7 @@ export class BusinessCollector {
       ['operation_type']: data.operationType,
     };
     if (data.projectId) labels[LABELS.PROJECT] = data.projectId;
+    if (data.skill) labels['skill'] = data.skill;
 
     this.aiTokensInputTotal.inc(labels, data.inputTokens);
     this.aiTokensOutputTotal.inc(labels, data.outputTokens);

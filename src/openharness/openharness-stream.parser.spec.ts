@@ -145,7 +145,7 @@ describe('OpenHarnessStreamParser', () => {
     expect(parser.getToolsUsed()).toEqual(['mcp__bmad__bmad']);
   });
 
-  it('sums all *_tokens fields from a Claude result usage block', () => {
+  it('splits a Claude result usage block into input (incl. cache) and output tokens', () => {
     parser.parseLine(
       JSON.stringify({
         type: 'result',
@@ -161,11 +161,27 @@ describe('OpenHarnessStreamParser', () => {
     );
 
     expect(parser.getTokensUsed()).toBe(160);
+    expect(parser.getTokenUsage()).toEqual({ inputTokens: 110, outputTokens: 50 });
+  });
+
+  it('reads OpenAI (`oh` runtime) prompt/completion token vocabulary', () => {
+    parser.parseLine(
+      JSON.stringify({
+        type: 'result',
+        is_error: false,
+        result: 'done',
+        usage: { prompt_tokens: 200, completion_tokens: 80 },
+      }),
+    );
+
+    expect(parser.getTokensUsed()).toBe(280);
+    expect(parser.getTokenUsage()).toEqual({ inputTokens: 200, outputTokens: 80 });
   });
 
   it('reports zero tokens when the stream carries no usage block', () => {
     parser.parseLine(JSON.stringify({ type: 'result', status: 'COMPLETED', summary: 'done' }));
 
     expect(parser.getTokensUsed()).toBe(0);
+    expect(parser.getTokenUsage()).toEqual({ inputTokens: null, outputTokens: null });
   });
 });

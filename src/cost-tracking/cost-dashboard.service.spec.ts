@@ -4,6 +4,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { LoggerService } from '@/common/logger/logger.service';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { Prisma, AIProvider } from '@/prisma/client';
+import { AICostTrackerService } from './ai-cost-tracker.service';
 
 describe('CostDashboardService', () => {
   let service: CostDashboardService;
@@ -26,6 +27,10 @@ describe('CostDashboardService', () => {
     captureException: jest.fn(),
   };
 
+  const mockAICostTrackerService = {
+    getSkillComputeStats: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,6 +38,7 @@ describe('CostDashboardService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: LoggerService, useValue: mockLoggerService },
         { provide: SentryService, useValue: mockSentryService },
+        { provide: AICostTrackerService, useValue: mockAICostTrackerService },
       ],
     }).compile();
 
@@ -199,6 +205,46 @@ describe('CostDashboardService', () => {
           limit: 10,
         }),
       ).rejects.toThrow('Query failed');
+    });
+  });
+
+  describe('getSkillComputeStats', () => {
+    it('returns skill and skill-project grouped compute stats', async () => {
+      mockAICostTrackerService.getSkillComputeStats.mockResolvedValue({
+        bySkill: [
+          {
+            skill: 'clickup-dev-implement',
+            totalCostUsd: '2.25',
+            runCount: 3,
+            avgDurationMs: 2000,
+          },
+        ],
+        bySkillProject: [
+          {
+            skill: 'clickup-dev-implement',
+            projectId: 'project-1',
+            totalCostUsd: '2.25',
+            runCount: 3,
+            avgDurationMs: 2000,
+          },
+        ],
+      });
+
+      const result = await service.getSkillComputeStats();
+
+      expect(result.bySkill[0]).toEqual({
+        skill: 'clickup-dev-implement',
+        totalCostUsd: '2.25',
+        runCount: 3,
+        avgDurationMs: 2000,
+      });
+      expect(result.bySkillProject[0]).toEqual({
+        skill: 'clickup-dev-implement',
+        projectId: 'project-1',
+        totalCostUsd: '2.25',
+        runCount: 3,
+        avgDurationMs: 2000,
+      });
     });
   });
 });

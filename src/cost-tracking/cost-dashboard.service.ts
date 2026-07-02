@@ -3,6 +3,7 @@ import { PrismaService } from '@/database/prisma.service';
 import { LoggerService } from '@/common/logger/logger.service';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { Prisma } from '@/prisma/client';
+import { AICostTrackerService } from './ai-cost-tracker.service';
 import {
   CostSummaryDto,
   ProviderCostDto,
@@ -12,6 +13,7 @@ import {
   BreakdownDto,
   GroupedCostDto,
   PaginationMetaDto,
+  SkillComputeStatsDto,
 } from './dto';
 
 type Decimal = Prisma.Decimal;
@@ -24,6 +26,7 @@ export class CostDashboardService {
     private readonly prisma: PrismaService,
     private readonly loggerService: LoggerService,
     private readonly sentry: SentryService,
+    private readonly costTracker: AICostTrackerService,
   ) {
     this.logger = new Logger(CostDashboardService.name);
   }
@@ -339,6 +342,22 @@ export class CostDashboardService {
 
       // Re-throw to let controller handle HTTP status
       throw _error;
+    }
+  }
+
+  async getSkillComputeStats(correlationId?: string): Promise<SkillComputeStatsDto> {
+    try {
+      this.loggerService.debug('Getting skill compute stats', { correlationId });
+      return await this.costTracker.getSkillComputeStats();
+    } catch (_error) {
+      this.logger.error(`Failed to get skill compute stats: ${(_error as Error).message}`, {
+        correlationId,
+        error: (_error as Error).stack,
+      });
+      this.sentry.captureException(_error as Error, {
+        tags: { operation: 'getSkillComputeStats' },
+      });
+      return { bySkill: [], bySkillProject: [] };
     }
   }
 }

@@ -6,6 +6,10 @@ export class OpenHarnessStreamParser {
   private progress: unknown = null;
   private result: OhResultEvent | null = null;
   private tokensUsed = 0;
+  private tokenUsage: { inputTokens: number | null; outputTokens: number | null } = {
+    inputTokens: null,
+    outputTokens: null,
+  };
 
   parseLine(line: string): OhEvent | null {
     try {
@@ -55,7 +59,8 @@ export class OpenHarnessStreamParser {
         // Claude Code's terminal `result` event carries a `usage` block
         // ({input_tokens, output_tokens, cache_*}). Capture the total so the
         // account selector can meter token budgets, not just request counts.
-        this.tokensUsed = this.extractTokens(parsed);
+        this.tokenUsage = this.extractTokenUsage(parsed);
+        this.tokensUsed = (this.tokenUsage.inputTokens ?? 0) + (this.tokenUsage.outputTokens ?? 0);
         return parsed;
       }
 
@@ -150,17 +155,39 @@ export class OpenHarnessStreamParser {
     return this.tokensUsed;
   }
 
-  /** Sum every *_tokens field in a `usage` block — covers input/output/cache. */
-  private extractTokens(raw: unknown): number {
-    if (!raw || typeof raw !== 'object') return 0;
+  getTokenUsage(): { inputTokens: number | null; outputTokens: number | null } {
+    return this.tokenUsage;
+  }
+
+  /** Split usage into input/output while counting cache reads as input. */
+  private extractTokenUsage(raw: unknown): {
+    inputTokens: number | null;
+    outputTokens: number | null;
+  } {
+    if (!raw || typeof raw !== 'object') return { inputTokens: null, outputTokens: null };
     const usage = (raw as { usage?: unknown }).usage;
-    if (!usage || typeof usage !== 'object') return 0;
-    let total = 0;
-    for (const [key, value] of Object.entries(usage)) {
-      if (key.endsWith('tokens') && typeof value === 'number' && Number.isFinite(value)) {
-        total += value;
-      }
-    }
-    return total;
+    if (!usage || typeof usage !== 'object') return { inputTokens: null, outputTokens: null };
+    const values = usage as {
+      input_tokens?: unknown;
+      output_tokens?: unknown;
+      cache_read_input_tokens?: unknown;
+      cache_creation_input_tokens?: unknown;
+      // OpenAI (`oh` runtime) usage vocabulary — kept so token capture and
+      // budget metering don't silently zero out for non-Claude runtimes.
+      prompt_tokens?: unknown;
+      completion_tokens?: unknown;
+    };
+    const read = (value: unknown): number =>
+      typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    const inputTokens =
+      read(values.input_tokens) +
+      read(values.cache_read_input_tokens) +
+      read(values.cache_creation_input_tokens) +
+      read(values.prompt_tokens);
+    const outputTokens = read(values.output_tokens) + read(values.completion_tokens);
+    return {
+      inputTokens: inputTokens || null,
+      outputTokens: outputTokens || null,
+    };
   }
 }

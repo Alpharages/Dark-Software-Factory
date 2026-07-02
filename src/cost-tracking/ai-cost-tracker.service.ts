@@ -131,10 +131,14 @@ export class AICostTrackerService {
     ticketId?: string;
     provider: AIProvider;
     model: string;
-    inputTokens: number;
-    outputTokens: number;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
     agentName: string;
     operationType: string;
+    skill?: string;
+    projectId?: string;
+    selectedAccountId?: string | null;
+    durationMs?: number | null;
   }): Promise<void> {
     const {
       executionId,
@@ -145,11 +149,23 @@ export class AICostTrackerService {
       outputTokens,
       agentName,
       operationType,
+      skill,
+      selectedAccountId,
+      durationMs,
     } = params;
 
-    const costUsd = this.calculateUSD(model, inputTokens, outputTokens);
+    const hasTokens =
+      inputTokens !== null &&
+      inputTokens !== undefined &&
+      outputTokens !== null &&
+      outputTokens !== undefined;
+    const costUsd = hasTokens
+      ? this.calculateUSD(model, inputTokens, outputTokens)
+      : new Decimal(0);
 
     try {
+      const projectId =
+        params.projectId ?? (ticketId ? await this.getProjectId(ticketId) : undefined);
       // 1. Log to Database
       await this.prisma.aICostLog.create({
         data: {
@@ -160,8 +176,12 @@ export class AICostTrackerService {
           operation_type: operationType,
           tokens_input: inputTokens,
           tokens_output: outputTokens,
-          tokens_total: inputTokens + outputTokens,
+          tokens_total: hasTokens ? inputTokens + outputTokens : null,
           cost_usd: costUsd,
+          skill,
+          project_id: projectId,
+          selected_account_id: selectedAccountId,
+          duration_ms: durationMs,
         },
       });
 
@@ -169,12 +189,13 @@ export class AICostTrackerService {
       this.metrics.recordAICost({
         provider: provider.toString(),
         model,
-        inputTokens,
-        outputTokens,
+        inputTokens: inputTokens ?? 0,
+        outputTokens: outputTokens ?? 0,
         costUsd: costUsd.toNumber(),
         agentName,
         operationType,
-        projectId: ticketId ? await this.getProjectId(ticketId) : undefined,
+        projectId,
+        skill,
       });
 
       this.logger.log(
@@ -288,5 +309,54 @@ export class AICostTrackerService {
     const projectBudget = ticket.project?.budget_usd?.toNumber() || 100;
 
     return { totalCost, projectBudget, projectSpend };
+  }
+
+  async getSkillComputeStats(): Promise<{
+    bySkill: Array<{
+      skill: string;
+      totalCostUsd: string;
+      runCount: number;
+      avgDurationMs: number | null;
+    }>;
+    bySkillProject: Array<{
+      skill: string;
+      projectId: string | null;
+      totalCostUsd: string;
+      runCount: number;
+      avgDurationMs: number | null;
+    }>;
+  }> {
+    const [bySkill, bySkillProject] = await Promise.all([
+      this.prisma.aICostLog.groupBy({
+        by: ['skill'],
+        where: { skill: { not: null } },
+        _sum: { cost_usd: true, duration_ms: true },
+        _count: true,
+        _avg: { duration_ms: true },
+      }),
+      this.prisma.aICostLog.groupBy({
+        by: ['skill', 'project_id'],
+        where: { skill: { not: null } },
+        _sum: { cost_usd: true, duration_ms: true },
+        _count: true,
+        _avg: { duration_ms: true },
+      }),
+    ]);
+
+    return {
+      bySkill: bySkill.map((row) => ({
+        skill: row.skill ?? '',
+        totalCostUsd: row._sum.cost_usd?.toString() ?? '0.00',
+        runCount: row._count,
+        avgDurationMs: row._avg.duration_ms,
+      })),
+      bySkillProject: bySkillProject.map((row) => ({
+        skill: row.skill ?? '',
+        projectId: row.project_id,
+        totalCostUsd: row._sum.cost_usd?.toString() ?? '0.00',
+        runCount: row._count,
+        avgDurationMs: row._avg.duration_ms,
+      })),
+    };
   }
 }

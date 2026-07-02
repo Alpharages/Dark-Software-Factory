@@ -16,6 +16,7 @@ describe('CostDashboardController', () => {
     getCostSummary: jest.fn(),
     getTicketCost: jest.fn(),
     getCostBreakdown: jest.fn(),
+    getSkillComputeStats: jest.fn(),
   };
 
   const mockLoggerService = {
@@ -116,6 +117,18 @@ describe('CostDashboardController', () => {
       } catch (e: unknown) {
         expect((e as HttpException).getStatus()).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       }
+    });
+  });
+
+  describe('getSkillComputeStats', () => {
+    it('calls service for skill compute stats', async () => {
+      const mockResult = { bySkill: [], bySkillProject: [] };
+      (service.getSkillComputeStats as jest.Mock).mockResolvedValue(mockResult);
+
+      const result = await controller.getSkillComputeStats('test-id');
+
+      expect(result).toBe(mockResult);
+      expect(service.getSkillComputeStats).toHaveBeenCalledWith('test-id');
     });
   });
 });

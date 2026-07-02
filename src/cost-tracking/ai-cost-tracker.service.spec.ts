@@ -18,6 +18,7 @@ describe('AICostTrackerService', () => {
     aICostLog: {
       create: jest.fn().mockResolvedValue({}),
       aggregate: jest.fn().mockResolvedValue({ _sum: { cost_usd: new Decimal(10) } }),
+      groupBy: jest.fn(),
     },
     ticket: {
       findUnique: jest.fn().mockResolvedValue({
@@ -124,6 +125,87 @@ describe('AICostTrackerService', () => {
           outputTokens: 500,
         }),
       );
+    });
+
+    it('stores skill/project/account/duration and keeps missing tokens nullable', async () => {
+      await service.logCost({
+        executionId: 'exec-1',
+        ticketId: 'ticket-1',
+        provider: AIProvider.OPENHARNESS,
+        model: 'sonnet',
+        inputTokens: null,
+        outputTokens: null,
+        agentName: 'clickup-qa',
+        operationType: 'openharness-run',
+        skill: 'clickup-qa',
+        projectId: 'project-1',
+        selectedAccountId: 'acct-1',
+        durationMs: 1000,
+      });
+
+      expect(prisma.aICostLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            skill: 'clickup-qa',
+            project_id: 'project-1',
+            selected_account_id: 'acct-1',
+            duration_ms: 1000,
+            tokens_input: null,
+            tokens_output: null,
+            tokens_total: null,
+            cost_usd: new Decimal(0),
+          }),
+        }),
+      );
+      expect(metrics.recordAICost).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputTokens: 0,
+          outputTokens: 0,
+          costUsd: 0,
+          skill: 'clickup-qa',
+        }),
+      );
+    });
+
+    it('returns per-skill compute stats', async () => {
+      (prisma.aICostLog.groupBy as jest.Mock)
+        .mockResolvedValueOnce([
+          {
+            skill: 'clickup-dev-implement',
+            _sum: { cost_usd: new Decimal('1.5'), duration_ms: 3000 },
+            _count: 2,
+            _avg: { duration_ms: 1500 },
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            skill: 'clickup-dev-implement',
+            project_id: 'project-1',
+            _sum: { cost_usd: new Decimal('1.5'), duration_ms: 3000 },
+            _count: 2,
+            _avg: { duration_ms: 1500 },
+          },
+        ]);
+
+      await expect(service.getSkillComputeStats()).resolves.toEqual({
+        bySkill: [
+          {
+            skill: 'clickup-dev-implement',
+            totalCostUsd: '1.5',
+            runCount: 2,
+            avgDurationMs: 1500,
+          },
+        ],
+        bySkillProject: [
+          {
+            skill: 'clickup-dev-implement',
+            projectId: 'project-1',
+            totalCostUsd: '1.5',
+            runCount: 2,
+            avgDurationMs: 1500,
+          },
+        ],
+      });
     });
   });
 

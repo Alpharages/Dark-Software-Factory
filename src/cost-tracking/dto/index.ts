@@ -15,3 +15,9 @@ export {
   PaginationMetaDto,
   BreakdownDto,
 } from './cost-breakdown.dto';
+
+export {
+  SkillComputeStatDto,
+  SkillProjectComputeStatDto,
+  SkillComputeStatsDto,
+} from './skill-compute-stats.dto';
