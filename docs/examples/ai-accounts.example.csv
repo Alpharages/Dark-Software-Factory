@@ -1,3 +1,3 @@
 label,provider,runtime,credentials_json,quota_config_json
-claude-acct-1,claude,claude,"{""email"":""REPLACE_ME@example.com"",""password"":""REPLACE_ME""}","{""weekly_budget"":1000000,""five_hour_budget"":200000}"
+claude-acct-1,claude,claude,"{""email"":""REPLACE_ME@example.com""}","{""weekly_budget"":1000000,""five_hour_budget"":200000}"
 openai-acct-1,openai,oh,"{""token"":""REPLACE_ME""}","{""weekly_budget"":2000000}"

@@ -43,7 +43,11 @@ function makePrismaStub() {
         rows.push(row);
         return row;
       }),
-      findMany: jest.fn(async () => rows.map(redact)),
+      // Honor `select.credentials` so session probing can read the encrypted blob; every other
+      // caller selects the redacted projection and must not see credentials.
+      findMany: jest.fn(async ({ select }: any = {}) =>
+        rows.map((r) => (select?.credentials ? r : redact(r))),
+      ),
       findUnique: jest.fn(async ({ where, select }: any) => {
         const row = rows.find((r) => r.id === where.id);
         if (!row) return null;
@@ -118,11 +122,8 @@ describe('AiAccountsService', () => {
       expect(stored).not.toContain(SECRET_EMAIL);
       // iv:authTag:ciphertext shape (three hex segments).
       expect(stored).toMatch(/^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/);
-      // Round-trips to the original credential JSON.
-      expect(JSON.parse(encryption.decrypt(stored))).toEqual({
-        email: SECRET_EMAIL,
-        password: SECRET_PW,
-      });
+      // Round-trips to the stored credential JSON — password is dropped (only declared keys persist).
+      expect(JSON.parse(encryption.decrypt(stored))).toEqual({ email: SECRET_EMAIL });
       // quota_config stored as a parsed object for A5.
       expect(prisma._rows[0].quota_config).toEqual({ weekly_budget: 1000, five_hour_budget: 200 });
     });
@@ -207,14 +208,20 @@ describe('AiAccountsService', () => {
     });
 
     it('AC6: rejects credentials missing a provider-required key (redacted, key name only)', async () => {
-      // claude row without "password"
-      const summary = await service.importFromCsv(
-        csv(`x,claude,claude,"{""email"":""${SECRET_EMAIL}""}","{}"`),
-      );
+      // claude row missing the required "email" key
+      const summary = await service.importFromCsv(csv(`x,claude,claude,"{""foo"":""bar""}","{}"`));
       expect(summary.imported).toBe(0);
       expect(summary.skipped).toBe(1);
-      expect(summary.errors[0].reason).toMatch(/missing required key "password"/);
-      expect(summary.errors[0].reason).not.toContain(SECRET_EMAIL);
+      expect(summary.errors[0].reason).toMatch(/missing required key "email"/);
+    });
+
+    it('drops non-declared credential keys (e.g. a legacy claude password is never stored)', async () => {
+      // CLAUDE_ROW carries email + password; only email must survive to storage.
+      const summary = await service.importFromCsv(csv(CLAUDE_ROW));
+      expect(summary.imported).toBe(1);
+      const stored = prisma._rows[0].credentials as string;
+      expect(stored).not.toContain(SECRET_PW);
+      expect(JSON.parse(encryption.decrypt(stored))).toEqual({ email: SECRET_EMAIL });
     });
 
     it('edge: mixed valid/invalid rows import partially with per-row errors', async () => {
@@ -267,7 +274,8 @@ describe('AiAccountsService', () => {
   });
 
   describe('listClaudeSessions', () => {
-    // Seed a claude account row with a known id so we can build its config dir deterministically.
+    // Seed a claude account row with a known id (and real encrypted email) so we can build its
+    // config dir deterministically and verify the email surfaces in the session view.
     function seedClaude(id: string, label = id, enabled = true) {
       prisma._rows.push({
         id,
@@ -275,7 +283,7 @@ describe('AiAccountsService', () => {
         provider: 'claude',
         runtime: 'claude',
         enabled,
-        credentials: 'x',
+        credentials: encryption.encrypt(JSON.stringify({ email: `${id}@example.com` })),
         quota_config: {},
       });
     }
@@ -289,10 +297,15 @@ describe('AiAccountsService', () => {
       await fs.writeFile(path.join(dir, '.credentials.json'), JSON.stringify(body), 'utf8');
     }
 
-    it('reports missing when no config dir has been provisioned', async () => {
+    it('reports missing when no config dir has been provisioned, with the account email', async () => {
       seedClaude('acct-missing');
       const [session] = await service.listClaudeSessions();
-      expect(session).toMatchObject({ id: 'acct-missing', status: 'missing', expiresAt: null });
+      expect(session).toMatchObject({
+        id: 'acct-missing',
+        email: 'acct-missing@example.com',
+        status: 'missing',
+        expiresAt: null,
+      });
       expect(session.configDir).toContain('acct-missing');
     });
 
