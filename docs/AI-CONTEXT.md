@@ -103,3 +103,47 @@ Note: the agent's OWN `git push` inside the bmad skill is a separate concern —
 has the token stripped (`project-workspace.service.ts`), so on a server with no `gh`/SSH it cannot
 push. DSF's `GitHubBranchPushService` is the authoritative pusher and covers delivery regardless; the
 only residual risk is a bmad skill that treats its own push failure as fatal.
+
+## Epic A (Skill & Model Routing) closed (✅ Done, epic-QA-verified 2026-07-04)
+
+Skill & model routing replaced the old static single-model/single-account read on the runner hot
+path. All 7 stories shipped on branch `qa-fixes-2026-06-25` (`fc7e7db` → `05ff259`); ClickUp epic
+`86ey4235p` + all subtasks Closed. Epic-QA gate green: typecheck, `nest build`, and Jest across every
+epic path (30 suites / 314 tests), plus a live visual pass over the four admin UIs. What landed:
+
+- **A1/A2 — status→skill map (control plane).** Per-project `ProjectStatusSkillMap` overrides layered
+  (per-status merge) over a DB-backed **global default** stored in `SystemConfig` key
+  `status_skill_map.global`. `StatusSkillMapService.resolveSkill(status, projectId?)` is async with a
+  30s in-process cache. **`STATUS_SKILL_MAP` env var was removed** — do NOT re-add it; the DB global
+  row (falling back to `DEFAULT_STATUS_SKILL_MAP` in code) is the authority. Admin CRUD at
+  `GET/PUT /api/v1/config/status-skill-map`.
+- **A3 — skill→model map.** Dedicated `SkillModelMap` table (one row per skill, unique on `skill`),
+  `SkillModelMapService.resolveModel(skill) → {model, provider, runtime}` (30s cache, falls back to
+  static `openharness.*` config per-skill). Admin CRUD at `GET/PUT /api/v1/admin/skill-model-map(/:skill)`.
+  This is what the runner now reads instead of `openharness.model`/`runtime`/`claudeModel`.
+- **A4/A5/A6 — account pool + load balancer + runner wiring.** `AiAccount` pool (CSV import, creds
+  AES-256-GCM encrypted at rest via `EncryptionService`, redacted on every read, enable/disable);
+  `AiAccountSelectorService.selectAccount({provider,runtime,model})` / `recordUsage()` with 5h-rolling +
+  weekly quota windows (`AiAccountUsage`), throws `NoEligibleAccountError` on a dry pool. The runner
+  (`runForTicket()`) resolves model (A3) → selects account (A5) → drives the wrapper + persists
+  `selected_model`/`selected_account_id` on `Execution` → records usage once in `finalize()`.
+  Vocabulary is string literals everywhere: `provider ∈ {claude,openai}`, `runtime ∈ {oh,claude}`,
+  `claude↔claude`/`openai↔oh` — **there are NO `AiProvider`/`AiRuntime` Prisma enums.**
+- **A7 — per-skill compute stats.** OpenHarness runs now emit one `AICostLog` row per settled run
+  (extended with nullable `skill`/`project_id`/`selected_account_id`/`duration_ms`); aggregation at
+  `GET /api/v1/costs/skill-compute-stats`. Zero-token Claude runs record duration + `cost_usd=0`, never
+  fabricated tokens.
+
+**Operational gotchas for future work:**
+
+- **Claude accounts need one-time out-of-band login.** Account selection binds a run to a specific
+  Claude subscription via a per-account `CLAUDE_CONFIG_DIR` (default `~/.dsf/claude-accounts/<id>`,
+  `OPENHARNESS_CLAUDE_ACCOUNTS_DIR`). The CLI has **no headless email/password auth** — run
+  `scripts/claude-account-login.sh <account-id>` once per account. Un-provisioned accounts fail closed
+  ("not logged in"), they do not silently mis-route. Session status: `GET /api/v1/admin/ai-accounts/claude-sessions`.
+- **Zero-token rule still holds** — A4 stores subscription creds (Claude email/password) + the OpenAI/`oh`
+  token, never a pay-per-token Anthropic API key. Do not re-add `ANTHROPIC_API_KEY`.
+- **Config caches are per-instance (30s TTL)** — status→skill and skill→model edits propagate within the
+  TTL on multi-instance; fine for the single-tenant MVP, revisit (Redis pub/sub) if it goes multi-instance.
+- `CostOptimizerService` was **dead code and has been deleted** (`05ff259`) — the account selector, not a
+  repurposed optimizer, is the selection seam. Do not resurrect it.
