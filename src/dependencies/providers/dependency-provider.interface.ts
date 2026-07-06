@@ -7,7 +7,10 @@ export interface DependencyEdge {
 
 export interface IDependencyProvider {
   readonly source: 'clickup' | 'jira' | 'asana';
-  getDependencies(externalId: string, task?: unknown): Promise<DependencyEdge[]>;
+  /** Returns null when the payload's dependency data can't be determined (as opposed to
+   *  a confirmed-empty list) — callers must not reconcile against a null result, since
+   *  doing so would delete every existing edge based on no real signal. */
+  getDependencies(externalId: string, task?: unknown): Promise<DependencyEdge[] | null>;
 }
 
 export const DEPENDENCY_PROVIDER = Symbol('DEPENDENCY_PROVIDER');

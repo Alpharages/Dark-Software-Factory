@@ -61,36 +61,10 @@ export class DependencyManagerService {
           continue;
         }
 
-        try {
-          const localTask = await this.prisma.ticket.findUnique({
-            where: { clickup_task_id: depId },
-            select: { status: true },
-          });
-          const status =
-            localTask?.status ??
-            (((await this.clickUpService.getTask(depId)).status as { status?: string } | undefined)
-              ?.status as TicketStatus | undefined);
-          const isResolved = this.isStatusResolved(status);
-
-          if (isResolved) {
-            resolvedCount++;
-          } else {
-            unresolvedDependencies.push(depId);
-          }
-        } catch (error: unknown) {
-          const err = error as { message?: string };
-          // A blocker that no longer exists (deleted) can never reach a done state —
-          // treating it as unresolved would deadlock the dependent forever, so resolve it.
-          // Transient errors stay unresolved (conservative; clears on the next check).
-          if (err.message?.includes('not found') || err.message?.includes('404')) {
-            this.logger.warn(`Dependency ${depId} not found (deleted), treating as resolved`);
-            resolvedCount++;
-          } else {
-            this.logger.warn(
-              `Dependency ${depId} status unavailable for ${ticketId}, treating as unresolved: ${err.message}`,
-            );
-            unresolvedDependencies.push(depId);
-          }
+        if (await this.isDependencyResolved(depId)) {
+          resolvedCount++;
+        } else {
+          unresolvedDependencies.push(depId);
         }
       }
 
@@ -162,6 +136,42 @@ export class DependencyManagerService {
 
     const resolvedStatuses = ['completed', 'deployed', 'closed', 'done', 'archived'];
     return resolvedStatuses.includes(status.toLowerCase());
+  }
+
+  /**
+   * Resolves whether a blocker (by external ticket id) has reached a terminal/done state.
+   * The local `Ticket.status` is DSF's internal execution-pipeline status, not a PM-facing
+   * completion label — it only short-circuits this check when already a recognized resolved
+   * value; otherwise ClickUp's own status label is consulted, since that's what PMs actually
+   * mark "done" through. A deleted (404) blocker is treated as resolved to avoid deadlocking
+   * the dependent forever; transient errors are conservatively treated as unresolved (clears
+   * on the next check).
+   */
+  public async isDependencyResolved(depId: string): Promise<boolean> {
+    const localTask = await this.prisma.ticket.findUnique({
+      where: { clickup_task_id: depId },
+      select: { status: true },
+    });
+
+    if (localTask && this.isStatusResolved(localTask.status)) {
+      return true;
+    }
+
+    try {
+      const depTask = await this.clickUpService.getTask(depId);
+      const depTaskStatus = depTask.status as { status?: string } | undefined;
+      return this.isStatusResolved(depTaskStatus?.status);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      if (err.message?.includes('not found') || err.message?.includes('404')) {
+        this.logger.warn(`Dependency ${depId} not found (deleted), treating as resolved`);
+        return true;
+      }
+      this.logger.warn(
+        `Dependency ${depId} status unavailable, treating as unresolved: ${err.message}`,
+      );
+      return false;
+    }
   }
 
   async calculateETA(ticketId: string, unresolvedDependencies: string[]): Promise<ETAResult> {

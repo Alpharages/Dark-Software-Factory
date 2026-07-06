@@ -47,10 +47,11 @@ export class TicketDependencyRepository {
             type: edge.type,
             source,
           },
+          // Only `type` changes on resync — leave `status`/`resolved_at` alone. Resync runs
+          // on every ClickUp webhook for the ticket, not just dependency changes; resetting
+          // status here would stomp a RESOLVED row back to WAITING on an unrelated edit.
           update: {
             type: edge.type,
-            status: 'WAITING',
-            resolved_at: null,
           },
         }),
       ),

@@ -37,4 +37,14 @@ describe('ClickUpDependencyProvider', () => {
     ]);
     expect(clickup.getTask).toHaveBeenCalledWith('task-a');
   });
+
+  it('returns an empty array for a task with a confirmed-empty dependencies list', async () => {
+    await expect(provider.getDependencies('task-a', { dependencies: [] })).resolves.toEqual([]);
+  });
+
+  it('returns null (not []) when the payload has no dependencies field at all', async () => {
+    // A missing field is not the same as a confirmed-empty list — reconcile() must not
+    // treat this as "delete every existing edge".
+    await expect(provider.getDependencies('task-a', {})).resolves.toBeNull();
+  });
 });

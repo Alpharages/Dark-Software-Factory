@@ -217,6 +217,36 @@ describe('DependencyManagerService', () => {
       expect(result.canProceed).toBe(false);
       expect(result.unresolvedDependencies).toEqual(['dep-1']);
     });
+
+    it('falls back to the live ClickUp status when the local ticket is tracked but not yet resolved', async () => {
+      // Regression test: Ticket.status is DSF's internal pipeline status (e.g. QA_REVIEW),
+      // never one of the words isStatusResolved recognizes. A defined-but-unresolved local
+      // status must not suppress the real ClickUp completion check.
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
+        { depends_on: 'dep-1', circular_detected: false },
+      ] as never);
+      (prismaService.ticket.findUnique as jest.Mock).mockResolvedValueOnce({ status: 'QA_REVIEW' });
+      (clickUpService.getTask as jest.Mock).mockResolvedValueOnce({
+        status: { status: 'completed' },
+      });
+
+      const result = await service.checkDependencies('ticket-123');
+
+      expect(result.canProceed).toBe(true);
+      expect(result.resolvedCount).toBe(1);
+    });
+
+    it('uses the local ticket status as a fast path when already resolved, skipping ClickUp', async () => {
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
+        { depends_on: 'dep-1', circular_detected: false },
+      ] as never);
+      (prismaService.ticket.findUnique as jest.Mock).mockResolvedValueOnce({ status: 'COMPLETED' });
+
+      const result = await service.checkDependencies('ticket-123');
+
+      expect(result.canProceed).toBe(true);
+      expect(clickUpService.getTask).not.toHaveBeenCalled();
+    });
   });
 
   describe('calculateETA', () => {

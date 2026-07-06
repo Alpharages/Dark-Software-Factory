@@ -9,7 +9,7 @@ describe('DependencyGateService', () => {
     ticket: { findUnique: jest.Mock; update: jest.Mock };
   };
   let dependencies: { getBlockers: jest.Mock };
-  let dependencyManager: { isStatusResolved: jest.Mock };
+  let dependencyManager: { isDependencyResolved: jest.Mock };
   let service: DependencyGateService;
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('DependencyGateService', () => {
     };
     dependencies = { getBlockers: jest.fn().mockResolvedValue([]) };
     dependencyManager = {
-      isStatusResolved: jest.fn((status?: string) => status?.toLowerCase() === 'completed'),
+      isDependencyResolved: jest.fn().mockResolvedValue(false),
     };
     service = new DependencyGateService(
       prisma as unknown as PrismaService,
@@ -35,16 +35,14 @@ describe('DependencyGateService', () => {
       { depends_on: 'done-task', circular_detected: false },
       { depends_on: 'missing-task', circular_detected: false },
     ]);
-    prisma.ticket.findUnique
-      // 1st call: resolve the gated ticket's external id + block behavior
-      .mockResolvedValueOnce({
-        clickup_task_id: 'clickup-ticket-1',
-        dependency_block_behavior: null,
-        project: { dependency_block_behavior: DependencyBlockBehavior.auto_resume },
-      })
-      // then per-blocker status lookups
-      .mockResolvedValueOnce({ status: TicketStatus.COMPLETED })
-      .mockResolvedValueOnce(null);
+    prisma.ticket.findUnique.mockResolvedValueOnce({
+      clickup_task_id: 'clickup-ticket-1',
+      dependency_block_behavior: null,
+      project: { dependency_block_behavior: DependencyBlockBehavior.auto_resume },
+    });
+    dependencyManager.isDependencyResolved.mockImplementation(
+      async (depId: string) => depId === 'done-task',
+    );
 
     await expect(service.check('ticket-1')).resolves.toEqual({
       blocked: true,
@@ -54,6 +52,10 @@ describe('DependencyGateService', () => {
 
     // Blockers must be queried by the resolved external id, not the internal UUID.
     expect(dependencies.getBlockers).toHaveBeenCalledWith('clickup-ticket-1');
+    // Resolution must delegate to the shared DependencyManagerService check (which has the
+    // local-status-then-ClickUp-fallback logic), not re-implement a local-only lookup here.
+    expect(dependencyManager.isDependencyResolved).toHaveBeenCalledWith('done-task');
+    expect(dependencyManager.isDependencyResolved).toHaveBeenCalledWith('missing-task');
   });
 
   it('marks hold tickets as awaiting dependency release', async () => {

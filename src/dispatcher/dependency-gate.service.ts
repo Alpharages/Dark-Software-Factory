@@ -50,12 +50,7 @@ export class DependencyGateService {
         continue;
       }
 
-      const blockerTicket = await this.prisma.ticket.findUnique({
-        where: { clickup_task_id: blocker.depends_on },
-        select: { status: true },
-      });
-
-      if (!blockerTicket || !this.dependencyManager.isStatusResolved(blockerTicket.status)) {
+      if (!(await this.dependencyManager.isDependencyResolved(blocker.depends_on))) {
         unresolved.push(blocker.depends_on);
       }
     }

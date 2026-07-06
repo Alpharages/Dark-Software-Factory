@@ -16,9 +16,17 @@ export class ClickUpDependencyProvider implements IDependencyProvider {
 
   constructor(private readonly clickup: ClickUpService) {}
 
-  async getDependencies(externalId: string, task?: unknown): Promise<DependencyEdge[]> {
+  async getDependencies(externalId: string, task?: unknown): Promise<DependencyEdge[] | null> {
     const payload = task ?? (await this.clickup.getTask(externalId));
-    const dependencies = (payload as { dependencies?: ClickUpDependencyLink[] }).dependencies ?? [];
+    const dependencies = (payload as { dependencies?: ClickUpDependencyLink[] }).dependencies;
+
+    if (dependencies === undefined) {
+      this.logger.warn(
+        `ClickUp payload for ${externalId} has no 'dependencies' field — skipping reconcile ` +
+          `rather than treating it as a confirmed-empty dependency list`,
+      );
+      return null;
+    }
 
     const edges = new Map<string, DependencyEdge>();
     for (const dependency of dependencies) {
