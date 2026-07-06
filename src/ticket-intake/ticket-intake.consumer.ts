@@ -78,6 +78,16 @@ export class TicketIntakeConsumer extends RabbitMQConsumerBase implements OnModu
    * Process a message from the queue
    */
   protected async processMessage(payload: unknown, correlationId: string): Promise<void> {
+    // Dependency auto-resume: when a blocker completes, DependencyManagerService
+    // publishes a bare { ticket_id, reason: 'dependencies_resolved' } signal — NOT a
+    // task event. Route it to the guarded re-dispatch; the intake parser below would
+    // otherwise read an absent `taskId`/`externalId` and silently drop the resume.
+    const resume = payload as { reason?: string; ticket_id?: string };
+    if (resume.reason === 'dependencies_resolved' && resume.ticket_id) {
+      await this.ticketIntakeService.resumeBlockedTicket(resume.ticket_id, correlationId);
+      return;
+    }
+
     const event = payload as IRawTaskEvent;
 
     this.logger.debug(`[${correlationId}] Processing message for task ${event.taskId}`);

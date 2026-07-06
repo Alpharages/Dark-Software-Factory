@@ -1,4 +1,4 @@
-import { DependencyBlockBehavior, TicketStatus } from '@/prisma/client';
+import { DependencyBlockBehavior, DependencyStatus, TicketStatus } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { DependencyManagerService } from '@/dependencies/dependency-manager.service';
 import { TicketDependencyRepository } from '@/dependencies/ticket-dependency.repository';
@@ -56,6 +56,46 @@ describe('DependencyGateService', () => {
     // local-status-then-ClickUp-fallback logic), not re-implement a local-only lookup here.
     expect(dependencyManager.isDependencyResolved).toHaveBeenCalledWith('done-task');
     expect(dependencyManager.isDependencyResolved).toHaveBeenCalledWith('missing-task');
+  });
+
+  it('treats an already-RESOLVED edge as satisfied without a live status re-fetch (AC2 hot path)', async () => {
+    dependencies.getBlockers.mockResolvedValueOnce([
+      { depends_on: 'done-task', circular_detected: false, status: DependencyStatus.RESOLVED },
+    ]);
+    prisma.ticket.findUnique.mockResolvedValueOnce({
+      clickup_task_id: 'clickup-ticket-1',
+      dependency_block_behavior: null,
+      project: { dependency_block_behavior: DependencyBlockBehavior.auto_resume },
+    });
+
+    await expect(service.check('ticket-1')).resolves.toEqual({
+      blocked: false,
+      unresolved: [],
+      behavior: DependencyBlockBehavior.auto_resume,
+    });
+    expect(dependencyManager.isDependencyResolved).not.toHaveBeenCalled();
+  });
+
+  it('never blocks on a self-referential edge', async () => {
+    dependencies.getBlockers.mockResolvedValueOnce([
+      {
+        depends_on: 'clickup-ticket-1',
+        circular_detected: false,
+        status: DependencyStatus.WAITING,
+      },
+    ]);
+    prisma.ticket.findUnique.mockResolvedValueOnce({
+      clickup_task_id: 'clickup-ticket-1',
+      dependency_block_behavior: null,
+      project: { dependency_block_behavior: DependencyBlockBehavior.auto_resume },
+    });
+
+    await expect(service.check('ticket-1')).resolves.toEqual({
+      blocked: false,
+      unresolved: [],
+      behavior: DependencyBlockBehavior.auto_resume,
+    });
+    expect(dependencyManager.isDependencyResolved).not.toHaveBeenCalled();
   });
 
   it('marks hold tickets as awaiting dependency release', async () => {

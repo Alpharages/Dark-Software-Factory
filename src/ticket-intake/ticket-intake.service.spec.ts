@@ -26,7 +26,7 @@ describe('TicketIntakeService', () => {
   let mockDependencyManager: { checkDependencies: jest.Mock; isStatusResolved: jest.Mock };
   let mockWaitingCounter: { inc: jest.Mock };
   let mockCircularCounter: { inc: jest.Mock };
-  let mockDispatcher: { dispatch: jest.Mock };
+  let mockDispatcher: { dispatch: jest.Mock; releaseDependencyHold: jest.Mock };
 
   let mockProjectService: { findByListId: jest.Mock };
 
@@ -128,7 +128,10 @@ describe('TicketIntakeService', () => {
     };
     mockWaitingCounter = { inc: jest.fn() };
     mockCircularCounter = { inc: jest.fn() };
-    mockDispatcher = { dispatch: jest.fn().mockResolvedValue({ dispatched: false }) };
+    mockDispatcher = {
+      dispatch: jest.fn().mockResolvedValue({ dispatched: false }),
+      releaseDependencyHold: jest.fn().mockResolvedValue({ dispatched: true, skill: 'x' }),
+    };
 
     // Story 11.4: Mock AIDecisionLoggerService
     const mockAIDecisionLogger = {
@@ -166,6 +169,20 @@ describe('TicketIntakeService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('resumeBlockedTicket (dependency auto-resume, AC4)', () => {
+    it('routes a dependencies_resolved signal to the guarded re-dispatch', async () => {
+      await service.resumeBlockedTicket('clickup-ticket-A', 'corr-1');
+
+      // Must go through the dispatcher's guarded re-dispatch (which re-checks the gate,
+      // active-execution and loop-cap), NOT the task-event parser — the resume signal
+      // carries no taskId/status, so processTaskEvent would drop it.
+      expect(mockDispatcher.releaseDependencyHold).toHaveBeenCalledWith(
+        'clickup-ticket-A',
+        'corr-1',
+      );
+    });
   });
 
   describe('processTaskEvent', () => {

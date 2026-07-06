@@ -1,5 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { DependencyBlockBehavior, TicketStatus } from '@/prisma/client';
+import { DependencyBlockBehavior, DependencyStatus, TicketStatus } from '@/prisma/client';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { PrismaService } from '@/database/prisma.service';
 import { DependencyManagerService } from '@/dependencies/dependency-manager.service';
@@ -45,10 +45,19 @@ export class DependencyGateService {
 
     const unresolved: string[] = [];
     for (const blocker of blockers) {
+      // Self-edges never block (defensive — the provider/repo already drop them);
+      // a genuine cycle is surfaced by Story 12.1's detector, not silently held here.
+      if (blocker.depends_on === ticket?.clickup_task_id) continue;
+
       if (blocker.circular_detected) {
         unresolved.push(blocker.depends_on);
         continue;
       }
+
+      // Fast path: an edge the sync/notify already confirmed RESOLVED needs no live
+      // status re-fetch, keeping the gate off the ClickUp hot path (AC2). A blocker
+      // regressing after resolution is out of scope — the gate is dispatch-time only.
+      if (blocker.status === DependencyStatus.RESOLVED) continue;
 
       if (!(await this.dependencyManager.isDependencyResolved(blocker.depends_on))) {
         unresolved.push(blocker.depends_on);

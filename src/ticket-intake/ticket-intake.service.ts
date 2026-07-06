@@ -74,6 +74,23 @@ export class TicketIntakeService {
   ) {}
 
   /**
+   * Auto-resume a dependency-blocked ticket once all its blockers complete.
+   * Called by the intake consumer when DependencyManagerService signals
+   * `dependencies_resolved`. Routes through the dispatcher's guarded re-dispatch
+   * (active-execution + loop-cap valves still apply, and the dependency gate is
+   * re-checked — so a still-blocked ticket fails safe and never runs). Kept here
+   * because TicketIntakeService already depends on DispatcherService, avoiding a
+   * DependenciesModule ⇄ DispatcherModule cycle.
+   */
+  async resumeBlockedTicket(ticketRef: string, correlationId: string): Promise<void> {
+    const result = await this.dispatcher.releaseDependencyHold(ticketRef, correlationId);
+    const detail = result.dispatched ? '' : ` (${result.reason})`;
+    this.logger.log(
+      `[${correlationId}] Dependency auto-resume for ${ticketRef}: dispatched=${result.dispatched}${detail}`,
+    );
+  }
+
+  /**
    * Story 20.1: Backward-compatible adapter
    * Converts IRawTaskEvent (legacy ClickUp-specific) to ITaskEvent (provider-agnostic)
    * This maintains compatibility with existing webhook consumers during transition
