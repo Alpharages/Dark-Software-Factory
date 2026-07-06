@@ -8,6 +8,7 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 import { DatabaseModule } from '../database/database.module';
 import { AuditLogModule } from '../common/audit/audit-log.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { DependenciesModule } from '@/dependencies/dependencies.module';
 
 /**
  * ClickUp API Integration Module
@@ -26,6 +27,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     RabbitMQModule,
     AuditLogModule,
     forwardRef(() => IntegrationsModule),
+    forwardRef(() => DependenciesModule),
   ],
   controllers: [],
   providers: [ClickUpService, ClickUpTaskUpdateConsumer],

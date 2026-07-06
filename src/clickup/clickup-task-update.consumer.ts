@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { Inject, forwardRef } from '@nestjs/common';
 import { PMProvider } from '@/prisma/client';
 import { ProjectIntegrationService } from '../integrations/project-integration.service';
+import { DependencySyncService } from '@/dependencies/dependency-sync.service';
 // Story 20.1: Provider-Agnostic Intake
 import { mapClickUpToTaskEvent, TaskTriggerSource } from '@/ticket-intake/dto';
 import { IRawTaskEvent } from '@/ticket-intake/interfaces/ticket-intake.interface';
@@ -47,6 +48,7 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
     private readonly config: ConfigService,
     @Inject(forwardRef(() => ProjectIntegrationService))
     private readonly integrationService: ProjectIntegrationService,
+    private readonly dependencySync: DependencySyncService,
   ) {
     super();
   }
@@ -180,6 +182,23 @@ export class ClickUpTaskUpdateConsumer extends RabbitMQConsumerBase implements O
           taskId: message.task_id,
         });
         return;
+      }
+
+      try {
+        await this.dependencySync.syncDependencies(message.task_id);
+        this.metrics.incrementCounter('clickup_dependency_sync_total', {
+          source: message.source,
+          status: 'success',
+        });
+      } catch (_error) {
+        this.loggerService.warn('Dependency sync failed for ClickUp task update', {
+          taskId: message.task_id,
+          error: (_error as Error).message,
+        });
+        this.metrics.incrementCounter('clickup_dependency_sync_total', {
+          source: message.source,
+          status: 'error',
+        });
       }
 
       if (!integration.ai_trigger_status) {

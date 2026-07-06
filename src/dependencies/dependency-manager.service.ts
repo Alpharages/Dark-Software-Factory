@@ -6,6 +6,8 @@ import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
 import { DependencyCheckResult, ETAResult } from './interfaces/dependency-status.interface';
 import { ETAReasoningParamsDto } from './dto/eta-calculation.dto';
+import { DependencyBlockBehavior, TicketStatus } from '@/prisma/client';
+import { TicketDependencyRepository } from './ticket-dependency.repository';
 
 @Injectable()
 export class DependencyManagerService {
@@ -17,6 +19,7 @@ export class DependencyManagerService {
     private readonly metricsService: MetricsService,
     private readonly prisma: PrismaService,
     private readonly rabbitMQPublisher: RabbitMQPublisherService,
+    private readonly ticketDependencies: TicketDependencyRepository,
   ) {}
 
   async checkDependencies(ticketId: string): Promise<DependencyCheckResult> {
@@ -27,37 +30,7 @@ export class DependencyManagerService {
       // Increment dependency check counter
       this.metricsService.incrementCounter('dependency_checks_total', { ticket_id: ticketId });
 
-      // Step 1: Fetch task from ClickUp
-      // NOTE: ClickUpService requires a global API key (legacy pattern removed in CS4).
-      // If unavailable, skip dependency check and allow ticket to proceed — dependency
-      // checking is best-effort and must not block the intake pipeline.
-      let task: unknown;
-      try {
-        task = await this.clickUpService.getTask(ticketId);
-      } catch (fetchError: unknown) {
-        const err = fetchError as Error;
-        this.logger.warn(
-          `Skipping dependency check for ticket ${ticketId}: unable to fetch from ClickUp (${err.message}). ` +
-            `Dependency checking via ClickUpService requires OAuth via PMProviderFactory.`,
-        );
-        this.metricsService.recordHistogram(
-          'dependency_resolution_duration_seconds',
-          (Date.now() - startTime) / 1000,
-          { can_proceed: 'true' },
-        );
-        return {
-          canProceed: true,
-          unresolvedDependencies: [],
-          resolvedCount: 0,
-          totalCount: 0,
-          estimatedETA: null,
-        };
-      }
-
-      // Step 2: Extract dependencies from ClickUp task
-      // Cast to access the field (same pattern as Story 12.1)
-      const fullTask = task as unknown as { dependencies?: { task_id: string }[] };
-      const dependencies = fullTask.dependencies || [];
+      const dependencies = await this.ticketDependencies.getBlockers(ticketId);
       const totalCount = dependencies.length;
 
       if (totalCount === 0) {
@@ -71,22 +44,16 @@ export class DependencyManagerService {
         };
       }
 
-      // Step 3: Check for circular dependencies in Prisma
-      const circularDeps = await this.prisma.ticketDependency.findMany({
-        where: {
-          ticket_id: ticketId,
-          circular_detected: true,
-        },
-      });
-
-      const circularDepIds = new Set(circularDeps.map((d) => d.depends_on));
+      const circularDepIds = new Set(
+        dependencies.filter((dep) => dep.circular_detected).map((dep) => dep.depends_on),
+      );
 
       // Step 4: Check each dependency's status
       const unresolvedDependencies: string[] = [];
       let resolvedCount = 0;
 
       for (const dep of dependencies) {
-        const depId = dep.task_id;
+        const depId = dep.depends_on;
 
         // Check if this dependency is marked as circular
         if (circularDepIds.has(depId)) {
@@ -95,9 +62,15 @@ export class DependencyManagerService {
         }
 
         try {
-          const depTask = await this.clickUpService.getTask(depId);
-          const depTaskStatus = depTask.status as { status?: string } | undefined;
-          const isResolved = this.isStatusResolved(depTaskStatus?.status);
+          const localTask = await this.prisma.ticket.findUnique({
+            where: { clickup_task_id: depId },
+            select: { status: true },
+          });
+          const status =
+            localTask?.status ??
+            (((await this.clickUpService.getTask(depId)).status as { status?: string } | undefined)
+              ?.status as TicketStatus | undefined);
+          const isResolved = this.isStatusResolved(status);
 
           if (isResolved) {
             resolvedCount++;
@@ -106,13 +79,17 @@ export class DependencyManagerService {
           }
         } catch (error: unknown) {
           const err = error as { message?: string };
-          // If dependency task is not found (deleted), treat as resolved
+          // A blocker that no longer exists (deleted) can never reach a done state —
+          // treating it as unresolved would deadlock the dependent forever, so resolve it.
+          // Transient errors stay unresolved (conservative; clears on the next check).
           if (err.message?.includes('not found') || err.message?.includes('404')) {
             this.logger.warn(`Dependency ${depId} not found (deleted), treating as resolved`);
             resolvedCount++;
           } else {
-            // For other errors, re-throw
-            throw error;
+            this.logger.warn(
+              `Dependency ${depId} status unavailable for ${ticketId}, treating as unresolved: ${err.message}`,
+            );
+            unresolvedDependencies.push(depId);
           }
         }
       }
@@ -328,12 +305,9 @@ export class DependencyManagerService {
 
     try {
       // Step 1: Find all tickets waiting on this completed ticket
-      const dependentTickets = await this.prisma.ticketDependency.findMany({
-        where: {
-          depends_on: completedTicketId,
-          status: { in: ['WAITING', 'BLOCKED'] },
-        },
-      });
+      const dependentTickets = (
+        await this.ticketDependencies.getDependents(completedTicketId)
+      ).filter((dep) => ['WAITING', 'BLOCKED'].includes(dep.status));
 
       if (dependentTickets.length === 0) {
         this.logger.debug(`No dependent tickets for ${completedTicketId}`);
@@ -360,17 +334,28 @@ export class DependencyManagerService {
                 },
               });
 
-              // Publish to RabbitMQ intake queue for processing
-              await this.rabbitMQPublisher.publishToQueue('ticket-intake-queue', {
-                ticket_id: dep.ticket_id,
-                reason: 'dependencies_resolved',
-                trigger: 'dependency_manager',
-              });
+              const behavior = await this.resolveBlockBehavior(dep.ticket_id);
+              if (behavior === DependencyBlockBehavior.auto_resume) {
+                await this.rabbitMQPublisher.publishToQueue('ticket-intake-queue', {
+                  ticket_id: dep.ticket_id,
+                  reason: 'dependencies_resolved',
+                  trigger: 'dependency_manager',
+                });
+              } else {
+                await this.prisma.ticket.updateMany({
+                  where: { clickup_task_id: dep.ticket_id },
+                  data: { status: TicketStatus.AWAITING_DEPENDENCY_RELEASE },
+                });
+              }
 
               // Update ClickUp with success message
               await this.clickUpService.addComment(
                 dep.ticket_id,
-                `✅ **All dependencies resolved!** Your ticket is now queued for processing.\n\n` +
+                `✅ **All dependencies resolved!** Your ticket is now ${
+                  behavior === DependencyBlockBehavior.auto_resume
+                    ? 'queued for processing'
+                    : 'awaiting PM release'
+                }.\n\n` +
                   `**Blocker completed:** [${completedTicketId}]\n` +
                   `**Estimated start time:** ${new Date(Date.now() + 5 * 60 * 1000).toLocaleString()}\n\n` +
                   `You will receive updates as the AI agent works on your ticket.`,
@@ -381,7 +366,10 @@ export class DependencyManagerService {
                 action: 'requeued',
               });
 
-              return { ticketId: dep.ticket_id, action: 'requeued' };
+              return {
+                ticketId: dep.ticket_id,
+                action: behavior === DependencyBlockBehavior.auto_resume ? 'requeued' : 'held',
+              };
             } catch (publishError: unknown) {
               // Rollback: Mark dependency as WAITING again if RabbitMQ publish fails
               await this.prisma.ticketDependency.updateMany({
@@ -440,6 +428,22 @@ export class DependencyManagerService {
       );
       // Don't re-throw: this is a background notification process
     }
+  }
+
+  private async resolveBlockBehavior(ticketId: string): Promise<DependencyBlockBehavior> {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { clickup_task_id: ticketId },
+      select: {
+        dependency_block_behavior: true,
+        project: { select: { dependency_block_behavior: true } },
+      },
+    });
+
+    return (
+      ticket?.dependency_block_behavior ??
+      ticket?.project.dependency_block_behavior ??
+      DependencyBlockBehavior.auto_resume
+    );
   }
 
   /**

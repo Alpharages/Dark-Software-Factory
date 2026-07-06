@@ -7,38 +7,39 @@ datasource db {
 }
 
 model Project {
-  id                    String                 @id @default(uuid())
-  name                  String
-  clickup_list_id       String?                @unique
-  github_repository_url String
-  default_branch        String                 @default("main")
-  budget_usd            Decimal?               @default(100.00) @db.Decimal(10, 2)
-  created_at            DateTime               @default(now())
-  updated_at            DateTime               @updatedAt
-  pm_id                 String
-  status                String                 @default("active")
-  client_name           String                 @default("Internal")
-  monitor_tasks         Boolean                @default(false)
-  provider              PMProvider             @default(CLICKUP)
-  sync_config           Json?
-  deactivated_at        DateTime?
-  is_active             Boolean                @default(true)
-  qa_failure_status     String?                            // WR-4.2: ClickUp status name for QA exhaustion (FR-WR11)
-  manual_review_status  String?                            // WR-4.2: ClickUp status name for PM cancel action (FR-WR11, WR-4.3)
-  code_review_status    String?                            // WR-4.2: ClickUp status name after open_pr action (FR-WR11, WR-4.3)
-  qa_max_retries        Int                    @default(3) // WR-5.1: Per-project QA retry limit (FR-EXT1, NFR-EXT1/2)
-  max_execution_retries Int                    @default(3) // Per-project execution-level retry limit
-  require_pr_approval   Boolean?                            // Null = inherit global GITHUB_REQUIRE_PR_APPROVAL; set = per-project override of the PR-open approval gate
-  conversations         ClientConversation[]
-  coverage_baseline     CoverageBaseline?
-  coverage_config       ProjectCoverageConfig?
-  quality_gate_config   QualityGateConfig?
-  reports               Report[]
-  tickets               Ticket[]
-  github_account_id     String?                @map("github_account_id")
-  gitHubAccount         GitHubAccount?         @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
-  integrations          ProjectIntegration[]
-  status_skill_maps     ProjectStatusSkillMap[]
+  id                        String                  @id @default(uuid())
+  name                      String
+  clickup_list_id           String?                 @unique
+  github_repository_url     String
+  default_branch            String                  @default("main")
+  budget_usd                Decimal?                @default(100.00) @db.Decimal(10, 2)
+  created_at                DateTime                @default(now())
+  updated_at                DateTime                @updatedAt
+  pm_id                     String
+  status                    String                  @default("active")
+  client_name               String                  @default("Internal")
+  monitor_tasks             Boolean                 @default(false)
+  provider                  PMProvider              @default(CLICKUP)
+  sync_config               Json?
+  deactivated_at            DateTime?
+  is_active                 Boolean                 @default(true)
+  qa_failure_status         String? // WR-4.2: ClickUp status name for QA exhaustion (FR-WR11)
+  manual_review_status      String? // WR-4.2: ClickUp status name for PM cancel action (FR-WR11, WR-4.3)
+  code_review_status        String? // WR-4.2: ClickUp status name after open_pr action (FR-WR11, WR-4.3)
+  qa_max_retries            Int                     @default(3) // WR-5.1: Per-project QA retry limit (FR-EXT1, NFR-EXT1/2)
+  max_execution_retries     Int                     @default(3) // Per-project execution-level retry limit
+  require_pr_approval       Boolean? // Null = inherit global GITHUB_REQUIRE_PR_APPROVAL; set = per-project override of the PR-open approval gate
+  dependency_block_behavior DependencyBlockBehavior @default(auto_resume)
+  conversations             ClientConversation[]
+  coverage_baseline         CoverageBaseline?
+  coverage_config           ProjectCoverageConfig?
+  quality_gate_config       QualityGateConfig?
+  reports                   Report[]
+  tickets                   Ticket[]
+  github_account_id         String?                 @map("github_account_id")
+  gitHubAccount             GitHubAccount?          @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
+  integrations              ProjectIntegration[]
+  status_skill_maps         ProjectStatusSkillMap[]
 
   @@index([github_account_id])
   @@map("projects")
@@ -73,29 +74,30 @@ model SkillModelMap {
 }
 
 model Ticket {
-  id                   String               @id @default(uuid())
-  clickup_task_id      String               @unique
-  project_id           String
-  title                String
-  description          String
-  acceptance_criteria  String
-  ticket_quality_score Int
-  epic_num             String?
-  completion_date      DateTime?
-  pm_synced            Boolean              @default(true)
-  status               TicketStatus         @default(RECEIVED)
-  created_at           DateTime             @default(now())
-  updated_at           DateTime             @updatedAt
-  conversation_id      String?
-  adrs                 Adr[]
-  ai_cost_logs         AICostLog[]
-  bug_escapes          BugEscape[]
-  context_documents    ContextDocument[]
-  cost_records         CostRecord[]
-  executions           Execution[]
-  production_approvals ProductionApproval[]
-  conversation         ClientConversation?  @relation("ConversationTickets", fields: [conversation_id], references: [id])
-  project              Project              @relation(fields: [project_id], references: [id])
+  id                        String                   @id @default(uuid())
+  clickup_task_id           String                   @unique
+  project_id                String
+  title                     String
+  description               String
+  acceptance_criteria       String
+  ticket_quality_score      Int
+  epic_num                  String?
+  completion_date           DateTime?
+  pm_synced                 Boolean                  @default(true)
+  status                    TicketStatus             @default(RECEIVED)
+  created_at                DateTime                 @default(now())
+  updated_at                DateTime                 @updatedAt
+  conversation_id           String?
+  dependency_block_behavior DependencyBlockBehavior?
+  adrs                      Adr[]
+  ai_cost_logs              AICostLog[]
+  bug_escapes               BugEscape[]
+  context_documents         ContextDocument[]
+  cost_records              CostRecord[]
+  executions                Execution[]
+  production_approvals      ProductionApproval[]
+  conversation              ClientConversation?      @relation("ConversationTickets", fields: [conversation_id], references: [id])
+  project                   Project                  @relation(fields: [project_id], references: [id])
 
   @@index([project_id, status])
   @@index([created_at])
@@ -129,7 +131,7 @@ model Execution {
   routing_reason        String?
   scheduled_retry_at    DateTime?
   base_branch           String?
-  qa_failed_branch      String?             // WR-4.1: branch pushed when QA exhausted retries
+  qa_failed_branch      String? // WR-4.1: branch pushed when QA exhausted retries
   branch_selection_log  String?
   circular_dep_detected Boolean             @default(false)
   file_modifications    Json?
@@ -140,7 +142,7 @@ model Execution {
   container_id          String?
   debug_mode            Boolean             @default(false)
   progress              Json?               @map("progress") // Store latest progress state (step, percent)
-  qa_attempts           Json?               // WR-6.1: per-attempt QA history array
+  qa_attempts           Json? // WR-6.1: per-attempt QA history array
   adrs                  Adr[]
   aiCostLogs            AICostLog[]
   aiDecisionLogs        AIDecisionLog[]
@@ -525,17 +527,19 @@ model AICostLog {
 }
 
 model TicketDependency {
-  id                String           @id @default(uuid())
+  id                String             @id @default(uuid())
   ticket_id         String
   depends_on        String
-  status            DependencyStatus @default(WAITING)
-  circular_detected Boolean          @default(false)
-  created_at        DateTime         @default(now())
+  type              DependencyEdgeType @default(waiting_on)
+  source            String             @default("clickup")
+  status            DependencyStatus   @default(WAITING)
+  circular_detected Boolean            @default(false)
+  created_at        DateTime           @default(now())
   resolved_at       DateTime?
   estimated_eta     DateTime?
   eta_calculated_at DateTime?
 
-  @@unique([ticket_id, depends_on])
+  @@unique([ticket_id, depends_on, source])
   @@index([ticket_id])
   @@index([depends_on])
   @@index([status])
@@ -1093,6 +1097,7 @@ enum TicketStatus {
   COMPLETED
   BLOCKED_CIRCULAR
   WAITING
+  AWAITING_DEPENDENCY_RELEASE
   WAITING_FOR_LOCKS
   AWAITING_APPROVAL
   APPROVED
@@ -1116,6 +1121,16 @@ enum DependencyStatus {
   BLOCKED
   RESOLVED
   CANCELLED
+}
+
+enum DependencyEdgeType {
+  waiting_on
+  blocking
+}
+
+enum DependencyBlockBehavior {
+  hold
+  auto_resume
 }
 
 enum PRRiskLevel {
@@ -1152,7 +1167,7 @@ enum ExecutionStatus {
   CANCELLED
   AWAITING_APPROVAL
   EMERGENCY_STOPPED
-  QA_FAILED          // WR-4.1: QA retries exhausted; awaiting PM resolution
+  QA_FAILED // WR-4.1: QA retries exhausted; awaiting PM resolution
 }
 
 enum GitHubStatus {
@@ -1261,7 +1276,7 @@ enum InvitationStatus {
 }
 
 model ProjectIntegration {
-  id                   String              @id @default(uuid())
+  id                   String     @id @default(uuid())
   project_id           String
   provider             PMProvider
   workspace_id         String
@@ -1271,17 +1286,17 @@ model ProjectIntegration {
   token_expiry         DateTime?
   bot_user_id          String?
   bot_username         String?
-  polling_enabled      Boolean             @default(false)
-  polling_interval_min Int                 @default(15)
+  polling_enabled      Boolean    @default(false)
+  polling_interval_min Int        @default(15)
   polling_last_run_at  DateTime?
-  webhook_enabled      Boolean             @default(false)
+  webhook_enabled      Boolean    @default(false)
   webhook_id           String?
   webhook_secret       String?
   provider_config      Json
   ai_trigger_status    String?
-  created_at           DateTime            @default(now())
-  updated_at           DateTime            @updatedAt
-  project              Project             @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  created_at           DateTime   @default(now())
+  updated_at           DateTime   @updatedAt
+  project              Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
 
   @@unique([project_id, provider])
   @@index([project_id])

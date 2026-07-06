@@ -49,6 +49,7 @@ describe('ProjectService', () => {
     qa_max_retries: 3,
     max_execution_retries: 3,
     require_pr_approval: null,
+    dependency_block_behavior: 'auto_resume' as const,
   };
 
   const mockCounter = {

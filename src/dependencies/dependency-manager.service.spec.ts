@@ -5,12 +5,14 @@ import { AIDecisionLoggerService } from '../audit/ai-decision-logger.service';
 import { MetricsService } from '../common/metrics/metrics.service';
 import { PrismaService } from '../database/prisma.service';
 import { RabbitMQPublisherService } from '../rabbitmq/rabbitmq-publisher.service';
+import { TicketDependencyRepository } from './ticket-dependency.repository';
 
 describe('DependencyManagerService', () => {
   let service: DependencyManagerService;
   let clickUpService: jest.Mocked<ClickUpService>;
   let prismaService: jest.Mocked<PrismaService>;
   let rabbitmqPublisher: jest.Mocked<RabbitMQPublisherService>;
+  let ticketDependencies: jest.Mocked<TicketDependencyRepository>;
 
   interface MockClickUpApiTask {
     id: string;
@@ -48,11 +50,20 @@ describe('DependencyManagerService', () => {
       execution: {
         findMany: jest.fn().mockResolvedValue([]),
       },
+      ticket: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
     };
 
     const mockRabbitMQPublisher = {
       publishToQueue: jest.fn().mockResolvedValue(true),
       publishWithRetry: jest.fn().mockResolvedValue(true),
+    };
+
+    const mockTicketDependencies = {
+      getBlockers: jest.fn().mockResolvedValue([]),
+      getDependents: jest.fn().mockResolvedValue([]),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -63,6 +74,7 @@ describe('DependencyManagerService', () => {
         { provide: MetricsService, useValue: mockMetricsService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: RabbitMQPublisherService, useValue: mockRabbitMQPublisher },
+        { provide: TicketDependencyRepository, useValue: mockTicketDependencies },
       ],
     }).compile();
 
@@ -70,6 +82,7 @@ describe('DependencyManagerService', () => {
     clickUpService = module.get(ClickUpService);
     prismaService = module.get(PrismaService);
     rabbitmqPublisher = module.get(RabbitMQPublisherService);
+    ticketDependencies = module.get(TicketDependencyRepository);
   });
 
   it('should be defined', () => {
@@ -97,15 +110,11 @@ describe('DependencyManagerService', () => {
     });
 
     it('should return canProceed=true when all dependencies are resolved', async () => {
-      // Mock ClickUp API: task with 2 dependencies
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
+        { depends_on: 'dep-1', circular_detected: false },
+        { depends_on: 'dep-2', circular_detected: false },
+      ] as never);
       (clickUpService.getTask as jest.Mock)
-        .mockResolvedValueOnce({
-          id: 'ticket-123',
-          name: 'Task 123',
-          description: 'Test',
-          status: { status: 'Open' },
-          dependencies: [{ task_id: 'dep-1' }, { task_id: 'dep-2' }],
-        } as MockClickUpApiTask)
         .mockResolvedValueOnce({
           id: 'dep-1',
           name: 'Dep 1',
@@ -119,9 +128,6 @@ describe('DependencyManagerService', () => {
           status: { status: 'deployed' },
         } as MockClickUpApiTask);
 
-      // Mock Prisma: no circular dependencies
-      (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([]);
-
       const result = await service.checkDependencies('ticket-123');
 
       expect(result.canProceed).toBe(true);
@@ -131,14 +137,11 @@ describe('DependencyManagerService', () => {
     });
 
     it('should return canProceed=false when one dependency is unresolved', async () => {
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
+        { depends_on: 'dep-1', circular_detected: false },
+        { depends_on: 'dep-2', circular_detected: false },
+      ] as never);
       (clickUpService.getTask as jest.Mock)
-        .mockResolvedValueOnce({
-          id: 'ticket-123',
-          name: 'Task 123',
-          description: '',
-          status: { status: 'Open' },
-          dependencies: [{ task_id: 'dep-1' }, { task_id: 'dep-2' }],
-        } as unknown)
         .mockResolvedValueOnce({
           id: 'dep-1',
           name: 'Dep 1',
@@ -151,9 +154,6 @@ describe('DependencyManagerService', () => {
           description: '',
           status: { status: 'completed' },
         } as MockClickUpApiTask);
-
-      (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([]);
-
       // Mock execution history for ETA
       (prismaService.execution.findMany as jest.Mock).mockResolvedValueOnce([]);
 
@@ -167,16 +167,7 @@ describe('DependencyManagerService', () => {
     });
 
     it('should return canProceed=false with circular dependency detected', async () => {
-      (clickUpService.getTask as jest.Mock).mockResolvedValueOnce({
-        id: 'ticket-123',
-        name: 'Task 123',
-        description: '',
-        status: { status: 'Open' },
-        dependencies: [{ task_id: 'dep-1' }],
-      } as unknown);
-
-      // Mock Prisma: circular dependency flagged by Story 12.1
-      (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
         {
           id: '1',
           ticket_id: 'ticket-123',
@@ -185,8 +176,8 @@ describe('DependencyManagerService', () => {
           circular_detected: true,
           created_at: new Date(),
           resolved_at: null,
-        } as unknown,
-      ]);
+        } as never,
+      ] as never);
 
       const result = await service.checkDependencies('ticket-123');
 
@@ -195,34 +186,36 @@ describe('DependencyManagerService', () => {
       expect(result.estimatedETA).toBeNull(); // Cannot estimate ETA for circular deps
     });
 
-    it('should handle ClickUp API failures gracefully', async () => {
-      (clickUpService.getTask as jest.Mock).mockRejectedValueOnce(new Error('ClickUp API timeout'));
-
-      // Should resolve with canProceed=true instead of throwing — dependency check is best-effort
+    it('should proceed when no dependency rows exist even if ClickUp is unavailable', async () => {
       const result = await service.checkDependencies('ticket-123');
       expect(result.canProceed).toBe(true);
       expect(result.unresolvedDependencies).toHaveLength(0);
       expect(result.totalCount).toBe(0);
     });
 
-    it('should handle missing dependencies (404) gracefully', async () => {
-      (clickUpService.getTask as jest.Mock)
-        .mockResolvedValueOnce({
-          id: 'ticket-123',
-          name: 'Task 123',
-          description: '',
-          status: { status: 'Open' },
-          dependencies: [{ task_id: 'dep-missing' }],
-        } as MockClickUpApiTask)
-        .mockRejectedValueOnce(new Error('Task not found'));
+    it('treats a deleted blocker (404) as resolved to avoid deadlock', async () => {
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
+        { depends_on: 'dep-missing', circular_detected: false },
+      ] as never);
+      (clickUpService.getTask as jest.Mock).mockRejectedValueOnce(new Error('Task not found'));
 
-      (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([]);
-
-      // Should continue processing despite missing dependency
       const result = await service.checkDependencies('ticket-123');
 
-      expect(result.canProceed).toBe(true); // Missing deps treated as resolved (deleted)
+      expect(result.canProceed).toBe(true);
       expect(result.unresolvedDependencies).toEqual([]);
+      expect(result.resolvedCount).toBe(1);
+    });
+
+    it('treats a transient blocker fetch error as unresolved', async () => {
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
+        { depends_on: 'dep-1', circular_detected: false },
+      ] as never);
+      (clickUpService.getTask as jest.Mock).mockRejectedValueOnce(new Error('ClickUp 503'));
+
+      const result = await service.checkDependencies('ticket-123');
+
+      expect(result.canProceed).toBe(false);
+      expect(result.unresolvedDependencies).toEqual(['dep-1']);
     });
   });
 
@@ -317,8 +310,7 @@ describe('DependencyManagerService', () => {
 
   describe('notifyDependentTickets', () => {
     it('should find and notify dependent tickets when a ticket is completed', async () => {
-      // Mock Prisma: 2 tickets depend on 'completed-ticket'
-      (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([
+      ticketDependencies.getDependents.mockResolvedValueOnce([
         {
           id: '1',
           ticket_id: 'ticket-a',
@@ -333,47 +325,30 @@ describe('DependencyManagerService', () => {
           status: 'WAITING',
           circular_detected: false,
         },
-      ]);
+      ] as never);
 
-      // Mock checkDependencies for ticket-a: still blocked by another dep
-      (clickUpService.getTask as jest.Mock)
-        .mockResolvedValueOnce({
-          id: 'ticket-a',
-          name: 'Task A',
-          description: '',
-          status: { status: 'Open' },
-          dependencies: [{ task_id: 'completed-ticket' }, { task_id: 'other-dep' }],
-        })
-        .mockResolvedValueOnce({
-          id: 'completed-ticket',
-          name: 'Completed',
-          description: '',
-          status: { status: 'completed' },
-        })
-        .mockResolvedValueOnce({
-          id: 'other-dep',
-          name: 'Other Dep',
-          description: '',
-          status: { status: 'in progress' },
-        })
-        // Mock checkDependencies for ticket-b: all deps resolved
-        .mockResolvedValueOnce({
-          id: 'ticket-b',
-          name: 'Task B',
-          description: '',
-          status: { status: 'Open' },
-          dependencies: [{ task_id: 'completed-ticket' }],
-        })
-        .mockResolvedValueOnce({
-          id: 'completed-ticket',
-          name: 'Completed',
-          description: '',
-          status: { status: 'completed' },
-        });
-
-      (prismaService.ticketDependency.findMany as jest.Mock)
-        .mockResolvedValueOnce([]) // ticket-a: no circular deps
-        .mockResolvedValueOnce([]); // ticket-b: no circular deps
+      ticketDependencies.getBlockers
+        .mockResolvedValueOnce([
+          { depends_on: 'completed-ticket', circular_detected: false },
+          { depends_on: 'other-dep', circular_detected: false },
+        ] as never)
+        .mockResolvedValueOnce([
+          { depends_on: 'completed-ticket', circular_detected: false },
+        ] as never);
+      (prismaService.ticket.findUnique as jest.Mock).mockImplementation(
+        ({ where }: { where: { clickup_task_id?: string } }) => {
+          if (where.clickup_task_id === 'completed-ticket') {
+            return Promise.resolve({ status: 'COMPLETED' });
+          }
+          if (where.clickup_task_id === 'other-dep') {
+            return Promise.resolve({ status: 'AI_PROCESSING' });
+          }
+          return Promise.resolve({
+            dependency_block_behavior: null,
+            project: { dependency_block_behavior: 'auto_resume' },
+          });
+        },
+      );
 
       await service.notifyDependentTickets('completed-ticket');
 
@@ -405,7 +380,7 @@ describe('DependencyManagerService', () => {
     });
 
     it('should handle no dependent tickets gracefully', async () => {
-      (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([]);
+      ticketDependencies.getDependents.mockResolvedValueOnce([]);
 
       await service.notifyDependentTickets('completed-ticket');
 
@@ -414,21 +389,21 @@ describe('DependencyManagerService', () => {
     });
 
     it('should handle ClickUp API failures when adding comments', async () => {
-      (prismaService.ticketDependency.findMany as jest.Mock).mockResolvedValueOnce([
+      ticketDependencies.getDependents.mockResolvedValueOnce([
         {
           id: '1',
           ticket_id: 'ticket-a',
           depends_on: 'completed-ticket',
           status: 'WAITING',
         },
-      ]);
+      ] as never);
 
+      ticketDependencies.getBlockers.mockResolvedValueOnce([
+        { depends_on: 'completed-ticket', circular_detected: false },
+      ] as never);
       (clickUpService.getTask as jest.Mock).mockResolvedValueOnce({
-        id: 'ticket-a',
-        name: 'Task A',
-        description: '',
-        status: { status: 'Open' },
-        dependencies: [{ task_id: 'completed-ticket' }],
+        id: 'completed-ticket',
+        status: { status: 'completed' },
       });
 
       (clickUpService.addComment as jest.Mock).mockRejectedValueOnce(

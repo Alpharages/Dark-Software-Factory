@@ -2355,12 +2355,14 @@ model TicketDependency {
   id                String           @id @default(uuid())
   ticket_id         String           // Dependent ticket
   depends_on        String           // Blocking ticket ID
+  type              DependencyEdgeType @default(waiting_on)
+  source            String           @default("clickup")
   status            DependencyStatus @default(WAITING)
   circular_detected Boolean          @default(false)
   created_at        DateTime         @default(now())
   resolved_at       DateTime?
 
-  @@unique([ticket_id, depends_on])  // Prevent duplicate dependency links
+  @@unique([ticket_id, depends_on, source])  // Prevent duplicate dependency links per provider
   @@index([ticket_id])
   @@index([depends_on])
   @@index([status])

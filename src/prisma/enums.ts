@@ -5,6 +5,8 @@ export {
   FileLockStatus,
   FileLockQueueStatus,
   DependencyStatus,
+  DependencyEdgeType,
+  DependencyBlockBehavior,
   PRRiskLevel,
   TaskType,
   AIProvider,

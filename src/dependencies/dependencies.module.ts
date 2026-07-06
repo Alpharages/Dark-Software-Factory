@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CircularDependencyDetectorService } from './circular-dependency-detector.service';
 import { DependencyManagerService } from './dependency-manager.service';
 import { ClickUpModule } from '../clickup/clickup.module';
@@ -6,6 +6,10 @@ import { AIDecisionLoggerModule } from '../audit/ai-decision-logger.module';
 import { AppMetricsModule } from '../common/metrics/metrics.module';
 import { DatabaseModule } from '../database/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
+import { DependencySyncService } from './dependency-sync.service';
+import { ClickUpDependencyProvider } from './providers/clickup-dependency.provider';
+import { DEPENDENCY_PROVIDER } from './providers/dependency-provider.interface';
+import { TicketDependencyRepository } from './ticket-dependency.repository';
 
 /**
  * Dependencies Module
@@ -25,13 +29,25 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
  */
 @Module({
   imports: [
-    ClickUpModule, // For ClickUp API access
+    forwardRef(() => ClickUpModule), // For ClickUp API access
     AIDecisionLoggerModule, // For AI decision logging
     AppMetricsModule, // For Prometheus metrics
     DatabaseModule, // For database access
     RabbitMQModule, // For RabbitMQ queue operations (Story 12.2)
   ],
-  providers: [CircularDependencyDetectorService, DependencyManagerService],
-  exports: [CircularDependencyDetectorService, DependencyManagerService],
+  providers: [
+    CircularDependencyDetectorService,
+    DependencyManagerService,
+    DependencySyncService,
+    TicketDependencyRepository,
+    ClickUpDependencyProvider,
+    { provide: DEPENDENCY_PROVIDER, useExisting: ClickUpDependencyProvider },
+  ],
+  exports: [
+    CircularDependencyDetectorService,
+    DependencyManagerService,
+    DependencySyncService,
+    TicketDependencyRepository,
+  ],
 })
 export class DependenciesModule {}

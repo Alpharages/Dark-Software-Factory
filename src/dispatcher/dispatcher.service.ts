@@ -9,12 +9,14 @@ import { OpenHarnessRunnerService } from '@/openharness/openharness-runner.servi
 import { OpenHarnessSkill, openHarnessSkillPrompt } from '@/openharness/skills.enum';
 import { StatusSkillMapService } from '@/openharness/status-skill-map.service';
 import { ITaskEvent, TaskProviderType } from '@/ticket-intake/dto';
+import { DependencyGateService } from './dependency-gate.service';
 
 /** Non-fatal error-metric label recorded when a ticket trips the loop-cap safety valve. */
 const LOOP_CAP_EXCEEDED_METRIC = 'dispatcher_loop_cap_exceeded';
 
 /** Non-fatal error-metric label recorded when opening the approval gate fails. */
 const OPEN_GATE_FAILED_METRIC = 'dispatcher_open_gate_failed';
+const DEPENDENCY_GATE_FAILED_METRIC = 'dispatcher_dependency_gate_failed';
 
 export type DispatchResult =
   | { dispatched: true; executionId: string; skill: string }
@@ -27,11 +29,13 @@ export type DispatchResult =
         | 'loop-complete'
         | 'awaiting-approval'
         | 'active-execution'
+        | 'blocked'
         | 'loop-cap-exceeded'
         | 'error';
       executionId?: string;
       error?: string;
       skill?: string;
+      unresolved?: string[];
     };
 
 @Injectable()
@@ -59,6 +63,7 @@ export class DispatcherService {
     // so dispatcher ⇄ gate is a deliberate cycle.
     @Inject(forwardRef(() => ApprovalGateService))
     private readonly approvalGate: ApprovalGateService,
+    private readonly dependencyGate: DependencyGateService,
     // Optional so a missing metrics provider never breaks fire-and-forget dispatch,
     // and the service stays trivially constructable in unit tests.
     @Optional() private readonly metrics?: MetricsService,
@@ -181,6 +186,9 @@ export class DispatcherService {
       };
     }
 
+    const blocked = await this.checkDependencyGate(ticket.id, event.correlationId, skill);
+    if (blocked) return blocked;
+
     if (mappedSkill === OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT) {
       // Safety valve against unbounded ping-pong (e.g. changes-requested ⇄ re-implement).
       // `loopMaxIterations` caps the TOTAL implement runs per ticket — the initial
@@ -254,6 +262,14 @@ export class DispatcherService {
   ): Promise<DispatchResult> {
     const skill = OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT;
 
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { id: true },
+    });
+    if (!ticket) {
+      return { dispatched: false, reason: 'ticket-not-found' };
+    }
+
     const activeExecution = await this.prisma.execution.findFirst({
       where: {
         ticket_id: ticketId,
@@ -267,6 +283,9 @@ export class DispatcherService {
       );
       return { dispatched: false, reason: 'active-execution', executionId: activeExecution.id };
     }
+
+    const blocked = await this.checkDependencyGate(ticketId, correlationId, skill);
+    if (blocked) return blocked;
 
     const loopCount = await this.prisma.execution.count({
       where: {
@@ -298,6 +317,46 @@ export class DispatcherService {
         `[${correlationId}] Re-dispatch failed for ticket ${ticketId}: ${message}`,
         error instanceof Error ? error.stack : undefined,
       );
+      return { dispatched: false, reason: 'error', error: message, skill };
+    }
+  }
+
+  async releaseDependencyHold(ticketRef: string, correlationId: string): Promise<DispatchResult> {
+    const ticket = await this.prisma.ticket.findFirst({
+      where: { OR: [{ id: ticketRef }, { clickup_task_id: ticketRef }] },
+      select: { id: true },
+    });
+
+    if (!ticket) {
+      return { dispatched: false, reason: 'ticket-not-found' };
+    }
+
+    return this.redispatchImplement(ticket.id, correlationId);
+  }
+
+  private async checkDependencyGate(
+    ticketId: string,
+    correlationId: string,
+    skill: string,
+  ): Promise<DispatchResult | null> {
+    try {
+      const result = await this.dependencyGate.check(ticketId);
+      if (!result.blocked) return null;
+
+      await this.dependencyGate.markBlocked(ticketId, result);
+      return {
+        dispatched: false,
+        reason: 'blocked',
+        unresolved: result.unresolved,
+        skill,
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `[${correlationId}] Dependency gate failed for ticket ${ticketId}: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      this.metrics?.incrementErrors(DEPENDENCY_GATE_FAILED_METRIC);
       return { dispatched: false, reason: 'error', error: message, skill };
     }
   }

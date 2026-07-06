@@ -9,6 +9,7 @@ import { AuditLogService } from '../common/audit/audit-log.service';
 import { ClickUpService } from './clickup.service';
 import { ConfigService } from '@nestjs/config';
 import { ProjectIntegrationService } from '../integrations/project-integration.service';
+import { DependencySyncService } from '@/dependencies/dependency-sync.service';
 
 describe('ClickUpTaskUpdateConsumer', () => {
   let consumer: ClickUpTaskUpdateConsumer;
@@ -59,6 +60,10 @@ describe('ClickUpTaskUpdateConsumer', () => {
     findByProjectAndProvider: jest.fn(),
   };
 
+  const mockDependencySyncService = {
+    syncDependencies: jest.fn().mockResolvedValue(0),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -72,6 +77,7 @@ describe('ClickUpTaskUpdateConsumer', () => {
         { provide: ClickUpService, useValue: mockClickUpService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: ProjectIntegrationService, useValue: mockIntegrationService },
+        { provide: DependencySyncService, useValue: mockDependencySyncService },
       ],
     }).compile();
 

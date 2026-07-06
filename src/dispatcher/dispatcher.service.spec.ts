@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { AIProvider, ExecutionStatus, PMProvider } from '@/prisma/client';
+import { AIProvider, DependencyBlockBehavior, ExecutionStatus, PMProvider } from '@/prisma/client';
 import { OpenHarnessSkill, openHarnessSkillPrompt } from '@/openharness/skills.enum';
 import { ITaskEvent, TaskProviderType, TaskTriggerSource } from '@/ticket-intake/dto';
 import { DispatcherService } from './dispatcher.service';
@@ -38,6 +38,7 @@ describe('DispatcherService', () => {
   let runner: { runForTicket: jest.Mock };
   let config: Pick<ConfigService, 'get'>;
   let approvalGate: { openGate: jest.Mock };
+  let dependencyGate: { check: jest.Mock; markBlocked: jest.Mock };
   let metrics: { incrementErrors: jest.Mock };
   let service: DispatcherService;
 
@@ -66,12 +67,21 @@ describe('DispatcherService', () => {
     };
     metrics = { incrementErrors: jest.fn() };
     approvalGate = { openGate: jest.fn().mockResolvedValue({}) };
+    dependencyGate = {
+      check: jest.fn().mockResolvedValue({
+        blocked: false,
+        unresolved: [],
+        behavior: DependencyBlockBehavior.auto_resume,
+      }),
+      markBlocked: jest.fn().mockResolvedValue(undefined),
+    };
     service = new DispatcherService(
       prisma as never,
       statusSkillMap as never,
       runner as never,
       config as ConfigService,
       approvalGate as never,
+      dependencyGate as never,
       metrics as never,
     );
   });
@@ -243,6 +253,44 @@ describe('DispatcherService', () => {
     expect(metrics.incrementErrors).toHaveBeenCalledWith('dispatcher_loop_cap_exceeded');
   });
 
+  it('skips dispatch when dependency gate reports unresolved blockers', async () => {
+    dependencyGate.check.mockResolvedValueOnce({
+      blocked: true,
+      unresolved: ['blocker-1'],
+      behavior: DependencyBlockBehavior.auto_resume,
+    });
+
+    const result = await service.dispatch(event);
+
+    expect(result).toEqual({
+      dispatched: false,
+      reason: 'blocked',
+      unresolved: ['blocker-1'],
+      skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW,
+    });
+    expect(dependencyGate.markBlocked).toHaveBeenCalledWith('ticket-uuid-1', {
+      blocked: true,
+      unresolved: ['blocker-1'],
+      behavior: DependencyBlockBehavior.auto_resume,
+    });
+    expect(runner.runForTicket).not.toHaveBeenCalled();
+  });
+
+  it('returns error when dependency gate fails without throwing', async () => {
+    dependencyGate.check.mockRejectedValueOnce(new Error('gate unavailable'));
+
+    const result = await service.dispatch(event);
+
+    expect(result).toEqual({
+      dispatched: false,
+      reason: 'error',
+      error: 'gate unavailable',
+      skill: OpenHarnessSkill.CLICKUP_CODE_REVIEW,
+    });
+    expect(metrics.incrementErrors).toHaveBeenCalledWith('dispatcher_dependency_gate_failed');
+    expect(runner.runForTicket).not.toHaveBeenCalled();
+  });
+
   it('returns failed result when runner throws', async () => {
     runner.runForTicket.mockRejectedValueOnce(new Error('oh missing'));
 
@@ -289,6 +337,24 @@ describe('DispatcherService', () => {
         skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
         workspaceDir: '/workspaces/dsf',
       });
+    });
+
+    it('skips re-dispatch when dependency gate reports unresolved blockers', async () => {
+      dependencyGate.check.mockResolvedValueOnce({
+        blocked: true,
+        unresolved: ['blocker-1'],
+        behavior: DependencyBlockBehavior.hold,
+      });
+
+      const result = await service.redispatchImplement('ticket-uuid-1', 'corr-1');
+
+      expect(result).toEqual({
+        dispatched: false,
+        reason: 'blocked',
+        unresolved: ['blocker-1'],
+        skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+      });
+      expect(runner.runForTicket).not.toHaveBeenCalled();
     });
 
     it('skips re-dispatch when an active execution exists', async () => {
