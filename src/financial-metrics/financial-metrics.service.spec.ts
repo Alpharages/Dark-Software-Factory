@@ -98,6 +98,36 @@ describe('FinancialMetricsService — project-existence consistency (BUG-02)', (
     });
   });
 
+  it('getEpics with no projectId skips the project check and queries across all projects', async () => {
+    mockPrismaService.ticket.findMany.mockResolvedValue([{ epic_num: '2' }, { epic_num: '1' }]);
+
+    await expect(service.getEpics()).resolves.toEqual([
+      { epicId: 'epic-1', epicTitle: 'Epic 1' },
+      { epicId: 'epic-2', epicTitle: 'Epic 2' },
+    ]);
+    expect(mockPrismaService.project.findUnique).not.toHaveBeenCalled();
+    expect(mockPrismaService.ticket.findMany).toHaveBeenCalledWith({
+      where: { epic_num: { not: null } },
+      distinct: ['epic_num'],
+      select: { epic_num: true },
+    });
+  });
+
+  it('getEpics sorts non-numeric epic_num values lexically without NaN scrambling', async () => {
+    mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1' });
+    mockPrismaService.ticket.findMany.mockResolvedValue([
+      { epic_num: 'beta' },
+      { epic_num: '2' },
+      { epic_num: 'alpha' },
+    ]);
+
+    await expect(service.getEpics('project-1')).resolves.toEqual([
+      { epicId: 'epic-2', epicTitle: 'Epic 2' },
+      { epicId: 'epic-alpha', epicTitle: 'Epic alpha' },
+      { epicId: 'epic-beta', epicTitle: 'Epic beta' },
+    ]);
+  });
+
   it('getModelEfficiency 404s on an unknown project', async () => {
     mockPrismaService.project.findUnique.mockResolvedValue(null);
 

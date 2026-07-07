@@ -221,11 +221,20 @@ export class FinancialMetricsService {
       select: { epic_num: true },
     });
 
-    return tickets
-      .map((t) => t.epic_num)
-      .filter((num): num is string => !!num)
-      .sort((a, b) => Number(a) - Number(b))
-      .map((num) => ({ epicId: `epic-${num}`, epicTitle: `Epic ${num}` }));
+    return (
+      tickets
+        .map((t) => t.epic_num)
+        .filter((num): num is string => !!num)
+        // Sort numerically when both parse as numbers; fall back to lexical for
+        // non-numeric epic_num values (epic_num is a free-form String in the schema).
+        .sort((a, b) => {
+          const na = Number(a);
+          const nb = Number(b);
+          if (Number.isNaN(na) || Number.isNaN(nb)) return a.localeCompare(b);
+          return na - nb;
+        })
+        .map((num) => ({ epicId: `epic-${num}`, epicTitle: `Epic ${num}` }))
+    );
   }
 
   /**
