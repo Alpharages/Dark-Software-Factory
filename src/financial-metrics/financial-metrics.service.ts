@@ -48,6 +48,20 @@ export class FinancialMetricsService {
   }
 
   /**
+   * Shared existence check so all financial-metrics endpoints 404 consistently
+   * on an unknown project instead of silently returning empty data (BUG-02).
+   */
+  private async assertProjectExists(projectId: string): Promise<void> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true },
+    });
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+  }
+
+  /**
    * AC#1: Get cost per feature/epic breakdown
    * NOTE: Requires epic_num field in Ticket model (see Technical Debt)
    */
@@ -59,6 +73,11 @@ export class FinancialMetricsService {
   }): Promise<CostPerFeatureDto[]> {
     try {
       const { epicId, projectId, startDate, endDate } = options;
+
+      if (projectId) {
+        await this.assertProjectExists(projectId);
+      }
+
       const whereClause: Prisma.AICostLogWhereInput = {};
 
       // Date range filter
@@ -194,6 +213,8 @@ export class FinancialMetricsService {
   }): Promise<RoiMetricsDto> {
     try {
       const { projectId, period, valuePerPoint = 500 } = options;
+
+      await this.assertProjectExists(projectId);
 
       this.loggerService.debug('Calculating ROI', { projectId, period, valuePerPoint });
 
@@ -434,17 +455,15 @@ export class FinancialMetricsService {
 
       this.loggerService.debug('Getting budget trends', { projectId, period });
 
+      await this.assertProjectExists(projectId);
+
       // Get project budget
       const project = await this.prisma.project.findUnique({
         where: { id: projectId },
         select: { budget_usd: true },
       });
 
-      if (!project) {
-        throw new NotFoundException(`Project ${projectId} not found`);
-      }
-
-      if (!project.budget_usd) {
+      if (!project?.budget_usd) {
         throw new NotFoundException(`Project ${projectId} has no budget set`);
       }
 
@@ -597,6 +616,8 @@ export class FinancialMetricsService {
   }): Promise<ModelEfficiencyDto> {
     try {
       const { projectId, startDate, endDate } = options;
+
+      await this.assertProjectExists(projectId);
 
       this.loggerService.debug('Getting model efficiency', { projectId });
 
@@ -817,6 +838,9 @@ export class FinancialMetricsService {
   }): Promise<HistoricalRoiResponseDto> {
     try {
       const { projectId, startDate, endDate } = options;
+
+      await this.assertProjectExists(projectId);
+
       this.loggerService.debug('Getting historical ROI', { projectId });
 
       // Default to last 30 days if no range provided

@@ -132,6 +132,9 @@ export class FinancialMetricsController {
       return result;
     } catch (_error) {
       this.logger.error(`Cost per feature error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -186,6 +189,9 @@ export class FinancialMetricsController {
       });
     } catch (_error) {
       this.logger.error(`ROI calculation error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -311,6 +317,9 @@ export class FinancialMetricsController {
       });
     } catch (_error) {
       this.logger.error(`Model efficiency error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -399,6 +408,9 @@ export class FinancialMetricsController {
       });
     } catch (_error) {
       this.logger.error(`Historical ROI error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
