@@ -23,6 +23,7 @@ import { FinancialMetricsService } from './financial-metrics.service';
 import {
   CostPerFeatureQueryDto,
   CostPerFeatureDto,
+  EpicOptionDto,
   RoiQueryDto,
   RoiMetricsDto,
   BudgetTrendsQueryDto,
@@ -132,6 +133,43 @@ export class FinancialMetricsController {
       return result;
     } catch (_error) {
       this.logger.error(`Cost per feature error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
+      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * BUG-04: List distinct epics for the cost-per-feature epic selector
+   */
+  @Get('epics')
+  @Roles(Role.MANAGER, Role.ADMIN)
+  @Throttle({ default: { limit: 50, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'List epics available for cost-per-feature selection',
+    description:
+      'Returns the distinct epics (derived from ticket.epic_num) available for a project, so the Cost per Feature epic selector can be populated dynamically instead of hardcoded.',
+  })
+  @ApiQuery({
+    name: 'projectId',
+    description: 'Optional project ID filter',
+    required: false,
+    example: 'project-uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Epics retrieved successfully',
+    type: [EpicOptionDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - No JWT token' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient role' })
+  async getEpics(@Query('projectId') projectId?: string): Promise<EpicOptionDto[]> {
+    try {
+      this.loggerService.debug('GET /epics', { projectId });
+      return await this.financialMetricsService.getEpics(projectId);
+    } catch (_error) {
+      this.logger.error(`Get epics error: ${(_error as Error).message}`);
       if (_error instanceof HttpException) {
         throw _error;
       }

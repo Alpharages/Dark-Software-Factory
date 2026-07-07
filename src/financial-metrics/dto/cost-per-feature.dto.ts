@@ -113,6 +113,23 @@ export class ProviderBreakdownDto {
 }
 
 /**
+ * Single epic option for the cost-per-feature epic selector
+ */
+export class EpicOptionDto {
+  @ApiProperty({
+    description: 'Epic identifier',
+    example: 'epic-5',
+  })
+  epicId!: string;
+
+  @ApiProperty({
+    description: 'Epic display title',
+    example: 'Epic 5',
+  })
+  epicTitle!: string;
+}
+
+/**
  * Response DTO for cost-per-feature endpoint
  */
 export class CostPerFeatureDto {

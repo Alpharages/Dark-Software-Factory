@@ -5,6 +5,7 @@ import { SentryService } from '@/common/sentry/sentry.service';
 import { Prisma } from '@/prisma/client';
 import {
   CostPerFeatureDto,
+  EpicOptionDto,
   StoryCostDto,
   ProviderBreakdownDto,
   RoiMetricsDto,
@@ -200,6 +201,31 @@ export class FinancialMetricsService {
       this.logger.error(`Failed to get cost per feature: ${(_error as Error).message}`);
       throw _error;
     }
+  }
+
+  /**
+   * BUG-04: List distinct epics available for the cost-per-feature selector,
+   * derived from ticket.epic_num so the dropdown is data-driven instead of hardcoded.
+   */
+  async getEpics(projectId?: string): Promise<EpicOptionDto[]> {
+    if (projectId) {
+      await this.assertProjectExists(projectId);
+    }
+
+    const tickets = await this.prisma.ticket.findMany({
+      where: {
+        epic_num: { not: null },
+        ...(projectId ? { project_id: projectId } : {}),
+      },
+      distinct: ['epic_num'],
+      select: { epic_num: true },
+    });
+
+    return tickets
+      .map((t) => t.epic_num)
+      .filter((num): num is string => !!num)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((num) => ({ epicId: `epic-${num}`, epicTitle: `Epic ${num}` }));
   }
 
   /**

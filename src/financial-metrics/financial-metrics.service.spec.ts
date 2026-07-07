@@ -72,6 +72,32 @@ describe('FinancialMetricsService — project-existence consistency (BUG-02)', (
     expect(mockPrismaService.project.findUnique).not.toHaveBeenCalled();
   });
 
+  it('getEpics 404s on an unknown project when a projectId filter is supplied', async () => {
+    mockPrismaService.project.findUnique.mockResolvedValue(null);
+
+    await expect(service.getEpics('unknown-project-id')).rejects.toThrow(NotFoundException);
+  });
+
+  it('getEpics returns distinct epics sorted numerically, derived from ticket.epic_num', async () => {
+    mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1' });
+    mockPrismaService.ticket.findMany.mockResolvedValue([
+      { epic_num: '14' },
+      { epic_num: '6' },
+      { epic_num: '5' },
+    ]);
+
+    await expect(service.getEpics('project-1')).resolves.toEqual([
+      { epicId: 'epic-5', epicTitle: 'Epic 5' },
+      { epicId: 'epic-6', epicTitle: 'Epic 6' },
+      { epicId: 'epic-14', epicTitle: 'Epic 14' },
+    ]);
+    expect(mockPrismaService.ticket.findMany).toHaveBeenCalledWith({
+      where: { epic_num: { not: null }, project_id: 'project-1' },
+      distinct: ['epic_num'],
+      select: { epic_num: true },
+    });
+  });
+
   it('getModelEfficiency 404s on an unknown project', async () => {
     mockPrismaService.project.findUnique.mockResolvedValue(null);
 
