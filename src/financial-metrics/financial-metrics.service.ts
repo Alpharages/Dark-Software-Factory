@@ -233,7 +233,7 @@ export class FinancialMetricsService {
         case 'week':
           currentStartDate.setDate(currentStartDate.getDate() - 7);
           previousStartDate.setDate(previousStartDate.getDate() - 14);
-          previousEndDate.setDate(previousEndDate.getHours() - 7);
+          previousEndDate.setDate(previousEndDate.getDate() - 7);
           break;
         case 'month':
           currentStartDate.setDate(currentStartDate.getDate() - 30);
@@ -455,15 +455,17 @@ export class FinancialMetricsService {
 
       this.loggerService.debug('Getting budget trends', { projectId, period });
 
-      await this.assertProjectExists(projectId);
-
-      // Get project budget
+      // Single query covers both the existence check and the budget lookup.
       const project = await this.prisma.project.findUnique({
         where: { id: projectId },
         select: { budget_usd: true },
       });
 
-      if (!project?.budget_usd) {
+      if (!project) {
+        throw new NotFoundException(`Project ${projectId} not found`);
+      }
+
+      if (!project.budget_usd) {
         throw new NotFoundException(`Project ${projectId} has no budget set`);
       }
 
@@ -754,6 +756,8 @@ export class FinancialMetricsService {
       const { projectId, expireDays = 7 } = options;
       this.loggerService.debug('Generating share link', { projectId, expireDays });
 
+      await this.assertProjectExists(projectId);
+
       const payload = {
         projectId,
         scope: 'financial_metrics_readonly',
@@ -792,6 +796,8 @@ export class FinancialMetricsService {
     try {
       const { projectId, email, frequency } = options;
       this.loggerService.debug('Scheduling report', { projectId, email, frequency });
+
+      await this.assertProjectExists(projectId);
 
       // Store in SystemConfig as a JSON array of schedules for now
       // Future improvement: dedicated ReportSchedule table

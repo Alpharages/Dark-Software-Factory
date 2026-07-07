@@ -95,4 +95,20 @@ describe('FinancialMetricsService — project-existence consistency (BUG-02)', (
       service.getBudgetTrends({ projectId: UNKNOWN_PROJECT, period: 'month' }),
     ).rejects.toThrow(NotFoundException);
   });
+
+  it('generateShareLink 404s on an unknown project', async () => {
+    mockPrismaService.project.findUnique.mockResolvedValue(null);
+
+    await expect(service.generateShareLink({ projectId: UNKNOWN_PROJECT })).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('scheduleReport 404s on an unknown project', async () => {
+    mockPrismaService.project.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.scheduleReport({ projectId: UNKNOWN_PROJECT, email: 'a@b.com', frequency: 'weekly' }),
+    ).rejects.toThrow(NotFoundException);
+  });
 });

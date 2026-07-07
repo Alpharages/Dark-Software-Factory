@@ -348,6 +348,9 @@ export class FinancialMetricsController {
       return await this.financialMetricsService.generateShareLink(body);
     } catch (_error) {
       this.logger.error(`Share link generation error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -375,6 +378,9 @@ export class FinancialMetricsController {
       return await this.financialMetricsService.scheduleReport(body);
     } catch (_error) {
       this.logger.error(`Report scheduling error: ${(_error as Error).message}`);
+      if (_error instanceof HttpException) {
+        throw _error;
+      }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
