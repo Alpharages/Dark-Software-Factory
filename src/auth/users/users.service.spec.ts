@@ -49,6 +49,7 @@ describe('UsersService', () => {
 
   describe('listUsers', () => {
     it('should return paginated user list successfully', async () => {
+      const lastLoginAt = new Date('2026-07-06T18:55:38.000Z');
       const mockUsers = [
         {
           id: '1',
@@ -56,6 +57,7 @@ describe('UsersService', () => {
           full_name: 'User One',
           role: Role.PM,
           is_active: true,
+          last_login_at: lastLoginAt,
         },
       ];
 
@@ -66,10 +68,24 @@ describe('UsersService', () => {
 
       expect(result.users).toHaveLength(1);
       expect(result.users[0].email).toBe('user1@test.com');
+      expect(result.users[0].lastLoginAt).toBe(lastLoginAt);
       expect(result.pagination.total).toBe(1);
       expect(result.pagination.page).toBe(1);
       expect(result.pagination.hasNext).toBe(false);
       expect(result.pagination.hasPrevious).toBe(false);
+    });
+
+    it('should select last login timestamps', async () => {
+      mockPrismaService.user.findMany.mockResolvedValue([]);
+      mockPrismaService.user.count.mockResolvedValue(0);
+
+      await service.listUsers({});
+
+      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({ last_login_at: true }),
+        }),
+      );
     });
 
     it('should apply role filter correctly', async () => {

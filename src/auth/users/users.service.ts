@@ -57,6 +57,7 @@ export class UsersService {
           full_name: true,
           role: true,
           is_active: true,
+          last_login_at: true,
           slackMemberId: true,
         },
       }),
@@ -84,6 +85,7 @@ export class UsersService {
       fullName: user.full_name,
       role: user.role as Role,
       isActive: user.is_active,
+      lastLoginAt: user.last_login_at,
     }));
 
     return {

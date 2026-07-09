@@ -15,14 +15,6 @@ export class UserDetailDto extends UserDto {
   activeRefreshTokensCount!: number;
 
   @ApiProperty({
-    description: 'Timestamp of last login',
-    example: '2026-01-03T00:00:00.000Z',
-    required: false,
-    nullable: true,
-  })
-  lastLoginAt?: Date | null;
-
-  @ApiProperty({
     description: 'Slack Member ID for notifications',
     example: 'U12345678',
     required: false,

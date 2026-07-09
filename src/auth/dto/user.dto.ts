@@ -32,4 +32,11 @@ export class UserDto {
     example: true,
   })
   isActive!: boolean;
+
+  @ApiProperty({
+    description: "The user's most recent login timestamp",
+    nullable: true,
+    required: false,
+  })
+  lastLoginAt?: Date | null;
 }
