@@ -24,9 +24,22 @@ fail() {
 
 [[ -n "$ACCOUNT_ID" ]] || fail "usage: scripts/claude-account-login.sh <account-id>"
 # Account ids are UUIDs — alnum + hyphen only. Rejecting other chars keeps the id from escaping
-# the accounts dir (no '/' or '..').
+# the accounts dir (no '/' or '..') and makes it safe to interpolate into the SQL check below.
 [[ "$ACCOUNT_ID" =~ ^[[:alnum:]-]+$ ]] || fail "account id must be alphanumeric/hyphen only"
 command -v claude >/dev/null 2>&1 || fail "missing command 'claude' (install Claude Code first)"
+
+# The runner selects accounts from `ai_accounts` independently of this script — provisioning a
+# config dir for an id that isn't a registered, enabled claude row is exactly how a dir/DB
+# mismatch happens (the original failure mode this script must not reproduce).
+: "${DATABASE_URL:?DATABASE_URL must be set (see .env) to validate the account id against ai_accounts}"
+command -v psql >/dev/null 2>&1 || fail "missing command 'psql' (needed to validate the account id against ai_accounts)"
+ENABLED=$(psql "$DATABASE_URL" -tAc \
+  "SELECT enabled FROM ai_accounts WHERE id = '$ACCOUNT_ID' AND provider = 'claude'") ||
+  fail "could not query ai_accounts for id '$ACCOUNT_ID' — check DATABASE_URL"
+[[ -n "$ENABLED" ]] ||
+  fail "account id '$ACCOUNT_ID' is not registered in ai_accounts (provider='claude') — import/create it first, then re-run with that id"
+[[ "$ENABLED" == "t" ]] ||
+  fail "account id '$ACCOUNT_ID' is registered but disabled in ai_accounts — enable it first, then re-run"
 
 CONFIG_DIR="$ACCOUNTS_DIR/$ACCOUNT_ID"
 mkdir -p "$CONFIG_DIR"
@@ -41,11 +54,14 @@ echo
 # silently produces no credentials — the exact failure mode this script exists to prevent.
 CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude auth login
 
-# `auth status` reflects the true login state for this CLAUDE_CONFIG_DIR whether the
-# credential ended up file-based or (on macOS) in the Keychain, so it verifies the login
-# actually succeeded instead of always printing success.
-CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude auth status >/dev/null 2>&1 ||
-  fail "login did not complete — '$CONFIG_DIR' is not authenticated (run 'CLAUDE_CONFIG_DIR=$CONFIG_DIR claude auth status' to inspect)"
+# The runner (probeClaudeSession, ai-accounts.service.ts) reads credentials straight from
+# "$CONFIG_DIR/.credentials.json" — not from `claude auth status`, which also reflects a
+# macOS-Keychain-only session that the isolated, non-interactive runner can never see. The CLI
+# has no flag to force file-based storage, so require the file directly: a Keychain-only login
+# fails loudly here instead of surfacing as a runtime "Connection error" later.
+CRED_FILE="$CONFIG_DIR/.credentials.json"
+[[ -s "$CRED_FILE" ]] ||
+  fail "login did not produce a file-based credential at '$CRED_FILE' — on macOS this usually means the session was saved to Keychain instead of the account dir, which the isolated runner can't read"
 
 echo
 echo "✅ Session saved to $CONFIG_DIR"
