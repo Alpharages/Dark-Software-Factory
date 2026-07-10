@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RegistrationService } from './registration.service';
 import { RegisterUserDto } from '../dto/register-user.dto';
 import { RegisterResponseDto } from '../dto/register-response.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
 @ApiTags('Auth - Registration')
@@ -10,6 +11,7 @@ export class RegistrationController {
   constructor(private readonly registrationService: RegistrationService) {}
 
   @Post('register')
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register new user via invite token' })
   @ApiResponse({

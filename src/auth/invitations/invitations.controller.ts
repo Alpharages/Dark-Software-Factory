@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '../../common/guards/auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser as User } from '../../common/decorators/current-user.decorator';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Invitations')
 @Controller('auth/invitations')
@@ -103,6 +104,7 @@ export class InvitationsController {
   }
 
   @Get('verify/:token')
+  @Public()
   @SkipThrottle() // Don't rate limit verification too strictly, or use a separate strategy
   @ApiOperation({ summary: 'Verify invitation token' })
   @ApiParam({ name: 'token', description: 'Invitation token' })
