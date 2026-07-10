@@ -52,6 +52,12 @@ echo
 # `claude login` is not a subcommand on current Claude Code CLIs (moved under `auth`);
 # passing it verbatim gets swallowed as a chat prompt to an unauthenticated session and
 # silently produces no credentials — the exact failure mode this script exists to prevent.
+# Clear any credential left by a prior attempt so the check below can only pass if THIS
+# `claude auth login` invocation produced it — otherwise a stale file from an earlier,
+# cancelled, or now-expired session would make a failed re-login look like success.
+CRED_FILE="$CONFIG_DIR/.credentials.json"
+rm -f "$CRED_FILE"
+
 CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude auth login
 
 # The runner (probeClaudeSession, ai-accounts.service.ts) reads credentials straight from
@@ -59,7 +65,6 @@ CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude auth login
 # macOS-Keychain-only session that the isolated, non-interactive runner can never see. The CLI
 # has no flag to force file-based storage, so require the file directly: a Keychain-only login
 # fails loudly here instead of surfacing as a runtime "Connection error" later.
-CRED_FILE="$CONFIG_DIR/.credentials.json"
 [[ -s "$CRED_FILE" ]] ||
   fail "login did not produce a file-based credential at '$CRED_FILE' — on macOS this usually means the session was saved to Keychain instead of the account dir, which the isolated runner can't read"
 
