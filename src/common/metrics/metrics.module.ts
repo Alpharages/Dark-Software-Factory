@@ -132,12 +132,26 @@ import {
     makeCounterProvider({
       name: AI_METRICS.TOKENS_INPUT_TOTAL,
       help: 'Total input tokens used by AI providers',
-      labelNames: [LABELS.PROVIDER, 'model', 'agent_name', 'operation_type', LABELS.PROJECT],
+      labelNames: [
+        LABELS.PROVIDER,
+        'model',
+        'agent_name',
+        'operation_type',
+        LABELS.PROJECT,
+        'skill',
+      ],
     }),
     makeCounterProvider({
       name: AI_METRICS.TOKENS_OUTPUT_TOTAL,
       help: 'Total output tokens used by AI providers',
-      labelNames: [LABELS.PROVIDER, 'model', 'agent_name', 'operation_type', LABELS.PROJECT],
+      labelNames: [
+        LABELS.PROVIDER,
+        'model',
+        'agent_name',
+        'operation_type',
+        LABELS.PROJECT,
+        'skill',
+      ],
     }),
     makeGaugeProvider({
       name: AI_METRICS.PROVIDER_STATUS,
@@ -201,13 +215,27 @@ import {
     makeHistogramProvider({
       name: COST_METRICS.PER_PROJECT,
       help: 'Cost per project in USD',
-      labelNames: [LABELS.PROJECT, LABELS.PROVIDER, 'model', 'agent_name', 'operation_type'],
+      labelNames: [
+        LABELS.PROJECT,
+        LABELS.PROVIDER,
+        'model',
+        'agent_name',
+        'operation_type',
+        'skill',
+      ],
       buckets: METRICS_CONSTANTS.COST_BUCKETS,
     }),
     makeCounterProvider({
       name: COST_METRICS.TOTAL,
       help: 'Total cost in USD',
-      labelNames: [LABELS.PROVIDER, 'model', 'agent_name', 'operation_type', LABELS.PROJECT],
+      labelNames: [
+        LABELS.PROVIDER,
+        'model',
+        'agent_name',
+        'operation_type',
+        LABELS.PROJECT,
+        'skill',
+      ],
     }),
     makeGaugeProvider({
       name: COST_METRICS.BUDGET_UTILIZATION,
