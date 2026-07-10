@@ -36,7 +36,16 @@ echo "  config dir: $CONFIG_DIR"
 echo "A browser window will open — sign in with THIS account's Anthropic subscription."
 echo
 
-CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude login
+# `claude login` is not a subcommand on current Claude Code CLIs (moved under `auth`);
+# passing it verbatim gets swallowed as a chat prompt to an unauthenticated session and
+# silently produces no credentials — the exact failure mode this script exists to prevent.
+CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude auth login
+
+# `auth status` reflects the true login state for this CLAUDE_CONFIG_DIR whether the
+# credential ended up file-based or (on macOS) in the Keychain, so it verifies the login
+# actually succeeded instead of always printing success.
+CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude auth status >/dev/null 2>&1 ||
+  fail "login did not complete — '$CONFIG_DIR' is not authenticated (run 'CLAUDE_CONFIG_DIR=$CONFIG_DIR claude auth status' to inspect)"
 
 echo
 echo "✅ Session saved to $CONFIG_DIR"
