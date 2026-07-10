@@ -13,6 +13,7 @@ import { ExecutionRepository } from '@/execution/execution.repository';
 import { OpenHarnessExecutionController } from './openharness-execution.controller';
 import { OpenHarnessRunnerService } from './openharness-runner.service';
 import { TestExecutionDto } from './dto/test-execution.dto';
+import { OpenHarnessSkill } from './skills.enum';
 
 describe('OpenHarnessExecutionController', () => {
   let controller: OpenHarnessExecutionController;
@@ -67,7 +68,7 @@ describe('OpenHarnessExecutionController', () => {
     const result = await controller.runTestExecution(
       {
         ticketId: '86ey08c75',
-        skill: 'custom-skill',
+        skill: OpenHarnessSkill.CLICKUP_QA,
         maxTurns: 50,
       },
       makeReply(),
@@ -77,7 +78,7 @@ describe('OpenHarnessExecutionController', () => {
     // The run targets the resolved internal ticket UUID (Execution.ticket_id FK),
     // not the caller-supplied ClickUp task id.
     expect(runner.runForTicket).toHaveBeenCalledWith('ticket-uuid-1', {
-      skill: 'custom-skill',
+      skill: OpenHarnessSkill.CLICKUP_QA,
       workspaceDir: '/workspaces/dsf',
       maxTurns: 50,
       mcpConfigPath: 'docs/openharness/mcp-config.json',
@@ -142,11 +143,21 @@ describe('OpenHarnessExecutionController', () => {
 
   it('validates ticketId as required', async () => {
     const dto = new TestExecutionDto();
-    dto.skill = 'clickup-dev-implement';
+    dto.skill = OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT;
 
     const errors = await validate(dto);
 
     expect(errors.some((error) => error.property === 'ticketId')).toBe(true);
+  });
+
+  it('rejects a non-enum skill so it cannot leak into Prometheus labels', async () => {
+    const dto = new TestExecutionDto();
+    dto.ticketId = '86ey08c75';
+    (dto as { skill?: string }).skill = 'arbitrary-cardinality-bomb';
+
+    const errors = await validate(dto);
+
+    expect(errors.some((error) => error.property === 'skill')).toBe(true);
   });
 
   it('transforms maxTurns through the validation pipe and rejects invalid bounds', async () => {

@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { OpenHarnessSkill } from '@/openharness/skills.enum';
 
 export class TestExecutionDto {
   @ApiProperty({
@@ -12,13 +13,13 @@ export class TestExecutionDto {
   ticketId!: string;
 
   @ApiPropertyOptional({
-    description: 'OpenHarness skill or prompt to run; defaults to openharness.defaultSkill',
-    example: 'clickup-dev-implement',
+    description: 'OpenHarness skill to run; defaults to openharness.defaultSkill',
+    enum: OpenHarnessSkill,
+    example: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
   })
   @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  skill?: string;
+  @IsEnum(OpenHarnessSkill)
+  skill?: OpenHarnessSkill;
 
   @ApiPropertyOptional({
     description:
