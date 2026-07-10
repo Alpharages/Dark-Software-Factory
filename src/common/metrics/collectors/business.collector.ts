@@ -20,6 +20,7 @@ import {
   CostMetricData,
   PMUtilizationData,
 } from '../metrics.interface';
+import { OpenHarnessSkill } from '@/openharness/skills.enum';
 
 @Injectable()
 export class BusinessCollector {
@@ -272,7 +273,11 @@ export class BusinessCollector {
       ['operation_type']: data.operationType,
     };
     if (data.projectId) labels[LABELS.PROJECT] = data.projectId;
-    if (data.skill) labels['skill'] = data.skill;
+    if (data.skill) {
+      labels['skill'] = Object.values(OpenHarnessSkill).includes(data.skill as OpenHarnessSkill)
+        ? data.skill
+        : 'custom';
+    }
 
     this.aiTokensInputTotal.inc(labels, data.inputTokens);
     this.aiTokensOutputTotal.inc(labels, data.outputTokens);
