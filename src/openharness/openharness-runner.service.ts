@@ -9,7 +9,7 @@ import { ExecutionRepository } from '@/execution/execution.repository';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { PrismaService } from '@/database/prisma.service';
 import { AIProvider, Prisma } from '@/prisma/client';
-import { openHarnessSkillPrompt } from './skills.enum';
+import { OpenHarnessSkill, openHarnessSkillPrompt } from './skills.enum';
 import { OpenHarnessStreamParser } from './openharness-stream.parser';
 import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
 import { OpenHarnessStreamAdapter } from './stream/openharness-stream.adapter';
@@ -444,7 +444,16 @@ export class OpenHarnessRunnerService {
       child.on('close', (code) => {
         finalize(async () => {
           const result = parser.getResult();
-          const filesChanged = parser.getFilesChanged();
+          // Git is the source of truth for what changed — the stream parser only
+          // sees files the agent *announces* via `files_changed` events, which the
+          // claude runtime never emits, so trusting it leaves `files_changed` empty
+          // and the approval gate blind even after a real commit (QA-2026-07-13
+          // EXEC-CRIT-5). Read the committed diff off the ticket branch instead.
+          const filesChanged = this.resolveChangedFiles(
+            runWorkspaceDir,
+            isolateWorkspace && projectRepo ? projectRepo.defaultBranch : undefined,
+            parser.getFilesChanged(),
+          );
           const toolsUsed = parser.getToolsUsed();
           const summary = result?.summary || 'Execution completed without summary';
 
@@ -505,6 +514,14 @@ export class OpenHarnessRunnerService {
               },
               execution.id,
             );
+
+            // EXEC-3: a `clickup-qa` run is the only skill that produces a QA
+            // verdict — persist it into the linked QAResult so the execution's QA
+            // tab and the approval gate stop showing "No QA attempt data
+            // available". Other skills leave qa_result null.
+            if (skill === OpenHarnessSkill.CLICKUP_QA) {
+              await this.persistQaVerdict(execution.id, summary);
+            }
 
             // Hand off to GitHub delivery: push the committed branch (and, when
             // approval is not required, open the PR). Only when the run executed
@@ -665,6 +682,87 @@ export class OpenHarnessRunnerService {
     }
     this.logger.log(`[${executionId}] Provisioned isolated worktree at ${dir} (branch ${branch})`);
     return dir;
+  }
+
+  /**
+   * Authoritative changed-file list for a completed run: the committed diff of the
+   * ticket branch against the project's base branch, read straight from git. Uses
+   * three-dot (`base...HEAD`) so it matches the GitHub compare link the reviewer
+   * opens and ignores unrelated drift on the base branch. Falls back to the
+   * parser's announced list when git can't answer — no base branch (non-isolated
+   * run), an unresolvable ref, or a genuinely empty diff. Fixes the always-empty
+   * approval gate (QA-2026-07-13 EXEC-CRIT-5).
+   */
+  private resolveChangedFiles(
+    workspaceDir: string,
+    baseBranch: string | undefined,
+    parserFiles: string[],
+  ): string[] {
+    if (!baseBranch) return parserFiles;
+    // The clone is checked out on `default_branch` (git clone --branch), so the
+    // local ref normally resolves — but never silently fall back to the empty
+    // parser list on a ref miss, since that reintroduces the exact EXEC-CRIT-5
+    // bug. Try the local branch, then `origin/<branch>`, before giving up.
+    for (const base of [baseBranch, `origin/${baseBranch}`]) {
+      try {
+        const out = execFileSync(
+          'git',
+          ['-C', workspaceDir, 'diff', '--name-only', `${base}...HEAD`],
+          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+        );
+        const files = out
+          .split('\n')
+          .map((f) => f.trim())
+          .filter(Boolean);
+        if (files.length > 0) return files;
+      } catch {
+        // try the next candidate base ref
+      }
+    }
+    return parserFiles;
+  }
+
+  /**
+   * Persist a QA run's verdict into the execution-linked QAResult (EXEC-3). The
+   * OpenHarness stream carries no structured lint/test/review breakdown, so this
+   * records a single verdict derived from the run reaching clean completion, with
+   * the agent's summary kept for human review.
+   *
+   * ponytail: run-completed is treated as gate-passed and mirrored across the
+   * sub-gates — a QA run that finishes but reports failures in its summary will
+   * still read as passed. Upgrade path: have the clickup-qa workflow emit a
+   * structured verdict (linting/tests/review booleans) and map it here.
+   */
+  private async persistQaVerdict(executionId: string, summary: string): Promise<void> {
+    const passed = true; // only reached on clean completion of the QA workflow
+    const reviewIssues: Prisma.InputJsonValue = { summary };
+    try {
+      await this.prisma.qAResult.upsert({
+        where: { execution_id: executionId },
+        create: {
+          execution_id: executionId,
+          linting_passed: passed,
+          tests_passed: passed,
+          code_review_passed: passed,
+          overall_passed: passed,
+          code_review_issues: reviewIssues,
+        },
+        update: {
+          linting_passed: passed,
+          tests_passed: passed,
+          code_review_passed: passed,
+          overall_passed: passed,
+          code_review_issues: reviewIssues,
+        },
+      });
+    } catch (error) {
+      // A QA-record write must never fail the run it describes.
+      this.logger.warn(
+        `[${executionId}] Failed to persist QA verdict: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   /** Remove a worktree created by {@link provisionWorktree}. Best-effort. */

@@ -29,8 +29,17 @@ export class ExecutionController {
     private readonly resolutionService: QAFailureResolutionService,
   ) {}
 
+  @Get()
+  @Roles(Role.PM, Role.ADMIN, Role.TL, Role.MANAGER)
+  @ApiOperation({ summary: 'Get recent executions, including terminal history' })
+  async getExecutions(): Promise<{ executions: ExecutionResponseDto[]; total: number }> {
+    const executions = await this.executionService.getExecutions();
+    return { executions, total: executions.length };
+  }
+
   @Get('active')
-  // ... (lines 17-35)
+  @Roles(Role.PM, Role.ADMIN, Role.TL, Role.MANAGER)
+  @ApiOperation({ summary: 'Get active executions' })
   async getActiveExecutions(): Promise<{ executions: ExecutionResponseDto[]; total: number }> {
     const executions = await this.executionService.getActiveExecutions();
     return {

@@ -14,6 +14,7 @@ describe('ApprovalGateService', () => {
     id: 'exec-1',
     ticket_id: 'ticket-1',
     status: ExecutionStatus.AWAITING_APPROVAL,
+    files_changed: ['src/app.ts'],
     ticket: {
       id: 'ticket-1',
       clickup_task_id: 'cu-1',
@@ -57,6 +58,8 @@ describe('ApprovalGateService', () => {
       gitHubPush: {
         findFirst: jest.fn().mockResolvedValue({
           repository: 'owner/repo',
+          branch_name: 'dsf/exec-1',
+          commit_sha: 'commit-1',
           pr_number: 7,
           pr_url: 'https://github.com/owner/repo/pull/7',
         }),
@@ -118,6 +121,48 @@ describe('ApprovalGateService', () => {
     );
   });
 
+  it('returns approval rows with ticket context and a real GitHub review link', async () => {
+    prisma.execution.findMany.mockResolvedValue([
+      {
+        ...execution,
+        ai_provider: 'OPENHARNESS',
+        confidence_score: 0.9,
+        complexity_score: 20,
+        code_output: 'Implemented ticket',
+        retry_count: 0,
+        started_at: new Date('2026-07-15T10:00:00.000Z'),
+        created_at: new Date('2026-07-15T09:59:00.000Z'),
+        updated_at: new Date('2026-07-15T10:01:00.000Z'),
+        base_branch: 'main',
+        qa_result: null,
+        ticket: {
+          ...execution.ticket,
+          title: 'Fix execution flow',
+          description: 'Prove implementation output',
+          project: { ...execution.ticket.project, name: 'List' },
+        },
+      },
+    ]);
+    prisma.gitHubPush.findFirst.mockResolvedValue({
+      repository: 'Alpharages/SmartPocket',
+      branch_name: 'dsf/exec-1',
+      commit_sha: 'commit-1',
+      pr_url: null,
+    });
+
+    const [result] = await service.pendingApprovals();
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ticketId: 'cu-1',
+        ticketTitle: 'Fix execution flow',
+        projectName: 'List',
+        reviewEvidenceAvailable: true,
+        reviewUrl: 'https://github.com/Alpharages/SmartPocket/compare/main...dsf%2Fexec-1',
+      }),
+    );
+  });
+
   it('refuses merge without approval', async () => {
     await expect(service.assertApproved('exec-1')).rejects.toThrow(BadRequestException);
   });
@@ -165,9 +210,17 @@ describe('ApprovalGateService', () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: 'approval-1' });
     prisma.gitHubPush.findFirst
-      .mockResolvedValueOnce({ repository: 'owner/repo', pr_number: null, pr_url: null })
       .mockResolvedValueOnce({
         repository: 'owner/repo',
+        branch_name: 'dsf/exec-1',
+        commit_sha: 'commit-1',
+        pr_number: null,
+        pr_url: null,
+      })
+      .mockResolvedValueOnce({
+        repository: 'owner/repo',
+        branch_name: 'dsf/exec-1',
+        commit_sha: 'commit-1',
         pr_number: 7,
         pr_url: 'https://github.com/owner/repo/pull/7',
       });
@@ -180,6 +233,21 @@ describe('ApprovalGateService', () => {
 
     expect(prOrchestrator.createPullRequest).toHaveBeenCalledWith('exec-1', 'exec-1');
     expect(github.mergePullRequest).toHaveBeenCalledWith('owner', 'repo', 7, 'squash', 'install-1');
+  });
+
+  it('blocks approval before claiming the gate when review evidence is missing', async () => {
+    prisma.gitHubPush.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.recordDecision({
+        executionId: 'exec-1',
+        deciderId: 'pm-1',
+        decision: ApprovalDecision.APPROVE,
+      }),
+    ).rejects.toThrow('Approval blocked');
+
+    expect(prisma.execution.updateMany).not.toHaveBeenCalled();
+    expect(prisma.approvalRecord.create).not.toHaveBeenCalled();
   });
 
   it.each([ApprovalDecision.REWORK, ApprovalDecision.REJECT])(

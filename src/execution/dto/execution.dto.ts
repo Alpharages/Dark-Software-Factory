@@ -132,6 +132,7 @@ export class ExecutionResponseDto {
   status!: ExecutionStatus;
   confidenceScore!: number | null;
   startTime!: Date | null;
+  duration!: number;
   completedAt!: Date | null;
   failedAt!: Date | null;
   errorMessage!: string | null;

@@ -273,6 +273,23 @@ export class ExecutionRepository {
   }
 
   /**
+   * Find recent executions, including terminal history.
+   */
+  async findExecutions(limit = 100): Promise<Execution[]> {
+    return this.prisma.execution.findMany({
+      take: limit,
+      orderBy: { created_at: 'desc' },
+      include: {
+        ticket: {
+          select: {
+            project_id: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
    * Get active execution count per provider
    */
   async getActiveCountByProvider(): Promise<Record<AIProvider, number>> {

@@ -82,6 +82,7 @@ describe('ExecutionService', () => {
             cancelExecution: jest.fn(),
             getExecution: jest.fn(),
             getExecutionsForTicket: jest.fn(),
+            getExecutions: jest.fn(),
             hasActiveExecution: jest.fn(),
             findActiveExecution: jest.fn(),
           },
@@ -112,6 +113,37 @@ describe('ExecutionService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('execution responses', () => {
+    it('returns completed execution duration in seconds', async () => {
+      jest.spyOn(trackerService, 'getExecution').mockResolvedValue({
+        ...mockExecution,
+        status: ExecutionStatus.COMPLETED,
+        started_at: new Date('2026-07-15T10:00:00.000Z'),
+        completed_at: new Date('2026-07-15T10:02:03.900Z'),
+      });
+
+      const result = await service.getExecution('exec-123');
+
+      expect(result?.duration).toBe(123);
+    });
+
+    it('returns recent execution history through the shared response mapper', async () => {
+      jest.spyOn(trackerService, 'getExecutions').mockResolvedValue([
+        {
+          ...mockExecution,
+          status: ExecutionStatus.COMPLETED,
+          started_at: new Date('2026-07-15T10:00:00.000Z'),
+          completed_at: new Date('2026-07-15T10:00:30.000Z'),
+        },
+      ]);
+
+      const result = await service.getExecutions();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(expect.objectContaining({ status: 'COMPLETED', duration: 30 }));
+    });
   });
 
   describe('startExecution', () => {

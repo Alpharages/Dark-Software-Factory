@@ -64,6 +64,9 @@ describe('OpenHarnessRunnerService', () => {
           ticket: { project_id: 'project-1' },
         }),
       },
+      qAResult: {
+        upsert: jest.fn().mockResolvedValue({ id: 'qa-1' }),
+      },
     };
 
     mockConfig = {
@@ -633,5 +636,70 @@ describe('OpenHarnessRunnerService', () => {
       'exec-123',
     );
     expect(mockAiAccounts.getDecryptedCredentials).not.toHaveBeenCalled();
+  });
+
+  // EXEC-CRIT-5: the diff must be read from git, not the stream parser, so a
+  // committed run that never emitted `files_changed` events is still captured.
+  describe('resolveChangedFiles', () => {
+    const call = (base: string | undefined, parserFiles: string[]) =>
+      (service as any).resolveChangedFiles('/tmp/wt', base, parserFiles);
+
+    it('returns the committed git diff over the parser list', () => {
+      (child_process.execFileSync as jest.Mock).mockReturnValue(
+        'server/ai/categorize.ts\nserver/routers.ts\n',
+      );
+      expect(call('main', ['stale.ts'])).toEqual(['server/ai/categorize.ts', 'server/routers.ts']);
+    });
+
+    it('falls back to the parser list when git returns nothing', () => {
+      (child_process.execFileSync as jest.Mock).mockReturnValue('');
+      expect(call('main', ['from-stream.ts'])).toEqual(['from-stream.ts']);
+    });
+
+    it('falls back to origin/<branch> when the local base ref is missing', () => {
+      (child_process.execFileSync as jest.Mock)
+        .mockImplementationOnce(() => {
+          throw new Error("fatal: ambiguous argument 'main...HEAD'");
+        })
+        .mockReturnValueOnce('server/routers.ts\n');
+      expect(call('main', ['stale.ts'])).toEqual(['server/routers.ts']);
+    });
+
+    it('falls back to the parser list only when every base ref is unresolvable', () => {
+      (child_process.execFileSync as jest.Mock).mockImplementation(() => {
+        throw new Error('fatal: bad revision');
+      });
+      expect(call('main', ['from-stream.ts'])).toEqual(['from-stream.ts']);
+    });
+
+    it('uses the parser list unchanged for a non-isolated run (no base branch)', () => {
+      expect(call(undefined, ['from-stream.ts'])).toEqual(['from-stream.ts']);
+    });
+  });
+
+  // EXEC-3: a completed QA run must persist a verdict onto the execution's
+  // QAResult so the QA tab / approval gate have data.
+  describe('persistQaVerdict', () => {
+    it('upserts a passing verdict with the summary for human review', async () => {
+      await (service as any).persistQaVerdict('exec-123', 'All tests green; coverage 92%');
+
+      expect(mockPrisma.qAResult.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { execution_id: 'exec-123' },
+          create: expect.objectContaining({
+            execution_id: 'exec-123',
+            overall_passed: true,
+            code_review_issues: { summary: 'All tests green; coverage 92%' },
+          }),
+        }),
+      );
+    });
+
+    it('never throws when the QA write fails — the run outcome stands', async () => {
+      mockPrisma.qAResult.upsert.mockRejectedValueOnce(new Error('db down'));
+      await expect(
+        (service as any).persistQaVerdict('exec-123', 'summary'),
+      ).resolves.toBeUndefined();
+    });
   });
 });

@@ -331,4 +331,31 @@ describe('OpenHarnessStreamAdapter', () => {
       );
     });
   });
+
+  // EXEC-4: agent-internal identifiers annotated with model-only instructions
+  // must never reach a user-facing activity.
+  describe('redactInternal', () => {
+    const redact = (v: unknown) => (adapter as any).redactInternal(v);
+
+    it('strips an id token and its "do not mention to user" annotation', () => {
+      expect(
+        redact('Using agentId: 7f3a-99 (internal ID - do not mention to user) to proceed'),
+      ).toBe('Using to proceed');
+    });
+
+    it('strips a standalone internal-id parenthetical', () => {
+      expect(redact('Delegating work (internal ID, do not reveal)')).toBe('Delegating work');
+    });
+
+    it('leaves ordinary text untouched', () => {
+      expect(redact('Running tests in server/ai (unit + integration)')).toBe(
+        'Running tests in server/ai (unit + integration)',
+      );
+    });
+
+    it('passes null/undefined through unchanged', () => {
+      expect(redact(null)).toBeNull();
+      expect(redact(undefined)).toBeUndefined();
+    });
+  });
 });

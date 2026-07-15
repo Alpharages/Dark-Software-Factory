@@ -6,7 +6,13 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApprovalDecision, ExecutionStatus, Prisma, TicketStatus } from '@/prisma/client';
+import {
+  ApprovalDecision,
+  ExecutionStatus,
+  GitHubPush,
+  Prisma,
+  TicketStatus,
+} from '@/prisma/client';
 import { AIDecisionLoggerService } from '@/audit/ai-decision-logger.service';
 import { PrismaService } from '@/database/prisma.service';
 import { DispatcherService } from '@/dispatcher/dispatcher.service';
@@ -105,17 +111,72 @@ export class ApprovalGateService {
    * ownership relation exists; today approver roles are workspace-global.
    */
   async pendingApprovals(projectId?: string) {
-    return this.prisma.execution.findMany({
+    const executions = await this.prisma.execution.findMany({
       where: {
         status: ExecutionStatus.AWAITING_APPROVAL,
         ...(projectId ? { ticket: { project_id: projectId } } : {}),
       },
       include: {
         ticket: { include: { project: true } },
+        qa_result: true,
         approvalRecords: { orderBy: { created_at: 'desc' }, take: 1 },
       },
       orderBy: { updated_at: 'desc' },
     });
+
+    return Promise.all(
+      executions.map(async (execution) => {
+        const githubPush = await this.prisma.gitHubPush.findFirst({
+          where: { execution_id: execution.id },
+          orderBy: { created_at: 'desc' },
+        });
+        const filesChanged = Array.isArray(execution.files_changed)
+          ? (execution.files_changed as string[])
+          : [];
+        const startedAt = execution.started_at ?? execution.created_at;
+        const durationMs = Math.max(0, execution.updated_at.getTime() - startedAt.getTime());
+        const repositoryUrl = githubPush?.repository
+          ? githubPush.repository.startsWith('http')
+            ? githubPush.repository.replace(/\.git$/, '')
+            : `https://github.com/${githubPush.repository.replace(/\.git$/, '')}`
+          : null;
+        const reviewUrl =
+          githubPush?.pr_url ??
+          (repositoryUrl && githubPush?.branch_name
+            ? `${repositoryUrl}/compare/${encodeURIComponent(execution.base_branch ?? 'main')}...${encodeURIComponent(githubPush.branch_name)}`
+            : null);
+
+        return {
+          id: execution.id,
+          ticketId: execution.ticket.clickup_task_id ?? execution.ticket_id,
+          ticketTitle: execution.ticket.title,
+          ticketDescription: execution.ticket.description,
+          projectId: execution.ticket.project_id,
+          projectName: execution.ticket.project.name,
+          status: execution.status,
+          aiProvider: execution.ai_provider,
+          confidenceScore: execution.confidence_score,
+          complexityScore: execution.complexity_score,
+          filesChanged,
+          codeOutput: execution.code_output,
+          retryCount: execution.retry_count,
+          startedAt,
+          updatedAt: execution.updated_at,
+          durationMs,
+          qaResult: execution.qa_result,
+          branchName: githubPush?.branch_name ?? null,
+          commitSha: githubPush?.commit_sha ?? null,
+          prUrl: githubPush?.pr_url ?? null,
+          reviewUrl,
+          reviewEvidenceAvailable: Boolean(
+            filesChanged.length > 0 &&
+            githubPush?.branch_name &&
+            githubPush.commit_sha &&
+            reviewUrl,
+          ),
+        };
+      }),
+    );
   }
 
   async assertApproved(executionId: string): Promise<void> {
@@ -175,6 +236,20 @@ export class ApprovalGateService {
       );
     }
 
+    let approvalPush: GitHubPush | null = null;
+    if (input.decision === ApprovalDecision.APPROVE) {
+      approvalPush = await this.prisma.gitHubPush.findFirst({
+        where: { execution_id: input.executionId },
+        orderBy: { created_at: 'desc' },
+      });
+      const filesChanged = Array.isArray(execution.files_changed) ? execution.files_changed : [];
+      if (!approvalPush?.branch_name || !approvalPush.commit_sha || filesChanged.length === 0) {
+        throw new BadRequestException(
+          'Approval blocked: execution has no persisted changed-file and pushed-commit evidence',
+        );
+      }
+    }
+
     // Atomic claim — the WHERE clause guarantees exactly one concurrent caller
     // flips the row, so duplicate submissions can never double-merge/double-loop.
     const claim = await this.prisma.execution.updateMany({
@@ -202,7 +277,7 @@ export class ApprovalGateService {
       }
 
       if (input.decision === ApprovalDecision.APPROVE) {
-        return await this.approve(execution, input);
+        return await this.approve(execution, input, approvalPush!);
       }
       return await this.loopBack(execution, input);
     } catch (error: unknown) {
@@ -211,14 +286,8 @@ export class ApprovalGateService {
     }
   }
 
-  private async approve(execution: GateExecution, input: DecisionInput) {
+  private async approve(execution: GateExecution, input: DecisionInput, githubPush: GitHubPush) {
     await this.assertApproved(input.executionId);
-    let githubPush = await this.prisma.gitHubPush.findFirst({
-      where: { execution_id: input.executionId },
-      orderBy: { created_at: 'desc' },
-    });
-    if (!githubPush)
-      throw new BadRequestException('Execution has no pushed branch — nothing to open or merge');
 
     // PR-open approval gate: when require_pr_approval is on, the code-delivery
     // step pushed the branch but deferred opening the PR until now. Open it on
@@ -229,10 +298,14 @@ export class ApprovalGateService {
       if (!pr.success || !pr.prNumber) {
         throw new Error(`Failed to open pull request on approval: ${pr.error ?? 'unknown error'}`);
       }
-      githubPush = await this.prisma.gitHubPush.findFirst({
+      const refreshedPush = await this.prisma.gitHubPush.findFirst({
         where: { execution_id: input.executionId },
         orderBy: { created_at: 'desc' },
       });
+      if (!refreshedPush) {
+        throw new BadRequestException('Execution has no pull request to merge');
+      }
+      githubPush = refreshedPush;
     }
     if (!githubPush?.pr_number)
       throw new BadRequestException('Execution has no pull request to merge');

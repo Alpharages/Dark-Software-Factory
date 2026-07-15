@@ -310,6 +310,14 @@ export class ExecutionService {
   }
 
   /**
+   * Get recent executions, including terminal history.
+   */
+  async getExecutions(): Promise<ExecutionResponseDto[]> {
+    const executions = await this.tracker.getExecutions();
+    return executions.map((e) => this.toResponseDto(e));
+  }
+
+  /**
    * Whether a NEW execution may be started given the latest execution's status.
    *
    * Since OHP-3.2 retired the bespoke state machine, this answers "is the
@@ -338,6 +346,14 @@ export class ExecutionService {
    * Convert Prisma model to response DTO
    */
   private toResponseDto(execution: Execution): ExecutionResponseDto {
+    const endTime =
+      execution.completed_at ??
+      execution.failed_at ??
+      (isFinalExecutionStatus(execution.status) ? execution.updated_at : new Date());
+    const duration = execution.started_at
+      ? Math.max(0, Math.floor((endTime.getTime() - execution.started_at.getTime()) / 1000))
+      : 0;
+
     return {
       id: execution.id,
       ticketId: execution.ticket_id,
@@ -345,6 +361,7 @@ export class ExecutionService {
       status: execution.status,
       confidenceScore: execution.confidence_score,
       startTime: execution.started_at,
+      duration,
       completedAt: execution.completed_at,
       failedAt: execution.failed_at,
       errorMessage: execution.error_message,

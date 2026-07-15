@@ -375,7 +375,37 @@ export class OpenHarnessStreamAdapter {
     this.logStreamBuffer.delete(bufferKey);
   }
 
+  /**
+   * Strip agent-internal leakage from user-facing text (EXEC-4). The agent stream
+   * sometimes echoes tool/session identifiers annotated with instructions meant
+   * for the model itself — e.g. `agentId: 7f3a… (internal ID - do not mention to
+   * user)` — which must never reach a dashboard activity. Removes such a
+   * parenthetical along with any `key: value` / `key=value` token it annotates.
+   */
+  private redactInternal<T extends string | null | undefined>(value: T): T {
+    if (typeof value !== 'string') return value;
+    const redacted = value
+      .replace(
+        /\s*(?:[\w.-]+\s*[:=]\s*[\w.-]+\s*)?\((?=[^)]*\b(?:internal id|do not (?:mention|reveal|share|tell))\b)[^)]*\)/gi,
+        '',
+      )
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+    return redacted as T;
+  }
+
   private emitActivity(projectId: string | null, payload: ContainerActivityPayload): void {
+    // EXEC-4: sanitize every user-facing text field at the single choke point all
+    // activities pass through, so no event type can leak agent internals to the
+    // persisted timeline or the live socket.
+    payload = {
+      ...payload,
+      // Never fall back to the raw activity — an empty redaction means the whole
+      // line was the leak, so a neutral label is the only safe replacement.
+      activity: this.redactInternal(payload.activity) || 'Agent activity',
+      detail: this.redactInternal(payload.detail) || undefined,
+      rawContent: this.redactInternal(payload.rawContent) || undefined,
+    };
     // Persist first (fire-and-forget) so the timeline survives a page reload and
     // is queryable via GET /executions/:id/logs. The persisted row reuses the
     // payload's exact ISO timestamp so the frontend can dedupe a live socket
