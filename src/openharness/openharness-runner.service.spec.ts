@@ -414,6 +414,41 @@ describe('OpenHarnessRunnerService', () => {
     );
   });
 
+  // QA-2026-07-13 §2.1d: the live failure — the agent claimed "implemented
+  // end-to-end", captured nothing, and the run still read COMPLETED.
+  it('fails an implement run that reports success but captured no files', async () => {
+    const mockChild = new EventEmitter() as any;
+    mockChild.stdout = new PassThrough();
+    mockChild.stderr = new PassThrough();
+    mockChild.kill = jest.fn();
+    (child_process.spawn as jest.Mock).mockReturnValue(mockChild);
+
+    const runPromise = service.runForTicket('ticket-1', {
+      skill: 'clickup-dev-implement',
+      workspaceDir: '/tmp',
+    });
+
+    mockChild.stdout.write(
+      JSON.stringify({
+        type: 'result',
+        status: 'COMPLETED',
+        summary: 'Implemented CU-86exz3qzx end-to-end',
+        files_changed: [],
+      }) + '\n',
+    );
+    setTimeout(() => mockChild.emit('close', 0), 10);
+    await runPromise;
+
+    expect(mockExecutionTracker.completeExecution).not.toHaveBeenCalled();
+    expect(mockExecutionTracker.failExecution).toHaveBeenCalledWith(
+      expect.objectContaining({
+        executionId: 'exec-123',
+        errorMessage: expect.stringContaining('produced no file changes'),
+      }),
+      'exec-123',
+    );
+  });
+
   it('should fail on spawn error without an unhandled rejection — AC2/edge', async () => {
     const mockChild = new EventEmitter() as any;
     mockChild.stdout = new PassThrough();
@@ -638,42 +673,113 @@ describe('OpenHarnessRunnerService', () => {
     expect(mockAiAccounts.getDecryptedCredentials).not.toHaveBeenCalled();
   });
 
-  // EXEC-CRIT-5: the diff must be read from git, not the stream parser, so a
-  // committed run that never emitted `files_changed` events is still captured.
+  // EXEC-CRIT-5 / QA-2026-07-13 §2.1d: the changed-file list must come from git —
+  // committed diff AND working tree — never from the stream parser, which the
+  // claude runtime never populates. Route the mock by git subcommand: the earlier
+  // fix passed its tests only because they mocked an always-committed diff.
+  const gitMock = (handler: (args: string[]) => string) => {
+    (child_process.execFileSync as jest.Mock).mockImplementation((_cmd, args) =>
+      handler(args as string[]),
+    );
+  };
+  const gitSub = (args: string[]) =>
+    args.find((a) => ['status', 'diff', 'add', 'commit'].includes(a)) ?? '';
+
   describe('resolveChangedFiles', () => {
     const call = (base: string | undefined, parserFiles: string[]) =>
       (service as any).resolveChangedFiles('/tmp/wt', base, parserFiles);
 
-    it('returns the committed git diff over the parser list', () => {
-      (child_process.execFileSync as jest.Mock).mockReturnValue(
-        'server/ai/categorize.ts\nserver/routers.ts\n',
+    it('captures the working tree when the agent never committed (§2.1d regression)', () => {
+      gitMock(
+        (args) =>
+          gitSub(args) === 'status'
+            ? 'A  hooks/use-ai-consent.ts\0?? components/ui/AiConsentCard.tsx\0'
+            : '', // no commit → empty committed diff, the exact live-failure shape
       );
-      expect(call('main', ['stale.ts'])).toEqual(['server/ai/categorize.ts', 'server/routers.ts']);
+      expect(call('main', [])).toEqual([
+        'hooks/use-ai-consent.ts',
+        'components/ui/AiConsentCard.tsx',
+      ]);
     });
 
-    it('falls back to the parser list when git returns nothing', () => {
-      (child_process.execFileSync as jest.Mock).mockReturnValue('');
-      expect(call('main', ['from-stream.ts'])).toEqual(['from-stream.ts']);
+    it('unions committed and uncommitted work without duplicating a file', () => {
+      gitMock((args) =>
+        gitSub(args) === 'status'
+          ? ' M server/routers.ts\0?? tests/ai-router.test.ts\0'
+          : 'server/ai/categorize.ts\nserver/routers.ts\n',
+      );
+      expect(call('main', ['stale.ts']).sort()).toEqual([
+        'server/ai/categorize.ts',
+        'server/routers.ts',
+        'tests/ai-router.test.ts',
+      ]);
+    });
+
+    it('counts a rename once, ignoring the source path field', () => {
+      gitMock((args) => (gitSub(args) === 'status' ? 'R  new/path.ts\0old/path.ts\0' : ''));
+      expect(call('main', [])).toEqual(['new/path.ts']);
     });
 
     it('falls back to origin/<branch> when the local base ref is missing', () => {
-      (child_process.execFileSync as jest.Mock)
-        .mockImplementationOnce(() => {
+      gitMock((args) => {
+        if (gitSub(args) === 'status') return '';
+        if (args.includes('main...HEAD'))
           throw new Error("fatal: ambiguous argument 'main...HEAD'");
-        })
-        .mockReturnValueOnce('server/routers.ts\n');
+        return 'server/routers.ts\n';
+      });
       expect(call('main', ['stale.ts'])).toEqual(['server/routers.ts']);
     });
 
-    it('falls back to the parser list only when every base ref is unresolvable', () => {
-      (child_process.execFileSync as jest.Mock).mockImplementation(() => {
+    it('falls back to the parser list only when git can answer nothing at all', () => {
+      gitMock(() => {
         throw new Error('fatal: bad revision');
       });
       expect(call('main', ['from-stream.ts'])).toEqual(['from-stream.ts']);
     });
 
-    it('uses the parser list unchanged for a non-isolated run (no base branch)', () => {
-      expect(call(undefined, ['from-stream.ts'])).toEqual(['from-stream.ts']);
+    it('still reads the working tree for a non-isolated run (no base branch)', () => {
+      gitMock((args) => (gitSub(args) === 'status' ? ' M in-place.ts\0' : ''));
+      expect(call(undefined, ['from-stream.ts'])).toEqual(['in-place.ts']);
+    });
+  });
+
+  // §2.1d: the agent's work must survive worktree teardown — the runner commits
+  // it onto the ticket branch rather than trusting the agent to have done so.
+  describe('commitPendingWork', () => {
+    const call = () =>
+      (service as any).commitPendingWork(
+        '/tmp/wt',
+        'exec-123',
+        '86exz3qzx',
+        'clickup-dev-implement',
+      );
+
+    it('stages and commits work the agent left uncommitted', () => {
+      gitMock((args) => (gitSub(args) === 'diff' ? 'app/settings.tsx\n' : ''));
+      call();
+      const commit = (child_process.execFileSync as jest.Mock).mock.calls.find(
+        ([, args]) => gitSub(args as string[]) === 'commit',
+      );
+      expect(commit).toBeDefined();
+      expect(commit[1]).toEqual(expect.arrayContaining(['user.email=bot@dsf.local']));
+      expect(commit[1].join(' ')).toContain('CU-86exz3qzx');
+    });
+
+    it('does not commit when the agent already committed everything', () => {
+      gitMock(() => '');
+      call();
+      expect(
+        (child_process.execFileSync as jest.Mock).mock.calls.some(
+          ([, args]) => gitSub(args as string[]) === 'commit',
+        ),
+      ).toBe(false);
+    });
+
+    it('never throws when git fails — the captured diff still stands', () => {
+      gitMock(() => {
+        throw new Error('git index locked');
+      });
+      expect(() => call()).not.toThrow();
     });
   });
 

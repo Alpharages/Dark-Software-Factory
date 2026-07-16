@@ -447,8 +447,8 @@ export class OpenHarnessRunnerService {
           // Git is the source of truth for what changed — the stream parser only
           // sees files the agent *announces* via `files_changed` events, which the
           // claude runtime never emits, so trusting it leaves `files_changed` empty
-          // and the approval gate blind even after a real commit (QA-2026-07-13
-          // EXEC-CRIT-5). Read the committed diff off the ticket branch instead.
+          // and the approval gate blind (QA-2026-07-13 EXEC-CRIT-5). Read both the
+          // committed diff AND the working tree: the agent is not trusted to commit.
           const filesChanged = this.resolveChangedFiles(
             runWorkspaceDir,
             isolateWorkspace && projectRepo ? projectRepo.defaultBranch : undefined,
@@ -475,6 +475,32 @@ export class OpenHarnessRunnerService {
                 {
                   executionId: execution.id,
                   errorMessage: `OpenHarness guardrail formatter failed: ${message}`,
+                  isRetryable: false,
+                },
+                execution.id,
+              );
+              return;
+            }
+
+            // The agent is not trusted to commit: on the claude runtime it often
+            // finishes an implementation with everything still in the working
+            // tree, and the worktree is torn down moments later — which destroyed
+            // the work outright while the run reported COMPLETED (QA-2026-07-13
+            // §2.1d). Commit after the formatter so the branch carries formatted
+            // code, and before teardown so the branch is the durable artifact the
+            // diff, the approval gate and the GitHub push all read.
+            if (isolateWorkspace && projectRepo) {
+              this.commitPendingWork(runWorkspaceDir, execution.id, clickUpTaskId, skill);
+            }
+
+            // Fail loudly rather than reporting a success nobody can review: an
+            // implement run that captured no changes did not implement anything,
+            // whatever its summary claims (QA-2026-07-13 §2.1d).
+            if (skill === OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT && filesChanged.length === 0) {
+              await this.executionTracker.failExecution(
+                {
+                  executionId: execution.id,
+                  errorMessage: `Implement run reported success but produced no file changes on ${ticketBranch}. Summary: ${summary}`,
                   isRetryable: false,
                 },
                 execution.id,
@@ -676,6 +702,7 @@ export class OpenHarnessRunnerService {
       try {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         fs.symlinkSync(nodeModules, worktreeNodeModules, 'dir');
+        this.excludeNodeModules(dir);
       } catch {
         /* ignore — tests may be blocked but AC file checks still work */
       }
@@ -685,41 +712,165 @@ export class OpenHarnessRunnerService {
   }
 
   /**
-   * Authoritative changed-file list for a completed run: the committed diff of the
-   * ticket branch against the project's base branch, read straight from git. Uses
-   * three-dot (`base...HEAD`) so it matches the GitHub compare link the reviewer
-   * opens and ignores unrelated drift on the base branch. Falls back to the
-   * parser's announced list when git can't answer — no base branch (non-isolated
-   * run), an unresolvable ref, or a genuinely empty diff. Fixes the always-empty
-   * approval gate (QA-2026-07-13 EXEC-CRIT-5).
+   * Keep the `node_modules` symlink this class just created out of git's sight,
+   * so the sweep commit can be a plain `git add -A`. Nearly every repo already
+   * gitignores it; this covers the one that doesn't, where the symlink would
+   * otherwise be committed to the ticket branch and pushed to GitHub.
+   *
+   * Excluding via git's own ignore file rather than an `:(exclude)` pathspec is
+   * deliberate: `git add -A -- . ':(exclude)node_modules'` FAILS outright ("paths
+   * are ignored by one of your .gitignore files") in the normal repo that does
+   * ignore it, which silently reduced the sweep to a no-op on a live run.
+   */
+  private excludeNodeModules(worktreeDir: string): void {
+    try {
+      const excludeFile = execFileSync(
+        'git',
+        ['-C', worktreeDir, 'rev-parse', '--git-path', 'info/exclude'],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim();
+      const resolved = path.resolve(worktreeDir, excludeFile);
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      const current = fs.existsSync(resolved) ? fs.readFileSync(resolved, 'utf8') : '';
+      if (/^node_modules\/?$/m.test(current)) return;
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      fs.mkdirSync(path.dirname(resolved), { recursive: true });
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      fs.appendFileSync(
+        resolved,
+        `${current && !current.endsWith('\n') ? '\n' : ''}node_modules\n`,
+      );
+    } catch {
+      /* best-effort: a repo that gitignores node_modules (i.e. all of them) is fine anyway */
+    }
+  }
+
+  /**
+   * Authoritative changed-file list for a run: everything git can see in the
+   * worktree — the ticket branch's committed diff against the project's base
+   * branch UNION the uncommitted working tree. Both halves are required: the
+   * agent commits only sometimes (the original EXEC-CRIT-5 fix read only the
+   * committed diff and captured nothing on a run where the agent never
+   * committed — QA-2026-07-13 §2.1d), and prior legs of the ticket's loop live
+   * only in commits. Falls back to the parser's announced list when git can't
+   * answer at all — the claude runtime never emits those events, so this is a
+   * last resort, not the primary path.
    */
   private resolveChangedFiles(
     workspaceDir: string,
     baseBranch: string | undefined,
     parserFiles: string[],
   ): string[] {
-    if (!baseBranch) return parserFiles;
-    // The clone is checked out on `default_branch` (git clone --branch), so the
-    // local ref normally resolves — but never silently fall back to the empty
-    // parser list on a ref miss, since that reintroduces the exact EXEC-CRIT-5
-    // bug. Try the local branch, then `origin/<branch>`, before giving up.
-    for (const base of [baseBranch, `origin/${baseBranch}`]) {
-      try {
-        const out = execFileSync(
-          'git',
-          ['-C', workspaceDir, 'diff', '--name-only', `${base}...HEAD`],
-          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
-        );
-        const files = out
-          .split('\n')
-          .map((f) => f.trim())
-          .filter(Boolean);
-        if (files.length > 0) return files;
-      } catch {
-        // try the next candidate base ref
+    const files = new Set<string>(this.workingTreeFiles(workspaceDir));
+
+    if (baseBranch) {
+      // The clone is checked out on `default_branch` (git clone --branch), so the
+      // local ref normally resolves — but never silently skip the committed diff
+      // on a ref miss. Try the local branch, then `origin/<branch>`. Three-dot
+      // (`base...HEAD`) matches the GitHub compare link the reviewer opens and
+      // ignores unrelated drift on the base branch.
+      for (const base of [baseBranch, `origin/${baseBranch}`]) {
+        try {
+          const out = execFileSync(
+            'git',
+            ['-C', workspaceDir, 'diff', '--name-only', `${base}...HEAD`],
+            { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+          );
+          for (const file of out
+            .split('\n')
+            .map((f) => f.trim())
+            .filter(Boolean)) {
+            files.add(file);
+          }
+          break;
+        } catch {
+          // try the next candidate base ref
+        }
       }
     }
-    return parserFiles;
+
+    return files.size > 0 ? [...files] : parserFiles;
+  }
+
+  /**
+   * Files the agent left uncommitted in the worktree: staged, unstaged and
+   * untracked (ignored files excluded — `--untracked-files=all` respects
+   * .gitignore, so node_modules and build output stay out).
+   */
+  private workingTreeFiles(workspaceDir: string): string[] {
+    let out: string;
+    try {
+      out = String(
+        execFileSync(
+          'git',
+          ['-C', workspaceDir, 'status', '--porcelain=v1', '-z', '--untracked-files=all'],
+          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+        ) ?? '',
+      );
+    } catch {
+      return [];
+    }
+    // NUL-separated (`-z`) so paths with spaces/quotes arrive verbatim. Each
+    // entry is `XY <path>`; for a rename/copy the *following* field is the
+    // source path, which is not a change of its own — skip it.
+    const fields = out.split('\0').filter(Boolean);
+    const files: string[] = [];
+    for (let i = 0; i < fields.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection -- `i` is a loop counter over a local array
+      const entry = fields[i];
+      if (entry.length < 4) continue;
+      files.push(entry.slice(3));
+      if (entry[0] === 'R' || entry[0] === 'C') i++;
+    }
+    return files;
+  }
+
+  /**
+   * Commit whatever the agent left in the worktree onto the ticket branch, so the
+   * branch — not the about-to-be-deleted worktree — holds the work. No-op when the
+   * agent already committed everything. Best-effort: a commit failure must not
+   * fail a run whose changed files were captured anyway.
+   *
+   * ponytail: one sweep commit per leg, authored by DSF with a fixed identity.
+   * Upgrade path: attribute to the requesting user / split per logical change if
+   * reviewers ever need finer history than "what this leg produced".
+   */
+  private commitPendingWork(
+    workspaceDir: string,
+    executionId: string,
+    clickUpTaskId: string,
+    skill: string,
+  ): void {
+    try {
+      execFileSync('git', ['-C', workspaceDir, 'add', '-A'], { stdio: 'pipe' });
+      const staged = execFileSync('git', ['-C', workspaceDir, 'diff', '--cached', '--name-only'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      if (!staged) return;
+      execFileSync(
+        'git',
+        [
+          '-C',
+          workspaceDir,
+          // Inline identity: the runner must not depend on ambient git config.
+          '-c',
+          'user.name=Dark Software Factory',
+          '-c',
+          'user.email=bot@dsf.local',
+          'commit',
+          '-m',
+          `chore(${skill}): capture agent work for CU-${clickUpTaskId}\n\nThe agent left these changes uncommitted; DSF committed them so the work survives worktree teardown.`,
+        ],
+        { stdio: 'pipe' },
+      );
+      this.logger.log(
+        `[${executionId}] Committed the agent's uncommitted work (${staged.split('\n').length} files)`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`[${executionId}] Failed to commit pending agent work: ${message}`);
+    }
   }
 
   /**
