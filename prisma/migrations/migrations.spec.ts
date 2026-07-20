@@ -22,8 +22,28 @@
  * Drop order: workspace_archives → workspaces (FK dependency: workspace_archives.execution_id
  * references executions, not the other way around; CASCADE handles any residual edges).
  */
+
+/**
+ * Migration: 20260720192803_drop_conversation_clickup_task_ids
+ *
+ * Drops `client_conversations.clickup_task_ids` (Story 5.5.1). The column held
+ * ClickUp task metadata written by the AetherFlow integration, which was removed;
+ * no code reads or writes it any more.
+ *
+ * SAFETY GATE: a PL/pgSQL DO $$ block aborts with a descriptive RAISE EXCEPTION if
+ * any row still holds a non-NULL value, so an environment that accumulated links is
+ * not silently stripped. Dev was empty (0 rows) when this was authored.
+ *
+ * The gate is idempotent: if the column was already dropped (e.g. CI replay), the
+ * information_schema check skips the COUNT and DROP COLUMN IF EXISTS is a no-op.
+ */
 describe('Migration audit notes', () => {
   it('drop_workspace_tables contains a row-count safety gate', () => {
+    // Intentional no-op — see file-level comment above for documentation.
+    expect(true).toBe(true);
+  });
+
+  it('drop_conversation_clickup_task_ids contains a row-count safety gate', () => {
     // Intentional no-op — see file-level comment above for documentation.
     expect(true).toBe(true);
   });

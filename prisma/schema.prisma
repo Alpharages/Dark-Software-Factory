@@ -720,7 +720,6 @@ model ClientConversation {
   processing_cost   Float?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
-  clickup_task_ids  Json?
   pm                User     @relation("PMConversations", fields: [pm_id], references: [id])
   project           Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
   linked_tickets    Ticket[] @relation("ConversationTickets")
