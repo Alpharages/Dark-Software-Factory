@@ -2,7 +2,7 @@
 
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Dark-Software-Factory** (8467 symbols, 22792 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Dark-Software-Factory** (8448 symbols, 22681 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
@@ -29,10 +29,6 @@ This project is indexed by GitNexus as **Dark-Software-Factory** (8467 symbols, 
 | `gitnexus://repo/Dark-Software-Factory/clusters`       | All functional areas                     |
 | `gitnexus://repo/Dark-Software-Factory/processes`      | All execution flows                      |
 | `gitnexus://repo/Dark-Software-Factory/process/{name}` | Step-by-step execution trace             |
-
-## Rules
-
-1. **No AI attribution in commits.** Never add `Co-Authored-By: Claude` (or any AI/agent) to commit messages, and never set an AI as author or committer. Commits are authored solely by the human developer. Do not mention AI assistance anywhere in the commit or contribution.
 
 ## CLI
 
