@@ -396,6 +396,14 @@ export class OpenHarnessRunnerService {
             // must not swallow the resolve() or the worktree teardown below.
             if (selectedAccountId) {
               try {
+                // Cache reads are excluded from the metered total (EXEC-CRIT-4);
+                // log them so the split stays auditable without a schema change.
+                this.logger.log(
+                  `Token usage for execution ${execution.id}: ` +
+                    `metered=${parser.getTokensUsed()} ` +
+                    `(input=${tokenUsage.inputTokens ?? 0}, output=${tokenUsage.outputTokens ?? 0}), ` +
+                    `cache_read=${tokenUsage.cachedInputTokens ?? 0} (not metered)`,
+                );
                 await this.accountSelector.recordUsage(selectedAccountId, {
                   requests: 1,
                   tokens: parser.getTokensUsed(),

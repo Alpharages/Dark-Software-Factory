@@ -6,9 +6,14 @@ export class OpenHarnessStreamParser {
   private progress: unknown = null;
   private result: OhResultEvent | null = null;
   private tokensUsed = 0;
-  private tokenUsage: { inputTokens: number | null; outputTokens: number | null } = {
+  private tokenUsage: {
+    inputTokens: number | null;
+    outputTokens: number | null;
+    cachedInputTokens: number | null;
+  } = {
     inputTokens: null,
     outputTokens: null,
+    cachedInputTokens: null,
   };
 
   parseLine(line: string): OhEvent | null {
@@ -155,18 +160,38 @@ export class OpenHarnessStreamParser {
     return this.tokensUsed;
   }
 
-  getTokenUsage(): { inputTokens: number | null; outputTokens: number | null } {
+  getTokenUsage(): {
+    inputTokens: number | null;
+    outputTokens: number | null;
+    cachedInputTokens: number | null;
+  } {
     return this.tokenUsage;
   }
 
-  /** Split usage into input/output while counting cache reads as input. */
+  /**
+   * Split usage into fresh input / output, keeping cache *reads* out of both.
+   *
+   * Claude's terminal `result.usage` reports `cache_read_input_tokens`
+   * cumulatively across every turn, and on an agentic run the cached prefix is
+   * the whole conversation — so it grows ~O(turns x context) and dwarfs the
+   * real work (30 turns at 150k context ~= 4.5M cache reads vs a few thousand
+   * fresh tokens per turn). Counting it as input made one run report 1.18M-13.3M
+   * tokens and burn an entire 1M weekly budget (EXEC-CRIT-4).
+   *
+   * A cache read is a re-read of an already-processed prefix, not new work, so
+   * it is reported separately and excluded from budget metering.
+   * `cache_creation_input_tokens` IS fresh input the model processed (written to
+   * the cache once), so it stays in `inputTokens`.
+   */
   private extractTokenUsage(raw: unknown): {
     inputTokens: number | null;
     outputTokens: number | null;
+    cachedInputTokens: number | null;
   } {
-    if (!raw || typeof raw !== 'object') return { inputTokens: null, outputTokens: null };
+    const empty = { inputTokens: null, outputTokens: null, cachedInputTokens: null };
+    if (!raw || typeof raw !== 'object') return empty;
     const usage = (raw as { usage?: unknown }).usage;
-    if (!usage || typeof usage !== 'object') return { inputTokens: null, outputTokens: null };
+    if (!usage || typeof usage !== 'object') return empty;
     const values = usage as {
       input_tokens?: unknown;
       output_tokens?: unknown;
@@ -181,13 +206,14 @@ export class OpenHarnessStreamParser {
       typeof value === 'number' && Number.isFinite(value) ? value : 0;
     const inputTokens =
       read(values.input_tokens) +
-      read(values.cache_read_input_tokens) +
       read(values.cache_creation_input_tokens) +
       read(values.prompt_tokens);
     const outputTokens = read(values.output_tokens) + read(values.completion_tokens);
+    const cachedInputTokens = read(values.cache_read_input_tokens);
     return {
       inputTokens: inputTokens || null,
       outputTokens: outputTokens || null,
+      cachedInputTokens: cachedInputTokens || null,
     };
   }
 }

@@ -145,7 +145,7 @@ describe('OpenHarnessStreamParser', () => {
     expect(parser.getToolsUsed()).toEqual(['mcp__bmad__bmad']);
   });
 
-  it('splits a Claude result usage block into input (incl. cache) and output tokens', () => {
+  it('counts fresh input (incl. cache creation) and output, excluding cache reads', () => {
     parser.parseLine(
       JSON.stringify({
         type: 'result',
@@ -154,14 +154,41 @@ describe('OpenHarnessStreamParser', () => {
         usage: {
           input_tokens: 100,
           output_tokens: 50,
-          cache_read_input_tokens: 10,
+          cache_creation_input_tokens: 10, // fresh work — metered
+          cache_read_input_tokens: 900, // re-read prefix — NOT metered
           service_tier: 'standard', // non-token field, ignored
         },
       }),
     );
 
     expect(parser.getTokensUsed()).toBe(160);
-    expect(parser.getTokenUsage()).toEqual({ inputTokens: 110, outputTokens: 50 });
+    expect(parser.getTokenUsage()).toEqual({
+      inputTokens: 110,
+      outputTokens: 50,
+      cachedInputTokens: 900,
+    });
+  });
+
+  // EXEC-CRIT-4 regression: Claude reports cache reads cumulatively across turns,
+  // so on a long agentic run they dwarf the real work. Metering them burned a 1M
+  // weekly budget in a single execution.
+  it('does not let cumulative cache reads blow the metered total on an agentic run', () => {
+    parser.parseLine(
+      JSON.stringify({
+        type: 'result',
+        is_error: false,
+        result: 'done',
+        usage: {
+          input_tokens: 12_000,
+          output_tokens: 8_000,
+          cache_read_input_tokens: 13_000_000, // ~30 turns re-reading a 150k+ context
+        },
+      }),
+    );
+
+    expect(parser.getTokensUsed()).toBe(20_000);
+    expect(parser.getTokensUsed()).toBeLessThan(200_000); // fits the 5h budget
+    expect(parser.getTokenUsage().cachedInputTokens).toBe(13_000_000);
   });
 
   it('reads OpenAI (`oh` runtime) prompt/completion token vocabulary', () => {
@@ -175,13 +202,21 @@ describe('OpenHarnessStreamParser', () => {
     );
 
     expect(parser.getTokensUsed()).toBe(280);
-    expect(parser.getTokenUsage()).toEqual({ inputTokens: 200, outputTokens: 80 });
+    expect(parser.getTokenUsage()).toEqual({
+      inputTokens: 200,
+      outputTokens: 80,
+      cachedInputTokens: null,
+    });
   });
 
   it('reports zero tokens when the stream carries no usage block', () => {
     parser.parseLine(JSON.stringify({ type: 'result', status: 'COMPLETED', summary: 'done' }));
 
     expect(parser.getTokensUsed()).toBe(0);
-    expect(parser.getTokenUsage()).toEqual({ inputTokens: null, outputTokens: null });
+    expect(parser.getTokenUsage()).toEqual({
+      inputTokens: null,
+      outputTokens: null,
+      cachedInputTokens: null,
+    });
   });
 });
