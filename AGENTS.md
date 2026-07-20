@@ -30,6 +30,10 @@ This project is indexed by GitNexus as **Dark-Software-Factory** (8467 symbols, 
 | `gitnexus://repo/Dark-Software-Factory/processes`      | All execution flows                      |
 | `gitnexus://repo/Dark-Software-Factory/process/{name}` | Step-by-step execution trace             |
 
+## Rules
+
+1. **No AI attribution in commits.** Never add `Co-Authored-By: Claude` (or any AI/agent) to commit messages, and never set an AI as author or committer. Commits are authored solely by the human developer. Do not mention AI assistance anywhere in the commit or contribution.
+
 ## CLI
 
 | Task                                         | Read this skill file                                        |
