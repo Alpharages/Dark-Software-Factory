@@ -484,7 +484,10 @@ export class TicketIntakeService {
     validation: ValidationResultDto,
     correlationId: string,
   ): Promise<ITicketProcessingResult> {
-    this.logger.warn(`[${correlationId}] Validation failed for ${ticket.clickupTaskId}`);
+    this.logger.warn(
+      `[${correlationId}] Validation failed for ${ticket.clickupTaskId}: ` +
+        `${validation.errors.map((e) => e.code).join(', ') || 'no error codes'}`,
+    );
 
     // Story 11.4: Log ticket rejection decision
     await this.aiDecisionLogger.logDecision({

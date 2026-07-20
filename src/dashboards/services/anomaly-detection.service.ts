@@ -612,7 +612,9 @@ Respond in JSON format:
     // Parse period (e.g., "30d", "7d", "90d")
     const days = parseInt(period.replace('d', ''), 10) || 30;
     const startDate = new Date();
-    startDate.setDate(startDate.setDate(startDate.getDate() - days));
+    // Note: the nested setDate() this replaced fed a millisecond timestamp back
+    // in as a day-of-month, producing Invalid Date and a 500 on every request.
+    startDate.setDate(startDate.getDate() - days);
 
     const where: Record<string, unknown> = {
       detected_at: { gte: startDate },
