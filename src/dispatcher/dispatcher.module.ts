@@ -4,9 +4,11 @@ import { DatabaseModule } from '@/database/database.module';
 import { ApprovalGateModule } from '@/approval-gate/approval-gate.module';
 import { DependenciesModule } from '@/dependencies/dependencies.module';
 import { OpenHarnessModule } from '@/openharness/openharness.module';
+import { SystemConfigModule } from '@/system-settings/system-config.module';
 import { DependencyGateService } from './dependency-gate.service';
 import { DependencyReleaseController } from './dependency-release.controller';
 import { DispatcherService } from './dispatcher.service';
+import { ExecutionConcurrencyGate } from './execution-concurrency.gate';
 
 @Module({
   imports: [
@@ -14,10 +16,11 @@ import { DispatcherService } from './dispatcher.service';
     DatabaseModule,
     DependenciesModule,
     OpenHarnessModule,
+    SystemConfigModule,
     forwardRef(() => ApprovalGateModule),
   ],
   controllers: [DependencyReleaseController],
-  providers: [DispatcherService, DependencyGateService],
-  exports: [DispatcherService],
+  providers: [DispatcherService, DependencyGateService, ExecutionConcurrencyGate],
+  exports: [DispatcherService, ExecutionConcurrencyGate],
 })
 export class DispatcherModule {}

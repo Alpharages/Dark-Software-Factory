@@ -40,6 +40,8 @@ describe('DispatcherService', () => {
   let approvalGate: { openGate: jest.Mock };
   let dependencyGate: { check: jest.Mock; markBlocked: jest.Mock };
   let metrics: { incrementErrors: jest.Mock };
+  let concurrencyGate: { acquire: jest.Mock };
+  const releaseSlot = jest.fn();
   let service: DispatcherService;
 
   beforeEach(() => {
@@ -75,6 +77,11 @@ describe('DispatcherService', () => {
       }),
       markBlocked: jest.fn().mockResolvedValue(undefined),
     };
+    // Slot always granted: the gate's own semantics are covered in
+    // execution-concurrency.gate.spec.ts. releaseSlot is module-scoped, so it
+    // must be cleared explicitly — this suite has no global clearAllMocks.
+    releaseSlot.mockClear();
+    concurrencyGate = { acquire: jest.fn().mockResolvedValue(releaseSlot) };
     service = new DispatcherService(
       prisma as never,
       statusSkillMap as never,
@@ -82,8 +89,35 @@ describe('DispatcherService', () => {
       config as ConfigService,
       approvalGate as never,
       dependencyGate as never,
+      concurrencyGate as never,
       metrics as never,
     );
+  });
+
+  it('holds a per-project concurrency slot for the duration of the run (§3.5)', async () => {
+    let heldDuringRun = false;
+    runner.runForTicket.mockImplementation(() => {
+      // The slot must still be held while the run is in flight — releasing early
+      // would let the next ticket start and blow past the configured limit.
+      heldDuringRun =
+        concurrencyGate.acquire.mock.calls.length === 1 && !releaseSlot.mock.calls.length;
+      return Promise.resolve('exec-1');
+    });
+
+    await service.dispatch(event);
+
+    expect(concurrencyGate.acquire).toHaveBeenCalledWith('project-1');
+    expect(heldDuringRun).toBe(true);
+    expect(releaseSlot).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases the concurrency slot even when the run throws', async () => {
+    runner.runForTicket.mockRejectedValueOnce(new Error('boom'));
+
+    const result = await service.dispatch(event);
+
+    expect(result.dispatched).toBe(false);
+    expect(releaseSlot).toHaveBeenCalledTimes(1);
   });
 
   it('dispatches mapped status to the mapped skill', async () => {

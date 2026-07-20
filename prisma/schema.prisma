@@ -7,39 +7,40 @@ datasource db {
 }
 
 model Project {
-  id                        String                  @id @default(uuid())
-  name                      String
-  clickup_list_id           String?                 @unique
-  github_repository_url     String
-  default_branch            String                  @default("main")
-  budget_usd                Decimal?                @default(100.00) @db.Decimal(10, 2)
-  created_at                DateTime                @default(now())
-  updated_at                DateTime                @updatedAt
-  pm_id                     String
-  status                    String                  @default("active")
-  client_name               String                  @default("Internal")
-  monitor_tasks             Boolean                 @default(false)
-  provider                  PMProvider              @default(CLICKUP)
-  sync_config               Json?
-  deactivated_at            DateTime?
-  is_active                 Boolean                 @default(true)
-  qa_failure_status         String? // WR-4.2: ClickUp status name for QA exhaustion (FR-WR11)
-  manual_review_status      String? // WR-4.2: ClickUp status name for PM cancel action (FR-WR11, WR-4.3)
-  code_review_status        String? // WR-4.2: ClickUp status name after open_pr action (FR-WR11, WR-4.3)
-  qa_max_retries            Int                     @default(3) // WR-5.1: Per-project QA retry limit (FR-EXT1, NFR-EXT1/2)
-  max_execution_retries     Int                     @default(3) // Per-project execution-level retry limit
-  require_pr_approval       Boolean? // Null = inherit global GITHUB_REQUIRE_PR_APPROVAL; set = per-project override of the PR-open approval gate
-  dependency_block_behavior DependencyBlockBehavior @default(auto_resume)
-  conversations             ClientConversation[]
-  coverage_baseline         CoverageBaseline?
-  coverage_config           ProjectCoverageConfig?
-  quality_gate_config       QualityGateConfig?
-  reports                   Report[]
-  tickets                   Ticket[]
-  github_account_id         String?                 @map("github_account_id")
-  gitHubAccount             GitHubAccount?          @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
-  integrations              ProjectIntegration[]
-  status_skill_maps         ProjectStatusSkillMap[]
+  id                          String                  @id @default(uuid())
+  name                        String
+  clickup_list_id             String?                 @unique
+  github_repository_url       String
+  default_branch              String                  @default("main")
+  budget_usd                  Decimal?                @default(100.00) @db.Decimal(10, 2)
+  created_at                  DateTime                @default(now())
+  updated_at                  DateTime                @updatedAt
+  pm_id                       String
+  status                      String                  @default("active")
+  client_name                 String                  @default("Internal")
+  monitor_tasks               Boolean                 @default(false)
+  provider                    PMProvider              @default(CLICKUP)
+  sync_config                 Json?
+  deactivated_at              DateTime?
+  is_active                   Boolean                 @default(true)
+  qa_failure_status           String? // WR-4.2: ClickUp status name for QA exhaustion (FR-WR11)
+  manual_review_status        String? // WR-4.2: ClickUp status name for PM cancel action (FR-WR11, WR-4.3)
+  code_review_status          String? // WR-4.2: ClickUp status name after open_pr action (FR-WR11, WR-4.3)
+  qa_max_retries              Int                     @default(3) // WR-5.1: Per-project QA retry limit (FR-EXT1, NFR-EXT1/2)
+  max_execution_retries       Int                     @default(3) // Per-project execution-level retry limit
+  require_pr_approval         Boolean? // Null = inherit global GITHUB_REQUIRE_PR_APPROVAL; set = per-project override of the PR-open approval gate
+  execution_concurrency_limit Int? // Null = inherit global SystemConfig `execution.concurrency_limit`; set = max concurrent AI executions for this project
+  dependency_block_behavior   DependencyBlockBehavior @default(auto_resume)
+  conversations               ClientConversation[]
+  coverage_baseline           CoverageBaseline?
+  coverage_config             ProjectCoverageConfig?
+  quality_gate_config         QualityGateConfig?
+  reports                     Report[]
+  tickets                     Ticket[]
+  github_account_id           String?                 @map("github_account_id")
+  gitHubAccount               GitHubAccount?          @relation(fields: [github_account_id], references: [id], onDelete: SetNull)
+  integrations                ProjectIntegration[]
+  status_skill_maps           ProjectStatusSkillMap[]
 
   @@index([github_account_id])
   @@map("projects")

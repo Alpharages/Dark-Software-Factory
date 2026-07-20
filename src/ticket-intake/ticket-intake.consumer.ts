@@ -6,6 +6,7 @@ import { QUEUE_NAMES } from '../rabbitmq/rabbitmq.config';
 import { TicketIntakeService } from './ticket-intake.service';
 import { ITaskEvent } from './dto';
 import { IRawTaskEvent } from './interfaces';
+import { ExecutionConcurrencyGate } from '@/dispatcher/execution-concurrency.gate';
 
 /**
  * Ticket Intake Queue Consumer
@@ -21,6 +22,7 @@ export class TicketIntakeConsumer extends RabbitMQConsumerBase implements OnModu
   constructor(
     private readonly rabbitMQService: RabbitMQService,
     private readonly ticketIntakeService: TicketIntakeService,
+    private readonly concurrencyGate: ExecutionConcurrencyGate,
   ) {
     super();
   }
@@ -52,11 +54,16 @@ export class TicketIntakeConsumer extends RabbitMQConsumerBase implements OnModu
         },
       });
 
-      // Set prefetch for controlled concurrency
-      // QA: hardcoded to 1 so at most one execution runs at a time; the rest wait
-      // in the queue until a slot frees. (Temporary — see report §3.5: make this a
-      // configurable global + per-project setting.)
-      await channel.prefetch(1);
+      // Global execution-concurrency cap (§3.5): at most N runs at a time, the
+      // rest wait in the queue until a slot frees — which is exactly what
+      // RabbitMQ prefetch gives us, since the base consumer acks only after the
+      // full run. Configurable via SystemConfig `execution.concurrency_limit`
+      // (env fallback EXECUTION_CONCURRENCY_LIMIT), default 1.
+      // Applied at consumer start: changing it takes effect on the next restart.
+      // The per-project override is enforced in DispatcherService, because
+      // prefetch is per-consumer and carries no project context.
+      const globalLimit = await this.concurrencyGate.getGlobalLimit();
+      await channel.prefetch(globalLimit);
 
       // Start consuming
       await channel.consume(
@@ -69,7 +76,9 @@ export class TicketIntakeConsumer extends RabbitMQConsumerBase implements OnModu
         { noAck: false },
       );
 
-      this.logger.log(`Consumer started for ${QUEUE_NAMES.TICKET_INTAKE} (prefetch: 1)`);
+      this.logger.log(
+        `Consumer started for ${QUEUE_NAMES.TICKET_INTAKE} (prefetch: ${globalLimit})`,
+      );
     } catch (_error) {
       this.logger.error(
         `Failed to start consumer: ${(_error as Error).message}`,

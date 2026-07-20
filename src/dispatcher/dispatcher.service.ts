@@ -10,6 +10,7 @@ import { OpenHarnessSkill, openHarnessSkillPrompt } from '@/openharness/skills.e
 import { StatusSkillMapService } from '@/openharness/status-skill-map.service';
 import { ITaskEvent, TaskProviderType } from '@/ticket-intake/dto';
 import { DependencyGateService } from './dependency-gate.service';
+import { ExecutionConcurrencyGate } from './execution-concurrency.gate';
 
 /** Non-fatal error-metric label recorded when a ticket trips the loop-cap safety valve. */
 const LOOP_CAP_EXCEEDED_METRIC = 'dispatcher_loop_cap_exceeded';
@@ -64,6 +65,7 @@ export class DispatcherService {
     @Inject(forwardRef(() => ApprovalGateService))
     private readonly approvalGate: ApprovalGateService,
     private readonly dependencyGate: DependencyGateService,
+    private readonly concurrencyGate: ExecutionConcurrencyGate,
     // Optional so a missing metrics provider never breaks fire-and-forget dispatch,
     // and the service stays trivially constructable in unit tests.
     @Optional() private readonly metrics?: MetricsService,
@@ -215,6 +217,10 @@ export class DispatcherService {
       }
     }
 
+    // Per-project concurrency cap (§3.5). Waits for a free slot rather than
+    // dropping the ticket — the global cap is RabbitMQ prefetch, which bounds
+    // how many dispatches can be parked here at once.
+    const releaseSlot = await this.concurrencyGate.acquire(ticket.project.id);
     try {
       const executionId = await this.runner.runForTicket(ticket.id, {
         skill,
@@ -231,6 +237,8 @@ export class DispatcherService {
         error instanceof Error ? error.stack : undefined,
       );
       return { dispatched: false, reason: 'error', error: message, skill };
+    } finally {
+      releaseSlot();
     }
   }
 

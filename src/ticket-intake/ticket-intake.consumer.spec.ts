@@ -6,7 +6,7 @@ describe('TicketIntakeConsumer', () => {
     processTaskEvent: jest.fn(),
     resumeBlockedTicket: jest.fn(),
   };
-  const consumer = new TicketIntakeConsumer({} as never, ticketIntakeService as never);
+  const consumer = new TicketIntakeConsumer({} as never, ticketIntakeService as never, {} as never);
   const processMessage = (payload: unknown) =>
     (
       consumer as unknown as {
