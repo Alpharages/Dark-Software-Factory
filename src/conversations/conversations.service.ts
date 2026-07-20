@@ -1,11 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
-import { Prisma } from '@/prisma/client';
 import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
 import { MetricsService } from '@/common/metrics/metrics.service';
 import { SentryService } from '@/common/sentry/sentry.service';
 import { AIConversationProcessorService } from './ai-conversation-processor.service';
-import { AetherFlowClientService } from '@/integrations/aetherflow/aetherflow-client.service';
 import {
   CreateConversationDto,
   SearchConversationsDto,
@@ -30,7 +28,6 @@ export class ConversationsService {
     private readonly costTracker: AICostTrackerService,
     private readonly metrics: MetricsService,
     private readonly sentry: SentryService,
-    private readonly aetherFlowClient: AetherFlowClientService,
   ) {
     this.storagePath = process.env.CONVERSATIONS_STORAGE_PATH || './storage/conversations';
   }
@@ -311,197 +308,6 @@ export class ConversationsService {
     }
 
     return this.mapToDto(conversation);
-  }
-
-  /**
-   * Create ClickUp tickets from action items
-   * AC#5: Auto-tickets require PM approval
-   */
-  async createTicketsFromActionItems(
-    conversationId: string,
-    actionItemIds: string[],
-  ): Promise<void> {
-    const conversation = await this.prisma.clientConversation.findUnique({
-      where: { id: conversationId },
-      include: {
-        project: true,
-      },
-    });
-
-    if (!conversation) {
-      throw new NotFoundException(`Conversation ${conversationId} not found`);
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const actionItems = (conversation.action_items as any[]) || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const selectedItems = actionItems.filter((item: any) => actionItemIds.includes(item.id));
-
-    if (selectedItems.length === 0) {
-      this.logger.warn(`No action items found for IDs: ${actionItemIds.join(', ')}`);
-      return;
-    }
-
-    this.logger.log(`Creating ${selectedItems.length} tickets for conversation ${conversationId}`);
-
-    // Map action items to AetherFlow task format
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tasks = selectedItems.map((item: any) => ({
-      name: item.task,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      description: this.formatTaskDescription(conversation as any, item),
-      priority: this.mapPriorityToClickUp(item.priority),
-      tags: ['from-conversation', `conversation-${conversationId}`],
-    }));
-
-    // Get default ClickUp list for project
-    const listName = await this.getDefaultListForProject(conversation.project_id);
-
-    try {
-      // Call AetherFlow API
-      const result = await this.aetherFlowClient.createTasks({
-        userId: conversation.pm_id,
-        listName,
-        tasks,
-      });
-
-      if (result.success) {
-        // Store ClickUp task IDs in conversation
-        await this.linkClickUpTasksToConversation(conversationId, result.tasks || []);
-        this.metrics.incrementConversationTicketCreationSuccess(result.tasks?.length || 0);
-
-        this.logger.log(
-          `Successfully created ${result.count} ClickUp tickets from conversation ${conversationId}`,
-        );
-      } else {
-        this.metrics.incrementConversationTicketCreationFailure(
-          this.classifyFailureReason(result.error),
-        );
-        this.logger.error(`Failed to create tickets: ${result.error}`);
-        this.sentry.captureException(
-          new Error(`AetherFlow ticket creation failed: ${result.error}`),
-          {
-            tags: { module: 'conversations', operation: 'createTickets' },
-            extra: {
-              conversationId,
-              error: result.error,
-              message: result.message,
-            },
-          },
-        );
-        throw new BadRequestException(result.error || 'Failed to create tickets');
-      }
-    } catch (_error) {
-      this.logger.error(
-        `Error creating tickets via AetherFlow: ${(_error as Error).message}`,
-        (_error as Error).stack,
-      );
-      throw _error;
-    }
-  }
-
-  /**
-   * Classify AetherFlow failure reasons for metrics
-   */
-  private classifyFailureReason(error: string | undefined): string {
-    if (!error) return 'unknown';
-    const lowerError = error.toLowerCase();
-    if (lowerError.includes('unavailable') || lowerError.includes('econn')) {
-      return 'aetherflow_unavailable';
-    }
-    if (lowerError.includes('auth') || lowerError.includes('key')) {
-      return 'clickup_authentication_failed';
-    }
-    if (lowerError.includes('list')) {
-      return 'invalid_list_name';
-    }
-    return 'unknown';
-  }
-
-  /**
-   * Format task description with conversation context
-   */
-  private formatTaskDescription(
-    conversation: {
-      title: string;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      conversation_date?: any;
-    },
-    actionItem: Record<string, unknown>,
-  ): string {
-    return `From conversation: ${conversation.title}
-
-**Action Item:** ${actionItem.task}
-
-**Due Date:** ${actionItem.due_date || 'Not specified'}
-**Priority:** ${actionItem.priority || 'Medium'}
-
-**Source:** Client Communication Intelligence (Story 5.5)
-**Conversation Date:** ${conversation.conversation_date ? new Date(conversation.conversation_date).toLocaleDateString() : 'N/A'}
-`;
-  }
-
-  /**
-   * Map priority string to ClickUp priority number
-   * @param priority - 'high', 'medium', 'low'
-   * @returns ClickUp priority (1=urgent, 2=high, 3=normal, 4=low)
-   */
-  private mapPriorityToClickUp(priority?: string): number {
-    switch (priority?.toLowerCase()) {
-      case 'urgent':
-      case 'critical':
-        return 1; // Urgent
-      case 'high':
-        return 2; // High
-      case 'low':
-        return 4; // Low
-      case 'medium':
-      default:
-        return 3; // Normal
-    }
-  }
-
-  /**
-   * Get default ClickUp list for project
-   * Tries: 1) Project configuration, 2) Environment default, 3) Hardcoded fallback
-   */
-  private async getDefaultListForProject(projectId: string): Promise<string> {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-    });
-
-    // Option 1: Project-specific list name (if configured in Project table)
-    if (project?.name) {
-      // Use  project name as list hint for now
-      return `${project.name} - Action Items`;
-    }
-
-    // Option 2: Environment variable default
-    const envDefault = process.env.AETHERFLOW_DEFAULT_CLICKUP_LIST;
-    if (envDefault) {
-      return envDefault;
-    }
-
-    // Option 3: Hardcoded fallback
-    return 'Backlog';
-  }
-
-  /**
-   * Link ClickUp task IDs back to conversation
-   * Stores task metadata in ClientConversation.clickup_task_ids JSON field
-   */
-  private async linkClickUpTasksToConversation(
-    conversationId: string,
-    tasks: Array<{ id: string; name: string; url: string }>,
-  ): Promise<void> {
-    await this.prisma.clientConversation.update({
-      where: { id: conversationId },
-      data: {
-        clickup_task_ids: tasks as Prisma.InputJsonValue,
-      },
-    });
-
-    this.logger.log(`Linked ${tasks.length} ClickUp tasks to conversation ${conversationId}`);
   }
 
   /**

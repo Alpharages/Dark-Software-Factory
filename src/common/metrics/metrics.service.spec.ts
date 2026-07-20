@@ -41,10 +41,6 @@ describe('MetricsService', () => {
             recordCost: jest.fn(),
             setBudgetUtilization: jest.fn(),
             updatePMUtilization: jest.fn(),
-            incrementAetherFlowApiCall: jest.fn(),
-            recordAetherFlowApiDuration: jest.fn(),
-            incrementConversationTicketCreationSuccess: jest.fn(),
-            incrementConversationTicketCreationFailure: jest.fn(),
           },
         },
         {
@@ -118,30 +114,6 @@ describe('MetricsService', () => {
       };
       service.updateQueueMetrics(data);
       expect(queueCollector.updateQueueMetrics).toHaveBeenCalledWith(data);
-    });
-  });
-
-  describe('AetherFlow Metrics', () => {
-    it('should delegate AetherFlow API call metrics', () => {
-      service.incrementAetherFlowApiCall('/test', 'success');
-      expect(businessCollector.incrementAetherFlowApiCall).toHaveBeenCalledWith('/test', 'success');
-    });
-
-    it('should delegate AetherFlow API duration metrics', () => {
-      service.recordAetherFlowApiDuration('/test', 0.5);
-      expect(businessCollector.recordAetherFlowApiDuration).toHaveBeenCalledWith('/test', 0.5);
-    });
-
-    it('should delegate ticket creation success metrics', () => {
-      service.incrementConversationTicketCreationSuccess(5);
-      expect(businessCollector.incrementConversationTicketCreationSuccess).toHaveBeenCalledWith(5);
-    });
-
-    it('should delegate ticket creation failure metrics', () => {
-      service.incrementConversationTicketCreationFailure('timeout');
-      expect(businessCollector.incrementConversationTicketCreationFailure).toHaveBeenCalledWith(
-        'timeout',
-      );
     });
   });
 });

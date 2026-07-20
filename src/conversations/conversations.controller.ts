@@ -36,7 +36,6 @@ import {
   SearchConversationsDto,
   ConversationResponseDto,
   PaginatedConversationsResponseDto,
-  CreateTicketsDto,
 } from './dto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -187,22 +186,5 @@ export class ConversationsController {
   @ApiResponse({ status: 200 })
   async getConversation(@Param('id', ParseUUIDPipe) id: string): Promise<ConversationResponseDto> {
     return this.conversationsService.getConversationById(id);
-  }
-
-  /**
-   * POST /:id/create-tickets - Create ClickUp tickets from action items
-   * AC#5: Auto-tickets require PM approval
-   */
-  @Post(':id/create-tickets')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles('PM', 'MANAGER')
-  @ApiOperation({ summary: 'Create tickets from action items (AC#5)' })
-  @ApiResponse({ status: 201, description: 'Tickets created' })
-  async createTickets(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: CreateTicketsDto,
-  ): Promise<{ message: string; count: number }> {
-    await this.conversationsService.createTicketsFromActionItems(id, dto.action_item_ids);
-    return { message: 'Tickets created successfully', count: dto.action_item_ids.length };
   }
 }

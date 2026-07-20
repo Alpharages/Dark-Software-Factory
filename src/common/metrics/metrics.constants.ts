@@ -162,14 +162,6 @@ export const UX_METRICS = {
   KEYBOARD_SHORTCUT_USAGE: `${METRICS_CONSTANTS.PREFIX}keyboard_shortcut_usage_total`,
 } as const;
 
-// AetherFlow Integration Metrics (Story 5.5.1.1)
-export const AETHERFLOW_METRICS = {
-  API_CALLS_TOTAL: `${METRICS_CONSTANTS.PREFIX}aetherflow_api_calls_total`,
-  API_DURATION: `${METRICS_CONSTANTS.PREFIX}aetherflow_api_duration_seconds`,
-  TICKETS_CREATED_TOTAL: `${METRICS_CONSTANTS.PREFIX}conversation_tickets_created_total`,
-  TICKET_CREATION_FAILURES_TOTAL: `${METRICS_CONSTANTS.PREFIX}conversation_ticket_creation_failures_total`,
-} as const;
-
 // Story 22.4: Container Execution Log Streaming Metrics
 export const CONTAINER_METRICS = {
   LOG_BYTES_TOTAL: `${METRICS_CONSTANTS.PREFIX}container_log_bytes_total`,

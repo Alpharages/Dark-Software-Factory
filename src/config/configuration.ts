@@ -99,9 +99,6 @@ export default () => {
 
     // External Services
     externalServices: {
-      aetherflow: {
-        url: process.env.AETHERFLOW_SERVICE_URL,
-      },
       redis: {
         url: process.env.REDIS_URL,
         enabled: !!process.env.REDIS_URL,
