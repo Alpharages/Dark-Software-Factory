@@ -1,5 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   makeCounterProvider,
   makeHistogramProvider,
@@ -73,15 +73,17 @@ import { QAFailureResolutionService } from './services/qa-failure-resolution.ser
     CapabilitiesModule,
     // Story 10.2: Socket.IO Real-Time Infrastructure
     RealtimeModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: {
-        expiresIn: '1h',
-        algorithm: 'HS256',
-      },
-      verifyOptions: {
-        algorithms: ['HS256'],
-      },
+    // Reads the validated config rather than `process.env.JWT_SECRET` directly,
+    // so it cannot silently construct a secret-less JwtService at module-build
+    // time if env load order ever changes (same failure class as REG-CRIT).
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('auth.jwtSecret'),
+        signOptions: { expiresIn: '1h', algorithm: 'HS256' as const },
+        verifyOptions: { algorithms: ['HS256' as const] },
+      }),
     }),
     forwardRef(() => GitHubModule),
   ],
