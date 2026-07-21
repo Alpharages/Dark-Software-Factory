@@ -8,3 +8,4 @@ export {
   FieldValue,
 } from './normalized-field.dto';
 export { NormalizedSelf, WebhookRegistrationResult } from './normalized-self.dto';
+export { NormalizedComment } from './normalized-comment.dto';

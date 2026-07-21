@@ -31,6 +31,8 @@ model Project {
   require_pr_approval         Boolean? // Null = inherit global GITHUB_REQUIRE_PR_APPROVAL; set = per-project override of the PR-open approval gate
   execution_concurrency_limit Int? // Null = inherit global SystemConfig `execution.concurrency_limit`; set = max concurrent AI executions for this project
   dependency_block_behavior   DependencyBlockBehavior @default(auto_resume)
+  lore_server_url             String? // Per-project Lore MCP URL; null = inherit global LORE_SERVER_URL
+  lore_api_key                String? // Per-project Lore bearer token (lore_<slug>_...), AES-256-GCM encrypted; null = inherit global LORE_API_KEY. Isolates each project's memory via Lore RLS.
   conversations               ClientConversation[]
   coverage_baseline           CoverageBaseline?
   coverage_config             ProjectCoverageConfig?

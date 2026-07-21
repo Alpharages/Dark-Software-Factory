@@ -17,6 +17,7 @@ import { AiAccountSelectorService } from '@/ai-accounts/account-selector.service
 import { AiAccountsService } from '@/ai-accounts/ai-accounts.service';
 import { NoEligibleAccountError } from '@/ai-accounts/errors/no-eligible-account.error';
 import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
+import { EncryptionService } from '@/common/encryption/encryption.service';
 
 jest.mock('child_process');
 
@@ -67,6 +68,9 @@ describe('OpenHarnessRunnerService', () => {
       qAResult: {
         upsert: jest.fn().mockResolvedValue({ id: 'qa-1' }),
       },
+      project: {
+        findUnique: jest.fn().mockResolvedValue({ lore_server_url: null, lore_api_key: null }),
+      },
     };
 
     mockConfig = {
@@ -81,6 +85,8 @@ describe('OpenHarnessRunnerService', () => {
           'openharness.mandatedToolsMode': 'warn',
           'openharness.formatEnabled': true,
           'openharness.formatCommand': 'pnpm exec prettier --write',
+          LORE_SERVER_URL: 'https://global-lore.example.com',
+          LORE_API_KEY: 'lore_global_key',
         };
         return values[key];
       }),
@@ -133,6 +139,10 @@ describe('OpenHarnessRunnerService', () => {
         { provide: AiAccountSelectorService, useValue: mockAccountSelector },
         { provide: AiAccountsService, useValue: mockAiAccounts },
         { provide: AICostTrackerService, useValue: mockCostTracker },
+        {
+          provide: EncryptionService,
+          useValue: { decrypt: jest.fn((v: string) => v), encrypt: jest.fn((v: string) => v) },
+        },
         { provide: OpenHarnessStreamAdapter, useValue: mockStreamAdapter },
       ],
     }).compile();
@@ -415,8 +425,10 @@ describe('OpenHarnessRunnerService', () => {
   });
 
   // QA-2026-07-13 §2.1d: the live failure — the agent claimed "implemented
-  // end-to-end", captured nothing, and the run still read COMPLETED.
-  it('fails an implement run that reports success but captured no files', async () => {
+  // end-to-end", captured nothing, and the run still read COMPLETED. It must not
+  // report success; instead it parks in PAUSED-awaiting-input and emits the
+  // needs-input event so the ask reaches the PM tool.
+  it('parks an implement run that reports success but captured no files as awaiting-input', async () => {
     const mockChild = new EventEmitter() as any;
     mockChild.stdout = new PassThrough();
     mockChild.stderr = new PassThrough();
@@ -440,12 +452,19 @@ describe('OpenHarnessRunnerService', () => {
     await runPromise;
 
     expect(mockExecutionTracker.completeExecution).not.toHaveBeenCalled();
-    expect(mockExecutionTracker.failExecution).toHaveBeenCalledWith(
+    expect(mockExecutionTracker.failExecution).not.toHaveBeenCalled();
+    expect(mockPrisma.execution.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        executionId: 'exec-123',
-        errorMessage: expect.stringContaining('produced no file changes'),
+        where: { id: 'exec-123' },
+        data: expect.objectContaining({
+          status: 'PAUSED',
+          error_context: expect.stringContaining('"awaitingInput":true'),
+        }),
       }),
-      'exec-123',
+    );
+    expect(mockEventBus.emit).toHaveBeenCalledWith(
+      'openharness.needs-input',
+      expect.objectContaining({ executionId: 'exec-123' }),
     );
   });
 
@@ -806,6 +825,45 @@ describe('OpenHarnessRunnerService', () => {
       await expect(
         (service as any).persistQaVerdict('exec-123', 'summary'),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('resolveLoreEnv — per-project memory isolation', () => {
+    it('inherits the global Lore key when the project has none', async () => {
+      mockPrisma.project.findUnique.mockResolvedValueOnce({
+        lore_server_url: null,
+        lore_api_key: null,
+      });
+      const env = await (service as any).resolveLoreEnv('project-1');
+      expect(env).toEqual({
+        LORE_SERVER_URL: 'https://global-lore.example.com',
+        LORE_API_KEY: 'lore_global_key',
+      });
+    });
+
+    it('injects the project-specific decrypted key so memory stays isolated', async () => {
+      mockPrisma.project.findUnique.mockResolvedValueOnce({
+        lore_server_url: 'https://tenant-lore.example.com',
+        lore_api_key: 'lore_acme_secret', // decrypt mock is identity
+      });
+      const env = await (service as any).resolveLoreEnv('project-1');
+      expect(env).toEqual({
+        LORE_SERVER_URL: 'https://tenant-lore.example.com',
+        LORE_API_KEY: 'lore_acme_secret',
+      });
+    });
+
+    it('runs with an empty key rather than leaking to the shared key when decrypt fails', async () => {
+      mockPrisma.project.findUnique.mockResolvedValueOnce({
+        lore_server_url: 'https://tenant-lore.example.com',
+        lore_api_key: 'corrupt',
+      });
+      ((service as any).encryption.decrypt as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('bad key');
+      });
+      const env = await (service as any).resolveLoreEnv('project-1');
+      expect(env.LORE_API_KEY).toBe('');
+      expect(env.LORE_SERVER_URL).toBe('https://tenant-lore.example.com');
     });
   });
 });

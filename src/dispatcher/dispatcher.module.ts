@@ -7,6 +7,7 @@ import { OpenHarnessModule } from '@/openharness/openharness.module';
 import { SystemConfigModule } from '@/system-settings/system-config.module';
 import { DependencyGateService } from './dependency-gate.service';
 import { DependencyReleaseController } from './dependency-release.controller';
+import { ExecutionRetryController } from './execution-retry.controller';
 import { DispatcherService } from './dispatcher.service';
 import { ExecutionConcurrencyGate } from './execution-concurrency.gate';
 
@@ -19,7 +20,7 @@ import { ExecutionConcurrencyGate } from './execution-concurrency.gate';
     SystemConfigModule,
     forwardRef(() => ApprovalGateModule),
   ],
-  controllers: [DependencyReleaseController],
+  controllers: [DependencyReleaseController, ExecutionRetryController],
   providers: [DispatcherService, DependencyGateService, ExecutionConcurrencyGate],
   exports: [DispatcherService, ExecutionConcurrencyGate],
 })

@@ -3,6 +3,7 @@ import { NormalizedTask } from './dto/normalized-task.dto';
 import { NormalizedStatus, NormalizedStatusType } from './dto/normalized-status.dto';
 import { NormalizedField, NormalizedFieldType } from './dto/normalized-field.dto';
 import { NormalizedSelf, WebhookRegistrationResult } from './dto/normalized-self.dto';
+import { NormalizedComment } from './dto/normalized-comment.dto';
 import { IRawTaskEvent } from '../../ticket-intake/interfaces/ticket-intake.interface';
 
 /**
@@ -33,6 +34,9 @@ class MockPMProvider implements IPMProvider {
 
   async updateStatus(_taskId: string, _statusId: string): Promise<void> {}
   async addComment(_taskId: string, _comment: string): Promise<void> {}
+  async getComments(_taskId: string): Promise<NormalizedComment[]> {
+    return [];
+  }
   async assignTask(_taskId: string, _userId: string): Promise<void> {}
   async prepareForTransition(
     _taskId: string,

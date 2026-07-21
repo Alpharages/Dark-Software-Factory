@@ -19,6 +19,16 @@ const LOOP_CAP_EXCEEDED_METRIC = 'dispatcher_loop_cap_exceeded';
 const OPEN_GATE_FAILED_METRIC = 'dispatcher_open_gate_failed';
 const DEPENDENCY_GATE_FAILED_METRIC = 'dispatcher_dependency_gate_failed';
 
+/**
+ * Debounce window for suppressing duplicate same-skill dispatches of one ticket.
+ * Covers the fast-fail gap (a run that errors in ms never occupies QUEUED/
+ * IN_PROGRESS, so the status guard alone lets rapid duplicate events re-spawn).
+ * 60s comfortably spans a burst of duplicate webhook/poll events while staying
+ * far below the minutes-apart cadence of any legitimate loopback re-run.
+ * ponytail: fixed window; make it configurable if real re-runs ever land inside it.
+ */
+const DUPLICATE_DISPATCH_DEBOUNCE_MS = 60_000;
+
 export type DispatchResult =
   | { dispatched: true; executionId: string; skill: string }
   | {
@@ -32,6 +42,8 @@ export type DispatchResult =
         | 'active-execution'
         | 'blocked'
         | 'loop-cap-exceeded'
+        | 'execution-not-found'
+        | 'not-retryable'
         | 'error';
       executionId?: string;
       error?: string;
@@ -169,17 +181,32 @@ export class DispatcherService {
       return { dispatched: false, reason: 'no-mapping' };
     }
 
+    // Duplicate guard. A QUEUED/IN_PROGRESS run means one is live. But a run that
+    // fails FAST (e.g. NoEligibleAccountError → row created FAILED in ms) never
+    // occupies those states, so rapid duplicate events for the same ticket+skill
+    // each slip past and spawn another execution (observed: 3 code-reviews 86ms
+    // apart). So also suppress a re-dispatch when the SAME skill was dispatched
+    // for this ticket within the debounce window, whatever its status — no
+    // legitimate re-run of one skill happens twice within seconds (loopbacks are
+    // minutes apart). Kept as one query so it's a single round-trip.
     const activeExecution = await this.prisma.execution.findFirst({
       where: {
         ticket: { clickup_task_id: event.externalId },
-        status: { in: [ExecutionStatus.QUEUED, ExecutionStatus.IN_PROGRESS] },
+        OR: [
+          { status: { in: [ExecutionStatus.QUEUED, ExecutionStatus.IN_PROGRESS] } },
+          {
+            ai_provider: AIProvider.OPENHARNESS,
+            prompt: openHarnessSkillPrompt(skill),
+            created_at: { gte: new Date(Date.now() - DUPLICATE_DISPATCH_DEBOUNCE_MS) },
+          },
+        ],
       },
       select: { id: true },
     });
 
     if (activeExecution) {
       this.logger.debug(
-        `[${event.correlationId}] Dispatch skipped: active execution ${activeExecution.id} for ${event.externalId}`,
+        `[${event.correlationId}] Dispatch skipped: active or recently-dispatched execution ${activeExecution.id} for ${event.externalId}`,
       );
       return {
         dispatched: false,
@@ -272,7 +299,7 @@ export class DispatcherService {
 
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      select: { id: true },
+      select: { id: true, project_id: true },
     });
     if (!ticket) {
       return { dispatched: false, reason: 'ticket-not-found' };
@@ -310,6 +337,10 @@ export class DispatcherService {
       return { dispatched: false, reason: 'loop-cap-exceeded', skill };
     }
 
+    // Honour the per-project Max Concurrent Executions cap on this path too, so
+    // a loopback/retry re-dispatch can't run past the limit that the initial
+    // status-driven dispatch (and every code-review/QA run) already respects.
+    const releaseSlot = await this.concurrencyGate.acquire(ticket.project_id);
     try {
       const executionId = await this.runner.runForTicket(ticketId, {
         skill,
@@ -326,7 +357,56 @@ export class DispatcherService {
         error instanceof Error ? error.stack : undefined,
       );
       return { dispatched: false, reason: 'error', error: message, skill };
+    } finally {
+      releaseSlot();
     }
+  }
+
+  /**
+   * Retry a finished execution by re-running the implement skill for its ticket.
+   *
+   * Only terminal executions are retryable — a QUEUED/IN_PROGRESS/PAUSED run is
+   * still live and `redispatchImplement`'s own active-execution guard would
+   * reject it anyway; we reject here first so the caller gets a clear reason.
+   * The retry creates a fresh execution; the old row is left as history.
+   */
+  async retryExecution(executionId: string, correlationId: string): Promise<DispatchResult> {
+    const execution = await this.prisma.execution.findUnique({
+      where: { id: executionId },
+      select: { ticket_id: true, status: true, error_context: true },
+    });
+    if (!execution) {
+      return { dispatched: false, reason: 'execution-not-found' };
+    }
+
+    // A PAUSED-awaiting-input run also retries by re-dispatch: the agent stopped
+    // to ask a question, and re-running is how it picks up the answer (the
+    // container-resume path is a no-op and would strand it — the exact bug the
+    // manual Resume button hit). Everything else is only retryable once terminal.
+    const awaitingInput = execution.error_context?.includes('"awaitingInput":true') ?? false;
+    const terminalRetryable: ExecutionStatus[] = [
+      ExecutionStatus.FAILED,
+      ExecutionStatus.TIMEOUT,
+      ExecutionStatus.CANCELLED,
+      ExecutionStatus.EMERGENCY_STOPPED,
+    ];
+    const retryable =
+      terminalRetryable.includes(execution.status) ||
+      (execution.status === ExecutionStatus.PAUSED && awaitingInput);
+    if (!retryable) {
+      return { dispatched: false, reason: 'not-retryable' };
+    }
+
+    // Clear the awaiting-input marker before re-dispatch so the poller can't also
+    // fire on the same row — the fresh run owns the lifecycle from here.
+    if (awaitingInput) {
+      await this.prisma.execution.update({
+        where: { id: executionId },
+        data: { error_context: null },
+      });
+    }
+
+    return this.redispatchImplement(execution.ticket_id, correlationId);
   }
 
   async releaseDependencyHold(ticketRef: string, correlationId: string): Promise<DispatchResult> {

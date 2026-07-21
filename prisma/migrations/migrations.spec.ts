@@ -37,6 +37,14 @@
  * The gate is idempotent: if the column was already dropped (e.g. CI replay), the
  * information_schema check skips the COUNT and DROP COLUMN IF EXISTS is a no-op.
  */
+/**
+ * Migration: 20260721120000_add_project_lore_credentials
+ *
+ * Adds nullable `projects.lore_server_url` and `projects.lore_api_key` (OHP-4.1
+ * per-tenant Lore memory isolation). `lore_api_key` holds an AES-256-GCM ciphertext,
+ * never plaintext. Purely additive nullable columns — no safety gate needed; existing
+ * projects read NULL and inherit the global LORE_* env (prior single-tenant behaviour).
+ */
 describe('Migration audit notes', () => {
   it('drop_workspace_tables contains a row-count safety gate', () => {
     // Intentional no-op — see file-level comment above for documentation.

@@ -128,6 +128,10 @@ export class FailExecutionDto {
 export class ExecutionResponseDto {
   id!: string;
   ticketId!: string;
+  /** PM-tool task id (e.g. ClickUp `86exzg6tz`) — the human-facing ticket ref. */
+  externalId!: string | null;
+  /** PM platform this ticket lives on (e.g. `ClickUp`). */
+  platform!: string;
   aiProvider!: AIProvider;
   status!: ExecutionStatus;
   confidenceScore!: number | null;
@@ -143,6 +147,13 @@ export class ExecutionResponseDto {
   currentStep?: string;
   percentComplete?: number;
   qaAttempts?: QAAttempt[] | null; // WR-6.3
+  /**
+   * True when this execution is PAUSED because the agent stopped to ask a
+   * question (relayed to the PM tool). Such a pause resumes by RE-DISPATCHING
+   * the agent, not by the container-resume path — the UI keys off this to route
+   * "Resume" to retry instead of the (no-op) manual resume. See PmInputResume.
+   */
+  awaitingInput?: boolean;
 }
 
 /**

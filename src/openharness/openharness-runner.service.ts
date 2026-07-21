@@ -8,7 +8,7 @@ import * as os from 'os';
 import { ExecutionRepository } from '@/execution/execution.repository';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { PrismaService } from '@/database/prisma.service';
-import { AIProvider, Prisma } from '@/prisma/client';
+import { AIProvider, ExecutionStatus, Prisma } from '@/prisma/client';
 import { OpenHarnessSkill, openHarnessSkillPrompt } from './skills.enum';
 import { OpenHarnessStreamParser } from './openharness-stream.parser';
 import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
@@ -17,11 +17,13 @@ import { OpenHarnessRunGuardrailsService } from './run-guardrails.service';
 import { ProjectWorkspaceService } from './project-workspace.service';
 import { SkillModelMapService } from './skill-model-map.service';
 import { OpenHarnessCodeReadyEvent } from './events/openharness-code-ready.event';
+import { OpenHarnessNeedsInputEvent } from './events/openharness-needs-input.event';
 import { EventBusService } from '@/common/event-bus.service';
 import { AiAccountsService } from '@/ai-accounts/ai-accounts.service';
 import { AiAccountSelectorService } from '@/ai-accounts/account-selector.service';
 import { NoEligibleAccountError } from '@/ai-accounts/errors/no-eligible-account.error';
 import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
+import { EncryptionService } from '@/common/encryption/encryption.service';
 
 type MandatedToolsMode = 'warn' | 'fail';
 /**
@@ -60,9 +62,50 @@ export class OpenHarnessRunnerService {
     private readonly accountSelector: AiAccountSelectorService,
     private readonly aiAccounts: AiAccountsService,
     private readonly costTracker: AICostTrackerService,
+    private readonly encryption: EncryptionService,
     @Optional()
     private readonly streamAdapter?: OpenHarnessStreamAdapter,
   ) {}
+
+  /**
+   * Per-project Lore credentials for multi-tenant isolation: each DSF project maps
+   * to its own Lore project, so lessons/patterns never mix across concurrent runs.
+   * Isolation is the bearer token alone — Lore's Postgres RLS scopes every query to
+   * it — so the MCP server name stays the static `lore` and no config regen is
+   * needed. A project with no key inherits the global LORE_* env (single-tenant /
+   * not-yet-provisioned, unchanged behaviour).
+   */
+  private async resolveLoreEnv(
+    projectId?: string,
+  ): Promise<{ LORE_SERVER_URL: string; LORE_API_KEY: string }> {
+    const globalUrl =
+      this.configService.get<string>('LORE_SERVER_URL') || process.env.LORE_SERVER_URL || '';
+    const globalKey =
+      this.configService.get<string>('LORE_API_KEY') || process.env.LORE_API_KEY || '';
+    if (!projectId) return { LORE_SERVER_URL: globalUrl, LORE_API_KEY: globalKey };
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { lore_server_url: true, lore_api_key: true },
+    });
+    if (!project?.lore_api_key) {
+      return { LORE_SERVER_URL: globalUrl, LORE_API_KEY: globalKey };
+    }
+    try {
+      return {
+        LORE_SERVER_URL: project.lore_server_url || globalUrl,
+        LORE_API_KEY: this.encryption.decrypt(project.lore_api_key),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `[lore] project ${projectId} key failed to decrypt (${message}); running without Lore to avoid cross-tenant leakage`,
+      );
+      // ponytail: empty token → Lore MCP 401s and its tools drop out for this run;
+      // safer than falling back to the shared global key, which would mix memory.
+      return { LORE_SERVER_URL: project.lore_server_url || globalUrl, LORE_API_KEY: '' };
+    }
+  }
 
   async runForTicket(ticketId: string, opts: OpenHarnessRunOptions): Promise<string> {
     const { skill, workspaceDir } = opts;
@@ -221,6 +264,10 @@ export class OpenHarnessRunnerService {
       return execution.id;
     }
 
+    // Resolve this project's own Lore credentials so its memory stays isolated
+    // from every other project's concurrent runs (see resolveLoreEnv).
+    const loreEnv = await this.resolveLoreEnv(projectRepo?.id);
+
     // Branch the agent commits to; also the ref the code-delivery push targets.
     const ticketBranch = `ohp/${clickUpTaskId}`;
 
@@ -289,12 +336,7 @@ export class OpenHarnessRunnerService {
               '',
             BMAD_API_KEY:
               this.configService.get<string>('BMAD_API_KEY') || process.env.BMAD_API_KEY || '',
-            LORE_SERVER_URL:
-              this.configService.get<string>('LORE_SERVER_URL') ||
-              process.env.LORE_SERVER_URL ||
-              '',
-            LORE_API_KEY:
-              this.configService.get<string>('LORE_API_KEY') || process.env.LORE_API_KEY || '',
+            ...loreEnv,
             LORE_SLUG: this.configService.get<string>('LORE_SLUG') || process.env.LORE_SLUG || '',
             LORE_KEY: this.configService.get<string>('LORE_KEY') || process.env.LORE_KEY || '',
             OH_RUN_WORKFLOW: skill,
@@ -501,17 +543,40 @@ export class OpenHarnessRunnerService {
               this.commitPendingWork(runWorkspaceDir, execution.id, clickUpTaskId, skill);
             }
 
-            // Fail loudly rather than reporting a success nobody can review: an
-            // implement run that captured no changes did not implement anything,
-            // whatever its summary claims (QA-2026-07-13 §2.1d).
+            // Never report a success nobody can review: an implement run that
+            // captured no changes did not implement anything, whatever its
+            // summary claims (QA-2026-07-13 §2.1d).
+            //
+            // But this is not a dead end — a zero-diff implement run means the
+            // agent stopped short and wants something from a human, and its
+            // summary is that ask. FAILED buried the ask in `error_message`
+            // where nobody read it and left the ticket needing a manual re-run.
+            // Park in PAUSED instead and relay the ask to the PM tool as a task
+            // comment; answering it there resumes the ticket automatically.
             if (skill === OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT && filesChanged.length === 0) {
-              await this.executionTracker.failExecution(
-                {
-                  executionId: execution.id,
-                  errorMessage: `Implement run reported success but produced no file changes on ${ticketBranch}. Summary: ${summary}`,
-                  isRetryable: false,
+              await this.prisma.execution.update({
+                where: { id: execution.id },
+                data: {
+                  status: ExecutionStatus.PAUSED,
+                  error_message: `Implement run produced no file changes on ${ticketBranch} — awaiting input. Summary: ${summary}`,
+                  // Discriminator: PAUSED is also used for manual pause
+                  // (Story 10-U-5), so the resume poller keys off this marker to
+                  // resume ONLY the runs it parked here, never a human-paused one.
+                  error_context: JSON.stringify({ awaitingInput: true, taskId: clickUpTaskId }),
                 },
-                execution.id,
+              });
+
+              this.eventBus.emit(
+                'openharness.needs-input',
+                new OpenHarnessNeedsInputEvent(
+                  execution.id,
+                  ticketId,
+                  projectRepo?.id ?? null,
+                  clickUpTaskId,
+                  summary,
+                  skill,
+                  execution.id,
+                ),
               );
               return;
             }

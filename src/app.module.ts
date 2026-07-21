@@ -52,6 +52,7 @@ import { ConnectedAppsModule } from './connected-apps/connected-apps.module';
 import { ClickUpModule } from './clickup/clickup.module';
 import { ProjectModule } from './projects/project.module';
 import { PmPollingModule } from './integrations/polling/pm-polling.module';
+import { PmInputResumeModule } from './integrations/pm-input-resume.module';
 
 // Dependency Management
 import { DependenciesModule } from './dependencies/dependencies.module';
@@ -137,6 +138,7 @@ import { SentryModule, SentryExceptionFilter, SentryInterceptor } from './common
     ClickUpModule,
     ProjectModule,
     PmPollingModule,
+    PmInputResumeModule,
 
     // Story 5.5: Client Communication Intelligence
     ConversationsModule,

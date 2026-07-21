@@ -12,6 +12,7 @@ export type EventPayload = {
   'execution.cancelled': import('../execution/events/execution-cancelled.event').ExecutionCancelledEvent;
   'quality.anomaly.detected': import('../dashboards/events/quality-anomaly-detected.event').QualityAnomalyDetectedEvent;
   'openharness.code-ready': import('../openharness/events/openharness-code-ready.event').OpenHarnessCodeReadyEvent;
+  'openharness.needs-input': import('../openharness/events/openharness-needs-input.event').OpenHarnessNeedsInputEvent;
 };
 
 @Injectable()

@@ -31,9 +31,19 @@ command -v claude >/dev/null 2>&1 || fail "missing command 'claude' (install Cla
 # The runner selects accounts from `ai_accounts` independently of this script — provisioning a
 # config dir for an id that isn't a registered, enabled claude row is exactly how a dir/DB
 # mismatch happens (the original failure mode this script must not reproduce).
-: "${DATABASE_URL:?DATABASE_URL must be set (see .env) to validate the account id against ai_accounts}"
+# DATABASE_URL usually lives in .env, not the shell env — load it from there when unset so the
+# script works out of the box. ponytail: grep one key, not a full dotenv parser; unquoted values only.
+ENV_FILE="$(dirname "$0")/../.env"
+if [[ -z "${DATABASE_URL:-}" && -f "$ENV_FILE" ]]; then
+  DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | tail -1 | cut -d= -f2-)
+  export DATABASE_URL
+fi
+: "${DATABASE_URL:?DATABASE_URL must be set (in .env or the environment) to validate the account id against ai_accounts}"
 command -v psql >/dev/null 2>&1 || fail "missing command 'psql' (needed to validate the account id against ai_accounts)"
-ENABLED=$(psql "$DATABASE_URL" -tAc \
+# Prisma URLs carry a ?schema=... param that libpq rejects ("invalid URI query parameter"). Strip
+# the query string — psql defaults to the search_path, and ai_accounts is in the default schema.
+PSQL_URL="${DATABASE_URL%%\?*}"
+ENABLED=$(psql "$PSQL_URL" -tAc \
   "SELECT enabled FROM ai_accounts WHERE id = '$ACCOUNT_ID' AND provider = 'claude'") ||
   fail "could not query ai_accounts for id '$ACCOUNT_ID' — check DATABASE_URL"
 [[ -n "$ENABLED" ]] ||
@@ -63,8 +73,17 @@ CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude auth login
 # The runner (probeClaudeSession, ai-accounts.service.ts) reads credentials straight from
 # "$CONFIG_DIR/.credentials.json" — not from `claude auth status`, which also reflects a
 # macOS-Keychain-only session that the isolated, non-interactive runner can never see. The CLI
-# has no flag to force file-based storage, so require the file directly: a Keychain-only login
-# fails loudly here instead of surfacing as a runtime "Connection error" later.
+# has no flag to force file-based storage, so on macOS it often saves the session to the login
+# Keychain and leaves no file. Recover it: pull the blob from the Keychain and write the
+# `.credentials.json` the runner expects. ponytail: keychain-only fallback, drop it if the CLI
+# ever gains a file-storage flag.
+if [[ ! -s "$CRED_FILE" ]] && command -v security >/dev/null 2>&1; then
+  security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); json.dump({'claudeAiOauth': d['claudeAiOauth']}, open('$CRED_FILE','w'))" 2>/dev/null &&
+    chmod 600 "$CRED_FILE" &&
+    echo "  (recovered session from macOS Keychain)"
+fi
+
 [[ -s "$CRED_FILE" ]] ||
   fail "login did not produce a file-based credential at '$CRED_FILE' — on macOS this usually means the session was saved to Keychain instead of the account dir, which the isolated runner can't read"
 

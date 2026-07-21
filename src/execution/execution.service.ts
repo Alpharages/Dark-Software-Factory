@@ -345,7 +345,9 @@ export class ExecutionService {
   /**
    * Convert Prisma model to response DTO
    */
-  private toResponseDto(execution: Execution): ExecutionResponseDto {
+  private toResponseDto(
+    execution: Execution & { ticket?: { clickup_task_id?: string } },
+  ): ExecutionResponseDto {
     const endTime =
       execution.completed_at ??
       execution.failed_at ??
@@ -357,6 +359,10 @@ export class ExecutionService {
     return {
       id: execution.id,
       ticketId: execution.ticket_id,
+      externalId: execution.ticket?.clickup_task_id ?? null,
+      // ponytail: sole PM provider today (ticket's only external ref is
+      // clickup_task_id). Derive from the project integration if a 2nd ships.
+      platform: 'ClickUp',
       aiProvider: execution.ai_provider,
       status: execution.status,
       confidenceScore: execution.confidence_score,
@@ -373,6 +379,7 @@ export class ExecutionService {
         (execution.progress as unknown as IExecutionProgress)?.currentStep ?? 'Initializing...',
       percentComplete: (execution.progress as unknown as IExecutionProgress)?.percentComplete ?? 0,
       qaAttempts: execution.qa_attempts as unknown as QAAttempt[] | null, // WR-6.3
+      awaitingInput: execution.error_context?.includes('"awaitingInput":true') ?? false,
     };
   }
   /**

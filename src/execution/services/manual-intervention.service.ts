@@ -182,6 +182,16 @@ export class ManualInterventionService {
       );
     }
 
+    // An awaiting-input pause resumes by RE-DISPATCHING the agent (POST
+    // :id/retry), not by this container-resume path — flipping it to IN_PROGRESS
+    // here would strand it with no process running. The UI routes such resumes to
+    // retry; this guard closes the broken path for any direct caller.
+    if (execution.error_context?.includes('"awaitingInput":true')) {
+      throw new BadRequestException(
+        'This execution is waiting for input on its ticket. Reply on the ticket (it resumes automatically) or use Retry — not Resume.',
+      );
+    }
+
     // Container resume delegated to OpenSandbox — no direct container control needed
     const containerControlSkipped = true;
     this.logger.debug(`Container resume delegated to OpenSandbox (executionId: ${executionId})`);

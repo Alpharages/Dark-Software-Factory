@@ -118,7 +118,19 @@ export class ProjectService {
   async update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project> {
     try {
       await this.findOne(id); // Ensure exists
-      const project = await this.repository.update(id, updateProjectDto);
+      // Lore credentials are handled out-of-band: the key is encrypted before it
+      // ever hits the DB, and an empty string clears either field back to "inherit
+      // global". Everything else passes straight through as before.
+      const { lore_api_key, lore_server_url, ...rest } = updateProjectDto;
+      const data: Prisma.ProjectUpdateInput = { ...rest };
+      if (lore_api_key !== undefined) {
+        data.lore_api_key =
+          lore_api_key === '' ? null : this.encryptionService.encrypt(lore_api_key);
+      }
+      if (lore_server_url !== undefined) {
+        data.lore_server_url = lore_server_url === '' ? null : lore_server_url;
+      }
+      const project = await this.repository.update(id, data);
       this.operationsCounter.inc({ operation: 'update', status: 'success' });
       return project;
     } catch (_error) {

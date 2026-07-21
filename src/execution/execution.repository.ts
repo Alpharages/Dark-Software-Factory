@@ -74,13 +74,16 @@ export class ExecutionRepository {
   /**
    * Find execution by ID
    */
-  async findById(id: string): Promise<(Execution & { ticket?: { project_id: string } }) | null> {
+  async findById(
+    id: string,
+  ): Promise<(Execution & { ticket?: { project_id: string; clickup_task_id: string } }) | null> {
     return this.prisma.execution.findUnique({
       where: { id },
       include: {
         ticket: {
           select: {
             project_id: true,
+            clickup_task_id: true,
           },
         },
       },
@@ -266,6 +269,7 @@ export class ExecutionRepository {
         ticket: {
           select: {
             project_id: true,
+            clickup_task_id: true,
           },
         },
       },
@@ -283,6 +287,7 @@ export class ExecutionRepository {
         ticket: {
           select: {
             project_id: true,
+            clickup_task_id: true,
           },
         },
       },

@@ -20,6 +20,7 @@ describe('DispatcherService', () => {
 
   const makeTicket = (aiTriggerStatus = 'ready for ai') => ({
     id: 'ticket-uuid-1',
+    project_id: 'project-1',
     project: {
       id: 'project-1',
       integrations: [{ provider: PMProvider.CLICKUP, ai_trigger_status: aiTriggerStatus }],
@@ -28,7 +29,12 @@ describe('DispatcherService', () => {
 
   let prisma: {
     ticket: { findUnique: jest.Mock };
-    execution: { findFirst: jest.Mock; count: jest.Mock };
+    execution: {
+      findFirst: jest.Mock;
+      count: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
   };
   let statusSkillMap: {
     resolveSkill: jest.Mock;
@@ -50,6 +56,10 @@ describe('DispatcherService', () => {
       execution: {
         findFirst: jest.fn().mockResolvedValue(null),
         count: jest.fn().mockResolvedValue(0),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ ticket_id: 'ticket-uuid-1', status: 'FAILED', error_context: null }),
+        update: jest.fn().mockResolvedValue({}),
       },
     };
     statusSkillMap = {
@@ -254,6 +264,26 @@ describe('DispatcherService', () => {
     expect(runner.runForTicket).not.toHaveBeenCalled();
   });
 
+  it('suppresses a rapid duplicate even when the prior run already failed fast', async () => {
+    // Fast-fail (e.g. no eligible account) leaves a FAILED row, never
+    // QUEUED/IN_PROGRESS — the recent-same-skill arm of the dedup query is what
+    // catches it, so a burst of duplicate events can't each spawn a run.
+    prisma.execution.findFirst.mockResolvedValueOnce({
+      id: 'exec-recent-failed',
+      ticket_id: 'ticket-uuid-1',
+      status: ExecutionStatus.FAILED,
+    });
+
+    const result = await service.dispatch(event);
+
+    expect(result).toEqual({
+      dispatched: false,
+      reason: 'active-execution',
+      executionId: 'exec-recent-failed',
+    });
+    expect(runner.runForTicket).not.toHaveBeenCalled();
+  });
+
   it('allows re-dispatch after prior execution is terminal', async () => {
     statusSkillMap.resolveSkill.mockResolvedValue(OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT);
     prisma.execution.findFirst.mockResolvedValueOnce(null);
@@ -371,6 +401,9 @@ describe('DispatcherService', () => {
         skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
         workspaceDir: '/workspaces/dsf',
       });
+      // Re-dispatch must also honour the per-project concurrency cap.
+      expect(concurrencyGate.acquire).toHaveBeenCalledWith('project-1');
+      expect(releaseSlot).toHaveBeenCalledTimes(1);
     });
 
     it('skips re-dispatch when dependency gate reports unresolved blockers', async () => {
@@ -429,6 +462,79 @@ describe('DispatcherService', () => {
         error: 'oh down',
         skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
       });
+    });
+  });
+
+  describe('retryExecution', () => {
+    it('re-dispatches implement for a terminal execution', async () => {
+      prisma.execution.findUnique.mockResolvedValueOnce({
+        ticket_id: 'ticket-uuid-1',
+        status: 'FAILED',
+      });
+
+      const result = await service.retryExecution('exec-old', 'corr-1');
+
+      expect(result).toEqual({
+        dispatched: true,
+        executionId: 'exec-1',
+        skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+      });
+      expect(runner.runForTicket).toHaveBeenCalledWith('ticket-uuid-1', expect.any(Object));
+    });
+
+    it('retries a PAUSED-awaiting-input execution and clears the marker first', async () => {
+      prisma.execution.findUnique.mockResolvedValueOnce({
+        ticket_id: 'ticket-uuid-1',
+        status: 'PAUSED',
+        error_context: '{"awaitingInput":true,"taskId":"86exzg6tz"}',
+      });
+
+      const result = await service.retryExecution('exec-paused', 'corr-1');
+
+      expect(result).toEqual({
+        dispatched: true,
+        executionId: 'exec-1',
+        skill: OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT,
+      });
+      // Marker cleared before re-dispatch so the poller can't double-fire.
+      expect(prisma.execution.update).toHaveBeenCalledWith({
+        where: { id: 'exec-paused' },
+        data: { error_context: null },
+      });
+    });
+
+    it('rejects a plain (non-awaiting-input) PAUSED execution', async () => {
+      prisma.execution.findUnique.mockResolvedValueOnce({
+        ticket_id: 'ticket-uuid-1',
+        status: 'PAUSED',
+        error_context: null,
+      });
+
+      const result = await service.retryExecution('exec-manualpause', 'corr-1');
+
+      expect(result).toEqual({ dispatched: false, reason: 'not-retryable' });
+      expect(runner.runForTicket).not.toHaveBeenCalled();
+    });
+
+    it('rejects a still-live (non-terminal) execution without dispatching', async () => {
+      prisma.execution.findUnique.mockResolvedValueOnce({
+        ticket_id: 'ticket-uuid-1',
+        status: 'IN_PROGRESS',
+      });
+
+      const result = await service.retryExecution('exec-live', 'corr-1');
+
+      expect(result).toEqual({ dispatched: false, reason: 'not-retryable' });
+      expect(runner.runForTicket).not.toHaveBeenCalled();
+    });
+
+    it('returns execution-not-found for an unknown id', async () => {
+      prisma.execution.findUnique.mockResolvedValueOnce(null);
+
+      const result = await service.retryExecution('nope', 'corr-1');
+
+      expect(result).toEqual({ dispatched: false, reason: 'execution-not-found' });
+      expect(runner.runForTicket).not.toHaveBeenCalled();
     });
   });
 

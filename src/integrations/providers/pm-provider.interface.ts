@@ -2,6 +2,7 @@ import { IRawTaskEvent } from '../../ticket-intake/interfaces/ticket-intake.inte
 import { NormalizedTask } from './dto/normalized-task.dto';
 import { NormalizedStatus } from './dto/normalized-status.dto';
 import { NormalizedField, FieldValue } from './dto/normalized-field.dto';
+import { NormalizedComment } from './dto/normalized-comment.dto';
 import { NormalizedSelf, WebhookRegistrationResult } from './dto/normalized-self.dto';
 
 /**
@@ -23,6 +24,9 @@ export interface IPMProvider {
 
   /** Add a comment to a task. */
   addComment(taskId: string, comment: string): Promise<void>;
+
+  /** Read a task's comments, newest first. */
+  getComments(taskId: string): Promise<NormalizedComment[]>;
 
   /** Assign a user to a task. */
   assignTask(taskId: string, userId: string): Promise<void>;

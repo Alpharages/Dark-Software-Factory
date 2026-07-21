@@ -45,6 +45,8 @@ describe('ProjectController', () => {
     require_pr_approval: null,
     execution_concurrency_limit: null,
     dependency_block_behavior: 'auto_resume' as const,
+    lore_server_url: null,
+    lore_api_key: null,
   };
 
   const mockIntegration = {
@@ -150,7 +152,8 @@ describe('ProjectController', () => {
 
       const result = await controller.findAll();
 
-      expect(result).toEqual([mockProject]);
+      const { lore_api_key: _k, ...expected } = mockProject;
+      expect(result).toEqual([{ ...expected, lore_configured: false }]);
       expect(service.findAll).toHaveBeenCalled();
     });
   });
@@ -161,7 +164,8 @@ describe('ProjectController', () => {
 
       const result = await controller.findOne('project-123');
 
-      expect(result).toEqual(mockProject);
+      const { lore_api_key: _k, ...expected } = mockProject;
+      expect(result).toEqual({ ...expected, lore_configured: false });
       expect(service.findOne).toHaveBeenCalledWith('project-123');
     });
   });

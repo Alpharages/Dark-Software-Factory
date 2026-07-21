@@ -58,6 +58,16 @@ export class ProjectController {
     private readonly integrationService: ProjectIntegrationService,
   ) {}
 
+  /**
+   * Trust boundary to the client: never expose the encrypted Lore key. Replace it
+   * with a `lore_configured` boolean so the UI can show set/unset without ever
+   * receiving the ciphertext.
+   */
+  private redactLoreSecret<T extends { lore_api_key?: string | null }>(project: T) {
+    const { lore_api_key, ...rest } = project;
+    return { ...rest, lore_configured: lore_api_key != null && lore_api_key !== '' };
+  }
+
   @Post()
   @Roles(Role.ADMIN, Role.MANAGER, Role.PM) // Changed to use Role enum for consistency with existing code
   @ApiOperation({ summary: 'Create a new project' })
@@ -94,7 +104,9 @@ export class ProjectController {
     if (!user || !user.id) {
       throw new BadRequestException('User context required');
     }
-    return this.projectService.findUserProjects(user.id);
+    return this.projectService
+      .findUserProjects(user.id)
+      .then((projects) => projects.map((p) => this.redactLoreSecret(p)));
   }
 
   @Get()
@@ -113,7 +125,9 @@ export class ProjectController {
     if (active === 'true') activeFilter = true;
     else if (active === 'false') activeFilter = false;
     // If 'all' or undefined, activeFilter remains undefined (fetch all)
-    return this.projectService.findAll(activeFilter);
+    return this.projectService
+      .findAll(activeFilter)
+      .then((projects) => projects.map((p) => this.redactLoreSecret(p)));
   }
 
   @Get(':id')
@@ -122,7 +136,7 @@ export class ProjectController {
   @ApiResponse({ status: 200, description: 'Return project details' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   findOne(@Param('id') id: string) {
-    return this.projectService.findOne(id);
+    return this.projectService.findOne(id).then((p) => this.redactLoreSecret(p));
   }
 
   @Patch(':id')
@@ -131,7 +145,7 @@ export class ProjectController {
   @ApiResponse({ status: 200, description: 'Project updated successfully' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectService.update(id, updateProjectDto);
+    return this.projectService.update(id, updateProjectDto).then((p) => this.redactLoreSecret(p));
   }
 
   @Post(':id/reassign')

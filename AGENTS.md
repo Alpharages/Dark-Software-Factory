@@ -1,3 +1,7 @@
+## Rules
+
+1. **No AI attribution in commits.** Never add `Co-Authored-By: Claude` (or any AI/agent) to commit messages, and never set an AI as author or committer. Commits are authored solely by the human developer. Do not mention AI assistance anywhere in the commit or contribution.
+
 <!-- gitnexus:start -->
 
 # GitNexus — Code Intelligence

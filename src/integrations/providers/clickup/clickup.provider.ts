@@ -12,6 +12,7 @@ import {
   FieldValue,
   PMProviderClientError,
 } from '../';
+import { NormalizedComment } from '../dto/normalized-comment.dto';
 import { IRawTaskEvent } from '../../../ticket-intake/interfaces/ticket-intake.interface';
 
 // Raw ClickUp API response shapes (internal only)
@@ -80,6 +81,13 @@ interface ClickUpWebhookPayload {
   webhook_id: string;
   event: string;
   task_id: string;
+}
+
+interface ClickUpComment {
+  id: string;
+  comment_text?: string;
+  date: string;
+  user?: { id?: number; username?: string };
 }
 
 export class ClickUpProvider implements IPMProvider {
@@ -160,6 +168,21 @@ export class ClickUpProvider implements IPMProvider {
         notify_all: false,
       }),
     );
+  }
+
+  async getComments(taskId: string): Promise<NormalizedComment[]> {
+    const response = await this.retryWithBackoff(() => this.client.get(`/task/${taskId}/comment`));
+    const raw: ClickUpComment[] = response.data.comments || [];
+    return raw.map((c) => ({
+      id: c.id,
+      // ClickUp returns rich comments as a `comment` block array; `comment_text`
+      // is the flattened plaintext of the same content and is what we act on.
+      text: c.comment_text ?? '',
+      authorId: c.user?.id?.toString() ?? '',
+      authorName: c.user?.username ?? '',
+      // ClickUp `date` is a Unix-ms timestamp delivered as a string.
+      createdAt: new Date(Number(c.date)),
+    }));
   }
 
   async assignTask(taskId: string, userId: string): Promise<void> {

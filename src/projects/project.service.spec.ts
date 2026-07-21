@@ -51,6 +51,8 @@ describe('ProjectService', () => {
     require_pr_approval: null,
     execution_concurrency_limit: null,
     dependency_block_behavior: 'auto_resume' as const,
+    lore_server_url: null,
+    lore_api_key: null,
   };
 
   const mockCounter = {
@@ -498,6 +500,36 @@ describe('ProjectService', () => {
         operation: 'update_status',
         status: 'success',
       });
+    });
+  });
+
+  describe('update — Lore credentials', () => {
+    beforeEach(() => {
+      repository.findById.mockResolvedValue(mockProject);
+      repository.update.mockResolvedValue(mockProject);
+    });
+
+    it('encrypts lore_api_key before persisting it', async () => {
+      await service.update('project-123', { lore_api_key: 'lore_acme_secret' } as any);
+      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith('lore_acme_secret');
+      expect(repository.update).toHaveBeenCalledWith('project-123', {
+        lore_api_key: 'enc-lore_acme_secret',
+      });
+    });
+
+    it('clears the key (null = inherit global) when given an empty string', async () => {
+      await service.update('project-123', { lore_api_key: '' } as any);
+      expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalledWith('project-123', { lore_api_key: null });
+    });
+
+    it('passes lore_server_url through and clears it on empty string', async () => {
+      await service.update('project-123', { lore_server_url: 'https://lore.example.com' } as any);
+      expect(repository.update).toHaveBeenCalledWith('project-123', {
+        lore_server_url: 'https://lore.example.com',
+      });
+      await service.update('project-123', { lore_server_url: '' } as any);
+      expect(repository.update).toHaveBeenLastCalledWith('project-123', { lore_server_url: null });
     });
   });
 
