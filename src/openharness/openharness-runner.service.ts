@@ -8,7 +8,7 @@ import * as os from 'os';
 import { ExecutionRepository } from '@/execution/execution.repository';
 import { ExecutionTrackerService } from '@/execution/execution-tracker.service';
 import { PrismaService } from '@/database/prisma.service';
-import { AIProvider, ExecutionStatus, Prisma } from '@/prisma/client';
+import { AIProvider, DependencyEdgeType, ExecutionStatus, Prisma } from '@/prisma/client';
 import { OpenHarnessSkill, openHarnessSkillPrompt } from './skills.enum';
 import { OpenHarnessStreamParser } from './openharness-stream.parser';
 import { isOpenHarnessLiveEvent, OpenHarnessStreamEvent } from './stream/openharness-event.types';
@@ -281,7 +281,24 @@ export class OpenHarnessRunnerService {
         // branch, so a prior leg's commit is visible to the next (review/QA see
         // the implement diff). The worktree is per-run and torn down each leg;
         // the branch survives in the object store. Resolves OHP-2.6 Finding 3.
-        runWorkspaceDir = this.provisionWorktree(baseRepoDir, execution.id, ticketBranch);
+        //
+        // Dependency chaining: a dependent ticket must build on its blockers'
+        // work even before that work is merged to the default branch. Fork off
+        // main (latest) then merge in any blocker branch not yet in main, so the
+        // agent sees the dependency code instead of a stale base.
+        const baseBranches = projectRepo
+          ? await this.resolveUnmergedBlockerBranches(
+              baseRepoDir,
+              ticketId,
+              projectRepo.defaultBranch,
+            )
+          : [];
+        runWorkspaceDir = this.provisionWorktree(
+          baseRepoDir,
+          execution.id,
+          ticketBranch,
+          baseBranches,
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         await this.executionTracker.failExecution(
@@ -728,7 +745,12 @@ export class OpenHarnessRunnerService {
    * thereafter) so each leg sees prior legs' commits. `node_modules` is symlinked
    * so the agent can run tests/typecheck. Returns the worktree path.
    */
-  private provisionWorktree(repoDir: string, executionId: string, branch: string): string {
+  private provisionWorktree(
+    repoDir: string,
+    executionId: string,
+    branch: string,
+    baseBranches: string[] = [],
+  ): string {
     const dir = path.join(os.tmpdir(), 'dsf-workspaces', executionId);
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     fs.mkdirSync(path.dirname(dir), { recursive: true });
@@ -762,6 +784,29 @@ export class OpenHarnessRunnerService {
       execFileSync('git', ['-C', repoDir, 'worktree', 'add', '-b', branch, dir, head], {
         stdio: 'pipe',
       });
+      // Stack this fresh branch on top of its blockers' unmerged work. A conflict
+      // fails the run loudly rather than silently: dropping the merge would rebuild
+      // the exact dependency-invisibility bug this chaining exists to prevent.
+      for (const base of baseBranches) {
+        try {
+          execFileSync('git', ['-C', dir, 'merge', '--no-edit', base], { stdio: 'pipe' });
+        } catch {
+          try {
+            execFileSync('git', ['-C', dir, 'merge', '--abort'], { stdio: 'pipe' });
+          } catch {
+            /* nothing to abort */
+          }
+          throw new Error(
+            `Failed to chain dependency branch '${base}' into '${branch}': merge conflict. ` +
+              `Merge '${base}' into the default branch (or merge the default branch into '${base}'), then retry.`,
+          );
+        }
+      }
+      if (baseBranches.length > 0) {
+        this.logger.log(
+          `[${executionId}] Chained ${baseBranches.length} unmerged dependency branch(es) into ${branch}: ${baseBranches.join(', ')}`,
+        );
+      }
     }
     // Make the worktree a runnable dev env (tests/typecheck) by sharing node_modules.
     const nodeModules = path.join(repoDir, 'node_modules');
@@ -782,6 +827,51 @@ export class OpenHarnessRunnerService {
     }
     this.logger.log(`[${executionId}] Provisioned isolated worktree at ${dir} (branch ${branch})`);
     return dir;
+  }
+
+  /**
+   * Blocker branches whose work is committed but not yet in the default branch —
+   * the set a dependent ticket must chain onto so it builds on its dependencies'
+   * code instead of a stale main. A blocker whose branch is already an ancestor of
+   * the default branch is skipped (a plain fork off main already contains it); one
+   * whose branch never landed in this clone is skipped (nothing to chain).
+   *
+   * Deliberately keyed off git ancestry, NOT the dependency's RESOLVED status: a
+   * blocker can be marked done in the PM tool before its PR merges, and that race
+   * is exactly when the dependent needs the chain.
+   */
+  private async resolveUnmergedBlockerBranches(
+    repoDir: string,
+    ticketId: string,
+    defaultBranch: string,
+  ): Promise<string[]> {
+    const blockers = await this.prisma.ticketDependency.findMany({
+      where: { ticket_id: ticketId, type: DependencyEdgeType.waiting_on },
+      select: { depends_on: true },
+    });
+    const branches: string[] = [];
+    for (const { depends_on } of blockers) {
+      const branch = `ohp/${depends_on}`;
+      try {
+        // Branch must exist locally to chain onto it.
+        execFileSync(
+          'git',
+          ['-C', repoDir, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`],
+          { stdio: 'pipe' },
+        );
+      } catch {
+        continue;
+      }
+      try {
+        // Already merged into the default branch → plain fork off main has it.
+        execFileSync('git', ['-C', repoDir, 'merge-base', '--is-ancestor', branch, defaultBranch], {
+          stdio: 'pipe',
+        });
+      } catch {
+        branches.push(branch);
+      }
+    }
+    return branches;
   }
 
   /**

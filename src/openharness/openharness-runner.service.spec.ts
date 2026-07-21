@@ -68,6 +68,9 @@ describe('OpenHarnessRunnerService', () => {
       qAResult: {
         upsert: jest.fn().mockResolvedValue({ id: 'qa-1' }),
       },
+      ticketDependency: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       project: {
         findUnique: jest.fn().mockResolvedValue({ lore_server_url: null, lore_api_key: null }),
       },
@@ -864,6 +867,48 @@ describe('OpenHarnessRunnerService', () => {
       const env = await (service as any).resolveLoreEnv('project-1');
       expect(env.LORE_API_KEY).toBe('');
       expect(env.LORE_SERVER_URL).toBe('https://tenant-lore.example.com');
+    });
+  });
+
+  describe('resolveUnmergedBlockerBranches', () => {
+    // Route git by subcommand: a branch is "unmerged" iff it exists locally AND
+    // `merge-base --is-ancestor` fails (non-zero) against the default branch.
+    const wire = (existing: Set<string>, mergedIntoMain: Set<string>) => {
+      gitMock((args) => {
+        if (args.includes('rev-parse') && args.includes('--verify')) {
+          const ref = args[args.length - 1]; // refs/heads/ohp/<id>
+          const branch = ref.replace('refs/heads/', '');
+          if (!existing.has(branch)) throw new Error('unknown revision');
+          return '';
+        }
+        if (args.includes('merge-base') && args.includes('--is-ancestor')) {
+          const branch = args[args.indexOf('--is-ancestor') + 1];
+          if (mergedIntoMain.has(branch)) return ''; // exit 0 = already in main
+          throw new Error('not an ancestor'); // exit non-zero = unmerged
+        }
+        return '';
+      });
+    };
+    const call = () =>
+      (service as any).resolveUnmergedBlockerBranches('/repo', 'ticket-1', 'main') as Promise<
+        string[]
+      >;
+
+    it('chains only blockers whose branch exists and is not yet in main', async () => {
+      mockPrisma.ticketDependency.findMany.mockResolvedValue([
+        { depends_on: 'unmerged' }, // exists, not in main → chain
+        { depends_on: 'merged' }, // exists, already in main → skip
+        { depends_on: 'ghost' }, // no local branch → skip
+      ]);
+      wire(new Set(['ohp/unmerged', 'ohp/merged']), new Set(['ohp/merged']));
+
+      await expect(call()).resolves.toEqual(['ohp/unmerged']);
+    });
+
+    it('returns nothing when the ticket has no blockers', async () => {
+      mockPrisma.ticketDependency.findMany.mockResolvedValue([]);
+      wire(new Set(), new Set());
+      await expect(call()).resolves.toEqual([]);
     });
   });
 });

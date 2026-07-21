@@ -18,11 +18,8 @@
       }
     },
     "gitnexus": {
-      "type": "http",
-      "url": "${GITNEXUS_SERVER_URL}/mcp",
-      "headers": {
-        "Authorization": "Bearer ${GITNEXUS_API_KEY}"
-      }
+      "command": "npx",
+      "args": ["-y", "gitnexus@latest", "mcp"]
     }
   }
 }
