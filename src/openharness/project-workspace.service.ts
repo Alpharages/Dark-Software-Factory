@@ -89,6 +89,13 @@ export class ProjectWorkspaceService {
       );
     }
 
+    // Install deps once, here, so `node_modules` exists in the base clone — the
+    // runner's per-run worktree symlinks it in, so every leg gets a runnable dev
+    // env for free. Without this the agent discovers deps are missing mid-run and
+    // burns time/tokens fumbling test-runner invocations then installing itself.
+    // Best-effort: a failure here never fails the run (the agent can still install).
+    this.installDependencies(clonePath);
+
     return {
       dir: clonePath,
       project: { id: project.id, repositoryUrl: plainUrl, defaultBranch },
@@ -128,6 +135,72 @@ export class ProjectWorkspaceService {
     this.git(['-C', clonePath, 'checkout', defaultBranch]);
     this.git(['-C', clonePath, 'reset', '--hard', 'FETCH_HEAD']);
     this.logger.debug(`Refreshed project clone ${clonePath} to latest ${defaultBranch}`);
+  }
+
+  /**
+   * Install JS dependencies in `dir` if a recognized lockfile is present and the
+   * install is stale (no `node_modules`, or the lockfile is newer than it).
+   * Best-effort and idempotent — never throws. `node_modules` is untracked, so
+   * `git reset --hard` during refresh leaves it intact; it persists across runs.
+   */
+  private installDependencies(dir: string): void {
+    const cmd = this.resolveInstallCommand(dir);
+    if (!cmd) return; // no recognized lockfile — nothing reproducible to install
+    if (this.depsUpToDate(dir, cmd.lockfile)) return;
+    try {
+      this.logger.log(`Installing dependencies in ${dir} via ${cmd.bin} ${cmd.args.join(' ')}`);
+      execFileSync(cmd.bin, cmd.args, {
+        cwd: dir,
+        stdio: 'pipe',
+        // First install with a cold store can be slow; generous ceiling.
+        timeout: 10 * 60_000,
+        env: { ...process.env, CI: '1', GIT_TERMINAL_PROMPT: '0' },
+      });
+      this.logger.log(`Dependencies installed in ${dir}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Dependency install skipped in ${dir}: ${this.redact(message)}`);
+    }
+  }
+
+  /** Map the lockfile in `dir` to its package manager's frozen-install command. */
+  private resolveInstallCommand(
+    dir: string,
+  ): { bin: string; args: string[]; lockfile: string } | null {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    const has = (f: string) => fs.existsSync(path.join(dir, f));
+    if (has('pnpm-lock.yaml'))
+      return {
+        bin: 'pnpm',
+        args: ['install', '--frozen-lockfile', '--prefer-offline'],
+        lockfile: 'pnpm-lock.yaml',
+      };
+    if (has('yarn.lock'))
+      return { bin: 'yarn', args: ['install', '--frozen-lockfile'], lockfile: 'yarn.lock' };
+    if (has('package-lock.json'))
+      return {
+        bin: 'npm',
+        args: ['ci', '--prefer-offline', '--no-audit', '--no-fund'],
+        lockfile: 'package-lock.json',
+      };
+    if (has('bun.lockb')) return { bin: 'bun', args: ['install'], lockfile: 'bun.lockb' };
+    return null;
+  }
+
+  /** node_modules exists and is at least as new as the lockfile → skip install. */
+  private depsUpToDate(dir: string, lockfile: string): boolean {
+    try {
+      const nodeModules = path.join(dir, 'node_modules');
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      if (!fs.existsSync(nodeModules)) return false;
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      const nmMtime = fs.statSync(nodeModules).mtimeMs;
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      const lockMtime = fs.statSync(path.join(dir, lockfile)).mtimeMs;
+      return nmMtime >= lockMtime;
+    } catch {
+      return false; // can't tell → (re)install to be safe
+    }
   }
 
   private git(args: string[]): void {

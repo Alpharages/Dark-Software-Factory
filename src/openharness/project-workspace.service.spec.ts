@@ -103,6 +103,40 @@ describe('ProjectWorkspaceService', () => {
     expect(cloneCall[1]).toContain('https://x-access-token:plain-token@github.com/acme/app.git');
   });
 
+  it('installs deps after cloning when a lockfile is present', async () => {
+    // .git absent → clone; only the pnpm lockfile exists (node_modules missing).
+    existsSync.mockImplementation((p: string) => p.endsWith('pnpm-lock.yaml'));
+
+    await service.resolveWorkspaceDir('ticket-1', '/fallback');
+
+    const install = execFileSync.mock.calls.find((c) => c[0] === 'pnpm');
+    expect(install).toBeDefined();
+    expect(install[1]).toEqual(['install', '--frozen-lockfile', '--prefer-offline']);
+    expect(install[2]).toMatchObject({ cwd: '/workspaces/project-1' });
+  });
+
+  it('skips install when no lockfile is present', async () => {
+    existsSync.mockReturnValue(false); // no .git, no lockfile
+
+    await service.resolveWorkspaceDir('ticket-1', '/fallback');
+
+    expect(execFileSync.mock.calls.some((c) => ['pnpm', 'npm', 'yarn', 'bun'].includes(c[0]))).toBe(
+      false,
+    );
+  });
+
+  it('never fails the run when dependency install errors', async () => {
+    existsSync.mockImplementation((p: string) => p.endsWith('pnpm-lock.yaml'));
+    execFileSync.mockImplementation((cmd: string) => {
+      if (cmd === 'pnpm') throw new Error('pnpm: frozen lockfile out of date');
+      return '';
+    });
+
+    await expect(service.resolveWorkspaceDir('ticket-1', '/fallback')).resolves.toMatchObject({
+      dir: '/workspaces/project-1',
+    });
+  });
+
   it('throws a credential-redacted error when cloning fails', async () => {
     existsSync.mockReturnValue(false);
     execFileSync.mockImplementation((_cmd: string, args: string[]) => {
