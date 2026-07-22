@@ -384,11 +384,13 @@ export class DispatcherService {
     // container-resume path is a no-op and would strand it — the exact bug the
     // manual Resume button hit). Everything else is only retryable once terminal.
     const awaitingInput = execution.error_context?.includes('"awaitingInput":true') ?? false;
+    // EMERGENCY_STOPPED is deliberately NOT retryable: it's an operator's manual
+    // kill, so auto/loopback retry must not resurrect it (only an explicit new
+    // dispatch should).
     const terminalRetryable: ExecutionStatus[] = [
       ExecutionStatus.FAILED,
       ExecutionStatus.TIMEOUT,
       ExecutionStatus.CANCELLED,
-      ExecutionStatus.EMERGENCY_STOPPED,
     ];
     const retryable =
       terminalRetryable.includes(execution.status) ||
