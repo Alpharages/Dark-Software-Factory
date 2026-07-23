@@ -628,15 +628,15 @@ describe('ProjectService', () => {
       });
     });
 
-    it('should sync project details and tasks from ClickUp', async () => {
-      const syncedProject = { ...mockProject, name: 'Updated Project Name' };
-
+    it('should sync tasks without overwriting the project name from ClickUp', async () => {
       repository.findById.mockResolvedValue(mockProject);
-      repository.update.mockResolvedValue(syncedProject);
 
       const result = await service.syncFromClickUp('project-123');
 
-      expect(result.name).toBe('Updated Project Name');
+      // Resync must NOT clobber a user rename: the ClickUp list is named
+      // 'Updated Project Name' but the local project name is preserved.
+      expect(result.name).toBe(mockProject.name);
+      expect(repository.update).not.toHaveBeenCalled();
       // CS1-1 fix: inline check allows QUEUED tasks through sync path (all tasks map to QUEUED)
       expect(result.syncedTasksCount).toBe(2);
       expect(ClickUpProvider).toHaveBeenCalledWith('token-abc');

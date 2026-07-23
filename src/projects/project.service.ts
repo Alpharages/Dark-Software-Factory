@@ -510,13 +510,12 @@ export class ProjectService {
       }
       const clickupProvider = new ClickUpProvider(integration.access_token);
 
-      // 1. Sync List Details
+      // 1. Fetch list details (used below as the task event's listName). We
+      // intentionally do NOT overwrite project.name from the ClickUp list on
+      // resync: the name is set once at import/link time and is then user-editable
+      // via PATCH /projects/:id. Re-syncing must not clobber a rename the user made
+      // (previously this reset name to listDetails.name every sync).
       const listDetails = await clickupProvider.getList(project.clickup_list_id);
-
-      // Update name if changed
-      const updated = await this.repository.update(id, {
-        name: listDetails.name,
-      });
 
       // 2. Sync Tasks with pagination - Story 20.1: Provider-agnostic flow
       let page = 0;
@@ -639,7 +638,7 @@ export class ProjectService {
         `Successfully synced project ${id}: ${totalSyncedCount} tasks fetched, ${totalPublishedCount} published to intake queue`,
       );
 
-      return { ...updated, syncedTasksCount: totalPublishedCount };
+      return { ...project, syncedTasksCount: totalPublishedCount };
     } catch (_error) {
       this.operationsCounter.inc({ operation: 'sync', status: 'error' });
       this.syncCounter.inc({ status: 'error' });
