@@ -382,9 +382,21 @@ export class OpenHarnessRunnerService {
       let lastProgress = '';
       let settled = false;
 
+      // Secrets injected into the child env can leak into the stream (e.g. a Lore
+      // MCP error echoing its Authorization header). The wrapper redacts the
+      // persisted log file, but the live stream is consumed here BEFORE that scan
+      // and its events are persisted as activities — so redact each line up front.
+      const secretValues = [
+        loreEnv.LORE_API_KEY,
+        accountEnv.OPENAI_API_KEY,
+        this.configService.get<string>('BMAD_API_KEY') || process.env.BMAD_API_KEY,
+        this.configService.get<string>('CLICKUP_API_KEY') || process.env.CLICKUP_API_KEY,
+      ].filter((v): v is string => typeof v === 'string' && v.length > 0);
+
       if (child.stdout) {
         const rl = readline.createInterface({ input: child.stdout });
-        rl.on('line', (line) => {
+        rl.on('line', (rawLine) => {
+          const line = this.redactSecrets(rawLine, secretValues);
           const event = parser.parseLine(line);
           if (!event) return;
 
@@ -414,7 +426,8 @@ export class OpenHarnessRunnerService {
 
       if (child.stderr) {
         child.stderr.on('data', (data) => {
-          this.logger.debug(`[${execution.id}] STDERR: ${data.toString().trim()}`);
+          const text = this.redactSecrets(data.toString().trim(), secretValues);
+          this.logger.debug(`[${execution.id}] STDERR: ${text}`);
         });
       }
 
@@ -745,6 +758,21 @@ export class OpenHarnessRunnerService {
    * thereafter) so each leg sees prior legs' commits. `node_modules` is symlinked
    * so the agent can run tests/typecheck. Returns the worktree path.
    */
+  /**
+   * Replace every occurrence of each secret value with `[REDACTED]`. Fixed-string
+   * replace (no regex) so token characters never need escaping; `[REDACTED]` keeps
+   * surrounding JSON valid since it carries no quotes or structural characters.
+   */
+  private redactSecrets(text: string, secrets: string[]): string {
+    let out = text;
+    for (const secret of secrets) {
+      // Guard empty: split('') would explode every character. The caller filters
+      // empties, but keep the helper safe on its own.
+      if (secret && out.includes(secret)) out = out.split(secret).join('[REDACTED]');
+    }
+    return out;
+  }
+
   private provisionWorktree(
     repoDir: string,
     executionId: string,

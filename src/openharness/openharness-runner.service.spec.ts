@@ -707,6 +707,23 @@ describe('OpenHarnessRunnerService', () => {
   const gitSub = (args: string[]) =>
     args.find((a) => ['status', 'diff', 'add', 'commit'].includes(a)) ?? '';
 
+  describe('redactSecrets', () => {
+    const redact = (text: string, secrets: string[]) =>
+      (service as any).redactSecrets(text, secrets);
+
+    it('replaces every occurrence of each secret and keeps JSON valid', () => {
+      const line = '{"header":"Bearer lore_acme_SECRET","note":"lore_acme_SECRET again"}';
+      const out = redact(line, ['lore_acme_SECRET', '']);
+      expect(out).not.toContain('lore_acme_SECRET');
+      expect(out).toContain('[REDACTED]');
+      expect(() => JSON.parse(out)).not.toThrow();
+    });
+
+    it('leaves lines without any secret untouched', () => {
+      expect(redact('{"type":"progress"}', ['lore_x_KEY'])).toBe('{"type":"progress"}');
+    });
+  });
+
   describe('resolveChangedFiles', () => {
     const call = (base: string | undefined, parserFiles: string[]) =>
       (service as any).resolveChangedFiles('/tmp/wt', base, parserFiles);
