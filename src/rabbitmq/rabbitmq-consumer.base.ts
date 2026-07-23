@@ -27,32 +27,33 @@ export abstract class RabbitMQConsumerBase {
 
       // Process the message
       await this.processMessage(parsed.payload, correlationId);
-
-      // Acknowledge message (manual ack)
-      channel.ack(message);
-      this.logger.log(`Message ${messageId} processed successfully`);
     } catch (_error) {
       this.logger.error(`Error processing message ${messageId}:`, _error);
+      // Reject without requeue → dead-letter queue handles retries.
+      this.settle(() => channel.nack(message, false, false), messageId, 'nack');
+      return;
+    }
 
-      // Check retry count (stored in message headers)
-      const retryCount = (message.properties.headers?.['x-retry-count'] as number) || 0;
-      const maxRetries = 3;
+    // Ack OUTSIDE the processing try: if the channel closed while processMessage
+    // ran (connection dropped/reconnected), ack throws IllegalOperationError. That
+    // must not be mistaken for a processing failure — the work already succeeded,
+    // and the broker will redeliver this unacked message after reconnect.
+    this.settle(() => channel.ack(message), messageId, 'ack');
+    this.logger.log(`Message ${messageId} processed successfully`);
+  }
 
-      if (retryCount < maxRetries) {
-        // Increment retry count and requeue
-        this.logger.warn(`Retrying message ${messageId} (attempt ${retryCount + 1}/${maxRetries})`);
-
-        // Reject and requeue with incremented retry count
-        // Note: This requires manually republishing with updated headers
-        // For now, send to DLQ which will handle retries
-        channel.nack(message, false, false);
-      } else {
-        // Max retries exceeded, send to dead letter queue
-        this.logger.error(
-          `Message ${messageId} failed after ${maxRetries} attempts, moving to DLQ`,
-        );
-        channel.nack(message, false, false);
-      }
+  /**
+   * Run a channel ack/nack, swallowing "Channel closed" (IllegalOperationError)
+   * from a connection drop. An unacked message is redelivered on reconnect, so a
+   * failed ack/nack is safe to log rather than throw.
+   */
+  private settle(op: () => void, messageId: string | undefined, kind: 'ack' | 'nack'): void {
+    try {
+      op();
+    } catch (error) {
+      this.logger.warn(
+        `Could not ${kind} message ${messageId} (channel closed?); will be redelivered: ${error}`,
+      );
     }
   }
 }
