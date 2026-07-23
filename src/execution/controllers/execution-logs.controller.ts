@@ -8,6 +8,7 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 // Assuming RoleGuard and JwtAuthGuard exist - verifying imports from execution.module.ts
 import { JwtAuthGuard } from '@/common/guards/auth.guard'; // More specific import to match file system
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -17,6 +18,11 @@ import { ExecutionActivityRepository } from '../repositories/execution-activity.
 @ApiTags('Execution Logs')
 @Controller('executions')
 @UseGuards(JwtAuthGuard, RolesGuard)
+// JWT+Roles-guarded read-only telemetry. The live activity timeline fires one
+// fetch per on-screen execution, so a dashboard load bursts well past the global
+// 100/min 'webhook' throttle. Raise the ceiling like the audit/production dashboards.
+// ponytail: fixed 300/min ceiling; if pages routinely show >300 executions, key the throttle per-user instead of per-IP.
+@Throttle({ default: { limit: 300, ttl: 60000 } })
 export class ExecutionLogsController {
   constructor(
     private readonly logRepository: ExecutionLogRepository,

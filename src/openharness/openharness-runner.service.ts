@@ -775,6 +775,14 @@ export class OpenHarnessRunnerService {
       }
     })();
     if (branchExists) {
+      // A prior run's worktree for this per-ticket branch may still be registered
+      // and on disk (teardown skipped on crash/kill/dev-server restart). git allows
+      // a branch in only one worktree, so `worktree add <branch>` would fail with
+      // "already used by worktree at ...". `worktree prune` above only clears
+      // worktrees whose dirs were deleted, so remove any stale one still holding it.
+      // ponytail: assumes no legit concurrent run on the same ticket branch — the
+      // file-locks module serializes per-ticket work, so a held branch is stale.
+      this.removeStaleWorktreeForBranch(repoDir, branch, executionId);
       // Reuse the persistent branch so prior legs' commits are visible.
       execFileSync('git', ['-C', repoDir, 'worktree', 'add', dir, branch], { stdio: 'pipe' });
     } else {
@@ -827,6 +835,44 @@ export class OpenHarnessRunnerService {
     }
     this.logger.log(`[${executionId}] Provisioned isolated worktree at ${dir} (branch ${branch})`);
     return dir;
+  }
+
+  /**
+   * Force-remove any git worktree currently checked out on `branch`. Used before
+   * re-adding a persistent per-ticket branch so a stale worktree left by a crashed
+   * or restarted prior run can't cause "'<branch>' is already used by worktree at".
+   */
+  private removeStaleWorktreeForBranch(repoDir: string, branch: string, executionId: string): void {
+    let list: string;
+    try {
+      list = execFileSync('git', ['-C', repoDir, 'worktree', 'list', '--porcelain'], {
+        encoding: 'utf8',
+      });
+    } catch {
+      return;
+    }
+    // Porcelain output is blank-line-separated blocks; each holding a checked-out
+    // branch has a `branch refs/heads/<name>` line and a leading `worktree <path>`.
+    for (const block of list.split('\n\n')) {
+      if (!block.includes(`branch refs/heads/${branch}`)) continue;
+      const pathMatch = block.match(/^worktree (.+)$/m);
+      if (!pathMatch) continue;
+      try {
+        execFileSync('git', ['-C', repoDir, 'worktree', 'remove', '--force', pathMatch[1]], {
+          stdio: 'pipe',
+        });
+        this.logger.warn(
+          `[${executionId}] Removed stale worktree ${pathMatch[1]} holding branch ${branch}`,
+        );
+      } catch {
+        /* best effort — the subsequent worktree add will surface any real problem */
+      }
+    }
+    try {
+      execFileSync('git', ['-C', repoDir, 'worktree', 'prune'], { stdio: 'pipe' });
+    } catch {
+      /* ignore */
+    }
   }
 
   /**

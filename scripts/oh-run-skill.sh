@@ -9,7 +9,9 @@ MODEL="${OH_RUN_MODEL:-gpt-5.4}"
 MAX_TURNS="${OH_RUN_MAX_TURNS:-200}"
 
 required_commands=(node oh)
-required_env=(BMAD_SERVER_URL BMAD_API_KEY CLICKUP_API_KEY CLICKUP_TEAM_ID LORE_SERVER_URL LORE_API_KEY)
+# Lore is optional: when LORE_SERVER_URL + LORE_API_KEY are unset the lore MCP
+# server is skipped and the run proceeds without Lore memory (see node block below).
+required_env=(BMAD_SERVER_URL BMAD_API_KEY CLICKUP_API_KEY CLICKUP_TEAM_ID)
 # OPENAI_API_KEY is injected per-run by the DSF runner (the selected account's
 # token) — scrub it from the persisted stream alongside the MCP secrets.
 secret_env=(BMAD_API_KEY CLICKUP_API_KEY LORE_API_KEY OPENAI_API_KEY)
@@ -74,12 +76,19 @@ function materialize(value) {
   return value;
 }
 
-for (const name of ["bmad", "lore"]) {
-  if (!config.mcpServers?.[name]) throw new Error(`missing mcpServers.${name}`);
-}
+if (!config.mcpServers?.bmad) throw new Error("missing mcpServers.bmad");
 
 fs.writeFileSync(bmadPath, JSON.stringify(materialize(config.mcpServers.bmad)));
-fs.writeFileSync(lorePath, JSON.stringify(materialize(config.mcpServers.lore)));
+
+// Lore is optional: register it only if configured AND its env (LORE_*) resolves.
+// If not, leave lorePath unwritten — the shell skips registration when it's absent.
+if (config.mcpServers?.lore) {
+  try {
+    fs.writeFileSync(lorePath, JSON.stringify(materialize(config.mcpServers.lore)));
+  } catch {
+    // Optional server with unresolved env — skip it.
+  }
+}
 NODE
 
 DEFAULT_CONFIG_DIR="${OPENHARNESS_CONFIG_DIR:-$HOME/.openharness}"
@@ -95,8 +104,10 @@ oh mcp remove lore >/dev/null 2>&1 || true
 if ! oh mcp add bmad "$(cat "$TMP_DIR/bmad.json")" >"$TMP_DIR/bmad-add.log" 2>&1; then
   fail "failed to register bmad MCP server"
 fi
-if ! oh mcp add lore "$(cat "$TMP_DIR/lore.json")" >"$TMP_DIR/lore-add.log" 2>&1; then
-  fail "failed to register lore MCP server"
+if [[ -s "$TMP_DIR/lore.json" ]]; then
+  if ! oh mcp add lore "$(cat "$TMP_DIR/lore.json")" >"$TMP_DIR/lore-add.log" 2>&1; then
+    fail "failed to register lore MCP server"
+  fi
 fi
 
 mkdir -p "$(dirname "$OUTPUT_PATH")"

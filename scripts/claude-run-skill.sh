@@ -17,7 +17,8 @@ MODEL="${CLAUDE_RUN_MODEL:-sonnet}"
 MAX_TURNS="${OH_RUN_MAX_TURNS:-200}"
 
 required_commands=(node claude)
-required_env=(BMAD_SERVER_URL BMAD_API_KEY CLICKUP_API_KEY CLICKUP_TEAM_ID LORE_SERVER_URL LORE_API_KEY)
+# Lore is optional: unset LORE_* → the lore MCP server is skipped (see REQUIRED below).
+required_env=(BMAD_SERVER_URL BMAD_API_KEY CLICKUP_API_KEY CLICKUP_TEAM_ID)
 secret_env=(BMAD_API_KEY CLICKUP_API_KEY LORE_API_KEY)
 
 fail() {
@@ -58,7 +59,7 @@ const fs = require("node:fs");
 
 const [configPath, outPath] = process.argv.slice(2);
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-const REQUIRED = new Set(["bmad", "lore"]);
+const REQUIRED = new Set(["bmad"]); // lore is optional — skipped if its env is unset
 
 function materialize(value) {
   if (typeof value === "string") {
