@@ -138,15 +138,26 @@ else
 fi
 set -e
 
-for env_name in "${secret_env[@]}"; do
-  # Skip unset/empty vars — grep -Fq "" matches every line and would falsely
-  # flag every run (e.g. OPENAI_API_KEY is absent on non-openai legs).
-  [[ -n "${!env_name:-}" ]] || continue
-  if grep -Fq "${!env_name}" "$TEMP_OUTPUT"; then
-    rm -f "$TEMP_OUTPUT"
-    fail "stream output contained the literal value of $env_name; refusing to write unsafe log"
-  fi
-done
+# Redact any secret value that leaked into the stream (e.g. a Lore MCP error
+# echoing its Authorization header) instead of discarding the run. The run has
+# already done its work — failing here would waste all its time and tokens while
+# still leaving the on-disk log safe. Fixed-string replace via node (a required
+# command) avoids sed regex-escaping traps; empty vars are skipped.
+node -e '
+  const fs = require("node:fs");
+  const [file, ...names] = process.argv.slice(1);
+  let s = fs.readFileSync(file, "utf8");
+  let changed = false;
+  for (const n of names) {
+    const v = process.env[n];
+    if (v && s.includes(v)) {
+      s = s.split(v).join(`[REDACTED_${n}]`);
+      changed = true;
+      process.stderr.write(`WARN: redacted leaked ${n} from stream output\n`);
+    }
+  }
+  if (changed) fs.writeFileSync(file, s);
+' "$TEMP_OUTPUT" "${secret_env[@]}"
 
 mv "$TEMP_OUTPUT" "$OUTPUT_PATH"
 
