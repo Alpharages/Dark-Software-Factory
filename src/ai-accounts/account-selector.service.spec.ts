@@ -41,6 +41,11 @@ function makePrismaStub(accounts: Account[]) {
       findUnique: jest.fn(
         async ({ where }: any) => accounts.find((account) => account.id === where.id) ?? null,
       ),
+      update: jest.fn(async ({ where, data }: any) => {
+        const row = accounts.find((account) => account.id === where.id);
+        if (row) Object.assign(row, data);
+        return row;
+      }),
     },
     aiAccountUsage: {
       findMany: jest.fn(async ({ where }: any) =>
@@ -214,6 +219,35 @@ describe('AiAccountSelectorService', () => {
     await expect(
       selector.selectAccount({ provider: 'claude', runtime: 'claude', model: 'sonnet' }),
     ).resolves.toMatchObject({ id: 'fresh' });
+  });
+
+  it('quarantine excludes the account until the cooldown lapses, then readmits it', async () => {
+    const prisma = makePrismaStub([account('limited'), account('ok')]);
+    const selector = new AiAccountSelectorService(prisma as unknown as PrismaService, clock);
+    await selector.quarantine('limited', 60 * 60 * 1000);
+
+    // During cooldown: skipped even though it has full budget headroom.
+    await expect(
+      selector.selectAccount({ provider: 'claude', runtime: 'claude', model: 'sonnet' }),
+    ).resolves.toMatchObject({ id: 'ok' });
+
+    // Same pool 61 minutes later: cooldown lapsed. Give 'ok' real usage so
+    // 'limited' can only win by being back in the pool.
+    const later = new AiAccountSelectorService(prisma as unknown as PrismaService, {
+      now: () => new Date(now.getTime() + 61 * 60 * 1000),
+    });
+    await later.recordUsage('ok', { tokens: 50 });
+    await expect(
+      later.selectAccount({ provider: 'claude', runtime: 'claude', model: 'sonnet' }),
+    ).resolves.toMatchObject({ id: 'limited' });
+  });
+
+  it('quarantine rejects an unknown account id with NotFoundException', async () => {
+    const { selector } = service([account('ok')]);
+
+    await expect(selector.quarantine('missing', 1000)).rejects.toThrow(
+      'AiAccount missing not found',
+    );
   });
 
   it('recordUsage rejects an unknown account id with NotFoundException', async () => {

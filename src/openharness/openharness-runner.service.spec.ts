@@ -120,6 +120,7 @@ describe('OpenHarnessRunnerService', () => {
     mockAccountSelector = {
       selectAccount: jest.fn().mockResolvedValue({ id: 'acct-openai' }),
       recordUsage: jest.fn().mockResolvedValue(undefined),
+      quarantine: jest.fn().mockResolvedValue(undefined),
     };
     mockAiAccounts = {
       getDecryptedCredentials: jest.fn().mockResolvedValue({ token: 'sk-selected' }),
@@ -395,6 +396,101 @@ describe('OpenHarnessRunnerService', () => {
       requests: 1,
       tokens: 0,
     });
+  });
+
+  it('quarantines a rate-limited account and fails over to the next one mid-run', async () => {
+    const child1 = new EventEmitter() as any;
+    child1.stdout = new PassThrough();
+    child1.stderr = new PassThrough();
+    child1.kill = jest.fn();
+    const child2 = new EventEmitter() as any;
+    child2.stdout = new PassThrough();
+    child2.stderr = new PassThrough();
+    child2.kill = jest.fn();
+    (child_process.spawn as jest.Mock).mockReturnValueOnce(child1).mockReturnValueOnce(child2);
+    mockAccountSelector.selectAccount
+      .mockResolvedValueOnce({ id: 'acct-1' })
+      .mockResolvedValueOnce({ id: 'acct-2' });
+
+    const runPromise = service.runForTicket('ticket-1', {
+      skill: 'test-skill',
+      workspaceDir: '/tmp',
+    });
+
+    child1.stdout.write(
+      JSON.stringify({
+        type: 'result',
+        status: 'FAILED',
+        error_message: 'Claude AI usage limit reached|1751400000',
+      }) + '\n',
+    );
+    setTimeout(() => child1.emit('close', 1), 10);
+    // Drive the second attempt to success once the failover has spawned it.
+    const driveSecond = setInterval(() => {
+      if ((child_process.spawn as jest.Mock).mock.calls.length === 2) {
+        clearInterval(driveSecond);
+        child2.stdout.write(
+          JSON.stringify({
+            type: 'result',
+            status: 'COMPLETED',
+            summary: 'done',
+            files_changed: ['a.ts'],
+          }) + '\n',
+        );
+        child2.emit('close', 0);
+      }
+    }, 5);
+
+    await runPromise;
+
+    expect(mockAccountSelector.quarantine).toHaveBeenCalledWith('acct-1', expect.any(Number));
+    expect(child_process.spawn).toHaveBeenCalledTimes(2);
+    expect(mockExecutionTracker.failExecution).not.toHaveBeenCalled();
+    expect(mockExecutionTracker.completeExecution).toHaveBeenCalledWith(
+      expect.objectContaining({ executionId: 'exec-123', codeOutput: 'done' }),
+      'exec-123',
+    );
+    expect(mockAccountSelector.recordUsage).toHaveBeenCalledWith('acct-2', {
+      requests: 1,
+      tokens: 0,
+    });
+  });
+
+  it('fails with the original rate-limit error when no other account is eligible', async () => {
+    const child1 = new EventEmitter() as any;
+    child1.stdout = new PassThrough();
+    child1.stderr = new PassThrough();
+    child1.kill = jest.fn();
+    (child_process.spawn as jest.Mock).mockReturnValueOnce(child1);
+    mockAccountSelector.selectAccount
+      .mockResolvedValueOnce({ id: 'acct-1' })
+      .mockRejectedValueOnce(new NoEligibleAccountError('openai', 'oh'));
+
+    const runPromise = service.runForTicket('ticket-1', {
+      skill: 'test-skill',
+      workspaceDir: '/tmp',
+    });
+
+    child1.stdout.write(
+      JSON.stringify({
+        type: 'result',
+        status: 'FAILED',
+        error_message: 'rate_limit_error: Number of requests exceeded',
+      }) + '\n',
+    );
+    setTimeout(() => child1.emit('close', 1), 10);
+
+    await runPromise;
+
+    expect(mockAccountSelector.quarantine).toHaveBeenCalledWith('acct-1', expect.any(Number));
+    expect(child_process.spawn).toHaveBeenCalledTimes(1);
+    expect(mockExecutionTracker.failExecution).toHaveBeenCalledWith(
+      expect.objectContaining({
+        executionId: 'exec-123',
+        errorMessage: 'rate_limit_error: Number of requests exceeded',
+      }),
+      'exec-123',
+    );
   });
 
   it('should fail (not complete) on clean exit with no parseable result — AC2c', async () => {

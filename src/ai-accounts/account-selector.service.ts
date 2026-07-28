@@ -59,7 +59,10 @@ export class AiAccountSelectorService {
       where: { provider: req.provider, runtime: req.runtime, enabled: true },
       orderBy: [{ id: 'asc' }],
     });
-    const usableAccounts = accounts.filter((account) => !this.isFailing(account.quota_config));
+    const usableAccounts = accounts.filter(
+      (account) =>
+        !this.isFailing(account.quota_config) && !this.isCoolingDown(account.quota_config, now),
+    );
     const usage = await this.loadUsage(
       usableAccounts.map((account) => account.id),
       now,
@@ -120,6 +123,33 @@ export class AiAccountSelectorService {
         }),
       ),
     );
+  }
+
+  /**
+   * Exclude an account from selection for `cooldownMs` — used when the provider
+   * rejects it (rate limit) before DSF's own budget accounting says it is
+   * exhausted. Self-heals: selection resumes once the cooldown lapses.
+   */
+  async quarantine(accountId: string, cooldownMs: number): Promise<void> {
+    const account = await this.prisma.aiAccount.findUnique({ where: { id: accountId } });
+    if (!account) {
+      throw new NotFoundException(`AiAccount ${accountId} not found`);
+    }
+    const until = new Date(this.clock.now().getTime() + cooldownMs);
+    await this.prisma.aiAccount.update({
+      where: { id: accountId },
+      data: {
+        quota_config: {
+          ...this.config(account.quota_config),
+          cooldown_until: until.toISOString(),
+        } as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  private isCoolingDown(configValue: Prisma.JsonValue, now: Date): boolean {
+    const value = this.config(configValue)['cooldown_until'];
+    return typeof value === 'string' && new Date(value) > now;
   }
 
   private async loadUsage(accountIds: string[], now: Date): Promise<Map<string, UsageTotals>> {

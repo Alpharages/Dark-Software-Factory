@@ -20,7 +20,10 @@ import { OpenHarnessCodeReadyEvent } from './events/openharness-code-ready.event
 import { OpenHarnessNeedsInputEvent } from './events/openharness-needs-input.event';
 import { EventBusService } from '@/common/event-bus.service';
 import { AiAccountsService } from '@/ai-accounts/ai-accounts.service';
-import { AiAccountSelectorService } from '@/ai-accounts/account-selector.service';
+import {
+  AiAccountSelectorService,
+  SelectAccountRequest,
+} from '@/ai-accounts/account-selector.service';
 import { NoEligibleAccountError } from '@/ai-accounts/errors/no-eligible-account.error';
 import { AICostTrackerService } from '@/cost-tracking/ai-cost-tracker.service';
 import { EncryptionService } from '@/common/encryption/encryption.service';
@@ -31,6 +34,15 @@ type MandatedToolsMode = 'warn' | 'fail';
  * (getResult/getFilesChanged/getToolsUsed) rather than the live adapter path.
  * Anything outside this set and the live-event set is logged and skipped (AC5).
  */
+// A provider-side rejection that names a limit means the account is exhausted for
+// its current window, whatever DSF's own budget accounting says. Matches the known
+// Claude CLI phrasings ("Claude AI usage limit reached", "5-hour limit reached")
+// and generic rate-limit wording from either runtime.
+const RATE_LIMIT_PATTERN = /rate.?limit|usage limit|limit reached/i;
+// ponytail: fixed 1h cooldown — the CLI error doesn't reliably carry the window
+// reset time; parse it into the cooldown if a stable format emerges.
+const RATE_LIMIT_COOLDOWN_MS = 60 * 60 * 1000;
+
 const KNOWN_OH_EVENT_TYPES = new Set<string>([
   'progress',
   'result',
@@ -153,34 +165,9 @@ export class OpenHarnessRunnerService {
     let selectedAccountId = '';
     let accountEnv: Record<string, string> = {};
     try {
-      const account = await this.accountSelector.selectAccount({ provider, runtime, model });
-      const credentials = await this.aiAccounts.getDecryptedCredentials(account.id);
-      if (provider === 'openai') {
-        const token = credentials.token;
-        if (typeof token !== 'string' || token.trim() === '') {
-          throw new Error('selected OpenAI account is missing token credentials');
-        }
-        // `oh` / the OpenAI SDK read OPENAI_API_KEY from the environment natively.
-        accountEnv = { OPENAI_API_KEY: token };
-      } else {
-        // The `claude` CLI has no headless email/password login — the only way to
-        // drive a *specific* Claude subscription account is to point it at that
-        // account's own logged-in config dir. We validate the stored credentials
-        // decrypt cleanly (integrity/provisioning check) but never inject them:
-        // they are inert to `claude` and would only widen the secret surface.
-        // Selection is enforced via a per-account CLAUDE_CONFIG_DIR instead — an
-        // un-provisioned account fails closed ("not logged in") rather than
-        // silently running under whatever ambient ~/.claude session exists.
-        const email = credentials.email;
-        if (typeof email !== 'string' || email.trim() === '') {
-          throw new Error('selected Claude account is missing credentials');
-        }
-        const accountsDir =
-          this.configService.get<string>('openharness.claudeAccountsDir') ??
-          path.join(os.homedir(), '.dsf', 'claude-accounts');
-        accountEnv = { CLAUDE_CONFIG_DIR: path.join(accountsDir, account.id) };
-      }
-      selectedAccountId = account.id;
+      const prepared = await this.prepareAccountEnv({ provider, runtime, model });
+      selectedAccountId = prepared.id;
+      accountEnv = prepared.env;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await this.executionTracker.failExecution(
@@ -314,391 +301,492 @@ export class OpenHarnessRunnerService {
     }
 
     return new Promise((resolve) => {
-      const wrapperFile =
-        runtime === 'claude' ? 'scripts/claude-run-skill.sh' : 'scripts/oh-run-skill.sh';
-      const wrapperPath = path.resolve(process.cwd(), wrapperFile);
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      const useWrapper = fs.existsSync(wrapperPath);
-      const child = spawn(
-        useWrapper ? wrapperPath : binaryPath,
-        useWrapper
-          ? [clickUpTaskId, path.join(os.tmpdir(), `${execution.id}.stream.json`)]
-          : [
-              '-p',
-              childPrompt,
-              '--output-format',
-              'stream-json',
-              '--permission-mode',
-              'full_auto',
-              '--max-turns',
-              String(maxTurns),
-              '--mcp-config',
-              mcpConfigPath,
-            ],
-        {
-          cwd: runWorkspaceDir,
-          env: {
-            ...process.env,
-            CLICKUP_API_KEY:
-              this.configService.get<string>('CLICKUP_API_KEY') ||
-              process.env.CLICKUP_API_KEY ||
-              '',
-            CLICKUP_TEAM_ID:
-              this.configService.get<string>('CLICKUP_TEAM_ID') ||
-              process.env.CLICKUP_TEAM_ID ||
-              '',
-            BMAD_SERVER_URL:
-              this.configService.get<string>('BMAD_SERVER_URL') ||
-              process.env.BMAD_SERVER_URL ||
-              '',
-            BMAD_API_KEY:
-              this.configService.get<string>('BMAD_API_KEY') || process.env.BMAD_API_KEY || '',
-            ...loreEnv,
-            LORE_SLUG: this.configService.get<string>('LORE_SLUG') || process.env.LORE_SLUG || '',
-            LORE_KEY: this.configService.get<string>('LORE_KEY') || process.env.LORE_KEY || '',
-            OH_RUN_WORKFLOW: skill,
-            OH_RUN_MCP_CONFIG: mcpConfigPath,
-            // Each wrapper falls back to its own default when its var is unset/empty
-            // (`${OH_RUN_MODEL:-gpt-5.4}` / `${CLAUDE_RUN_MODEL:-sonnet}`), so only
-            // the var matching the resolved runtime needs the real value.
-            OH_RUN_MODEL: runtime === 'oh' ? model : '',
-            CLAUDE_RUN_MODEL: runtime === 'claude' ? model : '',
-            OH_RUN_MAX_TURNS: String(maxTurns),
-            OH_RUN_STREAM_STDOUT: useWrapper ? '1' : '',
-            ...accountEnv,
-            ...(useWrapper
-              ? {}
-              : {
-                  OPENHARNESS_CONFIG_DIR: path.join(
-                    os.tmpdir(),
-                    `${execution.id}-openharness-config`,
-                  ),
-                }),
+      // One spawn attempt bound to the currently selected account. Re-invoked by
+      // the rate-limit failover path below with a freshly selected account.
+      const attemptRun = (): void => {
+        const wrapperFile =
+          runtime === 'claude' ? 'scripts/claude-run-skill.sh' : 'scripts/oh-run-skill.sh';
+        const wrapperPath = path.resolve(process.cwd(), wrapperFile);
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        const useWrapper = fs.existsSync(wrapperPath);
+        const child = spawn(
+          useWrapper ? wrapperPath : binaryPath,
+          useWrapper
+            ? [clickUpTaskId, path.join(os.tmpdir(), `${execution.id}.stream.json`)]
+            : [
+                '-p',
+                childPrompt,
+                '--output-format',
+                'stream-json',
+                '--permission-mode',
+                'full_auto',
+                '--max-turns',
+                String(maxTurns),
+                '--mcp-config',
+                mcpConfigPath,
+              ],
+          {
+            cwd: runWorkspaceDir,
+            env: {
+              ...process.env,
+              CLICKUP_API_KEY:
+                this.configService.get<string>('CLICKUP_API_KEY') ||
+                process.env.CLICKUP_API_KEY ||
+                '',
+              CLICKUP_TEAM_ID:
+                this.configService.get<string>('CLICKUP_TEAM_ID') ||
+                process.env.CLICKUP_TEAM_ID ||
+                '',
+              BMAD_SERVER_URL:
+                this.configService.get<string>('BMAD_SERVER_URL') ||
+                process.env.BMAD_SERVER_URL ||
+                '',
+              BMAD_API_KEY:
+                this.configService.get<string>('BMAD_API_KEY') || process.env.BMAD_API_KEY || '',
+              ...loreEnv,
+              LORE_SLUG: this.configService.get<string>('LORE_SLUG') || process.env.LORE_SLUG || '',
+              LORE_KEY: this.configService.get<string>('LORE_KEY') || process.env.LORE_KEY || '',
+              OH_RUN_WORKFLOW: skill,
+              OH_RUN_MCP_CONFIG: mcpConfigPath,
+              // Each wrapper falls back to its own default when its var is unset/empty
+              // (`${OH_RUN_MODEL:-gpt-5.4}` / `${CLAUDE_RUN_MODEL:-sonnet}`), so only
+              // the var matching the resolved runtime needs the real value.
+              OH_RUN_MODEL: runtime === 'oh' ? model : '',
+              CLAUDE_RUN_MODEL: runtime === 'claude' ? model : '',
+              OH_RUN_MAX_TURNS: String(maxTurns),
+              OH_RUN_STREAM_STDOUT: useWrapper ? '1' : '',
+              ...accountEnv,
+              ...(useWrapper
+                ? {}
+                : {
+                    OPENHARNESS_CONFIG_DIR: path.join(
+                      os.tmpdir(),
+                      `${execution.id}-openharness-config`,
+                    ),
+                  }),
+            },
           },
-        },
-      );
+        );
 
-      const parser = new OpenHarnessStreamParser();
-      let lastProgress = '';
-      let settled = false;
+        const parser = new OpenHarnessStreamParser();
+        let lastProgress = '';
+        let settled = false;
 
-      // Secrets injected into the child env can leak into the stream (e.g. a Lore
-      // MCP error echoing its Authorization header). The wrapper redacts the
-      // persisted log file, but the live stream is consumed here BEFORE that scan
-      // and its events are persisted as activities — so redact each line up front.
-      const secretValues = [
-        loreEnv.LORE_API_KEY,
-        accountEnv.OPENAI_API_KEY,
-        this.configService.get<string>('BMAD_API_KEY') || process.env.BMAD_API_KEY,
-        this.configService.get<string>('CLICKUP_API_KEY') || process.env.CLICKUP_API_KEY,
-      ].filter((v): v is string => typeof v === 'string' && v.length > 0);
+        // Secrets injected into the child env can leak into the stream (e.g. a Lore
+        // MCP error echoing its Authorization header). The wrapper redacts the
+        // persisted log file, but the live stream is consumed here BEFORE that scan
+        // and its events are persisted as activities — so redact each line up front.
+        const secretValues = [
+          loreEnv.LORE_API_KEY,
+          accountEnv.OPENAI_API_KEY,
+          this.configService.get<string>('BMAD_API_KEY') || process.env.BMAD_API_KEY,
+          this.configService.get<string>('CLICKUP_API_KEY') || process.env.CLICKUP_API_KEY,
+        ].filter((v): v is string => typeof v === 'string' && v.length > 0);
 
-      if (child.stdout) {
-        const rl = readline.createInterface({ input: child.stdout });
-        rl.on('line', (rawLine) => {
-          const line = this.redactSecrets(rawLine, secretValues);
-          const event = parser.parseLine(line);
-          if (!event) return;
+        if (child.stdout) {
+          const rl = readline.createInterface({ input: child.stdout });
+          rl.on('line', (rawLine) => {
+            const line = this.redactSecrets(rawLine, secretValues);
+            const event = parser.parseLine(line);
+            if (!event) return;
 
-          if (event.type === 'progress' && event.step) {
-            lastProgress = event.step;
-          }
+            if (event.type === 'progress' && event.step) {
+              lastProgress = event.step;
+            }
 
-          if (isOpenHarnessLiveEvent(event as OpenHarnessStreamEvent)) {
-            this.streamAdapter
-              ?.handleEvent(execution.id, ticketId, event)
-              .catch((error: unknown) => {
-                const message = error instanceof Error ? error.message : String(error);
-                this.logger.warn(`[${execution.id}] OpenHarness stream adapter failed: ${message}`);
-              });
-            return;
-          }
+            if (isOpenHarnessLiveEvent(event as OpenHarnessStreamEvent)) {
+              this.streamAdapter
+                ?.handleEvent(execution.id, ticketId, event)
+                .catch((error: unknown) => {
+                  const message = error instanceof Error ? error.message : String(error);
+                  this.logger.warn(
+                    `[${execution.id}] OpenHarness stream adapter failed: ${message}`,
+                  );
+                });
+              return;
+            }
 
-          // AC5: unknown/unhandled stream event types are logged and skipped so
-          // they are observable without ever crashing the run.
-          if (!KNOWN_OH_EVENT_TYPES.has(event.type)) {
-            this.logger.debug(
-              `[${execution.id}] Skipping unrecognized OpenHarness stream event: ${event.type}`,
-            );
-          }
-        });
-      }
+            // AC5: unknown/unhandled stream event types are logged and skipped so
+            // they are observable without ever crashing the run.
+            if (!KNOWN_OH_EVENT_TYPES.has(event.type)) {
+              this.logger.debug(
+                `[${execution.id}] Skipping unrecognized OpenHarness stream event: ${event.type}`,
+              );
+            }
+          });
+        }
 
-      if (child.stderr) {
-        child.stderr.on('data', (data) => {
-          const text = this.redactSecrets(data.toString().trim(), secretValues);
-          this.logger.debug(`[${execution.id}] STDERR: ${text}`);
-        });
-      }
+        if (child.stderr) {
+          child.stderr.on('data', (data) => {
+            const text = this.redactSecrets(data.toString().trim(), secretValues);
+            this.logger.debug(`[${execution.id}] STDERR: ${text}`);
+          });
+        }
 
-      // Run exactly one terminal path and only resolve once its persistence has
-      // completed. The `settled` guard prevents a double-fire: a timeout calls
-      // child.kill(), which in turn emits 'close' — without the guard the close
-      // handler would attempt a second, illegal TIMEOUT→FAILED transition. It
-      // also ensures the row is genuinely in its terminal state by the time
-      // runForTicket() resolves, so a caller that reads the row right after the
-      // await sees the final status (not a still-in-flight write).
-      const finalize = (persist: () => Promise<unknown>): void => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        void (async () => {
-          try {
-            await persist();
-          } catch (e) {
-            this.logger.error(e);
-          } finally {
-            const tokenUsage = parser.getTokenUsage();
+        // Run exactly one terminal path and only resolve once its persistence has
+        // completed. The `settled` guard prevents a double-fire: a timeout calls
+        // child.kill(), which in turn emits 'close' — without the guard the close
+        // handler would attempt a second, illegal TIMEOUT→FAILED transition. It
+        // also ensures the row is genuinely in its terminal state by the time
+        // runForTicket() resolves, so a caller that reads the row right after the
+        // await sees the final status (not a still-in-flight write).
+        const finalize = (persist: () => Promise<unknown>): void => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          void (async () => {
             try {
-              await this.logRunCost({
-                executionId: execution.id,
-                ticketId,
-                skill,
-                model,
-                selectedAccountId,
-                inputTokens: tokenUsage.inputTokens,
-                outputTokens: tokenUsage.outputTokens,
-              });
+              await persist();
             } catch (e) {
               this.logger.error(e);
-            }
-            // Record usage on every terminal path for a spawned run — even if the
-            // terminal persist above threw — so the account's budget reflects the
-            // work it actually did. Independent try/catch: a usage-write failure
-            // must not swallow the resolve() or the worktree teardown below.
-            if (selectedAccountId) {
+            } finally {
+              const tokenUsage = parser.getTokenUsage();
               try {
-                // Cache reads are excluded from the metered total (EXEC-CRIT-4);
-                // log them so the split stays auditable without a schema change.
-                this.logger.log(
-                  `Token usage for execution ${execution.id}: ` +
-                    `metered=${parser.getTokensUsed()} ` +
-                    `(input=${tokenUsage.inputTokens ?? 0}, output=${tokenUsage.outputTokens ?? 0}), ` +
-                    `cache_read=${tokenUsage.cachedInputTokens ?? 0} (not metered)`,
-                );
-                await this.accountSelector.recordUsage(selectedAccountId, {
-                  requests: 1,
-                  tokens: parser.getTokensUsed(),
+                await this.logRunCost({
+                  executionId: execution.id,
+                  ticketId,
+                  skill,
+                  model,
+                  selectedAccountId,
+                  inputTokens: tokenUsage.inputTokens,
+                  outputTokens: tokenUsage.outputTokens,
                 });
               } catch (e) {
                 this.logger.error(e);
               }
+              // Record usage on every terminal path for a spawned run — even if the
+              // terminal persist above threw — so the account's budget reflects the
+              // work it actually did. Independent try/catch: a usage-write failure
+              // must not swallow the resolve() or the worktree teardown below.
+              if (selectedAccountId) {
+                try {
+                  // Cache reads are excluded from the metered total (EXEC-CRIT-4);
+                  // log them so the split stays auditable without a schema change.
+                  this.logger.log(
+                    `Token usage for execution ${execution.id}: ` +
+                      `metered=${parser.getTokensUsed()} ` +
+                      `(input=${tokenUsage.inputTokens ?? 0}, output=${tokenUsage.outputTokens ?? 0}), ` +
+                      `cache_read=${tokenUsage.cachedInputTokens ?? 0} (not metered)`,
+                  );
+                  await this.accountSelector.recordUsage(selectedAccountId, {
+                    requests: 1,
+                    tokens: parser.getTokensUsed(),
+                  });
+                } catch (e) {
+                  this.logger.error(e);
+                }
+              }
+              // Tear down the isolated worktree on every terminal path (success,
+              // failure, timeout). Best-effort: never block resolution on cleanup.
+              if (isolateWorkspace && runWorkspaceDir !== baseRepoDir) {
+                this.removeWorktree(baseRepoDir, runWorkspaceDir);
+              }
+              resolve(execution.id);
             }
-            // Tear down the isolated worktree on every terminal path (success,
-            // failure, timeout). Best-effort: never block resolution on cleanup.
-            if (isolateWorkspace && runWorkspaceDir !== baseRepoDir) {
-              this.removeWorktree(baseRepoDir, runWorkspaceDir);
-            }
-            resolve(execution.id);
-          }
-        })();
-      };
+          })();
+        };
 
-      const timer = setTimeout(() => {
-        child.kill();
-        finalize(() =>
-          this.executionTracker.timeoutExecution(
-            {
-              executionId: execution.id,
-              timeoutSeconds: runTimeoutMs / 1000,
-              lastKnownProgress: lastProgress,
-            },
-            execution.id,
-          ),
-        );
-      }, runTimeoutMs);
-
-      child.on('error', (err) => {
-        finalize(() =>
-          this.executionTracker.failExecution(
-            {
-              executionId: execution.id,
-              errorMessage: `Spawn error: ${err.message}`,
-              isRetryable: false,
-            },
-            execution.id,
-          ),
-        );
-      });
-
-      child.on('close', (code) => {
-        finalize(async () => {
-          const result = parser.getResult();
-          // Git is the source of truth for what changed — the stream parser only
-          // sees files the agent *announces* via `files_changed` events, which the
-          // claude runtime never emits, so trusting it leaves `files_changed` empty
-          // and the approval gate blind (QA-2026-07-13 EXEC-CRIT-5). Read both the
-          // committed diff AND the working tree: the agent is not trusted to commit.
-          const filesChanged = this.resolveChangedFiles(
-            runWorkspaceDir,
-            isolateWorkspace && projectRepo ? projectRepo.defaultBranch : undefined,
-            parser.getFilesChanged(),
+        const timer = setTimeout(() => {
+          child.kill();
+          finalize(() =>
+            this.executionTracker.timeoutExecution(
+              {
+                executionId: execution.id,
+                timeoutSeconds: runTimeoutMs / 1000,
+                lastKnownProgress: lastProgress,
+              },
+              execution.id,
+            ),
           );
-          const toolsUsed = parser.getToolsUsed();
-          const summary = result?.summary || 'Execution completed without summary';
+        }, runTimeoutMs);
 
-          if (code === 0 && result && result.status !== 'FAILED') {
-            try {
-              await this.guardrails.formatOwnFiles(
-                runWorkspaceDir,
-                filesChanged,
-                formatEnabled,
-                formatCommand,
-              );
-            } catch (error) {
-              const message = error instanceof Error ? error.message : String(error);
+        child.on('error', (err) => {
+          finalize(() =>
+            this.executionTracker.failExecution(
+              {
+                executionId: execution.id,
+                errorMessage: `Spawn error: ${err.message}`,
+                isRetryable: false,
+              },
+              execution.id,
+            ),
+          );
+        });
+
+        child.on('close', (code) => {
+          const persistTerminal = async (): Promise<void> => {
+            const result = parser.getResult();
+            // Git is the source of truth for what changed — the stream parser only
+            // sees files the agent *announces* via `files_changed` events, which the
+            // claude runtime never emits, so trusting it leaves `files_changed` empty
+            // and the approval gate blind (QA-2026-07-13 EXEC-CRIT-5). Read both the
+            // committed diff AND the working tree: the agent is not trusted to commit.
+            const filesChanged = this.resolveChangedFiles(
+              runWorkspaceDir,
+              isolateWorkspace && projectRepo ? projectRepo.defaultBranch : undefined,
+              parser.getFilesChanged(),
+            );
+            const toolsUsed = parser.getToolsUsed();
+            const summary = result?.summary || 'Execution completed without summary';
+
+            if (code === 0 && result && result.status !== 'FAILED') {
+              try {
+                await this.guardrails.formatOwnFiles(
+                  runWorkspaceDir,
+                  filesChanged,
+                  formatEnabled,
+                  formatCommand,
+                );
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                await this.prisma.execution.update({
+                  where: { id: execution.id },
+                  data: { error_context: `OpenHarness guardrail formatter failed: ${message}` },
+                });
+                await this.executionTracker.failExecution(
+                  {
+                    executionId: execution.id,
+                    errorMessage: `OpenHarness guardrail formatter failed: ${message}`,
+                    isRetryable: false,
+                  },
+                  execution.id,
+                );
+                return;
+              }
+
+              // The agent is not trusted to commit: on the claude runtime it often
+              // finishes an implementation with everything still in the working
+              // tree, and the worktree is torn down moments later — which destroyed
+              // the work outright while the run reported COMPLETED (QA-2026-07-13
+              // §2.1d). Commit after the formatter so the branch carries formatted
+              // code, and before teardown so the branch is the durable artifact the
+              // diff, the approval gate and the GitHub push all read.
+              if (isolateWorkspace && projectRepo) {
+                this.commitPendingWork(runWorkspaceDir, execution.id, clickUpTaskId, skill);
+              }
+
+              // Never report a success nobody can review: an implement run that
+              // captured no changes did not implement anything, whatever its
+              // summary claims (QA-2026-07-13 §2.1d).
+              //
+              // But this is not a dead end — a zero-diff implement run means the
+              // agent stopped short and wants something from a human, and its
+              // summary is that ask. FAILED buried the ask in `error_message`
+              // where nobody read it and left the ticket needing a manual re-run.
+              // Park in PAUSED instead and relay the ask to the PM tool as a task
+              // comment; answering it there resumes the ticket automatically.
+              if (skill === OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT && filesChanged.length === 0) {
+                await this.prisma.execution.update({
+                  where: { id: execution.id },
+                  data: {
+                    status: ExecutionStatus.PAUSED,
+                    error_message: `Implement run produced no file changes on ${ticketBranch} — awaiting input. Summary: ${summary}`,
+                    // Discriminator: PAUSED is also used for manual pause
+                    // (Story 10-U-5), so the resume poller keys off this marker to
+                    // resume ONLY the runs it parked here, never a human-paused one.
+                    error_context: JSON.stringify({ awaitingInput: true, taskId: clickUpTaskId }),
+                  },
+                });
+
+                this.eventBus.emit(
+                  'openharness.needs-input',
+                  new OpenHarnessNeedsInputEvent(
+                    execution.id,
+                    ticketId,
+                    projectRepo?.id ?? null,
+                    clickUpTaskId,
+                    summary,
+                    skill,
+                    execution.id,
+                  ),
+                );
+                return;
+              }
+
+              // Persist 100% alongside tools_used so a reloaded/closed card shows a
+              // full bar — emitProgress's mid-run writes only carried {currentStep,
+              // percentComplete}, and without this the final write would reset it.
               await this.prisma.execution.update({
                 where: { id: execution.id },
-                data: { error_context: `OpenHarness guardrail formatter failed: ${message}` },
+                data: {
+                  progress: {
+                    tools_used: toolsUsed,
+                    currentStep: 'Completed',
+                    percentComplete: 100,
+                  } as Prisma.InputJsonValue,
+                },
               });
+
+              // Snap the live progress bar to 100% (the mid-run creep caps below it).
+              await this.executionTracker
+                .emitProgress(execution.id, ticketId, null, 'Completed', 100, 'COMPLETED')
+                .catch(() => undefined);
+
+              await this.executionTracker.completeExecution(
+                {
+                  executionId: execution.id,
+                  codeOutput: summary,
+                  filesChanged: filesChanged,
+                  // Placeholder: IExecutionCompletion requires a confidence score,
+                  // but the OpenHarness stream carries no confidence signal. 1.0 is
+                  // a known limitation, not a measured value — revisit if the
+                  // stream gains a confidence field.
+                  confidenceScore: 1.0,
+                },
+                execution.id,
+              );
+
+              // EXEC-3: a `clickup-qa` run is the only skill that produces a QA
+              // verdict — persist it into the linked QAResult so the execution's QA
+              // tab and the approval gate stop showing "No QA attempt data
+              // available". Other skills leave qa_result null.
+              if (skill === OpenHarnessSkill.CLICKUP_QA) {
+                await this.persistQaVerdict(execution.id, summary);
+              }
+
+              // Hand off to GitHub delivery: push the committed branch (and, when
+              // approval is not required, open the PR). Only when the run executed
+              // in an isolated worktree on a real project repo — otherwise there is
+              // no dedicated branch / remote to push to. Decoupled via the EventBus
+              // so this module never imports the GitHub module.
+              if (isolateWorkspace && projectRepo) {
+                this.eventBus.emit(
+                  'openharness.code-ready',
+                  new OpenHarnessCodeReadyEvent(
+                    execution.id,
+                    ticketId,
+                    projectRepo.id,
+                    ticketBranch,
+                    baseRepoDir,
+                    projectRepo.repositoryUrl,
+                    skill,
+                    execution.id,
+                  ),
+                );
+              }
+            } else {
+              let errorMessage = result?.error_message || `Process exited with code ${code}`;
+              const errorContext = result?.error_context || '';
+              if (!result && code === 0) {
+                errorMessage = 'Clean exit but no parseable result event';
+              }
+
+              if (errorContext) {
+                await this.prisma.execution.update({
+                  where: { id: execution.id },
+                  data: { error_context: errorContext },
+                });
+              }
+
               await this.executionTracker.failExecution(
                 {
                   executionId: execution.id,
-                  errorMessage: `OpenHarness guardrail formatter failed: ${message}`,
+                  errorMessage,
+                  errorCode: String(code),
                   isRetryable: false,
                 },
                 execution.id,
               );
-              return;
             }
+          };
 
-            // The agent is not trusted to commit: on the claude runtime it often
-            // finishes an implementation with everything still in the working
-            // tree, and the worktree is torn down moments later — which destroyed
-            // the work outright while the run reported COMPLETED (QA-2026-07-13
-            // §2.1d). Commit after the formatter so the branch carries formatted
-            // code, and before teardown so the branch is the durable artifact the
-            // diff, the approval gate and the GitHub push all read.
-            if (isolateWorkspace && projectRepo) {
-              this.commitPendingWork(runWorkspaceDir, execution.id, clickUpTaskId, skill);
-            }
-
-            // Never report a success nobody can review: an implement run that
-            // captured no changes did not implement anything, whatever its
-            // summary claims (QA-2026-07-13 §2.1d).
-            //
-            // But this is not a dead end — a zero-diff implement run means the
-            // agent stopped short and wants something from a human, and its
-            // summary is that ask. FAILED buried the ask in `error_message`
-            // where nobody read it and left the ticket needing a manual re-run.
-            // Park in PAUSED instead and relay the ask to the PM tool as a task
-            // comment; answering it there resumes the ticket automatically.
-            if (skill === OpenHarnessSkill.CLICKUP_DEV_IMPLEMENT && filesChanged.length === 0) {
-              await this.prisma.execution.update({
-                where: { id: execution.id },
-                data: {
-                  status: ExecutionStatus.PAUSED,
-                  error_message: `Implement run produced no file changes on ${ticketBranch} — awaiting input. Summary: ${summary}`,
-                  // Discriminator: PAUSED is also used for manual pause
-                  // (Story 10-U-5), so the resume poller keys off this marker to
-                  // resume ONLY the runs it parked here, never a human-paused one.
-                  error_context: JSON.stringify({ awaitingInput: true, taskId: clickUpTaskId }),
-                },
-              });
-
-              this.eventBus.emit(
-                'openharness.needs-input',
-                new OpenHarnessNeedsInputEvent(
-                  execution.id,
-                  ticketId,
-                  projectRepo?.id ?? null,
-                  clickUpTaskId,
-                  summary,
-                  skill,
-                  execution.id,
-                ),
-              );
-              return;
-            }
-
-            // Persist 100% alongside tools_used so a reloaded/closed card shows a
-            // full bar — emitProgress's mid-run writes only carried {currentStep,
-            // percentComplete}, and without this the final write would reset it.
-            await this.prisma.execution.update({
-              where: { id: execution.id },
-              data: {
-                progress: {
-                  tools_used: toolsUsed,
-                  currentStep: 'Completed',
-                  percentComplete: 100,
-                } as Prisma.InputJsonValue,
-              },
+          // Rate-limited? Quarantine the account and re-spawn on the next eligible
+          // one instead of failing the execution. Bounded without a counter: every
+          // hop quarantines an account, so the pool shrinks until a run sticks or
+          // selection comes up dry (then we fall through and fail normally).
+          const earlyResult = parser.getResult();
+          const failedRun = !(code === 0 && earlyResult && earlyResult.status !== 'FAILED');
+          const failureMessage = earlyResult?.error_message || `Process exited with code ${code}`;
+          if (
+            failedRun &&
+            !settled &&
+            selectedAccountId &&
+            RATE_LIMIT_PATTERN.test(failureMessage)
+          ) {
+            // Kill this attempt's timer: it would otherwise fire mid-failover and
+            // finalize a TIMEOUT against the abandoned attempt.
+            clearTimeout(timer);
+            void this.failoverAccount(execution.id, selectedAccountId, {
+              provider,
+              runtime,
+              model,
+            }).then((next) => {
+              if (next) {
+                selectedAccountId = next.id;
+                accountEnv = next.env;
+                attemptRun();
+              } else {
+                finalize(persistTerminal);
+              }
             });
-
-            // Snap the live progress bar to 100% (the mid-run creep caps below it).
-            await this.executionTracker
-              .emitProgress(execution.id, ticketId, null, 'Completed', 100, 'COMPLETED')
-              .catch(() => undefined);
-
-            await this.executionTracker.completeExecution(
-              {
-                executionId: execution.id,
-                codeOutput: summary,
-                filesChanged: filesChanged,
-                // Placeholder: IExecutionCompletion requires a confidence score,
-                // but the OpenHarness stream carries no confidence signal. 1.0 is
-                // a known limitation, not a measured value — revisit if the
-                // stream gains a confidence field.
-                confidenceScore: 1.0,
-              },
-              execution.id,
-            );
-
-            // EXEC-3: a `clickup-qa` run is the only skill that produces a QA
-            // verdict — persist it into the linked QAResult so the execution's QA
-            // tab and the approval gate stop showing "No QA attempt data
-            // available". Other skills leave qa_result null.
-            if (skill === OpenHarnessSkill.CLICKUP_QA) {
-              await this.persistQaVerdict(execution.id, summary);
-            }
-
-            // Hand off to GitHub delivery: push the committed branch (and, when
-            // approval is not required, open the PR). Only when the run executed
-            // in an isolated worktree on a real project repo — otherwise there is
-            // no dedicated branch / remote to push to. Decoupled via the EventBus
-            // so this module never imports the GitHub module.
-            if (isolateWorkspace && projectRepo) {
-              this.eventBus.emit(
-                'openharness.code-ready',
-                new OpenHarnessCodeReadyEvent(
-                  execution.id,
-                  ticketId,
-                  projectRepo.id,
-                  ticketBranch,
-                  baseRepoDir,
-                  projectRepo.repositoryUrl,
-                  skill,
-                  execution.id,
-                ),
-              );
-            }
-          } else {
-            let errorMessage = result?.error_message || `Process exited with code ${code}`;
-            const errorContext = result?.error_context || '';
-            if (!result && code === 0) {
-              errorMessage = 'Clean exit but no parseable result event';
-            }
-
-            if (errorContext) {
-              await this.prisma.execution.update({
-                where: { id: execution.id },
-                data: { error_context: errorContext },
-              });
-            }
-
-            await this.executionTracker.failExecution(
-              {
-                executionId: execution.id,
-                errorMessage,
-                errorCode: String(code),
-                isRetryable: false,
-              },
-              execution.id,
-            );
+            return;
           }
+
+          finalize(persistTerminal);
         });
-      });
+      };
+      attemptRun();
     });
+  }
+
+  /** Select an eligible account and build the child-process env that binds the run to it. */
+  private async prepareAccountEnv(
+    req: SelectAccountRequest,
+  ): Promise<{ id: string; env: Record<string, string> }> {
+    const account = await this.accountSelector.selectAccount(req);
+    const credentials = await this.aiAccounts.getDecryptedCredentials(account.id);
+    if (req.provider === 'openai') {
+      const token = credentials.token;
+      if (typeof token !== 'string' || token.trim() === '') {
+        throw new Error('selected OpenAI account is missing token credentials');
+      }
+      // `oh` / the OpenAI SDK read OPENAI_API_KEY from the environment natively.
+      return { id: account.id, env: { OPENAI_API_KEY: token } };
+    }
+    // The `claude` CLI has no headless email/password login — the only way to
+    // drive a *specific* Claude subscription account is to point it at that
+    // account's own logged-in config dir. We validate the stored credentials
+    // decrypt cleanly (integrity/provisioning check) but never inject them:
+    // they are inert to `claude` and would only widen the secret surface.
+    // Selection is enforced via a per-account CLAUDE_CONFIG_DIR instead — an
+    // un-provisioned account fails closed ("not logged in") rather than
+    // silently running under whatever ambient ~/.claude session exists.
+    const email = credentials.email;
+    if (typeof email !== 'string' || email.trim() === '') {
+      throw new Error('selected Claude account is missing credentials');
+    }
+    const accountsDir =
+      this.configService.get<string>('openharness.claudeAccountsDir') ??
+      path.join(os.homedir(), '.dsf', 'claude-accounts');
+    return { id: account.id, env: { CLAUDE_CONFIG_DIR: path.join(accountsDir, account.id) } };
+  }
+
+  /**
+   * A rate-limited account is exhausted for its window, not broken: quarantine it
+   * and move the run to the next eligible account. Returns null when the pool is
+   * dry (or failover itself errors) — the caller then fails the run normally.
+   */
+  private async failoverAccount(
+    executionId: string,
+    exhaustedAccountId: string,
+    req: SelectAccountRequest,
+  ): Promise<{ id: string; env: Record<string, string> } | null> {
+    try {
+      await this.accountSelector.quarantine(exhaustedAccountId, RATE_LIMIT_COOLDOWN_MS);
+      const next = await this.prepareAccountEnv(req);
+      await this.prisma.execution.update({
+        where: { id: executionId },
+        data: { selected_account_id: next.id },
+      });
+      this.logger.warn(
+        `[${executionId}] account ${exhaustedAccountId} rate-limited; failing over to ${next.id}`,
+      );
+      return next;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[${executionId}] rate-limit failover unavailable: ${message}`);
+      return null;
+    }
   }
 
   private requiredConfig(key: string): string {
