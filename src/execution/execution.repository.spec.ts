@@ -148,6 +148,7 @@ describe('ExecutionRepository', () => {
           ticket: {
             select: {
               project_id: true,
+              clickup_task_id: true,
             },
           },
         },
