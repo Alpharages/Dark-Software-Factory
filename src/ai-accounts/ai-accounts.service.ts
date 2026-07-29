@@ -7,15 +7,16 @@ import * as path from 'path';
 import { Prisma } from '@/prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { EncryptionService } from '@/common/encryption/encryption.service';
-
-/** Provider/runtime vocabulary — must match A3's SkillModelMap exactly so A5/A6 can join. */
-const PROVIDERS = ['claude', 'openai'] as const;
-const RUNTIMES = ['oh', 'claude'] as const;
-type Provider = (typeof PROVIDERS)[number];
-type Runtime = (typeof RUNTIMES)[number];
-
-/** claude↔claude, openai↔oh — the only valid pairings. */
-const expectedRuntime = (provider: Provider): Runtime => (provider === 'claude' ? 'claude' : 'oh');
+import {
+  CREDENTIAL_KEYS,
+  PROVIDERS,
+  RUNTIMES,
+  expectedRuntime,
+  type Provider,
+  type Runtime,
+} from './constants';
+import type { CreateAiAccountDto } from './dto/create-ai-account.dto';
+import type { UpdateAiAccountDto } from './dto/update-ai-account.dto';
 
 const REQUIRED_COLUMNS = [
   'label',
@@ -24,18 +25,6 @@ const REQUIRED_COLUMNS = [
   'credentials_json',
   'quota_config_json',
 ] as const;
-
-/**
- * Required credential keys per provider — validated present + non-empty (key names only, never values).
- * Only these keys are persisted; anything else in the CSV cell is dropped. Claude no longer stores a
- * password (auth is the per-account CLAUDE_CONFIG_DIR browser session, not a headless login); `email`
- * is kept purely as a human identifier so the admin "Claude sessions" view can show which account a
- * session belongs to.
- */
-const CREDENTIAL_KEYS: Record<Provider, readonly string[]> = {
-  claude: ['email'],
-  openai: ['token'],
-};
 
 /** Non-secret projection returned by every read path (AC1 — credentials never leave the boundary). */
 export interface RedactedAiAccount {
@@ -186,8 +175,70 @@ export class AiAccountsService {
     });
   }
 
-  /** Enable/disable an account (AC4). Returns the redacted row. */
-  async setEnabled(id: string, enabled: boolean): Promise<RedactedAiAccount> {
+  /** Add a single account to the pool. Returns the redacted row. */
+  async create(dto: CreateAiAccountDto): Promise<RedactedAiAccount> {
+    const wantRuntime = expectedRuntime(dto.provider);
+    if (wantRuntime !== dto.runtime) {
+      throw new BadRequestException(
+        `field "runtime" is inconsistent with "provider" (provider "${dto.provider}" requires runtime "${wantRuntime}")`,
+      );
+    }
+    const credentials = this.assertAndProjectCredentials(dto.provider, dto.credentials);
+    const ciphertext = this.encryption.encrypt(JSON.stringify(credentials));
+
+    try {
+      return await this.prisma.aiAccount.create({
+        data: {
+          label: dto.label,
+          provider: dto.provider,
+          runtime: dto.runtime,
+          credentials: ciphertext,
+          quota_config: (dto.quota_config ?? {}) as Prisma.InputJsonValue,
+          enabled: dto.enabled ?? true,
+        },
+        select: REDACTED_SELECT,
+      });
+    } catch (err) {
+      if ((err as { code?: string })?.code === 'P2002') {
+        throw new BadRequestException(
+          `An account with label "${dto.label}" already exists for provider "${dto.provider}".`,
+        );
+      }
+      throw err;
+    }
+  }
+
+  /** Edit an account — label, quota, credentials, and/or enabled. Returns the redacted row. */
+  async update(id: string, dto: UpdateAiAccountDto): Promise<RedactedAiAccount> {
+    const existing = await this.prisma.aiAccount.findUnique({
+      where: { id },
+      select: { id: true, provider: true },
+    });
+    if (!existing) {
+      throw new NotFoundException(`AiAccount not found: ${id}`);
+    }
+
+    const data: Prisma.AiAccountUpdateInput = {};
+    if (dto.label !== undefined) data.label = dto.label;
+    if (dto.quota_config !== undefined)
+      data.quota_config = dto.quota_config as Prisma.InputJsonValue;
+    if (dto.enabled !== undefined) data.enabled = dto.enabled;
+    if (dto.credentials !== undefined) {
+      const credentials = this.assertAndProjectCredentials(
+        existing.provider as Provider,
+        dto.credentials,
+      );
+      data.credentials = this.encryption.encrypt(JSON.stringify(credentials));
+    }
+
+    return this.prisma.aiAccount.update({ where: { id }, data, select: REDACTED_SELECT });
+  }
+
+  /**
+   * Remove an account from the pool. In-flight executions that selected this account are
+   * unaffected — `Execution.selected_account_id` is `onDelete: SetNull`; usage rows cascade.
+   */
+  async remove(id: string): Promise<void> {
     const existing = await this.prisma.aiAccount.findUnique({
       where: { id },
       select: { id: true },
@@ -195,11 +246,7 @@ export class AiAccountsService {
     if (!existing) {
       throw new NotFoundException(`AiAccount not found: ${id}`);
     }
-    return this.prisma.aiAccount.update({
-      where: { id },
-      data: { enabled },
-      select: REDACTED_SELECT,
-    });
+    await this.prisma.aiAccount.delete({ where: { id } });
   }
 
   /**
@@ -348,22 +395,11 @@ export class AiAccountsService {
     }
 
     const rawCredentials = this.parseJsonObject(record.credentials_json, 'credentials_json');
-    // Provider-shaped payload check — fail loud at import (key names only in the error, AC3).
-    // Persist ONLY the declared keys: extras (e.g. a legacy claude `password`) are dropped so we
-    // never store a credential we no longer use.
-    const credentials: Record<string, string> = {};
-    // eslint-disable-next-line security/detect-object-injection -- provider is validated against PROVIDERS above
-    for (const key of CREDENTIAL_KEYS[provider]) {
-      // eslint-disable-next-line security/detect-object-injection -- key is a trusted literal from CREDENTIAL_KEYS
-      const value = rawCredentials[key];
-      if (typeof value !== 'string' || value.trim() === '') {
-        throw new BadRequestException(
-          `field "credentials_json" is missing required key "${key}" for provider "${provider}"`,
-        );
-      }
-      // eslint-disable-next-line security/detect-object-injection -- key is a trusted literal from CREDENTIAL_KEYS
-      credentials[key] = value;
-    }
+    const credentials = this.assertAndProjectCredentials(
+      provider,
+      rawCredentials,
+      'credentials_json',
+    );
     const quotaConfig = this.parseJsonObject(record.quota_config_json, 'quota_config_json');
 
     return {
@@ -373,6 +409,32 @@ export class AiAccountsService {
       credentials,
       quotaConfig: quotaConfig as Prisma.InputJsonValue,
     };
+  }
+
+  /**
+   * Validate a provider-shaped credential payload and project it down to only the declared keys
+   * (e.g. a legacy claude `password` is dropped so we never store a credential we no longer use).
+   * Shared by CSV import and the JSON create/update paths (AC3: error references key names only).
+   */
+  private assertAndProjectCredentials(
+    provider: Provider,
+    raw: Record<string, unknown>,
+    field = 'credentials',
+  ): Record<string, string> {
+    const credentials: Record<string, string> = {};
+    // eslint-disable-next-line security/detect-object-injection -- provider is validated against PROVIDERS
+    for (const key of CREDENTIAL_KEYS[provider]) {
+      // eslint-disable-next-line security/detect-object-injection -- key is a trusted literal from CREDENTIAL_KEYS
+      const value = raw[key];
+      if (typeof value !== 'string' || value.trim() === '') {
+        throw new BadRequestException(
+          `field "${field}" is missing required key "${key}" for provider "${provider}"`,
+        );
+      }
+      // eslint-disable-next-line security/detect-object-injection -- key is a trusted literal from CREDENTIAL_KEYS
+      credentials[key] = value;
+    }
+    return credentials;
   }
 
   /** Parse a JSON-object cell. Error references the field name only — never the raw value (AC3). */

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -25,7 +26,8 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/auth/constants/roles.enum';
 import { AiAccountsService } from './ai-accounts.service';
-import { SetAiAccountEnabledDto } from './dto/set-enabled.dto';
+import { CreateAiAccountDto } from './dto/create-ai-account.dto';
+import { UpdateAiAccountDto } from './dto/update-ai-account.dto';
 
 /**
  * ADMIN-guarded credential-pool admin API (Epic A / A4). All routes are served under the global
@@ -83,6 +85,14 @@ export class AiAccountsController {
     return this.accounts.list();
   }
 
+  @Post()
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Add a single account to the pool (ADMIN).' })
+  @ApiResponse({ status: 201, description: 'Created redacted account' })
+  async create(@Body() dto: CreateAiAccountDto) {
+    return this.accounts.create(dto);
+  }
+
   @Get('claude-sessions')
   @Roles(Role.ADMIN)
   @ApiOperation({
@@ -97,9 +107,20 @@ export class AiAccountsController {
 
   @Patch(':id')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Enable/disable an account (ADMIN).' })
+  @ApiOperation({
+    summary: 'Edit an account — label, quota, credentials, and/or enabled (ADMIN).',
+  })
   @ApiResponse({ status: 200, description: 'Updated redacted account' })
-  async setEnabled(@Param('id') id: string, @Body() dto: SetAiAccountEnabledDto) {
-    return this.accounts.setEnabled(id, dto.enabled);
+  async update(@Param('id') id: string, @Body() dto: UpdateAiAccountDto) {
+    return this.accounts.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Remove an account from the pool (ADMIN).' })
+  @ApiResponse({ status: 200, description: 'Account removed' })
+  async remove(@Param('id') id: string) {
+    await this.accounts.remove(id);
+    return { success: true };
   }
 }

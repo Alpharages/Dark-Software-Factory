@@ -12,7 +12,9 @@ describe('AiAccountsController', () => {
     service = {
       importFromCsv: jest.fn().mockResolvedValue({ imported: 2, skipped: 0, errors: [] }),
       list: jest.fn().mockResolvedValue([{ id: 'a', label: 'claude-1', enabled: true }]),
-      setEnabled: jest.fn().mockResolvedValue({ id: 'a', enabled: false }),
+      create: jest.fn().mockResolvedValue({ id: 'a', label: 'claude-1', enabled: true }),
+      update: jest.fn().mockResolvedValue({ id: 'a', enabled: false }),
+      remove: jest.fn().mockResolvedValue(undefined),
     };
     controller = new AiAccountsController(service as unknown as AiAccountsService);
   });
@@ -62,14 +64,32 @@ describe('AiAccountsController', () => {
     expect(service.list).toHaveBeenCalled();
   });
 
-  it('setEnabled() delegates the id + dto.enabled to the service', async () => {
-    const result = await controller.setEnabled('a', { enabled: false });
+  it('create() forwards the dto to the service', async () => {
+    const dto = {
+      label: 'claude-1',
+      provider: 'claude' as const,
+      runtime: 'claude' as const,
+      credentials: { email: 'a@example.com' },
+    };
+    const result = await controller.create(dto);
+    expect(result).toEqual({ id: 'a', label: 'claude-1', enabled: true });
+    expect(service.create).toHaveBeenCalledWith(dto);
+  });
+
+  it('update() delegates the id + dto to the service', async () => {
+    const result = await controller.update('a', { enabled: false });
     expect(result).toEqual({ id: 'a', enabled: false });
-    expect(service.setEnabled).toHaveBeenCalledWith('a', false);
+    expect(service.update).toHaveBeenCalledWith('a', { enabled: false });
+  });
+
+  it('remove() delegates the id to the service', async () => {
+    const result = await controller.remove('a');
+    expect(result).toEqual({ success: true });
+    expect(service.remove).toHaveBeenCalledWith('a');
   });
 
   it('every route is ADMIN-guarded (RolesGuard + @Roles(ADMIN))', () => {
-    for (const method of ['import', 'list', 'setEnabled'] as const) {
+    for (const method of ['import', 'list', 'create', 'update', 'remove'] as const) {
       const roles = Reflect.getMetadata('roles', controller[method]);
       expect(roles).toEqual([Role.ADMIN]);
     }

@@ -26,6 +26,17 @@ function makePrismaStub() {
   return {
     _rows: rows,
     aiAccount: {
+      create: jest.fn(async ({ data }: any) => {
+        const dup = rows.find((r) => r.provider === data.provider && r.label === data.label);
+        if (dup) {
+          const err: any = new Error('Unique constraint failed');
+          err.code = 'P2002';
+          throw err;
+        }
+        const row = { id: `id-${++seq}`, created_at: new Date(), updated_at: new Date(), ...data };
+        rows.push(row);
+        return redact(row);
+      }),
       upsert: jest.fn(async ({ where, create, update }: any) => {
         const { provider, label } = where.provider_label;
         const existing = rows.find((r) => r.provider === provider && r.label === label);
@@ -59,6 +70,11 @@ function makePrismaStub() {
       update: jest.fn(async ({ where, data }: any) => {
         const row = rows.find((r) => r.id === where.id);
         Object.assign(row, data, { updated_at: new Date() });
+        return redact(row);
+      }),
+      delete: jest.fn(async ({ where }: any) => {
+        const index = rows.findIndex((r) => r.id === where.id);
+        const [row] = rows.splice(index, 1);
         return redact(row);
       }),
     },
@@ -243,21 +259,138 @@ describe('AiAccountsService', () => {
     });
   });
 
-  describe('setEnabled', () => {
+  describe('create', () => {
+    it('adds a single account and encrypts its credentials', async () => {
+      const account = await service.create({
+        label: 'claude-1',
+        provider: 'claude',
+        runtime: 'claude',
+        credentials: { email: SECRET_EMAIL },
+      });
+
+      expect(account).not.toHaveProperty('credentials');
+      expect(account).toMatchObject({ label: 'claude-1', provider: 'claude', enabled: true });
+      const stored = prisma._rows[0].credentials as string;
+      expect(stored).not.toContain(SECRET_EMAIL);
+      expect(JSON.parse(encryption.decrypt(stored))).toEqual({ email: SECRET_EMAIL });
+    });
+
+    it('defaults enabled to true and quota_config to {}', async () => {
+      const account = await service.create({
+        label: 'openai-1',
+        provider: 'openai',
+        runtime: 'oh',
+        credentials: { token: SECRET_TOKEN },
+      });
+      expect(account.enabled).toBe(true);
+      expect(account.quota_config).toEqual({});
+    });
+
+    it('rejects a provider/runtime mismatch', async () => {
+      await expect(
+        service.create({
+          label: 'x',
+          provider: 'claude',
+          runtime: 'oh',
+          credentials: { email: SECRET_EMAIL },
+        }),
+      ).rejects.toThrow(/runtime/);
+    });
+
+    it('rejects credentials missing a provider-required key', async () => {
+      await expect(
+        service.create({
+          label: 'x',
+          provider: 'claude',
+          runtime: 'claude',
+          credentials: {},
+        }),
+      ).rejects.toThrow(/missing required key "email"/);
+    });
+
+    it('rejects a duplicate (provider,label) with a clean 400', async () => {
+      await service.create({
+        label: 'claude-1',
+        provider: 'claude',
+        runtime: 'claude',
+        credentials: { email: SECRET_EMAIL },
+      });
+      await expect(
+        service.create({
+          label: 'claude-1',
+          provider: 'claude',
+          runtime: 'claude',
+          credentials: { email: 'other@example.com' },
+        }),
+      ).rejects.toThrow(/already exists/);
+    });
+  });
+
+  describe('update', () => {
+    it('edits label, quota_config, and enabled', async () => {
+      await service.importFromCsv(csv(CLAUDE_ROW));
+      const id = prisma._rows[0].id;
+
+      const updated = await service.update(id, {
+        label: 'claude-1-renamed',
+        quota_config: { weekly_budget: 5000 },
+        enabled: false,
+      });
+
+      expect(updated).toMatchObject({
+        label: 'claude-1-renamed',
+        quota_config: { weekly_budget: 5000 },
+        enabled: false,
+      });
+      expect(updated).not.toHaveProperty('credentials');
+    });
+
     it('AC4: toggles enabled and persists', async () => {
       await service.importFromCsv(csv(CLAUDE_ROW));
       const id = prisma._rows[0].id;
 
-      const disabled = await service.setEnabled(id, false);
+      const disabled = await service.update(id, { enabled: false });
       expect(disabled.enabled).toBe(false);
       expect(disabled).not.toHaveProperty('credentials');
 
-      const enabled = await service.setEnabled(id, true);
+      const enabled = await service.update(id, { enabled: true });
       expect(enabled.enabled).toBe(true);
     });
 
+    it('replaces credentials, re-encrypting under the account provider', async () => {
+      await service.importFromCsv(csv(CLAUDE_ROW));
+      const id = prisma._rows[0].id;
+
+      await service.update(id, { credentials: { email: 'new@example.com' } });
+      expect(await service.getDecryptedCredentials(id)).toEqual({ email: 'new@example.com' });
+    });
+
+    it('rejects replacement credentials missing a provider-required key', async () => {
+      await service.importFromCsv(csv(CLAUDE_ROW));
+      const id = prisma._rows[0].id;
+      await expect(service.update(id, { credentials: {} })).rejects.toThrow(
+        /missing required key "email"/,
+      );
+    });
+
     it('throws NotFound for an unknown id', async () => {
-      await expect(service.setEnabled('nope', false)).rejects.toThrow(NotFoundException);
+      await expect(service.update('nope', { enabled: false })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('deletes the account', async () => {
+      await service.importFromCsv(csv(CLAUDE_ROW));
+      const id = prisma._rows[0].id;
+
+      await service.remove(id);
+
+      expect(prisma._rows).toHaveLength(0);
+      await expect(service.getDecryptedCredentials(id)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFound for an unknown id', async () => {
+      await expect(service.remove('nope')).rejects.toThrow(NotFoundException);
     });
   });
 
