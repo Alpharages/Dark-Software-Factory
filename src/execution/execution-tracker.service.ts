@@ -606,6 +606,13 @@ export class ExecutionTrackerService implements OnModuleInit {
   }
 
   /**
+   * Delete an execution record. Returns false if it didn't exist.
+   */
+  async deleteExecution(executionId: string): Promise<boolean> {
+    return this.repository.deleteById(executionId);
+  }
+
+  /**
    * Get executions for a ticket
    */
   async getExecutionsForTicket(ticketId: string): Promise<Execution[]> {

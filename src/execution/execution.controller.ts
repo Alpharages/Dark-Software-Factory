@@ -2,10 +2,13 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   UseGuards,
   NotFoundException,
+  HttpCode,
+  HttpStatus,
   Headers,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
@@ -66,6 +69,17 @@ export class ExecutionController {
   ): Promise<QAResolutionResult> {
     const corrId = correlationId ?? `wr-4.3-${id.slice(0, 8)}`;
     return this.resolutionService.resolve(id, dto, corrId);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.PM, Role.ADMIN)
+  @ApiOperation({ summary: 'Delete an execution and its associated records' })
+  @ApiParam({ name: 'id', description: 'Execution UUID' })
+  @ApiResponse({ status: 204, description: 'Execution deleted' })
+  @ApiResponse({ status: 404, description: 'Execution not found' })
+  async deleteExecution(@Param('id') id: string): Promise<void> {
+    await this.executionService.deleteExecution(id);
   }
 
   @Get(':id/status')

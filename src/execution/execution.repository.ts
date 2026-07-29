@@ -343,6 +343,17 @@ export class ExecutionRepository {
   }
 
   /**
+   * Delete an execution by ID. Related rows (logs, activities, QA results,
+   * approval records, file locks) cascade at the DB level.
+   *
+   * @returns false if no execution with this ID existed
+   */
+  async deleteById(id: string): Promise<boolean> {
+    const { count } = await this.prisma.execution.deleteMany({ where: { id } });
+    return count > 0;
+  }
+
+  /**
    * Update ticket status based on execution
    */
   async updateTicketStatus(ticketId: string, status: string): Promise<void> {

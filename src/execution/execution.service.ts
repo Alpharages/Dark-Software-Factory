@@ -1,4 +1,4 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
 import { ExecutionStatus, Execution } from '@/prisma/client';
 import { ExecutionTrackerService } from './execution-tracker.service';
 import {
@@ -291,6 +291,18 @@ export class ExecutionService {
   async getExecution(executionId: string): Promise<ExecutionResponseDto | null> {
     const execution = await this.tracker.getExecution(executionId);
     return execution ? this.toResponseDto(execution) : null;
+  }
+
+  /**
+   * Delete an execution record
+   * @throws NotFoundException if the execution doesn't exist
+   */
+  async deleteExecution(executionId: string): Promise<void> {
+    const deleted = await this.tracker.deleteExecution(executionId);
+    if (!deleted) {
+      throw new NotFoundException(`Execution with ID ${executionId} not found`);
+    }
+    this.logger.log(`Deleted execution ${executionId}`);
   }
 
   /**
