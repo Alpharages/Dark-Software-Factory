@@ -36,9 +36,9 @@ type MandatedToolsMode = 'warn' | 'fail';
  */
 // A provider-side rejection that names a limit means the account is exhausted for
 // its current window, whatever DSF's own budget accounting says. Matches the known
-// Claude CLI phrasings ("Claude AI usage limit reached", "5-hour limit reached")
-// and generic rate-limit wording from either runtime.
-const RATE_LIMIT_PATTERN = /rate.?limit|usage limit|limit reached/i;
+// Claude CLI phrasings ("Claude AI usage limit reached", "5-hour limit reached",
+// "You've hit your session limit") and generic rate-limit wording from either runtime.
+const RATE_LIMIT_PATTERN = /rate.?limit|usage limit|session limit|limit reached/i;
 // ponytail: fixed 1h cooldown — the CLI error doesn't reliably carry the window
 // reset time; parse it into the cooldown if a stable format emerges.
 const RATE_LIMIT_COOLDOWN_MS = 60 * 60 * 1000;
